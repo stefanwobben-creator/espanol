@@ -143,6 +143,10 @@
         <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
       </div>
       <p class="muted" id="profHint" style="margin-top:8px">Kies een niveau, of doe de test van 10 vragen (2 minuten).</p>
+      <h2 style="margin-top:18px">Oefen je al op een ander apparaat?</h2>
+      <p class="muted">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
+      <input type="text" id="syncCodeIn" placeholder="bijv. elise-x7k2m9p4qa3b" autocomplete="off">
+      <div class="row"><button class="ghost" id="btnSyncLogin">Haal mijn voortgang op</button></div>
     </div>
     <div class="card hidden" id="placeCard"></div>
   </section>
@@ -209,8 +213,11 @@
       <textarea id="errorDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"></textarea>
     </div>
     <div class="card">
-      <h2>Profiel</h2>
-      <p class="muted">Iedereen heeft een eigen leerpad, eigen woordjes en een eigen streak op dit apparaat.</p>
+      <h2>Profiel &amp; synchronisatie</h2>
+      <p class="muted">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
+      Vul daar bij het profielscherm deze sync-code in:</p>
+      <p><b id="syncCode" style="font-size:1.05rem; letter-spacing:.03em">…</b></p>
+      <p class="muted" id="syncStatus">Laatste sync: nog niet</p>
       <div class="row"><button class="ghost" id="btnSwitchProf">Wissel profiel</button></div>
     </div>
     <div class="card">
@@ -872,7 +879,63 @@ var store = {
 
 function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, dir:"es-nl", newIntro:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
-function persist(){ store.save(S); }
+function persist(){ store.save(S); scheduleSync(); }
+
+/* ================= SERVER-SYNC ================= */
+var API = "https://espanol-qbm8.onrender.com";
+var syncTimer = null, lastSync = null;
+
+function api(path, method, body){
+  try{
+    return fetch(API + path, {
+      method: method || "GET",
+      headers: {"Content-Type":"application/json"},
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function(r){ return r.json(); }).catch(function(){ return null; });
+  }catch(e){ return Promise.resolve(null); }
+}
+
+function randCode(){
+  var chars = "abcdefghjkmnpqrstuvwxyz23456789", out = "";
+  for(var i=0;i<12;i++){ out += chars[Math.floor(Math.random()*chars.length)]; }
+  return out;
+}
+function ensureCode(p){
+  if(!p.code){
+    p.code = p.name.toLowerCase().replace(/[^a-z0-9]/g,"") + "-" + randCode();
+    saveProfiles();
+  }
+  return p.code;
+}
+
+function scheduleSync(){
+  if(syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncUp, 4000);
+}
+function syncUp(){
+  var p = activeProfile();
+  if(!p) return;
+  api("/api/sync", "POST", {code: ensureCode(p), name: p.name, track: p.track, state: S})
+    .then(function(res){ if(res && res.ok){ lastSync = res.updated_at; var el = document.getElementById("syncStatus"); if(el) el.textContent = "Laatste sync: zojuist ✓"; } });
+}
+function serverPull(p){
+  api("/api/state/" + ensureCode(p)).then(function(res){
+    if(res && res.ok && res.state && (res.state.txp||0) > (S.txp||0)){
+      S = res.state;
+      S.xp = S.xp || {}; S.streak = S.streak || {count:0,last:""};
+      S.tapaP = S.tapaP||0; S.fed = S.fed||""; S.owned = S.owned||{}; S.wear = S.wear||{}; S.lessons = S.lessons||{};
+      store.save(S);
+      updateBadge(); updateGoalUI();
+      toast("Voortgang van je andere apparaat opgehaald ✓");
+      show("lessen");
+    }
+  });
+}
+function logServer(kind, payload){
+  var p = activeProfile();
+  if(!p) return;
+  api("/api/log", "POST", {code: ensureCode(p), kind: kind, payload: payload});
+}
 
 /* ================= PROFIELEN ================= */
 var PKEY = "espanol-profiles-v1";
@@ -922,6 +985,34 @@ function renderProfileScreen(){
     };
   });
   document.getElementById("btnPlacement").onclick = startPlacement;
+  var bs = document.getElementById("btnSyncLogin");
+  if(bs) bs.onclick = function(){
+    var code = (document.getElementById("syncCodeIn").value||"").trim().toLowerCase();
+    if(code.length < 8){ document.getElementById("profHint").textContent = "Die code lijkt te kort, check hem even."; return; }
+    bs.disabled = true; bs.textContent = "Ophalen...";
+    api("/api/state/"+code).then(function(res){
+      bs.disabled = false; bs.textContent = "Haal mijn voortgang op";
+      if(!res || !res.ok){ document.getElementById("profHint").textContent = "Code niet gevonden (of de server slaapt even, probeer zo nog eens)."; return; }
+      var naam = res.name;
+      var bestaand = profiles.list.filter(function(p){ return p.code === code; })[0];
+      if(!bestaand){
+        var slug = naam.toLowerCase().replace(/[^a-z0-9]/g,"");
+        bestaand = {name:naam, track:res.track, key:"espanol-"+slug+"-v1", code:code};
+        // vervang eventueel lokaal profiel met dezelfde naam (zonder code)
+        profiles.list = profiles.list.filter(function(p){ return p.name.toLowerCase() !== naam.toLowerCase(); });
+        profiles.list.push(bestaand);
+      }
+      profiles.active = bestaand.name;
+      saveProfiles();
+      store.key = bestaand.key;
+      S = res.state || defaultState();
+      S.xp=S.xp||{}; S.streak=S.streak||{count:0,last:""}; S.tapaP=S.tapaP||0; S.fed=S.fed||"";
+      S.owned=S.owned||{}; S.wear=S.wear||{}; S.lessons=S.lessons||{}; S.txp=S.txp||0; S.tapas=S.tapas||0;
+      store.save(S);
+      boot();
+      toast("Welkom terug, "+naam+"! Voortgang opgehaald ✓");
+    });
+  };
   document.getElementById("btnNewProf").onclick = function(){
     var name = (document.getElementById("newProfName").value || "").trim();
     if(!name){ document.getElementById("profHint").textContent = "Vul eerst een naam in."; return; }
@@ -1033,6 +1124,9 @@ function boot(){
   updateBadge();
   updateGoalUI();
   show("lessen");
+  ensureCode(p);
+  serverPull(p);
+  syncUp();
 }
 
 /* ================= DAGDOEL, XP & STREAK ================= */
@@ -1054,6 +1148,7 @@ function addXP(n){
     S.streak.last = t;
     confetti(["🔥","⭐️","🎉"], 18);
     toast("¡Objetivo del día conseguido! 🔥 Streak: " + S.streak.count);
+    logServer("dagdoel", {streak:S.streak.count, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
   }
   var lvlAfter = petLevel(S.txp);
   if(lvlAfter > lvlBefore){
@@ -1196,6 +1291,7 @@ function checkLessonComplete(){
       persist();
       confetti(["🎉","🌮","⭐️","💃","✨"], 36);
       toast("¡LECCIÓN "+l.num+" COMPLETADA! 🎉 +5 tapas"+(beloond ? " én Chispa verdient de "+beloond.naam.toLowerCase()+" "+beloond.emoji : ""));
+      logServer("les-af", {les:l.id, titel:l.titel, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
     }
   }
 }
@@ -1397,16 +1493,47 @@ function checkSentence(){
   }
   html += "<div class='uitleg'><b>Waarom:</b> "+s.uitleg+"</div>";
   html += "<div class='row'>"+
-    (retryable ? "<button class='primary' id='btnRetry'>Probeer opnieuw</button><button class='ghost' id='btnNext'>Volgende zin →</button>"
-               : "<button class='primary' id='btnNext'>Volgende zin →</button>")+
-    "</div>";
+    (retryable ? "<button class='primary' id='btnRetry'>Probeer opnieuw</button>"+
+                 "<button class='ghost' id='btnAiCheck'>🤖 Is mijn variant ook goed?</button>"+
+                 "<button class='ghost' id='btnNext'>Volgende zin →</button>"
+               : "<button class='primary' id='btnNext'>Volgende zin →</button><button class='ghost' id='btnAiUitleg'>🤖 Meer uitleg</button>")+
+    "</div><div id='aiFb'></div>";
   fb.innerHTML = html;
   persist();
   if(gehaald){ checkLessonComplete(); }
+  var rauw = document.getElementById("sInput") ? document.getElementById("sInput").value : "";
   var bn = document.getElementById("btnNext");
   if(bn) bn.onclick = function(){ renderSentence(true); };
   var br = document.getElementById("btnRetry");
   if(br) br.onclick = function(){ renderSentence(false); };
+  var ba = document.getElementById("btnAiCheck");
+  if(ba) ba.onclick = function(){
+    ba.disabled = true; ba.textContent = "🤖 Claude denkt na...";
+    api("/api/ai/check", "POST", {nl:s.nl, verwacht:s.es, gegeven:rauw}).then(function(res){
+      var af = document.getElementById("aiFb");
+      if(!af) return;
+      if(!res || !res.ok){ af.innerHTML = "<div class='feedback bijna'>De AI is even niet bereikbaar, probeer het straks nog eens.</div>"; ba.disabled=false; ba.textContent="🤖 Is mijn variant ook goed?"; return; }
+      if(res.goed){
+        S.done[s.id] = true; addXP(4); persist(); checkLessonComplete();
+        af.innerHTML = "<div class='feedback ok'>🤖 Claude: ja, jouw variant is ook goed Spaans! (+4 XP)<br>"+res.uitleg+"</div>";
+        confetti(["🤖","✅","🎉"], 10);
+      } else {
+        af.innerHTML = "<div class='feedback fout'>🤖 Claude: helaas, niet helemaal. "+res.uitleg+"</div>";
+      }
+      ba.classList.add("hidden");
+    });
+  };
+  var bu = document.getElementById("btnAiUitleg");
+  if(bu) bu.onclick = function(){
+    bu.disabled = true; bu.textContent = "🤖 Momentje...";
+    api("/api/ai/uitleg", "POST", {vraag:"Leg de grammatica van deze zin nog eens eenvoudig en anders uit.", context:s.es+" | "+s.uitleg}).then(function(res){
+      var af = document.getElementById("aiFb");
+      if(!af) return;
+      af.innerHTML = (res && res.ok) ? "<div class='uitleg'>🤖 "+res.uitleg+"</div>" :
+        "<div class='feedback bijna'>De AI is even niet bereikbaar.</div>";
+      bu.classList.add("hidden");
+    });
+  };
 }
 
 /* ================= TOETSJES ================= */
@@ -2000,7 +2127,14 @@ function show(tabId){
   if(tabId==="chispa"){ renderPet(); renderShop(); }
   if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
-  if(tabId==="voortgang"){ renderStats(); }
+  if(tabId==="voortgang"){
+    renderStats();
+    var p = activeProfile();
+    var sc = document.getElementById("syncCode");
+    if(sc && p) sc.textContent = ensureCode(p);
+    var ss = document.getElementById("syncStatus");
+    if(ss) ss.textContent = lastSync ? "Laatste sync: gelukt ✓" : "Laatste sync: wordt automatisch gedaan tijdens het oefenen";
+  }
 }
 
 (function init(){
