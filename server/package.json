@@ -1,0 +1,15 @@
+{
+  "name": "espanol-api",
+  "version": "1.0.0",
+  "description": "API voor de ¡Vamos! Spaans-leerapp: profielsync, foutenlogs en AI-feedback",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
