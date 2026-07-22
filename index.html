@@ -1133,12 +1133,17 @@ var PET_LEVELS = [
 ];
 function petLevel(txp){ var lv=0; for(var i=0;i<PET_LEVELS.length;i++){ if(txp>=PET_LEVELS[i].min) lv=i; } return lv; }
 var SHOP = [
-  {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", prijs:5,  emoji:"🌺"},
-  {id:"gafas",    naam:"Gafas de sol", hint:"zonnebril",                prijs:10, emoji:"🕶️"},
-  {id:"bufanda",  naam:"Bufanda",      hint:"een warme sjaal",          prijs:12, emoji:"🧣"},
-  {id:"sombrero", naam:"Sombrero",     hint:"een echte Spaanse hoed",   prijs:18, emoji:"👒"},
-  {id:"guitarra", naam:"Guitarra",     hint:"voor de serenades",        prijs:30, emoji:"🎸"}
+  {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", les:1, emoji:"🌺"},
+  {id:"gafas",    naam:"Gafas de sol", hint:"zonnebril",                les:2, emoji:"🕶️"},
+  {id:"bufanda",  naam:"Bufanda",      hint:"een warme sjaal",          les:3, emoji:"🧣"},
+  {id:"sombrero", naam:"Sombrero",     hint:"een echte Spaanse hoed",   les:4, emoji:"👒"},
+  {id:"guitarra", naam:"Guitarra",     hint:"voor de serenades",        les:5, emoji:"🎸"}
 ];
+function doneLessonCount(){
+  var n = 0;
+  for(var k in S.lessons){ if(S.lessons[k] && S.lessons[k].done) n++; }
+  return n;
+}
 
 /* ================= LES-HELPERS ================= */
 var scopeLesson = null, curLesson = null;
@@ -1183,9 +1188,14 @@ function checkLessonComplete(){
     if(p && p.done){
       st.done = true; S.lessons[l.id] = st;
       S.tapas = (S.tapas||0) + 5;
+      var n = doneLessonCount();
+      var beloond = null;
+      SHOP.forEach(function(it){
+        if(it.les === n && !S.owned[it.id]){ S.owned[it.id] = true; S.wear[it.id] = true; beloond = it; }
+      });
       persist();
       confetti(["🎉","🌮","⭐️","💃","✨"], 36);
-      toast("¡LECCIÓN "+l.num+" COMPLETADA! 🎉 +5 tapas voor Chispa");
+      toast("¡LECCIÓN "+l.num+" COMPLETADA! 🎉 +5 tapas"+(beloond ? " én Chispa verdient de "+beloond.naam.toLowerCase()+" "+beloond.emoji : ""));
     }
   }
 }
@@ -1684,30 +1694,23 @@ function feedPet(){
 }
 function renderShop(){
   var el = document.getElementById("shopCard");
-  var html = "<h2>Chispa's kledingkast</h2><p class='muted'>Verdien tapas door te oefenen (10 XP = 1 tapa, les af = +5, foutloze toets = +2) en verwen Chispa.</p>";
+  var n = doneLessonCount();
+  var html = "<h2>Chispa's kledingkast</h2><p class='muted'>Accessoires verdien je door lessen af te ronden. "+
+    "Tapas (10 XP = 1 tapa, les af = +5, foutloze toets = +2) zijn om Chispa te voeren.</p>";
   SHOP.forEach(function(it){
-    var owned = !!S.owned[it.id];
+    var owned = !!S.owned[it.id] || n >= it.les;
+    if(owned && !S.owned[it.id]){ S.owned[it.id] = true; persist(); }
     var wearing = !!S.wear[it.id];
     html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+it.hint+"</small></div>";
     if(!owned){
-      var kan = (S.tapas||0) >= it.prijs;
-      html += "<button class='ghost' data-buy='"+it.id+"' "+(kan?"":"disabled style='opacity:.5'")+">Koop · 🌮 "+it.prijs+"</button>";
+      var nog = it.les - n;
+      html += "<span class='muted'>🔒 nog "+nog+" les"+(nog>1?"sen":"")+"</span>";
     } else {
       html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?"Doe af":"Draag")+"</button>";
     }
     html += "</div>";
   });
   el.innerHTML = html;
-  el.querySelectorAll("button[data-buy]").forEach(function(b){
-    b.onclick = function(){
-      var it = SHOP.filter(function(x){ return x.id===b.getAttribute("data-buy"); })[0];
-      if(!it || (S.tapas||0) < it.prijs) return;
-      S.tapas -= it.prijs; S.owned[it.id] = true; S.wear[it.id] = true; persist();
-      confetti(["🎉","🛍️",it.emoji], 18);
-      toast("¡Qué guapo! Chispa draagt nu een "+it.naam.toLowerCase()+".");
-      renderPet(); renderShop();
-    };
-  });
   el.querySelectorAll("button[data-wear]").forEach(function(b){
     b.onclick = function(){
       var id = b.getAttribute("data-wear");
