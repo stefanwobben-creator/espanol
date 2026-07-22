@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¡Vamos Stefan! · Spaans oefenen</title>
+<style>
+  :root{
+    --bg:#faf6ef; --card:#ffffff; --ink:#2d2a26; --muted:#8a8378;
+    --accent:#d4552b; --accent-soft:#fbe8df; --green:#2e7d4f; --green-soft:#e3f2e8;
+    --red:#c0392b; --red-soft:#fdeae7; --amber:#b7791f; --amber-soft:#fdf3e0;
+    --border:#e8e1d4; --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg); color:var(--ink); line-height:1.55; padding-bottom:40px;}
+  .wrap{max-width:640px; margin:0 auto; padding:16px;}
+  header{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:8px 0 14px;}
+  header h1{font-size:1.45rem; margin:0; letter-spacing:-0.02em;}
+  header h1 span{color:var(--accent);}
+  .badge{background:var(--accent-soft); color:var(--accent); font-weight:600; font-size:.8rem;
+         padding:4px 10px; border-radius:999px; white-space:nowrap;}
+  nav{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:14px;}
+  nav button{flex:0 0 auto; border:1px solid var(--border); background:var(--card); color:var(--muted);
+             padding:8px 14px; border-radius:999px; font-size:.9rem; font-weight:600; cursor:pointer;}
+  nav button.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+        padding:18px; margin-bottom:14px;}
+  .muted{color:var(--muted); font-size:.88rem;}
+  .big{font-size:1.5rem; font-weight:700; margin:10px 0;}
+  .tag{display:inline-block; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+       color:var(--muted); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:2px 8px;}
+  button.primary{background:var(--accent); color:#fff; border:none; padding:12px 20px; border-radius:10px;
+                 font-size:1rem; font-weight:700; cursor:pointer;}
+  button.primary:active{transform:scale(.98);}
+  button.ghost{background:var(--card); color:var(--ink); border:1.5px solid var(--border); padding:11px 18px;
+               border-radius:10px; font-size:.95rem; font-weight:600; cursor:pointer;}
+  button.good{background:var(--green); color:#fff; border:none; padding:12px 20px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;}
+  button.bad{background:var(--red-soft); color:var(--red); border:1.5px solid var(--red); padding:12px 20px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .row.center{justify-content:center;}
+  input[type=text], textarea{width:100%; font-size:1.05rem; padding:12px; border:1.5px solid var(--border);
+    border-radius:10px; background:#fffdf9; color:var(--ink); font-family:inherit;}
+  input[type=text]:focus, textarea:focus{outline:none; border-color:var(--accent);}
+  .feedback{border-radius:10px; padding:12px 14px; margin-top:12px; font-size:.95rem;}
+  .feedback.ok{background:var(--green-soft); color:var(--green);}
+  .feedback.bijna{background:var(--amber-soft); color:var(--amber);}
+  .feedback.fout{background:var(--red-soft); color:var(--red);}
+  .uitleg{background:var(--bg); border:1px dashed var(--border); border-radius:10px; padding:12px 14px;
+          margin-top:10px; font-size:.92rem;}
+  .opt{display:block; width:100%; text-align:left; margin-top:8px; padding:12px 14px; border-radius:10px;
+       border:1.5px solid var(--border); background:var(--card); font-size:1rem; cursor:pointer; color:var(--ink);}
+  .opt.correct{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
+  .opt.wrong{border-color:var(--red); background:var(--red-soft); color:var(--red);}
+  .progressbar{height:8px; background:var(--border); border-radius:99px; overflow:hidden; margin:8px 0 4px;}
+  .progressbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s;}
+  details{border:1px solid var(--border); border-radius:var(--radius); background:var(--card);
+          margin-bottom:10px; padding:0 16px;}
+  details summary{padding:14px 0; font-weight:700; cursor:pointer; font-size:1rem;}
+  details .inner{padding:2px 0 16px; font-size:.94rem;}
+  details table{border-collapse:collapse; width:100%; margin:8px 0; font-size:.9rem;}
+  details td, details th{border:1px solid var(--border); padding:6px 8px; text-align:left;}
+  details th{background:var(--bg);}
+  .statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat{background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center;}
+  .stat b{display:block; font-size:1.5rem;}
+  .boxrow{display:flex; align-items:center; gap:8px; margin:4px 0; font-size:.88rem;}
+  .boxrow .bar{flex:1; height:10px; background:var(--border); border-radius:99px; overflow:hidden;}
+  .boxrow .bar > div{height:100%; background:var(--accent);}
+  .warn{background:var(--amber-soft); color:var(--amber); border-radius:10px; padding:10px 14px; font-size:.88rem; margin-bottom:14px;}
+  .goalline{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
+  .goalbar{flex:1; height:9px; background:var(--border); border-radius:99px; overflow:hidden;}
+  .goalbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .4s;}
+  .goalbar > div.done{background:var(--green);}
+  .goaltxt{font-size:.8rem; color:var(--muted); white-space:nowrap; font-weight:600;}
+  .toast{position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:var(--ink); color:#fff;
+         padding:14px 22px; border-radius:12px; font-weight:700; box-shadow:0 8px 30px rgba(0,0,0,.25);
+         opacity:0; transition:opacity .3s, bottom .3s; pointer-events:none; z-index:99; font-size:1rem;}
+  .toast.show{opacity:1; bottom:44px;}
+  .leech{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border); font-size:.92rem;}
+  .trackpick.active{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
+  .profbtn{display:block; width:100%; text-align:left; margin-top:8px; padding:14px; border-radius:10px;
+           border:1.5px solid var(--border); background:var(--card); font-size:1.05rem; font-weight:700; cursor:pointer; color:var(--ink);}
+  .profbtn small{display:block; font-weight:400; color:var(--muted); font-size:.8rem;}
+  .hidden{display:none !important;}
+  .es{font-style:normal; color:var(--accent); font-weight:700;}
+  h2{font-size:1.15rem; margin:4px 0 10px;}
+  .kicker{font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>¡Vamos <span id="userName">…</span>!</h1>
+    <div class="badge" id="dueBadge">…</div>
+  </header>
+
+  <!-- PROFIELKEUZE -->
+  <section id="tab-profiel" class="hidden">
+    <div class="card">
+      <h2>Wie gaat er oefenen?</h2>
+      <div id="profileList"></div>
+      <h2 style="margin-top:18px">Nieuw profiel</h2>
+      <input type="text" id="newProfName" placeholder="Naam" autocomplete="off">
+      <div class="row">
+        <button class="ghost trackpick" data-track="beginner">Beginner (nog geen Spaans)</button>
+        <button class="ghost trackpick" data-track="a2">A2 (zoals Stefan)</button>
+      </div>
+      <div class="row">
+        <button class="primary" id="btnNewProf">Start</button>
+        <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
+      </div>
+      <p class="muted" id="profHint" style="margin-top:8px">Kies een niveau, of doe de test van 10 vragen (2 minuten).</p>
+    </div>
+    <div class="card hidden" id="placeCard"></div>
+  </section>
+  <div id="storageWarn" class="warn hidden">
+    Let op: in deze omgeving kan voortgang niet automatisch bewaard worden. Gebruik bij Voortgang de knop
+    "exporteer voortgang" voordat je afsluit, en plak die de volgende keer terug.
+  </div>
+  <div class="goalline hidden" id="goalLine">
+    <div class="goalbar"><div id="goalFill" style="width:0%"></div></div>
+    <span class="goaltxt" id="goalTxt"></span>
+  </div>
+  <nav id="nav" class="hidden"></nav>
+
+  <!-- WOORDJES -->
+  <section id="tab-woorden">
+    <div class="card" id="wCard"></div>
+  </section>
+
+  <!-- VERTALEN -->
+  <section id="tab-vertalen" class="hidden">
+    <div class="card" id="sCard"></div>
+  </section>
+
+  <!-- TOETSJES -->
+  <section id="tab-toetsjes" class="hidden">
+    <div id="qMenu"></div>
+    <div class="card hidden" id="qCard"></div>
+  </section>
+
+  <!-- SPIEKBRIEF -->
+  <section id="tab-spiekbrief" class="hidden">
+    <div id="cheat"></div>
+  </section>
+
+  <!-- VOORTGANG -->
+  <section id="tab-voortgang" class="hidden">
+    <div class="card" id="statsCard"></div>
+    <div class="card">
+      <h2>Foutenlog voor Claude</h2>
+      <p class="muted">Kopieer dit en plak het in je Spaans-project bij Claude. Dan maak ik een nieuwe batch
+      oefeningen die zich richt op jouw fouten.</p>
+      <div class="row">
+        <button class="primary" id="btnExportErrors">Kopieer foutenlog</button>
+      </div>
+      <textarea id="errorDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"></textarea>
+    </div>
+    <div class="card">
+      <h2>Profiel</h2>
+      <p class="muted">Iedereen heeft een eigen leerpad, eigen woordjes en een eigen streak op dit apparaat.</p>
+      <div class="row"><button class="ghost" id="btnSwitchProf">Wissel profiel</button></div>
+    </div>
+    <div class="card">
+      <h2>Voortgang verplaatsen</h2>
+      <p class="muted">Wil je op een ander apparaat of in een andere browser verder? Exporteer hier je voortgang
+      en importeer hem daar.</p>
+      <div class="row">
+        <button class="ghost" id="btnExportProgress">Exporteer voortgang</button>
+        <button class="ghost" id="btnImportProgress">Importeer voortgang</button>
+      </div>
+      <textarea id="progressDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"
+        placeholder="Plak hier je geëxporteerde voortgang en klik nogmaals op importeer."></textarea>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
+var BATCH = "batch-1";
+
+var WORDS = [
+ {id:"w1", es:"inseguro / insegura", nl:"onzeker", tag:"gevoelens"},
+ {id:"w2", es:"la inseguridad", nl:"de onzekerheid", tag:"gevoelens"},
+ {id:"w3", es:"ansioso / ansiosa", nl:"gespannen, angstig", tag:"gevoelens"},
+ {id:"w4", es:"la ansiedad", nl:"de spanning, de angst", tag:"gevoelens"},
+ {id:"w5", es:"frustrado / frustrada", nl:"gefrustreerd", tag:"gevoelens"},
+ {id:"w6", es:"la frustración", nl:"de frustratie", tag:"gevoelens"},
+ {id:"w7", es:"miedoso / miedosa", nl:"snel bang, angstig aangelegd", tag:"gevoelens"},
+ {id:"w8", es:"el miedo", nl:"de angst", tag:"gevoelens"},
+ {id:"w9", es:"ilusionado / ilusionada", nl:"enthousiast, vol verwachting", tag:"gevoelens"},
+ {id:"w10", es:"la ilusión", nl:"de blije verwachting (géén illusie!)", tag:"gevoelens"},
+ {id:"w11", es:"ridículo / ridícula", nl:"belachelijk", tag:"gevoelens"},
+ {id:"w12", es:"entusiasmado / entusiasmada", nl:"enthousiast", tag:"gevoelens"},
+ {id:"w13", es:"tímido / tímida", nl:"verlegen", tag:"gevoelens"},
+ {id:"w14", es:"divertido / divertida", nl:"grappig, leuk", tag:"gevoelens"},
+ {id:"w15", es:"contento / contenta", nl:"tevreden, blij", tag:"gevoelens"},
+ {id:"w16", es:"triste", nl:"verdrietig", tag:"gevoelens"},
+ {id:"w17", es:"libre", nl:"vrij", tag:"gevoelens"},
+ {id:"w18", es:"sentirse", nl:"zich voelen", tag:"gevoelens"},
+ {id:"w19", es:"preocuparse", nl:"zich zorgen maken", tag:"gevoelens"},
+ {id:"w20", es:"sentirse fatal", nl:"zich waardeloos voelen", tag:"gevoelens"},
+ {id:"w21", es:"aprender", nl:"leren", tag:"leren"},
+ {id:"w22", es:"olvidar", nl:"vergeten", tag:"leren"},
+ {id:"w23", es:"recordar", nl:"onthouden, zich herinneren", tag:"leren"},
+ {id:"w24", es:"repetir", nl:"herhalen", tag:"leren"},
+ {id:"w25", es:"traducir", nl:"vertalen", tag:"leren"},
+ {id:"w26", es:"buscar", nl:"zoeken, opzoeken", tag:"leren"},
+ {id:"w27", es:"el diccionario", nl:"het woordenboek", tag:"leren"},
+ {id:"w28", es:"la palabra", nl:"het woord", tag:"leren"},
+ {id:"w29", es:"la frase", nl:"de zin", tag:"leren"},
+ {id:"w30", es:"el sonido", nl:"de klank, het geluid", tag:"leren"},
+ {id:"w31", es:"pronunciar", nl:"uitspreken", tag:"leren"},
+ {id:"w32", es:"mejorar", nl:"verbeteren", tag:"leren"},
+ {id:"w33", es:"el reto", nl:"de uitdaging", tag:"leren"},
+ {id:"w34", es:"el error", nl:"de fout", tag:"leren"},
+ {id:"w35", es:"costar", nl:"moeite kosten (ook: kosten)", tag:"leren"},
+ {id:"w36", es:"perder el miedo", nl:"de angst overwinnen", tag:"leren"},
+ {id:"w37", es:"el vocabulario", nl:"de woordenschat", tag:"leren"},
+ {id:"w38", es:"la gramática", nl:"de grammatica", tag:"leren"},
+ {id:"w39", es:"entender", nl:"verstaan, begrijpen", tag:"leren"},
+ {id:"w40", es:"el / la hispanohablante", nl:"de Spaanstalige", tag:"leren"},
+ {id:"w41", es:"nacer", nl:"geboren worden", tag:"biografie"},
+ {id:"w42", es:"casarse (con)", nl:"trouwen (met)", tag:"biografie"},
+ {id:"w43", es:"divorciarse", nl:"scheiden", tag:"biografie"},
+ {id:"w44", es:"morir", nl:"sterven, overlijden", tag:"biografie"},
+ {id:"w45", es:"mudarse", nl:"verhuizen", tag:"biografie"},
+ {id:"w46", es:"influir (en)", nl:"beïnvloeden", tag:"biografie"},
+ {id:"w47", es:"viajar", nl:"reizen", tag:"biografie"},
+ {id:"w48", es:"la vida", nl:"het leven", tag:"biografie"},
+ {id:"w49", es:"la muerte", nl:"de dood", tag:"biografie"},
+ {id:"w50", es:"el cuadro", nl:"het schilderij", tag:"biografie"},
+ {id:"w51", es:"la obra", nl:"het werk (van een kunstenaar)", tag:"biografie"},
+ {id:"w52", es:"la época", nl:"het tijdperk, de tijd", tag:"biografie"},
+ {id:"w53", es:"famoso / famosa", nl:"beroemd", tag:"biografie"},
+ {id:"w54", es:"el pintor / la pintora", nl:"de schilder(es)", tag:"biografie"},
+ {id:"w55", es:"el sufrimiento", nl:"het lijden", tag:"biografie"},
+ {id:"w56", es:"la exposición", nl:"de tentoonstelling", tag:"biografie"},
+ {id:"w57", es:"tropezar", nl:"struikelen", tag:"persoonlijk"},
+ {id:"w58", es:"nadar", nl:"zwemmen", tag:"persoonlijk"},
+ {id:"w59", es:"el mar", nl:"de zee", tag:"persoonlijk"},
+ {id:"w60", es:"tomar decisiones", nl:"keuzes maken, beslissingen nemen", tag:"persoonlijk"},
+ {id:"w61", es:"descubrir", nl:"ontdekken", tag:"persoonlijk"},
+ {id:"w62", es:"los seres queridos", nl:"de dierbaren", tag:"persoonlijk"},
+ {id:"w63", es:"el país", nl:"het land", tag:"persoonlijk"},
+ {id:"w64", es:"todo el mundo", nl:"iedereen", tag:"persoonlijk"}
+];
+
+var SENTENCES = [
+ {id:"s1", lvl:1, nl:"Ik voel me goed.", es:"Me siento bien.", alt:["me siento bien"],
+  uitleg:"Sentirse is wederkerend: me siento, te sientes, se siente. Het is ook een schoenwerkwoord: de e wordt ie (sentir → siento).", tag:"sentirse"},
+ {id:"s2", lvl:1, nl:"Ik ben verlegen.", es:"Soy tímido.", alt:["soy tímido","soy tímida","soy timido","soy timida"],
+  uitleg:"Ser (soy) voor karaktereigenschappen: zo ben je nou eenmaal. Vergelijk: me siento tímido zou betekenen dat je je nú even verlegen voelt.", tag:"ser-sentirse"},
+ {id:"s3", lvl:1, nl:"Ik voel me vrij als ik in de zee zwem.", es:"Me siento libre cuando nado en el mar.",
+  alt:["me siento libre cuando nado en el mar"],
+  uitleg:"Na cuando gewoon tegenwoordige tijd. Nadar is regelmatig: nado, nadas, nada.", tag:"sentirse"},
+ {id:"s4", lvl:1, nl:"Het kost me moeite om de werkwoorden te leren.", es:"Me cuesta aprender los verbos.",
+  alt:["me cuesta aprender los verbos"],
+  uitleg:"Aprender is een infinitief, dus enkelvoud, dus cuesta. Het onderwerp is 'het leren', niet 'ik'.", tag:"costar"},
+ {id:"s5", lvl:1, nl:"Lange woorden kosten me moeite.", es:"Me cuestan las palabras largas.",
+  alt:["me cuestan las palabras largas"],
+  uitleg:"Las palabras largas is meervoud en is het onderwerp, dus cuestan. Vergelijk met s4: daar was het onderwerp een infinitief (enkelvoud).", tag:"costar"},
+ {id:"s6", lvl:1, nl:"Ik vind het leuk om Spaans te leren.", es:"Me gusta aprender español.",
+  alt:["me gusta aprender español","me gusta aprender espanol"],
+  uitleg:"Gustar werkt precies als costar: aprender is een infinitief, dus gusta (enkelvoud). Letterlijk: 'Spaans leren bevalt mij'.", tag:"gustar"},
+ {id:"s7", lvl:1, nl:"Onze lerares is heel grappig.", es:"Nuestra profesora es muy divertida.",
+  alt:["nuestra profesora es muy divertida"],
+  uitleg:"Ser (es) omdat grappig zijn haar karakter is. Divertida eindigt op -a omdat profesora vrouwelijk is.", tag:"ser-sentirse"},
+ {id:"s8", lvl:1, nl:"Ik maak me soms zorgen.", es:"A veces me preocupo.",
+  alt:["a veces me preocupo","me preocupo a veces"],
+  uitleg:"Preocuparse is wederkerend: me preocupo. A veces = soms.", tag:"sentirse"},
+ {id:"s9", lvl:1, nl:"Ik voel me onzeker als ik snel moet praten.", es:"Me siento inseguro cuando tengo que hablar rápido.",
+  alt:["me siento inseguro cuando tengo que hablar rápido","me siento insegura cuando tengo que hablar rápido","me siento inseguro cuando tengo que hablar rapido"],
+  uitleg:"Tener que + infinitief = moeten. Tener is onregelmatig: tengo.", tag:"sentirse"},
+ {id:"s10", lvl:1, nl:"Wij houden van uitdagingen.", es:"Nos gustan los retos.",
+  alt:["nos gustan los retos"],
+  uitleg:"Los retos is meervoud, dus gustan. Nos verandert daar niks aan: dat is 'aan ons', het meewerkend voorwerp.", tag:"gustar"},
+ {id:"s11", lvl:2, nl:"Frida Kahlo werd geboren in 1907.", es:"Frida Kahlo nació en 1907.",
+  alt:["frida kahlo nació en 1907","frida kahlo nacio en 1907","nació en 1907"],
+  uitleg:"Indefinido (nació): een afgesloten feit met een jaartal. Nacer → nació (onregelmatige klemtoonvorm met accent).", tag:"indefinido"},
+ {id:"s12", lvl:2, nl:"Ze trouwde met Diego Rivera.", es:"Se casó con Diego Rivera.",
+  alt:["se casó con diego rivera","se caso con diego rivera"],
+  uitleg:"Casarse is wederkerend: se casó. Indefinido, want het is een afgesloten gebeurtenis in haar leven. Let op: trouwen MET = casarse CON.", tag:"indefinido"},
+ {id:"s13", lvl:2, nl:"Ze stierf in 1954.", es:"Murió en 1954.",
+  alt:["murió en 1954","murio en 1954","ella murió en 1954"],
+  uitleg:"Morir → murió (o wordt u in de derde persoon indefinido). Jaartal = indefinido.", tag:"indefinido"},
+ {id:"s14", lvl:2, nl:"Vandaag heb ik veel geleerd.", es:"Hoy he aprendido mucho.",
+  alt:["hoy he aprendido mucho","he aprendido mucho hoy"],
+  uitleg:"Hoy (vandaag) is een periode die nog loopt, dus pretérito perfecto: he + aprendido. Dit lijkt op het Nederlandse 'heb geleerd'.", tag:"perfecto"},
+ {id:"s15", lvl:2, nl:"Ik heb deze film al gezien.", es:"Ya he visto esta película.",
+  alt:["ya he visto esta película","ya he visto esta pelicula","he visto ya esta película"],
+  uitleg:"Ya (al) is een signaalwoord voor de perfecto. Visto is een onregelmatig voltooid deelwoord (ver → visto).", tag:"perfecto"},
+ {id:"s16", lvl:2, nl:"Vorig jaar reisde ik naar Spanje.", es:"El año pasado viajé a España.",
+  alt:["el año pasado viajé a españa","el ano pasado viaje a espana","viajé a españa el año pasado"],
+  uitleg:"El año pasado is een afgesloten periode, dus indefinido: viajé (met accent op de é, anders staat er 'hij/zij reist' niet meer).", tag:"indefinido"},
+ {id:"s17", lvl:2, nl:"Van Gogh schilderde ongeveer 900 schilderijen.", es:"Van Gogh pintó unos 900 cuadros.",
+  alt:["van gogh pintó unos 900 cuadros","van gogh pinto unos 900 cuadros","pintó unos 900 cuadros"],
+  uitleg:"Afgesloten leven, afgesloten feit: indefinido (pintó). Unos + getal = ongeveer.", tag:"indefinido"},
+ {id:"s18", lvl:2, nl:"Deze week heb ik veel woorden geleerd.", es:"Esta semana he aprendido muchas palabras.",
+  alt:["esta semana he aprendido muchas palabras"],
+  uitleg:"Esta semana loopt nog, dus perfecto. Muchas eindigt op -as want palabras is vrouwelijk meervoud.", tag:"perfecto"},
+ {id:"s19", lvl:2, nl:"Hij verhuisde naar Parijs in 1886.", es:"Se mudó a París en 1886.",
+  alt:["se mudó a parís en 1886","se mudo a paris en 1886","en 1886 se mudó a parís"],
+  uitleg:"Mudarse is wederkerend: se mudó. Jaartal = indefinido.", tag:"indefinido"},
+ {id:"s20", lvl:2, nl:"Ik heb nog nooit paella gegeten.", es:"Nunca he comido paella.",
+  alt:["nunca he comido paella","no he comido paella nunca","no he comido nunca paella"],
+  uitleg:"Nunca (nooit) over je leven tot nu toe = perfecto, want je leven loopt nog. Comer → comido.", tag:"perfecto"},
+ {id:"s21", lvl:3, nl:"Het kost ons moeite om de mensen te verstaan.", es:"Nos cuesta entender a la gente.",
+  alt:["nos cuesta entender a la gente"],
+  uitleg:"Entender is een infinitief → cuesta (enkelvoud), ook al gaat het over 'ons'. En let op de persoonlijke a: entender A la gente.", tag:"costar"},
+ {id:"s22", lvl:3, nl:"Ik voel me belachelijk als ik struikel en iedereen het ziet.", es:"Me siento ridículo cuando tropiezo y todo el mundo lo ve.",
+  alt:["me siento ridículo cuando tropiezo y todo el mundo lo ve","me siento ridiculo cuando tropiezo y todo el mundo lo ve","me siento ridícula cuando tropiezo y todo el mundo lo ve"],
+  uitleg:"Tropezar is een schoenwerkwoord: tropiezo (e→ie). Todo el mundo = iedereen, en is enkelvoud: ve, niet ven. Lo = 'het'.", tag:"sentirse"},
+ {id:"s23", lvl:3, nl:"Om woorden te onthouden werkt het goed om ze op te schrijven.", es:"Para recordar palabras va muy bien escribirlas.",
+  alt:["para recordar palabras va muy bien escribirlas","para recordar palabras va bien escribirlas"],
+  uitleg:"Va (enkelvoud) want het onderwerp is escribirlas, een infinitief. Las plakt achteraan de infinitief en verwijst naar las palabras.", tag:"costar"},
+ {id:"s24", lvl:3, nl:"Ik ben niet bang aangelegd, maar ik voel me soms gespannen.", es:"No soy miedoso, pero a veces me siento ansioso.",
+  alt:["no soy miedoso, pero a veces me siento ansioso","no soy miedoso pero a veces me siento ansioso","no soy miedosa, pero a veces me siento ansiosa","no soy miedosa pero a veces me siento ansiosa"],
+  uitleg:"De hele les in één zin: soy voor karakter (niet bang aangelegd), me siento voor het gevoel van het moment (a veces!).", tag:"ser-sentirse"}
+];
+
+var QUIZZES = [
+ {id:"q-costar", titel:"Cuesta of cuestan (en va of van)", vragen:[
+  {q:"Me ___ aprender los verbos.", opts:["cuesta","cuestan"], c:0,
+   u:"Aprender is een infinitief. Eén activiteit = enkelvoud = cuesta."},
+  {q:"Me ___ algunos sonidos del español.", opts:["cuesta","cuestan"], c:1,
+   u:"Algunos sonidos is meervoud en is het onderwerp, dus cuestan."},
+  {q:"A Peer y a mí nos ___ mucho entender a la gente.", opts:["cuesta","cuestan"], c:0,
+   u:"Trap er niet in: 'a Peer y a mí' zijn meewerkend voorwerp. Het onderwerp is entender (infinitief) = cuesta."},
+  {q:"Para aprender vocabulario ___ muy bien leer.", opts:["va","van"], c:0,
+   u:"Leer is een infinitief, dus va. 'Lezen werkt goed', en lezen is één ding."},
+  {q:"A casi todos nos ___ hablar rápido.", opts:["cuesta","cuestan"], c:0,
+   u:"Ook al gaat het om bijna iedereen: het onderwerp is hablar (infinitief), dus cuesta."},
+  {q:"A Linnéa también le ___ las palabras muy largas.", opts:["cuesta","cuestan"], c:1,
+   u:"Las palabras largas = meervoud = cuestan. Le is alleen 'aan haar'."},
+  {q:"Para estudiar ___ bien tener una gramática.", opts:["va","van"], c:0,
+   u:"Tener is een infinitief, dus va."},
+  {q:"Me ___ la jota y la erre.", opts:["cuesta","cuestan"], c:1,
+   u:"Twee klanken (la jota en la erre) = meervoud = cuestan."},
+  {q:"Nos ___ mucho los verbos irregulares.", opts:["cuesta","cuestan"], c:1,
+   u:"Los verbos irregulares = meervoud = cuestan."},
+  {q:"¿Te ___ pronunciar la erre?", opts:["cuesta","cuestan"], c:0,
+   u:"Pronunciar is een infinitief, dus cuesta. Te = 'aan jou'."}
+ ]},
+ {id:"q-ser", titel:"Ser of sentirse", vragen:[
+  {q:"Como ___ un poco tímido, me siento inseguro en clase.", opts:["soy","me siento"], c:0,
+   u:"Verlegen zijn is een karaktereigenschap: ser. Test: 'zo ben ik nou eenmaal' → ser."},
+  {q:"Cuando veo las dificultades, ___ un poco frustrado.", opts:["soy","me siento"], c:1,
+   u:"Een gevoel op dat moment (cuando...): sentirse. Test: kun je er 'nu even' bij denken → sentirse."},
+  {q:"Mis compañeros dicen que ___ muy divertida.", opts:["soy","me siento"], c:0,
+   u:"Grappig zijn is karakter, dus ser."},
+  {q:"A veces ___ ridícula cuando pronuncio la erre.", opts:["soy","me siento"], c:1,
+   u:"A veces (soms) verraadt het al: een tijdelijk gevoel, dus me siento."},
+  {q:"No ___ miedoso, me gustan los retos.", opts:["soy","me siento"], c:0,
+   u:"Bang aangelegd zijn (of niet) is karakter: ser."},
+  {q:"Cuando hablo con nativos, siempre ___ un poco ansioso.", opts:["soy","me siento"], c:1,
+   u:"Gespannen voelen in een situatie: sentirse. Siempre lijkt permanent, maar het gaat om hoe je je vóélt in die situatie."},
+  {q:"Nuestra profesora ___ muy divertida.", opts:["es","se siente"], c:0,
+   u:"Haar karakter: es. Se siente divertida zou betekenen dat ze zich grappig vóélt."},
+  {q:"Al empezar una lengua nueva, ___ ilusionado.", opts:["soy","me siento"], c:1,
+   u:"Enthousiast bij de start: een gevoel van dat moment, dus me siento."},
+  {q:"Mi hermano ___ una persona muy entusiasmada.", opts:["es","se siente"], c:0,
+   u:"Ser + una persona + eigenschap: zo is hij."},
+  {q:"Hoy ___ fatal, no he dormido bien.", opts:["soy","me siento"], c:1,
+   u:"Hoy + niet geslapen: duidelijk een toestand van nu, dus me siento fatal."}
+ ]},
+ {id:"q-tijden", titel:"Indefinido of perfecto", vragen:[
+  {q:"Frida Kahlo ___ en 1907.", opts:["nació","ha nacido"], c:0,
+   u:"Jaartal in het verleden = afgesloten = indefinido. Haar leven is een gesloten hoofdstuk."},
+  {q:"Hoy ___ mucho en clase.", opts:["aprendí","he aprendido"], c:1,
+   u:"Hoy loopt nog, dus perfecto: he aprendido."},
+  {q:"El año pasado ___ a México.", opts:["viajé","he viajado"], c:0,
+   u:"El año pasado is voorbij en afgesloten: indefinido."},
+  {q:"Esta semana ___ dos películas españolas.", opts:["vi","he visto"], c:1,
+   u:"Esta semana is nog bezig: perfecto. Ver → visto (onregelmatig)."},
+  {q:"¿Alguna vez ___ paella?", opts:["comiste","has comido"], c:1,
+   u:"Alguna vez (ooit, in je leven tot nu) = perfecto, want je leven loopt nog."},
+  {q:"Ayer ___ con mi profesora.", opts:["hablé","he hablado"], c:0,
+   u:"Ayer (gisteren) is afgesloten: indefinido."},
+  {q:"Van Gogh ___ a París en 1886.", opts:["se mudó","se ha mudado"], c:0,
+   u:"Jaartal, afgesloten leven: indefinido."},
+  {q:"Todavía no ___ los deberes.", opts:["terminé","he terminado"], c:1,
+   u:"Todavía no (nog niet) = de periode loopt nog, het kan nog gebeuren: perfecto."},
+  {q:"Kahlo ___ 32 operaciones a lo largo de su vida.", opts:["tuvo","ha tenido"], c:0,
+   u:"Haar leven is voorbij ('a lo largo de su vida' is een gesloten periode): indefinido. Tener → tuvo (onregelmatig)."},
+  {q:"Ya ___ este ejercicio dos veces.", opts:["hice","he hecho"], c:1,
+   u:"Ya (al) + relevantie voor nu = perfecto. Hacer → hecho (onregelmatig)."},
+  {q:"En 1939 ___ sus pinturas en Francia.", opts:["expuso","ha expuesto"], c:0,
+   u:"En 1939: jaartal = indefinido. Exponer → expuso (onregelmatig, zoals poner → puso)."},
+  {q:"Este año ___ mucho español.", opts:["estudié","he estudiado"], c:1,
+   u:"Este año is nog niet voorbij: perfecto."}
+ ]}
+];
+
+var CHEATSHEET = [
+ {titel:"De tijden, vertaald naar Nederlandse termen",
+  html:"<p>De namen die je op school kende, naast de Spaanse:</p>"+
+  "<table><tr><th>Nederlands</th><th>Spaans</th><th>Voorbeeld</th></tr>"+
+  "<tr><td>tegenwoordige tijd (tt): ik leer</td><td>presente</td><td><b>aprendo</b></td></tr>"+
+  "<tr><td>voltooid tegenwoordige tijd (vtt): ik heb geleerd</td><td>pretérito <b>perfecto</b></td><td><b>he aprendido</b></td></tr>"+
+  "<tr><td>onvoltooid verleden tijd (ovt): ik leerde</td><td>pretérito <b>indefinido</b></td><td><b>aprendí</b></td></tr></table>"+
+  "<p><b>De keuzeregel:</b> is de periode afgesloten (ayer, el año pasado, en 1907, een leven dat voorbij is)? Dan indefinido. "+
+  "Loopt de periode nog (hoy, esta semana, este año, ya, todavía no, alguna vez, nunca over je leven)? Dan perfecto.</p>"+
+  "<p>Ezelsbrug: <b>datum of 'toen' = indefinido</b>. <b>'Tot nu toe' = perfecto</b>.</p>"+
+  "<p>Perfecto maken: he / has / ha / hemos / habéis / han + voltooid deelwoord (-ar → -ado, -er/-ir → -ido). "+
+  "Onregelmatige deelwoorden: visto (gezien), hecho (gedaan), escrito (geschreven), dicho (gezegd), puesto (gelegd), vuelto (teruggekomen).</p>"},
+ {titel:"Ser, estar en sentirse",
+  html:"<p><b>Ser</b> = wat/hoe iemand IS, karakter en eigenschappen. <i>Soy tímido</i> (zo ben ik). <i>Es divertida</i> (zij is grappig).</p>"+
+  "<p><b>Estar</b> = toestand en plaats. <i>Estoy cansado</i> (ik ben nu moe), <i>estoy en Madrid</i>.</p>"+
+  "<p><b>Sentirse</b> = zich voelen, altijd met me/te/se: <i>me siento, te sientes, se siente, nos sentimos, os sentís, se sienten</i>.</p>"+
+  "<p><b>De test:</b> kun je er 'op dit moment' of 'soms' bij denken → sentirse/estar. Is het 'zo ben ik nou eenmaal' → ser.</p>"+
+  "<p>Vergeet de uitgang niet: een vrouw zegt <i>me siento insegur<b>a</b></i>, een man <i>insegur<b>o</b></i>.</p>"},
+ {titel:"De gustar-familie (gustar, costar, ir bien, preocupar)",
+  html:"<p>Deze werkwoorden draaien de zin om. Niet de persoon is het onderwerp, maar het ding:</p>"+
+  "<p><i>Me cuesta hablar rápido</i> = 'Snel praten kost mij moeite.'<br>"+
+  "<i>Nos gustan los retos</i> = 'De uitdagingen bevallen ons.'</p>"+
+  "<p><b>Stap 1:</b> kies de persoon: me (mij), te (jou), le (hem/haar), nos (ons), os (jullie), les (hen).<br>"+
+  "<b>Stap 2:</b> kijk naar wat er moeilijk is / bevalt:</p>"+
+  "<table><tr><th>Onderwerp</th><th>Werkwoord</th><th>Voorbeeld</th></tr>"+
+  "<tr><td>infinitief (één activiteit)</td><td>enkelvoud</td><td>me <b>cuesta</b> aprender</td></tr>"+
+  "<tr><td>enkelvoudig ding</td><td>enkelvoud</td><td>me <b>gusta</b> el cine</td></tr>"+
+  "<tr><td>meervoud</td><td>meervoud</td><td>me <b>cuestan</b> las palabras largas</td></tr></table>"+
+  "<p><b>De 'dat/die'-test:</b> vervang het onderwerp door dat of die. 'Snel praten? DAT kost moeite' → enkelvoud. "+
+  "'Lange woorden? DIE kosten moeite' → meervoud.</p>"},
+ {titel:"Schoenwerkwoorden (klinkerwissel)",
+  html:"<p>Bij deze werkwoorden verandert de klinker in de vormen die in 'de schoen' vallen (alle personen behalve nosotros/vosotros):</p>"+
+  "<p><b>e → ie:</b> sentirse → me s<b>ie</b>nto · empezar → emp<b>ie</b>zo · tropezar → trop<b>ie</b>zo · entender → ent<b>ie</b>ndo · querer → qu<b>ie</b>ro</p>"+
+  "<p><b>o → ue:</b> costar → c<b>ue</b>sta · poder → p<b>ue</b>do · recordar → rec<b>ue</b>rdo · dormir → d<b>ue</b>rmo</p>"+
+  "<p><b>e → i:</b> repetir → rep<b>i</b>to · pedir → p<b>i</b>do</p>"+
+  "<p>Nosotros en vosotros houden de gewone klinker: <i>nos sentimos, empezamos, podemos</i>.</p>"},
+ {titel:"Signaalwoorden om te herkennen",
+  html:"<table><tr><th>Indefinido (afgesloten)</th><th>Perfecto (loopt nog)</th></tr>"+
+  "<tr><td>ayer (gisteren)</td><td>hoy (vandaag)</td></tr>"+
+  "<tr><td>el año pasado (vorig jaar)</td><td>este año (dit jaar)</td></tr>"+
+  "<tr><td>la semana pasada</td><td>esta semana</td></tr>"+
+  "<tr><td>en 1907 / en marzo</td><td>ya (al) · todavía no (nog niet)</td></tr>"+
+  "<tr><td>hace dos años (twee jaar geleden)</td><td>alguna vez (ooit) · nunca (nooit)</td></tr>"+
+  "<tr><td>aquel día (die dag)</td><td>últimamente (de laatste tijd)</td></tr></table>"+
+  "<p>Zie je zo'n woord in een toets, dan heb je het antwoord meestal al.</p>"}
+];
+
+/* ================= BEGINNERSTRACK ================= */
+var B_WORDS = [
+ {id:"b1", es:"hola", nl:"hallo", tag:"basis"},
+ {id:"b2", es:"adiós", nl:"tot ziens, dag", tag:"basis"},
+ {id:"b3", es:"gracias", nl:"dank je wel", tag:"basis"},
+ {id:"b4", es:"por favor", nl:"alsjeblieft", tag:"basis"},
+ {id:"b5", es:"sí / no", nl:"ja / nee", tag:"basis"},
+ {id:"b6", es:"buenos días", nl:"goedemorgen", tag:"basis"},
+ {id:"b7", es:"buenas noches", nl:"goedenavond, welterusten", tag:"basis"},
+ {id:"b8", es:"hasta mañana", nl:"tot morgen", tag:"basis"},
+ {id:"b9", es:"me llamo...", nl:"ik heet...", tag:"basis"},
+ {id:"b10", es:"¿cómo estás?", nl:"hoe gaat het?", tag:"basis"},
+ {id:"b11", es:"la casa", nl:"het huis", tag:"woorden"},
+ {id:"b12", es:"el perro", nl:"de hond", tag:"woorden"},
+ {id:"b13", es:"el gato", nl:"de kat", tag:"woorden"},
+ {id:"b14", es:"el libro", nl:"het boek", tag:"woorden"},
+ {id:"b15", es:"la escuela", nl:"de school", tag:"woorden"},
+ {id:"b16", es:"el amigo / la amiga", nl:"de vriend / vriendin", tag:"woorden"},
+ {id:"b17", es:"la familia", nl:"de familie, het gezin", tag:"familie"},
+ {id:"b18", es:"la madre", nl:"de moeder", tag:"familie"},
+ {id:"b19", es:"el padre", nl:"de vader", tag:"familie"},
+ {id:"b20", es:"el hermano / la hermana", nl:"de broer / zus", tag:"familie"},
+ {id:"b21", es:"comer", nl:"eten", tag:"werkwoorden"},
+ {id:"b22", es:"beber", nl:"drinken", tag:"werkwoorden"},
+ {id:"b23", es:"hablar", nl:"praten, spreken", tag:"werkwoorden"},
+ {id:"b24", es:"vivir", nl:"wonen, leven", tag:"werkwoorden"},
+ {id:"b25", es:"ser", nl:"zijn (eigenschap)", tag:"werkwoorden"},
+ {id:"b26", es:"estar", nl:"zijn (plaats/toestand)", tag:"werkwoorden"},
+ {id:"b27", es:"tener", nl:"hebben", tag:"werkwoorden"},
+ {id:"b28", es:"ir", nl:"gaan", tag:"werkwoorden"},
+ {id:"b29", es:"grande", nl:"groot", tag:"woorden"},
+ {id:"b30", es:"pequeño / pequeña", nl:"klein", tag:"woorden"},
+ {id:"b31", es:"bonito / bonita", nl:"mooi", tag:"woorden"},
+ {id:"b32", es:"simpático / simpática", nl:"aardig", tag:"woorden"},
+ {id:"b33", es:"el agua", nl:"het water", tag:"woorden"},
+ {id:"b34", es:"la comida", nl:"het eten", tag:"woorden"},
+ {id:"b35", es:"uno, dos, tres, cuatro, cinco", nl:"1, 2, 3, 4, 5", tag:"getallen"},
+ {id:"b36", es:"seis, siete, ocho, nueve, diez", nl:"6, 7, 8, 9, 10", tag:"getallen"},
+ {id:"b37", es:"los Países Bajos", nl:"Nederland", tag:"basis"},
+ {id:"b38", es:"un poco", nl:"een beetje", tag:"basis"},
+ {id:"b39", es:"¿dónde?", nl:"waar?", tag:"basis"},
+ {id:"b40", es:"mucho", nl:"veel", tag:"basis"}
+];
+
+var B_SENTENCES = [
+ {id:"bs1", lvl:1, nl:"Hallo, ik heet Ana.", es:"Hola, me llamo Ana.", alt:["hola me llamo ana"],
+  uitleg:"Me llamo = letterlijk 'ik noem mij'. Zo stel je je voor.", tag:"basis"},
+ {id:"bs2", lvl:1, nl:"Ik ben twaalf jaar.", es:"Tengo doce años.", alt:["tengo doce años","tengo 12 años","tengo doce anos"],
+  uitleg:"Verrassing: in het Spaans HEB je jaren (tener), je bent ze niet. Tengo = ik heb.", tag:"tener"},
+ {id:"bs3", lvl:1, nl:"Ik woon in Nederland.", es:"Vivo en los Países Bajos.", alt:["vivo en los países bajos","vivo en los paises bajos","vivo en holanda"],
+  uitleg:"Vivir = wonen. Vivo, vives, vive. Nederland = los Países Bajos (letterlijk: de Lage Landen).", tag:"basis"},
+ {id:"bs4", lvl:1, nl:"Dit is mijn moeder.", es:"Esta es mi madre.", alt:["esta es mi madre","ésta es mi madre"],
+  uitleg:"Esta (vrouwelijk) omdat madre vrouwelijk is. Mi = mijn.", tag:"basis"},
+ {id:"bs5", lvl:1, nl:"Ik heb een hond.", es:"Tengo un perro.", alt:["tengo un perro"],
+  uitleg:"Tener = hebben: tengo. Un perro = een hond (mannelijk, dus un).", tag:"tener"},
+ {id:"bs6", lvl:1, nl:"De kat is klein.", es:"El gato es pequeño.", alt:["el gato es pequeño","el gato es pequeno"],
+  uitleg:"Ser (es) voor een eigenschap: klein zijn hoort bij de kat. Pequeño met ñ!", tag:"ser-estar"},
+ {id:"bs7", lvl:1, nl:"Ik spreek een beetje Spaans.", es:"Hablo un poco de español.", alt:["hablo un poco de español","hablo un poco de espanol","hablo un poco español"],
+  uitleg:"Hablar = spreken: hablo. Un poco de = een beetje.", tag:"basis"},
+ {id:"bs8", lvl:1, nl:"Waar is het huis?", es:"¿Dónde está la casa?", alt:["dónde está la casa","donde esta la casa"],
+  uitleg:"Estar (está) voor plaats: waar iets zich bevindt. Dónde met accent in een vraag.", tag:"ser-estar"},
+ {id:"bs9", lvl:2, nl:"Ik vind chocolade lekker.", es:"Me gusta el chocolate.", alt:["me gusta el chocolate"],
+  uitleg:"Letterlijk: 'chocolade bevalt mij'. Me gusta + el/la + het ding.", tag:"gustar"},
+ {id:"bs10", lvl:2, nl:"Wij eten paella.", es:"Comemos paella.", alt:["comemos paella","nosotros comemos paella"],
+  uitleg:"Comer = eten. Wij-vorm: comemos. Het woordje 'wij' mag weg, de uitgang -emos zegt het al.", tag:"basis"},
+ {id:"bs11", lvl:2, nl:"Ik ga naar school.", es:"Voy a la escuela.", alt:["voy a la escuela","voy al colegio"],
+  uitleg:"Ir = gaan, en is onregelmatig: voy, vas, va. Altijd met a (naartoe).", tag:"basis"},
+ {id:"bs12", lvl:2, nl:"Mijn vriend is aardig.", es:"Mi amigo es simpático.", alt:["mi amigo es simpático","mi amigo es simpatico"],
+  uitleg:"Ser (es) voor karakter. Simpático = aardig (níét 'sympathiek zeuren': gewoon aardig).", tag:"ser-estar"},
+ {id:"bs13", lvl:2, nl:"Het water is koud.", es:"El agua está fría.", alt:["el agua está fría","el agua esta fria"],
+  uitleg:"Estar voor een toestand (nú koud). Gek weetje: agua is vrouwelijk maar krijgt el, en het bijvoeglijk naamwoord blijft vrouwelijk: fría.", tag:"ser-estar"},
+ {id:"bs14", lvl:2, nl:"Tot morgen!", es:"¡Hasta mañana!", alt:["hasta mañana","hasta manana"],
+  uitleg:"Hasta = tot. Ook handig: hasta luego (tot straks).", tag:"basis"}
+];
+
+var B_QUIZZES = [
+ {id:"bq-ellla", titel:"El of la?", vragen:[
+  {q:"___ casa", opts:["el","la"], c:1, u:"Woorden op -a zijn meestal vrouwelijk: la casa."},
+  {q:"___ libro", opts:["el","la"], c:0, u:"Woorden op -o zijn meestal mannelijk: el libro."},
+  {q:"___ perro", opts:["el","la"], c:0, u:"-o = mannelijk: el perro."},
+  {q:"___ familia", opts:["el","la"], c:1, u:"-a = vrouwelijk: la familia."},
+  {q:"___ día", opts:["el","la"], c:0, u:"Instinker! Día eindigt op -a maar is mannelijk: el día. Buenos días!"},
+  {q:"___ mano", opts:["el","la"], c:1, u:"Instinker! Mano (hand) eindigt op -o maar is vrouwelijk: la mano."},
+  {q:"___ escuela", opts:["el","la"], c:1, u:"-a = vrouwelijk: la escuela."},
+  {q:"___ agua", opts:["el","la"], c:0, u:"Instinker! Agua is vrouwelijk, maar krijgt el omdat het woord met een beklemtoonde a begint. El agua fría."},
+  {q:"___ gato", opts:["el","la"], c:0, u:"-o = mannelijk: el gato."},
+  {q:"___ noche", opts:["el","la"], c:1, u:"Die moet je leren: la noche. Buenas noches!"}
+ ]},
+ {id:"bq-serestar", titel:"Ser of estar?", vragen:[
+  {q:"Yo ___ holandesa.", opts:["soy","estoy"], c:0, u:"Nationaliteit is wie je bent: ser (soy)."},
+  {q:"Yo ___ en casa.", opts:["soy","estoy"], c:1, u:"Plaats (waar je bent): estar (estoy)."},
+  {q:"La casa ___ grande.", opts:["es","está"], c:0, u:"Eigenschap (groot zijn hoort bij het huis): ser."},
+  {q:"Mi padre ___ cansado.", opts:["es","está"], c:1, u:"Toestand (nu moe, straks niet meer): estar."},
+  {q:"Nosotros ___ amigos.", opts:["somos","estamos"], c:0, u:"Wat je (voor elkaar) bent: ser (somos)."},
+  {q:"Mis amigos ___ en Madrid.", opts:["son","están"], c:1, u:"Plaats: estar (están)."},
+  {q:"Ella ___ mi madre.", opts:["es","está"], c:0, u:"Identiteit: ser."},
+  {q:"Yo ___ bien, gracias.", opts:["soy","estoy"], c:1, u:"Hoe het met je gaat = toestand: estar. ¿Cómo estás? Estoy bien."}
+ ]},
+ {id:"bq-getallen", titel:"Getallen 1-10", vragen:[
+  {q:"cinco = ?", opts:["4","5","6"], c:1, u:"cinco = 5."},
+  {q:"ocho = ?", opts:["6","7","8"], c:2, u:"ocho = 8."},
+  {q:"3 = ?", opts:["dos","tres","seis"], c:1, u:"tres = 3."},
+  {q:"siete = ?", opts:["6","7","9"], c:1, u:"siete = 7."},
+  {q:"10 = ?", opts:["nueve","diez","dos"], c:1, u:"diez = 10."},
+  {q:"nueve = ?", opts:["9","7","6"], c:0, u:"nueve = 9. Nueve lijkt op 'nieuw' (nuevo), negen is het."},
+  {q:"4 = ?", opts:["cuatro","cinco","seis"], c:0, u:"cuatro = 4, denk aan 'kwartet'."},
+  {q:"seis = ?", opts:["7","16","6"], c:2, u:"seis = 6."}
+ ]}
+];
+
+var B_CHEATSHEET = [
+ {titel:"Uitspraak: de rare letters",
+  html:"<p><b>j</b> = harde Nederlandse g: <i>jota</i> klinkt als 'gota'. <b>ll</b> = j: <i>me llamo</i> = 'me jamo'. "+
+  "<b>ñ</b> = nj: <i>mañana</i> = 'manjana'. <b>h</b> is altijd stil: <i>hola</i> = 'ola'. "+
+  "<b>rr</b> = rollende r: <i>perro</i>. <b>c</b> voor e/i = Engelse th (in Spanje): <i>gracias</i> = 'grathias'.</p>"},
+ {titel:"El en la (lidwoorden)",
+  html:"<p>Elk woord is mannelijk (el) of vrouwelijk (la). Vuistregel: <b>-o = el</b> (el libro), <b>-a = la</b> (la casa).</p>"+
+  "<p>Bekende uitzonderingen: el día, la mano, el agua (vrouwelijk, maar el vanwege de a-klank), la noche.</p>"+
+  "<p>Meervoud: el → los, la → las. Los libros, las casas.</p>"},
+ {titel:"Ser of estar (twee keer 'zijn')",
+  html:"<p><b>Ser</b> = wat/wie je bent (eigenschap, identiteit, nationaliteit): soy, eres, es, somos, sois, son. <i>Soy holandesa. El gato es pequeño.</i></p>"+
+  "<p><b>Estar</b> = waar je bent en hoe je je voelt (plaats, toestand): estoy, estás, está, estamos, estáis, están. <i>Estoy en casa. Estoy bien.</i></p>"+
+  "<p>Test: kan het morgen anders zijn (plek, humeur)? Dan estar. Is het gewoon zo (naam, afkomst, groot/klein)? Dan ser.</p>"},
+ {titel:"Tener (hebben) en je leeftijd",
+  html:"<p>Tener = hebben: tengo, tienes, tiene, tenemos, tenéis, tienen.</p>"+
+  "<p>Let op: in het Spaans <b>heb</b> je je leeftijd: <i>Tengo doce años</i> = ik ben 12 (letterlijk: ik heb 12 jaren). "+
+  "Vraag: <i>¿Cuántos años tienes?</i></p>"},
+ {titel:"Vraagwoorden",
+  html:"<p>¿Qué? = wat · ¿Dónde? = waar · ¿Quién? = wie · ¿Cómo? = hoe · ¿Cuándo? = wanneer · ¿Cuánto? = hoeveel · ¿Por qué? = waarom</p>"+
+  "<p>Altijd met accent in een vraag, en vergeet de omgekeerde vraagtekens niet: ¿Cómo estás?</p>"}
+];
+
+var TRACKS = {
+  a2:       {label:"A2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:BATCH},
+  beginner: {label:"Beginner", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"beginner-1"}
+};
+
+/* ================= OPSLAG ================= */
+var store = {
+  ok:(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })(),
+  mem:{},
+  key:"espanol-stefan-v1",
+  load:function(){
+    if(this.ok){
+      try{ var raw = localStorage.getItem(this.key); if(raw) return JSON.parse(raw); }catch(e){}
+    }
+    return this.mem[this.key] || null;
+  },
+  save:function(state){
+    this.mem[this.key] = state;
+    if(this.ok){ try{ localStorage.setItem(this.key, JSON.stringify(state)); }catch(e){} }
+  }
+};
+
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, dir:"es-nl", newIntro:{} }; }
+var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
+function persist(){ store.save(S); }
+
+/* ================= PROFIELEN ================= */
+var PKEY = "espanol-profiles-v1";
+var profMem = null;
+function loadProfiles(){
+  if(store.ok){ try{ var r = localStorage.getItem(PKEY); if(r) return JSON.parse(r); }catch(e){} }
+  return profMem;
+}
+function saveProfiles(){
+  profMem = profiles;
+  if(store.ok){ try{ localStorage.setItem(PKEY, JSON.stringify(profiles)); }catch(e){} }
+}
+var profiles = loadProfiles() || {
+  list:[{name:"Stefan", track:"a2", key:"espanol-stefan-v1"}],
+  active:null
+};
+function activeProfile(){
+  for(var i=0;i<profiles.list.length;i++){ if(profiles.list[i].name === profiles.active) return profiles.list[i]; }
+  return null;
+}
+
+var newTrack = null;
+function renderProfileScreen(){
+  document.getElementById("tab-profiel").classList.remove("hidden");
+  document.getElementById("goalLine").classList.add("hidden");
+  document.getElementById("nav").classList.add("hidden");
+  TABS.forEach(function(t){ document.getElementById("tab-"+t.id).classList.add("hidden"); });
+  document.getElementById("userName").textContent = "…";
+  document.getElementById("dueBadge").textContent = "kies profiel";
+  var list = document.getElementById("profileList");
+  list.innerHTML = profiles.list.map(function(p){
+    return "<button class='profbtn' data-prof='"+p.name+"'>"+p.name+"<small>niveau: "+(TRACKS[p.track]?TRACKS[p.track].label:p.track)+"</small></button>";
+  }).join("");
+  list.querySelectorAll(".profbtn").forEach(function(b){
+    b.onclick = function(){ selectProfile(b.getAttribute("data-prof")); };
+  });
+  document.querySelectorAll(".trackpick").forEach(function(b){
+    b.onclick = function(){
+      newTrack = b.getAttribute("data-track");
+      document.querySelectorAll(".trackpick").forEach(function(x){ x.classList.toggle("active", x===b); });
+      document.getElementById("profHint").textContent = "Niveau gekozen: "+TRACKS[newTrack].label+". Vul een naam in en klik Start.";
+    };
+  });
+  document.getElementById("btnPlacement").onclick = startPlacement;
+  document.getElementById("btnNewProf").onclick = function(){
+    var name = (document.getElementById("newProfName").value || "").trim();
+    if(!name){ document.getElementById("profHint").textContent = "Vul eerst een naam in."; return; }
+    if(!newTrack){ document.getElementById("profHint").textContent = "Kies eerst een niveau (Beginner of A2)."; return; }
+    var exists = profiles.list.some(function(p){ return p.name.toLowerCase() === name.toLowerCase(); });
+    if(exists){ document.getElementById("profHint").textContent = "Die naam bestaat al, kies hem hierboven of verzin een andere."; return; }
+    var slug = name.toLowerCase().replace(/[^a-z0-9]/g,"");
+    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1"});
+    saveProfiles();
+    selectProfile(name);
+  };
+}
+
+function selectProfile(name){
+  profiles.active = name;
+  saveProfiles();
+  boot();
+}
+
+/* ================= NIVEAUTEST ================= */
+var PLACEMENT = [
+ {q:"'Hola' betekent...", opts:["hallo","tot ziens"], c:0, lvl:1},
+ {q:"___ casa", opts:["el","la"], c:1, lvl:1},
+ {q:"'Ik heb een hond' is...", opts:["Tengo un perro","Soy un perro"], c:0, lvl:1},
+ {q:"Yo ___ en Madrid.", opts:["estoy","soy"], c:0, lvl:1},
+ {q:"'Wij eten' is...", opts:["comemos","como"], c:0, lvl:1},
+ {q:"Hoy ___ mucho en clase.", opts:["he aprendido","aprendí"], c:0, lvl:2},
+ {q:"Ayer ___ a la playa.", opts:["fui","he ido"], c:0, lvl:2},
+ {q:"Me ___ las palabras largas.", opts:["cuestan","cuesta"], c:0, lvl:2},
+ {q:"Como soy tímido, ___ inseguro en clase.", opts:["me siento","soy"], c:0, lvl:2},
+ {q:"Frida Kahlo ___ en 1907.", opts:["nació","ha nacido"], c:0, lvl:2}
+];
+var pIdx = 0, pScore = null, pName = "";
+
+function startPlacement(){
+  pName = (document.getElementById("newProfName").value || "").trim();
+  if(!pName){ document.getElementById("profHint").textContent = "Vul eerst een naam in, dan start de test."; return; }
+  var exists = profiles.list.some(function(p){ return p.name.toLowerCase() === pName.toLowerCase(); });
+  if(exists){ document.getElementById("profHint").textContent = "Die naam bestaat al, kies hem hierboven of verzin een andere."; return; }
+  pIdx = 0; pScore = {1:0, 2:0};
+  document.getElementById("placeCard").classList.remove("hidden");
+  renderPlacement();
+}
+
+function renderPlacement(){
+  var el = document.getElementById("placeCard");
+  if(pIdx >= PLACEMENT.length){
+    // uitslag: eerst basis beoordelen, dan A2-vragen
+    var track = (pScore[1] >= 4 && pScore[2] >= 3) ? "a2" : "beginner";
+    var msg = track === "a2"
+      ? "Je basis zit goed én je herkent de lastige dingen (verleden tijden, cuesta/cuestan). Je start op niveau A2."
+      : "We beginnen bij het begin, dat is de snelste route omhoog. Je start als Beginner.";
+    el.innerHTML = "<span class='kicker'>Niveautest · uitslag</span>"+
+      "<p class='big'>"+(pScore[1]+pScore[2])+"/10 goed</p>"+
+      "<p>"+msg+"</p>"+
+      "<div class='row'><button class='primary' id='btnPlaceStart'>Start als "+TRACKS[track].label+"</button></div>";
+    document.getElementById("btnPlaceStart").onclick = function(){
+      var slug = pName.toLowerCase().replace(/[^a-z0-9]/g,"");
+      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1"});
+      saveProfiles();
+      document.getElementById("placeCard").classList.add("hidden");
+      selectProfile(pName);
+    };
+    return;
+  }
+  var v = PLACEMENT[pIdx];
+  var html = "<span class='kicker'>Niveautest · vraag "+(pIdx+1)+"/"+PLACEMENT.length+"</span>"+
+    "<div class='progressbar'><div style='width:"+Math.round(100*pIdx/PLACEMENT.length)+"%'></div></div>"+
+    "<p class='big' style='font-size:1.15rem'>"+v.q+"</p>";
+  v.opts.forEach(function(o,idx){ html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>"; });
+  html += "<p class='muted' style='margin-top:10px'>Weet je het niet? Gokken mag, daar is de test voor.</p>";
+  el.innerHTML = html;
+  el.querySelectorAll(".opt").forEach(function(b){
+    b.onclick = function(){
+      if(+b.getAttribute("data-i") === v.c) pScore[v.lvl]++;
+      pIdx++; renderPlacement();
+    };
+  });
+}
+
+function switchProfile(){
+  profiles.active = null;
+  saveProfiles();
+  renderProfileScreen();
+}
+
+function boot(){
+  var p = activeProfile();
+  if(!p){ renderProfileScreen(); return; }
+  var tr = TRACKS[p.track] || TRACKS.a2;
+  WORDS = tr.words; SENTENCES = tr.sentences; QUIZZES = tr.quizzes; CHEATSHEET = tr.cheat; BATCH = tr.batch;
+  store.key = p.key;
+  S = store.load() || defaultState();
+  S.xp = S.xp || {};
+  S.streak = S.streak || {count:0, last:""};
+  wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null;
+  document.getElementById("userName").textContent = p.name;
+  document.getElementById("tab-profiel").classList.add("hidden");
+  document.getElementById("goalLine").classList.remove("hidden");
+  document.getElementById("nav").classList.remove("hidden");
+  updateBadge();
+  updateGoalUI();
+  show("woorden");
+}
+
+/* ================= DAGDOEL, XP & STREAK ================= */
+var GOAL = 30; // XP per dag ≈ 10 min oefenen
+
+function addXP(n){
+  var t = today();
+  var was = S.xp[t] || 0;
+  S.xp[t] = was + n;
+  if(was < GOAL && S.xp[t] >= GOAL && S.streak.last !== t){
+    var gisteren = addDays(t, -1);
+    S.streak.count = (S.streak.last === gisteren) ? S.streak.count + 1 : 1;
+    S.streak.last = t;
+    toast("¡Objetivo del día conseguido! 🔥 Streak: " + S.streak.count);
+  }
+  persist(); updateGoalUI();
+}
+
+function streakNow(){
+  // streak vervalt als je gisteren én vandaag (nog) niet gehaald hebt
+  var t = today();
+  if(S.streak.last === t || S.streak.last === addDays(t,-1)) return S.streak.count;
+  return 0;
+}
+
+function updateGoalUI(){
+  var t = today();
+  var x = S.xp[t] || 0;
+  var pct = Math.min(100, Math.round(100 * x / GOAL));
+  var fill = document.getElementById("goalFill");
+  fill.style.width = pct + "%";
+  fill.className = x >= GOAL ? "done" : "";
+  var st = streakNow();
+  document.getElementById("goalTxt").textContent =
+    (x >= GOAL ? "doel gehaald ✓" : x + "/" + GOAL + " XP") + " · 🔥 " + st;
+}
+
+var toastTimer = null;
+function toast(msg){
+  var el = document.getElementById("toastBox");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "toastBox"; el.className = "toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 3000);
+}
+
+function today(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function addDays(dateStr, n){ var p=dateStr.split("-"); var d=new Date(+p[0], +p[1]-1, +p[2]); d.setDate(d.getDate()+n);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+var INTERVALS = [0,1,3,7,14,30];
+
+function logError(id, type, tag, extra){
+  var k = type+":"+id;
+  if(!S.errors[k]) S.errors[k] = {id:id, type:type, tag:tag, count:0, laatst:""};
+  S.errors[k].count++;
+  S.errors[k].laatst = extra || today();
+  persist();
+}
+
+/* ================= WOORDJES (SRS) ================= */
+var MAX_NEW_PER_DAY = 8;
+var wQueue = [], wCur = null, wShown = false, wSessionDone = 0;
+
+function buildQueue(){
+  var t = today();
+  var due = [], fresh = [];
+  var introToday = S.newIntro[t] || 0;
+  WORDS.forEach(function(w){
+    var st = S.srs[w.id];
+    if(st){ if(st.due <= t) due.push(w); }
+    else fresh.push(w);
+  });
+  var newAllowed = Math.max(0, MAX_NEW_PER_DAY - introToday);
+  wQueue = due.concat(fresh.slice(0, newAllowed));
+}
+
+function dueCount(){
+  var t = today(); var n = 0;
+  var introToday = S.newIntro[t] || 0;
+  WORDS.forEach(function(w){
+    var st = S.srs[w.id];
+    if(st){ if(st.due <= t) n++; }
+  });
+  var fresh = WORDS.filter(function(w){ return !S.srs[w.id]; }).length;
+  n += Math.min(fresh, Math.max(0, MAX_NEW_PER_DAY - introToday));
+  return n;
+}
+
+function updateBadge(){
+  var n = dueCount();
+  document.getElementById("dueBadge").textContent = n>0 ? (n+" woordjes te doen") : "alles gedaan ✓";
+}
+
+function renderWord(){
+  var el = document.getElementById("wCard");
+  if(!wQueue.length){ buildQueue(); }
+  if(!wQueue.length){
+    el.innerHTML = "<span class='kicker'>Woordjes</span>"+
+      "<p class='big'>Klaar voor vandaag ✓</p>"+
+      "<p class='muted'>Je hebt "+wSessionDone+" kaartje(s) gedaan. Morgen staan de herhalingen weer klaar. "+
+      "Wil je toch verder? Kom morgen terug, spaced repetition werkt juist door de pauze.</p>";
+    updateBadge(); return;
+  }
+  wCur = wQueue[0]; wShown = false;
+  var isNew = !S.srs[wCur.id];
+  var front = S.dir==="es-nl" ? wCur.es : wCur.nl;
+  el.innerHTML = "<span class='kicker'>Woordjes · "+wQueue.length+" te gaan "+(isNew?"· <span style='color:var(--accent)'>nieuw</span>":"")+"</span>"+
+    "<p class='big'>"+front+"</p>"+
+    "<p class='muted'>"+(S.dir==="es-nl"?"Wat betekent dit?":"Hoe zeg je dit in het Spaans?")+"</p>"+
+    "<div class='row'><button class='primary' id='btnShow'>Toon antwoord</button>"+
+    "<button class='ghost' id='btnDir'>↔ "+(S.dir==="es-nl"?"ES → NL":"NL → ES")+"</button></div>";
+  document.getElementById("btnShow").onclick = showWord;
+  document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
+}
+
+function showWord(){
+  wShown = true;
+  var el = document.getElementById("wCard");
+  var front = S.dir==="es-nl" ? wCur.es : wCur.nl;
+  var back  = S.dir==="es-nl" ? wCur.nl : wCur.es;
+  el.innerHTML = "<span class='kicker'>Woordjes · "+wQueue.length+" te gaan</span>"+
+    "<p class='big'>"+front+"</p>"+
+    "<p class='big' style='color:var(--accent)'>"+back+"</p>"+
+    "<span class='tag'>"+wCur.tag+"</span>"+
+    "<div class='row'><button class='good' id='btnGood'>Wist ik ✓</button>"+
+    "<button class='bad' id='btnBad'>Wist ik niet ✗</button></div>";
+  document.getElementById("btnGood").onclick = function(){ answerWord(true); };
+  document.getElementById("btnBad").onclick = function(){ answerWord(false); };
+}
+
+function answerWord(good){
+  var t = today();
+  var st = S.srs[wCur.id];
+  if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0)+1; }
+  if(good){
+    st.box = Math.min(st.box+1, INTERVALS.length-1);
+    st.due = addDays(t, INTERVALS[st.box]);
+    wQueue.shift();
+    addXP(2);
+  } else {
+    st.box = 0; st.due = t;
+    logError(wCur.id, "woord", wCur.tag, wCur.es);
+    wQueue.push(wQueue.shift()); // achteraan opnieuw
+    addXP(1); // ook fouten zijn oefening
+  }
+  S.srs[wCur.id] = st; wSessionDone++; persist(); updateBadge(); renderWord();
+}
+
+/* ================= VERTALEN ================= */
+function norm(s){
+  return s.toLowerCase().trim()
+    .replace(/[¡!¿?.,;:]/g,"")
+    .replace(/\s+/g," ");
+}
+function stripAcc(s){
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+var sIdx = null;
+function pickSentence(){
+  var open = SENTENCES.filter(function(x){ return !S.done[x.id]; });
+  var pool = open.length ? open : SENTENCES;
+  // laagste level eerst als er nog open zinnen zijn
+  pool = pool.slice().sort(function(a,b){ return a.lvl-b.lvl; });
+  var topLvl = pool[0].lvl;
+  var candidates = pool.filter(function(x){ return x.lvl===topLvl; });
+  return candidates[Math.floor(Math.random()*candidates.length)];
+}
+
+function renderSentence(fresh){
+  if(fresh || sIdx===null) sIdx = pickSentence();
+  var s = sIdx;
+  var doneCount = Object.keys(S.done).length;
+  var el = document.getElementById("sCard");
+  el.innerHTML = "<span class='kicker'>Vertalen · niveau "+s.lvl+" · "+doneCount+"/"+SENTENCES.length+" gehaald</span>"+
+    "<p class='big'>"+s.nl+"</p>"+
+    "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='Typ de Spaanse zin...'>"+
+    "<div class='row'><button class='primary' id='btnCheck'>Controleer</button>"+
+    "<button class='ghost' id='btnSkip'>Andere zin</button></div>"+
+    "<div id='sFeedback'></div>";
+  var inp = document.getElementById("sInput");
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkSentence(); });
+  document.getElementById("btnCheck").onclick = checkSentence;
+  document.getElementById("btnSkip").onclick = function(){ renderSentence(true); };
+  inp.focus();
+}
+
+function checkSentence(){
+  var s = sIdx;
+  var given = norm(document.getElementById("sInput").value || "");
+  if(!given) return;
+  var fb = document.getElementById("sFeedback");
+  var answers = [norm(s.es)].concat(s.alt.map(norm));
+  var exact = answers.indexOf(given) !== -1;
+  var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
+  var html = "";
+  if(exact){
+    html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
+    S.done[s.id] = true; addXP(5);
+  } else if(loose){
+    html = "<div class='feedback bijna'>Bijna! Alleen de accenten: <b>"+s.es+"</b> (+4 XP)</div>";
+    S.done[s.id] = true; addXP(4);
+  } else {
+    html = "<div class='feedback fout'>Nog niet. Het antwoord is: <b>"+s.es+"</b></div>";
+    logError(s.id, "zin", s.tag, given); addXP(1);
+  }
+  html += "<div class='uitleg'><b>Waarom:</b> "+s.uitleg+"</div>";
+  html += "<div class='row'><button class='primary' id='btnNext'>Volgende zin →</button></div>";
+  fb.innerHTML = html;
+  persist();
+  document.getElementById("btnNext").onclick = function(){ renderSentence(true); };
+}
+
+/* ================= TOETSJES ================= */
+var qState = null;
+
+function renderQuizMenu(){
+  var el = document.getElementById("qMenu");
+  var html = "";
+  QUIZZES.forEach(function(qz){
+    var best = S.quiz[qz.id];
+    html += "<div class='card'><h2>"+qz.titel+"</h2>"+
+      "<p class='muted'>"+qz.vragen.length+" vragen"+(best!==undefined?(" · beste score: "+best+"/"+qz.vragen.length):"")+"</p>"+
+      "<button class='primary' data-quiz='"+qz.id+"'>Start</button></div>";
+  });
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-quiz]").forEach(function(b){
+    b.onclick = function(){ startQuiz(b.getAttribute("data-quiz")); };
+  });
+}
+
+function startQuiz(id){
+  var qz = QUIZZES.filter(function(x){ return x.id===id; })[0];
+  qState = {qz:qz, i:0, score:0, locked:false};
+  document.getElementById("qMenu").classList.add("hidden");
+  document.getElementById("qCard").classList.remove("hidden");
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var st = qState, qz = st.qz;
+  var el = document.getElementById("qCard");
+  if(st.i >= qz.vragen.length){
+    var prev = S.quiz[qz.id];
+    if(prev===undefined || st.score>prev){ S.quiz[qz.id] = st.score; persist(); }
+    var pct = st.score/qz.vragen.length;
+    var msg = pct===1 ? "¡Perfecto! Foutloos." : pct>=0.8 ? "¡Muy bien! Bijna foutloos." :
+              pct>=0.6 ? "Goede basis, kijk de uitleg van je fouten nog even terug." :
+              "Deze regel verdient nog aandacht. Lees de spiekbrief en probeer opnieuw.";
+    el.innerHTML = "<span class='kicker'>"+qz.titel+"</span>"+
+      "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
+      "<div class='row'><button class='primary' id='btnRetry'>Opnieuw</button>"+
+      "<button class='ghost' id='btnMenu'>Terug naar toetsjes</button></div>";
+    document.getElementById("btnRetry").onclick = function(){ startQuiz(qz.id); };
+    document.getElementById("btnMenu").onclick = closeQuiz;
+    return;
+  }
+  var v = qz.vragen[st.i];
+  st.locked = false;
+  var html = "<span class='kicker'>"+qz.titel+" · vraag "+(st.i+1)+"/"+qz.vragen.length+"</span>"+
+    "<div class='progressbar'><div style='width:"+Math.round(100*st.i/qz.vragen.length)+"%'></div></div>"+
+    "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>";
+  v.opts.forEach(function(o,idx){
+    html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>";
+  });
+  html += "<div id='qFeedback'></div>";
+  el.innerHTML = html;
+  el.querySelectorAll(".opt").forEach(function(b){
+    b.onclick = function(){ answerQuestion(+b.getAttribute("data-i"), b); };
+  });
+}
+
+function answerQuestion(idx, btn){
+  var st = qState; if(st.locked) return; st.locked = true;
+  var v = st.qz.vragen[st.i];
+  var el = document.getElementById("qCard");
+  var opts = el.querySelectorAll(".opt");
+  opts[v.c].classList.add("correct");
+  var goed = idx === v.c;
+  if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+st.i, "quiz", st.qz.id, v.q); addXP(1); }
+  var fb = document.getElementById("qFeedback");
+  fb.innerHTML = "<div class='uitleg'><b>"+(goed?"Goed! ":"")+"Waarom:</b> "+v.u+"</div>"+
+    "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.qz.vragen.length ? "Volgende →" : "Uitslag →")+"</button></div>";
+  document.getElementById("btnNextQ").onclick = function(){ st.i++; renderQuestion(); };
+}
+
+function closeQuiz(){
+  document.getElementById("qCard").classList.add("hidden");
+  document.getElementById("qMenu").classList.remove("hidden");
+  renderQuizMenu();
+}
+
+/* ================= SPIEKBRIEF ================= */
+function renderCheat(){
+  var el = document.getElementById("cheat");
+  el.innerHTML = CHEATSHEET.map(function(c){
+    return "<details><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
+  }).join("");
+}
+
+/* ================= VOORTGANG ================= */
+function renderStats(){
+  var el = document.getElementById("statsCard");
+  var boxes = [0,0,0,0,0,0];
+  var seen = 0;
+  WORDS.forEach(function(w){ var st=S.srs[w.id]; if(st){ seen++; boxes[st.box]++; } });
+  var zinnenGoed = Object.keys(S.done).length;
+  var quizzesDone = Object.keys(S.quiz).length;
+  var errCount = Object.keys(S.errors).reduce(function(a,k){ return a+S.errors[k].count; },0);
+  var boxLabels = ["nieuw/fout","1 dag","3 dagen","1 week","2 weken","1 maand"];
+  var maxBox = Math.max.apply(null, boxes.concat([1]));
+  var boxHtml = boxes.map(function(n,i){
+    return "<div class='boxrow'><span style='width:80px'>"+boxLabels[i]+"</span>"+
+      "<div class='bar'><div style='width:"+Math.round(100*n/maxBox)+"%'></div></div><b style='width:24px; text-align:right'>"+n+"</b></div>";
+  }).join("");
+  // hardnekkige woorden (leeches): 3x of vaker fout
+  var leeches = [];
+  Object.keys(S.errors).forEach(function(k){
+    var e = S.errors[k];
+    if(e.type === "woord" && e.count >= 3){
+      var w = WORDS.filter(function(x){ return x.id === e.id; })[0];
+      if(w) leeches.push({w:w, n:e.count});
+    }
+  });
+  leeches.sort(function(a,b){ return b.n - a.n; });
+  var leechHtml = "";
+  if(leeches.length){
+    leechHtml = "<h2 style='margin-top:16px'>Hardnekkige woorden</h2>"+
+      "<p class='muted'>Deze blijven lastig (3+ keer fout). Tip: maak er zelf een zin mee over je eigen leven, dan blijven ze wél hangen.</p>"+
+      leeches.map(function(l){ return "<div class='leech'><span><b>"+l.w.es+"</b> · "+l.w.nl+"</span><span class='muted'>"+l.n+"× fout</span></div>"; }).join("");
+  }
+  var t2 = today();
+  var xpToday = S.xp[t2] || 0;
+  el.innerHTML = "<h2>Je voortgang</h2>"+
+    "<div class='statgrid'>"+
+    "<div class='stat'><b>🔥 "+streakNow()+"</b><span class='muted'>dagen streak</span></div>"+
+    "<div class='stat'><b>"+xpToday+"/"+GOAL+"</b><span class='muted'>XP vandaag</span></div>"+
+    "<div class='stat'><b>"+seen+"/"+WORDS.length+"</b><span class='muted'>woorden gestart</span></div>"+
+    "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>zinnen gehaald</span></div>"+
+    "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>toetsjes gemaakt</span></div>"+
+    "<div class='stat'><b>"+errCount+"</b><span class='muted'>fouten gelogd</span></div>"+
+    "</div>"+
+    "<h2 style='margin-top:16px'>Woorden per herhaalinterval</h2>"+boxHtml+
+    leechHtml+
+    "<p class='muted' style='margin-top:8px'>Hoe verder naar onder, hoe beter een woord in je geheugen zit. Batch: "+BATCH+"</p>";
+}
+
+function exportErrors(){
+  var srsSummary = {};
+  WORDS.forEach(function(w){ var st=S.srs[w.id]; if(st && st.box<=1){ srsSummary[w.es]=("box "+st.box); } });
+  var p = activeProfile();
+  var payload = {
+    app:"espanol-stefan", profiel:(p?p.name:"?"), niveau:(p?p.track:"?"), batch:BATCH, datum:today(),
+    fouten:Object.keys(S.errors).map(function(k){ return S.errors[k]; }),
+    moeilijkeWoorden:srsSummary,
+    zinnenGehaald:Object.keys(S.done).length+"/"+SENTENCES.length,
+    quizScores:S.quiz
+  };
+  var txt = JSON.stringify(payload, null, 1);
+  var ta = document.getElementById("errorDump");
+  ta.value = txt; ta.classList.remove("hidden");
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){
+    document.getElementById("btnExportErrors").textContent = "Gekopieerd ✓ (plak bij Claude)";
+  }).catch(function(){}); }
+}
+
+function exportProgress(){
+  var ta = document.getElementById("progressDump");
+  ta.value = JSON.stringify(S); ta.classList.remove("hidden");
+  if(navigator.clipboard){ navigator.clipboard.writeText(ta.value).then(function(){
+    document.getElementById("btnExportProgress").textContent = "Gekopieerd ✓";
+  }).catch(function(){}); }
+}
+
+function importProgress(){
+  var ta = document.getElementById("progressDump");
+  if(ta.classList.contains("hidden")){ ta.classList.remove("hidden"); ta.focus(); return; }
+  try{
+    var parsed = JSON.parse(ta.value);
+    if(parsed && parsed.srs){ S = parsed; persist(); renderStats(); updateBadge(); buildQueue(); renderWord();
+      document.getElementById("btnImportProgress").textContent = "Geïmporteerd ✓"; }
+  }catch(e){ alertBox("Dat lijkt geen geldige voortgang. Plak precies wat je eerder exporteerde."); }
+}
+function alertBox(msg){
+  var ta = document.getElementById("progressDump");
+  ta.value = msg;
+}
+
+/* ================= NAVIGATIE ================= */
+var TABS = [
+  {id:"woorden", label:"Woordjes"},
+  {id:"vertalen", label:"Vertalen"},
+  {id:"toetsjes", label:"Toetsjes"},
+  {id:"spiekbrief", label:"Spiekbrief"},
+  {id:"voortgang", label:"Voortgang"}
+];
+
+function show(tabId){
+  TABS.forEach(function(t){
+    document.getElementById("tab-"+t.id).classList.toggle("hidden", t.id!==tabId);
+  });
+  document.querySelectorAll("#nav button").forEach(function(b){
+    b.classList.toggle("active", b.getAttribute("data-tab")===tabId);
+  });
+  if(tabId==="woorden"){ buildQueue(); renderWord(); }
+  if(tabId==="vertalen"){ renderSentence(true); }
+  if(tabId==="toetsjes"){ closeQuiz(); }
+  if(tabId==="spiekbrief"){ renderCheat(); }
+  if(tabId==="voortgang"){ renderStats(); }
+}
+
+(function init(){
+  if(!store.ok) document.getElementById("storageWarn").classList.remove("hidden");
+  var nav = document.getElementById("nav");
+  nav.innerHTML = TABS.map(function(t){
+    return "<button data-tab='"+t.id+"'>"+t.label+"</button>";
+  }).join("");
+  nav.querySelectorAll("button").forEach(function(b){
+    b.onclick = function(){ show(b.getAttribute("data-tab")); };
+  });
+  document.getElementById("btnExportErrors").onclick = exportErrors;
+  document.getElementById("btnExportProgress").onclick = exportProgress;
+  document.getElementById("btnImportProgress").onclick = importProgress;
+  document.getElementById("btnSwitchProf").onclick = switchProfile;
+  if(profiles.active && activeProfile()){ boot(); } else { renderProfileScreen(); }
+})();
+</script>
+</body>
+</html>
