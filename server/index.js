@@ -9,6 +9,7 @@
  */
 const express = require("express");
 const { Pool } = require("pg");
+const { reason } = require("./llm");
 
 const app = express();
 app.use(express.json({ limit: "512kb" }));
@@ -125,25 +126,11 @@ app.get("/api/logs", async (req, res) => {
   }
 });
 
-// ---- AI-feedback (Anthropic) ----
-async function vraagClaude(system, user, maxTokens) {
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5",
-      max_tokens: maxTokens || 400,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
-  });
-  if (!r.ok) throw new Error("anthropic " + r.status + ": " + (await r.text()).slice(0, 300));
-  const data = await r.json();
-  return (data.content && data.content[0] && data.content[0].text) || "";
+// ---- AI-feedback via de LLM-ladder (goedkoop eerst, duur als vangnet) ----
+async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
+  const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite });
+  if (!res) throw new Error("alle LLM-tredes uitgeput");
+  return res.text;
 }
 
 // POST /api/ai/check {nl, verwacht, gegeven}
@@ -151,15 +138,14 @@ async function vraagClaude(system, user, maxTokens) {
 app.post("/api/ai/check", async (req, res) => {
   const { nl, verwacht, gegeven } = req.body || {};
   if (!nl || !gegeven) return bad(res, 400, "nl en gegeven verplicht");
-  if (!process.env.ANTHROPIC_API_KEY) return bad(res, 503, "AI niet geconfigureerd");
   try {
-    const txt = await vraagClaude(
+    const txt = await vraagLadder(
       "Je beoordeelt antwoorden in een Spaanse leerapp voor Nederlandstaligen (niveau A0-A2). " +
       "Antwoord UITSLUITEND met geldige JSON: {\"goed\": true/false, \"uitleg\": \"korte uitleg in het Nederlands (max 2 zinnen)\"}. " +
       "Wees streng op grammatica maar accepteer natuurlijke alternatieven (andere woordvolgorde, synoniemen, weglaten van onderwerp). " +
       "Kleine accentfouten: goed=true maar benoem ze in de uitleg.",
       "Nederlandse zin: \"" + nl + "\"\nModelantwoord: \"" + (verwacht || "-") + "\"\nAntwoord van de leerling: \"" + gegeven + "\"\nIs het antwoord van de leerling correct Spaans voor deze zin?",
-      250
+      250, true, "ai-check"
     );
     const m = txt.match(/\{[\s\S]*\}/);
     if (!m) return bad(res, 502, "onleesbaar AI-antwoord");
@@ -176,13 +162,12 @@ app.post("/api/ai/check", async (req, res) => {
 app.post("/api/ai/uitleg", async (req, res) => {
   const { vraag, context } = req.body || {};
   if (!vraag) return bad(res, 400, "vraag verplicht");
-  if (!process.env.ANTHROPIC_API_KEY) return bad(res, 503, "AI niet geconfigureerd");
   try {
-    const txt = await vraagClaude(
+    const txt = await vraagLadder(
       "Je bent een geduldige Spaanse-taaldocent voor Nederlandstaligen (A0-A2). Antwoord in eenvoudig Nederlands, " +
       "maximaal 120 woorden, met één concreet voorbeeld. Geen opsommingstekens, gewoon lopende tekst.",
       (context ? "Context uit de oefening: " + context + "\n\n" : "") + "Vraag van de leerling: " + vraag,
-      350
+      350, false, "ai-uitleg"
     );
     ok(res, { uitleg: txt.slice(0, 1200) });
   } catch (e) {
