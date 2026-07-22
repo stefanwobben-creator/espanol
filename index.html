@@ -109,6 +109,11 @@
   @keyframes cfall{0%{transform:translateY(0) rotate(0); opacity:1} 100%{transform:translateY(105vh) rotate(540deg); opacity:.7}}
   .diffword{color:var(--red); font-weight:800; text-decoration:underline;}
   .celebrate{border:2px solid var(--green); background:var(--green-soft);}
+  .ytwrap{position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; background:#000; margin:10px 0;}
+  .ytwrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+  .oogst{padding:10px 0; border-bottom:1px dashed var(--border);}
+  .oogst b{color:var(--accent);}
+  .oogst .muted{display:block; margin-top:2px;}
   .hidden{display:none !important;}
   .es{font-style:normal; color:var(--accent); font-weight:700;}
   h2{font-size:1.15rem; margin:4px 0 10px;}
@@ -163,6 +168,12 @@
     <div class="card" id="shopCard"></div>
   </section>
 
+  <!-- MÚSICA -->
+  <section id="tab-musica" class="hidden">
+    <div id="songList"></div>
+    <div id="songView" class="hidden"></div>
+  </section>
+
   <!-- WOORDJES -->
   <section id="tab-woorden" class="hidden">
     <div class="card" id="wCard"></div>
@@ -188,11 +199,12 @@
   <section id="tab-voortgang" class="hidden">
     <div class="card" id="statsCard"></div>
     <div class="card">
-      <h2>Foutenlog voor Claude</h2>
-      <p class="muted">Kopieer dit en plak het in je Spaans-project bij Claude. Dan maak ik een nieuwe batch
-      oefeningen die zich richt op jouw fouten.</p>
+      <h2>Foutenlog naar Claude</h2>
+      <p class="muted">Eén tik: dit opent een kant-en-klaar mailtje aan jezelf. Verstuur het, en de wekelijkse
+      update leest het automatisch en stemt de nieuwe oefeningen af op jouw fouten. Geen kopiëren of plakken.</p>
       <div class="row">
-        <button class="primary" id="btnExportErrors">Kopieer foutenlog</button>
+        <button class="primary" id="btnMailErrors">Verstuur foutenlog ✉️</button>
+        <button class="ghost" id="btnExportErrors">Bekijk/kopieer zelf</button>
       </div>
       <textarea id="errorDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"></textarea>
     </div>
@@ -432,73 +444,73 @@ var SENTENCES = [
 
 var QUIZZES = [
  {id:"q-costar", titel:"Cuesta of cuestan (en va of van)", vragen:[
-  {q:"Me ___ aprender los verbos.", opts:["cuesta","cuestan"], c:0,
+  {q:"Me ___ aprender los verbos.", nl:"Het kost me moeite om de werkwoorden te leren.", opts:["cuesta","cuestan"], c:0,
    u:"Aprender is een infinitief. Eén activiteit = enkelvoud = cuesta."},
-  {q:"Me ___ algunos sonidos del español.", opts:["cuesta","cuestan"], c:1,
+  {q:"Me ___ algunos sonidos del español.", nl:"Sommige Spaanse klanken kosten me moeite.", opts:["cuesta","cuestan"], c:1,
    u:"Algunos sonidos is meervoud en is het onderwerp, dus cuestan."},
-  {q:"A Peer y a mí nos ___ mucho entender a la gente.", opts:["cuesta","cuestan"], c:0,
+  {q:"A Peer y a mí nos ___ mucho entender a la gente.", nl:"Het kost Peer en mij veel moeite om de mensen te verstaan.", opts:["cuesta","cuestan"], c:0,
    u:"Trap er niet in: 'a Peer y a mí' zijn meewerkend voorwerp. Het onderwerp is entender (infinitief) = cuesta."},
-  {q:"Para aprender vocabulario ___ muy bien leer.", opts:["va","van"], c:0,
+  {q:"Para aprender vocabulario ___ muy bien leer.", nl:"Om woordenschat te leren werkt lezen heel goed.", opts:["va","van"], c:0,
    u:"Leer is een infinitief, dus va. 'Lezen werkt goed', en lezen is één ding."},
-  {q:"A casi todos nos ___ hablar rápido.", opts:["cuesta","cuestan"], c:0,
+  {q:"A casi todos nos ___ hablar rápido.", nl:"Snel praten kost bijna ons allemaal moeite.", opts:["cuesta","cuestan"], c:0,
    u:"Ook al gaat het om bijna iedereen: het onderwerp is hablar (infinitief), dus cuesta."},
-  {q:"A Linnéa también le ___ las palabras muy largas.", opts:["cuesta","cuestan"], c:1,
+  {q:"A Linnéa también le ___ las palabras muy largas.", nl:"Ook Linnéa kosten de heel lange woorden moeite.", opts:["cuesta","cuestan"], c:1,
    u:"Las palabras largas = meervoud = cuestan. Le is alleen 'aan haar'."},
-  {q:"Para estudiar ___ bien tener una gramática.", opts:["va","van"], c:0,
+  {q:"Para estudiar ___ bien tener una gramática.", nl:"Om te studeren is het handig een grammaticaboek te hebben.", opts:["va","van"], c:0,
    u:"Tener is een infinitief, dus va."},
-  {q:"Me ___ la jota y la erre.", opts:["cuesta","cuestan"], c:1,
+  {q:"Me ___ la jota y la erre.", nl:"De j en de r kosten me moeite.", opts:["cuesta","cuestan"], c:1,
    u:"Twee klanken (la jota en la erre) = meervoud = cuestan."},
-  {q:"Nos ___ mucho los verbos irregulares.", opts:["cuesta","cuestan"], c:1,
+  {q:"Nos ___ mucho los verbos irregulares.", nl:"De onregelmatige werkwoorden kosten ons veel moeite.", opts:["cuesta","cuestan"], c:1,
    u:"Los verbos irregulares = meervoud = cuestan."},
-  {q:"¿Te ___ pronunciar la erre?", opts:["cuesta","cuestan"], c:0,
+  {q:"¿Te ___ pronunciar la erre?", nl:"Kost het jou moeite om de r uit te spreken?", opts:["cuesta","cuestan"], c:0,
    u:"Pronunciar is een infinitief, dus cuesta. Te = 'aan jou'."}
  ]},
  {id:"q-ser", titel:"Ser of sentirse", vragen:[
-  {q:"Como ___ un poco tímido, me siento inseguro en clase.", opts:["soy","me siento"], c:0,
+  {q:"Como ___ un poco tímido, me siento inseguro en clase.", nl:"Omdat ik wat verlegen ben, voel ik me onzeker in de les.", opts:["soy","me siento"], c:0,
    u:"Verlegen zijn is een karaktereigenschap: ser. Test: 'zo ben ik nou eenmaal' → ser."},
-  {q:"Cuando veo las dificultades, ___ un poco frustrado.", opts:["soy","me siento"], c:1,
+  {q:"Cuando veo las dificultades, ___ un poco frustrado.", nl:"Als ik de moeilijkheden zie, voel ik me wat gefrustreerd.", opts:["soy","me siento"], c:1,
    u:"Een gevoel op dat moment (cuando...): sentirse. Test: kun je er 'nu even' bij denken → sentirse."},
-  {q:"Mis compañeros dicen que ___ muy divertida.", opts:["soy","me siento"], c:0,
+  {q:"Mis compañeros dicen que ___ muy divertida.", nl:"Mijn klasgenoten zeggen dat ik heel grappig ben.", opts:["soy","me siento"], c:0,
    u:"Grappig zijn is karakter, dus ser."},
-  {q:"A veces ___ ridícula cuando pronuncio la erre.", opts:["soy","me siento"], c:1,
+  {q:"A veces ___ ridícula cuando pronuncio la erre.", nl:"Soms voel ik me belachelijk als ik de r uitspreek.", opts:["soy","me siento"], c:1,
    u:"A veces (soms) verraadt het al: een tijdelijk gevoel, dus me siento."},
-  {q:"No ___ miedoso, me gustan los retos.", opts:["soy","me siento"], c:0,
+  {q:"No ___ miedoso, me gustan los retos.", nl:"Ik ben niet bang aangelegd, ik hou van uitdagingen.", opts:["soy","me siento"], c:0,
    u:"Bang aangelegd zijn (of niet) is karakter: ser."},
-  {q:"Cuando hablo con nativos, siempre ___ un poco ansioso.", opts:["soy","me siento"], c:1,
+  {q:"Cuando hablo con nativos, siempre ___ un poco ansioso.", nl:"Als ik met moedertaalsprekers praat, voel ik me altijd wat gespannen.", opts:["soy","me siento"], c:1,
    u:"Gespannen voelen in een situatie: sentirse. Siempre lijkt permanent, maar het gaat om hoe je je vóélt in die situatie."},
-  {q:"Nuestra profesora ___ muy divertida.", opts:["es","se siente"], c:0,
+  {q:"Nuestra profesora ___ muy divertida.", nl:"Onze lerares is heel grappig.", opts:["es","se siente"], c:0,
    u:"Haar karakter: es. Se siente divertida zou betekenen dat ze zich grappig vóélt."},
-  {q:"Al empezar una lengua nueva, ___ ilusionado.", opts:["soy","me siento"], c:1,
+  {q:"Al empezar una lengua nueva, ___ ilusionado.", nl:"Als ik aan een nieuwe taal begin, voel ik me enthousiast.", opts:["soy","me siento"], c:1,
    u:"Enthousiast bij de start: een gevoel van dat moment, dus me siento."},
-  {q:"Mi hermano ___ una persona muy entusiasmada.", opts:["es","se siente"], c:0,
+  {q:"Mi hermano ___ una persona muy entusiasmada.", nl:"Mijn broer is een heel enthousiast persoon.", opts:["es","se siente"], c:0,
    u:"Ser + una persona + eigenschap: zo is hij."},
-  {q:"Hoy ___ fatal, no he dormido bien.", opts:["soy","me siento"], c:1,
+  {q:"Hoy ___ fatal, no he dormido bien.", nl:"Vandaag voel ik me waardeloos, ik heb slecht geslapen.", opts:["soy","me siento"], c:1,
    u:"Hoy + niet geslapen: duidelijk een toestand van nu, dus me siento fatal."}
  ]},
  {id:"q-tijden", titel:"Indefinido of perfecto", vragen:[
-  {q:"Frida Kahlo ___ en 1907.", opts:["nació","ha nacido"], c:0,
+  {q:"Frida Kahlo ___ en 1907.", nl:"Frida Kahlo werd geboren in 1907.", opts:["nació","ha nacido"], c:0,
    u:"Jaartal in het verleden = afgesloten = indefinido. Haar leven is een gesloten hoofdstuk."},
-  {q:"Hoy ___ mucho en clase.", opts:["aprendí","he aprendido"], c:1,
+  {q:"Hoy ___ mucho en clase.", nl:"Vandaag heb ik veel geleerd in de les.", opts:["aprendí","he aprendido"], c:1,
    u:"Hoy loopt nog, dus perfecto: he aprendido."},
-  {q:"El año pasado ___ a México.", opts:["viajé","he viajado"], c:0,
+  {q:"El año pasado ___ a México.", nl:"Vorig jaar reisde ik naar Mexico.", opts:["viajé","he viajado"], c:0,
    u:"El año pasado is voorbij en afgesloten: indefinido."},
-  {q:"Esta semana ___ dos películas españolas.", opts:["vi","he visto"], c:1,
+  {q:"Esta semana ___ dos películas españolas.", nl:"Deze week heb ik twee Spaanse films gezien.", opts:["vi","he visto"], c:1,
    u:"Esta semana is nog bezig: perfecto. Ver → visto (onregelmatig)."},
-  {q:"¿Alguna vez ___ paella?", opts:["comiste","has comido"], c:1,
+  {q:"¿Alguna vez ___ paella?", nl:"Heb je ooit paella gegeten?", opts:["comiste","has comido"], c:1,
    u:"Alguna vez (ooit, in je leven tot nu) = perfecto, want je leven loopt nog."},
-  {q:"Ayer ___ con mi profesora.", opts:["hablé","he hablado"], c:0,
+  {q:"Ayer ___ con mi profesora.", nl:"Gisteren sprak ik met mijn lerares.", opts:["hablé","he hablado"], c:0,
    u:"Ayer (gisteren) is afgesloten: indefinido."},
-  {q:"Van Gogh ___ a París en 1886.", opts:["se mudó","se ha mudado"], c:0,
+  {q:"Van Gogh ___ a París en 1886.", nl:"Van Gogh verhuisde in 1886 naar Parijs.", opts:["se mudó","se ha mudado"], c:0,
    u:"Jaartal, afgesloten leven: indefinido."},
-  {q:"Todavía no ___ los deberes.", opts:["terminé","he terminado"], c:1,
+  {q:"Todavía no ___ los deberes.", nl:"Ik heb het huiswerk nog niet af.", opts:["terminé","he terminado"], c:1,
    u:"Todavía no (nog niet) = de periode loopt nog, het kan nog gebeuren: perfecto."},
-  {q:"Kahlo ___ 32 operaciones a lo largo de su vida.", opts:["tuvo","ha tenido"], c:0,
+  {q:"Kahlo ___ 32 operaciones a lo largo de su vida.", nl:"Kahlo onderging 32 operaties gedurende haar leven.", opts:["tuvo","ha tenido"], c:0,
    u:"Haar leven is voorbij ('a lo largo de su vida' is een gesloten periode): indefinido. Tener → tuvo (onregelmatig)."},
-  {q:"Ya ___ este ejercicio dos veces.", opts:["hice","he hecho"], c:1,
+  {q:"Ya ___ este ejercicio dos veces.", nl:"Ik heb deze oefening al twee keer gedaan.", opts:["hice","he hecho"], c:1,
    u:"Ya (al) + relevantie voor nu = perfecto. Hacer → hecho (onregelmatig)."},
-  {q:"En 1939 ___ sus pinturas en Francia.", opts:["expuso","ha expuesto"], c:0,
+  {q:"En 1939 ___ sus pinturas en Francia.", nl:"In 1939 exposeerde ze haar schilderijen in Frankrijk.", opts:["expuso","ha expuesto"], c:0,
    u:"En 1939: jaartal = indefinido. Exponer → expuso (onregelmatig, zoals poner → puso)."},
-  {q:"Este año ___ mucho español.", opts:["estudié","he estudiado"], c:1,
+  {q:"Este año ___ mucho español.", nl:"Dit jaar heb ik veel Spaans geleerd.", opts:["estudié","he estudiado"], c:1,
    u:"Este año is nog niet voorbij: perfecto."}
  ]},
  {id:"q-vormen", titel:"Indefinido: de juiste vorm", vragen:[
@@ -524,24 +536,24 @@ var QUIZZES = [
    u:"Hacer is onregelmatig: hice, hiciste, hizo (let op de z in hizo)."}
  ]},
  {id:"q-serir", titel:"Fue: ser of ir?", vragen:[
-  {q:"La película fue un éxito.", opts:["ser","ir"], c:0, u:"De film WAS een succes: ser. Geen a erachter, wel een beschrijving."},
-  {q:"Mi hermano no fue a verla.", opts:["ser","ir"], c:1, u:"Hij GING hem niet zien: fue A verla. De a verraadt ir."},
-  {q:"Fuimos siempre los primeros de la clase.", opts:["ser","ir"], c:0, u:"Wij WAREN de besten: beschrijving, dus ser."},
-  {q:"Fuimos a un colegio bilingüe.", opts:["ser","ir"], c:1, u:"Wij GINGEN naar een school: fuimos A, dus ir."},
-  {q:"Minerva y Martín fueron a Suecia en 1970.", opts:["ser","ir"], c:1, u:"Zij gingen NAAR Zweden: ir."},
-  {q:"Mis padres fueron muy deportistas.", opts:["ser","ir"], c:0, u:"Zij waren sportief: eigenschap, ser."},
-  {q:"Ayer fue un día difícil.", opts:["ser","ir"], c:0, u:"Gisteren WAS een moeilijke dag: ser."},
-  {q:"¿Fuiste a la fiesta el sábado?", opts:["ser","ir"], c:1, u:"Ging jij NAAR het feest: fuiste a = ir."}
+  {q:"La película fue un éxito.", nl:"De film was een succes.", opts:["ser","ir"], c:0, u:"De film WAS een succes: ser. Geen a erachter, wel een beschrijving."},
+  {q:"Mi hermano no fue a verla.", nl:"Mijn broer ging hem niet zien.", opts:["ser","ir"], c:1, u:"Hij GING hem niet zien: fue A verla. De a verraadt ir."},
+  {q:"Fuimos siempre los primeros de la clase.", nl:"Wij waren altijd de besten van de klas.", opts:["ser","ir"], c:0, u:"Wij WAREN de besten: beschrijving, dus ser."},
+  {q:"Fuimos a un colegio bilingüe.", nl:"Wij gingen naar een tweetalige school.", opts:["ser","ir"], c:1, u:"Wij GINGEN naar een school: fuimos A, dus ir."},
+  {q:"Minerva y Martín fueron a Suecia en 1970.", nl:"Minerva en Martín gingen in 1970 naar Zweden.", opts:["ser","ir"], c:1, u:"Zij gingen NAAR Zweden: ir."},
+  {q:"Mis padres fueron muy deportistas.", nl:"Mijn ouders waren heel sportief.", opts:["ser","ir"], c:0, u:"Zij waren sportief: eigenschap, ser."},
+  {q:"Ayer fue un día difícil.", nl:"Gisteren was een moeilijke dag.", opts:["ser","ir"], c:0, u:"Gisteren WAS een moeilijke dag: ser."},
+  {q:"¿Fuiste a la fiesta el sábado?", nl:"Ging jij zaterdag naar het feest?", opts:["ser","ir"], c:1, u:"Ging jij NAAR het feest: fuiste a = ir."}
  ]},
  {id:"q-soyasi", titel:"Ser, tener of llevar? (beschrijven)", vragen:[
-  {q:"Mi madre ___ el pelo corto.", opts:["es","tiene","lleva"], c:1, u:"Haar en ogen HEB je: tiene el pelo corto."},
-  {q:"Mi hermana ___ muy alta.", opts:["es","tiene","lleva"], c:0, u:"Lang/klein zijn is een eigenschap: es alta."},
-  {q:"Mi padre ___ gafas.", opts:["es","tiene","lleva"], c:2, u:"Een bril DRAAG je: lleva gafas."},
-  {q:"Yo ___ los ojos azules.", opts:["soy","tengo","llevo"], c:1, u:"Tengo los ojos azules: ogen heb je."},
-  {q:"Ella ___ una persona muy abierta.", opts:["es","tiene","lleva"], c:0, u:"Karakter: ser. Es una persona abierta."},
-  {q:"Mi abuelo ___ barba.", opts:["es","tiene","lleva"], c:1, u:"Tiene barba (lleva barba kan ook, maar tener is hier het standaardantwoord van het boek)."},
-  {q:"Hoy ___ una camiseta roja.", opts:["soy","tengo","llevo"], c:2, u:"Kleding draag je: llevo una camiseta."},
-  {q:"Mis ojos ___ verdes.", opts:["son","tienen","llevan"], c:0, u:"Als de ogen zélf het onderwerp zijn: son verdes (eigenschap van de ogen)."}
+  {q:"Mi madre ___ el pelo corto.", nl:"Mijn moeder heeft kort haar.", opts:["es","tiene","lleva"], c:1, u:"Haar en ogen HEB je: tiene el pelo corto."},
+  {q:"Mi hermana ___ muy alta.", nl:"Mijn zus is heel lang.", opts:["es","tiene","lleva"], c:0, u:"Lang/klein zijn is een eigenschap: es alta."},
+  {q:"Mi padre ___ gafas.", nl:"Mijn vader draagt een bril.", opts:["es","tiene","lleva"], c:2, u:"Een bril DRAAG je: lleva gafas."},
+  {q:"Yo ___ los ojos azules.", nl:"Ik heb blauwe ogen.", opts:["soy","tengo","llevo"], c:1, u:"Tengo los ojos azules: ogen heb je."},
+  {q:"Ella ___ una persona muy abierta.", nl:"Zij is een heel open persoon.", opts:["es","tiene","lleva"], c:0, u:"Karakter: ser. Es una persona abierta."},
+  {q:"Mi abuelo ___ barba.", nl:"Mijn opa heeft een baard.", opts:["es","tiene","lleva"], c:1, u:"Tiene barba (lleva barba kan ook, maar tener is hier het standaardantwoord van het boek)."},
+  {q:"Hoy ___ una camiseta roja.", nl:"Vandaag draag ik een rood T-shirt.", opts:["soy","tengo","llevo"], c:2, u:"Kleding draag je: llevo una camiseta."},
+  {q:"Mis ojos ___ verdes.", nl:"Mijn ogen zijn groen.", opts:["son","tienen","llevan"], c:0, u:"Als de ogen zélf het onderwerp zijn: son verdes (eigenschap van de ogen)."}
  ]}
 ];
 
@@ -731,26 +743,26 @@ var B_SENTENCES = [
 
 var B_QUIZZES = [
  {id:"bq-ellla", titel:"El of la?", vragen:[
-  {q:"___ casa", opts:["el","la"], c:1, u:"Woorden op -a zijn meestal vrouwelijk: la casa."},
-  {q:"___ libro", opts:["el","la"], c:0, u:"Woorden op -o zijn meestal mannelijk: el libro."},
-  {q:"___ perro", opts:["el","la"], c:0, u:"-o = mannelijk: el perro."},
-  {q:"___ familia", opts:["el","la"], c:1, u:"-a = vrouwelijk: la familia."},
-  {q:"___ día", opts:["el","la"], c:0, u:"Instinker! Día eindigt op -a maar is mannelijk: el día. Buenos días!"},
-  {q:"___ mano", opts:["el","la"], c:1, u:"Instinker! Mano (hand) eindigt op -o maar is vrouwelijk: la mano."},
-  {q:"___ escuela", opts:["el","la"], c:1, u:"-a = vrouwelijk: la escuela."},
-  {q:"___ agua", opts:["el","la"], c:0, u:"Instinker! Agua is vrouwelijk, maar krijgt el omdat het woord met een beklemtoonde a begint. El agua fría."},
-  {q:"___ gato", opts:["el","la"], c:0, u:"-o = mannelijk: el gato."},
-  {q:"___ noche", opts:["el","la"], c:1, u:"Die moet je leren: la noche. Buenas noches!"}
+  {q:"___ casa", nl:"het huis (la casa)", opts:["el","la"], c:1, u:"Woorden op -a zijn meestal vrouwelijk: la casa."},
+  {q:"___ libro", nl:"het boek (el libro)", opts:["el","la"], c:0, u:"Woorden op -o zijn meestal mannelijk: el libro."},
+  {q:"___ perro", nl:"de hond (el perro)", opts:["el","la"], c:0, u:"-o = mannelijk: el perro."},
+  {q:"___ familia", nl:"de familie (la familia)", opts:["el","la"], c:1, u:"-a = vrouwelijk: la familia."},
+  {q:"___ día", nl:"de dag (el día)", opts:["el","la"], c:0, u:"Instinker! Día eindigt op -a maar is mannelijk: el día. Buenos días!"},
+  {q:"___ mano", nl:"de hand (la mano)", opts:["el","la"], c:1, u:"Instinker! Mano (hand) eindigt op -o maar is vrouwelijk: la mano."},
+  {q:"___ escuela", nl:"de school (la escuela)", opts:["el","la"], c:1, u:"-a = vrouwelijk: la escuela."},
+  {q:"___ agua", nl:"het water (el agua)", opts:["el","la"], c:0, u:"Instinker! Agua is vrouwelijk, maar krijgt el omdat het woord met een beklemtoonde a begint. El agua fría."},
+  {q:"___ gato", nl:"de kat (el gato)", opts:["el","la"], c:0, u:"-o = mannelijk: el gato."},
+  {q:"___ noche", nl:"de nacht (la noche)", opts:["el","la"], c:1, u:"Die moet je leren: la noche. Buenas noches!"}
  ]},
  {id:"bq-serestar", titel:"Ser of estar?", vragen:[
-  {q:"Yo ___ holandesa.", opts:["soy","estoy"], c:0, u:"Nationaliteit is wie je bent: ser (soy)."},
-  {q:"Yo ___ en casa.", opts:["soy","estoy"], c:1, u:"Plaats (waar je bent): estar (estoy)."},
-  {q:"La casa ___ grande.", opts:["es","está"], c:0, u:"Eigenschap (groot zijn hoort bij het huis): ser."},
-  {q:"Mi padre ___ cansado.", opts:["es","está"], c:1, u:"Toestand (nu moe, straks niet meer): estar."},
-  {q:"Nosotros ___ amigos.", opts:["somos","estamos"], c:0, u:"Wat je (voor elkaar) bent: ser (somos)."},
-  {q:"Mis amigos ___ en Madrid.", opts:["son","están"], c:1, u:"Plaats: estar (están)."},
-  {q:"Ella ___ mi madre.", opts:["es","está"], c:0, u:"Identiteit: ser."},
-  {q:"Yo ___ bien, gracias.", opts:["soy","estoy"], c:1, u:"Hoe het met je gaat = toestand: estar. ¿Cómo estás? Estoy bien."}
+  {q:"Yo ___ holandesa.", nl:"Ik ben Nederlandse.", opts:["soy","estoy"], c:0, u:"Nationaliteit is wie je bent: ser (soy)."},
+  {q:"Yo ___ en casa.", nl:"Ik ben thuis.", opts:["soy","estoy"], c:1, u:"Plaats (waar je bent): estar (estoy)."},
+  {q:"La casa ___ grande.", nl:"Het huis is groot.", opts:["es","está"], c:0, u:"Eigenschap (groot zijn hoort bij het huis): ser."},
+  {q:"Mi padre ___ cansado.", nl:"Mijn vader is moe.", opts:["es","está"], c:1, u:"Toestand (nu moe, straks niet meer): estar."},
+  {q:"Nosotros ___ amigos.", nl:"Wij zijn vrienden.", opts:["somos","estamos"], c:0, u:"Wat je (voor elkaar) bent: ser (somos)."},
+  {q:"Mis amigos ___ en Madrid.", nl:"Mijn vrienden zijn in Madrid.", opts:["son","están"], c:1, u:"Plaats: estar (están)."},
+  {q:"Ella ___ mi madre.", nl:"Zij is mijn moeder.", opts:["es","está"], c:0, u:"Identiteit: ser."},
+  {q:"Yo ___ bien, gracias.", nl:"Met mij gaat het goed, dank je.", opts:["soy","estoy"], c:1, u:"Hoe het met je gaat = toestand: estar. ¿Cómo estás? Estoy bien."}
  ]},
  {id:"bq-getallen", titel:"Getallen 1-10", vragen:[
   {q:"cinco = ?", opts:["4","5","6"], c:1, u:"cinco = 5."},
@@ -1458,7 +1470,8 @@ function answerQuestion(idx, btn){
   var goed = idx === v.c;
   if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+st.i, "quiz", st.qz.id, v.q); addXP(1); }
   var fb = document.getElementById("qFeedback");
-  fb.innerHTML = "<div class='uitleg'><b>"+(goed?"Goed! ":"")+"Waarom:</b> "+v.u+"</div>"+
+  fb.innerHTML = (v.nl ? "<div class='feedback "+(goed?"ok":"bijna")+"'>Vertaling: "+v.nl+"</div>" : "")+
+    "<div class='uitleg'><b>"+(goed?"Goed! ":"")+"Waarom:</b> "+v.u+"</div>"+
     "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.qz.vragen.length ? "Volgende →" : "Uitslag →")+"</button></div>";
   document.getElementById("btnNextQ").onclick = function(){ st.i++; renderQuestion(); };
 }
@@ -1704,6 +1717,144 @@ function renderShop(){
   });
 }
 
+/* ================= MÚSICA ================= */
+var SONGS = [
+ {id:"song-bachata", titel:"La Bachata", artiest:"Manuel Turizo", yt:"TiM_TFpT_DE", lvl:"A2",
+  intro:"Dé perfecte les-2-song: hij staat vól indefinido. En je danst hem toch al.",
+  oogst:[
+   {es:"te bloqueé", nl:"ik blokkeerde je", u:"Indefinido van bloquear, mét de -qué spellingregel die je kent van practiqué. Het hele lied is één grote indefinido-oefening."},
+   {es:"me enamoré (de ti)", nl:"ik werd verliefd (op jou)", u:"Enamorarse de = verliefd worden op. Wederkerend + indefinido: me enamoré."},
+   {es:"borré", nl:"ik wiste / verwijderde", u:"Borrar = wissen (foto's, berichten...). Regelmatige indefinido: borré."},
+   {es:"olvidarte", nl:"jou vergeten", u:"Het pronomen plakt achteraan de infinitief: olvidar + te. Zelfde truc als escribirlas."},
+   {es:"volver a verte", nl:"jou weer zien", u:"Volver a + infinitief = opnieuw iets doen. Ken je van 'se volvieron a casar' uit de Frida-tekst."},
+   {es:"no sé", nl:"ik weet (het) niet", u:"Van saber. Mét accent op sé, anders staat er 'se' (zich)."},
+   {es:"lo que", nl:"wat / dat wat", u:"Lo que pasó = wat er gebeurde. Handige verbinder die je constant hoort."}
+  ],
+  vragen:[
+   {q:"'Te bloqueé' is dezelfde spellingtruc als...", opts:["practiqué","empecé"], c:0, u:"Bloquear eindigt op -quear/-car-klank: qu bewaart de k-klank voor de é. Net als practicar → practiqué."},
+   {q:"'Me enamoré' staat in de...", opts:["indefinido","perfecto"], c:0, u:"Eén woord, accent op de é: indefinido. Het gebeurde en is afgesloten (vandaar het verdriet)."},
+   {q:"'Volver a verte' betekent...", opts:["jou weer zien","terugkomen om te zien"], c:0, u:"Volver a + infinitief = iets opnieuw doen. Volver a ver = weer zien."}
+  ]},
+ {id:"song-ojitos", titel:"Ojitos Lindos", artiest:"Bad Bunny ft. Bomba Estéreo", yt:"wAjHQXrIj9o", lvl:"A0/A2",
+  intro:"Rustig, duidelijk gezongen en vol verkleinwoordjes: perfect om je oor te trainen.",
+  oogst:[
+   {es:"ojitos lindos", nl:"mooie oogjes", u:"Ojos + -itos = oogjes. Het Spaans is dol op verkleinwoorden: -ito/-ita maakt alles kleiner én liever."},
+   {es:"lindo / linda", nl:"mooi, lief", u:"Synoniem van bonito. In Latijns-Amerika hoor je lindo vaker dan in Spanje."},
+   {es:"un poquito", nl:"een klein beetje", u:"Poco + -ito. Nog zo'n verkleinwoord: un poquito is nóg minder dan un poco."},
+   {es:"mírame", nl:"kijk naar me", u:"Gebiedende wijs mira + me eraan vastgeplakt. Daarom het accent: mírame."},
+   {es:"bailar", nl:"dansen", u:"Regelmatig -ar werkwoord. Bailo, bailas, baila..."},
+   {es:"cerquita", nl:"lekker dichtbij", u:"Cerca (dichtbij) + -ita. Verkleinwoord van een bijwoord, heel typisch spreektaal."}
+  ],
+  vragen:[
+   {q:"Wat doet -ito/-ita met een woord?", opts:["kleiner en liever maken","meervoud maken"], c:0, u:"Ojitos = oogjes, poquito = beetje-tje. Verkleinwoord dus."},
+   {q:"'Mírame' betekent...", opts:["kijk naar me","ik kijk"], c:0, u:"Mira (kijk!) + me (naar mij). Pronomen plakt aan de gebiedende wijs vast."},
+   {q:"Lindo is een synoniem van...", opts:["bonito","grande"], c:0, u:"Lindo = mooi/lief, net als bonito."}
+  ]}
+];
+
+function ytId(url){
+  if(!url) return null;
+  var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : (url.match(/^[A-Za-z0-9_-]{8,}$/) ? url : null);
+}
+
+function renderSongs(){
+  document.getElementById("songView").classList.add("hidden");
+  var el = document.getElementById("songList");
+  el.classList.remove("hidden");
+  var html = "<div class='card'><h2>Música 🎵</h2><p class='muted'>Leer Spaans met liedjes: kijk de video en oogst de taal eruit. "+
+    "Elke week komt er nieuwe muziek bij.</p></div>";
+  SONGS.forEach(function(sg){
+    html += "<div class='lesson' data-song='"+sg.id+"'><div class='lnum'>🎵</div>"+
+      "<div class='lbody'><b>"+sg.titel+"</b><span>"+sg.artiest+" · "+sg.lvl+"</span></div><div class='lstatus'>▶</div></div>";
+  });
+  (S.mySongs||[]).forEach(function(ms, i){
+    html += "<div class='lesson' data-mysong='"+i+"'><div class='lnum'>🎵</div>"+
+      "<div class='lbody'><b>"+ms.titel+"</b><span>zelf toegevoegd · taaloogst aangevraagd</span></div><div class='lstatus'>▶</div></div>";
+  });
+  html += "<div class='card'><h2>Zelf een lied toevoegen</h2>"+
+    "<p class='muted'>Plak een YouTube-link. De video werkt direct; de woordjes en uitleg maakt Claude bij de volgende wekelijkse update.</p>"+
+    "<input type='text' id='songUrl' placeholder='https://www.youtube.com/watch?v=...' autocomplete='off'>"+
+    "<input type='text' id='songTitel' placeholder='Titel en artiest' autocomplete='off' style='margin-top:8px'>"+
+    "<div class='row'><button class='primary' id='btnAddSong'>Toevoegen</button></div>"+
+    "<p class='muted hidden' id='songHint' style='margin-top:8px'></p></div>";
+  el.innerHTML = html;
+  el.querySelectorAll("[data-song]").forEach(function(d){
+    d.onclick = function(){ openSong(SONGS.filter(function(x){ return x.id===d.getAttribute("data-song"); })[0]); };
+  });
+  el.querySelectorAll("[data-mysong]").forEach(function(d){
+    d.onclick = function(){ openSong((S.mySongs||[])[+d.getAttribute("data-mysong")]); };
+  });
+  var ba = document.getElementById("btnAddSong");
+  if(ba) ba.onclick = function(){
+    var url = (document.getElementById("songUrl").value||"").trim();
+    var tit = (document.getElementById("songTitel").value||"").trim() || "Mijn lied";
+    var id = ytId(url);
+    var hint = document.getElementById("songHint");
+    hint.classList.remove("hidden");
+    if(!id){ hint.textContent = "Hmm, dat lijkt geen YouTube-link. Kopieer de link van de video (Delen → Kopieer link)."; return; }
+    S.mySongs = S.mySongs || [];
+    S.mySongs.push({id:"my-"+id, titel:tit, artiest:"", yt:id, lvl:"", intro:"Taaloogst volgt in de wekelijkse update. Wil je hem sneller? Stuur het verzoek met de knop hieronder.", oogst:[], vragen:[], eigen:true});
+    persist();
+    var mail = "mailto:stefanwobben@gmail.com?subject="+encodeURIComponent("espanol-lied")+
+      "&body="+encodeURIComponent("Taaloogst graag voor: "+tit+"\nhttps://www.youtube.com/watch?v="+id+"\nProfiel: "+(activeProfile()?activeProfile().name:""));
+    hint.innerHTML = "Toegevoegd! 🎵 <a href='"+mail+"'>Tik hier om het taaloogst-verzoek te versturen</a> (opent je mailapp, alleen op verzenden tikken).";
+    renderSongs();
+  };
+}
+
+function openSong(sg){
+  if(!sg) return;
+  document.getElementById("songList").classList.add("hidden");
+  var el = document.getElementById("songView");
+  el.classList.remove("hidden");
+  var html = "<div class='card'><span class='kicker'>Música · "+(sg.lvl||"")+"</span>"+
+    "<p class='big' style='margin:4px 0'>"+sg.titel+"</p><p class='muted'>"+sg.artiest+"</p>"+
+    "<div class='ytwrap'><iframe src='https://www.youtube-nocookie.com/embed/"+sg.yt+"' title='"+sg.titel+"' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' allowfullscreen></iframe></div>"+
+    "<p>"+(sg.intro||"")+"</p>"+
+    "<p class='muted'>Tip: zet ondertiteling (CC) aan in de speler en zing gewoon mee, fouten maken mag hard.</p></div>";
+  if(sg.oogst && sg.oogst.length){
+    html += "<div class='card'><h2>De taaloogst 🌾</h2>";
+    sg.oogst.forEach(function(o){
+      html += "<div class='oogst'><b>"+o.es+"</b> · "+o.nl+"<span class='muted'>"+o.u+"</span></div>";
+    });
+    html += "</div>";
+  }
+  if(sg.vragen && sg.vragen.length){
+    html += "<div class='card'><h2>Snap je het lied?</h2><div id='songQuiz'></div></div>";
+  }
+  html += "<div class='card'><div class='row'><button class='ghost' id='btnSongTerug'>← Terug naar Música</button></div></div>";
+  el.innerHTML = html;
+  document.getElementById("btnSongTerug").onclick = renderSongs;
+  if(sg.vragen && sg.vragen.length) renderSongQuiz(sg, 0, 0);
+}
+
+function renderSongQuiz(sg, i, score){
+  var el = document.getElementById("songQuiz");
+  if(!el) return;
+  if(i >= sg.vragen.length){
+    if(score === sg.vragen.length){ confetti(["🎵","🎉","⭐️"], 16); }
+    el.innerHTML = "<p class='big'>"+score+"/"+sg.vragen.length+"</p><p class='muted'>"+(score===sg.vragen.length?"¡Perfecto! Je luistert als een local. (+XP)":"Kijk de taaloogst nog eens en luister opnieuw.")+"</p>";
+    return;
+  }
+  var v = sg.vragen[i];
+  var html = "<p><b>"+(i+1)+"/"+sg.vragen.length+" · "+v.q+"</b></p>";
+  v.opts.forEach(function(o, idx){ html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>"; });
+  html += "<div id='songQFb'></div>";
+  el.innerHTML = html;
+  el.querySelectorAll(".opt").forEach(function(b){
+    b.onclick = function(){
+      var goed = +b.getAttribute("data-i") === v.c;
+      el.querySelectorAll(".opt")[v.c].classList.add("correct");
+      if(!goed) b.classList.add("wrong");
+      addXP(goed ? 2 : 1);
+      document.getElementById("songQFb").innerHTML = "<div class='uitleg'><b>"+(goed?"Goed! ":"")+"</b>"+v.u+"</div>"+
+        "<div class='row'><button class='primary' id='btnSongNext'>"+(i+1<sg.vragen.length?"Volgende →":"Uitslag →")+"</button></div>";
+      document.getElementById("btnSongNext").onclick = function(){ renderSongQuiz(sg, i+1, score + (goed?1:0)); };
+    };
+  });
+}
+
 /* ================= SPIEKBRIEF ================= */
 function renderCheat(){
   var el = document.getElementById("cheat");
@@ -1780,6 +1931,24 @@ function exportErrors(){
   }).catch(function(){}); }
 }
 
+function mailErrors(){
+  var p = activeProfile();
+  var fouten = Object.keys(S.errors).map(function(k){ return S.errors[k]; })
+    .sort(function(a,b){ return b.count - a.count; }).slice(0, 20);
+  var lastig = [];
+  WORDS.forEach(function(w){ var st=S.srs[w.id]; if(st && st.box<=1 && S.errors["woord:"+w.id]) lastig.push(w.es); });
+  var payload = {
+    profiel:(p?p.name:"?"), niveau:(p?p.track:"?"), batch:BATCH, xpTotaal:S.txp||0,
+    fouten:fouten, moeilijkeWoorden:lastig.slice(0,15), quizScores:S.quiz
+  };
+  var body = "Automatische foutenlog uit de leerapp (gewoon versturen, verder niks doen):\n\n"+JSON.stringify(payload, null, 1);
+  if(body.length > 1800) body = body.slice(0, 1800) + "\n...(ingekort)";
+  var url = "mailto:stefanwobben@gmail.com?subject="+encodeURIComponent("espanol-foutenlog "+(p?p.name:""))+
+    "&body="+encodeURIComponent(body);
+  window.location.href = url;
+  toast("Mailtje staat klaar, alleen nog op verzenden tikken ✉️");
+}
+
 function exportProgress(){
   var ta = document.getElementById("progressDump");
   ta.value = JSON.stringify(S); ta.classList.remove("hidden");
@@ -1809,6 +1978,7 @@ var TABS = [
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
   {id:"chispa", label:"Chispa"},
+  {id:"musica", label:"Música"},
   {id:"spiekbrief", label:"Spiekbrief"},
   {id:"voortgang", label:"Voortgang"}
 ];
@@ -1825,6 +1995,7 @@ function show(tabId){
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="chispa"){ renderPet(); renderShop(); }
+  if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
   if(tabId==="voortgang"){ renderStats(); }
 }
@@ -1839,6 +2010,7 @@ function show(tabId){
     b.onclick = function(){ scopeLesson = null; show(b.getAttribute("data-tab")); };
   });
   document.getElementById("btnExportErrors").onclick = exportErrors;
+  document.getElementById("btnMailErrors").onclick = mailErrors;
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
