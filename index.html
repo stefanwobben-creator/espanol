@@ -2038,8 +2038,9 @@ function renderSongs(){
     hint.classList.remove("hidden");
     if(!id){ hint.textContent = "Hmm, dat lijkt geen YouTube-link. Kopieer de link van de video (Delen → Kopieer link)."; return; }
     S.mySongs = S.mySongs || [];
-    S.mySongs.push({id:"my-"+id, titel:tit, artiest:"", yt:id, lvl:"", intro:"Taaloogst volgt in de wekelijkse update. Wil je hem sneller? Stuur het verzoek met de knop hieronder.", oogst:[], vragen:[], eigen:true});
+    S.mySongs.push({id:"my-"+id, titel:tit, artiest:"", yt:id, lvl:"", intro:"Taaloogst volgt bij de eerstvolgende nachtelijke update.", oogst:[], vragen:[], eigen:true});
     persist();
+    logServer("lied", {titel:tit, yt:id, url:"https://www.youtube.com/watch?v="+id});
     var mail = "mailto:stefanwobben@gmail.com?subject="+encodeURIComponent("espanol-lied")+
       "&body="+encodeURIComponent("Taaloogst graag voor: "+tit+"\nhttps://www.youtube.com/watch?v="+id+"\nProfiel: "+(activeProfile()?activeProfile().name:""));
     hint.innerHTML = "Toegevoegd! 🎵 <a href='"+mail+"'>Tik hier om het taaloogst-verzoek te versturen</a> (opent je mailapp, alleen op verzenden tikken).";
