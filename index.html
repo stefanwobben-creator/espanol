@@ -185,10 +185,43 @@
     <div id="lessonView" class="hidden"></div>
   </section>
 
-  <!-- CHISPA -->
+  <!-- CHISPA (pet + voortgang, via het mini-icoontje) -->
   <section id="tab-chispa" class="hidden">
     <div class="card" id="petCard"></div>
     <div class="card" id="shopCard"></div>
+    <div class="card" id="statsCard"></div>
+    <div class="card">
+      <h2>Foutenlog naar Claude</h2>
+      <p class="muted">Fouten gaan automatisch naar de server. Deze knop is de handmatige reserve: één tik opent een
+      kant-en-klaar mailtje aan jezelf.</p>
+      <div class="row">
+        <button class="primary" id="btnMailErrors">Verstuur foutenlog ✉️</button>
+        <button class="ghost" id="btnExportErrors">Bekijk/kopieer zelf</button>
+      </div>
+      <textarea id="errorDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"></textarea>
+    </div>
+    <div class="card">
+      <h2>Profiel &amp; synchronisatie</h2>
+      <p class="muted">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
+      Vul daar bij het profielscherm deze sync-code in:</p>
+      <p><b id="syncCode" style="font-size:1.05rem; letter-spacing:.03em">…</b></p>
+      <p class="muted" id="syncStatus">Laatste sync: nog niet</p>
+      <div class="row"><button class="ghost" id="btnSwitchProf">Wissel profiel</button></div>
+    </div>
+    <div class="card">
+      <h2>Voortgang verplaatsen (handmatig)</h2>
+      <p class="muted">Alleen nodig als de server het niet doet: exporteer hier je voortgang en importeer hem elders.</p>
+      <div class="row">
+        <button class="ghost" id="btnExportProgress">Exporteer voortgang</button>
+        <button class="ghost" id="btnImportProgress">Importeer voortgang</button>
+      </div>
+      <textarea id="progressDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"
+        placeholder="Plak hier je geëxporteerde voortgang en klik nogmaals op importeer."></textarea>
+    </div>
+  </section>
+
+  <!-- SPEELTUIN -->
+  <section id="tab-speeltuin" class="hidden">
     <div class="card" id="funCard"></div>
   </section>
 
@@ -219,39 +252,6 @@
     <div id="cheat"></div>
   </section>
 
-  <!-- VOORTGANG -->
-  <section id="tab-voortgang" class="hidden">
-    <div class="card" id="statsCard"></div>
-    <div class="card">
-      <h2>Foutenlog naar Claude</h2>
-      <p class="muted">Eén tik: dit opent een kant-en-klaar mailtje aan jezelf. Verstuur het, en de wekelijkse
-      update leest het automatisch en stemt de nieuwe oefeningen af op jouw fouten. Geen kopiëren of plakken.</p>
-      <div class="row">
-        <button class="primary" id="btnMailErrors">Verstuur foutenlog ✉️</button>
-        <button class="ghost" id="btnExportErrors">Bekijk/kopieer zelf</button>
-      </div>
-      <textarea id="errorDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"></textarea>
-    </div>
-    <div class="card">
-      <h2>Profiel &amp; synchronisatie</h2>
-      <p class="muted">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
-      Vul daar bij het profielscherm deze sync-code in:</p>
-      <p><b id="syncCode" style="font-size:1.05rem; letter-spacing:.03em">…</b></p>
-      <p class="muted" id="syncStatus">Laatste sync: nog niet</p>
-      <div class="row"><button class="ghost" id="btnSwitchProf">Wissel profiel</button></div>
-    </div>
-    <div class="card">
-      <h2>Voortgang verplaatsen</h2>
-      <p class="muted">Wil je op een ander apparaat of in een andere browser verder? Exporteer hier je voortgang
-      en importeer hem daar.</p>
-      <div class="row">
-        <button class="ghost" id="btnExportProgress">Exporteer voortgang</button>
-        <button class="ghost" id="btnImportProgress">Importeer voortgang</button>
-      </div>
-      <textarea id="progressDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"
-        placeholder="Plak hier je geëxporteerde voortgang en klik nogmaals op importeer."></textarea>
-    </div>
-  </section>
 </div>
 
 <script>
@@ -2531,8 +2531,8 @@ var TABS = [
   {id:"toetsjes", label:"Toetsjes"},
   {id:"chispa", label:"Chispa", nav:false},
   {id:"musica", label:"Música"},
-  {id:"spiekbrief", label:"Spiekbrief"},
-  {id:"voortgang", label:"Voortgang"}
+  {id:"speeltuin", label:"Speeltuin"},
+  {id:"spiekbrief", label:"Spiekbrief"}
 ];
 
 function show(tabId){
@@ -2546,17 +2546,17 @@ function show(tabId){
   if(tabId==="woorden"){ buildQueue(); renderWord(); }
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
-  if(tabId==="chispa"){ renderPet(); renderShop(); renderFun(); }
-  if(tabId==="musica"){ renderSongs(); }
-  if(tabId==="spiekbrief"){ renderCheat(); }
-  if(tabId==="voortgang"){
-    renderStats();
-    var p = activeProfile();
+  if(tabId==="chispa"){
+    renderPet(); renderShop(); renderStats();
+    var pc = activeProfile();
     var sc = document.getElementById("syncCode");
-    if(sc && p) sc.textContent = ensureCode(p);
+    if(sc && pc) sc.textContent = ensureCode(pc);
     var ss = document.getElementById("syncStatus");
     if(ss) ss.textContent = lastSync ? "Laatste sync: gelukt ✓" : "Laatste sync: wordt automatisch gedaan tijdens het oefenen";
   }
+  if(tabId==="speeltuin"){ renderFun(); }
+  if(tabId==="musica"){ renderSongs(); }
+  if(tabId==="spiekbrief"){ renderCheat(); }
 }
 
 (function init(){
