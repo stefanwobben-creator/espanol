@@ -50,8 +50,126 @@ async function init() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS logs_created ON logs (created_at DESC);
+    CREATE TABLE IF NOT EXISTS duels (
+      id         text PRIMARY KEY,
+      rounds     int NOT NULL DEFAULT 5,
+      letters    jsonb NOT NULL,
+      players    jsonb NOT NULL DEFAULT '[]'::jsonb,
+      moves      jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
   `);
 }
+
+/* ---- Palabra Duel ---- */
+const LETTER_SCORE = { a:1,e:1,o:1,i:1,s:1,n:1,r:1,u:1,l:1,t:1,d:2,g:2,c:3,b:3,m:3,p:3,f:4,h:4,v:4,y:4,q:5,j:8,x:8,z:10,"ñ":8 };
+function duelLetters(rounds) {
+  const vowels = "aaaeeeeooiiu";
+  const cons = "nnrrssllttddccmmbbppgg" + "fhvyjqzñx";
+  const out = [];
+  for (let r = 0; r < rounds; r++) {
+    const set = [];
+    for (let i = 0; i < 3; i++) set.push(vowels[Math.floor(Math.random() * vowels.length)]);
+    for (let i = 0; i < 4; i++) set.push(cons[Math.floor(Math.random() * cons.length)]);
+    set.sort(() => Math.random() - 0.5);
+    out.push(set);
+  }
+  return out;
+}
+function canMake(word, letters) {
+  const pool = {};
+  letters.forEach((l) => { pool[l] = (pool[l] || 0) + 1; });
+  for (const ch of word) {
+    if (!pool[ch]) return false;
+    pool[ch]--;
+  }
+  return true;
+}
+function wordScore(word) {
+  let s = 0;
+  for (const ch of word) s += LETTER_SCORE[ch] || 1;
+  return s + (word.length >= 6 ? 5 : 0); // bonus voor lange woorden
+}
+
+// POST /api/duel/nieuw {speler}
+app.post("/api/duel/nieuw", async (req, res) => {
+  const { speler } = req.body || {};
+  if (!speler) return bad(res, 400, "speler verplicht");
+  const id = Math.random().toString(36).slice(2, 8);
+  const letters = duelLetters(5);
+  try {
+    await pool.query("INSERT INTO duels (id, rounds, letters, players) VALUES ($1,5,$2,$3)",
+      [id, JSON.stringify(letters), JSON.stringify([String(speler).slice(0, 30)])]);
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    ok(res, { duel: r.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/duel/join {id, speler}
+app.post("/api/duel/join", async (req, res) => {
+  const { id, speler } = req.body || {};
+  if (!id || !speler) return bad(res, 400, "id en speler verplicht");
+  try {
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
+    const duel = r.rows[0];
+    const players = duel.players;
+    if (!players.includes(speler)) {
+      if (players.length >= 2) return bad(res, 409, "duel zit al vol");
+      players.push(String(speler).slice(0, 30));
+      await pool.query("UPDATE duels SET players=$2, updated_at=now() WHERE id=$1", [id, JSON.stringify(players)]);
+      duel.players = players;
+    }
+    ok(res, { duel });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/duel/:id
+app.get("/api/duel/:id", async (req, res) => {
+  try {
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [req.params.id]);
+    if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
+    ok(res, { duel: r.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/duel/zet {id, speler, ronde, woord}
+app.post("/api/duel/zet", async (req, res) => {
+  const { id, speler, ronde, woord } = req.body || {};
+  if (!id || !speler || typeof ronde !== "number" || !woord) return bad(res, 400, "id/speler/ronde/woord verplicht");
+  const w = String(woord).toLowerCase().trim();
+  if (w.length < 2 || w.length > 7 || !/^[a-zñ]+$/.test(w)) return bad(res, 400, "ongeldig woord (2-7 letters)");
+  try {
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
+    const duel = r.rows[0];
+    if (!duel.players.includes(speler)) return bad(res, 403, "je doet niet mee aan dit duel");
+    if (ronde < 0 || ronde >= duel.rounds) return bad(res, 400, "ongeldige ronde");
+    const moves = duel.moves || {};
+    if (moves[ronde] && moves[ronde][speler]) return bad(res, 409, "je hebt deze ronde al gespeeld");
+    if (!canMake(w, duel.letters[ronde])) return bad(res, 400, "dat woord past niet in de letters van deze ronde");
+    // Spaanse geldigheid via de LLM-ladder (fail-closed)
+    const ai = await reason(
+      "Je bent scheidsrechter in een Spaans woordspel. Antwoord UITSLUITEND met geldige JSON {\"geldig\": true/false, \"betekenis\": \"NL-vertaling of korte reden\"}. " +
+      "geldig=true alleen als dit een bestaand Spaans woord is (zelfstandig naamwoord, werkwoordsvorm, bijvoeglijk naamwoord, enz. — vervoegingen tellen mee). Eigennamen en afkortingen tellen niet.\n\nWoord: \"" + w + "\"",
+      { maxTokens: 150, jsonMode: true, callSite: "duel-woord" }
+    );
+    if (!ai) return bad(res, 503, "de scheidsrechter (AI) is even niet bereikbaar, probeer zo opnieuw");
+    const m = ai.text.match(/\{[\s\S]*\}/);
+    if (!m) return bad(res, 502, "onleesbaar AI-antwoord");
+    const parsed = JSON.parse(m[0]);
+    if (!parsed.geldig) {
+      return ok(res, { geldig: false, betekenis: String(parsed.betekenis || "").slice(0, 200) });
+    }
+    const punten = wordScore(w);
+    moves[ronde] = moves[ronde] || {};
+    moves[ronde][speler] = { woord: w, punten, betekenis: String(parsed.betekenis || "").slice(0, 200) };
+    await pool.query("UPDATE duels SET moves=$2, updated_at=now() WHERE id=$1", [id, JSON.stringify(moves)]);
+    const r2 = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    ok(res, { geldig: true, punten, betekenis: String(parsed.betekenis || "").slice(0, 200), duel: r2.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
 
 const ok = (res, data) => res.json({ ok: true, ...data });
 const bad = (res, code, msg) => res.status(code).json({ ok: false, error: msg });

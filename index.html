@@ -125,6 +125,11 @@
                  font-weight:700; font-size:.85rem; cursor:pointer; color:var(--ink); padding:0;}
   .wsgrid button.sel{background:var(--amber-soft); border-color:var(--amber);}
   .wsgrid button.found{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+  .tiles{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
+  .tile{width:40px; height:44px; border-radius:8px; background:var(--amber-soft); border:1.5px solid var(--amber);
+        display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:1.15rem; color:var(--ink);}
+  .tile small{font-size:.6rem; font-weight:600; color:var(--muted);}
+  .duelrow{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border); font-size:.92rem;}
   .hidden{display:none !important;}
   .es{font-style:normal; color:var(--accent); font-weight:700;}
   h2{font-size:1.15rem; margin:4px 0 10px;}
@@ -2169,15 +2174,171 @@ function wsCellClick(r, c){
   }
   renderFun();
 }
+/* ================= PALABRA DUEL ================= */
+var DUEL_SCORE = {a:1,e:1,o:1,i:1,s:1,n:1,r:1,u:1,l:1,t:1,d:2,g:2,c:3,b:3,m:3,p:3,f:4,h:4,v:4,y:4,q:5,j:8,x:8,z:10,"ñ":8};
+var duelCur = null;
+
+function duelCanMake(word, letters){
+  var pool = {};
+  letters.forEach(function(l){ pool[l] = (pool[l]||0)+1; });
+  for(var i=0;i<word.length;i++){
+    var ch = word[i];
+    if(!pool[ch]) return false;
+    pool[ch]--;
+  }
+  return true;
+}
+function duelMijnNaam(){ var p = activeProfile(); return p ? p.name : "?"; }
+function duelBewaar(id){
+  S.duels = S.duels || [];
+  if(S.duels.indexOf(id) === -1){ S.duels.push(id); persist(); }
+}
+function duelNieuw(){
+  api("/api/duel/nieuw", "POST", {speler: duelMijnNaam()}).then(function(res){
+    if(!res || !res.ok){ toast("Server even niet bereikbaar."); return; }
+    duelBewaar(res.duel.id);
+    duelCur = res.duel;
+    renderDuel();
+  });
+}
+function duelJoin(code){
+  api("/api/duel/join", "POST", {id: code, speler: duelMijnNaam()}).then(function(res){
+    if(!res || !res.ok){ toast(res && res.error ? res.error : "Duel niet gevonden."); return; }
+    duelBewaar(res.duel.id);
+    duelCur = res.duel;
+    renderDuel();
+  });
+}
+function duelOpen(id){
+  api("/api/duel/" + id).then(function(res){
+    if(!res || !res.ok){ toast("Duel niet gevonden."); return; }
+    duelCur = res.duel;
+    renderDuel();
+  });
+}
+function duelMijnRonde(d){
+  var ik = duelMijnNaam();
+  for(var r=0;r<d.rounds;r++){
+    if(!(d.moves[r] && d.moves[r][ik])) return r;
+  }
+  return -1; // alles gespeeld
+}
+function duelTotaal(d, speler){
+  var t = 0;
+  for(var r=0;r<d.rounds;r++){
+    if(d.moves[r] && d.moves[r][speler]) t += d.moves[r][speler].punten;
+  }
+  return t;
+}
+function renderDuel(){
+  var el = document.getElementById("funCard");
+  var d = duelCur;
+  if(!el || !d) return;
+  var ik = duelMijnNaam();
+  var tegen = d.players.filter(function(p){ return p !== ik; })[0] || null;
+  var ronde = duelMijnRonde(d);
+  var klaar = ronde === -1;
+  var beideKlaar = klaar && tegen && duelMijnRonde({rounds:d.rounds, moves:d.moves, players:d.players}) === -1 &&
+    (function(){ for(var r=0;r<d.rounds;r++){ if(!(d.moves[r] && d.moves[r][tegen])) return false; } return true; })();
+  var html = "<h2>Palabra Duel ⚔️</h2>"+
+    "<p class='muted'>Duel-code: <b>"+d.id+"</b>"+(tegen ? " · jij vs. "+tegen : " · deel de code, dan kan iemand meedoen")+"</p>";
+  // scorebord
+  html += "<div class='duelrow'><span><b>"+ik+"</b></span><b>"+duelTotaal(d, ik)+" punten</b></div>";
+  if(tegen) html += "<div class='duelrow'><span><b>"+tegen+"</b></span><b>"+duelTotaal(d, tegen)+" punten</b></div>";
+  for(var r=0;r<d.rounds;r++){
+    var mijn = d.moves[r] && d.moves[r][ik];
+    var hun = tegen && d.moves[r] && d.moves[r][tegen];
+    var mijnTxt = mijn ? mijn.woord+" ("+mijn.punten+")" : "…";
+    var hunTxt = !tegen ? "" : (hun ? (mijn ? hun.woord+" ("+hun.punten+")" : "✔ gespeeld") : "…");
+    html += "<div class='duelrow'><span class='muted'>Ronde "+(r+1)+"</span><span>"+mijnTxt+(tegen ? " · "+hunTxt : "")+"</span></div>";
+  }
+  if(!klaar){
+    var letters = d.letters[ronde];
+    html += "<p style='margin-top:12px'><b>Ronde "+(ronde+1)+"</b> · maak het beste Spaanse woord uit deze letters:</p><div class='tiles'>"+
+      letters.map(function(l){ return "<div class='tile'>"+l.toUpperCase()+"<small>"+(DUEL_SCORE[l]||1)+"</small></div>"; }).join("")+"</div>"+
+      "<input type='text' id='duelIn' autocomplete='off' autocapitalize='off' placeholder='jouw woord...'>"+
+      "<div class='row'><button class='primary' id='btnDuelZet'>Speel woord</button>"+
+      "<button class='ghost' id='btnDuelVerv'>Ververs</button>"+
+      "<button class='ghost' id='btnDuelTerug'>← Speeltuin</button></div><div id='duelFb'></div>";
+  } else {
+    var winTxt = "";
+    if(beideKlaar){
+      var mij = duelTotaal(d, ik), hen = duelTotaal(d, tegen);
+      winTxt = mij > hen ? "🏆 ¡Jij wint, "+mij+" om "+hen+"!" : (mij < hen ? tegen+" wint met "+hen+" om "+mij+". Revanche?" : "Gelijkspel, "+mij+" om "+hen+"!");
+      if(!S.duelKlaar) S.duelKlaar = {};
+      if(!S.duelKlaar[d.id]){
+        S.duelKlaar[d.id] = true;
+        S.tapas = (S.tapas||0) + (mij >= hen ? 2 : 1);
+        persist();
+        confetti(mij > hen ? ["🏆","🎉","⚔️"] : ["⚔️","✨"], 22);
+      }
+    }
+    html += "<p style='margin-top:12px'>"+(beideKlaar ? "<b>"+winTxt+"</b>" : "Jij hebt alle rondes gespeeld. Wachten op "+(tegen||"een tegenstander")+"...")+"</p>"+
+      "<div class='row'>"+(beideKlaar ? "<button class='primary' id='btnDuelNieuw'>Nieuw duel</button>" : "")+
+      "<button class='ghost' id='btnDuelVerv'>Ververs</button>"+
+      "<button class='ghost' id='btnDuelTerug'>← Speeltuin</button></div>";
+  }
+  el.innerHTML = html;
+  var b;
+  b = document.getElementById("btnDuelZet");
+  if(b) b.onclick = function(){
+    var w = (document.getElementById("duelIn").value||"").toLowerCase().trim();
+    var fb = document.getElementById("duelFb");
+    if(w.length < 2){ return; }
+    if(!duelCanMake(w, d.letters[ronde])){
+      fb.innerHTML = "<div class='feedback fout'>Dat past niet in deze letters (elke letter mag maar zo vaak als hij er ligt).</div>";
+      return;
+    }
+    b.disabled = true; b.textContent = "🤖 Scheidsrechter kijkt...";
+    api("/api/duel/zet", "POST", {id:d.id, speler:ik, ronde:ronde, woord:w}).then(function(res){
+      b.disabled = false; b.textContent = "Speel woord";
+      if(!res){ fb.innerHTML = "<div class='feedback bijna'>Server even niet bereikbaar.</div>"; return; }
+      if(!res.ok){ fb.innerHTML = "<div class='feedback fout'>"+(res.error||"Er ging iets mis.")+"</div>"; return; }
+      if(!res.geldig){
+        fb.innerHTML = "<div class='feedback fout'>De scheidsrechter keurt \""+w+"\" af: "+(res.betekenis||"geen bestaand Spaans woord")+". Probeer een ander woord!</div>";
+        return;
+      }
+      addXP(Math.min(res.punten, 10));
+      confetti(["⚔️","✨"], 8);
+      duelCur = res.duel;
+      toast("\""+w+"\" is goed! +"+res.punten+" punten ("+(res.betekenis||"")+")");
+      renderDuel();
+    });
+  };
+  b = document.getElementById("btnDuelVerv");
+  if(b) b.onclick = function(){ duelOpen(d.id); };
+  b = document.getElementById("btnDuelTerug");
+  if(b) b.onclick = function(){ duelCur = null; renderFun(); };
+  b = document.getElementById("btnDuelNieuw");
+  if(b) b.onclick = duelNieuw;
+}
+
 function renderFun(){
   var el = document.getElementById("funCard");
   if(!el) return;
-  var html = "<h2>Speeltuin 🧩</h2><p class='muted'>Ontspanning die stiekem herhaling is: de woorden komen uit jouw geleerde woordjes.</p>";
+  if(duelCur){ renderDuel(); return; }
+  var html = "<h2>Speeltuin 🧩</h2><p class='muted'>Ontspanning die stiekem herhaling is.</p>";
+  html += "<h2 style='font-size:1rem; margin-top:6px'>Palabra Duel ⚔️ <span class='muted' style='font-weight:400'>· speel tegen elkaar</span></h2>"+
+    "<p class='muted'>Zelfde letters, om de beurt het beste Spaanse woord. De AI is scheidsrechter. Start een duel en deel de code met bijv. Elise.</p>"+
+    "<div class='row'><button class='primary' id='btnDuelStart'>Nieuw duel</button></div>"+
+    "<input type='text' id='duelCode' autocomplete='off' placeholder='...of vul een duel-code in' style='margin-top:8px'>"+
+    "<div class='row'><button class='ghost' id='btnDuelJoin'>Meedoen</button></div>";
+  if(S.duels && S.duels.length){
+    html += "<p class='muted' style='margin-top:8px'>Jouw duels: "+S.duels.slice(-5).map(function(id){ return "<a href='#' data-duel='"+id+"'><b>"+id+"</b></a>"; }).join(" · ")+"</p>";
+  }
+  html += "<h2 style='font-size:1rem; margin-top:14px'>Woordenzoeker</h2>";
   if(!ws){
-    html += "<div class='row'><button class='primary' id='btnWs'>Nieuwe woordenzoeker</button></div>";
+    html += "<div class='row'><button class='ghost' id='btnWs'>Nieuwe woordenzoeker</button></div>";
     el.innerHTML = html;
-    var b = document.getElementById("btnWs");
-    if(b) b.onclick = wsStart;
+    var b0 = document.getElementById("btnWs");
+    if(b0) b0.onclick = wsStart;
+    var b1 = document.getElementById("btnDuelStart");
+    if(b1) b1.onclick = duelNieuw;
+    var b2 = document.getElementById("btnDuelJoin");
+    if(b2) b2.onclick = function(){ var c = (document.getElementById("duelCode").value||"").trim().toLowerCase(); if(c) duelJoin(c); };
+    el.querySelectorAll("a[data-duel]").forEach(function(a){
+      a.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); duelOpen(a.getAttribute("data-duel")); };
+    });
     return;
   }
   html += "<div class='wsgrid'>";
@@ -2200,6 +2361,13 @@ function renderFun(){
   });
   var bn = document.getElementById("btnWsNieuw");
   if(bn) bn.onclick = wsStart;
+  var bd1 = document.getElementById("btnDuelStart");
+  if(bd1) bd1.onclick = duelNieuw;
+  var bd2 = document.getElementById("btnDuelJoin");
+  if(bd2) bd2.onclick = function(){ var c = (document.getElementById("duelCode").value||"").trim().toLowerCase(); if(c) duelJoin(c); };
+  el.querySelectorAll("a[data-duel]").forEach(function(a){
+    a.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); duelOpen(a.getAttribute("data-duel")); };
+  });
 }
 
 /* ================= SPIEKBRIEF ================= */
@@ -2361,7 +2529,7 @@ var TABS = [
   {id:"woorden", label:"Woordjes"},
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
-  {id:"chispa", label:"Chispa"},
+  {id:"chispa", label:"Chispa", nav:false},
   {id:"musica", label:"Música"},
   {id:"spiekbrief", label:"Spiekbrief"},
   {id:"voortgang", label:"Voortgang"}
@@ -2394,7 +2562,7 @@ function show(tabId){
 (function init(){
   if(!store.ok) document.getElementById("storageWarn").classList.remove("hidden");
   var nav = document.getElementById("nav");
-  nav.innerHTML = TABS.map(function(t){
+  nav.innerHTML = TABS.filter(function(t){ return t.nav !== false; }).map(function(t){
     return "<button data-tab='"+t.id+"'>"+t.label+"</button>";
   }).join("");
   nav.querySelectorAll("button").forEach(function(b){
