@@ -157,6 +157,31 @@ app.post("/api/ai/check", async (req, res) => {
   }
 });
 
+// POST /api/ai/zin {woord, zin}
+// Schrijfoefening: beoordeel of de leerling het woord goed gebruikt in een eigen zin.
+app.post("/api/ai/zin", async (req, res) => {
+  const { woord, zin } = req.body || {};
+  if (!woord || !zin) return bad(res, 400, "woord en zin verplicht");
+  try {
+    const txt = await vraagLadder(
+      "Je beoordeelt een schrijfoefening in een Spaanse leerapp voor Nederlandstaligen (A0-A2). De leerling moest een eigen " +
+      "Spaanse zin maken met een doelwoord. Antwoord UITSLUITEND met geldige JSON: " +
+      "{\"goed\": true/false, \"uitleg\": \"korte reactie in het Nederlands, max 2 zinnen, warm en concreet\"}. " +
+      "goed=true als het doelwoord correct gebruikt is en de zin begrijpelijk Spaans is (kleine fouten mogen, benoem ze in de uitleg). " +
+      "goed=false alleen als het doelwoord verkeerd gebruikt is of de zin geen begrijpelijk Spaans is.",
+      "Doelwoord: \"" + woord + "\"\nZin van de leerling: \"" + zin + "\"",
+      250, true, "ai-zin"
+    );
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) return bad(res, 502, "onleesbaar AI-antwoord");
+    const parsed = JSON.parse(m[0]);
+    ok(res, { goed: !!parsed.goed, uitleg: String(parsed.uitleg || "").slice(0, 500) });
+  } catch (e) {
+    console.error(e);
+    bad(res, 502, "AI-fout");
+  }
+});
+
 // POST /api/ai/uitleg {vraag, context}
 // "Leg uit waarom"-knop: korte NL-uitleg over een grammaticapunt.
 app.post("/api/ai/uitleg", async (req, res) => {

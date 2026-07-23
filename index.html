@@ -112,8 +112,19 @@
   .ytwrap{position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; background:#000; margin:10px 0;}
   .ytwrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
   .oogst{padding:10px 0; border-bottom:1px dashed var(--border);}
-  .oogst b{color:var(--accent);}
+  .oogst b{color:var(--accent); text-decoration:underline dotted; cursor:pointer;}
   .oogst .muted{display:block; margin-top:2px;}
+  #miniPet{cursor:pointer; line-height:0;}
+  #miniPet svg{width:36px; height:33px;}
+  .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .vpop{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); border:2px solid var(--accent);
+        border-radius:14px; padding:16px 18px; max-width:340px; width:88vw; z-index:97; box-shadow:0 10px 40px rgba(0,0,0,.3); font-size:.92rem;}
+  .vpop h3{margin:0 0 6px; font-size:1.05rem;}
+  .wsgrid{display:grid; grid-template-columns:repeat(10,1fr); gap:3px; margin:10px 0;}
+  .wsgrid button{aspect-ratio:1; border:1px solid var(--border); background:var(--card); border-radius:6px;
+                 font-weight:700; font-size:.85rem; cursor:pointer; color:var(--ink); padding:0;}
+  .wsgrid button.sel{background:var(--amber-soft); border-color:var(--amber);}
+  .wsgrid button.found{background:var(--green-soft); border-color:var(--green); color:var(--green);}
   .hidden{display:none !important;}
   .es{font-style:normal; color:var(--accent); font-weight:700;}
   h2{font-size:1.15rem; margin:4px 0 10px;}
@@ -124,7 +135,10 @@
 <div class="wrap">
   <header>
     <h1>¡Vamos <span id="userName">…</span>!</h1>
-    <div class="badge" id="dueBadge">…</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="badge" id="dueBadge">…</div>
+      <span id="miniPet" title="Chispa"></span>
+    </div>
   </header>
 
   <!-- PROFIELKEUZE -->
@@ -170,6 +184,7 @@
   <section id="tab-chispa" class="hidden">
     <div class="card" id="petCard"></div>
     <div class="card" id="shopCard"></div>
+    <div class="card" id="funCard"></div>
   </section>
 
   <!-- MÚSICA -->
@@ -1103,7 +1118,15 @@ function boot(){
   var p = activeProfile();
   if(!p){ renderProfileScreen(); return; }
   var tr = TRACKS[p.track] || TRACKS.a2;
-  WORDS = tr.words; SENTENCES = tr.sentences; QUIZZES = tr.quizzes; CHEATSHEET = tr.cheat; BATCH = tr.batch;
+  if(p.track === "a2"){
+    // A2'ers krijgen ook alle A1-materiaal mee als opfris-lessen (kennis zakt anders weg)
+    WORDS = tr.words.concat(B_WORDS);
+    SENTENCES = tr.sentences.concat(B_SENTENCES);
+    QUIZZES = tr.quizzes.concat(B_QUIZZES);
+  } else {
+    WORDS = tr.words; SENTENCES = tr.sentences; QUIZZES = tr.quizzes;
+  }
+  CHEATSHEET = tr.cheat; BATCH = tr.batch;
   store.key = p.key;
   S = store.load() || defaultState();
   S.xp = S.xp || {};
@@ -1190,6 +1213,11 @@ function updateGoalUI(){
   var st = streakNow();
   document.getElementById("goalTxt").textContent =
     (x >= GOAL ? "doel gehaald ✓" : x + "/" + GOAL + " XP") + " · 🔥 " + st;
+  var mp = document.getElementById("miniPet");
+  if(mp){
+    mp.innerHTML = petSVG();
+    mp.onclick = function(){ scopeLesson = null; show("chispa"); };
+  }
 }
 
 var toastTimer = null;
@@ -1248,6 +1276,17 @@ function tLessons(){
   var tr = p ? (TRACKS[p.track] || TRACKS.a2) : TRACKS.a2;
   return tr.lessons || [];
 }
+function reviewLessons(){
+  var p = activeProfile();
+  if(!p || p.track !== "a2") return [];
+  return (TRACKS.beginner.lessons || []).filter(function(l){ return !l.stub; })
+    .map(function(l){ l.review = true; return l; });
+}
+function findLesson(id){
+  var all = tLessons().concat(reviewLessons());
+  return all.filter(function(x){ return x.id === id; })[0] || null;
+}
+function lessonCheat(l){ return l && l.review ? B_CHEATSHEET : CHEATSHEET; }
 function wordSeen(id){ return !!S.srs[id]; }
 function quizPct(qid){
   var qz = QUIZZES.filter(function(x){ return x.id===qid; })[0];
@@ -1273,7 +1312,7 @@ function lessonUnlocked(i){
   return p ? p.done : false;
 }
 function checkLessonComplete(){
-  var ls = tLessons();
+  var ls = tLessons().concat(reviewLessons());
   for(var i=0;i<ls.length;i++){
     var l = ls[i];
     if(l.stub) continue;
@@ -1310,8 +1349,12 @@ function allowedSentIds(){
   return out;
 }
 
-/* ================= WOORDJES (SRS, zonder daglimiet) ================= */
+/* ================= WOORDJES (SRS, 5-15 nieuwe per dag) ================= */
+var MAX_NEW_PER_DAY = 15, MIN_NEW_PER_DAY = 5;
 var wQueue = [], wCur = null, wShown = false, wSessionDone = 0;
+
+function newToday(){ return S.newIntro[today()] || 0; }
+function newAllowance(){ return Math.max(0, MAX_NEW_PER_DAY - newToday()); }
 
 function buildQueue(){
   var t = today();
@@ -1319,24 +1362,23 @@ function buildQueue(){
   allowedWordIds().forEach(function(id){ allow[id] = true; });
   var due = [], fresh = [];
   WORDS.forEach(function(w){
-    if(!allow[w.id]) return;
     var st = S.srs[w.id];
-    if(st){ if(st.due <= t) due.push(w); }
-    else fresh.push(w);
+    if(st){ if(st.due <= t) due.push(w); }          // herhalingen: altijd, uit alle ooit geleerde woorden
+    else if(allow[w.id]) fresh.push(w);             // nieuw: alleen uit de actieve/ontgrendelde lessen
   });
-  wQueue = due.concat(fresh);
+  wQueue = due.concat(fresh.slice(0, newAllowance()));
 }
 
 function dueCount(){
-  var t = today(); var n = 0;
+  var t = today(); var due = 0, fresh = 0;
   var allow = {};
   allowedWordIds().forEach(function(id){ allow[id] = true; });
   WORDS.forEach(function(w){
-    if(!allow[w.id]) return;
     var st = S.srs[w.id];
-    if(!st || st.due <= t) n++;
+    if(st){ if(st.due <= t) due++; }
+    else if(allow[w.id]) fresh++;
   });
-  return n;
+  return due + Math.min(fresh, newAllowance());
 }
 
 function updateBadge(){
@@ -1387,7 +1429,7 @@ function showWord(){
 function answerWord(good){
   var t = today();
   var st = S.srs[wCur.id];
-  if(!st){ st = {box:0, due:t}; }
+  if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0) + 1; }
   if(good){
     st.box = Math.min(st.box+1, INTERVALS.length-1);
     st.due = addDays(t, INTERVALS[st.box]);
@@ -1620,13 +1662,30 @@ function closeQuiz(){
 }
 
 /* ================= LESSEN: WEERGAVE ================= */
+function ritmeCard(){
+  var t = today();
+  var nieuw = newToday();
+  var xp = S.xp[t] || 0;
+  // openstaande herhalingen (alleen due, geen nieuwe)
+  var over = 0;
+  WORDS.forEach(function(w){ var st = S.srs[w.id]; if(st && st.due <= t) over++; });
+  function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
+  return "<div class='card'><span class='kicker'>Vandaag · minimale basis</span>"+
+    "<div class='ritme'>"+
+    chip(nieuw >= MIN_NEW_PER_DAY, "nieuwe woorden "+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
+    chip(over === 0, over === 0 ? "herhalingen bij" : over+" herhalingen open")+
+    chip(xp >= GOAL, "dagdoel "+Math.min(xp,GOAL)+"/"+GOAL+" XP")+
+    "</div>"+
+    "<p class='muted' style='margin-top:8px'>Dit is genoeg om vooruit te blijven gaan. Alles daarboven (lessen, liedjes, puzzels) is extra: leuk, maar hoeft niet.</p></div>";
+}
+
 function renderLessons(){
   curLesson = null; scopeLesson = null;
   document.getElementById("lessonView").classList.add("hidden");
   var listEl = document.getElementById("lessonList");
   listEl.classList.remove("hidden");
   var ls = tLessons();
-  var html = "";
+  var html = ritmeCard();
   ls.forEach(function(l, i){
     var unlocked = lessonUnlocked(i) && !l.stub;
     var p = l.stub ? null : lessonProgress(l);
@@ -1653,11 +1712,24 @@ function renderLessons(){
       "<div class='lbody'><b>"+l.titel+"</b><span>"+sub+"</span></div>"+
       "<div class='lstatus'>"+status+"</div></div>";
   });
+  var rl = reviewLessons();
+  if(rl.length){
+    html += "<div class='card' style='margin-top:4px'><span class='kicker'>Opfrissen · A1</span>"+
+      "<p class='muted' style='margin:6px 0 0'>De basis zakt weg als je hem nooit meer aanraakt. Deze lessen staan altijd open; de woorden draaien mee in je herhaalsysteem.</p></div>";
+    rl.forEach(function(l){
+      var p = lessonProgress(l);
+      var cls = "lesson" + (p.done ? " done" : "");
+      html += "<div class='"+cls+"' data-les='"+l.id+"'>"+
+        "<div class='lnum'>A1</div>"+
+        "<div class='lbody'><b>"+l.titel+"</b><span>"+l.doel+"</span></div>"+
+        "<div class='lstatus'>"+(p.done?"✓":"↻")+"</div></div>";
+    });
+  }
   listEl.innerHTML = html;
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
     if(lid){ el2.onclick = function(){
-      var l = tLessons().filter(function(x){ return x.id===lid; })[0];
+      var l = findLesson(lid);
       if(l) openLesson(l);
     }; }
   });
@@ -1689,7 +1761,7 @@ function renderLessonView(){
   } else if(!p.spiek){
     html += "<p>Elke les begint met de spiekbrief: lees de uitleg hieronder rustig door (dit is de theorie van de les), daarna gaan we oefenen.</p></div>";
     (l.spiek||[]).forEach(function(ci){
-      var c = CHEATSHEET[ci];
+      var c = lessonCheat(l)[ci];
       if(c) html += "<details open><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
     });
     html += "<div class='card'><div class='row'><button class='primary' id='btnSpiekKlaar'>Gelezen! Naar de oefeningen → (+3 XP)</button>"+
@@ -1727,7 +1799,7 @@ function renderLessonSpiek(l){
   var html = "<div class='card'><span class='kicker'>Les "+l.num+" · spiekbrief</span>"+
     "<p class='big' style='margin:4px 0'>"+l.titel+"</p></div>";
   (l.spiek||[]).forEach(function(ci){
-    var c = CHEATSHEET[ci];
+    var c = lessonCheat(l)[ci];
     if(c) html += "<details open><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
   });
   html += "<div class='card'><div class='row'><button class='primary' id='btnSpiekTerug'>Terug naar de les →</button></div></div>";
@@ -1956,6 +2028,9 @@ function openSong(sg){
   html += "<div class='card'><div class='row'><button class='ghost' id='btnSongTerug'>← Terug naar Música</button></div></div>";
   el.innerHTML = html;
   document.getElementById("btnSongTerug").onclick = renderSongs;
+  el.querySelectorAll(".oogst b").forEach(function(b){
+    b.onclick = function(){ verbPopup(b.textContent); };
+  });
   if(sg.vragen && sg.vragen.length) renderSongQuiz(sg, 0, 0);
 }
 
@@ -1983,6 +2058,148 @@ function renderSongQuiz(sg, i, score){
       document.getElementById("btnSongNext").onclick = function(){ renderSongQuiz(sg, i+1, score + (goed?1:0)); };
     };
   });
+}
+
+/* ================= VERVOEGINGS-POPUP ================= */
+function verbPopup(term){
+  var bestaand = document.getElementById("vpop");
+  if(bestaand) bestaand.remove();
+  var pop = document.createElement("div");
+  pop.className = "vpop"; pop.id = "vpop";
+  pop.innerHTML = "<h3>"+term+"</h3><p class='muted' id='vpopBody'>🤖 Rijtjes ophalen...</p>"+
+    "<div class='row'><button class='ghost' id='vpopClose'>Sluiten</button></div>";
+  document.body.appendChild(pop);
+  document.getElementById("vpopClose").onclick = function(){ pop.remove(); };
+  S.vcache = S.vcache || {};
+  if(S.vcache[term]){
+    var b1 = document.getElementById("vpopBody");
+    if(b1) b1.innerHTML = S.vcache[term];
+    return;
+  }
+  api("/api/ai/uitleg", "POST", {
+    vraag: "Geef van het werkwoord in \""+term+"\" beknopt de vervoeging: presente (yo, tú, él/ella, nosotros, vosotros, ellos) en pretérito indefinido, als korte regels met · ertussen. Sluit af met één voorbeeldzinnetje. Is het geen werkwoord, geef dan een mini-uitleg van het woord.",
+    context: ""
+  }).then(function(res){
+    var b2 = document.getElementById("vpopBody");
+    if(!b2) return;
+    if(res && res.ok){
+      var txt = res.uitleg.replace(/\n/g, "<br>");
+      b2.innerHTML = txt;
+      S.vcache[term] = txt; persist();
+    } else {
+      b2.textContent = "AI even niet bereikbaar. Probeer het straks nog eens.";
+    }
+  });
+}
+
+/* ================= WOORDENZOEKER ================= */
+var ws = null;
+function wsWoordPool(){
+  var artikelen = {el:1, la:1, los:1, las:1, un:1, una:1};
+  var pool = [];
+  WORDS.forEach(function(w){
+    if(!S.srs[w.id]) return; // alleen geleerde woorden
+    var kern = w.es.toLowerCase().split("/")[0].trim().split(" ").filter(function(t){ return !artikelen[t]; })[0] || "";
+    kern = stripAcc(kern).replace(/[^a-z]/g, "");
+    if(kern.length >= 4 && kern.length <= 9) pool.push({woord:kern, nl:w.nl});
+  });
+  return pool;
+}
+function wsStart(){
+  var pool = wsWoordPool();
+  if(pool.length < 4){ toast("Leer eerst wat meer woordjes, dan kan de puzzel gevuld worden!"); return; }
+  // husselen en 6 kiezen
+  pool.sort(function(){ return Math.random() - 0.5; });
+  var gekozen = [];
+  pool.forEach(function(p){ if(gekozen.length < 6 && !gekozen.some(function(g){ return g.woord === p.woord; })) gekozen.push(p); });
+  var N = 10;
+  var grid = [];
+  for(var r=0;r<N;r++){ grid.push(new Array(N).fill("")); }
+  var geplaatst = [];
+  gekozen.forEach(function(g){
+    for(var poging=0; poging<60; poging++){
+      var horiz = Math.random() < 0.5;
+      var len = g.woord.length;
+      var row = Math.floor(Math.random() * (horiz ? N : N - len));
+      var col = Math.floor(Math.random() * (horiz ? N - len : N));
+      var past = true;
+      for(var i=0;i<len;i++){
+        var cell = horiz ? grid[row][col+i] : grid[row+i][col];
+        if(cell && cell !== g.woord[i]){ past = false; break; }
+      }
+      if(!past) continue;
+      for(var j=0;j<len;j++){
+        if(horiz) grid[row][col+j] = g.woord[j];
+        else grid[row+j][col] = g.woord[j];
+      }
+      geplaatst.push({woord:g.woord, nl:g.nl, found:false});
+      break;
+    }
+  });
+  var abc = "abcdefghijklmnopqrstuvwxyz";
+  for(var r2=0;r2<N;r2++){ for(var c2=0;c2<N;c2++){ if(!grid[r2][c2]) grid[r2][c2] = abc[Math.floor(Math.random()*26)]; } }
+  ws = {grid:grid, woorden:geplaatst, sel:null, foundCells:{}};
+  renderFun();
+}
+function wsCellClick(r, c){
+  if(!ws) return;
+  if(!ws.sel){ ws.sel = [r, c]; renderFun(); return; }
+  var r1 = ws.sel[0], c1 = ws.sel[1];
+  ws.sel = null;
+  var letters = "";
+  var cells = [];
+  if(r1 === r){
+    var a = Math.min(c1, c), b = Math.max(c1, c);
+    for(var i=a;i<=b;i++){ letters += ws.grid[r][i]; cells.push(r+","+i); }
+  } else if(c1 === c){
+    var a2 = Math.min(r1, r), b2 = Math.max(r1, r);
+    for(var j=a2;j<=b2;j++){ letters += ws.grid[j][c]; cells.push(j+","+c); }
+  } else { renderFun(); return; }
+  var omgekeerd = letters.split("").reverse().join("");
+  var hit = ws.woorden.filter(function(w){ return !w.found && (w.woord === letters || w.woord === omgekeerd); })[0];
+  if(hit){
+    hit.found = true;
+    cells.forEach(function(k){ ws.foundCells[k] = true; });
+    addXP(2);
+    if(ws.woorden.every(function(w){ return w.found; })){
+      S.tapas = (S.tapas||0) + 1; persist();
+      confetti(["🧩","🎉","🌮"], 24);
+      toast("¡Puzzel opgelost! +1 tapa 🌮");
+    }
+  }
+  renderFun();
+}
+function renderFun(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var html = "<h2>Speeltuin 🧩</h2><p class='muted'>Ontspanning die stiekem herhaling is: de woorden komen uit jouw geleerde woordjes.</p>";
+  if(!ws){
+    html += "<div class='row'><button class='primary' id='btnWs'>Nieuwe woordenzoeker</button></div>";
+    el.innerHTML = html;
+    var b = document.getElementById("btnWs");
+    if(b) b.onclick = wsStart;
+    return;
+  }
+  html += "<div class='wsgrid'>";
+  for(var r=0;r<ws.grid.length;r++){
+    for(var c=0;c<ws.grid[r].length;c++){
+      var k = r+","+c;
+      var cls = ws.foundCells[k] ? "found" : (ws.sel && ws.sel[0]===r && ws.sel[1]===c ? "sel" : "");
+      html += "<button class='"+cls+"' data-ws='"+k+"'>"+ws.grid[r][c].toUpperCase()+"</button>";
+    }
+  }
+  html += "</div><p class='muted'>Tik de eerste en laatste letter van een woord. Zoek:</p><p>"+
+    ws.woorden.map(function(w){ return w.found ? "<s>"+w.woord+"</s>" : "<b>"+w.nl+"</b>"; }).join(" · ")+"</p>"+
+    "<div class='row'><button class='ghost' id='btnWsNieuw'>Nieuwe puzzel</button></div>";
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-ws]").forEach(function(b){
+    b.onclick = function(){
+      var p = b.getAttribute("data-ws").split(",");
+      wsCellClick(+p[0], +p[1]);
+    };
+  });
+  var bn = document.getElementById("btnWsNieuw");
+  if(bn) bn.onclick = wsStart;
 }
 
 /* ================= SPIEKBRIEF ================= */
@@ -2021,8 +2238,12 @@ function renderStats(){
   var leechHtml = "";
   if(leeches.length){
     leechHtml = "<h2 style='margin-top:16px'>Hardnekkige woorden</h2>"+
-      "<p class='muted'>Deze blijven lastig (3+ keer fout). Tip: maak er zelf een zin mee over je eigen leven, dan blijven ze wél hangen.</p>"+
-      leeches.map(function(l){ return "<div class='leech'><span><b>"+l.w.es+"</b> · "+l.w.nl+"</span><span class='muted'>"+l.n+"× fout</span></div>"; }).join("");
+      "<p class='muted'>Deze blijven lastig (3+ keer fout). De beste remedie uit het geheugenonderzoek: maak er een eigen zin mee over je eigen leven. Claude kijkt hem na (+5 XP bij goed).</p>"+
+      leeches.map(function(l, i){
+        return "<div class='leech'><span><b>"+l.w.es+"</b> · "+l.w.nl+"</span>"+
+          "<button class='ghost' style='padding:6px 12px' data-leechzin='"+l.w.id+"'>✍️ maak een zin</button></div>";
+      }).join("")+
+      "<div id='leechOef' class='hidden' style='margin-top:10px'></div>";
   }
   var t2 = today();
   var xpToday = S.xp[t2] || 0;
@@ -2040,6 +2261,39 @@ function renderStats(){
     "<h2 style='margin-top:16px'>Woorden per herhaalinterval</h2>"+boxHtml+
     leechHtml+
     "<p class='muted' style='margin-top:8px'>Hoe verder naar onder, hoe beter een woord in je geheugen zit. Batch: "+BATCH+"</p>";
+  el.querySelectorAll("button[data-leechzin]").forEach(function(b){
+    b.onclick = function(){
+      var w = WORDS.filter(function(x){ return x.id === b.getAttribute("data-leechzin"); })[0];
+      if(!w) return;
+      var oef = document.getElementById("leechOef");
+      oef.classList.remove("hidden");
+      oef.innerHTML = "<div class='uitleg'><b>Schrijfoefening:</b> maak een Spaanse zin over je eigen leven met <b>"+w.es+"</b> ("+w.nl+").</div>"+
+        "<input type='text' id='leechIn' autocomplete='off' placeholder='Jouw zin met "+w.es.split(" ")[0]+"...' style='margin-top:8px'>"+
+        "<div class='row'><button class='primary' id='btnLeechCheck'>Laat Claude kijken</button></div>"+
+        "<div id='leechFb'></div>";
+      document.getElementById("btnLeechCheck").onclick = function(){
+        var zin = (document.getElementById("leechIn").value||"").trim();
+        if(zin.length < 3) return;
+        var btn = document.getElementById("btnLeechCheck");
+        btn.disabled = true; btn.textContent = "🤖 Claude leest...";
+        api("/api/ai/zin", "POST", {woord:w.es, zin:zin}).then(function(res){
+          var fb = document.getElementById("leechFb");
+          btn.disabled = false; btn.textContent = "Laat Claude kijken";
+          if(!res || !res.ok){ fb.innerHTML = "<div class='feedback bijna'>AI even niet bereikbaar, probeer straks nog eens.</div>"; return; }
+          if(res.goed){
+            addXP(5);
+            confetti(["✍️","🎉","⭐️"], 14);
+            fb.innerHTML = "<div class='feedback ok'>🤖 "+res.uitleg+" (+5 XP)</div>";
+            // beloning: leech-teller resetten, hij mag opnieuw bewijzen dat hij hangt
+            var k = "woord:"+w.id;
+            if(S.errors[k]){ S.errors[k].count = 0; persist(); }
+          } else {
+            fb.innerHTML = "<div class='feedback fout'>🤖 "+res.uitleg+"</div>";
+          }
+        });
+      };
+    };
+  });
 }
 
 function exportErrors(){
@@ -2124,7 +2378,7 @@ function show(tabId){
   if(tabId==="woorden"){ buildQueue(); renderWord(); }
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
-  if(tabId==="chispa"){ renderPet(); renderShop(); }
+  if(tabId==="chispa"){ renderPet(); renderShop(); renderFun(); }
   if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
   if(tabId==="voortgang"){
