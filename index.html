@@ -2257,10 +2257,12 @@ function renderDuel(){
   }
   if(!klaar){
     var letters = d.letters[ronde];
-    html += "<p style='margin-top:12px'><b>Ronde "+(ronde+1)+"</b> · maak het beste Spaanse woord uit deze letters:</p><div class='tiles'>"+
-      letters.map(function(l){ return "<div class='tile'>"+l.toUpperCase()+"<small>"+(DUEL_SCORE[l]||1)+"</small></div>"; }).join("")+"</div>"+
+    html += "<p style='margin-top:12px'><b>Ronde "+(ronde+1)+"</b> · tik de letters aan (of typ) en maak het beste Spaanse woord:</p><div class='tiles'>"+
+      letters.map(function(l, li){ return "<button class='tile' data-tile='"+li+"'>"+l.toUpperCase()+"<small>"+(DUEL_SCORE[l]||1)+"</small></button>"; }).join("")+"</div>"+
       "<input type='text' id='duelIn' autocomplete='off' autocapitalize='off' placeholder='jouw woord...'>"+
       "<div class='row'><button class='primary' id='btnDuelZet'>Speel woord</button>"+
+      "<button class='ghost' id='btnDuelWis'>⌫ Wis</button>"+
+      "<button class='ghost' id='btnDuelPas'>Pas (0 pt)</button>"+
       "<button class='ghost' id='btnDuelVerv'>Ververs</button>"+
       "<button class='ghost' id='btnDuelTerug'>← Speeltuin</button></div><div id='duelFb'></div>";
   } else {
@@ -2282,23 +2284,48 @@ function renderDuel(){
       "<button class='ghost' id='btnDuelTerug'>← Speeltuin</button></div>";
   }
   el.innerHTML = html;
-  var b;
-  b = document.getElementById("btnDuelZet");
-  if(b) b.onclick = function(){
-    var w = (document.getElementById("duelIn").value||"").toLowerCase().trim();
+  // letters aantikken om je woord te bouwen
+  var gebruikt = {};
+  el.querySelectorAll("button[data-tile]").forEach(function(tegel){
+    tegel.onclick = function(){
+      var li = tegel.getAttribute("data-tile");
+      if(gebruikt[li]) return;
+      gebruikt[li] = true;
+      tegel.style.opacity = "0.35";
+      var inp = document.getElementById("duelIn");
+      if(inp) inp.value += d.letters[ronde][+li];
+    };
+  });
+  var wisBtn = document.getElementById("btnDuelWis");
+  if(wisBtn) wisBtn.onclick = function(){
+    gebruikt = {};
+    el.querySelectorAll("button[data-tile]").forEach(function(t){ t.style.opacity = "1"; });
+    var inp = document.getElementById("duelIn");
+    if(inp){ inp.value = ""; inp.focus(); }
+  };
+  var zetBtn = document.getElementById("btnDuelZet");
+  if(zetBtn) zetBtn.onclick = function(){
+    var knop = document.getElementById("btnDuelZet");
     var fb = document.getElementById("duelFb");
-    if(w.length < 2){ return; }
-    if(!duelCanMake(w, d.letters[ronde])){
-      fb.innerHTML = "<div class='feedback fout'>Dat past niet in deze letters (elke letter mag maar zo vaak als hij er ligt).</div>";
+    var w = (document.getElementById("duelIn").value||"").toLowerCase().trim();
+    try{ w = w.normalize("NFC"); }catch(e){}
+    if(w.length < 2){
+      if(fb) fb.innerHTML = "<div class='feedback bijna'>Typ of tik eerst een woord van minstens 2 letters.</div>";
       return;
     }
-    b.disabled = true; b.textContent = "🤖 Scheidsrechter kijkt...";
+    if(!duelCanMake(w, d.letters[ronde])){
+      if(fb) fb.innerHTML = "<div class='feedback fout'>Dat past niet in deze letters (elke letter mag maar zo vaak als hij er ligt).</div>";
+      return;
+    }
+    if(knop){ knop.disabled = true; knop.textContent = "🤖 Scheidsrechter kijkt..."; }
     api("/api/duel/zet", "POST", {id:d.id, speler:ik, ronde:ronde, woord:w}).then(function(res){
-      b.disabled = false; b.textContent = "Speel woord";
-      if(!res){ fb.innerHTML = "<div class='feedback bijna'>Server even niet bereikbaar.</div>"; return; }
-      if(!res.ok){ fb.innerHTML = "<div class='feedback fout'>"+(res.error||"Er ging iets mis.")+"</div>"; return; }
+      var knop2 = document.getElementById("btnDuelZet");
+      if(knop2){ knop2.disabled = false; knop2.textContent = "Speel woord"; }
+      var fb2 = document.getElementById("duelFb");
+      if(!res){ if(fb2) fb2.innerHTML = "<div class='feedback bijna'>Server even niet bereikbaar, probeer zo opnieuw.</div>"; return; }
+      if(!res.ok){ if(fb2) fb2.innerHTML = "<div class='feedback fout'>"+(res.error||"Er ging iets mis.")+"</div>"; return; }
       if(!res.geldig){
-        fb.innerHTML = "<div class='feedback fout'>De scheidsrechter keurt \""+w+"\" af: "+(res.betekenis||"geen bestaand Spaans woord")+". Probeer een ander woord!</div>";
+        if(fb2) fb2.innerHTML = "<div class='feedback fout'>De scheidsrechter keurt \""+w+"\" af: "+(res.betekenis||"geen bestaand Spaans woord")+". Probeer een ander woord!</div>";
         return;
       }
       addXP(Math.min(res.punten, 10));
@@ -2308,12 +2335,28 @@ function renderDuel(){
       renderDuel();
     });
   };
-  b = document.getElementById("btnDuelVerv");
-  if(b) b.onclick = function(){ duelOpen(d.id); };
-  b = document.getElementById("btnDuelTerug");
-  if(b) b.onclick = function(){ duelCur = null; funView = "duel"; renderFun(); };
-  b = document.getElementById("btnDuelNieuw");
-  if(b) b.onclick = duelNieuw;
+  var pasBtn = document.getElementById("btnDuelPas");
+  if(pasBtn) pasBtn.onclick = function(){
+    var fb = document.getElementById("duelFb");
+    pasBtn.disabled = true;
+    api("/api/duel/zet", "POST", {id:d.id, speler:ik, ronde:ronde, pas:true}).then(function(res){
+      if(!res || !res.ok){
+        var pb = document.getElementById("btnDuelPas");
+        if(pb) pb.disabled = false;
+        if(fb) fb.innerHTML = "<div class='feedback bijna'>"+((res && res.error) || "Server even niet bereikbaar.")+"</div>";
+        return;
+      }
+      duelCur = res.duel;
+      toast("Gepast. Soms is dat de slimste zet — nieuwe letters!");
+      renderDuel();
+    });
+  };
+  var vervBtn = document.getElementById("btnDuelVerv");
+  if(vervBtn) vervBtn.onclick = function(){ duelOpen(d.id); };
+  var terugBtn = document.getElementById("btnDuelTerug");
+  if(terugBtn) terugBtn.onclick = function(){ duelCur = null; funView = "duel"; renderFun(); };
+  var nieuwBtn = document.getElementById("btnDuelNieuw");
+  if(nieuwBtn) nieuwBtn.onclick = duelNieuw;
 }
 
 var funView = null;

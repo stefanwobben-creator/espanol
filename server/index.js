@@ -134,12 +134,12 @@ app.get("/api/duel/:id", async (req, res) => {
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
-// POST /api/duel/zet {id, speler, ronde, woord}
+// POST /api/duel/zet {id, speler, ronde, woord} of {id, speler, ronde, pas:true}
 app.post("/api/duel/zet", async (req, res) => {
-  const { id, speler, ronde, woord } = req.body || {};
-  if (!id || !speler || typeof ronde !== "number" || !woord) return bad(res, 400, "id/speler/ronde/woord verplicht");
-  const w = String(woord).toLowerCase().trim();
-  if (w.length < 2 || w.length > 7 || !/^[a-zñ]+$/.test(w)) return bad(res, 400, "ongeldig woord (2-7 letters)");
+  const { id, speler, ronde, woord, pas } = req.body || {};
+  if (!id || !speler || typeof ronde !== "number" || (!woord && !pas)) return bad(res, 400, "id/speler/ronde/woord verplicht");
+  const w = pas ? "" : String(woord).toLowerCase().trim().normalize("NFC");
+  if (!pas && (w.length < 2 || w.length > 7 || !/^[a-zñ]+$/.test(w))) return bad(res, 400, "ongeldig woord (2-7 letters)");
   try {
     const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
     if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
@@ -148,6 +148,13 @@ app.post("/api/duel/zet", async (req, res) => {
     if (ronde < 0 || ronde >= duel.rounds) return bad(res, 400, "ongeldige ronde");
     const moves = duel.moves || {};
     if (moves[ronde] && moves[ronde][speler]) return bad(res, 409, "je hebt deze ronde al gespeeld");
+    if (pas) {
+      moves[ronde] = moves[ronde] || {};
+      moves[ronde][speler] = { woord: "–", punten: 0, betekenis: "gepast" };
+      await pool.query("UPDATE duels SET moves=$2, updated_at=now() WHERE id=$1", [id, JSON.stringify(moves)]);
+      const rp = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+      return ok(res, { geldig: true, punten: 0, betekenis: "gepast", duel: rp.rows[0] });
+    }
     if (!canMake(w, duel.letters[ronde])) return bad(res, 400, "dat woord past niet in de letters van deze ronde");
     // Spaanse geldigheid via de LLM-ladder (fail-closed)
     const ai = await reason(
