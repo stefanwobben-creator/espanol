@@ -166,6 +166,7 @@
       <p class="muted">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
       <input type="text" id="syncCodeIn" placeholder="bijv. elise-x7k2m9p4qa3b" autocomplete="off">
       <div class="row"><button class="ghost" id="btnSyncLogin">Haal mijn voortgang op</button></div>
+      <p class="muted" id="appVerProf" style="margin-top:10px"></p>
     </div>
     <div class="card hidden" id="placeCard"></div>
   </section>
@@ -206,6 +207,7 @@
       Vul daar bij het profielscherm deze sync-code in:</p>
       <p><b id="syncCode" style="font-size:1.05rem; letter-spacing:.03em">…</b></p>
       <p class="muted" id="syncStatus">Laatste sync: nog niet</p>
+      <p class="muted" id="appVer"></p>
       <div class="row"><button class="ghost" id="btnSwitchProf">Wissel profiel</button></div>
     </div>
     <div class="card">
@@ -256,6 +258,7 @@
 
 <script>
 "use strict";
+var APP_VERSIE = "v7.4";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1996,11 +1999,15 @@ function renderSongs(){
     return aPast - bPast;
   });
   lijst.forEach(function(sg){
+    if(S.songHide && S.songHide[sg.id]) return;
     var past = (sg.lvl||"").indexOf(mijnNiveau) !== -1;
     var sub = sg.artiest + " · " + sg.lvl + (past ? "" : " · 🔥 voor gevorderden, maar meeluisteren mag altijd");
     html += "<div class='lesson"+(past?"":" locked")+"' data-song='"+sg.id+"' style='opacity:1'><div class='lnum'>🎵</div>"+
       "<div class='lbody'><b>"+sg.titel+"</b><span>"+sub+"</span></div><div class='lstatus'>▶</div></div>";
   });
+  if(S.songHide && Object.keys(S.songHide).length){
+    html += "<p class='muted'><a href='#' id='songUnhide'>"+Object.keys(S.songHide).length+" verborgen liedje(s) terugzetten</a></p>";
+  }
   (S.mySongs||[]).forEach(function(ms, i){
     html += "<div class='lesson' data-mysong='"+i+"'><div class='lnum'>🎵</div>"+
       "<div class='lbody'><b>"+ms.titel+"</b><span>zelf toegevoegd · taaloogst aangevraagd</span></div><div class='lstatus'>▶</div></div>";
@@ -2014,6 +2021,8 @@ function renderSongs(){
   el.innerHTML = html;
   var bmt = document.getElementById("btnMusTerug");
   if(bmt) bmt.onclick = function(){ show("speeltuin"); };
+  var unh = document.getElementById("songUnhide");
+  if(unh) unh.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); S.songHide = {}; persist(); renderSongs(); };
   el.querySelectorAll("[data-song]").forEach(function(d){
     d.onclick = function(){ openSong(SONGS.filter(function(x){ return x.id===d.getAttribute("data-song"); })[0]); };
   });
@@ -2043,9 +2052,10 @@ function openSong(sg){
   document.getElementById("songList").classList.add("hidden");
   var el = document.getElementById("songView");
   el.classList.remove("hidden");
+  var ytEff = (S.songYt && S.songYt[sg.id]) || sg.yt;
   var html = "<div class='card'><span class='kicker'>Música · "+(sg.lvl||"")+"</span>"+
     "<p class='big' style='margin:4px 0'>"+sg.titel+"</p><p class='muted'>"+sg.artiest+"</p>"+
-    "<div class='ytwrap'><iframe src='https://www.youtube-nocookie.com/embed/"+sg.yt+"' title='"+sg.titel+"' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' allowfullscreen></iframe></div>"+
+    "<div class='ytwrap'><iframe src='https://www.youtube-nocookie.com/embed/"+ytEff+"' title='"+sg.titel+"' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' allowfullscreen></iframe></div>"+
     "<p>"+(sg.intro||"")+"</p>"+
     "<p class='muted'>Tip: zet ondertiteling (CC) aan in de speler en zing gewoon mee, fouten maken mag hard.</p></div>";
   if(sg.oogst && sg.oogst.length){
@@ -2058,9 +2068,45 @@ function openSong(sg){
   if(sg.vragen && sg.vragen.length){
     html += "<div class='card'><h2>Snap je het lied?</h2><div id='songQuiz'></div></div>";
   }
-  html += "<div class='card'><div class='row'><button class='ghost' id='btnSongTerug'>← Terug naar Música</button></div></div>";
+  html += "<div class='card'><span class='kicker'>Beheer</span>"+
+    "<div class='row'><button class='ghost' id='btnSongVideo'>🔁 Andere video</button>"+
+    "<button class='ghost' id='btnSongWeg'>🗑 "+(sg.eigen ? "Verwijder liedje" : "Verberg liedje")+"</button>"+
+    "<button class='ghost' id='btnSongTerug'>← Terug naar Música</button></div>"+
+    "<div id='songBeheerFb'></div></div>";
   el.innerHTML = html;
   document.getElementById("btnSongTerug").onclick = renderSongs;
+  var bv = document.getElementById("btnSongVideo");
+  if(bv) bv.onclick = function(){
+    var fb = document.getElementById("songBeheerFb");
+    fb.innerHTML = "<input type='text' id='songNieuwUrl' autocomplete='off' placeholder='Plak de nieuwe YouTube-link (bijv. een versie mét lyrics)' style='margin-top:8px'>"+
+      "<div class='row'><button class='primary' id='btnSongUrlOk'>Vervang video</button></div>";
+    document.getElementById("btnSongUrlOk").onclick = function(){
+      var id = ytId((document.getElementById("songNieuwUrl").value||"").trim());
+      if(!id){ toast("Dat lijkt geen YouTube-link."); return; }
+      if(sg.eigen){
+        sg.yt = id;
+        (S.mySongs||[]).forEach(function(ms){ if(ms.id === sg.id) ms.yt = id; });
+      } else {
+        S.songYt = S.songYt || {};
+        S.songYt[sg.id] = id;
+      }
+      persist();
+      toast("Video vervangen 🔁");
+      openSong(sg);
+    };
+  };
+  var bw = document.getElementById("btnSongWeg");
+  if(bw) bw.onclick = function(){
+    if(sg.eigen){
+      S.mySongs = (S.mySongs||[]).filter(function(ms){ return ms.id !== sg.id; });
+    } else {
+      S.songHide = S.songHide || {};
+      S.songHide[sg.id] = true;
+    }
+    persist();
+    toast(sg.eigen ? "Liedje verwijderd." : "Liedje verborgen (terugzetten kan onderaan de lijst).");
+    renderSongs();
+  };
   el.querySelectorAll(".oogst b").forEach(function(b){
     b.onclick = function(){ verbPopup(b.textContent); };
   });
@@ -2690,6 +2736,10 @@ function show(tabId){
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
+  var av = document.getElementById("appVer");
+  if(av) av.textContent = "App-versie: " + APP_VERSIE;
+  var avp = document.getElementById("appVerProf");
+  if(avp) avp.textContent = "App-versie: " + APP_VERSIE + " · zie je hier een lager nummer dan verwacht, ververs dan de pagina hard";
   if(profiles.active && activeProfile()){ boot(); } else { renderProfileScreen(); }
 })();
 </script>
