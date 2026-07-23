@@ -266,8 +266,23 @@ app.get("/api/familia", async (_req, res) => {
       const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
       return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, laatstActief: row.updated_at };
     });
-    spelers.sort((a, b) => b.txp - a.txp);
-    ok(res, { spelers });
+    // ontdubbel op naam: hetzelfde gezinslid op twee apparaten telt één keer (hoogste score wint)
+    const perNaam = {};
+    spelers.forEach((s) => {
+      const k = s.naam.toLowerCase();
+      if (!perNaam[k] || s.txp > perNaam[k].txp) perNaam[k] = s;
+    });
+    const lijst = Object.values(perNaam).sort((a, b) => b.txp - a.txp);
+    ok(res, { spelers: lijst });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/admin/schoon?key=ADMIN_KEY — verwijder lege profielen (0 XP); echte apparaten syncen zichzelf gewoon opnieuw aan
+app.get("/api/admin/schoon", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  try {
+    const r = await pool.query("DELETE FROM profiles WHERE COALESCE((state->>'txp')::int, 0) = 0 RETURNING name, code");
+    ok(res, { verwijderd: r.rows.length, profielen: r.rows.map((x) => x.name) });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
