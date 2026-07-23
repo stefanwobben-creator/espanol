@@ -1970,7 +1970,8 @@ function renderSongs(){
   var el = document.getElementById("songList");
   el.classList.remove("hidden");
   var html = "<div class='card'><h2>Música 🎵</h2><p class='muted'>Leer Spaans met liedjes: kijk de video en oogst de taal eruit. "+
-    "Elke week komt er nieuwe muziek bij.</p></div>";
+    "Er komt regelmatig nieuwe muziek bij.</p>"+
+    "<div class='row'><button class='ghost' id='btnMusTerug'>← Speeltuin</button></div></div>";
   SONGS.forEach(function(sg){
     html += "<div class='lesson' data-song='"+sg.id+"'><div class='lnum'>🎵</div>"+
       "<div class='lbody'><b>"+sg.titel+"</b><span>"+sg.artiest+" · "+sg.lvl+"</span></div><div class='lstatus'>▶</div></div>";
@@ -1986,6 +1987,8 @@ function renderSongs(){
     "<div class='row'><button class='primary' id='btnAddSong'>Toevoegen</button></div>"+
     "<p class='muted hidden' id='songHint' style='margin-top:8px'></p></div>";
   el.innerHTML = html;
+  var bmt = document.getElementById("btnMusTerug");
+  if(bmt) bmt.onclick = function(){ show("speeltuin"); };
   el.querySelectorAll("[data-song]").forEach(function(d){
     d.onclick = function(){ openSong(SONGS.filter(function(x){ return x.id===d.getAttribute("data-song"); })[0]); };
   });
@@ -2144,7 +2147,7 @@ function wsStart(){
   var abc = "abcdefghijklmnopqrstuvwxyz";
   for(var r2=0;r2<N;r2++){ for(var c2=0;c2<N;c2++){ if(!grid[r2][c2]) grid[r2][c2] = abc[Math.floor(Math.random()*26)]; } }
   ws = {grid:grid, woorden:geplaatst, sel:null, foundCells:{}};
-  renderFun();
+  funView = "ws"; renderFun();
 }
 function wsCellClick(r, c){
   if(!ws) return;
@@ -2308,37 +2311,40 @@ function renderDuel(){
   b = document.getElementById("btnDuelVerv");
   if(b) b.onclick = function(){ duelOpen(d.id); };
   b = document.getElementById("btnDuelTerug");
-  if(b) b.onclick = function(){ duelCur = null; renderFun(); };
+  if(b) b.onclick = function(){ duelCur = null; funView = "duel"; renderFun(); };
   b = document.getElementById("btnDuelNieuw");
   if(b) b.onclick = duelNieuw;
 }
+
+var funView = null;
 
 function renderFun(){
   var el = document.getElementById("funCard");
   if(!el) return;
   if(duelCur){ renderDuel(); return; }
-  var html = "<h2>Speeltuin 🧩</h2><p class='muted'>Ontspanning die stiekem herhaling is.</p>";
-  html += "<h2 style='font-size:1rem; margin-top:6px'>Palabra Duel ⚔️ <span class='muted' style='font-weight:400'>· speel tegen elkaar</span></h2>"+
-    "<p class='muted'>Zelfde letters, om de beurt het beste Spaanse woord. De AI is scheidsrechter. Start een duel en deel de code met bijv. Elise.</p>"+
-    "<div class='row'><button class='primary' id='btnDuelStart'>Nieuw duel</button></div>"+
-    "<input type='text' id='duelCode' autocomplete='off' placeholder='...of vul een duel-code in' style='margin-top:8px'>"+
-    "<div class='row'><button class='ghost' id='btnDuelJoin'>Meedoen</button></div>";
-  if(S.duels && S.duels.length){
-    html += "<p class='muted' style='margin-top:8px'>Jouw duels: "+S.duels.slice(-5).map(function(id){ return "<a href='#' data-duel='"+id+"'><b>"+id+"</b></a>"; }).join(" · ")+"</p>";
-  }
-  html += "<h2 style='font-size:1rem; margin-top:14px'>Woordenzoeker</h2>";
+  if(funView === "ws"){ renderFunWs(); return; }
+  if(funView === "duel"){ renderFunDuel(); return; }
+  el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
+    "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>";
+  document.getElementById("ftMusica").onclick = function(){ show("musica"); };
+  document.getElementById("ftWs").onclick = function(){ funView = "ws"; renderFun(); };
+  document.getElementById("ftDuel").onclick = function(){ funView = "duel"; renderFun(); };
+}
+
+function renderFunWs(){
+  var el = document.getElementById("funCard");
+  var html = "<h2>Woordenzoeker \ud83d\udd0d</h2>";
   if(!ws){
-    html += "<div class='row'><button class='ghost' id='btnWs'>Nieuwe woordenzoeker</button></div>";
+    html += "<p class='muted'>Zes van jouw geleerde woorden, verstopt in een raster.</p>"+
+      "<div class='row'><button class='primary' id='btnWs'>Nieuwe woordenzoeker</button>"+
+      "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
     el.innerHTML = html;
     var b0 = document.getElementById("btnWs");
     if(b0) b0.onclick = wsStart;
-    var b1 = document.getElementById("btnDuelStart");
-    if(b1) b1.onclick = duelNieuw;
-    var b2 = document.getElementById("btnDuelJoin");
-    if(b2) b2.onclick = function(){ var c = (document.getElementById("duelCode").value||"").trim().toLowerCase(); if(c) duelJoin(c); };
-    el.querySelectorAll("a[data-duel]").forEach(function(a){
-      a.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); duelOpen(a.getAttribute("data-duel")); };
-    });
+    var bt = document.getElementById("btnFunTerug");
+    if(bt) bt.onclick = function(){ funView = null; renderFun(); };
     return;
   }
   html += "<div class='wsgrid'>";
@@ -2350,8 +2356,9 @@ function renderFun(){
     }
   }
   html += "</div><p class='muted'>Tik de eerste en laatste letter van een woord. Zoek:</p><p>"+
-    ws.woorden.map(function(w){ return w.found ? "<s>"+w.woord+"</s>" : "<b>"+w.nl+"</b>"; }).join(" · ")+"</p>"+
-    "<div class='row'><button class='ghost' id='btnWsNieuw'>Nieuwe puzzel</button></div>";
+    ws.woorden.map(function(w){ return w.found ? "<s>"+w.woord+"</s>" : "<b>"+w.nl+"</b>"; }).join(" \u00b7 ")+"</p>"+
+    "<div class='row'><button class='ghost' id='btnWsNieuw'>Nieuwe puzzel</button>"+
+    "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("button[data-ws]").forEach(function(b){
     b.onclick = function(){
@@ -2361,15 +2368,32 @@ function renderFun(){
   });
   var bn = document.getElementById("btnWsNieuw");
   if(bn) bn.onclick = wsStart;
-  var bd1 = document.getElementById("btnDuelStart");
-  if(bd1) bd1.onclick = duelNieuw;
-  var bd2 = document.getElementById("btnDuelJoin");
-  if(bd2) bd2.onclick = function(){ var c = (document.getElementById("duelCode").value||"").trim().toLowerCase(); if(c) duelJoin(c); };
+  var bt2 = document.getElementById("btnFunTerug");
+  if(bt2) bt2.onclick = function(){ funView = null; renderFun(); };
+}
+
+function renderFunDuel(){
+  var el = document.getElementById("funCard");
+  var html = "<h2>Palabra Duel \u2694\ufe0f</h2>"+
+    "<p class='muted'>Zelfde letters, om de beurt het beste Spaanse woord. De AI is scheidsrechter. Start een duel en deel de code met bijv. Elise.</p>"+
+    "<div class='row'><button class='primary' id='btnDuelStart'>Nieuw duel</button></div>"+
+    "<input type='text' id='duelCode' autocomplete='off' placeholder='...of vul een duel-code in' style='margin-top:8px'>"+
+    "<div class='row'><button class='ghost' id='btnDuelJoin'>Meedoen</button>"+
+    "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
+  if(S.duels && S.duels.length){
+    html += "<p class='muted' style='margin-top:8px'>Jouw duels: "+S.duels.slice(-5).map(function(id){ return "<a href='#' data-duel='"+id+"'><b>"+id+"</b></a>"; }).join(" \u00b7 ")+"</p>";
+  }
+  el.innerHTML = html;
+  var b1 = document.getElementById("btnDuelStart");
+  if(b1) b1.onclick = duelNieuw;
+  var b2 = document.getElementById("btnDuelJoin");
+  if(b2) b2.onclick = function(){ var c = (document.getElementById("duelCode").value||"").trim().toLowerCase(); if(c) duelJoin(c); };
+  var bt = document.getElementById("btnFunTerug");
+  if(bt) bt.onclick = function(){ funView = null; renderFun(); };
   el.querySelectorAll("a[data-duel]").forEach(function(a){
     a.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); duelOpen(a.getAttribute("data-duel")); };
   });
 }
-
 /* ================= SPIEKBRIEF ================= */
 function renderCheat(){
   var el = document.getElementById("cheat");
@@ -2530,7 +2554,7 @@ var TABS = [
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
   {id:"chispa", label:"Chispa", nav:false},
-  {id:"musica", label:"Música"},
+  {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Spiekbrief"}
 ];
