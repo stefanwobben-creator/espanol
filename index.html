@@ -258,7 +258,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v7.5";
+var APP_VERSIE = "v7.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -950,7 +950,7 @@ function serverPull(p){
       store.save(S);
       updateBadge(); updateGoalUI();
       toast("Voortgang van je andere apparaat opgehaald ✓");
-      show("lessen");
+      show("lessen", true);
     }
   });
 }
@@ -1154,7 +1154,8 @@ function boot(){
   document.getElementById("nav").classList.remove("hidden");
   updateBadge();
   updateGoalUI();
-  show("lessen");
+  try{ if(window.history && history.replaceState) history.replaceState({t:"tab", id:"lessen"}, ""); }catch(e){}
+  show("lessen", true);
   ensureCode(p);
   serverPull(p);
   syncUp();
@@ -1754,7 +1755,8 @@ function renderLessons(){
   });
 }
 
-function openLesson(l){
+function openLesson(l, skipPush){
+  if(!skipPush) navPush({t:"les", id:l.id});
   curLesson = l;
   document.getElementById("lessonList").classList.add("hidden");
   renderLessonView();
@@ -2148,8 +2150,9 @@ function renderSongs(){
   };
 }
 
-function openSong(sg){
+function openSong(sg, skipPush){
   if(!sg) return;
+  if(!skipPush) navPush({t:"song", id:sg.id});
   document.getElementById("songList").classList.add("hidden");
   var el = document.getElementById("songView");
   el.classList.remove("hidden");
@@ -2384,10 +2387,11 @@ function duelJoin(code){
     renderDuel();
   });
 }
-function duelOpen(id){
+function duelOpen(id, skipPush){
   api("/api/duel/" + id).then(function(res){
     if(!res || !res.ok){ toast("Duel niet gevonden."); return; }
     duelCur = res.duel;
+    if(!skipPush) navPush({t:"duel", id:id});
     renderDuel();
   });
 }
@@ -2546,9 +2550,9 @@ function renderFun(){
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
-  document.getElementById("ftWs").onclick = function(){ funView = "ws"; renderFun(); };
-  document.getElementById("ftDuel").onclick = function(){ funView = "duel"; renderFun(); };
-  document.getElementById("ftFam").onclick = function(){ funView = "fam"; renderFun(); };
+  document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
+  document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
+  document.getElementById("ftFam").onclick = function(){ funView = "fam"; navPush({t:"fun", v:"fam"}); renderFun(); };
 }
 
 function renderFamilia(){
@@ -2799,7 +2803,12 @@ var TABS = [
   {id:"spiekbrief", label:"Spiekbrief"}
 ];
 
-function show(tabId){
+function navPush(state){
+  try{ if(window.history && history.pushState) history.pushState(state, ""); }catch(e){}
+}
+
+function show(tabId, skipPush){
+  if(!skipPush) navPush({t:"tab", id:tabId});
   TABS.forEach(function(t){
     document.getElementById("tab-"+t.id).classList.toggle("hidden", t.id!==tabId);
   });
@@ -2857,6 +2866,34 @@ function show(tabId){
   }
   checkVersie();
   if(typeof setInterval === "function"){ setInterval(checkVersie, 10 * 60 * 1000); }
+  if(window.addEventListener){
+    window.addEventListener("popstate", function(e){
+      var st = e.state;
+      if(!activeProfile()) return;
+      if(!st){ show("lessen", true); return; }
+      if(st.t === "tab"){
+        if(st.id === "speeltuin"){ funView = null; duelCur = null; }
+        scopeLesson = null;
+        show(st.id, true);
+      } else if(st.t === "les"){
+        show("lessen", true);
+        var l = findLesson(st.id);
+        if(l) openLesson(l, true);
+      } else if(st.t === "song"){
+        show("musica", true);
+        var sg = SONGS.filter(function(x){ return x.id === st.id; })[0] ||
+                 (S.mySongs||[]).filter(function(x){ return x.id === st.id; })[0];
+        if(sg) openSong(sg, true);
+      } else if(st.t === "fun"){
+        duelCur = null; funView = st.v;
+        show("speeltuin", true);
+      } else if(st.t === "duel"){
+        funView = "duel";
+        show("speeltuin", true);
+        duelOpen(st.id, true);
+      }
+    });
+  }
   var av = document.getElementById("appVer");
   if(av) av.textContent = "App-versie: " + APP_VERSIE;
   var avp = document.getElementById("appVerProf");
