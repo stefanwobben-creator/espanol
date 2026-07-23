@@ -258,7 +258,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v7.4";
+var APP_VERSIE = "v7.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2837,6 +2837,26 @@ function show(tabId){
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
+  // zelf-update-check: nooit meer familie-appjes over oude versies
+  function checkVersie(){
+    try{
+      fetch(window.location.pathname + "?vcheck=" + Math.floor(Math.random()*1e9), {cache:"no-store"})
+        .then(function(r){ return r.text(); })
+        .then(function(t){
+          var m = t.match(/APP_VERSIE = "([^"]+)"/);
+          if(m && m[1] !== APP_VERSIE && !document.getElementById("updateBar")){
+            var el = document.createElement("div");
+            el.id = "updateBar"; el.className = "toast show";
+            el.style.pointerEvents = "auto"; el.style.cursor = "pointer";
+            el.textContent = "✨ Nieuwe versie klaar (" + m[1] + ") — tik hier om te verversen";
+            el.onclick = function(){ window.location.href = window.location.pathname + "?v=" + m[1]; };
+            document.body.appendChild(el);
+          }
+        }).catch(function(){});
+    }catch(e){}
+  }
+  checkVersie();
+  if(typeof setInterval === "function"){ setInterval(checkVersie, 10 * 60 * 1000); }
   var av = document.getElementById("appVer");
   if(av) av.textContent = "App-versie: " + APP_VERSIE;
   var avp = document.getElementById("appVerProf");
