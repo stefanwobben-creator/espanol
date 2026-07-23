@@ -251,6 +251,26 @@ app.get("/api/logs", async (req, res) => {
   }
 });
 
+// GET /api/familia — scorebord: namen en scores, GEEN sync-codes of foutdetails
+app.get("/api/familia", async (_req, res) => {
+  try {
+    const r = await pool.query("SELECT name, track, state, updated_at FROM profiles ORDER BY updated_at DESC");
+    const spelers = r.rows.map((row) => {
+      const st = row.state || {};
+      let lessen = 0;
+      if (st.lessons) for (const k in st.lessons) { if (st.lessons[k] && st.lessons[k].done) lessen++; }
+      // streak alleen tellen als hij nog actueel is (vandaag of gisteren gehaald)
+      const vandaag = new Date().toISOString().slice(0, 10);
+      const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const sd = st.streak || {};
+      const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
+      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, laatstActief: row.updated_at };
+    });
+    spelers.sort((a, b) => b.txp - a.txp);
+    ok(res, { spelers });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
 // ---- AI-feedback via de LLM-ladder (goedkoop eerst, duur als vangnet) ----
 async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
   const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite });

@@ -1398,10 +1398,21 @@ function renderWord(){
     el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · woordjes":"Woordjes")+"</span>"+
       "<p class='big'>Alles gedaan ✓</p>"+
       "<p class='muted'>Je hebt "+wSessionDone+" kaartje(s) gedaan. "+
-      (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem." : "Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les.")+"</p>"+
-      (scopeLesson ? "<div class='row'><button class='primary' id='btnBackLes'>Terug naar de les →</button></div>" : "");
+      (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug." : "Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les.")+"</p>"+
+      "<div class='row'>"+
+      (scopeLesson ? "<button class='primary' id='btnRepeatAll'>Toch alles nog eens doen</button>"+
+                     "<button class='ghost' id='btnBackLes'>Terug naar de les →</button>" : "")+
+      "</div>";
     var bb = document.getElementById("btnBackLes");
     if(bb) bb.onclick = function(){ show("lessen"); if(curLesson) openLesson(curLesson); };
+    var br2 = document.getElementById("btnRepeatAll");
+    if(br2) br2.onclick = function(){
+      var ids = {};
+      scopeLesson.words.forEach(function(id){ ids[id] = true; });
+      wQueue = WORDS.filter(function(w){ return ids[w.id]; });
+      wQueue.sort(function(){ return Math.random() - 0.5; });
+      renderWord();
+    };
     updateBadge(); return;
   }
   wCur = wQueue[0]; wShown = false;
@@ -1761,8 +1772,13 @@ function renderLessonView(){
     "<p class='big' style='margin:4px 0'>"+l.titel+"</p>"+
     "<p class='muted'>"+l.doel+"</p>"+chips;
   if(p.done){
-    html += "<p><b>¡Lección completada!</b> 🎉 Je kunt alles blijven herhalen, of door naar de volgende les.</p>"+
-      "<div class='row'><button class='primary' id='btnLesTerug'>Naar het lesoverzicht →</button></div></div>";
+    html += "<p><b>¡Lección completada!</b> 🎉 En alles blijft gewoon herhaalbaar, juist goed voor je geheugen. Kies wat je wilt oefenen:</p>"+
+      "<div class='row'>"+
+      "<button class='primary' id='btnLesWoorden'>Woordjes herhalen</button>"+
+      "<button class='primary' id='btnLesZinnen'>Zinnen herhalen</button>"+
+      "<button class='primary' id='btnLesToets'>Toetsjes opnieuw</button>"+
+      "</div><div class='row'><button class='ghost' id='btnLesSpiek'>Spiekbrief teruglezen</button>"+
+      "<button class='ghost' id='btnLesTerug'>Naar het lesoverzicht</button></div></div>";
   } else if(!p.spiek){
     html += "<p>Elke les begint met de spiekbrief: lees de uitleg hieronder rustig door (dit is de theorie van de les), daarna gaan we oefenen.</p></div>";
     (l.spiek||[]).forEach(function(ci){
@@ -1972,9 +1988,18 @@ function renderSongs(){
   var html = "<div class='card'><h2>Música 🎵</h2><p class='muted'>Leer Spaans met liedjes: kijk de video en oogst de taal eruit. "+
     "Er komt regelmatig nieuwe muziek bij.</p>"+
     "<div class='row'><button class='ghost' id='btnMusTerug'>← Speeltuin</button></div></div>";
-  SONGS.forEach(function(sg){
-    html += "<div class='lesson' data-song='"+sg.id+"'><div class='lnum'>🎵</div>"+
-      "<div class='lbody'><b>"+sg.titel+"</b><span>"+sg.artiest+" · "+sg.lvl+"</span></div><div class='lstatus'>▶</div></div>";
+  var p0 = activeProfile();
+  var mijnNiveau = p0 && p0.track === "beginner" ? "A0" : "A2";
+  var lijst = SONGS.slice().sort(function(a, b){
+    var aPast = (a.lvl||"").indexOf(mijnNiveau) !== -1 ? 0 : 1;
+    var bPast = (b.lvl||"").indexOf(mijnNiveau) !== -1 ? 0 : 1;
+    return aPast - bPast;
+  });
+  lijst.forEach(function(sg){
+    var past = (sg.lvl||"").indexOf(mijnNiveau) !== -1;
+    var sub = sg.artiest + " · " + sg.lvl + (past ? "" : " · 🔥 voor gevorderden, maar meeluisteren mag altijd");
+    html += "<div class='lesson"+(past?"":" locked")+"' data-song='"+sg.id+"' style='opacity:1'><div class='lnum'>🎵</div>"+
+      "<div class='lbody'><b>"+sg.titel+"</b><span>"+sub+"</span></div><div class='lstatus'>▶</div></div>";
   });
   (S.mySongs||[]).forEach(function(ms, i){
     html += "<div class='lesson' data-mysong='"+i+"'><div class='lnum'>🎵</div>"+
@@ -2367,13 +2392,38 @@ function renderFun(){
   if(duelCur){ renderDuel(); return; }
   if(funView === "ws"){ renderFunWs(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
+  if(funView === "fam"){ renderFamilia(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>";
+    "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; renderFun(); };
+  document.getElementById("ftFam").onclick = function(){ funView = "fam"; renderFun(); };
+}
+
+function renderFamilia(){
+  var el = document.getElementById("funCard");
+  el.innerHTML = "<h2>Familie-klassement \ud83c\udfc6</h2><p class='muted' id='famStatus'>Scores ophalen...</p>"+
+    "<div id='famLijst'></div>"+
+    "<div class='row'><button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
+  var bt = document.getElementById("btnFunTerug");
+  if(bt) bt.onclick = function(){ funView = null; renderFun(); };
+  api("/api/familia").then(function(res){
+    var st = document.getElementById("famStatus");
+    var lijst = document.getElementById("famLijst");
+    if(!lijst) return;
+    if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
+    if(st) st.textContent = "Iedereen ziet alleen elkaars scores, nooit elkaars oefeningen of fouten.";
+    var medailles = ["\ud83e\udd47","\ud83e\udd48","\ud83e\udd49"];
+    lijst.innerHTML = res.spelers.map(function(sp, i){
+      var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
+      return "<div class='duelrow'><span>"+(medailles[i]||"\u00b7")+" <b>"+sp.naam+"</b> <span class='muted'>\u00b7 "+lvl+"</span></span>"+
+        "<span><b>"+sp.txp+" XP</b> \u00b7 \ud83d\udd25 "+sp.streak+" \u00b7 "+sp.lessen+" les"+(sp.lessen===1?"":"sen")+"</span></div>";
+    }).join("");
+  });
 }
 
 function renderFunWs(){
