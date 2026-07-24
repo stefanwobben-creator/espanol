@@ -50,6 +50,17 @@ async function init() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS logs_created ON logs (created_at DESC);
+    CREATE TABLE IF NOT EXISTS groups (
+      gcode      text PRIMARY KEY,
+      naam       text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS group_members (
+      gcode      text NOT NULL,
+      pcode      text NOT NULL,
+      joined_at  timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (gcode, pcode)
+    );
     CREATE TABLE IF NOT EXISTS duels (
       id         text PRIMARY KEY,
       rounds     int NOT NULL DEFAULT 5,
@@ -274,6 +285,68 @@ app.get("/api/familia", async (_req, res) => {
     });
     const lijst = Object.values(perNaam).sort((a, b) => b.txp - a.txp);
     ok(res, { spelers: lijst });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* ---- Groepen: eigen klassementen naast de familie ---- */
+// POST /api/groep/nieuw {naam, code} — code = sync-code van de maker
+app.post("/api/groep/nieuw", async (req, res) => {
+  const { naam, code } = req.body || {};
+  const schoon = String(naam || "").trim().slice(0, 40);
+  if (!schoon || !code) return bad(res, 400, "naam en code verplicht");
+  try {
+    const p = await pool.query("SELECT code FROM profiles WHERE code=$1", [String(code)]);
+    if (!p.rows.length) return bad(res, 404, "profiel onbekend, oefen eerst even zodat je sync-code bestaat");
+    const gcode = "g" + Math.random().toString(36).slice(2, 7);
+    await pool.query("INSERT INTO groups (gcode, naam) VALUES ($1,$2)", [gcode, schoon]);
+    await pool.query("INSERT INTO group_members (gcode, pcode) VALUES ($1,$2) ON CONFLICT DO NOTHING", [gcode, String(code)]);
+    ok(res, { groep: { gcode, naam: schoon } });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/groep/join {gcode, code}
+app.post("/api/groep/join", async (req, res) => {
+  const { gcode, code } = req.body || {};
+  if (!gcode || !code) return bad(res, 400, "gcode en code verplicht");
+  try {
+    const g = await pool.query("SELECT gcode, naam FROM groups WHERE gcode=$1", [String(gcode).toLowerCase().trim()]);
+    if (!g.rows.length) return bad(res, 404, "groep niet gevonden, check de code");
+    const p = await pool.query("SELECT code FROM profiles WHERE code=$1", [String(code)]);
+    if (!p.rows.length) return bad(res, 404, "profiel onbekend, oefen eerst even zodat je sync-code bestaat");
+    await pool.query("INSERT INTO group_members (gcode, pcode) VALUES ($1,$2) ON CONFLICT DO NOTHING", [g.rows[0].gcode, String(code)]);
+    ok(res, { groep: g.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/groep/weg {gcode, code} — groep verlaten
+app.post("/api/groep/weg", async (req, res) => {
+  const { gcode, code } = req.body || {};
+  if (!gcode || !code) return bad(res, 400, "gcode en code verplicht");
+  try {
+    await pool.query("DELETE FROM group_members WHERE gcode=$1 AND pcode=$2", [String(gcode), String(code)]);
+    ok(res, {});
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/groep/:gcode — naam + klassement van leden (geen sync-codes naar buiten)
+app.get("/api/groep/:gcode", async (req, res) => {
+  try {
+    const g = await pool.query("SELECT gcode, naam FROM groups WHERE gcode=$1", [String(req.params.gcode).toLowerCase().trim()]);
+    if (!g.rows.length) return bad(res, 404, "groep niet gevonden");
+    const r = await pool.query(
+      "SELECT p.name, p.track, p.state, p.updated_at FROM group_members m JOIN profiles p ON p.code = m.pcode WHERE m.gcode=$1",
+      [g.rows[0].gcode]);
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const spelers = r.rows.map((row) => {
+      const st = row.state || {};
+      let lessen = 0;
+      if (st.lessons) for (const k in st.lessons) { if (st.lessons[k] && st.lessons[k].done) lessen++; }
+      const sd = st.streak || {};
+      const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
+      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen };
+    }).sort((a, b) => b.txp - a.txp);
+    ok(res, { groep: g.rows[0], spelers });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 

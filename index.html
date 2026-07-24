@@ -306,7 +306,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v8.7";
+var APP_VERSIE = "v8.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3499,17 +3499,119 @@ function renderFun(){
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   if(funView === "fam"){ renderFamilia(); return; }
+  if(funView === "groep"){ renderFunGroep(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>";
+    "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftGroep'><div class='lnum'>\ud83d\udc65</div><div class='lbody'><b>Groepen</b><span>start een groep met bijv. je klasgenoten, met eigen klassement</span></div><div class='lstatus'>\u25b6</div></div>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
   document.getElementById("ftFam").onclick = function(){ funView = "fam"; navPush({t:"fun", v:"fam"}); renderFun(); };
+  document.getElementById("ftGroep").onclick = function(){ funView = "groep"; navPush({t:"fun", v:"groep"}); renderFun(); };
+}
+
+/* ================= GROEPEN ================= */
+var groepCur = null; // {gcode, naam} van de geopende groep
+function mijnSyncCode(){
+  var p = activeProfile();
+  return p ? ensureCode(p) : null;
+}
+function groepBewaar(g){
+  S.groepen = S.groepen || [];
+  if(!S.groepen.some(function(x){ return x.gcode === g.gcode; })){
+    S.groepen.push({gcode:g.gcode, naam:g.naam}); persist();
+  }
+}
+function renderFunGroep(){
+  var el = document.getElementById("funCard");
+  if(groepCur){
+    el.innerHTML = "<h2>"+groepCur.naam+" 👥</h2>"+
+      "<p class='muted'>Deel deze groepscode met wie mee mag doen: <b style='font-size:1.1rem'>"+groepCur.gcode+"</b></p>"+
+      "<p class='muted' id='grStatus'>Klassement ophalen...</p><div id='grLijst'></div>"+
+      "<div class='row'><button class='ghost' id='btnGrVerlaat'>Groep verlaten</button>"+
+      "<button class='ghost' id='btnGrTerug'>← Groepen</button></div>";
+    document.getElementById("btnGrTerug").onclick = function(){ groepCur = null; renderFun(); };
+    document.getElementById("btnGrVerlaat").onclick = function(){
+      if(!window.confirm || window.confirm("Weet je zeker dat je '"+groepCur.naam+"' wilt verlaten?")){
+        api("/api/groep/weg", "POST", {gcode:groepCur.gcode, code:mijnSyncCode()}).then(function(){
+          S.groepen = (S.groepen||[]).filter(function(x){ return x.gcode !== groepCur.gcode; });
+          persist(); groepCur = null; renderFun();
+        });
+      }
+    };
+    api("/api/groep/"+groepCur.gcode).then(function(res){
+      var st = document.getElementById("grStatus"), lijst = document.getElementById("grLijst");
+      if(!lijst) return;
+      if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
+      if(st) st.textContent = res.spelers.length + " deelnemer" + (res.spelers.length===1?"":"s") + " · alleen scores zichtbaar, nooit elkaars oefeningen.";
+      var medailles = ["🥇","🥈","🥉"];
+      lijst.innerHTML = res.spelers.map(function(sp, i){
+        var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
+        return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+"</b> <span class='muted'>· "+lvl+"</span></span>"+
+          "<span><b>"+sp.txp+" XP</b> · 🔥 "+sp.streak+" · "+sp.lessen+" les"+(sp.lessen===1?"":"sen")+"</span></div>";
+      }).join("");
+    });
+    return;
+  }
+  var mijn = S.groepen || [];
+  var html = "<h2>Groepen 👥</h2>"+
+    "<p class='muted'>Start een groep met je klasgenoten, collega's of vrienden. Iedereen met de groepscode kan meedoen; elke groep heeft een eigen klassement.</p>";
+  if(mijn.length){
+    html += "<p style='margin:10px 0 4px'><b>Jouw groepen</b></p>";
+    mijn.forEach(function(g){
+      html += "<div class='lesson' data-groep='"+g.gcode+"'><div class='lnum'>👥</div><div class='lbody'><b>"+g.naam+"</b><span>code: "+g.gcode+"</span></div><div class='lstatus'>▶</div></div>";
+    });
+  }
+  html += "<p style='margin:14px 0 4px'><b>Nieuwe groep</b></p>"+
+    "<input type='text' id='grNaam' autocomplete='off' placeholder='Naam van de groep (bijv. Clase de martes)'>"+
+    "<div class='row'><button class='primary' id='btnGrNieuw'>Start groep</button></div>"+
+    "<p style='margin:14px 0 4px'><b>Meedoen met een groep</b></p>"+
+    "<input type='text' id='grCode' autocomplete='off' placeholder='Groepscode (bijv. gx7k2p)'>"+
+    "<div class='row'><button class='ghost' id='btnGrJoin'>Meedoen</button>"+
+    "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
+  el.innerHTML = html;
+  el.querySelectorAll("[data-groep]").forEach(function(d){
+    d.onclick = function(){
+      var g = mijn.filter(function(x){ return x.gcode === d.getAttribute("data-groep"); })[0];
+      if(g){ groepCur = g; renderFun(); }
+    };
+  });
+  var bn = document.getElementById("btnGrNieuw");
+  if(bn) bn.onclick = function(){
+    var naam = (document.getElementById("grNaam").value || "").trim();
+    if(!naam){ toast("Geef je groep eerst een naam."); return; }
+    bn.disabled = true; bn.textContent = "Aanmaken...";
+    api("/api/groep/nieuw", "POST", {naam:naam, code:mijnSyncCode()}).then(function(res){
+      bn.disabled = false; bn.textContent = "Start groep";
+      if(!res || !res.ok || !res.groep){ toast(res && res.error ? res.error : "Server even niet bereikbaar."); return; }
+      groepBewaar(res.groep);
+      groepCur = res.groep;
+      confetti(["👥","🎉"], 16);
+      toast("Groep '"+res.groep.naam+"' aangemaakt! Deel code "+res.groep.gcode);
+      renderFun();
+    });
+  };
+  var bj = document.getElementById("btnGrJoin");
+  if(bj) bj.onclick = function(){
+    var code = (document.getElementById("grCode").value || "").trim().toLowerCase();
+    if(!code){ toast("Vul eerst een groepscode in."); return; }
+    bj.disabled = true;
+    api("/api/groep/join", "POST", {gcode:code, code:mijnSyncCode()}).then(function(res){
+      bj.disabled = false;
+      if(!res || !res.ok || !res.groep){ toast(res && res.error ? res.error : "Groep niet gevonden."); return; }
+      groepBewaar(res.groep);
+      groepCur = res.groep;
+      toast("Je doet mee met '"+res.groep.naam+"'! 🎉");
+      renderFun();
+    });
+  };
+  var bt = document.getElementById("btnFunTerug");
+  if(bt) bt.onclick = function(){ funView = null; renderFun(); };
 }
 
 function renderFamilia(){
