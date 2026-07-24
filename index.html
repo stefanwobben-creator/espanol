@@ -131,6 +131,11 @@
   .oogst .muted{display:block; margin-top:2px;}
   #miniPet{cursor:pointer; line-height:0;}
   #miniPet svg{width:36px; height:33px;}
+  #miniDic{cursor:pointer; font-size:1.35rem; line-height:1;}
+  .dicrow{border-bottom:1px dashed var(--border);}
+  .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
+  .dicbody{padding:2px 0 12px; font-size:.92rem;}
+  .dicbody p{margin:4px 0;}
   .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .vpop{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); border:2px solid var(--accent);
         border-radius:14px; padding:16px 18px; max-width:340px; width:88vw; z-index:97; box-shadow:0 10px 40px rgba(0,0,0,.3); font-size:.92rem;}
@@ -175,6 +180,7 @@
     <h1>¡Vamos <span id="userName">…</span>!</h1>
     <div style="display:flex; align-items:center; gap:8px;">
       <div class="badge" id="dueBadge">…</div>
+      <span id="miniDic" title="Woordenboek">📖</span>
       <span id="miniPet" title="Chispa"></span>
     </div>
   </header>
@@ -256,6 +262,10 @@
   </section>
 
   <!-- SPEELTUIN -->
+  <section id="tab-diccionario" class="hidden">
+    <div class="card" id="dicCard"></div>
+  </section>
+
   <section id="tab-speeltuin" class="hidden">
     <div class="card" id="funCard"></div>
   </section>
@@ -291,7 +301,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v8.0";
+var APP_VERSIE = "v8.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1440,6 +1450,8 @@ function updateGoalUI(){
     mp.innerHTML = petSVG();
     mp.onclick = function(){ scopeLesson = null; show("chispa"); };
   }
+  var md = document.getElementById("miniDic");
+  if(md){ md.onclick = function(){ scopeLesson = null; show("diccionario"); }; }
 }
 
 var toastTimer = null;
@@ -1761,6 +1773,7 @@ function answerWord(good){
   var t = today();
   var st = S.srs[wCur.id];
   if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0) + 1; }
+  st.n = (st.n||0) + 1; // hoe vaak geoefend (voor het woordenboek)
   if(good){
     st.box = Math.min(st.box+1, INTERVALS.length-1);
     st.due = addDays(t, INTERVALS[st.box]);
@@ -1768,6 +1781,7 @@ function answerWord(good){
     addXP(2);
   } else {
     st.box = 0; st.due = t;
+    st.f = (st.f||0) + 1;
     logError(wCur.id, "woord", wCur.tag, wCur.es);
     wQueue.push(wQueue.shift()); // achteraan opnieuw
     addXP(1); // ook fouten zijn oefening
@@ -2734,6 +2748,101 @@ function wsCellClick(r, c){
   }
   renderFun();
 }
+/* ================= WOORDENBOEK (diccionario) ================= */
+var dicOpen = null, dicZoek = "";
+function dicStatus(st){
+  if(!st) return null;
+  if(st.box <= 1) return {kleur:"🔴", label:"lastig"};
+  if(st.box <= 3) return {kleur:"🟡", label:"bezig"};
+  return {kleur:"🟢", label:"zit goed"};
+}
+function dicVoorbeeld(w){
+  var artikelen = {el:1, la:1, los:1, las:1, un:1, una:1};
+  var kern = w.es.toLowerCase().split("/")[0].trim().split(" ").filter(function(t){ return !artikelen[t]; });
+  var zoek = stripAcc(kern[kern.length-1] || "").replace(/[^a-z]/g, "");
+  if(zoek.length < 3) return null;
+  var stam = zoek.slice(0, Math.max(3, zoek.length - 2)); // vangt ook vervoegde vormen
+  return SENTENCES.filter(function(s){ return stripAcc(s.es.toLowerCase()).indexOf(stam) !== -1; })[0] || null;
+}
+function renderDic(){
+  var el = document.getElementById("dicCard");
+  if(!el) return;
+  var geleerd = WORDS.filter(function(w){ return !!S.srs[w.id]; });
+  var totaal = WORDS.length;
+  var q = stripAcc(dicZoek.toLowerCase());
+  var lijst = geleerd.filter(function(w){
+    if(!q) return true;
+    return stripAcc(w.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(w.nl.toLowerCase()).indexOf(q) !== -1;
+  });
+  var groepen = [
+    {naam:"🔴 Lastig", uitleg:"deze komen extra vaak terug", items:[]},
+    {naam:"🟡 Bezig", uitleg:"goed op weg", items:[]},
+    {naam:"🟢 Zit goed", uitleg:"lange herhaal-tussenpozen", items:[]}
+  ];
+  lijst.forEach(function(w){
+    var st = S.srs[w.id];
+    var g = st.box <= 1 ? 0 : (st.box <= 3 ? 1 : 2);
+    groepen[g].items.push(w);
+  });
+  groepen.forEach(function(g){ g.items.sort(function(a, b){ return a.es < b.es ? -1 : 1; }); });
+  var html = "<h2>Jouw woordenboek 📖</h2>"+
+    "<p class='muted'>Je hebt <b>"+geleerd.length+"</b> van de "+totaal+" woorden ontdekt. Tik op een woord voor vertaling, vormen en een voorbeeldzin.</p>"+
+    "<input type='text' id='dicZoek' placeholder='Zoek in het Spaans of Nederlands...' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+  if(!geleerd.length){
+    html += "<p class='muted'>Nog geen woorden geleerd. Begin bij Lessen, dan vult dit boek zich vanzelf!</p>";
+  }
+  groepen.forEach(function(g){
+    if(!g.items.length) return;
+    html += "<p style='margin:14px 0 4px'><b>"+g.naam+"</b> <span class='muted'>· "+g.items.length+" · "+g.uitleg+"</span></p>";
+    g.items.forEach(function(w){
+      var st = S.srs[w.id];
+      var open = dicOpen === w.id;
+      html += "<div class='dicrow' data-dic='"+w.id+"'>"+
+        "<div class='dichead'><span><b class='es'>"+w.es+"</b> <span class='muted'>· "+w.nl+"</span></span>"+
+        "<span class='muted'>"+(st.n ? st.n+"×" : "")+" "+(open ? "▾" : "▸")+"</span></div>";
+      if(open){
+        var fouten = st.f !== undefined ? st.f : (S.errors["woord:"+w.id] ? S.errors["woord:"+w.id].count : 0);
+        var vb = dicVoorbeeld(w);
+        html += "<div class='dicbody'>"+
+          "<p><b>"+w.nl+"</b>"+(w.tag ? " <span class='muted'>· thema: "+w.tag+"</span>" : "")+"</p>"+
+          "<p class='muted'>"+(st.n ? "Geoefend: "+st.n+"× · " : "")+"Fouten: "+fouten+"× · Box "+st.box+"/5 · volgende herhaling: "+(st.due <= today() ? "vandaag" : st.due)+"</p>"+
+          (vb ? "<p>Voorbeeld: <span class='es'>"+vb.es+"</span><br><span class='muted'>"+vb.nl+"</span></p>" : "")+
+          "<div class='row'><button class='ghost' data-vormen='"+w.id+"'>Vormen & uitleg 🤖</button></div>"+
+          "</div>";
+      }
+      html += "</div>";
+    });
+  });
+  if(q && !lijst.length && geleerd.length){
+    html += "<p class='muted'>Niets gevonden voor \""+dicZoek+"\" in jouw geleerde woorden.</p>";
+  }
+  el.innerHTML = html;
+  var zk = document.getElementById("dicZoek");
+  if(zk){
+    zk.oninput = function(){
+      dicZoek = zk.value;
+      var pos = zk.selectionStart;
+      renderDic();
+      var zk2 = document.getElementById("dicZoek");
+      if(zk2){ zk2.focus(); try{ zk2.setSelectionRange(pos, pos); }catch(e){} }
+    };
+  }
+  el.querySelectorAll(".dicrow").forEach(function(r){
+    var hd = r.querySelector ? r.querySelector(".dichead") : null;
+    if(hd) hd.onclick = function(){
+      var id = r.getAttribute("data-dic");
+      dicOpen = dicOpen === id ? null : id;
+      renderDic();
+    };
+  });
+  el.querySelectorAll("button[data-vormen]").forEach(function(b){
+    b.onclick = function(){
+      var w = WORDS.filter(function(x){ return x.id === b.getAttribute("data-vormen"); })[0];
+      if(w) verbPopup(w.es);
+    };
+  });
+}
+
 /* ================= RONDLEIDING (onboarding) ================= */
 var TOUR = [
   {titel:"¡Hola! Ik ben Chispa 🐾",
@@ -3340,6 +3449,7 @@ var TABS = [
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
   {id:"chispa", label:"Chispa", nav:false},
+  {id:"diccionario", label:"Woordenboek", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Spiekbrief"}
@@ -3369,6 +3479,7 @@ function show(tabId, skipPush){
     var ss = document.getElementById("syncStatus");
     if(ss) ss.textContent = lastSync ? "Laatste sync: gelukt ✓" : "Laatste sync: wordt automatisch gedaan tijdens het oefenen";
   }
+  if(tabId==="diccionario"){ renderDic(); }
   if(tabId==="speeltuin"){ renderFun(); }
   if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
