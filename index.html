@@ -424,7 +424,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.4";
+var APP_VERSIE = "v10.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1286,6 +1286,18 @@ function syncUp(){
   api("/api/sync", "POST", {code: ensureCode(p), name: p.name, track: p.track, state: S})
     .then(function(res){ if(res && res.ok){ lastSync = res.updated_at; var el = document.getElementById("syncStatus"); if(el) el.textContent = "Laatste sync: zojuist ✓"; } });
 }
+function mergeServerGroepen(res){
+  // lidmaatschappen zijn de waarheid van de server: altijd bijmengen
+  if(!res || !res.groepen || !res.groepen.length) return;
+  S.groepen = S.groepen || [];
+  var nieuw = 0;
+  res.groepen.forEach(function(g){
+    if(!S.groepen.some(function(x){ return x.gcode === g.gcode; })){
+      S.groepen.push({gcode:g.gcode, naam:g.naam}); nieuw++;
+    }
+  });
+  if(nieuw) persist();
+}
 function serverPull(p){
   api("/api/state/" + ensureCode(p)).then(function(res){
     if(res && res.ok && res.state && (res.state.txp||0) > (S.txp||0)){
@@ -1293,9 +1305,12 @@ function serverPull(p){
       S.xp = S.xp || {}; S.streak = S.streak || {count:0,last:""};
       S.tapaP = S.tapaP||0; S.fed = S.fed||""; S.owned = S.owned||{}; S.wear = S.wear||{}; S.lessons = S.lessons||{};
       store.save(S);
+      mergeServerGroepen(res);
       updateBadge(); updateGoalUI();
       toast("Voortgang van je andere apparaat opgehaald ✓");
       show("lessen", true);
+    } else {
+      mergeServerGroepen(res);
     }
   });
 }
@@ -1501,6 +1516,7 @@ function renderProfileScreen(){
       S.xp=S.xp||{}; S.streak=S.streak||{count:0,last:""}; S.tapaP=S.tapaP||0; S.fed=S.fed||"";
       S.owned=S.owned||{}; S.wear=S.wear||{}; S.lessons=S.lessons||{}; S.txp=S.txp||0; S.tapas=S.tapas||0;
       store.save(S);
+      mergeServerGroepen(res);
       boot();
       toast("Welkom terug, "+naam+"! Voortgang opgehaald ✓");
     });

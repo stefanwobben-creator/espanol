@@ -222,7 +222,11 @@ app.get("/api/state/:code", async (req, res) => {
   try {
     const r = await pool.query("SELECT name, track, state, updated_at FROM profiles WHERE code=$1", [req.params.code]);
     if (!r.rows.length) return bad(res, 404, "onbekende code");
-    ok(res, r.rows[0]);
+    // groepslidmaatschappen meesturen, zodat elk apparaat je groepen kent
+    const g = await pool.query(
+      "SELECT gr.gcode, gr.naam FROM group_members m JOIN groups gr ON gr.gcode = m.gcode WHERE m.pcode=$1",
+      [req.params.code]);
+    ok(res, { ...r.rows[0], groepen: g.rows });
   } catch (e) {
     console.error(e);
     bad(res, 500, "database-fout");
