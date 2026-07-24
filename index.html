@@ -139,6 +139,9 @@
           background:var(--accent); color:#fff; font-size:1.5rem; cursor:pointer; z-index:90;
           box-shadow:0 6px 18px rgba(212,85,43,.45); display:flex; align-items:center; justify-content:center;}
   .dicfab:active{transform:scale(.94);}
+  .appfooter{text-align:center; margin:30px 0 6px; font-size:.85rem; color:var(--muted);}
+  .appfooter a{color:var(--muted); text-decoration:none; border-bottom:1px dotted var(--muted);}
+  .appfooter a:hover{color:var(--accent); border-color:var(--accent);}
   .dicrow{border-bottom:1px dashed var(--border);}
   .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
   .dicbody{padding:2px 0 12px; font-size:.92rem;}
@@ -239,6 +242,9 @@
     </div>
     <div class="card hidden" id="placeCard"></div>
   </section>
+  <footer id="appFooter" class="appfooter hidden">
+    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkSteun">💛 Steun de app</a> · <span id="footVer"></span>
+  </footer>
   <button id="dicFab" class="dicfab hidden" title="Woordenboek">📖</button>
   <div id="storageWarn" class="warn hidden">
     Let op: in deze omgeving kan voortgang niet automatisch bewaard worden. Gebruik bij Voortgang de knop
@@ -427,7 +433,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v9.7";
+var APP_VERSIE = "v9.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1344,6 +1350,8 @@ function renderProfileScreen(){
   document.getElementById("nav").classList.add("hidden");
   var fb2 = document.getElementById("dicFab");
   if(fb2) fb2.classList.add("hidden");
+  var ft2 = document.getElementById("appFooter");
+  if(ft2) ft2.classList.add("hidden");
   TABS.forEach(function(t){ document.getElementById("tab-"+t.id).classList.add("hidden"); });
   document.getElementById("userName").textContent = "…";
   document.getElementById("dueBadge").textContent = "kies profiel";
@@ -1553,6 +1561,10 @@ function boot(){
   document.getElementById("nav").classList.remove("hidden");
   var fb = document.getElementById("dicFab");
   if(fb){ fb.classList.remove("hidden"); fb.onclick = dicModal; }
+  var ft = document.getElementById("appFooter");
+  if(ft) ft.classList.remove("hidden");
+  var fv = document.getElementById("footVer");
+  if(fv) fv.textContent = APP_VERSIE;
   updateBadge();
   updateGoalUI();
   try{ if(window.history && history.replaceState) history.replaceState({t:"tab", id:"lessen"}, ""); }catch(e){}
@@ -2255,9 +2267,6 @@ function renderLessons(){
         "<div class='lstatus'>"+(p.done?"✓":"↻")+"</div></div>";
     });
   }
-  html += "<p class='muted' style='text-align:center; margin-top:12px; font-size:.85rem'>"+
-    "<a href='#' id='lnkTour'>❓ Hoe werkt de app? Bekijk de rondleiding</a> · "+
-    "<a href='#' id='lnkSteun'>💛 Steun de app</a></p>";
   listEl.innerHTML = html;
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
@@ -2266,10 +2275,6 @@ function renderLessons(){
       if(l) openLesson(l);
     }; }
   });
-  var lt = document.getElementById("lnkTour");
-  if(lt) lt.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
-  var ls = document.getElementById("lnkSteun");
-  if(ls) ls.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("steun"); return false; };
 }
 
 function openLesson(l, skipPush){
@@ -3669,19 +3674,16 @@ function renderFun(){
   if(funView === "ws"){ renderFunWs(); return; }
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
-  if(funView === "fam"){ renderFamilia(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<p class='muted' style='font-size:.85rem; margin-top:10px'>Groepen met klasgenoten of vrienden vind je bij je profiel (\ud83d\udc64 rechtsboven).</p>";
+    "<p class='muted' style='font-size:.85rem; margin-top:10px'>\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.</p>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
-  document.getElementById("ftFam").onclick = function(){ funView = "fam"; navPush({t:"fun", v:"fam"}); renderFun(); };
 }
 
 /* ================= PROFIELPAGINA ================= */
@@ -4148,6 +4150,10 @@ function show(tabId, skipPush){
 (function init(){
   if(!store.ok) document.getElementById("storageWarn").classList.remove("hidden");
   buildNav();
+  var lt0 = document.getElementById("lnkTour");
+  if(lt0) lt0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
+  var ls0 = document.getElementById("lnkSteun");
+  if(ls0) ls0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("steun"); return false; };
   document.getElementById("btnExportErrors").onclick = exportErrors;
   document.getElementById("btnMailErrors").onclick = mailErrors;
   document.getElementById("btnExportProgress").onclick = exportProgress;

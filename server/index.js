@@ -262,10 +262,15 @@ app.get("/api/logs", async (req, res) => {
   }
 });
 
-// GET /api/familia — scorebord: namen en scores, GEEN sync-codes of foutdetails
+// GET /api/familia — scorebord van ALLEEN de familie (FAMILIA_NAMEN env, default stefan/elise/ilona).
+// Vroeger toonde dit alle profielen; sinds de app openbaar deelbaar is, is dat expres dichtgezet.
 app.get("/api/familia", async (_req, res) => {
   try {
-    const r = await pool.query("SELECT name, track, state, updated_at FROM profiles ORDER BY updated_at DESC");
+    const namen = String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona")
+      .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const r = await pool.query(
+      "SELECT name, track, state, updated_at FROM profiles WHERE lower(name) = ANY($1) ORDER BY updated_at DESC",
+      [namen]);
     const spelers = r.rows.map((row) => {
       const st = row.state || {};
       let lessen = 0;
