@@ -138,6 +138,11 @@
   .dicbody p{margin:4px 0;}
   .dicletter{margin:14px 0 0; font-weight:800; color:var(--muted); font-size:.8rem; letter-spacing:.08em;}
   .dicstip{font-size:.6rem; vertical-align:middle; margin-left:4px;}
+  .dicwrap{position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:96; display:flex; align-items:center; justify-content:center; padding:14px;}
+  .dicpanel{background:var(--card); border-radius:16px; max-width:520px; width:100%; max-height:88vh; overflow-y:auto;
+            padding:16px 18px; box-shadow:0 16px 50px rgba(0,0,0,.35); animation:bubpop .2s ease;}
+  .dictop{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+  .dicrijtje{background:var(--amber-soft); border-radius:10px; padding:8px 10px; font-size:.86rem;}
   .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .vpop{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); border:2px solid var(--accent);
         border-radius:14px; padding:16px 18px; max-width:340px; width:88vw; z-index:97; box-shadow:0 10px 40px rgba(0,0,0,.3); font-size:.92rem;}
@@ -264,10 +269,6 @@
   </section>
 
   <!-- SPEELTUIN -->
-  <section id="tab-diccionario" class="hidden">
-    <div class="card" id="dicCard"></div>
-  </section>
-
   <section id="tab-speeltuin" class="hidden">
     <div class="card" id="funCard"></div>
   </section>
@@ -303,7 +304,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v8.3";
+var APP_VERSIE = "v8.4";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1453,7 +1454,7 @@ function updateGoalUI(){
     mp.onclick = function(){ scopeLesson = null; show("chispa"); };
   }
   var md = document.getElementById("miniDic");
-  if(md){ md.onclick = function(){ scopeLesson = null; show("diccionario"); }; }
+  if(md){ md.onclick = dicModal; }
 }
 
 var toastTimer = null;
@@ -2751,7 +2752,226 @@ function wsCellClick(r, c){
   renderFun();
 }
 /* ================= WOORDENBOEK (diccionario) ================= */
+var DICINFO = {
+ w1:{v:"Me siento inseguro cuando hablo español.|Ik voel me onzeker als ik Spaans praat.",r:"bn: inseguro/insegura · mv: inseguros/inseguras"},
+ w2:{v:"La inseguridad desaparece con la práctica.|De onzekerheid verdwijnt met oefening.",r:"zn (v) · mv: las inseguridades"},
+ w3:{v:"Estoy ansiosa por el examen.|Ik ben gespannen voor het examen."},
+ w4:{v:"Respirar hondo ayuda contra la ansiedad.|Diep ademhalen helpt tegen de spanning."},
+ w5:{v:"Estoy frustrado porque olvidé la palabra.|Ik ben gefrustreerd omdat ik het woord vergat."},
+ w6:{v:"La frustración es parte del aprendizaje.|Frustratie hoort bij het leren."},
+ w7:{v:"Mi gato es muy miedoso.|Mijn kat is erg schrikachtig."},
+ w8:{v:"Tengo miedo de hablar en público.|Ik ben bang om in het openbaar te spreken.",r:"zn (m) · mv: los miedos · tener miedo de = bang zijn om"},
+ w9:{v:"Estoy ilusionado con mi nueva vida en Alicante.|Ik kijk vol verwachting uit naar mijn nieuwe leven in Alicante."},
+ w10:{v:"Me hace mucha ilusión tu visita.|Ik verheug me erg op je bezoek.",r:"vaste combinatie: me hace ilusión = ik verheug me op"},
+ w11:{v:"¡Qué situación tan ridícula!|Wat een belachelijke situatie!"},
+ w12:{v:"Estamos entusiasmados con el proyecto.|We zijn enthousiast over het project."},
+ w13:{v:"De niño era muy tímido.|Als kind was ik erg verlegen."},
+ w14:{v:"La clase fue muy divertida.|De les was erg leuk."},
+ w15:{v:"Estoy contento con mi progreso.|Ik ben blij met mijn vooruitgang."},
+ w16:{v:"La película me puso triste.|De film maakte me verdrietig.",r:"bn: triste (m=v) · mv: tristes"},
+ w17:{v:"¿Estás libre este sábado?|Ben je vrij deze zaterdag?",r:"bn: libre (m=v) · mv: libres"},
+ w18:{v:"Hoy me siento muy bien.|Vandaag voel ik me erg goed.",r:"presente (e→ie): me siento · te sientes · se siente · nos sentimos · os sentís · se sienten — indefinido: me sentí · te sentiste · se sintió · nos sentimos · os sentisteis · se sintieron"},
+ w19:{v:"No te preocupes, no pasa nada.|Maak je geen zorgen, er is niets aan de hand.",r:"presente: me preocupo · te preocupas · se preocupa · nos preocupamos · os preocupáis · se preocupan — indefinido: me preocupé · te preocupaste · se preocupó · nos preocupamos · os preocupasteis · se preocuparon"},
+ w20:{v:"Ayer me sentí fatal.|Gisteren voelde ik me waardeloos.",r:"zie sentirse: me siento fatal · me sentí fatal"},
+ w21:{v:"Aprendo español con mi propia app.|Ik leer Spaans met mijn eigen app.",r:"presente: aprendo · aprendes · aprende · aprendemos · aprendéis · aprenden — indefinido: aprendí · aprendiste · aprendió · aprendimos · aprendisteis · aprendieron"},
+ w22:{v:"Olvidé las llaves en casa.|Ik vergat de sleutels thuis.",r:"presente: olvido · olvidas · olvida · olvidamos · olvidáis · olvidan — indefinido: olvidé · olvidaste · olvidó · olvidamos · olvidasteis · olvidaron"},
+ w23:{v:"No recuerdo su nombre.|Ik herinner me zijn naam niet.",r:"presente (o→ue): recuerdo · recuerdas · recuerda · recordamos · recordáis · recuerdan — indefinido: recordé · recordaste · recordó · recordamos · recordasteis · recordaron"},
+ w24:{v:"¿Puedes repetir la frase, por favor?|Kun je de zin herhalen, alsjeblieft?",r:"presente (e→i): repito · repites · repite · repetimos · repetís · repiten — indefinido: repetí · repetiste · repitió · repetimos · repetisteis · repitieron"},
+ w25:{v:"Traduzco la frase al neerlandés.|Ik vertaal de zin naar het Nederlands.",r:"presente: traduzco · traduces · traduce · traducimos · traducís · traducen — indefinido: traduje · tradujiste · tradujo · tradujimos · tradujisteis · tradujeron"},
+ w26:{v:"Busco la palabra en el diccionario.|Ik zoek het woord op in het woordenboek.",r:"presente: busco · buscas · busca · buscamos · buscáis · buscan — indefinido: busqué (spelling!) · buscaste · buscó · buscamos · buscasteis · buscaron"},
+ w27:{v:"Miro el diccionario cuando no sé una palabra.|Ik kijk in het woordenboek als ik een woord niet weet.",r:"zn (m) · mv: los diccionarios"},
+ w28:{v:"Cada día aprendo palabras nuevas.|Elke dag leer ik nieuwe woorden.",r:"zn (v) · mv: las palabras"},
+ w29:{v:"Esta frase es fácil.|Deze zin is makkelijk.",r:"zn (v) · mv: las frases"},
+ w30:{v:"El sonido de la eñe no existe en neerlandés.|De klank van de ñ bestaat niet in het Nederlands.",r:"zn (m) · mv: los sonidos"},
+ w31:{v:"Es difícil pronunciar la erre.|De rollende r uitspreken is moeilijk.",r:"presente: pronuncio · pronuncias · pronuncia · pronunciamos · pronunciáis · pronuncian — indefinido: pronuncié · pronunciaste · pronunció · pronunciamos · pronunciasteis · pronunciaron"},
+ w32:{v:"Mi español mejora cada semana.|Mijn Spaans wordt elke week beter.",r:"presente: mejoro · mejoras · mejora · mejoramos · mejoráis · mejoran — indefinido: mejoré · mejoraste · mejoró · mejoramos · mejorasteis · mejoraron"},
+ w33:{v:"Aprender un idioma es un reto bonito.|Een taal leren is een mooie uitdaging.",r:"zn (m) · mv: los retos"},
+ w34:{v:"Los errores son parte del aprendizaje.|Fouten horen bij het leren.",r:"zn (m) · mv: los errores"},
+ w35:{v:"Me cuesta la gramática, pero me cuestan más los verbos.|De grammatica kost me moeite, maar de werkwoorden nog meer.",r:"vooral 3e persoon (zoals gustar): me cuesta + ev · me cuestan + mv — indefinido: costó · costaron"},
+ w36:{v:"Poco a poco pierdo el miedo a hablar.|Beetje bij beetje overwin ik mijn angst om te praten.",r:"perder, presente (e→ie): pierdo · pierdes · pierde · perdemos · perdéis · pierden — indefinido: perdí · perdiste · perdió · perdimos · perdisteis · perdieron"},
+ w37:{v:"Repaso el vocabulario cada mañana.|Ik herhaal de woordenschat elke ochtend.",r:"zn (m)"},
+ w38:{v:"La gramática española tiene muchos tiempos.|De Spaanse grammatica heeft veel tijden.",r:"zn (v)"},
+ w39:{v:"Entiendo casi todo si hablas despacio.|Ik begrijp bijna alles als je langzaam praat.",r:"presente (e→ie): entiendo · entiendes · entiende · entendemos · entendéis · entienden — indefinido: entendí · entendiste · entendió · entendimos · entendisteis · entendieron"},
+ w40:{v:"Hay más de 500 millones de hispanohablantes.|Er zijn meer dan 500 miljoen Spaanstaligen.",r:"zn (m/v): el/la hispanohablante · mv: los/las hispanohablantes"},
+ w41:{v:"Frida Kahlo nació en 1907.|Frida Kahlo werd geboren in 1907.",r:"vooral indefinido: nací · naciste · nació · nacimos · nacisteis · nacieron"},
+ w42:{v:"Se casó con Diego Rivera.|Ze trouwde met Diego Rivera.",r:"indefinido: me casé · te casaste · se casó · nos casamos · os casasteis · se casaron · casarse con = trouwen met"},
+ w43:{v:"Se divorciaron después de diez años.|Ze scheidden na tien jaar.",r:"indefinido: me divorcié · te divorciaste · se divorció · nos divorciamos · os divorciasteis · se divorciaron"},
+ w44:{v:"El pintor murió en 1954.|De schilder stierf in 1954.",r:"presente (o→ue): muero · mueres · muere · morimos · morís · mueren — indefinido: morí · moriste · murió · morimos · moristeis · murieron"},
+ w45:{v:"Me mudé a Alicante en 2025.|Ik verhuisde in 2025 naar Alicante.",r:"indefinido: me mudé · te mudaste · se mudó · nos mudamos · os mudasteis · se mudaron · mudarse a = verhuizen naar"},
+ w46:{v:"El accidente influyó en su obra.|Het ongeluk beïnvloedde haar werk.",r:"presente: influyo · influyes · influye · influimos · influís · influyen — indefinido: influí · influiste · influyó · influimos · influisteis · influyeron"},
+ w47:{v:"Viajamos por toda España.|We reisden door heel Spanje.",r:"presente: viajo · viajas · viaja · viajamos · viajáis · viajan — indefinido: viajé · viajaste · viajó · viajamos · viajasteis · viajaron"},
+ w48:{v:"La vida en España me gusta mucho.|Het leven in Spanje bevalt me erg goed.",r:"zn (v)"},
+ w49:{v:"Su muerte fue una gran pérdida.|Haar dood was een groot verlies.",r:"zn (v)"},
+ w50:{v:"Este cuadro es de Picasso.|Dit schilderij is van Picasso.",r:"zn (m) · mv: los cuadros"},
+ w51:{v:"Su obra es famosa en todo el mundo.|Haar werk is wereldberoemd.",r:"zn (v) · mv: las obras"},
+ w52:{v:"En esa época vivía en México.|In die tijd woonde ze in Mexico.",r:"zn (v) · mv: las épocas"},
+ w53:{v:"Es una pintora muy famosa.|Ze is een heel beroemde schilderes."},
+ w54:{v:"El pintor trabaja en su estudio.|De schilder werkt in zijn atelier.",r:"el pintor / la pintora · mv: los pintores / las pintoras"},
+ w55:{v:"Pintó su sufrimiento en autorretratos.|Ze schilderde haar lijden in zelfportretten.",r:"zn (m)"},
+ w56:{v:"Fuimos a una exposición de Miró.|We gingen naar een tentoonstelling van Miró.",r:"zn (v) · mv: las exposiciones"},
+ w57:{v:"Tropecé y todo el mundo lo vio.|Ik struikelde en iedereen zag het.",r:"presente (e→ie): tropiezo · tropiezas · tropieza · tropezamos · tropezáis · tropiezan — indefinido: tropecé (spelling!) · tropezaste · tropezó · tropezamos · tropezasteis · tropezaron"},
+ w58:{v:"Nado en el mar casi todos los días.|Ik zwem bijna elke dag in zee.",r:"presente: nado · nadas · nada · nadamos · nadáis · nadan — indefinido: nadé · nadaste · nadó · nadamos · nadasteis · nadaron"},
+ w59:{v:"Vivo cerca del mar.|Ik woon dicht bij zee.",r:"zn (m)"},
+ w60:{v:"No me gusta tomar decisiones rápidas.|Ik hou er niet van snelle beslissingen te nemen.",r:"tomar, presente: tomo · tomas · toma · tomamos · tomáis · toman — indefinido: tomé · tomaste · tomó · tomamos · tomasteis · tomaron"},
+ w61:{v:"Descubrí un restaurante japonés buenísimo.|Ik ontdekte een geweldig Japans restaurant.",r:"presente: descubro · descubres · descubre · descubrimos · descubrís · descubren — indefinido: descubrí · descubriste · descubrió · descubrimos · descubristeis · descubrieron"},
+ w62:{v:"Echo de menos a mis seres queridos.|Ik mis mijn dierbaren.",r:"altijd meervoud: los seres queridos"},
+ w63:{v:"España es un país muy variado.|Spanje is een heel gevarieerd land.",r:"zn (m) · mv: los países"},
+ w64:{v:"Todo el mundo lo sabe.|Iedereen weet het.",r:"vaste uitdrukking · werkwoord in het enkelvoud: todo el mundo sabe..."},
+ w65:{v:"Leí una biografía de Frida Kahlo.|Ik las een biografie van Frida Kahlo.",r:"zn (v) · mv: las biografías"},
+ w66:{v:"Hablar español es un gran logro.|Spaans spreken is een grote prestatie.",r:"zn (m) · mv: los logros"},
+ w67:{v:"La película tuvo mucho éxito.|De film had veel succes.",r:"tener, presente: tengo · tienes · tiene · tenemos · tenéis · tienen — indefinido: tuve · tuviste · tuvo · tuvimos · tuvisteis · tuvieron"},
+ w68:{v:"Ganó un premio importante.|Hij won een belangrijke prijs.",r:"zn (m) · mv: los premios"},
+ w69:{v:"Empecé a estudiar español en 2025.|Ik begon in 2025 met Spaans studeren.",r:"presente (e→ie): empiezo · empiezas · empieza · empezamos · empezáis · empiezan — indefinido: empecé (spelling!) · empezaste · empezó · empezamos · empezasteis · empezaron · empezar a + infinitief"},
+ w70:{v:"La clase termina a las ocho.|De les eindigt om acht uur.",r:"presente: termino · terminas · termina · terminamos · termináis · terminan — indefinido: terminé · terminaste · terminó · terminamos · terminasteis · terminaron"},
+ w71:{v:"Viví en Japón durante dos años.|Ik woonde twee jaar (lang) in Japan.",r:"voorzetsel: durante + periode (hoe lang iets duurde)"},
+ w72:{v:"Trabajó allí hasta 2010.|Hij werkte daar tot 2010.",r:"voorzetsel: desde... hasta... = van... tot..."},
+ w73:{v:"Picasso es del siglo veinte.|Picasso is van de twintigste eeuw.",r:"zn (m) · mv: los siglos"},
+ w74:{v:"Mi padre se jubiló el año pasado.|Mijn vader ging vorig jaar met pensioen.",r:"indefinido: me jubilé · te jubilaste · se jubiló · nos jubilamos · os jubilasteis · se jubilaron"},
+ w75:{v:"La guerra civil terminó en 1939.|De burgeroorlog eindigde in 1939.",r:"zn (v) · mv: las guerras"},
+ w76:{v:"Muchos artistas huyeron del país.|Veel kunstenaars vluchtten het land uit.",r:"presente: huyo · huyes · huye · huimos · huis · huyen — indefinido: huí · huiste · huyó · huimos · huisteis · huyeron"},
+ w77:{v:"Compuso más de cien canciones.|Hij componeerde meer dan honderd liedjes.",r:"presente: compongo · compones · compone · componemos · componéis · componen — indefinido: compuse · compusiste · compuso · compusimos · compusisteis · compusieron"},
+ w78:{v:"Almodóvar dirigió esta película.|Almodóvar regisseerde deze film.",r:"presente: dirijo (g→j!) · diriges · dirige · dirigimos · dirigís · dirigen — indefinido: dirigí · dirigiste · dirigió · dirigimos · dirigisteis · dirigieron"},
+ w79:{v:"Protagonizó una serie famosa.|Ze speelde de hoofdrol in een beroemde serie.",r:"indefinido: protagonicé (spelling!) · protagonizaste · protagonizó · protagonizamos · protagonizasteis · protagonizaron"},
+ w80:{v:"Conseguí mi primer trabajo en España.|Ik kreeg mijn eerste baan in Spanje voor elkaar.",r:"presente (e→i): consigo · consigues · consigue · conseguimos · conseguís · consiguen — indefinido: conseguí · conseguiste · consiguió · conseguimos · conseguisteis · consiguieron"},
+ w81:{v:"Rosalía es una cantante española.|Rosalía is een Spaanse zangeres.",r:"el/la cantante · mv: los/las cantantes"},
+ w82:{v:"Me voy, ¡hasta mañana!|Ik ga ervandoor, tot morgen!",r:"presente: me voy · te vas · se va · nos vamos · os vais · se van — indefinido: me fui · te fuiste · se fue · nos fuimos · os fuisteis · se fueron"},
+ w83:{v:"Tiene el pelo largo y moreno.|Ze heeft lang donker haar.",r:"zn (m) · met ll: el pelo, tener el pelo..."},
+ w84:{v:"Tiene los ojos verdes.|Hij heeft groene ogen.",r:"mv van el ojo: los ojos"},
+ w85:{v:"Mi hermano es muy alto.|Mijn broer is erg lang."},
+ w86:{v:"Soy un poco más bajo que tú.|Ik ben iets kleiner dan jij."},
+ w87:{v:"Es delgada y deportista.|Ze is slank en sportief."},
+ w88:{v:"¡Qué guapo estás hoy!|Wat zie je er knap uit vandaag!",r:"ser guapo = knap zíjn · estar guapo = er (nu) knap uitzien"},
+ w89:{v:"Llevo gafas desde los diez años.|Ik draag een bril sinds mijn tiende.",r:"llevar, presente: llevo · llevas · lleva · llevamos · lleváis · llevan"},
+ w90:{v:"Mi vecino tiene barba.|Mijn buurman heeft een baard.",r:"zn (v) · tener barba (zonder lidwoord)"},
+ w91:{v:"Me parezco a mi madre.|Ik lijk op mijn moeder.",r:"presente: me parezco · te pareces · se parece · nos parecemos · os parecéis · se parecen · parecerse a = lijken op"},
+ w92:{v:"Me llevo muy bien con mi hermana.|Ik kan het heel goed vinden met mijn zus.",r:"me llevo bien/mal con... · indefinido: me llevé bien con..."},
+ w93:{v:"Tiene un carácter fuerte.|Hij heeft een sterk karakter.",r:"zn (m) · mv: los caracteres (klemtoon verschuift)"},
+ w94:{v:"Es una persona muy abierta.|Ze is een heel open persoon."},
+ w95:{v:"Es callado pero muy simpático.|Hij is stil maar heel aardig."},
+ w96:{v:"Tu tía es muy graciosa.|Je tante is erg grappig."},
+ w97:{v:"Vino con su pareja.|Hij kwam met zijn partner.",r:"zn (v), ook voor een man: la pareja"},
+ w98:{v:"Conocí a mi pareja bailando salsa.|Ik leerde mijn partner kennen tijdens het salsadansen.",r:"presente: conozco (zc!) · conoces · conoce · conocemos · conocéis · conocen — indefinido: conocí · conociste · conoció · conocimos · conocisteis · conocieron"},
+ w99:{v:"Alquilamos un piso en el centro.|We huren een flat in het centrum.",r:"zn (m) · mv: los pisos"},
+ w100:{v:"El piso tiene dos dormitorios.|De flat heeft twee slaapkamers.",r:"zn (m) · mv: los dormitorios"},
+ w101:{v:"La cocina es pequeña pero moderna.|De keuken is klein maar modern.",r:"zn (v) · ook: het koken/de keuken (gerechten)"},
+ w102:{v:"El cuarto de baño no tiene ventana.|De badkamer heeft geen raam.",r:"zn (m) · mv: los cuartos de baño"},
+ w103:{v:"Vemos la tele en el salón.|We kijken tv in de woonkamer.",r:"zn (m) · mv: los salones"},
+ w104:{v:"Desayunamos en la terraza.|We ontbijten op het terras.",r:"zn (v) · mv: las terrazas"},
+ w105:{v:"El balcón da a la calle.|Het balkon kijkt uit op de straat.",r:"zn (m) · mv: los balcones · dar a = uitkijken op"},
+ w106:{v:"Los niños juegan en el jardín.|De kinderen spelen in de tuin.",r:"zn (m) · mv: los jardines"},
+ w107:{v:"El armario está lleno de ropa.|De kast zit vol kleren.",r:"zn (m) · mv: los armarios"},
+ w108:{v:"La cama es muy cómoda.|Het bed ligt erg lekker.",r:"zn (v) · mv: las camas"},
+ w109:{v:"El sofá es viejo pero cómodo.|De bank is oud maar comfortabel.",r:"zn (m, ondanks -a!): el sofá · mv: los sofás"},
+ w110:{v:"Los muebles son de segunda mano.|De meubels zijn tweedehands.",r:"meestal meervoud: los muebles · ev: el mueble"},
+ w111:{v:"Busco un piso amueblado.|Ik zoek een gemeubileerde flat."},
+ w112:{v:"El salón es muy luminoso.|De woonkamer is erg licht."},
+ w113:{v:"La cocina es amplia.|De keuken is ruim."},
+ w114:{v:"Tu casa es muy acogedora.|Jouw huis is erg gezellig.",r:"bn: acogedor/acogedora · mv: acogedores/acogedoras"},
+ w115:{v:"Mi calle es bastante ruidosa.|Mijn straat is behoorlijk lawaaierig."},
+ w116:{v:"Es un barrio tranquilo.|Het is een rustige wijk."},
+ w117:{v:"Vivo en un barrio con mucha vida.|Ik woon in een levendige wijk.",r:"zn (m) · mv: los barrios"},
+ w118:{v:"Viven en las afueras de Madrid.|Ze wonen in de buitenwijken van Madrid.",r:"altijd meervoud: las afueras"},
+ w119:{v:"Alquilo una habitación a un estudiante.|Ik verhuur een kamer aan een student.",r:"presente: alquilo · alquilas · alquila · alquilamos · alquiláis · alquilan — indefinido: alquilé · alquilaste · alquiló · alquilamos · alquilasteis · alquilaron · betekent huren én verhuren"},
+ w120:{v:"El alquiler sube cada año.|De huur stijgt elk jaar.",r:"zn (m) · mv: los alquileres"},
+ w121:{v:"El edificio no tiene ascensor.|Het gebouw heeft geen lift.",r:"zn (m) · mv: los ascensores"},
+ w122:{v:"Me encanta la playa de Alicante.|Ik ben dol op het strand van Alicante.",r:"zoals gustar: me encanta + enkelvoud/werkwoord · me encantan + meervoud · indefinido: me encantó · me encantaron"},
+ b1:{v:"¡Hola! ¿Qué tal?|Hallo! Hoe gaat het?"},
+ b2:{v:"¡Adiós y hasta pronto!|Dag, en tot snel!"},
+ b3:{v:"Muchas gracias por todo.|Heel erg bedankt voor alles."},
+ b4:{v:"Un café, por favor.|Een koffie, alsjeblieft."},
+ b5:{v:"¿Vienes? Sí, claro.|Kom je? Ja, natuurlijk."},
+ b6:{v:"¡Buenos días! ¿Cómo estás?|Goedemorgen! Hoe gaat het?",r:"altijd meervoud: buenos días"},
+ b7:{v:"Buenas noches, que duermas bien.|Goedenavond, slaap lekker.",r:"altijd meervoud: buenas noches"},
+ b8:{v:"Me voy. ¡Hasta mañana!|Ik ga. Tot morgen!"},
+ b9:{v:"Me llamo Elise, ¿y tú?|Ik heet Elise, en jij?",r:"van llamarse: me llamo · te llamas · se llama"},
+ b10:{v:"¿Cómo estás? Muy bien, gracias.|Hoe gaat het? Heel goed, dank je."},
+ b11:{v:"Mi casa es pequeña.|Mijn huis is klein.",r:"zn (v) · mv: las casas · en casa = thuis"},
+ b12:{v:"El perro se llama Rocky.|De hond heet Rocky.",r:"zn (m) · mv: los perros · vrouwtje: la perra"},
+ b13:{v:"El gato duerme mucho.|De kat slaapt veel.",r:"zn (m) · mv: los gatos · vrouwtje: la gata"},
+ b14:{v:"Leo un libro en español.|Ik lees een boek in het Spaans.",r:"zn (m) · mv: los libros"},
+ b15:{v:"La escuela está cerca.|De school is dichtbij.",r:"zn (v) · mv: las escuelas"},
+ b16:{v:"Mi amiga vive en Alicante.|Mijn vriendin woont in Alicante.",r:"el amigo / la amiga · mv: los amigos / las amigas"},
+ b17:{v:"Mi familia es pequeña.|Mijn gezin is klein.",r:"zn (v) · mv: las familias"},
+ b18:{v:"Mi madre se llama Ilona.|Mijn moeder heet Ilona.",r:"zn (v) · mv: las madres"},
+ b19:{v:"Mi padre trabaja mucho.|Mijn vader werkt veel.",r:"zn (m) · mv: los padres (= ook: de ouders!)"},
+ b20:{v:"Tengo un hermano y una hermana.|Ik heb een broer en een zus.",r:"el hermano / la hermana · los hermanos = broers, of broers en zussen samen"},
+ b21:{v:"Comemos paella los domingos.|We eten paella op zondag.",r:"presente: como · comes · come · comemos · coméis · comen"},
+ b22:{v:"Bebo mucha agua.|Ik drink veel water.",r:"presente: bebo · bebes · bebe · bebemos · bebéis · beben"},
+ b23:{v:"Hablo un poco de español.|Ik spreek een beetje Spaans.",r:"presente: hablo · hablas · habla · hablamos · habláis · hablan"},
+ b24:{v:"Vivo en los Países Bajos.|Ik woon in Nederland.",r:"presente: vivo · vives · vive · vivimos · vivís · viven"},
+ b25:{v:"Soy holandesa.|Ik ben Nederlands.",r:"presente: soy · eres · es · somos · sois · son · voor eigenschappen (wie/wat je bent)"},
+ b26:{v:"Estoy en casa.|Ik ben thuis.",r:"presente: estoy · estás · está · estamos · estáis · están · voor plaats en toestand"},
+ b27:{v:"Tengo doce años.|Ik ben twaalf jaar.",r:"presente: tengo · tienes · tiene · tenemos · tenéis · tienen · leeftijd gaat met tener!"},
+ b28:{v:"Voy a la escuela en bici.|Ik ga op de fiets naar school.",r:"presente: voy · vas · va · vamos · vais · van"},
+ b29:{v:"Madrid es una ciudad grande.|Madrid is een grote stad.",r:"bn: grande (m=v) · mv: grandes"},
+ b30:{v:"El gato es pequeño.|De kat is klein."},
+ b31:{v:"¡Qué bonita es la playa!|Wat is het strand mooi!"},
+ b32:{v:"Mi profesora es muy simpática.|Mijn lerares is erg aardig."},
+ b33:{v:"Bebo agua fría.|Ik drink koud water.",r:"zn (v), maar: el agua (klinkt beter) · mv: las aguas"},
+ b34:{v:"La comida española es muy rica.|Het Spaanse eten is erg lekker.",r:"zn (v)"},
+ b35:{v:"Tengo tres gatos.|Ik heb drie katten.",r:"uno wordt un vóór een woord: un gato"},
+ b36:{v:"Son las ocho.|Het is acht uur."},
+ b37:{v:"Soy de los Países Bajos.|Ik kom uit Nederland.",r:"altijd met los: los Países Bajos · ook gewoon: Holanda"},
+ b38:{v:"Hablo un poco de español.|Ik spreek een beetje Spaans.",r:"un poco de + zn"},
+ b39:{v:"¿Dónde vives?|Waar woon je?",r:"met accent in vragen: ¿dónde?"},
+ b40:{v:"Me gusta mucho.|Ik vind het erg leuk.",r:"mucho na een werkwoord · muy vóór een bijvoeglijk naamwoord"},
+ b41:{v:"Mi madre es holandesa.|Mijn moeder is Nederlandse.",r:"holandés / holandesa · mv: holandeses / holandesas · klein geschreven!"},
+ b42:{v:"Mi profesor es español.|Mijn leraar is Spaans.",r:"español / española · mv: españoles / españolas"},
+ b43:{v:"¿Cuál es tu nombre?|Wat is jouw naam?",r:"zn (m) · mv: los nombres"},
+ b44:{v:"Mi trabajo es interesante.|Mijn werk is interessant.",r:"zn (m) · mv: los trabajos"},
+ b45:{v:"La profesora explica muy bien.|De lerares legt heel goed uit.",r:"el profesor / la profesora"},
+ b46:{v:"Soy estudiante de español.|Ik ben student Spaans.",r:"el/la estudiante · mv: los/las estudiantes"},
+ b47:{v:"Mi padre trabaja en Ámsterdam.|Mijn vader werkt in Amsterdam.",r:"presente: trabajo · trabajas · trabaja · trabajamos · trabajáis · trabajan"},
+ b48:{v:"Estudio español con mi tío.|Ik leer Spaans met mijn oom.",r:"presente: estudio · estudias · estudia · estudiamos · estudiáis · estudian"},
+ b49:{v:"Tengo doce años.|Ik ben twaalf jaar (oud).",r:"zn (m) · mv: los años · leeftijd = tener ... años"},
+ b50:{v:"¿Cómo te llamas? Me llamo Sara.|Hoe heet je? Ik heet Sara.",r:"van llamarse: me llamo · te llamas · se llama"},
+ b51:{v:"Leo un libro cada mes.|Ik lees elke maand een boek.",r:"presente: leo · lees · lee · leemos · leéis · leen · verleden: leyó (hij/zij las)"},
+ b52:{v:"Escribo una frase en español.|Ik schrijf een zin in het Spaans.",r:"presente: escribo · escribes · escribe · escribimos · escribís · escriben"},
+ b53:{v:"Escucho música española.|Ik luister naar Spaanse muziek.",r:"presente: escucho · escuchas · escucha · escuchamos · escucháis · escuchan"},
+ b54:{v:"No entiendo la pregunta.|Ik begrijp de vraag niet.",r:"presente (e→ie): entiendo · entiendes · entiende · entendemos · entendéis · entienden"},
+ b55:{v:"Esta palabra es nueva.|Dit woord is nieuw.",r:"zn (v) · mv: las palabras"},
+ b56:{v:"El español es un idioma bonito.|Spaans is een mooie taal.",r:"zn (m, ondanks -a!): el idioma · mv: los idiomas"},
+ b57:{v:"Alicante es una ciudad bonita.|Alicante is een mooie stad.",r:"zn (v) · mv: las ciudades"},
+ b58:{v:"Mis abuelos viven en un pueblo.|Mijn opa en oma wonen in een dorp.",r:"zn (m) · mv: los pueblos · ook: het volk"},
+ b59:{v:"Vamos a la playa.|We gaan naar het strand.",r:"zn (v) · mv: las playas"},
+ b60:{v:"La montaña es muy alta.|De berg is erg hoog.",r:"zn (v) · mv: las montañas"},
+ b61:{v:"El río pasa por la ciudad.|De rivier stroomt door de stad.",r:"zn (m) · mv: los ríos"},
+ b62:{v:"El mar está tranquilo hoy.|De zee is rustig vandaag.",r:"zn (m)"},
+ b63:{v:"Groninga está en el norte.|Groningen ligt in het noorden.",r:"zn (m) · windrichtingen met el: el norte, el sur, el este, el oeste"},
+ b64:{v:"Alicante está en el sur.|Alicante ligt in het zuiden.",r:"zn (m)"},
+ b65:{v:"Jugamos en el parque.|We spelen in het park.",r:"zn (m) · mv: los parques"},
+ b66:{v:"Hay un mercado en la plaza.|Er is een markt op het plein.",r:"zn (v) · mv: las plazas"},
+ b67:{v:"El museo está cerrado los lunes.|Het museum is maandag dicht.",r:"zn (m) · mv: los museos"},
+ b68:{v:"La iglesia es muy antigua.|De kerk is heel oud.",r:"zn (v) · mv: las iglesias"},
+ b69:{v:"El clima de Alicante es perfecto.|Het klimaat van Alicante is perfect.",r:"zn (m, ondanks -a!): el clima"},
+ b70:{v:"En agosto hace mucho calor.|In augustus is het erg warm.",r:"met hacer: hace calor (nu) · hizo calor (toen) · hace mucho calor = het is érg warm"},
+ b71:{v:"En Holanda hace frío en enero.|In Nederland is het koud in januari.",r:"met hacer: hace frío · hizo frío"},
+ b72:{v:"Hoy llueve mucho.|Vandaag regent het hard.",r:"van llover (o→ue), alleen 3e persoon: llueve (het regent) · llovió (het regende)"},
+ b73:{v:"La gente aquí es muy amable.|De mensen hier zijn erg vriendelijk.",r:"enkelvoud in het Spaans: la gente es... (niet: son)"},
+ b74:{v:"El pueblo es muy bonito.|Het dorp is erg mooi."}
+};
+
 var dicOpen = null, dicZoek = "";
+function dicModal(){
+  var wrap = document.getElementById("dicWrap");
+  if(!wrap){
+    wrap = document.createElement("div");
+    wrap.id = "dicWrap"; wrap.className = "dicwrap";
+    wrap.innerHTML = "<div class='dicpanel'><div class='dictop'>"+
+      "<span class='kicker'>Woordenboek</span><button class='ghost' id='btnDicDicht'>✕ Sluiten</button></div>"+
+      "<div id='dicCard'></div></div>";
+    document.body.appendChild(wrap);
+    wrap.onclick = function(e){ if(e && e.target === wrap) dicSluit(); };
+    var bx = document.getElementById("btnDicDicht");
+    if(bx) bx.onclick = dicSluit;
+  }
+  wrap.classList.remove("hidden");
+  renderDic();
+}
+function dicSluit(){
+  var wrap = document.getElementById("dicWrap");
+  if(wrap) wrap.classList.add("hidden");
+}
 function dicStatus(st){
   if(!st) return null;
   if(st.box <= 1) return {kleur:"🔴", label:"lastig"};
@@ -2801,17 +3021,27 @@ function renderDic(){
       "<div class='dichead'><span><b class='es'>"+w.es+"</b> <span class='dicstip'>"+stip+"</span></span>"+
       "<span class='muted'>"+(st && st.n ? st.n+"× " : "")+(open ? "▾" : "▸")+"</span></div>";
     if(open){
-      var vb = dicVoorbeeld(w);
+      var info = (typeof DICINFO !== "undefined" && DICINFO[w.id]) || null;
       html += "<div class='dicbody'>"+
         "<p><b>"+w.nl+"</b>"+(w.tag ? " <span class='muted'>· thema: "+w.tag+"</span>" : "")+"</p>";
       if(st){
         var fouten = st.f !== undefined ? st.f : (S.errors["woord:"+w.id] ? S.errors["woord:"+w.id].count : 0);
         html += "<p class='muted'>"+(st.n ? "Geoefend: "+st.n+"× · " : "")+"Fouten: "+fouten+"× · Box "+st.box+"/5 · volgende herhaling: "+(st.due <= today() ? "vandaag" : st.due)+"</p>";
-      } else {
-        html += "<p class='muted'>Nog niet geoefend. Dit woord komt vanzelf langs in een les, of neem alvast een voorproefje:</p>";
       }
-      html += (vb ? "<p>Voorbeeld: <span class='es'>"+vb.es+"</span><br><span class='muted'>"+vb.nl+"</span></p>" : "")+
-        "<div class='row'><button class='ghost' data-vormen='"+w.id+"'>Vormen & uitleg 🤖</button></div>"+
+      if(info && info.r){
+        html += "<p class='dicrijtje'>"+info.r+"</p>";
+      }
+      var vbEs = null, vbNl = null;
+      if(info && info.v){
+        var dl = info.v.split("|"); vbEs = dl[0]; vbNl = dl[1] || "";
+      } else {
+        var vb = dicVoorbeeld(w);
+        if(vb){ vbEs = vb.es; vbNl = vb.nl; }
+      }
+      if(vbEs){
+        html += "<p>Voorbeeld: <span class='es'>"+vbEs+"</span><br><span class='muted'>"+vbNl+"</span></p>";
+      }
+      html += "<div class='row'><button class='ghost' data-vormen='"+w.id+"'>Meer uitleg 🤖</button></div>"+
         "</div>";
     }
     html += "</div>";
@@ -2859,7 +3089,7 @@ var TOUR = [
   {titel:"Fouten zijn goud waard 💛",
    txt:"Fouten maken is helemaal niet erg, daar leer je juist het meest van. De app onthoudt wat je lastig vindt en laat precies díe dingen vaker terugkomen, tot ze vastzitten."},
   {titel:"Jouw eigen woordenboek 📖",
-   txt:"Tik op het boekje naast mij, rechtsboven. Daar staat alles wat je al geleerd hebt: per woord de vertaling, hoe vaak je het oefende, wat nog lastig is, de vormen en een voorbeeldzin."},
+   txt:"Tik op het boekje naast mij, rechtsboven. Alle woorden op alfabet, met per woord de vertaling, de vormen (rijtjes) en een voorbeeldzin. Het opent als popup, dus je raakt je oefening of spelletje niet kwijt."},
   {titel:"De Speeltuin 🧩",
    txt:"Woordenzoeker, Memory, Palabra Duel (tegen elkaar!) en Spaanse muziek. Voelt als spelen, maar stiekem oefen je gewoon je woordjes."},
   {titel:"Ik groei met je mee ✨",
@@ -3454,7 +3684,6 @@ var TABS = [
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
   {id:"chispa", label:"Chispa", nav:false},
-  {id:"diccionario", label:"Woordenboek", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Spiekbrief"}
@@ -3465,6 +3694,7 @@ function navPush(state){
 }
 
 function show(tabId, skipPush){
+  if(tabId === "diccionario"){ dicModal(); return; } // oude links/history: woordenboek is nu een popup
   if(!skipPush) navPush({t:"tab", id:tabId});
   TABS.forEach(function(t){
     document.getElementById("tab-"+t.id).classList.toggle("hidden", t.id!==tabId);
@@ -3484,7 +3714,6 @@ function show(tabId, skipPush){
     var ss = document.getElementById("syncStatus");
     if(ss) ss.textContent = lastSync ? "Laatste sync: gelukt ✓" : "Laatste sync: wordt automatisch gedaan tijdens het oefenen";
   }
-  if(tabId==="diccionario"){ renderDic(); }
   if(tabId==="speeltuin"){ renderFun(); }
   if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
