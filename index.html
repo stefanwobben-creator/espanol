@@ -220,9 +220,10 @@
       </div>
       <p class="muted" style="margin:10px 0 4px">Moedertaal / mother tongue:</p>
       <div class="row" id="langRow"></div>
-      <p class="muted" style="margin:10px 0 4px">Optioneel: e-mail (zodat je je voortgang kunt terugvinden als je je code kwijt bent) en een groepscode als je die kreeg.</p>
+      <p class="muted" style="margin:10px 0 4px">Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.</p>
       <input type="email" id="newProfMail" placeholder="E-mail (optioneel)" autocomplete="email">
-      <input type="text" id="newProfGroep" placeholder="Groepscode (optioneel)" autocomplete="off">
+      <p class="muted" style="margin:10px 0 4px">Kreeg je een <b>uitnodigingslink</b> voor een groep? Open die link gewoon, dan hoef je hier niets in te vullen. Kreeg je alleen een <b>code</b>? Vul hem hieronder in. Geen van beide? Laat leeg: een groep starten of later meedoen kan altijd via je profiel.</p>
+      <input type="text" id="newProfGroep" placeholder="Groepscode (alleen als je die kreeg)" autocomplete="off">
       <div class="row">
         <button class="primary" id="btnNewProf">Start</button>
         <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
@@ -433,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.0";
+var APP_VERSIE = "v10.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
