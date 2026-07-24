@@ -288,6 +288,24 @@ app.get("/api/familia", async (_req, res) => {
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
+/* ---- Herstel: voortgang terugvinden via e-mail (max 5 pogingen per IP per uur) ---- */
+const herstelPogingen = new Map(); // ip -> [timestamps]
+app.post("/api/herstel", async (req, res) => {
+  const { mail } = req.body || {};
+  const schoon = String(mail || "").trim().toLowerCase();
+  if (!schoon || !schoon.includes("@")) return bad(res, 400, "vul een geldig e-mailadres in");
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?";
+  const nu = Date.now();
+  const lijst = (herstelPogingen.get(ip) || []).filter((t) => t > nu - 3600000);
+  if (lijst.length >= 5) return bad(res, 429, "te veel pogingen, probeer het over een uur nog eens");
+  lijst.push(nu); herstelPogingen.set(ip, lijst);
+  try {
+    const r = await pool.query(
+      "SELECT code, name, track FROM profiles WHERE lower(state->>'mail') = $1 ORDER BY updated_at DESC LIMIT 5", [schoon]);
+    ok(res, { profielen: r.rows.map((x) => ({ naam: x.name, code: x.code, track: x.track })) });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
 /* ---- Groepen: eigen klassementen naast de familie ---- */
 // POST /api/groep/nieuw {naam, code} — code = sync-code van de maker
 app.post("/api/groep/nieuw", async (req, res) => {

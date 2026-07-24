@@ -39,9 +39,9 @@
   button.bad{background:var(--red-soft); color:var(--red); border:1.5px solid var(--red); padding:12px 20px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;}
   .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
   .row.center{justify-content:center;}
-  input[type=text], textarea{width:100%; font-size:1.05rem; padding:12px; border:1.5px solid var(--border);
+  input[type=text], input[type=email], textarea{width:100%; font-size:1.05rem; padding:12px; border:1.5px solid var(--border);
     border-radius:10px; background:#fffdf9; color:var(--ink); font-family:inherit;}
-  input[type=text]:focus, textarea:focus{outline:none; border-color:var(--accent);}
+  input[type=text]:focus, input[type=email]:focus, textarea:focus{outline:none; border-color:var(--accent);}
   .feedback{border-radius:10px; padding:12px 14px; margin-top:12px; font-size:.95rem;}
   .feedback.ok{background:var(--green-soft); color:var(--green);}
   .feedback.bijna{background:var(--amber-soft); color:var(--amber);}
@@ -213,8 +213,9 @@
       </div>
       <p class="muted" style="margin:10px 0 4px">Moedertaal / mother tongue:</p>
       <div class="row" id="langRow"></div>
-      <input type="email" id="newProfMail" placeholder="E-mail (optioneel, alleen voor herstel van je voortgang)" autocomplete="off" style="margin-top:10px">
-      <input type="text" id="newProfGroep" placeholder="Groepscode (optioneel, van een vriend of je docent)" autocomplete="off">
+      <p class="muted" style="margin:10px 0 4px">Optioneel: e-mail (zodat je je voortgang kunt terugvinden als je je code kwijt bent) en een groepscode als je die kreeg.</p>
+      <input type="email" id="newProfMail" placeholder="E-mail (optioneel)" autocomplete="email">
+      <input type="text" id="newProfGroep" placeholder="Groepscode (optioneel)" autocomplete="off">
       <div class="row">
         <button class="primary" id="btnNewProf">Start</button>
         <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
@@ -224,6 +225,12 @@
       <p class="muted">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
       <input type="text" id="syncCodeIn" placeholder="bijv. elise-x7k2m9p4qa3b" autocomplete="off">
       <div class="row"><button class="ghost" id="btnSyncLogin">Haal mijn voortgang op</button></div>
+      <p class="muted" style="margin-top:8px"><a href="#" id="lnkHerstel">Code kwijt? Herstel via je e-mailadres</a></p>
+      <div id="herstelBox" class="hidden">
+        <input type="email" id="herstelMail" placeholder="Het e-mailadres van je profiel" autocomplete="email">
+        <div class="row"><button class="ghost" id="btnHerstel">Zoek mijn voortgang</button></div>
+        <div id="herstelUit"></div>
+      </div>
       <p class="muted" id="appVerProf" style="margin-top:10px"></p>
     </div>
     <div class="card hidden" id="placeCard"></div>
@@ -373,7 +380,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v9.4";
+var APP_VERSIE = "v9.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1311,6 +1318,37 @@ function renderProfileScreen(){
   });
   renderLangRow();
   document.getElementById("btnPlacement").onclick = startPlacement;
+  var lh = document.getElementById("lnkHerstel");
+  if(lh) lh.onclick = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    var hb = document.getElementById("herstelBox");
+    if(hb) hb.classList.toggle("hidden");
+    return false;
+  };
+  var bh = document.getElementById("btnHerstel");
+  if(bh) bh.onclick = function(){
+    var m = (document.getElementById("herstelMail").value || "").trim();
+    var uit = document.getElementById("herstelUit");
+    if(!m || m.indexOf("@") === -1){ if(uit) uit.innerHTML = "<p class='muted'>Vul eerst een geldig e-mailadres in.</p>"; return; }
+    bh.disabled = true; bh.textContent = "Zoeken...";
+    api("/api/herstel", "POST", {mail:m}).then(function(res){
+      bh.disabled = false; bh.textContent = "Zoek mijn voortgang";
+      if(!uit) return;
+      if(!res || !res.ok){ uit.innerHTML = "<p class='muted'>"+(res && res.error ? res.error : "Server even niet bereikbaar, probeer zo opnieuw.")+"</p>"; return; }
+      if(!res.profielen || !res.profielen.length){ uit.innerHTML = "<p class='muted'>Geen voortgang gevonden bij dit e-mailadres. Check de spelling, of was het profiel zonder e-mail aangemaakt?</p>"; return; }
+      uit.innerHTML = "<p class='muted'>Gevonden! Kies je profiel:</p>" + res.profielen.map(function(pr){
+        return "<button class='profbtn' data-herstel='"+pr.code+"'>"+pr.naam+"<small>tik om te herstellen</small></button>";
+      }).join("");
+      uit.querySelectorAll("button[data-herstel]").forEach(function(b){
+        b.onclick = function(){
+          var ci = document.getElementById("syncCodeIn");
+          if(ci) ci.value = b.getAttribute("data-herstel");
+          var bs2 = document.getElementById("btnSyncLogin");
+          if(bs2) bs2.onclick();
+        };
+      });
+    });
+  };
   var bs = document.getElementById("btnSyncLogin");
   if(bs) bs.onclick = function(){
     var code = (document.getElementById("syncCodeIn").value||"").trim().toLowerCase();
@@ -3613,7 +3651,17 @@ function renderPerfil(){
   el.innerHTML = "<div style='display:flex; align-items:center; gap:14px'>"+
     "<span class='miniprof' style='width:52px; height:52px; font-size:1.5rem'>"+p.name.charAt(0).toUpperCase()+"</span>"+
     "<div><h2 style='margin:0'>"+p.name+"</h2>"+
-    "<p class='muted' style='margin:2px 0 0'>Niveau: "+lvl+" · Moedertaal: "+lang.vlag+" "+lang.naam+"</p></div></div>";
+    "<p class='muted' style='margin:2px 0 0'>Niveau: "+lvl+" · Moedertaal: "+lang.vlag+" "+lang.naam+"</p></div></div>"+
+    "<p class='muted' style='margin:12px 0 4px'>Herstel-e-mail (om je voortgang terug te vinden als je je sync-code kwijt bent):</p>"+
+    "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
+    "<div class='row'><button class='ghost' id='btnMailBewaar'>Bewaar e-mail</button></div>";
+  var bm = document.getElementById("btnMailBewaar");
+  if(bm) bm.onclick = function(){
+    var m = (document.getElementById("perfilMail").value || "").trim();
+    if(m && m.indexOf("@") === -1){ toast("Dat lijkt geen e-mailadres."); return; }
+    S.mail = m; persist(); syncUp();
+    toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
+  };
   renderGroepen();
 }
 function joinViaLink(gcode, poging){
