@@ -143,6 +143,12 @@
   .wshint{border:1.5px solid var(--border); background:var(--card); border-radius:999px; cursor:pointer;
           font-size:.85rem; padding:2px 7px; vertical-align:middle;}
   .wshint:hover{border-color:var(--amber); background:var(--amber-soft);}
+  .memgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:10px 0;}
+  .memcard{min-height:60px; border-radius:10px; border:1.5px solid var(--border); background:var(--card);
+           font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
+           padding:4px 6px; font-size:.85rem; color:var(--ink); text-align:center; line-height:1.2;}
+  .memcard.dicht{background:var(--amber-soft); border-color:var(--amber); font-size:1.4rem; color:var(--amber);}
+  .memcard.goed{background:var(--green-soft); border-color:var(--green);}
   .tiles{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
   .tile{width:40px; height:44px; border-radius:8px; background:var(--amber-soft); border:1.5px solid var(--amber);
         display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:1.15rem; color:var(--ink);}
@@ -276,7 +282,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v7.8";
+var APP_VERSIE = "v7.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2714,6 +2720,101 @@ function wsCellClick(r, c){
   }
   renderFun();
 }
+/* ================= MEMORY (PAREJAS) ================= */
+var mem = null;
+function memPool(){
+  var pool = [];
+  WORDS.forEach(function(w){
+    if(!S.srs[w.id]) return; // alleen geleerde woorden
+    var es = w.es.split("/")[0].trim();
+    var nl = w.nl.split("/")[0].trim();
+    if(es.length >= 2 && es.length <= 18 && nl.length <= 18) pool.push({es:es, nl:nl});
+  });
+  return pool;
+}
+function memStart(){
+  var pool = memPool();
+  if(pool.length < 4){ toast("Leer eerst wat meer woordjes, dan kan het spel gevuld worden!"); return; }
+  pool.sort(function(){ return Math.random() - 0.5; });
+  var paren = [];
+  pool.forEach(function(p){ if(paren.length < 6 && !paren.some(function(x){ return x.es === p.es; })) paren.push(p); });
+  var cards = [];
+  paren.forEach(function(p, i){
+    cards.push({pid:i, txt:p.es, lang:"es"});
+    cards.push({pid:i, txt:p.nl, lang:"nl"});
+  });
+  cards.sort(function(){ return Math.random() - 0.5; });
+  mem = {cards:cards, open:[], matched:{}, beurten:0, lock:false, klaar:false};
+  funView = "mem"; renderFun();
+}
+function memClick(i){
+  if(!mem || mem.lock || mem.klaar) return;
+  if(mem.matched[i] || mem.open.indexOf(i) !== -1) return;
+  mem.open.push(i);
+  if(mem.open.length === 2){
+    mem.beurten++;
+    var a = mem.cards[mem.open[0]], b = mem.cards[mem.open[1]];
+    if(a.pid === b.pid){
+      mem.matched[mem.open[0]] = true; mem.matched[mem.open[1]] = true;
+      mem.open = [];
+      addXP(2);
+      if(Object.keys(mem.matched).length === mem.cards.length){
+        mem.klaar = true;
+        S.tapas = (S.tapas||0) + 1;
+        if(!S.memBest || mem.beurten < S.memBest) S.memBest = mem.beurten;
+        persist();
+        confetti(["🃏","🎉","🌮"], 24);
+        toast("¡Parejas compleet in "+mem.beurten+" beurten! +1 tapa 🌮");
+      }
+    } else {
+      mem.lock = true;
+      setTimeout(function(){ if(mem){ mem.open = []; mem.lock = false; renderFun(); } }, 950);
+    }
+  }
+  renderFun();
+}
+function renderFunMem(){
+  var el = document.getElementById("funCard");
+  var html = "<h2>Memory · Parejas 🃏</h2>";
+  if(!mem){
+    html += "<p class='muted'>Draai kaartjes om en zoek de paren: Spaans woord bij Nederlandse vertaling. Met jouw eigen geleerde woorden.</p>"+
+      (S.memBest ? "<p class='muted'>Jouw record: <b>"+S.memBest+" beurten</b> 🏅</p>" : "")+
+      "<div class='row'><button class='primary' id='btnMem'>Nieuw spel</button>"+
+      "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
+    el.innerHTML = html;
+    var b0 = document.getElementById("btnMem");
+    if(b0) b0.onclick = memStart;
+    var bt = document.getElementById("btnFunTerug");
+    if(bt) bt.onclick = function(){ funView = null; renderFun(); };
+    return;
+  }
+  html += "<div class='memgrid'>";
+  mem.cards.forEach(function(c, i){
+    var openKaart = mem.matched[i] || mem.open.indexOf(i) !== -1;
+    if(openKaart){
+      html += "<button class='memcard "+(mem.matched[i] ? "goed" : "")+"' data-mem='"+i+"'>"+
+        (c.lang === "es" ? "<span class='es'>"+c.txt+"</span>" : c.txt)+"</button>";
+    } else {
+      html += "<button class='memcard dicht' data-mem='"+i+"'>?</button>";
+    }
+  });
+  html += "</div><p class='muted'>Beurten: <b>"+mem.beurten+"</b>"+(S.memBest ? " · record: "+S.memBest : "")+"</p>";
+  if(mem.klaar){
+    html += "<p><b>¡Muy bien! Compleet in "+mem.beurten+" beurten.</b>"+
+      (S.memBest === mem.beurten ? " Nieuw record! 🏅" : "")+"</p>";
+  }
+  html += "<div class='row'><button class='ghost' id='btnMemNieuw'>Nieuw spel</button>"+
+    "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-mem]").forEach(function(b){
+    b.onclick = function(){ memClick(+b.getAttribute("data-mem")); };
+  });
+  var bn = document.getElementById("btnMemNieuw");
+  if(bn) bn.onclick = memStart;
+  var bt2 = document.getElementById("btnFunTerug");
+  if(bt2) bt2.onclick = function(){ funView = null; renderFun(); };
+}
+
 /* ================= PALABRA DUEL ================= */
 var DUEL_SCORE = {a:1,e:1,o:1,i:1,s:1,n:1,r:1,u:1,l:1,t:1,d:2,g:2,c:3,b:3,m:3,p:3,f:4,h:4,v:4,y:4,q:5,j:8,x:8,z:10,"ñ":8};
 var duelCur = null;
@@ -2904,15 +3005,18 @@ function renderFun(){
   if(!el) return;
   if(duelCur){ renderDuel(); return; }
   if(funView === "ws"){ renderFunWs(); return; }
+  if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   if(funView === "fam"){ renderFamilia(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
+  document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
   document.getElementById("ftFam").onclick = function(){ funView = "fam"; navPush({t:"fun", v:"fam"}); renderFun(); };
 }
