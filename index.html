@@ -134,6 +134,11 @@
   #miniDic{cursor:pointer; font-size:1.35rem; line-height:1;}
   .miniprof{width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff; font-weight:800;
             display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:.85rem; line-height:1;}
+  .naamknop{cursor:pointer; border-bottom:2px dotted var(--accent);}
+  .dicfab{position:fixed; right:16px; bottom:16px; width:54px; height:54px; border-radius:50%; border:none;
+          background:var(--accent); color:#fff; font-size:1.5rem; cursor:pointer; z-index:90;
+          box-shadow:0 6px 18px rgba(212,85,43,.45); display:flex; align-items:center; justify-content:center;}
+  .dicfab:active{transform:scale(.94);}
   .dicrow{border-bottom:1px dashed var(--border);}
   .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
   .dicbody{padding:2px 0 12px; font-size:.92rem;}
@@ -189,11 +194,10 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>¡Vamos <span id="userName">…</span>!</h1>
+    <h1>¡Vamos <span id="userName" class="naamknop" title="Profiel & groepen">…</span>!</h1>
     <div style="display:flex; align-items:center; gap:8px;">
       <div class="badge" id="dueBadge">…</div>
       <span id="miniPet" title="Chispa"></span>
-      <span id="miniProf" class="miniprof" title="Profiel & groepen">👤</span>
     </div>
   </header>
 
@@ -235,6 +239,7 @@
     </div>
     <div class="card hidden" id="placeCard"></div>
   </section>
+  <button id="dicFab" class="dicfab hidden" title="Woordenboek">📖</button>
   <div id="storageWarn" class="warn hidden">
     Let op: in deze omgeving kan voortgang niet automatisch bewaard worden. Gebruik bij Voortgang de knop
     "exporteer voortgang" voordat je afsluit, en plak die de volgende keer terug.
@@ -380,7 +385,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v9.5";
+var APP_VERSIE = "v9.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1295,6 +1300,8 @@ function renderProfileScreen(){
   document.getElementById("tab-profiel").classList.remove("hidden");
   document.getElementById("goalLine").classList.add("hidden");
   document.getElementById("nav").classList.add("hidden");
+  var fb2 = document.getElementById("dicFab");
+  if(fb2) fb2.classList.add("hidden");
   TABS.forEach(function(t){ document.getElementById("tab-"+t.id).classList.add("hidden"); });
   document.getElementById("userName").textContent = "…";
   document.getElementById("dueBadge").textContent = "kies profiel";
@@ -1502,6 +1509,8 @@ function boot(){
   document.getElementById("tab-profiel").classList.add("hidden");
   document.getElementById("goalLine").classList.remove("hidden");
   document.getElementById("nav").classList.remove("hidden");
+  var fb = document.getElementById("dicFab");
+  if(fb){ fb.classList.remove("hidden"); fb.onclick = dicModal; }
   updateBadge();
   updateGoalUI();
   try{ if(window.history && history.replaceState) history.replaceState({t:"tab", id:"lessen"}, ""); }catch(e){}
@@ -1583,12 +1592,8 @@ function updateGoalUI(){
     mp.innerHTML = petSVG();
     mp.onclick = function(){ scopeLesson = null; show("chispa"); };
   }
-  var mpr = document.getElementById("miniProf");
-  if(mpr){
-    var pa = activeProfile();
-    mpr.textContent = pa ? pa.name.charAt(0).toUpperCase() : "👤";
-    mpr.onclick = function(){ scopeLesson = null; show("perfil"); };
-  }
+  var un = document.getElementById("userName");
+  if(un){ un.onclick = function(){ scopeLesson = null; show("perfil"); }; }
 }
 
 var toastTimer = null;
@@ -1980,15 +1985,12 @@ function renderSentence(fresh){
     "<p class='big'>"+s.nl+"</p>"+
     "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='Typ de Spaanse zin...'>"+
     "<div class='row'><button class='primary' id='btnCheck'>Controleer</button>"+
-    "<button class='ghost' id='btnSkip'>Andere zin</button>"+
-    "<button class='ghost' id='btnDicSnel' title='Woordenboek'>📖</button></div>"+
+    "<button class='ghost' id='btnSkip'>Andere zin</button></div>"+
     "<div id='sFeedback'></div>";
   var inp = document.getElementById("sInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkSentence(); });
   document.getElementById("btnCheck").onclick = checkSentence;
   document.getElementById("btnSkip").onclick = function(){ renderSentence(true); };
-  var bds = document.getElementById("btnDicSnel");
-  if(bds) bds.onclick = dicModal;
   inp.focus();
 }
 
@@ -2901,7 +2903,7 @@ var TXT = {
   vertalen:{nl:"Vertalen",en:"Translate",fr:"Traduire",de:"Übersetzen"},
   toetsjes:{nl:"Toetsjes",en:"Quizzes",fr:"Quiz",de:"Tests"},
   speeltuin:{nl:"Speeltuin",en:"Playground",fr:"Aire de jeux",de:"Spielplatz"},
-  spiekbrief:{nl:"Theorie",en:"Theory",fr:"Théorie",de:"Theorie"},
+  spiekbrief:{nl:"Grammatica",en:"Grammar",fr:"Grammaire",de:"Grammatik"},
   toonAntwoord:{nl:"Toon antwoord",en:"Show answer",fr:"Voir la réponse",de:"Antwort zeigen"},
   watBetekent:{nl:"Wat betekent dit?",en:"What does this mean?",fr:"Qu'est-ce que ça veut dire ?",de:"Was bedeutet das?"},
   hoeZegJe:{nl:"Hoe zeg je dit in het Spaans?",en:"How do you say this in Spanish?",fr:"Comment dit-on ça en espagnol ?",de:"Wie sagt man das auf Spanisch?"},
@@ -3295,12 +3297,12 @@ var TOUR = [
    txt:"Vertaal de zinnen in je eigen woorden. Weet je iets niet? Spiek gerust in de spiekbrief of zoek het online op. Ook opzoeken is leren!"},
   {titel:"Fouten zijn goud waard 💛",
    txt:"Fouten maken is helemaal niet erg, daar leer je juist het meest van. De app onthoudt wat je lastig vindt en laat precies díe dingen vaker terugkomen, tot ze vastzitten."},
-  {titel:"Theorie: spiekbrief & woordenboek 📖",
-   txt:"Onder <b>Theorie</b> vind je de spiekbrieven (grammatica per les) en het woordenboek: alle woorden op alfabet met vertaling, vormen en voorbeeldzinnen. Het woordenboek opent als popup, en bij het vertalen zit een 📖-knopje voor snel opzoeken."},
+  {titel:"Grammatica & woordenboek 📖",
+   txt:"Onder <b>Grammatica</b> vind je de spiekbrieven van je lessen. En zie je het ronde 📖-knopje rechtsonder? Dat is het woordenboek: altijd binnen handbereik, opent als popup, dus je raakt je oefening nooit kwijt."},
   {titel:"De Speeltuin 🧩",
    txt:"Woordenzoeker, Memory, Palabra Duel (tegen elkaar!) en Spaanse muziek. Voelt als spelen, maar stiekem oefen je gewoon je woordjes."},
   {titel:"Jouw profiel 👤",
-   txt:"Rechtsboven zit je profiel: je voortgang, je geheime sync-code (daarmee ga je op een ander apparaat verder) en <b>Groepen</b>. Start een groep met vrienden of klasgenoten en deel de uitnodigingslink: samen leren werkt het best."},
+   txt:"Tik op je <b>naam</b> bovenaan voor je profiel: je voortgang, je geheime sync-code (daarmee ga je op een ander apparaat verder) en <b>Groepen</b>. Start een groep met vrienden of klasgenoten en deel de uitnodigingslink: samen leren werkt het best."},
   {titel:"Ik groei met je mee ✨",
    txt:"Alles wat je oefent levert XP op, en daarvan groei ik: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
 ];
@@ -3894,16 +3896,11 @@ function renderFunDuel(){
 /* ================= SPIEKBRIEF ================= */
 function renderCheat(){
   var el = document.getElementById("cheat");
-  el.innerHTML = "<div class='card'><h2>Woordenboek 📖</h2>"+
-    "<p class='muted'>Alle woorden op alfabet, met vertaling, vormen en voorbeeldzinnen. Opent als popup, dus je raakt niets kwijt.</p>"+
-    "<div class='row'><button class='primary' id='btnTheorieDic'>Open het woordenboek</button></div></div>"+
-    "<div class='card'><h2>Spiekbrief 📝</h2>"+
-    "<p class='muted'>De grammatica van jouw lessen, per onderwerp uitklapbaar.</p>"+
+  el.innerHTML = "<div class='card'><h2>Grammatica 📝</h2>"+
+    "<p class='muted'>De spiekbrieven van jouw lessen, per onderwerp uitklapbaar. Woorden opzoeken? Gebruik het 📖-knopje rechtsonder.</p>"+
     CHEATSHEET.map(function(c){
       return "<details><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
     }).join("")+"</div>";
-  var bd = document.getElementById("btnTheorieDic");
-  if(bd) bd.onclick = dicModal;
 }
 
 /* ================= VOORTGANG ================= */
@@ -4062,7 +4059,7 @@ var TABS = [
   {id:"steun", label:"Steun", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
-  {id:"spiekbrief", label:"Theorie"}
+  {id:"spiekbrief", label:"Grammatica"}
 ];
 
 function navPush(state){
