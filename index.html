@@ -211,26 +211,26 @@
       <div id="profileList"></div>
       <h2 id="profNieuwKop" style="margin-top:18px">Nieuw profiel</h2>
       <input type="text" id="newProfName" placeholder="Naam / Name" autocomplete="off">
-      <p class="muted" style="margin:10px 0 4px">Niveau:</p>
+      <p class="muted" style="margin:10px 0 4px" id="lblNiveau">Niveau:</p>
       <div class="row">
         <button class="ghost trackpick" data-track="beginner" data-lvl="A0">A0 · helemaal nieuw</button>
         <button class="ghost trackpick" data-track="beginner" data-lvl="A1">A1 · een paar woorden</button>
         <button class="ghost trackpick" data-track="a2" data-lvl="A2">A2 · ik ken de basis</button>
         <button class="ghost" disabled style="opacity:.45">B1 · binnenkort</button>
       </div>
-      <p class="muted" style="margin:10px 0 4px">Moedertaal / mother tongue:</p>
+      <p class="muted" style="margin:10px 0 4px" id="lblTaal">Moedertaal / mother tongue:</p>
       <div class="row" id="langRow"></div>
-      <p class="muted" style="margin:10px 0 4px">Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.</p>
+      <p class="muted" style="margin:10px 0 4px" id="lblMailUitleg">Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.</p>
       <input type="email" id="newProfMail" placeholder="E-mail (optioneel)" autocomplete="email">
-      <p class="muted" style="margin:10px 0 4px">Kreeg je een <b>uitnodigingslink</b> voor een groep? Open die link gewoon, dan hoef je hier niets in te vullen. Kreeg je alleen een <b>code</b>? Vul hem hieronder in. Geen van beide? Laat leeg: een groep starten of later meedoen kan altijd via je profiel.</p>
+      <p class="muted" style="margin:10px 0 4px" id="lblGroepUitleg"></p>
       <input type="text" id="newProfGroep" placeholder="Groepscode (alleen als je die kreeg)" autocomplete="off">
       <div class="row">
         <button class="primary" id="btnNewProf">Start</button>
         <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
       </div>
       <p class="muted" id="profHint" style="margin-top:8px">Kies een niveau, of doe de test van 10 vragen (2 minuten).</p>
-      <h2 style="margin-top:18px">Oefen je al op een ander apparaat?</h2>
-      <p class="muted">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
+      <h2 style="margin-top:18px" id="kopSync">Oefen je al op een ander apparaat?</h2>
+      <p class="muted" id="lblSyncUitleg">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
       <input type="text" id="syncCodeIn" placeholder="bijv. elise-x7k2m9p4qa3b" autocomplete="off">
       <div class="row"><button class="ghost" id="btnSyncLogin">Haal mijn voortgang op</button></div>
       <p class="muted" style="margin-top:8px"><a href="#" id="lnkHerstel">Code kwijt? Herstel via je e-mailadres</a></p>
@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.1";
+var APP_VERSIE = "v10.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1335,6 +1335,81 @@ function activeProfile(){
 }
 
 var newTrack = null, newLang = "nl";
+/* ---- aanmeldscherm in de eigen taal (browsertaal als startpunt) ---- */
+var SIGNUP_TXT = {
+ nl:{welkom:"Welkom! Maak je profiel", nieuw:"Nieuw profiel", kies:"Wie gaat er oefenen?", naamPh:"Naam",
+     niveau:"Niveau:", a0:"A0 · helemaal nieuw", a1:"A1 · een paar woorden", a2:"A2 · ik ken de basis", b1:"B1 · binnenkort",
+     taal:"Moedertaal:", mailUitleg:"Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.",
+     mailPh:"E-mail (optioneel)",
+     groepUitleg:"Kreeg je een <b>uitnodigingslink</b> voor een groep? Open die link gewoon, dan hoef je hier niets in te vullen. Kreeg je alleen een <b>code</b>? Vul hem hieronder in. Geen van beide? Laat leeg: een groep starten (bijvoorbeeld als docent voor je klas) kan altijd via je profiel.",
+     groepPh:"Groepscode (alleen als je die kreeg)", start:"Start", test:"Weet ik niet: doe de niveautest",
+     hint:"Kies een niveau, of doe de test van 10 vragen (2 minuten).",
+     syncKop:"Oefen je al op een ander apparaat?", syncUitleg:"Vul je sync-code in (te vinden op je andere apparaat op je profielpagina) en ga verder waar je was.",
+     syncKnop:"Haal mijn voortgang op", herstel:"Code kwijt? Herstel via je e-mailadres", herstelPh:"Het e-mailadres van je profiel",
+     herstelKnop:"Zoek mijn voortgang", badge:"kies profiel"},
+ en:{welkom:"Welcome! Create your profile", nieuw:"New profile", kies:"Who's practising?", naamPh:"Name",
+     niveau:"Level:", a0:"A0 · completely new", a1:"A1 · a few words", a2:"A2 · I know the basics", b1:"B1 · coming soon",
+     taal:"Mother tongue:", mailUitleg:"Optional: e-mail, so you can recover your progress if you ever lose your access code.",
+     mailPh:"E-mail (optional)",
+     groepUitleg:"Got an <b>invite link</b> for a group? Just open that link and you can skip this. Only got a <b>code</b>? Enter it below. Neither? Leave it empty: you can always start a group (for example as a teacher, for your class) from your profile.",
+     groepPh:"Group code (only if you got one)", start:"Start", test:"Not sure? Take the level test",
+     hint:"Pick a level, or take the 10-question test (2 minutes).",
+     syncKop:"Already practising on another device?", syncUitleg:"Enter your sync code (found on your profile page on your other device) and continue where you left off.",
+     syncKnop:"Get my progress", herstel:"Lost your code? Recover via e-mail", herstelPh:"The e-mail address of your profile",
+     herstelKnop:"Find my progress", badge:"pick a profile"},
+ fr:{welkom:"Bienvenue ! Crée ton profil", nieuw:"Nouveau profil", kies:"Qui va pratiquer ?", naamPh:"Prénom",
+     niveau:"Niveau :", a0:"A0 · totalement débutant", a1:"A1 · quelques mots", a2:"A2 · je connais les bases", b1:"B1 · bientôt",
+     taal:"Langue maternelle :", mailUitleg:"Facultatif : e-mail, pour retrouver ta progression si tu perds ton code d'accès.",
+     mailPh:"E-mail (facultatif)",
+     groepUitleg:"Tu as reçu un <b>lien d'invitation</b> pour un groupe ? Ouvre simplement ce lien. Seulement un <b>code</b> ? Saisis-le ci-dessous. Ni l'un ni l'autre ? Laisse vide : tu peux toujours créer un groupe (par exemple comme prof, pour ta classe) depuis ton profil.",
+     groepPh:"Code de groupe (seulement si tu en as reçu un)", start:"Commencer", test:"Pas sûr ? Fais le test de niveau",
+     hint:"Choisis un niveau, ou fais le test de 10 questions (2 minutes).",
+     syncKop:"Tu pratiques déjà sur un autre appareil ?", syncUitleg:"Saisis ton code de synchronisation (sur ta page de profil de l'autre appareil) et reprends où tu en étais.",
+     syncKnop:"Récupérer ma progression", herstel:"Code perdu ? Récupère via ton e-mail", herstelPh:"L'adresse e-mail de ton profil",
+     herstelKnop:"Retrouver ma progression", badge:"choisis un profil"},
+ de:{welkom:"Willkommen! Erstelle dein Profil", nieuw:"Neues Profil", kies:"Wer übt?", naamPh:"Name",
+     niveau:"Niveau:", a0:"A0 · ganz neu", a1:"A1 · ein paar Wörter", a2:"A2 · ich kenne die Basics", b1:"B1 · bald",
+     taal:"Muttersprache:", mailUitleg:"Optional: E-Mail, damit du deinen Fortschritt wiederfindest, falls du deinen Zugangscode verlierst.",
+     mailPh:"E-Mail (optional)",
+     groepUitleg:"Hast du einen <b>Einladungslink</b> für eine Gruppe bekommen? Öffne einfach den Link. Nur einen <b>Code</b>? Trage ihn unten ein. Weder noch? Leer lassen: eine Gruppe starten (z. B. als Lehrkraft für deine Klasse) geht jederzeit über dein Profil.",
+     groepPh:"Gruppencode (nur falls du einen bekommen hast)", start:"Los geht's", test:"Unsicher? Mach den Einstufungstest",
+     hint:"Wähle ein Niveau oder mach den Test mit 10 Fragen (2 Minuten).",
+     syncKop:"Übst du schon auf einem anderen Gerät?", syncUitleg:"Gib deinen Sync-Code ein (auf der Profilseite deines anderen Geräts) und mach weiter, wo du warst.",
+     syncKnop:"Fortschritt holen", herstel:"Code verloren? Über E-Mail wiederherstellen", herstelPh:"Die E-Mail-Adresse deines Profils",
+     herstelKnop:"Fortschritt suchen", badge:"Profil wählen"}
+};
+function applySignupLang(){
+  var d = SIGNUP_TXT[newLang] || SIGNUP_TXT.nl;
+  function zet(id, txt, isHtml){ var e = document.getElementById(id); if(e){ if(isHtml) e.innerHTML = txt; else e.textContent = txt; } }
+  function ph(id, txt){ var e = document.getElementById(id); if(e) e.placeholder = txt; }
+  zet("profNieuwKop", profiles.list.length ? d.nieuw : d.welkom);
+  zet("profKiesKop", d.kies);
+  ph("newProfName", d.naamPh);
+  zet("lblNiveau", d.niveau);
+  var lv = {A0:d.a0, A1:d.a1, A2:d.a2};
+  document.querySelectorAll(".trackpick[data-lvl]").forEach(function(b){
+    var l = b.getAttribute("data-lvl"); if(lv[l]) b.textContent = lv[l];
+  });
+  zet("lblTaal", d.taal);
+  zet("lblMailUitleg", d.mailUitleg);
+  ph("newProfMail", d.mailPh);
+  zet("lblGroepUitleg", d.groepUitleg, true);
+  ph("newProfGroep", d.groepPh);
+  zet("btnNewProf", d.start);
+  zet("btnPlacement", d.test);
+  zet("profHint", d.hint);
+  zet("kopSync", d.syncKop);
+  zet("lblSyncUitleg", d.syncUitleg);
+  zet("btnSyncLogin", d.syncKnop);
+  zet("lnkHerstel", d.herstel);
+  ph("herstelMail", d.herstelPh);
+  zet("btnHerstel", d.herstelKnop);
+  var db = document.getElementById("dueBadge");
+  if(db && !activeProfile()) db.textContent = d.badge;
+  // B1-knop (heeft geen data-lvl)
+  document.querySelectorAll("#tab-profiel .row button[disabled]").forEach(function(b){ b.textContent = d.b1; });
+}
+
 function renderLangRow(){
   var row = document.getElementById("langRow");
   if(!row) return;
@@ -1342,10 +1417,14 @@ function renderLangRow(){
     return "<button class='ghost trackpick langpick"+(l===newLang?" active":"")+"' data-lang='"+l+"'>"+UI_LANGS[l].vlag+" "+UI_LANGS[l].naam+"</button>";
   }).join("");
   row.querySelectorAll(".langpick").forEach(function(b){
-    b.onclick = function(){ newLang = b.getAttribute("data-lang"); renderLangRow(); };
+    b.onclick = function(){ newLang = b.getAttribute("data-lang"); renderLangRow(); applySignupLang(); };
   });
 }
 function renderProfileScreen(){
+  try{
+    var bl = ((typeof navigator !== "undefined" && navigator.language) || "nl").slice(0, 2).toLowerCase();
+    if(UI_LANGS[bl] && newLang === "nl") newLang = bl;
+  }catch(e){}
   document.getElementById("tab-profiel").classList.remove("hidden");
   document.getElementById("goalLine").classList.add("hidden");
   document.getElementById("nav").classList.add("hidden");
@@ -1375,6 +1454,7 @@ function renderProfileScreen(){
     };
   });
   renderLangRow();
+  applySignupLang();
   document.getElementById("btnPlacement").onclick = startPlacement;
   var lh = document.getElementById("lnkHerstel");
   if(lh) lh.onclick = function(e){
@@ -3350,10 +3430,31 @@ var TOUR = [
   {titel:"De Speeltuin 🧩",
    txt:"Woordenzoeker, Memory, Palabra Duel (tegen elkaar!) en Spaanse muziek. Voelt als spelen, maar stiekem oefen je gewoon je woordjes."},
   {titel:"Jouw profiel 👤",
-   txt:"Tik op je <b>naam</b> bovenaan voor je profiel: je voortgang, je geheime sync-code (daarmee ga je op een ander apparaat verder) en <b>Groepen</b>. Start een groep met vrienden of klasgenoten en deel de uitnodigingslink: samen leren werkt het best."},
+   txt:"Tik op je <b>naam</b> bovenaan voor je profiel: je voortgang, je geheime sync-code (daarmee ga je op een ander apparaat verder) en <b>Groepen</b>. Start een groep met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit: jij ziet hun voortgang in het klassement."},
   {titel:"Ik groei met je mee ✨",
    txt:"Alles wat je oefent levert XP op, en daarvan groei ik: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
 ];
+var TOUR_EN = [
+  {titel:"¡Hola! I'm Chispa 🐾",
+   txt:"Welcome to your Spanish learning app! Let me walk you through how everything works in about a minute. I grow along with you, by the way — more on that in a bit."},
+  {titel:"Start with a lesson 📖",
+   txt:"Under <b>Lessons</b> you always start with the <b>cheat sheet</b>: read the grammar first, then practise. That way you don't just know that something is right, but also why."},
+  {titel:"Words: max 15 new per day 🧠",
+   txt:"That's on purpose! Your brain remembers best in small portions. The app brings every word back at exactly the right moment (spaced repetition). By building up slowly now, you'll effortlessly review hundreds of words a day later on."},
+  {titel:"Then the sentences ✍️",
+   txt:"Translate the sentences in your own words. Don't know something? Feel free to peek at the cheat sheet or look it up online. Looking things up is learning too!"},
+  {titel:"Mistakes are gold 💛",
+   txt:"Making mistakes is completely fine — that's where you learn the most. The app remembers what you find hard and brings exactly those things back more often, until they stick."},
+  {titel:"Grammar & dictionary 📖",
+   txt:"Under <b>Grammar</b> you'll find the cheat sheets of your lessons. And see the round 📖 button in the bottom right? That's the dictionary: always within reach, opens as a popup, so you never lose your exercise."},
+  {titel:"The Playground 🧩",
+   txt:"Word search, memory, Palabra Duel (against each other!) and Spanish music. Feels like playing, but secretly you're just practising your words."},
+  {titel:"Your profile 👤",
+   txt:"Tap your <b>name</b> at the top for your profile: your progress, your secret sync code (to continue on another device) and <b>Groups</b>. Start a group with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students — you'll see their progress on the leaderboard."},
+  {titel:"I grow with you ✨",
+   txt:"Everything you practise earns XP, and that's what makes me grow: from egg to estrella, in 12 forms. Go at your own pace. <b>A little bit every day</b> — that's how you make real progress. ¡Vamos!"}
+];
+function tourLijst(){ return profLang() === "nl" ? TOUR : TOUR_EN; }
 function showTour(stap){
   var wrap = document.getElementById("tourWrap");
   if(!wrap){
@@ -3361,9 +3462,10 @@ function showTour(stap){
     wrap.id = "tourWrap"; wrap.className = "tourwrap";
     document.body.appendChild(wrap);
   }
-  var t = TOUR[stap];
-  var dots = TOUR.map(function(_, i){ return "<span class='"+(i===stap?"aan":"")+"'></span>"; }).join("");
-  var laatste = stap === TOUR.length - 1;
+  var lijst = tourLijst();
+  var t = lijst[stap];
+  var dots = lijst.map(function(_, i){ return "<span class='"+(i===stap?"aan":"")+"'></span>"; }).join("");
+  var laatste = stap === lijst.length - 1;
   wrap.innerHTML = "<div class='tourcard'>"+
     "<div class='tourpet'>"+petSVG()+"</div>"+
     "<h3>"+t.titel+"</h3>"+
@@ -3371,8 +3473,8 @@ function showTour(stap){
     "<div class='tourdots'>"+dots+"</div>"+
     "<div class='row center'>"+
     (laatste ? "<button class='primary' id='btnTourKlaar'>¡Vamos! 🎉</button>"
-             : "<button class='primary' id='btnTourVolg'>Volgende →</button>"+
-               "<button class='ghost' id='btnTourSkip'>Overslaan</button>")+
+             : "<button class='primary' id='btnTourVolg'>"+(profLang()==="nl"?"Volgende →":"Next →")+"</button>"+
+               "<button class='ghost' id='btnTourSkip'>"+(profLang()==="nl"?"Overslaan":"Skip")+"</button>")+
     "</div></div>";
   var bv = document.getElementById("btnTourVolg");
   if(bv) bv.onclick = function(){ showTour(stap + 1); };
@@ -3698,10 +3800,10 @@ function renderPerfil(){
   el.innerHTML = "<div style='display:flex; align-items:center; gap:14px'>"+
     "<span class='miniprof' style='width:52px; height:52px; font-size:1.5rem'>"+p.name.charAt(0).toUpperCase()+"</span>"+
     "<div><h2 style='margin:0'>"+p.name+"</h2>"+
-    "<p class='muted' style='margin:2px 0 0'>Niveau: "+lvl+" · Moedertaal: "+lang.vlag+" "+lang.naam+"</p></div></div>"+
-    "<p class='muted' style='margin:12px 0 4px'>Herstel-e-mail (om je voortgang terug te vinden als je je sync-code kwijt bent):</p>"+
+    "<p class='muted' style='margin:2px 0 0'>"+gt("niveauLbl")+": "+lvl+" · "+gt("taalLbl")+": "+lang.vlag+" "+lang.naam+"</p></div></div>"+
+    "<p class='muted' style='margin:12px 0 4px'>"+gt("mailLbl")+"</p>"+
     "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
-    "<div class='row'><button class='ghost' id='btnMailBewaar'>Bewaar e-mail</button></div>";
+    "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>";
   var bm = document.getElementById("btnMailBewaar");
   if(bm) bm.onclick = function(){
     var m = (document.getElementById("perfilMail").value || "").trim();
@@ -3749,18 +3851,37 @@ function groepBewaar(g){
   }
 }
 function groepLink(g){ return "https://vamos.stefanwobben.nl/?groep=" + g.gcode; }
+var GROEP_TXT = {
+ nl:{kop:"Groepen 👥", intro:"Start een groep met je klasgenoten, collega's, leerlingen of vrienden. Iedereen met de groepscode kan meedoen; elke groep heeft een eigen klassement.",
+     mijn:"Jouw groepen", code:"code", nieuwKop:"Nieuwe groep", naamPh:"Naam van de groep (bijv. Clase de martes)", startKnop:"Start groep",
+     meedoenKop:"Meedoen met een groep", codePh:"Groepscode (bijv. gx7k2p)", meedoenKnop:"Meedoen",
+     deelCode:"Deel deze groepscode met wie mee mag doen:", deelnemers:"deelnemers", deelnemer:"deelnemer",
+     privacy:"alleen scores zichtbaar, nooit elkaars oefeningen.", deelLink:"Of stuur ze deze uitnodigingslink, dan zitten ze er met één tik in:",
+     kopieer:"Kopieer uitnodigingslink 🔗", verlaat:"Groep verlaten", terug:"← Mijn groepen",
+     les:"les", lessen:"lessen", niveauLbl:"Niveau", taalLbl:"Moedertaal",
+     mailLbl:"Herstel-e-mail (om je voortgang terug te vinden als je je sync-code kwijt bent):", mailKnop:"Bewaar e-mail"},
+ en:{kop:"Groups 👥", intro:"Start a group with your classmates, colleagues, students or friends. Anyone with the group code can join; every group has its own leaderboard.",
+     mijn:"Your groups", code:"code", nieuwKop:"New group", naamPh:"Group name (e.g. Tuesday class)", startKnop:"Start group",
+     meedoenKop:"Join a group", codePh:"Group code (e.g. gx7k2p)", meedoenKnop:"Join",
+     deelCode:"Share this group code with whoever may join:", deelnemers:"members", deelnemer:"member",
+     privacy:"only scores are visible, never each other's exercises.", deelLink:"Or send them this invite link — one tap and they're in:",
+     kopieer:"Copy invite link 🔗", verlaat:"Leave group", terug:"← My groups",
+     les:"lesson", lessen:"lessons", niveauLbl:"Level", taalLbl:"Mother tongue",
+     mailLbl:"Recovery e-mail (to find your progress back if you lose your sync code):", mailKnop:"Save e-mail"}
+};
+function gt(k){ var l = profLang(); var d = GROEP_TXT[l] || GROEP_TXT.en; if(l === "nl") d = GROEP_TXT.nl; return d[k] || GROEP_TXT.nl[k]; }
 function renderGroepen(){
   var el = document.getElementById("groepCard");
   if(!el) return;
   if(groepCur){
     el.innerHTML = "<h2>"+groepCur.naam+" 👥</h2>"+
-      "<p class='muted'>Deel deze groepscode met wie mee mag doen: <b style='font-size:1.1rem'>"+groepCur.gcode+"</b></p>"+
+      "<p class='muted'>"+gt("deelCode")+" <b style='font-size:1.1rem'>"+groepCur.gcode+"</b></p>"+
       "<p class='muted' id='grStatus'>Klassement ophalen...</p><div id='grLijst'></div>"+
-      "<p class='muted'>Of stuur ze deze uitnodigingslink, dan zitten ze er met één tik in:</p>"+
+      "<p class='muted'>"+gt("deelLink")+"</p>"+
       "<p style='word-break:break-all; font-size:.85rem'><b>"+groepLink(groepCur)+"</b></p>"+
-      "<div class='row'><button class='primary' id='btnGrKopieer'>Kopieer uitnodigingslink 🔗</button></div>"+
-      "<div class='row'><button class='ghost' id='btnGrVerlaat'>Groep verlaten</button>"+
-      "<button class='ghost' id='btnGrTerug'>← Mijn groepen</button></div>";
+      "<div class='row'><button class='primary' id='btnGrKopieer'>"+gt("kopieer")+"</button></div>"+
+      "<div class='row'><button class='ghost' id='btnGrVerlaat'>"+gt("verlaat")+"</button>"+
+      "<button class='ghost' id='btnGrTerug'>"+gt("terug")+"</button></div>";
     document.getElementById("btnGrTerug").onclick = function(){ groepCur = null; renderGroepen(); };
     var bk2 = document.getElementById("btnGrKopieer");
     if(bk2) bk2.onclick = function(){
@@ -3781,31 +3902,31 @@ function renderGroepen(){
       var st = document.getElementById("grStatus"), lijst = document.getElementById("grLijst");
       if(!lijst) return;
       if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
-      if(st) st.textContent = res.spelers.length + " deelnemer" + (res.spelers.length===1?"":"s") + " · alleen scores zichtbaar, nooit elkaars oefeningen.";
+      if(st) st.textContent = res.spelers.length + " " + (res.spelers.length===1?gt("deelnemer"):gt("deelnemers")) + " · " + gt("privacy");
       var medailles = ["🥇","🥈","🥉"];
       lijst.innerHTML = res.spelers.map(function(sp, i){
         var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
         return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+"</b> <span class='muted'>· "+lvl+"</span></span>"+
-          "<span><b>"+sp.txp+" XP</b> · 🔥 "+sp.streak+" · "+sp.lessen+" les"+(sp.lessen===1?"":"sen")+"</span></div>";
+          "<span><b>"+sp.txp+" XP</b> · 🔥 "+sp.streak+" · "+sp.lessen+" "+(sp.lessen===1?gt("les"):gt("lessen"))+"</span></div>";
       }).join("");
     });
     return;
   }
   var mijn = S.groepen || [];
-  var html = "<h2>Groepen 👥</h2>"+
-    "<p class='muted'>Start een groep met je klasgenoten, collega's of vrienden. Iedereen met de groepscode kan meedoen; elke groep heeft een eigen klassement.</p>";
+  var html = "<h2>"+gt("kop")+"</h2>"+
+    "<p class='muted'>"+gt("intro")+"</p>";
   if(mijn.length){
-    html += "<p style='margin:10px 0 4px'><b>Jouw groepen</b></p>";
+    html += "<p style='margin:10px 0 4px'><b>"+gt("mijn")+"</b></p>";
     mijn.forEach(function(g){
-      html += "<div class='lesson' data-groep='"+g.gcode+"'><div class='lnum'>👥</div><div class='lbody'><b>"+g.naam+"</b><span>code: "+g.gcode+"</span></div><div class='lstatus'>▶</div></div>";
+      html += "<div class='lesson' data-groep='"+g.gcode+"'><div class='lnum'>👥</div><div class='lbody'><b>"+g.naam+"</b><span>"+gt("code")+": "+g.gcode+"</span></div><div class='lstatus'>▶</div></div>";
     });
   }
-  html += "<p style='margin:14px 0 4px'><b>Nieuwe groep</b></p>"+
-    "<input type='text' id='grNaam' autocomplete='off' placeholder='Naam van de groep (bijv. Clase de martes)'>"+
-    "<div class='row'><button class='primary' id='btnGrNieuw'>Start groep</button></div>"+
-    "<p style='margin:14px 0 4px'><b>Meedoen met een groep</b></p>"+
-    "<input type='text' id='grCode' autocomplete='off' placeholder='Groepscode (bijv. gx7k2p)'>"+
-    "<div class='row'><button class='ghost' id='btnGrJoin'>Meedoen</button></div>";
+  html += "<p style='margin:14px 0 4px'><b>"+gt("nieuwKop")+"</b></p>"+
+    "<input type='text' id='grNaam' autocomplete='off' placeholder=\""+gt("naamPh")+"\">"+
+    "<div class='row'><button class='primary' id='btnGrNieuw'>"+gt("startKnop")+"</button></div>"+
+    "<p style='margin:14px 0 4px'><b>"+gt("meedoenKop")+"</b></p>"+
+    "<input type='text' id='grCode' autocomplete='off' placeholder=\""+gt("codePh")+"\">"+
+    "<div class='row'><button class='ghost' id='btnGrJoin'>"+gt("meedoenKnop")+"</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("[data-groep]").forEach(function(d){
     d.onclick = function(){
@@ -3817,9 +3938,9 @@ function renderGroepen(){
   if(bn) bn.onclick = function(){
     var naam = (document.getElementById("grNaam").value || "").trim();
     if(!naam){ toast("Geef je groep eerst een naam."); return; }
-    bn.disabled = true; bn.textContent = "Aanmaken...";
+    bn.disabled = true; bn.textContent = "...";
     api("/api/groep/nieuw", "POST", {naam:naam, code:mijnSyncCode()}).then(function(res){
-      bn.disabled = false; bn.textContent = "Start groep";
+      bn.disabled = false; bn.textContent = gt("startKnop");
       if(!res || !res.ok || !res.groep){ toast(res && res.error ? res.error : "Server even niet bereikbaar."); return; }
       groepBewaar(res.groep);
       groepCur = res.groep;
