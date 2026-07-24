@@ -132,6 +132,8 @@
   #miniPet{cursor:pointer; line-height:0;}
   #miniPet svg{width:36px; height:33px;}
   #miniDic{cursor:pointer; font-size:1.35rem; line-height:1;}
+  .miniprof{width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff; font-weight:800;
+            display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:.85rem; line-height:1;}
   .dicrow{border-bottom:1px dashed var(--border);}
   .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
   .dicbody{padding:2px 0 12px; font-size:.92rem;}
@@ -192,6 +194,7 @@
       <div class="badge" id="dueBadge">…</div>
       <span id="miniDic" title="Woordenboek">📖</span>
       <span id="miniPet" title="Chispa"></span>
+      <span id="miniProf" class="miniprof" title="Profiel & groepen">👤</span>
     </div>
   </header>
 
@@ -237,16 +240,22 @@
     <div id="lessonView" class="hidden"></div>
   </section>
 
-  <!-- CHISPA (pet + voortgang, via het mini-icoontje) -->
+  <!-- CHISPA (alleen het huisdier, via het mini-icoontje) -->
   <section id="tab-chispa" class="hidden">
     <div class="card" id="petCard"></div>
     <div class="card" id="shopCard"></div>
+  </section>
+
+  <!-- PROFIEL (via het 👤-icoontje): jouw gegevens, groepen, voortgang, steun -->
+  <section id="tab-perfil" class="hidden">
+    <div class="card" id="perfilCard"></div>
+    <div class="card" id="groepCard"></div>
+    <div class="card" id="statsCard"></div>
     <div class="card" id="steunCard">
       <h2>Steun ¡Vamos! 💛</h2>
       <p class="muted">Deze app is gratis en blijft gratis. Vind je hem waardevol? Een kleine donatie helpt de server- en AI-kosten te dekken. · This app is free; a small donation helps cover the costs.</p>
       <div class="row"><a class="donatebtn" href="https://paypal.me/stefanwobben" target="_blank" rel="noopener">Doneer via PayPal 💛</a></div>
     </div>
-    <div class="card" id="statsCard"></div>
     <div class="card">
       <h2>Foutenlog naar Claude</h2>
       <p class="muted">Fouten gaan automatisch naar de server. Deze knop is de handmatige reserve: één tik opent een
@@ -314,7 +323,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v8.9";
+var APP_VERSIE = "v9.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1407,6 +1416,11 @@ function boot(){
   ensureCode(p);
   serverPull(p);
   syncUp();
+  if(pendingGroep){
+    var pg = pendingGroep; pendingGroep = null;
+    var alBinnen = (S.groepen||[]).some(function(x){ return x.gcode === pg; });
+    if(!alBinnen) setTimeout(function(){ joinViaLink(pg); }, 2500);
+  }
   if(!S.tour) showTour(0);
 }
 
@@ -1478,6 +1492,12 @@ function updateGoalUI(){
   }
   var md = document.getElementById("miniDic");
   if(md){ md.onclick = dicModal; }
+  var mpr = document.getElementById("miniProf");
+  if(mpr){
+    var pa = activeProfile();
+    mpr.textContent = pa ? pa.name.charAt(0).toUpperCase() : "👤";
+    mpr.onclick = function(){ scopeLesson = null; show("perfil"); };
+  }
 }
 
 var toastTimer = null;
@@ -3508,21 +3528,58 @@ function renderFun(){
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   if(funView === "fam"){ renderFamilia(); return; }
-  if(funView === "groep"){ renderFunGroep(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>Familie-klassement</b><span>wie is de vlijtigste: jij, Elise of Ilona?</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftGroep'><div class='lnum'>\ud83d\udc65</div><div class='lbody'><b>Groepen</b><span>start een groep met bijv. je klasgenoten, met eigen klassement</span></div><div class='lstatus'>\u25b6</div></div>";
+    "<p class='muted' style='font-size:.85rem; margin-top:10px'>Groepen met klasgenoten of vrienden vind je bij je profiel (\ud83d\udc64 rechtsboven).</p>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
   document.getElementById("ftFam").onclick = function(){ funView = "fam"; navPush({t:"fun", v:"fam"}); renderFun(); };
-  document.getElementById("ftGroep").onclick = function(){ funView = "groep"; navPush({t:"fun", v:"groep"}); renderFun(); };
 }
+
+/* ================= PROFIELPAGINA ================= */
+function renderPerfil(){
+  var el = document.getElementById("perfilCard");
+  if(!el) return;
+  var p = activeProfile();
+  if(!p) return;
+  var lvl = TRACKS[p.track] ? TRACKS[p.track].label : p.track;
+  var lang = UI_LANGS[profLang()] || UI_LANGS.nl;
+  el.innerHTML = "<div style='display:flex; align-items:center; gap:14px'>"+
+    "<span class='miniprof' style='width:52px; height:52px; font-size:1.5rem'>"+p.name.charAt(0).toUpperCase()+"</span>"+
+    "<div><h2 style='margin:0'>"+p.name+"</h2>"+
+    "<p class='muted' style='margin:2px 0 0'>Niveau: "+lvl+" · Moedertaal: "+lang.vlag+" "+lang.naam+"</p></div></div>";
+  renderGroepen();
+}
+function joinViaLink(gcode, poging){
+  api("/api/groep/join", "POST", {gcode:gcode, code:mijnSyncCode()}).then(function(res){
+    if(res && res.ok && res.groep){
+      groepBewaar(res.groep);
+      confetti(["👥","🎉"], 16);
+      toast("Je doet mee met de groep '"+res.groep.naam+"'! 🎉 (zie Profiel 👤)");
+    } else if((poging||0) < 2){
+      // sync-code bestaat mogelijk nog niet op de server; even wachten en opnieuw
+      setTimeout(function(){ joinViaLink(gcode, (poging||0)+1); }, 5000);
+    } else {
+      toast("Meedoen met de groep lukte nog niet. Ga naar Profiel 👤 en vul code "+gcode+" in.");
+    }
+  });
+}
+var pendingGroep = null;
+try{
+  if(typeof location !== "undefined" && location.search){
+    var gm = location.search.match(/[?&]groep=([a-z0-9]+)/i);
+    if(gm){
+      pendingGroep = gm[1].toLowerCase();
+      if(window.history && history.replaceState) history.replaceState(null, "", location.pathname);
+    }
+  }
+}catch(e){}
 
 /* ================= GROEPEN ================= */
 var groepCur = null; // {gcode, naam} van de geopende groep
@@ -3536,20 +3593,32 @@ function groepBewaar(g){
     S.groepen.push({gcode:g.gcode, naam:g.naam}); persist();
   }
 }
-function renderFunGroep(){
-  var el = document.getElementById("funCard");
+function groepLink(g){ return "https://espanol.stefanwobben.nl/?groep=" + g.gcode; }
+function renderGroepen(){
+  var el = document.getElementById("groepCard");
+  if(!el) return;
   if(groepCur){
     el.innerHTML = "<h2>"+groepCur.naam+" 👥</h2>"+
       "<p class='muted'>Deel deze groepscode met wie mee mag doen: <b style='font-size:1.1rem'>"+groepCur.gcode+"</b></p>"+
       "<p class='muted' id='grStatus'>Klassement ophalen...</p><div id='grLijst'></div>"+
+      "<p class='muted'>Of stuur ze deze uitnodigingslink, dan zitten ze er met één tik in:</p>"+
+      "<p style='word-break:break-all; font-size:.85rem'><b>"+groepLink(groepCur)+"</b></p>"+
+      "<div class='row'><button class='primary' id='btnGrKopieer'>Kopieer uitnodigingslink 🔗</button></div>"+
       "<div class='row'><button class='ghost' id='btnGrVerlaat'>Groep verlaten</button>"+
-      "<button class='ghost' id='btnGrTerug'>← Groepen</button></div>";
-    document.getElementById("btnGrTerug").onclick = function(){ groepCur = null; renderFun(); };
+      "<button class='ghost' id='btnGrTerug'>← Mijn groepen</button></div>";
+    document.getElementById("btnGrTerug").onclick = function(){ groepCur = null; renderGroepen(); };
+    var bk2 = document.getElementById("btnGrKopieer");
+    if(bk2) bk2.onclick = function(){
+      var tekst = "Doe je mee met onze Spaans-groep '"+groepCur.naam+"'? "+groepLink(groepCur);
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(tekst).then(function(){ toast("Link gekopieerd! Plak hem in WhatsApp of mail. 🔗"); });
+      } else if(window.prompt){ window.prompt("Kopieer deze link:", tekst); }
+    };
     document.getElementById("btnGrVerlaat").onclick = function(){
       if(!window.confirm || window.confirm("Weet je zeker dat je '"+groepCur.naam+"' wilt verlaten?")){
         api("/api/groep/weg", "POST", {gcode:groepCur.gcode, code:mijnSyncCode()}).then(function(){
           S.groepen = (S.groepen||[]).filter(function(x){ return x.gcode !== groepCur.gcode; });
-          persist(); groepCur = null; renderFun();
+          persist(); groepCur = null; renderGroepen();
         });
       }
     };
@@ -3581,13 +3650,12 @@ function renderFunGroep(){
     "<div class='row'><button class='primary' id='btnGrNieuw'>Start groep</button></div>"+
     "<p style='margin:14px 0 4px'><b>Meedoen met een groep</b></p>"+
     "<input type='text' id='grCode' autocomplete='off' placeholder='Groepscode (bijv. gx7k2p)'>"+
-    "<div class='row'><button class='ghost' id='btnGrJoin'>Meedoen</button>"+
-    "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
+    "<div class='row'><button class='ghost' id='btnGrJoin'>Meedoen</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("[data-groep]").forEach(function(d){
     d.onclick = function(){
       var g = mijn.filter(function(x){ return x.gcode === d.getAttribute("data-groep"); })[0];
-      if(g){ groepCur = g; renderFun(); }
+      if(g){ groepCur = g; renderGroepen(); }
     };
   });
   var bn = document.getElementById("btnGrNieuw");
@@ -3601,8 +3669,8 @@ function renderFunGroep(){
       groepBewaar(res.groep);
       groepCur = res.groep;
       confetti(["👥","🎉"], 16);
-      toast("Groep '"+res.groep.naam+"' aangemaakt! Deel code "+res.groep.gcode);
-      renderFun();
+      toast("Groep '"+res.groep.naam+"' aangemaakt! Deel de uitnodigingslink 🔗");
+      renderGroepen();
     });
   };
   var bj = document.getElementById("btnGrJoin");
@@ -3616,11 +3684,9 @@ function renderFunGroep(){
       groepBewaar(res.groep);
       groepCur = res.groep;
       toast("Je doet mee met '"+res.groep.naam+"'! 🎉");
-      renderFun();
+      renderGroepen();
     });
   };
-  var bt = document.getElementById("btnFunTerug");
-  if(bt) bt.onclick = function(){ funView = null; renderFun(); };
 }
 
 function renderFamilia(){
@@ -3877,6 +3943,7 @@ var TABS = [
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
   {id:"chispa", label:"Chispa", nav:false},
+  {id:"perfil", label:"Profiel", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Spiekbrief"}
@@ -3899,8 +3966,9 @@ function show(tabId, skipPush){
   if(tabId==="woorden"){ buildQueue(); renderWord(); }
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
-  if(tabId==="chispa"){
-    renderPet(); renderShop(); renderStats();
+  if(tabId==="chispa"){ renderPet(); renderShop(); }
+  if(tabId==="perfil"){
+    renderPerfil(); renderStats();
     var pc = activeProfile();
     var sc = document.getElementById("syncCode");
     if(sc && pc) sc.textContent = ensureCode(pc);
