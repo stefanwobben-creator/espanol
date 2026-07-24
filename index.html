@@ -200,16 +200,21 @@
   <!-- PROFIELKEUZE -->
   <section id="tab-profiel" class="hidden">
     <div class="card">
-      <h2>Wie gaat er oefenen?</h2>
+      <h2 id="profKiesKop">Wie gaat er oefenen?</h2>
       <div id="profileList"></div>
-      <h2 style="margin-top:18px">Nieuw profiel</h2>
+      <h2 id="profNieuwKop" style="margin-top:18px">Nieuw profiel</h2>
       <input type="text" id="newProfName" placeholder="Naam / Name" autocomplete="off">
+      <p class="muted" style="margin:10px 0 4px">Niveau:</p>
       <div class="row">
-        <button class="ghost trackpick" data-track="beginner">Beginner · nog geen Spaans</button>
-        <button class="ghost trackpick" data-track="a2">A2 · ik ken de basis al</button>
+        <button class="ghost trackpick" data-track="beginner" data-lvl="A0">A0 · helemaal nieuw</button>
+        <button class="ghost trackpick" data-track="beginner" data-lvl="A1">A1 · een paar woorden</button>
+        <button class="ghost trackpick" data-track="a2" data-lvl="A2">A2 · ik ken de basis</button>
+        <button class="ghost" disabled style="opacity:.45">B1 · binnenkort</button>
       </div>
       <p class="muted" style="margin:10px 0 4px">Moedertaal / mother tongue:</p>
       <div class="row" id="langRow"></div>
+      <input type="email" id="newProfMail" placeholder="E-mail (optioneel, alleen voor herstel van je voortgang)" autocomplete="off" style="margin-top:10px">
+      <input type="text" id="newProfGroep" placeholder="Groepscode (optioneel, van een vriend of je docent)" autocomplete="off">
       <div class="row">
         <button class="primary" id="btnNewProf">Start</button>
         <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
@@ -372,7 +377,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v9.2";
+var APP_VERSIE = "v9.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1264,15 +1269,9 @@ function saveProfiles(){
   profMem = profiles;
   if(store.ok){ try{ localStorage.setItem(PKEY, JSON.stringify(profiles)); }catch(e){} }
 }
-var profiles = loadProfiles() || {
-  list:[{name:"Stefan", track:"a2", key:"espanol-stefan-v1"}],
-  active:null
-};
-// zorg dat Elise altijd een eigen profiel heeft (A0)
-if(!profiles.list.some(function(p){ return p.name.toLowerCase()==="elise"; })){
-  profiles.list.push({name:"Elise", track:"beginner", key:"espanol-elise-v1"});
-  saveProfiles();
-}
+var profiles = loadProfiles() || { list:[], active:null };
+// (nieuwe bezoekers beginnen met een leeg profielscherm; bestaande apparaten
+//  houden hun opgeslagen profielen gewoon)
 function activeProfile(){
   for(var i=0;i<profiles.list.length;i++){ if(profiles.list[i].name === profiles.active) return profiles.list[i]; }
   return null;
@@ -1297,6 +1296,10 @@ function renderProfileScreen(){
   document.getElementById("userName").textContent = "…";
   document.getElementById("dueBadge").textContent = "kies profiel";
   var list = document.getElementById("profileList");
+  var kop = document.getElementById("profKiesKop");
+  if(kop) kop.classList.toggle("hidden", !profiles.list.length);
+  var nk = document.getElementById("profNieuwKop");
+  if(nk && !profiles.list.length) nk.textContent = "Welkom! Maak je profiel";
   list.innerHTML = profiles.list.map(function(p){
     return "<button class='profbtn' data-prof='"+p.name+"'>"+p.name+"<small>niveau: "+(TRACKS[p.track]?TRACKS[p.track].label:p.track)+"</small></button>";
   }).join("");
@@ -1347,7 +1350,10 @@ function renderProfileScreen(){
     var exists = profiles.list.some(function(p){ return p.name.toLowerCase() === name.toLowerCase(); });
     if(exists){ document.getElementById("profHint").textContent = "Die naam bestaat al, kies hem hierboven of verzin een andere."; return; }
     var slug = name.toLowerCase().replace(/[^a-z0-9]/g,"");
-    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1", lang:newLang});
+    var mail = (document.getElementById("newProfMail") ? document.getElementById("newProfMail").value : "").trim();
+    var gc = (document.getElementById("newProfGroep") ? document.getElementById("newProfGroep").value : "").trim().toLowerCase();
+    if(gc) pendingGroep = gc;
+    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1", lang:newLang, mail:mail});
     saveProfiles();
     selectProfile(name);
   };
@@ -1398,7 +1404,10 @@ function renderPlacement(){
       "<div class='row'><button class='primary' id='btnPlaceStart'>Start als "+TRACKS[track].label+"</button></div>";
     document.getElementById("btnPlaceStart").onclick = function(){
       var slug = pName.toLowerCase().replace(/[^a-z0-9]/g,"");
-      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1", lang:newLang});
+      var mailP = (document.getElementById("newProfMail") ? document.getElementById("newProfMail").value : "").trim();
+      var gcP = (document.getElementById("newProfGroep") ? document.getElementById("newProfGroep").value : "").trim().toLowerCase();
+      if(gcP) pendingGroep = gcP;
+      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1", lang:newLang, mail:mailP});
       saveProfiles();
       document.getElementById("placeCard").classList.add("hidden");
       selectProfile(pName);
@@ -1442,6 +1451,7 @@ function boot(){
   store.key = p.key;
   S = store.load() || defaultState();
   if(!S.lang) S.lang = p.lang || "nl"; // moedertaal per profiel, synct mee via S
+  if(!S.mail && p.mail) S.mail = p.mail; // optioneel e-mailadres (voor herstel), synct mee
   buildNav();
   S.xp = S.xp || {};
   S.streak = S.streak || {count:0, last:""};
@@ -3255,6 +3265,8 @@ var TOUR = [
    txt:"Onder <b>Theorie</b> vind je de spiekbrieven (grammatica per les) en het woordenboek: alle woorden op alfabet met vertaling, vormen en voorbeeldzinnen. Het woordenboek opent als popup, en bij het vertalen zit een 📖-knopje voor snel opzoeken."},
   {titel:"De Speeltuin 🧩",
    txt:"Woordenzoeker, Memory, Palabra Duel (tegen elkaar!) en Spaanse muziek. Voelt als spelen, maar stiekem oefen je gewoon je woordjes."},
+  {titel:"Jouw profiel 👤",
+   txt:"Rechtsboven zit je profiel: je voortgang, je geheime sync-code (daarmee ga je op een ander apparaat verder) en <b>Groepen</b>. Start een groep met vrienden of klasgenoten en deel de uitnodigingslink: samen leren werkt het best."},
   {titel:"Ik groei met je mee ✨",
    txt:"Alles wat je oefent levert XP op, en daarvan groei ik: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
 ];
