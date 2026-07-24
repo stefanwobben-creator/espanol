@@ -424,7 +424,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.5";
+var APP_VERSIE = "v10.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1668,7 +1668,8 @@ function boot(){
 }
 
 /* ================= DAGDOEL, XP & STREAK ================= */
-var GOAL = 30; // XP per dag ≈ 10 min oefenen
+var GOAL = 30; // standaard-dagdoel; het echte doel is instelbaar per profiel
+function dagdoel(){ return (S && S.doel) || GOAL; }
 
 function addXP(n){
   var t = today();
@@ -1680,9 +1681,18 @@ function addXP(n){
   var earned = 0;
   while(S.tapaP >= 10){ S.tapaP -= 10; S.tapas = (S.tapas || 0) + 1; earned++; }
   if(earned > 0){ toast("+" + earned + " tapa" + (earned>1?"s":"") + " 🌮 voor Chispa!"); }
-  if(was < GOAL && S.xp[t] >= GOAL && S.streak.last !== t){
+  if(was < dagdoel() && S.xp[t] >= dagdoel() && S.streak.last !== t){
     var gisteren = addDays(t, -1);
-    S.streak.count = (S.streak.last === gisteren) ? S.streak.count + 1 : 1;
+    if(S.streak.last === gisteren){
+      S.streak.count = S.streak.count + 1;
+    } else if(S.streak.last === addDays(t, -2) && siestaVrij(t)){
+      // één dag gemist en siësta beschikbaar: streak loopt gewoon door
+      S.siesta = t;
+      S.streak.count = S.streak.count + 1;
+      toast("Siësta-dag ingezet 😴 Je streak loopt gewoon door. (1x per week)");
+    } else {
+      S.streak.count = 1;
+    }
     S.streak.last = t;
     confetti(["🔥","⭐️","🎉"], 18);
     toast("¡Objetivo del día conseguido! 🔥 Streak: " + S.streak.count);
@@ -1711,23 +1721,28 @@ function confetti(emojis, count){
   }
 }
 
+function siestaVrij(t){
+  // siësta beschikbaar als hij de afgelopen 7 dagen niet is gebruikt
+  return !S.siesta || S.siesta <= addDays(t, -7);
+}
 function streakNow(){
-  // streak vervalt als je gisteren én vandaag (nog) niet gehaald hebt
   var t = today();
   if(S.streak.last === t || S.streak.last === addDays(t,-1)) return S.streak.count;
+  // gisteren gemist maar siësta beschikbaar: streak staat nog overeind
+  if(S.streak.last === addDays(t,-2) && siestaVrij(t)) return S.streak.count;
   return 0;
 }
 
 function updateGoalUI(){
   var t = today();
   var x = S.xp[t] || 0;
-  var pct = Math.min(100, Math.round(100 * x / GOAL));
+  var pct = Math.min(100, Math.round(100 * x / dagdoel()));
   var fill = document.getElementById("goalFill");
   fill.style.width = pct + "%";
-  fill.className = x >= GOAL ? "done" : "";
+  fill.className = x >= dagdoel() ? "done" : "";
   var st = streakNow();
   document.getElementById("goalTxt").textContent =
-    (x >= GOAL ? "doel gehaald ✓" : x + "/" + GOAL + " XP") + " · 🔥 " + st;
+    (x >= dagdoel() ? "doel gehaald ✓" : x + "/" + dagdoel() + " XP") + " · 🔥 " + st;
   var mp = document.getElementById("miniPet");
   if(mp){
     mp.innerHTML = petSVG();
@@ -2303,7 +2318,7 @@ function ritmeCard(){
     "<div class='ritme'>"+
     chip(nieuw >= MIN_NEW_PER_DAY, "nieuwe woorden "+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
     chip(over === 0, over === 0 ? "herhalingen bij" : over+" herhalingen open")+
-    chip(xp >= GOAL, "dagdoel "+Math.min(xp,GOAL)+"/"+GOAL+" XP")+
+    chip(xp >= dagdoel(), "dagdoel "+Math.min(xp,dagdoel())+"/"+dagdoel()+" XP")+
     "</div>"+
     "<p class='muted' style='margin-top:8px'>Dit is genoeg om vooruit te blijven gaan. Alles daarboven (lessen, liedjes, puzzels) is extra: leuk, maar hoeft niet.</p></div>";
 }
@@ -3593,43 +3608,33 @@ function renderFunEsc(){
 /* ================= RONDLEIDING (onboarding) ================= */
 var TOUR = [
   {titel:"¡Hola! Ik ben Chispa 🐾",
-   txt:"Welkom bij jouw Spaanse leerapp! Ik loop in één minuutje met je door hoe alles werkt. Ik groei trouwens met je mee, maar daarover straks meer."},
-  {titel:"Start met een les 📖",
-   txt:"Bij <b>Lessen</b> begin je altijd met de <b>spiekbrief</b>: eerst even de grammatica lezen, dán pas oefenen. Zo snap je niet alleen dát iets goed is, maar ook waaróm."},
-  {titel:"Woordjes: max 15 nieuwe per dag 🧠",
-   txt:"Dat is expres! Je brein onthoudt het best in kleine porties. De app laat elk woord op het juiste moment terugkomen (spaced repetition). Door nu rustig op te bouwen, herhaal je later moeiteloos hónderden woorden per dag."},
-  {titel:"Dan de zinnetjes ✍️",
-   txt:"Vertaal de zinnen in je eigen woorden. Weet je iets niet? Spiek gerust in de spiekbrief of zoek het online op. Ook opzoeken is leren!"},
-  {titel:"Fouten zijn goud waard 💛",
-   txt:"Fouten maken is helemaal niet erg, daar leer je juist het meest van. De app onthoudt wat je lastig vindt en laat precies díe dingen vaker terugkomen, tot ze vastzitten."},
-  {titel:"Grammatica & woordenboek 📖",
-   txt:"Onder <b>Grammatica</b> vind je de spiekbrieven van je lessen. En zie je het ronde 📖-knopje rechtsonder? Dat is het woordenboek: altijd binnen handbereik, opent als popup, dus je raakt je oefening nooit kwijt."},
-  {titel:"De Speeltuin 🧩",
-   txt:"Woordenzoeker, Memory, Palabra Duel (tegen elkaar!) en Spaanse muziek. Voelt als spelen, maar stiekem oefen je gewoon je woordjes."},
-  {titel:"Jouw profiel 👤",
-   txt:"Tik op je <b>naam</b> bovenaan voor je profiel: je voortgang, je geheime sync-code (daarmee ga je op een ander apparaat verder) en <b>Groepen</b>. Start een groep met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit: jij ziet hun voortgang in het klassement."},
+   txt:"Welkom! Ik ben je taal-maatje en ik groei mee met alles wat jij leert. Genoeg gepraat: we beginnen meteen met je állereerste woordje. Klaar?"},
+  {titel:"Je eerste woordje 🎉", oefen:{id:"b1", es:"hola", opts:["hallo","tot ziens"], c:0}},
+  {titel:"En nummer twee ✨", oefen:{id:"b3", es:"gracias", opts:["alsjeblieft","dank je wel"], c:1}},
+  {titel:"Zo werkt het 🧠",
+   txt:"Zo simpel is het! Elke dag krijg je maximaal <b>15 nieuwe woordjes</b> (expres: kleine porties blijven plakken) en komt alles terug precies wanneer je het bijna vergeten bent. Bij elke les lees je eerst kort de grammatica. En <b>fouten zijn goud</b>: daar leer je het meest van, dus ook een fout antwoord levert XP op."},
+  {titel:"Nog eentje dan 😄", oefen:{id:"b2", es:"adiós", opts:["tot ziens","goedemorgen"], c:0}},
+  {titel:"Alles binnen handbereik 🧭",
+   txt:"Onder <b>Grammatica</b> vind je de spiekbrieven, de ronde 📖-knop rechtsonder is je woordenboek (opent als popup, altijd bij de hand), en in de <b>Speeltuin</b> leer je spelenderwijs verder met muziek, memory en meer."},
+  {titel:"Samen leren 👤",
+   txt:"Tik op je <b>naam</b> bovenaan voor je voortgang, je geheime sync-code en <b>Groepen</b>: start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
   {titel:"Ik groei met je mee ✨",
-   txt:"Alles wat je oefent levert XP op, en daarvan groei ik: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
+   txt:"Je hebt net je eerste XP verdiend, en van XP groei ík: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
 ];
 var TOUR_EN = [
   {titel:"¡Hola! I'm Chispa 🐾",
-   txt:"Welcome to your Spanish learning app! Let me walk you through how everything works in about a minute. I grow along with you, by the way — more on that in a bit."},
-  {titel:"Start with a lesson 📖",
-   txt:"Under <b>Lessons</b> you always start with the <b>cheat sheet</b>: read the grammar first, then practise. That way you don't just know that something is right, but also why."},
-  {titel:"Words: max 15 new per day 🧠",
-   txt:"That's on purpose! Your brain remembers best in small portions. The app brings every word back at exactly the right moment (spaced repetition). By building up slowly now, you'll effortlessly review hundreds of words a day later on."},
-  {titel:"Then the sentences ✍️",
-   txt:"Translate the sentences in your own words. Don't know something? Feel free to peek at the cheat sheet or look it up online. Looking things up is learning too!"},
-  {titel:"Mistakes are gold 💛",
-   txt:"Making mistakes is completely fine — that's where you learn the most. The app remembers what you find hard and brings exactly those things back more often, until they stick."},
-  {titel:"Grammar & dictionary 📖",
-   txt:"Under <b>Grammar</b> you'll find the cheat sheets of your lessons. And see the round 📖 button in the bottom right? That's the dictionary: always within reach, opens as a popup, so you never lose your exercise."},
-  {titel:"The Playground 🧩",
-   txt:"Word search, memory, Palabra Duel (against each other!) and Spanish music. Feels like playing, but secretly you're just practising your words."},
-  {titel:"Your profile 👤",
-   txt:"Tap your <b>name</b> at the top for your profile: your progress, your secret sync code (to continue on another device) and <b>Groups</b>. Start a group with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students — you'll see their progress on the leaderboard."},
+   txt:"Welcome! I'm your language buddy and I grow with everything you learn. Enough talking — let's start with your very first word. Ready?"},
+  {titel:"Your first word 🎉", oefen:{id:"b1", es:"hola", opts:["hello","goodbye"], c:0}},
+  {titel:"And number two ✨", oefen:{id:"b3", es:"gracias", opts:["please","thank you"], c:1}},
+  {titel:"How it works 🧠",
+   txt:"That's all there is to it! Each day you get at most <b>15 new words</b> (on purpose: small portions stick) and everything comes back exactly when you're about to forget it. Every lesson starts with a short grammar note. And <b>mistakes are gold</b>: they're where you learn the most, so even a wrong answer earns XP."},
+  {titel:"One more 😄", oefen:{id:"b2", es:"adiós", opts:["goodbye","good morning"], c:0}},
+  {titel:"Everything within reach 🧭",
+   txt:"Under <b>Grammar</b> you'll find the cheat sheets, the round 📖 button bottom right is your dictionary (opens as a popup, always at hand), and in the <b>Playground</b> you keep learning through music, memory and more."},
+  {titel:"Learn together 👤",
+   txt:"Tap your <b>name</b> at the top for your progress, your secret sync code and <b>Groups</b>: start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
   {titel:"I grow with you ✨",
-   txt:"Everything you practise earns XP, and that's what makes me grow: from egg to estrella, in 12 forms. Go at your own pace. <b>A little bit every day</b> — that's how you make real progress. ¡Vamos!"}
+   txt:"You just earned your first XP, and XP is what makes me grow: from egg to estrella, in 12 forms. Go at your own pace — missing a day is fine. <b>A little bit every day</b>: that's how you make real progress. ¡Vamos!"}
 ];
 function tourLijst(){ return profLang() === "nl" ? TOUR : TOUR_EN; }
 function showTour(stap){
@@ -3643,16 +3648,40 @@ function showTour(stap){
   var t = lijst[stap];
   var dots = lijst.map(function(_, i){ return "<span class='"+(i===stap?"aan":"")+"'></span>"; }).join("");
   var laatste = stap === lijst.length - 1;
+  var nl = profLang() === "nl";
+  var midden;
+  if(t.oefen){
+    midden = "<p style='font-size:1.6rem; margin:4px 0 2px'><b class='es'>"+t.oefen.es+"</b></p>"+
+      "<p class='muted' style='margin:0 0 10px'>"+(nl?"Wat betekent dit?":"What does this mean?")+"</p>"+
+      t.oefen.opts.map(function(o, i){ return "<button class='opt' data-toefen='"+i+"' style='margin:4px 0'>"+o+"</button>"; }).join("");
+  } else {
+    midden = "<p>"+t.txt+"</p>";
+  }
   wrap.innerHTML = "<div class='tourcard'>"+
     "<div class='tourpet'>"+petSVG()+"</div>"+
     "<h3>"+t.titel+"</h3>"+
-    "<p>"+t.txt+"</p>"+
+    midden +
     "<div class='tourdots'>"+dots+"</div>"+
     "<div class='row center'>"+
-    (laatste ? "<button class='primary' id='btnTourKlaar'>¡Vamos! 🎉</button>"
-             : "<button class='primary' id='btnTourVolg'>"+(profLang()==="nl"?"Volgende →":"Next →")+"</button>"+
-               "<button class='ghost' id='btnTourSkip'>"+(profLang()==="nl"?"Overslaan":"Skip")+"</button>")+
+    (t.oefen ? "<button class='ghost' id='btnTourSkip'>"+(nl?"Overslaan":"Skip")+"</button>"
+     : laatste ? "<button class='primary' id='btnTourKlaar'>¡Vamos! 🎉</button>"
+             : "<button class='primary' id='btnTourVolg'>"+(nl?"Volgende →":"Next →")+"</button>"+
+               "<button class='ghost' id='btnTourSkip'>"+(nl?"Overslaan":"Skip")+"</button>")+
     "</div></div>";
+  if(t.oefen){
+    wrap.querySelectorAll("button[data-toefen]").forEach(function(b){
+      b.onclick = function(){
+        var goed = (+b.getAttribute("data-toefen")) === t.oefen.c;
+        // woordje meteen echt het herhaalsysteem in
+        if(!S.srs[t.oefen.id]) S.srs[t.oefen.id] = {box: goed ? 1 : 0, due: goed ? addDays(today(), 1) : today(), n:1, f: goed ? 0 : 1};
+        addXP(goed ? 2 : 1);
+        confetti(goed ? ["🎉","⭐️"] : ["💛"], goed ? 14 : 8);
+        toast(goed ? (nl?"¡Muy bien! +2 XP":"¡Muy bien! +2 XP")
+                   : (nl?"Het was: "+t.oefen.opts[t.oefen.c]+". Fouten zijn goud: +1 XP!":"It was: "+t.oefen.opts[t.oefen.c]+". Mistakes are gold: +1 XP!"));
+        setTimeout(function(){ showTour(stap + 1); }, 900);
+      };
+    });
+  }
   var bv = document.getElementById("btnTourVolg");
   if(bv) bv.onclick = function(){ showTour(stap + 1); };
   var bk = document.getElementById("btnTourKlaar");
@@ -3984,6 +4013,19 @@ function renderPerfil(){
     "<p class='muted' style='margin:12px 0 4px'>"+gt("mailLbl")+"</p>"+
     "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
     "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>";
+  var huidigDoel = S.doel || 30;
+  var doelen = [{n:10, lbl:(profLang()==="nl"?"Relaxed · 10":"Relaxed · 10")}, {n:30, lbl:(profLang()==="nl"?"Normaal · 30":"Normal · 30")}, {n:60, lbl:(profLang()==="nl"?"Fanatiek · 60":"Serious · 60")}];
+  el.innerHTML += "<p class='muted' style='margin:12px 0 4px'>"+(profLang()==="nl"?"Dagdoel (XP per dag): zelf gekozen doelen werken het best.":"Daily goal (XP per day): self-chosen goals work best.")+"</p>"+
+    "<div class='row'>"+doelen.map(function(d){
+      return "<button class='ghost trackpick"+(d.n===huidigDoel?" active":"")+"' data-doel='"+d.n+"'>"+d.lbl+"</button>";
+    }).join("")+"</div>";
+  el.querySelectorAll("button[data-doel]").forEach(function(b){
+    b.onclick = function(){
+      S.doel = +b.getAttribute("data-doel"); persist(); syncUp();
+      updateGoalUI(); renderPerfil();
+      toast(profLang()==="nl" ? "Dagdoel: "+S.doel+" XP per dag ✓" : "Daily goal: "+S.doel+" XP per day ✓");
+    };
+  });
   var bm = document.getElementById("btnMailBewaar");
   if(bm) bm.onclick = function(){
     var m = (document.getElementById("perfilMail").value || "").trim();
@@ -4289,7 +4331,7 @@ function renderStats(){
   el.innerHTML = "<h2>Je voortgang</h2>"+
     "<div class='statgrid'>"+
     "<div class='stat'><b>🔥 "+streakNow()+"</b><span class='muted'>dagen streak</span></div>"+
-    "<div class='stat'><b>"+xpToday+"/"+GOAL+"</b><span class='muted'>XP vandaag</span></div>"+
+    "<div class='stat'><b>"+xpToday+"/"+dagdoel()+"</b><span class='muted'>XP vandaag</span></div>"+
     "<div class='stat'><b>"+(S.txp||0)+"</b><span class='muted'>XP totaal</span></div>"+
     "<div class='stat'><b>🌮 "+(S.tapas||0)+"</b><span class='muted'>tapas gespaard</span></div>"+
     "<div class='stat'><b>"+seen+"/"+WORDS.length+"</b><span class='muted'>woorden gestart</span></div>"+
