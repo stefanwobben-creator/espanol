@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.7";
+var APP_VERSIE = "v10.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4126,13 +4126,13 @@ function checkWeekWinnaar(){
           S.tapas = (S.tapas || 0) + 5;
           persist();
         }
-        toonWinnaarReveal(g.naam, res.vorigeWeek.winnaar, res.vorigeWeek.xp, benIk);
+        toonWinnaarReveal(g.naam, res.vorigeWeek.winnaar, res.vorigeWeek.xp, benIk, res.vorigeWeek.dagen);
       });
     })(lijst[i]);
     break; // maximaal één onthulling per keer opstarten
   }
 }
-function toonWinnaarReveal(groepNaam, winnaar, xp, benIk){
+function toonWinnaarReveal(groepNaam, winnaar, xp, benIk, dagen){
   var nl = profLang() === "nl";
   var wrap = document.createElement("div");
   wrap.className = "tourwrap"; wrap.id = "winWrap";
@@ -4148,8 +4148,11 @@ function toonWinnaarReveal(groepNaam, winnaar, xp, benIk){
   if(ok2) ok2.onclick = function(){ if(wrap.remove) wrap.remove(); else wrap.innerHTML = ""; };
   setTimeout(function(){
     var el = document.getElementById("winNaam");
-    if(el) el.textContent = "🥇 " + winnaar + " · " + xp + " XP";
+    if(el) el.textContent = "🥇 " + winnaar;
     var sub = document.getElementById("winSub");
+    var pres = (dagen !== undefined ? (profLang()==="nl" ? dagen+"/7 dagen het eigen doel gehaald · " : dagen+"/7 days own goal hit · ") : "") + xp + " XP";
+    var el2 = document.getElementById("winNaam");
+    if(el2) el2.textContent = "🥇 " + winnaar + " · " + pres.split(" · ")[0];
     if(sub) sub.textContent = benIk
       ? (nl ? "¡Eres tú! +5 tapas én een gouden lauwerkrans voor Chispa, een week lang. 👑" : "It's you! +5 tapas and a golden laurel wreath for Chispa, for a whole week. 👑")
       : (nl ? "¡Felicidades, " + winnaar + "! Deze week nieuwe ronde, nieuwe kansen." : "¡Felicidades, " + winnaar + "! New week, new chances.");
@@ -4210,12 +4213,17 @@ function renderGroepen(){
       if(st) st.textContent = res.spelers.length + " " + (res.spelers.length===1?gt("deelnemer"):gt("deelnemers")) + " · " + gt("privacy");
       var medailles = ["🥇","🥈","🥉"];
       var vorigeWin = res.vorigeWeek ? res.vorigeWeek.winnaar : null;
-      var kopje = "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl"?"De week-race (maandag t/m zondag). Vorige winnaar draagt de 🏆.":"The weekly race (Monday to Sunday). Last week's winner wears the 🏆.")+"</p>";
+      var kopje = "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl"
+        ? "De week-race: wie haalt het vaakst zijn éigen dagdoel (ma t/m zo)? Zo maakt iedereen kans, van relaxed tot fanatiek. Vorige winnaar draagt de 🏆."
+        : "The weekly race: who hits their ówn daily goal most often (Mon-Sun)? That way everyone stands a chance, from relaxed to serious. Last week's winner wears the 🏆.")+"</p>";
       lijst.innerHTML = kopje + res.spelers.map(function(sp, i){
         var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
         var trofee = (vorigeWin && sp.naam === vorigeWin) ? " 🏆" : "";
+        var hoofd = (sp.weekDagen !== undefined)
+          ? "<b>"+sp.weekDagen+"/7</b> "+(profLang()==="nl"?"dagen doel ✓":"days goal ✓")+" <span class='muted'>· "+(sp.weekXp||0)+" XP · 🔥 "+sp.streak+"</span>"
+          : "<b>"+sp.txp+" XP</b> · 🔥 "+sp.streak;
         return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+trofee+"</b> <span class='muted'>· "+lvl+"</span></span>"+
-          "<span><b>"+(sp.weekXp!==undefined?sp.weekXp:sp.txp)+" XP</b> "+(profLang()==="nl"?"deze week":"this week")+" <span class='muted'>· "+sp.txp+" tot. · 🔥 "+sp.streak+"</span></span></div>";
+          "<span>"+hoofd+"</span></div>";
       }).join("");
     });
     return;

@@ -381,19 +381,28 @@ app.get("/api/groep/:gcode", async (req, res) => {
     const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     const dezeWeek = weekDates(0);
     const vorigeWeekDagen = weekDates(-1);
+    // eerlijke race: winnaar is wie het vaakst zijn EIGEN dagdoel haalt (relaxed 10 telt even zwaar als fanatiek 60)
+    function dagenGehaald(st, dates) {
+      const doel = (st && st.doel) || 30;
+      const xp = (st && st.xp) || {};
+      return dates.reduce((s, d) => s + ((xp[d] || 0) >= doel ? 1 : 0), 0);
+    }
     const spelers = r.rows.map((row) => {
       const st = row.state || {};
       let lessen = 0;
       if (st.lessons) for (const k in st.lessons) { if (st.lessons[k] && st.lessons[k].done) lessen++; }
       const sd = st.streak || {};
       const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
-      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen,
-        weekXp: sumXp(st, dezeWeek), vorigeXp: sumXp(st, vorigeWeekDagen) };
-    }).sort((a, b) => (b.weekXp - a.weekXp) || (b.txp - a.txp));
-    // winnaar van vorige week (alleen als er echt gespeeld is)
+      const doel = st.doel || 30;
+      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, doel,
+        weekXp: sumXp(st, dezeWeek), weekDagen: dagenGehaald(st, dezeWeek),
+        vorigeXp: sumXp(st, vorigeWeekDagen), vorigeDagen: dagenGehaald(st, vorigeWeekDagen) };
+    }).sort((a, b) => (b.weekDagen - a.weekDagen) || (b.weekXp / (a.doel * 7) - a.weekXp / (b.doel * 7)) || (b.txp - a.txp));
+    // winnaar vorige week: meeste dagen eigen doel gehaald; tiebreak: % van eigen weekdoel
     let vorigeWeek = null;
-    const top = [...spelers].sort((a, b) => b.vorigeXp - a.vorigeXp)[0];
-    if (top && top.vorigeXp > 0) vorigeWeek = { winnaar: top.naam, xp: top.vorigeXp, week: vorigeWeekDagen[0] };
+    const top = [...spelers].sort((a, b) =>
+      (b.vorigeDagen - a.vorigeDagen) || (b.vorigeXp / (b.doel * 7) - a.vorigeXp / (a.doel * 7)))[0];
+    if (top && top.vorigeXp > 0) vorigeWeek = { winnaar: top.naam, xp: top.vorigeXp, dagen: top.vorigeDagen, week: vorigeWeekDagen[0] };
     ok(res, { groep: g.rows[0], spelers, vorigeWeek, week: dezeWeek[0] });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
