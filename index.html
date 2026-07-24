@@ -277,16 +277,6 @@
       <div class="row"><button class="primary" id="btnNaarSteun">Lees het verhaal 💛</button></div>
     </div>
     <div class="card">
-      <h2>Foutenlog naar Claude</h2>
-      <p class="muted">Fouten gaan automatisch naar de server. Deze knop is de handmatige reserve: één tik opent een
-      kant-en-klaar mailtje aan jezelf.</p>
-      <div class="row">
-        <button class="primary" id="btnMailErrors">Verstuur foutenlog ✉️</button>
-        <button class="ghost" id="btnExportErrors">Bekijk/kopieer zelf</button>
-      </div>
-      <textarea id="errorDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"></textarea>
-    </div>
-    <div class="card">
       <h2>Profiel &amp; synchronisatie</h2>
       <p class="muted">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
       Vul daar bij het profielscherm deze sync-code in:</p>
@@ -434,7 +424,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.3";
+var APP_VERSIE = "v10.4";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4450,8 +4440,6 @@ function show(tabId, skipPush){
   if(lt0) lt0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
   var ls0 = document.getElementById("lnkSteun");
   if(ls0) ls0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("steun"); return false; };
-  document.getElementById("btnExportErrors").onclick = exportErrors;
-  document.getElementById("btnMailErrors").onclick = mailErrors;
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
