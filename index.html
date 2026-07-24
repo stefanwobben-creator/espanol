@@ -140,6 +140,9 @@
                  font-weight:700; font-size:.85rem; cursor:pointer; color:var(--ink); padding:0;}
   .wsgrid button.sel{background:var(--amber-soft); border-color:var(--amber);}
   .wsgrid button.found{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+  .wshint{border:1.5px solid var(--border); background:var(--card); border-radius:999px; cursor:pointer;
+          font-size:.85rem; padding:2px 7px; vertical-align:middle;}
+  .wshint:hover{border-color:var(--amber); background:var(--amber-soft);}
   .tiles{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
   .tile{width:40px; height:44px; border-radius:8px; background:var(--amber-soft); border:1.5px solid var(--amber);
         display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:1.15rem; color:var(--ink);}
@@ -273,7 +276,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v7.7";
+var APP_VERSIE = "v7.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2643,7 +2646,7 @@ function wsWoordPool(){
     if(!S.srs[w.id]) return; // alleen geleerde woorden
     var kern = w.es.toLowerCase().split("/")[0].trim().split(" ").filter(function(t){ return !artikelen[t]; })[0] || "";
     kern = stripAcc(kern).replace(/[^a-z]/g, "");
-    if(kern.length >= 4 && kern.length <= 9) pool.push({woord:kern, nl:w.nl});
+    if(kern.length >= 4 && kern.length <= 9) pool.push({woord:kern, nl:w.nl, es:w.es});
   });
   return pool;
 }
@@ -2674,7 +2677,7 @@ function wsStart(){
         if(horiz) grid[row][col+j] = g.woord[j];
         else grid[row+j][col] = g.woord[j];
       }
-      geplaatst.push({woord:g.woord, nl:g.nl, found:false});
+      geplaatst.push({woord:g.woord, nl:g.nl, es:g.es, found:false, hint:false});
       break;
     }
   });
@@ -2958,8 +2961,13 @@ function renderFunWs(){
       html += "<button class='"+cls+"' data-ws='"+k+"'>"+ws.grid[r][c].toUpperCase()+"</button>";
     }
   }
-  html += "</div><p class='muted'>Tik de eerste en laatste letter van een woord. Zoek:</p><p>"+
-    ws.woorden.map(function(w){ return w.found ? "<s>"+w.woord+"</s>" : "<b>"+w.nl+"</b>"; }).join(" \u00b7 ")+"</p>"+
+  html += "</div><p class='muted'>Tik de eerste en laatste letter van een woord. Zoek:</p><p style='line-height:2'>"+
+    ws.woorden.map(function(w, i){
+      if(w.found) return "<s>"+w.woord+"</s>";
+      return "<b>"+w.nl+"</b>"+(w.hint
+        ? " <span class='es'>("+(w.es||w.woord)+")</span>"
+        : " <button class='wshint' data-hint='"+i+"' title='Hint: laat het Spaanse woord zien'>\ud83d\udca1</button>");
+    }).join(" \u00b7 ")+"</p>"+
     "<div class='row'><button class='ghost' id='btnWsNieuw'>Nieuwe puzzel</button>"+
     "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
   el.innerHTML = html;
@@ -2967,6 +2975,12 @@ function renderFunWs(){
     b.onclick = function(){
       var p = b.getAttribute("data-ws").split(",");
       wsCellClick(+p[0], +p[1]);
+    };
+  });
+  el.querySelectorAll("button[data-hint]").forEach(function(b){
+    b.onclick = function(){
+      var w = ws.woorden[+b.getAttribute("data-hint")];
+      if(w){ w.hint = true; renderFun(); }
     };
   });
   var bn = document.getElementById("btnWsNieuw");
