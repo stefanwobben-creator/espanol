@@ -143,6 +143,9 @@
             padding:16px 18px; box-shadow:0 16px 50px rgba(0,0,0,.35); animation:bubpop .2s ease;}
   .dictop{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
   .dicrijtje{background:var(--amber-soft); border-radius:10px; padding:8px 10px; font-size:.86rem;}
+  .donatebtn{display:inline-block; background:var(--accent); color:#fff; font-weight:800; text-decoration:none;
+             padding:12px 20px; border-radius:12px; font-size:.95rem;}
+  .donatebtn:hover{opacity:.9;}
   .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .vpop{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); border:2px solid var(--accent);
         border-radius:14px; padding:16px 18px; max-width:340px; width:88vw; z-index:97; box-shadow:0 10px 40px rgba(0,0,0,.3); font-size:.92rem;}
@@ -238,6 +241,11 @@
   <section id="tab-chispa" class="hidden">
     <div class="card" id="petCard"></div>
     <div class="card" id="shopCard"></div>
+    <div class="card" id="steunCard">
+      <h2>Steun ¡Vamos! 💛</h2>
+      <p class="muted">Deze app is gratis en blijft gratis. Vind je hem waardevol? Een kleine donatie helpt de server- en AI-kosten te dekken. · This app is free; a small donation helps cover the costs.</p>
+      <div class="row"><a class="donatebtn" href="https://paypal.me/stefanwobben" target="_blank" rel="noopener">Doneer via PayPal 💛</a></div>
+    </div>
     <div class="card" id="statsCard"></div>
     <div class="card">
       <h2>Foutenlog naar Claude</h2>
@@ -306,7 +314,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v8.8";
+var APP_VERSIE = "v8.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2090,7 +2098,8 @@ function renderLessons(){
     });
   }
   html += "<p class='muted' style='text-align:center; margin-top:12px; font-size:.85rem'>"+
-    "<a href='#' id='lnkTour'>❓ Hoe werkt de app? Bekijk de rondleiding</a></p>";
+    "<a href='#' id='lnkTour'>❓ Hoe werkt de app? Bekijk de rondleiding</a> · "+
+    "<a href='https://paypal.me/stefanwobben' target='_blank' rel='noopener'>💛 Steun de app</a></p>";
   listEl.innerHTML = html;
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
