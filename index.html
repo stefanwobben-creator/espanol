@@ -136,6 +136,8 @@
   .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
   .dicbody{padding:2px 0 12px; font-size:.92rem;}
   .dicbody p{margin:4px 0;}
+  .dicletter{margin:14px 0 0; font-weight:800; color:var(--muted); font-size:.8rem; letter-spacing:.08em;}
+  .dicstip{font-size:.6rem; vertical-align:middle; margin-left:4px;}
   .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .vpop{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); border:2px solid var(--accent);
         border-radius:14px; padding:16px 18px; max-width:340px; width:88vw; z-index:97; box-shadow:0 10px 40px rgba(0,0,0,.3); font-size:.92rem;}
@@ -301,7 +303,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v8.2";
+var APP_VERSIE = "v8.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2764,57 +2766,58 @@ function dicVoorbeeld(w){
   var stam = zoek.slice(0, Math.max(3, zoek.length - 2)); // vangt ook vervoegde vormen
   return SENTENCES.filter(function(s){ return stripAcc(s.es.toLowerCase()).indexOf(stam) !== -1; })[0] || null;
 }
+function dicSortKey(w){
+  var artikelen = {el:1, la:1, los:1, las:1, un:1, una:1};
+  var delen = w.es.toLowerCase().split("/")[0].trim().split(" ");
+  while(delen.length > 1 && artikelen[delen[0]]) delen.shift(); // lidwoord negeren bij sorteren
+  return stripAcc(delen.join(" "));
+}
 function renderDic(){
   var el = document.getElementById("dicCard");
   if(!el) return;
-  var geleerd = WORDS.filter(function(w){ return !!S.srs[w.id]; });
-  var totaal = WORDS.length;
+  var geleerd = 0;
+  WORDS.forEach(function(w){ if(S.srs[w.id]) geleerd++; });
   var q = stripAcc(dicZoek.toLowerCase());
-  var lijst = geleerd.filter(function(w){
+  var lijst = WORDS.filter(function(w){
     if(!q) return true;
     return stripAcc(w.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(w.nl.toLowerCase()).indexOf(q) !== -1;
-  });
-  var groepen = [
-    {naam:"🔴 Lastig", uitleg:"deze komen extra vaak terug", items:[]},
-    {naam:"🟡 Bezig", uitleg:"goed op weg", items:[]},
-    {naam:"🟢 Zit goed", uitleg:"lange herhaal-tussenpozen", items:[]}
-  ];
+  }).slice();
+  lijst.sort(function(a, b){ var ka = dicSortKey(a), kb = dicSortKey(b); return ka < kb ? -1 : (ka > kb ? 1 : 0); });
+  var html = "<h2>Jouw woordenboek 📖</h2>"+
+    "<p class='muted'>Alle "+WORDS.length+" woorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. "+
+    "⚪ nog niet gehad · 🔴 lastig · 🟡 bezig · 🟢 zit goed. Tik op een woord voor meer.</p>"+
+    "<input type='text' id='dicZoek' placeholder='Zoek in het Spaans of Nederlands...' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+  var letter = "";
   lijst.forEach(function(w){
     var st = S.srs[w.id];
-    var g = st.box <= 1 ? 0 : (st.box <= 3 ? 1 : 2);
-    groepen[g].items.push(w);
-  });
-  groepen.forEach(function(g){ g.items.sort(function(a, b){ return a.es < b.es ? -1 : 1; }); });
-  var html = "<h2>Jouw woordenboek 📖</h2>"+
-    "<p class='muted'>Je hebt <b>"+geleerd.length+"</b> van de "+totaal+" woorden ontdekt. Tik op een woord voor vertaling, vormen en een voorbeeldzin.</p>"+
-    "<input type='text' id='dicZoek' placeholder='Zoek in het Spaans of Nederlands...' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
-  if(!geleerd.length){
-    html += "<p class='muted'>Nog geen woorden geleerd. Begin bij Lessen, dan vult dit boek zich vanzelf!</p>";
-  }
-  groepen.forEach(function(g){
-    if(!g.items.length) return;
-    html += "<p style='margin:14px 0 4px'><b>"+g.naam+"</b> <span class='muted'>· "+g.items.length+" · "+g.uitleg+"</span></p>";
-    g.items.forEach(function(w){
-      var st = S.srs[w.id];
-      var open = dicOpen === w.id;
-      html += "<div class='dicrow' data-dic='"+w.id+"'>"+
-        "<div class='dichead'><span><b class='es'>"+w.es+"</b> <span class='muted'>· "+w.nl+"</span></span>"+
-        "<span class='muted'>"+(st.n ? st.n+"×" : "")+" "+(open ? "▾" : "▸")+"</span></div>";
-      if(open){
+    var stip = st ? (st.box <= 1 ? "🔴" : (st.box <= 3 ? "🟡" : "🟢")) : "⚪";
+    var eerste = (dicSortKey(w).charAt(0) || "?").toUpperCase();
+    if(!q && eerste !== letter){
+      letter = eerste;
+      html += "<p class='dicletter'>"+letter+"</p>";
+    }
+    var open = dicOpen === w.id;
+    html += "<div class='dicrow' data-dic='"+w.id+"'>"+
+      "<div class='dichead'><span><b class='es'>"+w.es+"</b> <span class='dicstip'>"+stip+"</span></span>"+
+      "<span class='muted'>"+(st && st.n ? st.n+"× " : "")+(open ? "▾" : "▸")+"</span></div>";
+    if(open){
+      var vb = dicVoorbeeld(w);
+      html += "<div class='dicbody'>"+
+        "<p><b>"+w.nl+"</b>"+(w.tag ? " <span class='muted'>· thema: "+w.tag+"</span>" : "")+"</p>";
+      if(st){
         var fouten = st.f !== undefined ? st.f : (S.errors["woord:"+w.id] ? S.errors["woord:"+w.id].count : 0);
-        var vb = dicVoorbeeld(w);
-        html += "<div class='dicbody'>"+
-          "<p><b>"+w.nl+"</b>"+(w.tag ? " <span class='muted'>· thema: "+w.tag+"</span>" : "")+"</p>"+
-          "<p class='muted'>"+(st.n ? "Geoefend: "+st.n+"× · " : "")+"Fouten: "+fouten+"× · Box "+st.box+"/5 · volgende herhaling: "+(st.due <= today() ? "vandaag" : st.due)+"</p>"+
-          (vb ? "<p>Voorbeeld: <span class='es'>"+vb.es+"</span><br><span class='muted'>"+vb.nl+"</span></p>" : "")+
-          "<div class='row'><button class='ghost' data-vormen='"+w.id+"'>Vormen & uitleg 🤖</button></div>"+
-          "</div>";
+        html += "<p class='muted'>"+(st.n ? "Geoefend: "+st.n+"× · " : "")+"Fouten: "+fouten+"× · Box "+st.box+"/5 · volgende herhaling: "+(st.due <= today() ? "vandaag" : st.due)+"</p>";
+      } else {
+        html += "<p class='muted'>Nog niet geoefend. Dit woord komt vanzelf langs in een les, of neem alvast een voorproefje:</p>";
       }
-      html += "</div>";
-    });
+      html += (vb ? "<p>Voorbeeld: <span class='es'>"+vb.es+"</span><br><span class='muted'>"+vb.nl+"</span></p>" : "")+
+        "<div class='row'><button class='ghost' data-vormen='"+w.id+"'>Vormen & uitleg 🤖</button></div>"+
+        "</div>";
+    }
+    html += "</div>";
   });
-  if(q && !lijst.length && geleerd.length){
-    html += "<p class='muted'>Niets gevonden voor \""+dicZoek+"\" in jouw geleerde woorden.</p>";
+  if(q && !lijst.length){
+    html += "<p class='muted'>Niets gevonden voor \""+dicZoek+"\".</p>";
   }
   el.innerHTML = html;
   var zk = document.getElementById("dicZoek");
