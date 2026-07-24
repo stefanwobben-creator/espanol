@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.2";
+var APP_VERSIE = "v10.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3413,6 +3413,177 @@ function renderDic(){
   });
 }
 
+/* ================= ETIQUETAS (woorden plakken in scènes) ================= */
+var ESCENAS = [
+ {id:"cocina", titel:{es:"La cocina", nl:"de keuken", en:"the kitchen", fr:"la cuisine", de:"die Küche"},
+  achtergrond:"<rect width='400' height='300' fill='#fdf6ec'/><rect y='210' width='400' height='90' fill='#e8d9c3'/><rect y='205' width='400' height='8' fill='#d9c5a8'/>",
+  objecten:[
+   {id:"nevera", es:"la nevera", nl:"de koelkast", en:"the fridge", fr:"le frigo", de:"der Kühlschrank", x:52, y:100,
+    svg:"<rect x='20' y='60' width='64' height='150' rx='6' fill='#dfe8ee' stroke='#9fb4c2' stroke-width='3'/><line x1='20' y1='120' x2='84' y2='120' stroke='#9fb4c2' stroke-width='3'/><rect x='72' y='84' width='6' height='24' rx='3' fill='#9fb4c2'/><rect x='72' y='132' width='6' height='34' rx='3' fill='#9fb4c2'/>"},
+   {id:"horno", es:"el horno", nl:"de oven", en:"the oven", fr:"le four", de:"der Ofen", x:150, y:170,
+    svg:"<rect x='108' y='130' width='84' height='80' rx='4' fill='#c9cdd1' stroke='#8d939a' stroke-width='3'/><rect x='118' y='150' width='64' height='44' rx='4' fill='#4a4f55'/><rect x='118' y='150' width='64' height='44' rx='4' fill='none' stroke='#8d939a' stroke-width='2'/><circle cx='122' cy='140' r='4' fill='#8d939a'/><circle cx='138' cy='140' r='4' fill='#8d939a'/><circle cx='154' cy='140' r='4' fill='#8d939a'/>"},
+   {id:"sarten", es:"la sartén", nl:"de koekenpan", en:"the frying pan", fr:"la poêle", de:"die Pfanne", x:150, y:112,
+    svg:"<ellipse cx='140' cy='122' rx='26' ry='9' fill='#54595f' stroke='#33373b' stroke-width='2'/><rect x='166' y='118' width='34' height='6' rx='3' fill='#33373b'/>"},
+   {id:"fregadero", es:"el fregadero", nl:"de gootsteen", en:"the sink", fr:"l'évier", de:"die Spüle", x:258, y:170,
+    svg:"<rect x='216' y='130' width='84' height='80' rx='4' fill='#e8d9c3' stroke='#c4ad8d' stroke-width='3'/><rect x='228' y='138' width='60' height='22' rx='6' fill='#dfe8ee' stroke='#9fb4c2' stroke-width='3'/><path d='M250 138 q0 -18 16 -18 q10 0 10 8' stroke='#8d939a' stroke-width='5' fill='none' stroke-linecap='round'/>"},
+   {id:"ventana", es:"la ventana", nl:"het raam", en:"the window", fr:"la fenêtre", de:"das Fenster", x:258, y:70,
+    svg:"<rect x='222' y='36' width='72' height='68' rx='4' fill='#cdeafd' stroke='#8fb8d4' stroke-width='4'/><line x1='258' y1='36' x2='258' y2='104' stroke='#8fb8d4' stroke-width='3'/><line x1='222' y1='70' x2='294' y2='70' stroke='#8fb8d4' stroke-width='3'/>"},
+   {id:"mesa", es:"la mesa", nl:"de tafel", en:"the table", fr:"la table", de:"der Tisch", x:352, y:210,
+    svg:"<rect x='316' y='176' width='76' height='10' rx='4' fill='#b78a55'/><rect x='322' y='186' width='8' height='60' fill='#9a7043'/><rect x='378' y='186' width='8' height='60' fill='#9a7043'/>"},
+   {id:"vaso", es:"el vaso", nl:"het glas", en:"the glass", fr:"le verre", de:"das Glas", x:340, y:152,
+    svg:"<path d='M332 154 l4 20 h10 l4 -20 Z' fill='#d7ecf7' stroke='#8fb8d4' stroke-width='2.5'/>"},
+   {id:"silla", es:"la silla", nl:"de stoel", en:"the chair", fr:"la chaise", de:"der Stuhl", x:300, y:238,
+    svg:"<rect x='286' y='196' width='8' height='60' fill='#9a7043'/><rect x='286' y='224' width='34' height='8' rx='3' fill='#b78a55'/><rect x='312' y='230' width='8' height='26' fill='#9a7043'/>"}
+  ]},
+ {id:"salon", titel:{es:"El salón", nl:"de woonkamer", en:"the living room", fr:"le salon", de:"das Wohnzimmer"},
+  achtergrond:"<rect width='400' height='300' fill='#f7efe4'/><rect y='220' width='400' height='80' fill='#d9c5a8'/>",
+  objecten:[
+   {id:"sofa", es:"el sofá", nl:"de bank", en:"the sofa", fr:"le canapé", de:"das Sofa", x:96, y:200,
+    svg:"<rect x='30' y='170' width='132' height='44' rx='10' fill='#c9694a'/><rect x='30' y='150' width='132' height='30' rx='10' fill='#d97b5a'/><rect x='22' y='160' width='18' height='54' rx='8' fill='#c9694a'/><rect x='152' y='160' width='18' height='54' rx='8' fill='#c9694a'/>"},
+   {id:"television", es:"la televisión", nl:"de televisie", en:"the TV", fr:"la télévision", de:"der Fernseher", x:300, y:150,
+    svg:"<rect x='252' y='120' width='96' height='58' rx='4' fill='#2f3338' stroke='#1c1f22' stroke-width='3'/><rect x='292' y='178' width='16' height='12' fill='#4a4f55'/><rect x='276' y='190' width='48' height='6' rx='3' fill='#4a4f55'/>"},
+   {id:"lampara", es:"la lámpara", nl:"de lamp", en:"the lamp", fr:"la lampe", de:"die Lampe", x:222, y:130,
+    svg:"<path d='M208 108 l14 -26 l14 26 Z' fill='#f3cf6d' stroke='#d4ae44' stroke-width='2.5'/><rect x='219' y='108' width='6' height='92' fill='#8d939a'/><rect x='206' y='200' width='32' height='8' rx='4' fill='#8d939a'/>"},
+   {id:"alfombra", es:"la alfombra", nl:"het vloerkleed", en:"the rug", fr:"le tapis", de:"der Teppich", x:200, y:262,
+    svg:"<ellipse cx='200' cy='262' rx='88' ry='22' fill='#b7d3c4' stroke='#8fb3a0' stroke-width='3'/><ellipse cx='200' cy='262' rx='56' ry='13' fill='none' stroke='#8fb3a0' stroke-width='2'/>"},
+   {id:"cuadro", es:"el cuadro", nl:"het schilderij", en:"the painting", fr:"le tableau", de:"das Gemälde", x:96, y:76,
+    svg:"<rect x='62' y='46' width='68' height='56' fill='#fdf6ec' stroke='#b78a55' stroke-width='5'/><path d='M70 92 l16 -20 l12 12 l10 -14 l14 22 Z' fill='#8fb3a0'/><circle cx='116' cy='60' r='6' fill='#f3cf6d'/>"},
+   {id:"planta", es:"la planta", nl:"de plant", en:"the plant", fr:"la plante", de:"die Pflanze", x:366, y:216,
+    svg:"<path d='M352 224 h28 l-5 26 h-18 Z' fill='#c9694a'/><path d='M366 222 q-24 -20 -12 -44 q14 12 12 44 Z M366 222 q24 -20 12 -44 q-14 12 -12 44 Z M366 222 q0 -30 0 -46' stroke='#5c9457' stroke-width='5' fill='#79b473'/>"},
+   {id:"libro", es:"el libro", nl:"het boek", en:"the book", fr:"le livre", de:"das Buch", x:44, y:130,
+    svg:"<rect x='26' y='118' width='36' height='26' rx='3' fill='#7d9ec7' stroke='#5b7ba3' stroke-width='2.5'/><line x1='44' y1='118' x2='44' y2='144' stroke='#5b7ba3' stroke-width='2'/>"},
+   {id:"puerta", es:"la puerta", nl:"de deur", en:"the door", fr:"la porte", de:"die Tür", x:352, y:76,
+    svg:"<rect x='326' y='30' width='52' height='86' rx='3' fill='#b78a55' stroke='#9a7043' stroke-width='3'/><circle cx='368' cy='76' r='4' fill='#6e4f2e'/>"}
+  ]},
+ {id:"jardin", titel:{es:"El jardín", nl:"de tuin", en:"the garden", fr:"le jardin", de:"der Garten"},
+  achtergrond:"<rect width='400' height='300' fill='#d8effb'/><rect y='200' width='400' height='100' fill='#a8d5a0'/>",
+  objecten:[
+   {id:"arbol", es:"el árbol", nl:"de boom", en:"the tree", fr:"l'arbre", de:"der Baum", x:80, y:120,
+    svg:"<rect x='72' y='150' width='16' height='60' fill='#9a7043'/><circle cx='80' cy='110' r='46' fill='#79b473' stroke='#5c9457' stroke-width='3'/>"},
+   {id:"sol", es:"el sol", nl:"de zon", en:"the sun", fr:"le soleil", de:"die Sonne", x:344, y:52,
+    svg:"<circle cx='344' cy='52' r='22' fill='#f3cf6d' stroke='#d4ae44' stroke-width='3'/><g stroke='#d4ae44' stroke-width='3' stroke-linecap='round'><line x1='344' y1='18' x2='344' y2='8'/><line x1='344' y1='86' x2='344' y2='96'/><line x1='310' y1='52' x2='300' y2='52'/><line x1='378' y1='52' x2='388' y2='52'/><line x1='320' y1='28' x2='313' y2='21'/><line x1='368' y1='76' x2='375' y2='83'/><line x1='320' y1='76' x2='313' y2='83'/><line x1='368' y1='28' x2='375' y2='21'/></g>"},
+   {id:"flor", es:"la flor", nl:"de bloem", en:"the flower", fr:"la fleur", de:"die Blume", x:180, y:236,
+    svg:"<rect x='177' y='236' width='5' height='34' fill='#5c9457'/><g fill='#e58bb1'><circle cx='180' cy='224' r='8'/><circle cx='170' cy='232' r='8'/><circle cx='190' cy='232' r='8'/><circle cx='173' cy='243' r='8'/><circle cx='187' cy='243' r='8'/></g><circle cx='180' cy='234' r='7' fill='#f3cf6d'/>"},
+   {id:"pajaro", es:"el pájaro", nl:"de vogel", en:"the bird", fr:"l'oiseau", de:"der Vogel", x:196, y:78,
+    svg:"<circle cx='190' cy='84' r='12' fill='#7d9ec7'/><circle cx='203' cy='74' r='8' fill='#7d9ec7'/><path d='M209 73 l8 3 l-8 3 Z' fill='#e8a33d'/><circle cx='201' cy='72' r='1.8' fill='#2d2a26'/><path d='M182 84 q-8 -8 -4 -14' stroke='#5b7ba3' stroke-width='3' fill='none' stroke-linecap='round'/>"},
+   {id:"mariposa", es:"la mariposa", nl:"de vlinder", en:"the butterfly", fr:"le papillon", de:"der Schmetterling", x:270, y:140,
+    svg:"<g><ellipse cx='262' cy='136' rx='9' ry='12' fill='#e58bb1' transform='rotate(-20 262 136)'/><ellipse cx='278' cy='136' rx='9' ry='12' fill='#e58bb1' transform='rotate(20 278 136)'/><rect x='268' y='128' width='4' height='20' rx='2' fill='#54595f'/></g>"},
+   {id:"valla", es:"la valla", nl:"het hek", en:"the fence", fr:"la clôture", de:"der Zaun", x:340, y:216,
+    svg:"<g fill='#d9c5a8' stroke='#b79f7d' stroke-width='2'><rect x='306' y='196' width='10' height='44'/><rect x='324' y='196' width='10' height='44'/><rect x='342' y='196' width='10' height='44'/><rect x='360' y='196' width='10' height='44'/><rect x='300' y='204' width='76' height='7'/><rect x='300' y='222' width='76' height='7'/></g>"},
+   {id:"regadera", es:"la regadera", nl:"de gieter", en:"the watering can", fr:"l'arrosoir", de:"die Gießkanne", x:120, y:256,
+    svg:"<rect x='104' y='244' width='34' height='26' rx='5' fill='#8fb8d4' stroke='#6d94ad' stroke-width='2.5'/><path d='M104 252 l-16 -10 l3 14 l13 4 Z' fill='#8fb8d4' stroke='#6d94ad' stroke-width='2'/><path d='M138 250 q12 -4 12 6' stroke='#6d94ad' stroke-width='4' fill='none'/>"},
+   {id:"cesped", es:"el césped", nl:"het gras", en:"the grass", fr:"la pelouse", de:"der Rasen", x:262, y:282,
+    svg:"<g stroke='#5c9457' stroke-width='3' stroke-linecap='round'><line x1='240' y1='292' x2='236' y2='278'/><line x1='250' y1='292' x2='250' y2='276'/><line x1='260' y1='292' x2='264' y2='278'/><line x1='272' y1='292' x2='270' y2='278'/><line x1='282' y1='292' x2='286' y2='278'/></g>"}
+  ]},
+ {id:"super", titel:{es:"El supermercado", nl:"de supermarkt", en:"the supermarket", fr:"le supermarché", de:"der Supermarkt"},
+  achtergrond:"<rect width='400' height='300' fill='#f2f4f6'/><rect y='230' width='400' height='70' fill='#dfe3e7'/><rect x='20' y='60' width='250' height='10' fill='#c3cad1'/><rect x='20' y='140' width='250' height='10' fill='#c3cad1'/>",
+  objecten:[
+   {id:"pan", es:"el pan", nl:"het brood", en:"the bread", fr:"le pain", de:"das Brot", x:56, y:44,
+    svg:"<ellipse cx='56' cy='48' rx='30' ry='13' fill='#deb676' stroke='#c49a55' stroke-width='2.5'/><path d='M38 44 q6 -4 8 2 M52 42 q6 -4 8 2 M66 44 q6 -4 8 2' stroke='#c49a55' stroke-width='2' fill='none'/>"},
+   {id:"leche", es:"la leche", nl:"de melk", en:"the milk", fr:"le lait", de:"die Milch", x:130, y:38,
+    svg:"<path d='M116 24 h28 v10 l6 8 v18 h-40 v-18 l6 -8 Z' fill='#fdfdfd' stroke='#9fb4c2' stroke-width='2.5'/><rect x='116' y='40' width='40' height='10' fill='#8fb8d4'/>"},
+   {id:"manzana", es:"la manzana", nl:"de appel", en:"the apple", fr:"la pomme", de:"der Apfel", x:206, y:46,
+    svg:"<circle cx='206' cy='50' r='15' fill='#d9534f' stroke='#b23c38' stroke-width='2.5'/><path d='M206 36 q2 -8 8 -10' stroke='#5c9457' stroke-width='3' fill='none'/><path d='M210 30 q8 -2 8 6 q-8 2 -8 -6 Z' fill='#79b473'/>"},
+   {id:"queso", es:"el queso", nl:"de kaas", en:"the cheese", fr:"le fromage", de:"der Käse", x:66, y:122,
+    svg:"<path d='M36 132 l60 -18 v18 h-60 Z M36 132 h60 v-18' fill='#f3cf6d' stroke='#d4ae44' stroke-width='2.5'/><circle cx='58' cy='126' r='3.5' fill='#e0b944'/><circle cx='76' cy='122' r='3' fill='#e0b944'/>"},
+   {id:"huevos", es:"los huevos", nl:"de eieren", en:"the eggs", fr:"les œufs", de:"die Eier", x:150, y:126,
+    svg:"<rect x='124' y='118' width='52' height='18' rx='4' fill='#c9b28e' stroke='#a89272' stroke-width='2'/><g fill='#fdf6ec' stroke='#d9c5a8' stroke-width='1.5'><ellipse cx='136' cy='118' rx='7' ry='9'/><ellipse cx='152' cy='118' rx='7' ry='9'/><ellipse cx='168' cy='118' rx='7' ry='9'/></g>"},
+   {id:"pescado", es:"el pescado", nl:"de vis", en:"the fish", fr:"le poisson", de:"der Fisch", x:226, y:124,
+    svg:"<ellipse cx='222' cy='126' rx='22' ry='10' fill='#8fb8d4' stroke='#6d94ad' stroke-width='2.5'/><path d='M244 126 l14 -9 v18 Z' fill='#8fb8d4' stroke='#6d94ad' stroke-width='2'/><circle cx='210' cy='123' r='2' fill='#2d2a26'/>"},
+   {id:"carrito", es:"el carrito", nl:"het winkelwagentje", en:"the shopping cart", fr:"le caddie", de:"der Einkaufswagen", x:326, y:196,
+    svg:"<path d='M296 158 h12 l10 44 h44 l10 -32 h-56' fill='none' stroke='#8d939a' stroke-width='4' stroke-linejoin='round'/><circle cx='322' cy='214' r='6' fill='#54595f'/><circle cx='354' cy='214' r='6' fill='#54595f'/>"},
+   {id:"caja", es:"la caja", nl:"de kassa", en:"the checkout", fr:"la caisse", de:"die Kasse", x:120, y:226,
+    svg:"<rect x='76' y='208' width='90' height='16' rx='3' fill='#b78a55'/><rect x='84' y='224' width='74' height='40' fill='#9a7043'/><rect x='96' y='184' width='30' height='24' rx='3' fill='#54595f'/><rect x='100' y='188' width='22' height='12' fill='#cdeafd'/>"}
+  ]}
+];
+var ESC_TXT = {
+ nl:{kop:"Etiquetas 🏷️", uitleg:"Plak de Spaanse woorden op de juiste plek. Tik op het object dat hoort bij:", kies:"Kies een plek:", klaar:"¡Perfecto! Alles geplakt.", nogEen:"Nog een plek", terug:"← Speeltuin", fout:"Nee, dat is iets anders. Kijk nog eens!", af:"compleet"},
+ en:{kop:"Etiquetas 🏷️", uitleg:"Stick the Spanish words in the right place. Tap the object that matches:", kies:"Pick a place:", klaar:"¡Perfecto! All labelled.", nogEen:"Another place", terug:"← Playground", fout:"No, that's something else. Look again!", af:"complete"}
+};
+function et(k){ var d = profLang() === "nl" ? ESC_TXT.nl : ESC_TXT.en; return d[k]; }
+function escVert(o){ var l = profLang(); return o[l] || o.en || o.nl; }
+var escSpel = null;
+function escStart(scene){
+  var rest = scene.objecten.map(function(o){ return o.id; });
+  rest.sort(function(){ return Math.random() - 0.5; });
+  escSpel = {scene:scene, rest:rest, gelabeld:{}, mis:false};
+  renderFun();
+}
+function escSvg(){
+  var s = escSpel.scene;
+  var html = "<svg viewBox='0 0 400 300' style='width:100%; border-radius:12px; border:1.5px solid var(--border)'>" + s.achtergrond;
+  s.objecten.forEach(function(o){
+    html += "<g data-esc='"+o.id+"' style='cursor:pointer'>"+o.svg+"</g>";
+  });
+  s.objecten.forEach(function(o){
+    if(escSpel.gelabeld[o.id]){
+      html += "<text x='"+o.x+"' y='"+o.y+"' text-anchor='middle' font-size='13' font-weight='800' fill='#2d2a26' stroke='#ffffff' stroke-width='4' style='paint-order:stroke' pointer-events='none'>"+o.es+"</text>";
+    }
+  });
+  return html + "</svg>";
+}
+function renderFunEsc(){
+  var el = document.getElementById("funCard");
+  if(!escSpel){
+    var html = "<h2>"+et("kop")+"</h2><p class='muted'>"+et("kies")+"</p>";
+    ESCENAS.forEach(function(s){
+      html += "<div class='lesson' data-escene='"+s.id+"'><div class='lnum'>🏷️</div><div class='lbody'><b>"+s.titel.es+"</b><span>"+escVert(s.titel)+"</span></div><div class='lstatus'>▶</div></div>";
+    });
+    html += "<div class='row'><button class='ghost' id='btnFunTerug'>"+et("terug")+"</button></div>";
+    el.innerHTML = html;
+    el.querySelectorAll("[data-escene]").forEach(function(d){
+      d.onclick = function(){
+        var s = ESCENAS.filter(function(x){ return x.id === d.getAttribute("data-escene"); })[0];
+        if(s) escStart(s);
+      };
+    });
+    var bt = document.getElementById("btnFunTerug");
+    if(bt) bt.onclick = function(){ funView = null; renderFun(); };
+    return;
+  }
+  var sp = escSpel;
+  var doelId = sp.rest[0];
+  var doel = doelId ? sp.scene.objecten.filter(function(o){ return o.id === doelId; })[0] : null;
+  var html = "<h2>"+sp.scene.titel.es+" 🏷️</h2>";
+  if(doel){
+    html += "<p class='muted' style='margin:4px 0'>"+et("uitleg")+"</p>"+
+      "<p style='margin:4px 0 10px; font-size:1.25rem'><b class='es'>"+doel.es+"</b> <span class='muted'>· "+escVert(doel)+"</span></p>";
+  } else {
+    html += "<p style='margin:4px 0 10px'><b>"+et("klaar")+"</b> 🎉</p>";
+  }
+  html += escSvg();
+  html += "<div class='row' style='margin-top:10px'>"+
+    (doel ? "" : "<button class='primary' id='btnEscNieuw'>"+et("nogEen")+"</button>")+
+    "<button class='ghost' id='btnEscTerug'>"+et("kop")+"</button></div>";
+  el.innerHTML = html;
+  el.querySelectorAll("[data-esc]").forEach(function(g){
+    g.onclick = function(){
+      if(!escSpel || !escSpel.rest.length) return;
+      var geklikt = g.getAttribute("data-esc");
+      var doelNu = escSpel.rest[0];
+      if(geklikt === doelNu){
+        escSpel.gelabeld[doelNu] = true;
+        escSpel.rest.shift();
+        addXP(escSpel.mis ? 1 : 2);
+        escSpel.mis = false;
+        if(!escSpel.rest.length){
+          S.tapas = (S.tapas||0) + 1; persist();
+          confetti(["🏷️","🎉","🌮"], 24);
+          toast("¡"+escSpel.scene.titel.es+" "+et("af")+"! +1 tapa 🌮");
+        }
+        renderFun();
+      } else {
+        escSpel.mis = true;
+        toast(et("fout"));
+      }
+    };
+  });
+  var bn = document.getElementById("btnEscNieuw");
+  if(bn) bn.onclick = function(){ escSpel = null; renderFun(); };
+  var bt2 = document.getElementById("btnEscTerug");
+  if(bt2) bt2.onclick = function(){ escSpel = null; renderFun(); };
+}
+
 /* ================= RONDLEIDING (onboarding) ================= */
 var TOUR = [
   {titel:"¡Hola! Ik ben Chispa 🐾",
@@ -3776,16 +3947,19 @@ function renderFun(){
   if(duelCur){ renderDuel(); return; }
   if(funView === "ws"){ renderFunWs(); return; }
   if(funView === "mem"){ renderFunMem(); return; }
+  if(funView === "esc"){ renderFunEsc(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftEsc'><div class='lnum'>\ud83c\udff7\ufe0f</div><div class='lbody'><b>Etiquetas</b><span>plak de Spaanse woorden op de juiste plek in de keuken, tuin, supermarkt...</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.</p>";
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
+  document.getElementById("ftEsc").onclick = function(){ funView = "esc"; escSpel = null; navPush({t:"fun", v:"esc"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
 
