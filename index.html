@@ -95,8 +95,23 @@
   .chips{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
   .chip{font-size:.8rem; font-weight:700; padding:6px 12px; border-radius:999px; border:1.5px solid var(--border); color:var(--muted); background:var(--card);}
   .chip.ok{border-color:var(--green); color:var(--green); background:var(--green-soft);}
-  .petstage{display:flex; flex-direction:column; align-items:center; padding:8px 0;}
-  .petstage svg{width:230px; height:210px;}
+  .petstage{display:flex; flex-direction:column; align-items:center; padding:8px 0; position:relative;}
+  .petstage #petBox svg{width:230px; height:210px;}
+  #petBox{cursor:pointer;}
+  .petbubble{position:relative; max-width:300px; background:var(--card); border:2px solid var(--accent); border-radius:14px;
+             padding:8px 14px; font-size:.95rem; font-weight:700; margin-bottom:10px; text-align:center;
+             box-shadow:0 6px 20px rgba(0,0,0,.12); animation:bubpop .25s ease;}
+  .petbubble .nl{display:block; color:var(--muted); font-size:.78rem; font-weight:400; margin-top:2px;}
+  .petbubble:after{content:""; position:absolute; bottom:-9px; left:50%; margin-left:-8px; width:0; height:0;
+                   border-left:8px solid transparent; border-right:8px solid transparent; border-top:9px solid var(--accent);}
+  .daydeco{position:absolute; top:6px; right:10px; font-size:1.7rem; animation:decofloat 3s ease-in-out infinite; pointer-events:none;}
+  @keyframes decofloat{0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-8px) rotate(5deg)}}
+  @keyframes bubpop{0%{transform:scale(.7); opacity:0} 100%{transform:scale(1); opacity:1}}
+  .amigorow{display:flex; gap:14px; margin:8px 0 2px; justify-content:center;}
+  .amigo{text-align:center; cursor:pointer; border:none; background:none; padding:0; color:var(--ink);}
+  .amigo svg{width:48px; height:44px;}
+  .amigo small{display:block; font-size:.62rem; color:var(--muted); max-width:64px;}
+  .amigo.locked{opacity:.45; filter:grayscale(1);}
   .petname{font-size:1.3rem; font-weight:800; margin:4px 0 0;}
   .petmood{color:var(--muted); font-size:.9rem; margin-bottom:8px;}
   .tapabadge{font-weight:800; font-size:1rem; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:6px 14px;}
@@ -258,7 +273,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v7.6";
+var APP_VERSIE = "v7.7";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1437,11 +1452,109 @@ function logError(id, type, tag, extra){
 
 /* ================= PET-CONSTANTEN ================= */
 var PET_LEVELS = [
-  {min:0,    naam:"huevo (ei)"},
-  {min:150,  naam:"bebé"},
-  {min:600,  naam:"joven"},
-  {min:1500, naam:"maestro"}
+  {min:0,     naam:"huevo (ei)",    hint:"er zit iets in..."},
+  {min:150,   naam:"bebé",          hint:"net uit het ei"},
+  {min:600,   naam:"joven",         hint:"groeit als kool"},
+  {min:1500,  naam:"maestro",       hint:"verdient zijn snor"},
+  {min:3000,  naam:"profesor",      hint:"met echte afstudeerhoed"},
+  {min:6000,  naam:"poeta",         hint:"baret op, poëzie in het hart"},
+  {min:10000, naam:"bailaor",       hint:"flamenco! roos in de mond"},
+  {min:15000, naam:"chef de tapas", hint:"koksmuts verdiend"},
+  {min:21000, naam:"campeón",       hint:"gouden medaille"},
+  {min:28000, naam:"leyenda",       hint:"een gouden gloed"},
+  {min:36000, naam:"el sabio",      hint:"wijze witte baard"},
+  {min:45000, naam:"estrella",      hint:"kroon en sterren"}
 ];
+/* Vriendjes: verschijnen naast Chispa vanaf een bepaald niveau */
+var AMIGOS = [
+  {id:"pepe", naam:"Pepe el gorrión",   min:3000,  frase:{es:"¡Pío pío! ¿Estudiamos?", nl:"Piep piep! Zullen we studeren?"},
+   svg:"<svg viewBox='0 0 60 56'><ellipse cx='30' cy='50' rx='16' ry='4' fill='#00000010'/><circle cx='30' cy='30' r='16' fill='#b08968' stroke='#8a6a4b' stroke-width='2'/><circle cx='30' cy='16' r='10' fill='#b08968' stroke='#8a6a4b' stroke-width='2'/><circle cx='27' cy='14' r='2' fill='#2d2a26'/><path d='M36 16 l7 2 l-7 3 Z' fill='#e8a33d'/><path d='M18 30 q-8 4 -6 10' stroke='#8a6a4b' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M26 46 l0 5 M34 46 l0 5' stroke='#e8a33d' stroke-width='2.5' stroke-linecap='round'/></svg>"},
+  {id:"lola", naam:"Lola la lagartija", min:10000, frase:{es:"Tranquila, tranquila... al solecito.", nl:"Rustig aan... lekker in het zonnetje."},
+   svg:"<svg viewBox='0 0 60 56'><ellipse cx='30' cy='50' rx='18' ry='4' fill='#00000010'/><path d='M8 40 Q18 28 34 32 Q52 36 52 26' stroke='#79b473' stroke-width='9' fill='none' stroke-linecap='round'/><circle cx='12' cy='38' r='8' fill='#79b473' stroke='#5c9457' stroke-width='2'/><circle cx='9' cy='36' r='2' fill='#2d2a26'/><path d='M20 45 l-3 6 M30 44 l0 6 M40 42 l2 6' stroke='#5c9457' stroke-width='3' stroke-linecap='round'/></svg>"},
+  {id:"torito", naam:"Torito el gato",  min:21000, frase:{es:"Miau. Cinco minutitos más de siesta...", nl:"Miauw. Nog vijf minuutjes siësta..."},
+   svg:"<svg viewBox='0 0 60 56'><ellipse cx='30' cy='51' rx='16' ry='4' fill='#00000010'/><ellipse cx='30' cy='36' rx='15' ry='13' fill='#4a4a4a'/><circle cx='30' cy='20' r='11' fill='#4a4a4a'/><path d='M21 12 l3 -8 l5 6 Z M39 12 l-3 -8 l-5 6 Z' fill='#4a4a4a'/><circle cx='26' cy='19' r='2' fill='#ffd54d'/><circle cx='34' cy='19' r='2' fill='#ffd54d'/><path d='M27 25 q3 3 6 0' stroke='#ffd54d' stroke-width='1.6' fill='none'/><path d='M45 36 q10 -2 8 -12' stroke='#4a4a4a' stroke-width='4' fill='none' stroke-linecap='round'/></svg>"}
+];
+/* Uitspraken van Chispa: typisch/grappig Spaans, mét vertaling */
+var FRASES = [
+  {es:"¡No pasa nada!", nl:"Geen probleem! (dé Spaanse levenshouding)"},
+  {es:"Me importa un pepino.", nl:"Het kan me een komkommer schelen."},
+  {es:"¡Estoy flipando!", nl:"Ik sta versteld! (spreektaal)"},
+  {es:"Hasta luego, cocodrilo.", nl:"Tot later, krokodil."},
+  {es:"¡Qué guay!", nl:"Wat cool!"},
+  {es:"¡Ostras!", nl:"Oesters! (= Jeetje!)"},
+  {es:"Ponte las pilas.", nl:"Stop je batterijen erin (= aan de slag!)."},
+  {es:"Estoy en las nubes.", nl:"Ik zit in de wolken (= ik zit te dagdromen)."},
+  {es:"Me quedé frito.", nl:"Ik viel als een blok in slaap (letterlijk: ik bleef gefrituurd)."},
+  {es:"¡Eres la leche!", nl:"Jij bent de melk (= jij bent geweldig)!"},
+  {es:"Esto es pan comido.", nl:"Dit is gegeten brood (= een eitje)."},
+  {es:"Estoy como una cabra.", nl:"Ik ben als een geit (= knettergek)."},
+  {es:"¡Vamos, que nos vamos!", nl:"Kom op, we gaan!"},
+  {es:"Más vale tarde que nunca.", nl:"Beter laat dan nooit."},
+  {es:"El mundo es un pañuelo.", nl:"De wereld is een zakdoek (= wat is de wereld klein)."},
+  {es:"¡Qué fuerte!", nl:"Wat heftig!"},
+  {es:"Tengo un hambre que no veo.", nl:"Ik heb zo'n honger dat ik niks meer zie."},
+  {es:"A otra cosa, mariposa.", nl:"Op naar iets anders, vlinder!"},
+  {es:"Un poquito de por favor.", nl:"Een beetje alsjeblieft, graag."},
+  {es:"¡Olé tus huesos!", nl:"Olé voor jouw botten (= goed gedaan, jij)!"},
+  {es:"Hablando del rey de Roma...", nl:"Over de koning van Rome gesproken (= als je het over de duvel hebt)."},
+  {es:"Me piro, vampiro.", nl:"Ik smeer 'm, vampier."},
+  {es:"Al mal tiempo, buena cara.", nl:"Bij slecht weer een goed gezicht (= kop op)."},
+  {es:"¡Toma ya!", nl:"Pak aan! (= Yes!)"},
+  {es:"Sin prisa, pero sin pausa.", nl:"Zonder haast, maar zonder pauze."},
+  {es:"Quien no arriesga, no gana.", nl:"Wie niet waagt, die niet wint."},
+  {es:"¡Fiesta, siesta y sombra!", nl:"Feest, siësta en schaduw!"},
+  {es:"Tengo ganas de bailar bachata.", nl:"Ik heb zin om bachata te dansen."},
+  {es:"Una tapa al día, alegría.", nl:"Eén tapa per dag: blijdschap."},
+  {es:"¡Madre mía!", nl:"Lieve hemel! (letterlijk: moeder van mij)"},
+  {es:"Poco a poco se anda lejos.", nl:"Beetje bij beetje kom je ver."},
+  {es:"¿Bailamos?", nl:"Zullen we dansen?"},
+  {es:"La práctica hace al maestro.", nl:"Oefening baart kunst."},
+  {es:"En Alicante, ¡siempre sol!", nl:"In Alicante altijd zon!"},
+  {es:"Cada maestrillo tiene su librillo.", nl:"Elk meestertje heeft zijn boekje (= ieder zijn eigen aanpak)."},
+  {es:"Aquí se habla español, ¿eh?", nl:"Hier spreken we Spaans, hè?"},
+  {es:"No hay mal que cien años dure.", nl:"Geen tegenslag duurt honderd jaar."},
+  {es:"¡Qué arte tienes!", nl:"Wat een kunst heb jij (= wat kun jij dat goed)!"},
+  {es:"Dime con quién andas y te diré quién eres.", nl:"Zeg me met wie je omgaat en ik zeg je wie je bent."},
+  {es:"Las cuentas claras y el chocolate espeso.", nl:"Heldere afspraken en dikke chocolademelk."}
+];
+/* Dagdecor: elke dag iets anders bij Chispa */
+var DAYDECO = [
+  {e:"🦋", txt:"Er fladdert vandaag een vlinder om Chispa heen."},
+  {e:"🎶", txt:"Chispa neuriet vandaag een bachata."},
+  {e:"🌞", txt:"Zonnetje! Chispa ligt graag in het licht."},
+  {e:"🐌", txt:"Een slak komt langzaam op bezoek. Sin prisa..."},
+  {e:"🌈", txt:"Een regenboogje boven het aquarium."},
+  {e:"🍊", txt:"Chispa heeft vandaag zin in een sinaasappel uit Valencia."},
+  {e:"⛵", txt:"Chispa droomt van een bootje op de Middellandse Zee."},
+  {e:"🫧", txt:"Bubbels! Chispa blaast belletjes."},
+  {e:"🌵", txt:"Er staat vandaag een cactusje naast het aquarium."},
+  {e:"📖", txt:"Chispa leest stiekem mee in je Spaanse boek."}
+];
+/* Spaanse feestdagen: tijdelijke specials */
+var FIESTAS = [
+  {van:"01-01", tot:"01-01", e:"🍇", naam:"Año Nuevo",  txt:"¡Feliz año nuevo! In Spanje eet je 12 druiven bij de 12 klokslagen."},
+  {van:"01-05", tot:"01-06", e:"👑", naam:"Los Reyes",  txt:"Día de Reyes: de Drie Koningen brengen cadeaus (belangrijker dan de Kerstman!)."},
+  {van:"03-15", tot:"03-19", e:"🔥", naam:"Las Fallas", txt:"Las Fallas in Valencia: reuzenpoppen en vuurwerk!"},
+  {van:"06-20", tot:"06-24", e:"🎆", naam:"San Juan",   txt:"Hogueras de San Juan: het grote vuurfeest van Alicante!"},
+  {van:"07-06", tot:"07-14", e:"🐂", naam:"San Fermín", txt:"San Fermín in Pamplona. Chispa rent níet voor de stieren uit."},
+  {van:"08-24", tot:"08-31", e:"🍅", naam:"La Tomatina",txt:"La Tomatina: het grootste tomatengevecht ter wereld, in Buñol."},
+  {van:"10-09", tot:"10-09", e:"🎉", naam:"9 d'Octubre",txt:"Feestdag van de regio Valencia (waar Alicante bij hoort)."},
+  {van:"12-24", tot:"12-26", e:"🎄", naam:"Navidad",    txt:"¡Feliz Navidad! Tijd voor turrón uit Alicante."},
+  {van:"12-31", tot:"12-31", e:"🍇", naam:"Nochevieja", txt:"Nochevieja: druiven klaarzetten voor middernacht!"}
+];
+function dayHash(extra){
+  var s = today() + "|" + (extra || "");
+  var h = 0;
+  for(var i=0;i<s.length;i++){ h = ((h<<5)-h+s.charCodeAt(i))|0; }
+  return Math.abs(h);
+}
+function fiestaVandaag(){
+  var md = today().slice(5); // "MM-DD"
+  for(var i=0;i<FIESTAS.length;i++){
+    if(md >= FIESTAS[i].van && md <= FIESTAS[i].tot) return FIESTAS[i];
+  }
+  return null;
+}
 function petLevel(txp){ var lv=0; for(var i=0;i<PET_LEVELS.length;i++){ if(txp>=PET_LEVELS[i].min) lv=i; } return lv; }
 var SHOP = [
   {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", les:1, emoji:"🌺"},
@@ -2028,11 +2141,24 @@ function petSVG(){
       (w.bufanda?"<rect x='55' y='120' width='90' height='14' rx='7' fill='#c0392b'/>":"")+
       "</svg>";
   }
-  var scale = lvl===1 ? 0.8 : (lvl===2 ? 1 : 1.12);
+  var scale = lvl===1 ? 0.8 : (lvl===2 ? 1 : Math.min(1.12 + (lvl-3)*0.012, 1.2));
   var mouth = mood==="happy" ? "M85 105 Q100 120 115 105" : mood==="ok" ? "M87 110 L113 110" : "M85 114 Q100 102 115 114";
   var blush = mood==="happy" ? "<ellipse cx='70' cy='100' rx='7' ry='4' fill='#f7b7cd'/><ellipse cx='130' cy='100' rx='7' ry='4' fill='#f7b7cd'/>" : "";
   var g = "<g transform='translate(100 95) scale("+scale+") translate(-100 -95)'>";
-  return "<svg viewBox='0 0 200 180'>"+
+  // welke hoed hoort bij dit niveau? (eigen sombrero-accessoire gaat vóór)
+  var tierHat = "";
+  if(!w.sombrero){
+    if(lvl>=11)      tierHat = "<g><path d='M74 44 L74 24 L86 36 L100 18 L114 36 L126 24 L126 44 Z' fill='#ffd54d' stroke='#e0a800' stroke-width='2.5'/><circle cx='100' cy='24' r='4' fill='#e85a8a'/></g>";
+    else if(lvl>=7)  tierHat = "<g><path d='M76 44 Q72 12 100 14 Q128 12 124 44 Z' fill='#fff' stroke='#d8d2c6' stroke-width='2.5'/><rect x='74' y='40' width='52' height='9' rx='4' fill='#fff' stroke='#d8d2c6' stroke-width='2.5'/></g>";
+    else if(lvl>=5)  tierHat = "<g><path d='M70 42 Q100 18 130 42 Q100 50 70 42 Z' fill='#2d2a26'/><circle cx='100' cy='24' r='3.5' fill='#2d2a26'/></g>";
+    else if(lvl>=4)  tierHat = "<g><rect x='88' y='34' width='24' height='10' rx='3' fill='#2d2a26'/><path d='M60 34 L100 18 L140 34 L100 44 Z' fill='#2d2a26'/><path d='M136 34 L136 52' stroke='#ffd54d' stroke-width='3'/><circle cx='136' cy='55' r='4' fill='#ffd54d'/></g>";
+  }
+  var aura = lvl>=9 ? "<ellipse cx='100' cy='100' rx='84' ry='76' fill='#ffd54d22'/><ellipse cx='100' cy='100' rx='72' ry='66' fill='#ffd54d1c'/>" : "";
+  var sterren = lvl>=11 ? "<g fill='#ffd54d'><path d='M28 30 l3 6 6 1 -4 5 1 6 -6 -3 -6 3 1 -6 -4 -5 6 -1 Z'/><path d='M168 24 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/><path d='M176 120 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/></g>" : "";
+  var medaille = lvl>=8 ? "<g><path d='M86 138 L100 152 L114 138' stroke='#c0392b' stroke-width='5' fill='none'/><circle cx='100' cy='152' r='9' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/><text x='100' y='156' text-anchor='middle' font-size='10' font-weight='bold' fill='#a5661e'>1</text></g>" : "";
+  var roos = lvl>=6 ? "<g><path d='M113 112 q14 4 22 0' stroke='#3a7d44' stroke-width='2.5' fill='none'/><circle cx='137' cy='111' r='6' fill='#c0392b'/><circle cx='134' cy='108' r='3' fill='#e85a8a'/></g>" : "";
+  var baard = lvl>=10 ? "<path d='M82 116 Q84 142 100 144 Q116 142 118 116 Q109 124 100 122 Q91 124 82 116 Z' fill='#f5f0e8' stroke='#ddd5c8' stroke-width='2'/>" : "";
+  return "<svg viewBox='0 0 200 180'>"+ aura + sterren +
     "<ellipse cx='100' cy='166' rx='60' ry='12' fill='#00000012'/>"+ g +
     // kieuwen (axolotl!)
     "<g stroke='#e46a9a' stroke-width='7' stroke-linecap='round'>"+
@@ -2048,12 +2174,14 @@ function petSVG(){
     "<circle cx='80' cy='86' r='2.4' fill='#fff'/><circle cx='124' cy='86' r='2.4' fill='#fff'/>"+
     blush +
     "<path d='"+mouth+"' stroke='#2d2a26' stroke-width='3.5' fill='none' stroke-linecap='round'/>"+
-    (lvl===3?"<path d='M84 116 Q92 110 100 116 Q108 110 116 116' stroke='#7a5636' stroke-width='4' fill='none' stroke-linecap='round'/>":"")+
+    (lvl>=3?"<path d='M84 116 Q92 110 100 116 Q108 110 116 116' stroke='"+(lvl>=10?"#f5f0e8":"#7a5636")+"' stroke-width='4' fill='none' stroke-linecap='round'/>":"")+
+    baard + roos + medaille +
     (w.gafas?"<g><circle cx='78' cy='88' r='13' fill='#2d2a26cc'/><circle cx='122' cy='88' r='13' fill='#2d2a26cc'/><path d='M91 88 L109 88' stroke='#2d2a26' stroke-width='4'/></g>":"")+
     (w.flor?"<g><circle cx='143' cy='52' r='6' fill='#e85a8a'/><circle cx='153' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='64' r='6' fill='#e85a8a'/><circle cx='133' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='58' r='5' fill='#ffd54d'/></g>":"")+
     (w.sombrero?"<g><ellipse cx='100' cy='46' rx='52' ry='12' fill='#c98a3d'/><path d='M74 46 Q100 4 126 46 Z' fill='#b5762e'/><path d='M74 46 Q100 58 126 46' fill='none' stroke='#a5661e' stroke-width='3'/></g>":"")+
     (w.bufanda?"<g><path d='M58 128 Q100 148 142 128 L140 142 Q100 160 60 142 Z' fill='#c0392b'/><rect x='120' y='134' width='14' height='26' rx='6' fill='#c0392b'/></g>":"")+
     (w.guitarra?"<g transform='rotate(18 150 135)'><ellipse cx='150' cy='138' rx='17' ry='13' fill='#c98a3d'/><ellipse cx='150' cy='124' rx='11' ry='9' fill='#c98a3d'/><circle cx='150' cy='134' r='5' fill='#7a5636'/><rect x='147' y='92' width='6' height='30' fill='#7a5636'/></g>":"")+
+    tierHat +
     "</g></svg>";
 }
 function petMoodKey(){
@@ -2071,21 +2199,72 @@ function petMoodText(){
   if(k==="ok") return "Chispa heeft wel weer trek in een tapa...";
   return "Chispa rammelt van de honger. ¡Una tapa, por favor!";
 }
+function fraseVanDaag(){ return FRASES[dayHash("frase") % FRASES.length]; }
+function chispaSay(f){
+  var bub = document.getElementById("petBubble");
+  if(!bub) return;
+  bub.innerHTML = "<span class='es'>"+f.es+"</span><span class='nl'>"+f.nl+"</span>";
+  bub.classList.remove("hidden");
+  var box = document.getElementById("petBox");
+  if(box){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
+  if(window.chispaTimer) clearTimeout(window.chispaTimer);
+  window.chispaTimer = setTimeout(function(){ bub.classList.add("hidden"); }, 5000);
+}
+function chispaRandomSay(){
+  var f = FRASES[Math.floor(Math.random()*FRASES.length)];
+  chispaSay(f);
+}
 function renderPet(){
   var el = document.getElementById("petCard");
   var lvl = petLevel(S.txp||0);
   var next = lvl < PET_LEVELS.length-1 ? PET_LEVELS[lvl+1] : null;
-  el.innerHTML = "<div class='petstage'><div id='petBox'>"+petSVG()+"</div>"+
+  var fiesta = fiestaVandaag();
+  var deco = fiesta ? {e:fiesta.e, txt:fiesta.naam+"! "+fiesta.txt} : DAYDECO[dayHash("deco") % DAYDECO.length];
+  var fr = fraseVanDaag();
+  // vriendjes-rij
+  var amHtml = "";
+  AMIGOS.forEach(function(a){
+    var open = (S.txp||0) >= a.min;
+    if(open){
+      amHtml += "<button class='amigo' data-amigo='"+a.id+"'>"+a.svg+"<small>"+a.naam+"</small></button>";
+    } else {
+      amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>🔒 bij "+a.min.toLocaleString("nl-NL")+" XP</small></button>";
+    }
+  });
+  el.innerHTML = "<div class='petstage'>"+
+    "<span class='daydeco'>"+deco.e+"</span>"+
+    "<div id='petBubble' class='petbubble hidden'></div>"+
+    "<div id='petBox' title='Klik op Chispa!'>"+petSVG()+"</div>"+
+    "<div class='amigorow'>"+amHtml+"</div>"+
     "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>· "+PET_LEVELS[lvl].naam+"</span></p>"+
     "<p class='petmood'>"+petMoodText()+"</p>"+
+    "<p class='muted' style='font-size:.82rem; margin:2px 0 8px; text-align:center'>"+deco.txt+"</p>"+
     "<span class='tapabadge'>🌮 "+(S.tapas||0)+" tapas</span>"+
     "<div class='row center'>"+
     "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">Geef een tapa 🌮</button>"+
     "</div>"+
-    (next?"<p class='muted' style='margin-top:10px'>Nog "+Math.max(0,next.min-(S.txp||0))+" XP tot de volgende vorm ("+next.naam+")</p>":"<p class='muted' style='margin-top:10px'>Chispa is volgroeid: een echte maestro. 🎓</p>")+
+    (next?"<p class='muted' style='margin-top:10px'>Nog "+Math.max(0,next.min-(S.txp||0)).toLocaleString("nl-NL")+" XP tot de volgende vorm: <b>"+next.naam+"</b> ("+next.hint+")</p>"
+         :"<p class='muted' style='margin-top:10px'>Chispa is een echte estrella: het hoogste niveau. ⭐ Maar tapas blijven welkom.</p>")+
+    "<p class='muted' style='font-size:.82rem; margin-top:6px; text-align:center'>Frase van de dag: <span class='es'>"+fr.es+"</span><br>"+fr.nl+"</p>"+
     "</div>";
   var b = document.getElementById("btnFeed");
   if(b) b.onclick = feedPet;
+  var box = document.getElementById("petBox");
+  if(box){
+    box.onclick = chispaRandomSay;
+    box.onmouseenter = function(){
+      var now = new Date().getTime();
+      if(!window.chispaHover || now - window.chispaHover > 8000){ window.chispaHover = now; chispaSay(fraseVanDaag()); }
+    };
+  }
+  el.querySelectorAll("button.amigo").forEach(function(ab){
+    ab.onclick = function(){
+      var id = ab.getAttribute("data-amigo");
+      var a = AMIGOS.filter(function(x){ return x.id === id; })[0];
+      if(a){ chispaSay(a.frase); }
+      else { toast("Dit vriendje komt erbij als Chispa verder groeit. ¡Sigue estudiando!"); }
+    };
+  });
 }
 function feedPet(){
   if((S.tapas||0) < 1){ toast("Je hebt nog geen tapas. Oefenen = tapas verdienen!"); return; }
@@ -2095,6 +2274,7 @@ function feedPet(){
   confetti(["🌮","❤️","😋"], 12);
   toast("¡Ñam ñam! Chispa smult. ❤️");
   renderPet();
+  chispaSay({es:"¡Ñam ñam! ¡Qué rica esta tapa!", nl:"Mmm! Wat is deze tapa lekker!"});
 }
 function renderShop(){
   var el = document.getElementById("shopCard");
