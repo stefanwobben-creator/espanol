@@ -433,7 +433,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v9.8";
+var APP_VERSIE = "v9.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3747,7 +3747,7 @@ function groepBewaar(g){
     S.groepen.push({gcode:g.gcode, naam:g.naam}); persist();
   }
 }
-function groepLink(g){ return "https://espanol.stefanwobben.nl/?groep=" + g.gcode; }
+function groepLink(g){ return "https://vamos.stefanwobben.nl/?groep=" + g.gcode; }
 function renderGroepen(){
   var el = document.getElementById("groepCard");
   if(!el) return;

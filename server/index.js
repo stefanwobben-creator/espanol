@@ -5,7 +5,7 @@
  *   DATABASE_URL      — Neon connection string (postgresql://...)
  *   ANTHROPIC_API_KEY — sleutel van console.anthropic.com (voor /api/ai/*)
  *   ADMIN_KEY         — zelfverzonnen lang wachtwoord; nodig om alle logs uit te lezen
- *   ALLOWED_ORIGIN    — standaard https://espanol.stefanwobben.nl
+ *   ALLOWED_ORIGIN    — standaard https://vamos.stefanwobben.nl
  */
 const express = require("express");
 const { Pool } = require("pg");
@@ -14,7 +14,7 @@ const { reason } = require("./llm");
 const app = express();
 app.use(express.json({ limit: "512kb" }));
 
-const ORIGIN = process.env.ALLOWED_ORIGIN || "https://espanol.stefanwobben.nl";
+const ORIGIN = process.env.ALLOWED_ORIGIN || "https://vamos.stefanwobben.nl";
 app.use((req, res, next) => {
   const o = req.headers.origin || "";
   // sta het live-domein toe, plus lokaal testen vanaf file:// (origin "null")
