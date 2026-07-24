@@ -149,6 +149,15 @@
            padding:4px 6px; font-size:.85rem; color:var(--ink); text-align:center; line-height:1.2;}
   .memcard.dicht{background:var(--amber-soft); border-color:var(--amber); font-size:1.4rem; color:var(--amber);}
   .memcard.goed{background:var(--green-soft); border-color:var(--green);}
+  .tourwrap{position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:99; display:flex; align-items:center; justify-content:center; padding:16px;}
+  .tourcard{background:var(--card); border-radius:18px; padding:22px 20px; max-width:380px; width:100%; text-align:center;
+            box-shadow:0 16px 50px rgba(0,0,0,.35); animation:bubpop .25s ease;}
+  .tourcard h3{margin:6px 0 8px; font-size:1.15rem;}
+  .tourcard p{font-size:.93rem; margin:0 0 12px; color:var(--ink);}
+  .tourpet svg{width:110px; height:100px;}
+  .tourdots{display:flex; gap:6px; justify-content:center; margin-bottom:12px;}
+  .tourdots span{width:8px; height:8px; border-radius:50%; background:var(--border); display:inline-block;}
+  .tourdots span.aan{background:var(--accent);}
   .tiles{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
   .tile{width:40px; height:44px; border-radius:8px; background:var(--amber-soft); border:1.5px solid var(--amber);
         display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:1.15rem; color:var(--ink);}
@@ -282,7 +291,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v7.9";
+var APP_VERSIE = "v8.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1362,6 +1371,7 @@ function boot(){
   ensureCode(p);
   serverPull(p);
   syncUp();
+  if(!S.tour) showTour(0);
 }
 
 /* ================= DAGDOEL, XP & STREAK ================= */
@@ -2046,6 +2056,8 @@ function renderLessons(){
         "<div class='lstatus'>"+(p.done?"✓":"↻")+"</div></div>";
     });
   }
+  html += "<p class='muted' style='text-align:center; margin-top:12px; font-size:.85rem'>"+
+    "<a href='#' id='lnkTour'>❓ Hoe werkt de app? Bekijk de rondleiding</a></p>";
   listEl.innerHTML = html;
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
@@ -2054,6 +2066,8 @@ function renderLessons(){
       if(l) openLesson(l);
     }; }
   });
+  var lt = document.getElementById("lnkTour");
+  if(lt) lt.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
 }
 
 function openLesson(l, skipPush){
@@ -2720,6 +2734,57 @@ function wsCellClick(r, c){
   }
   renderFun();
 }
+/* ================= RONDLEIDING (onboarding) ================= */
+var TOUR = [
+  {titel:"¡Hola! Ik ben Chispa 🐾",
+   txt:"Welkom bij jouw Spaanse leerapp! Ik loop in één minuutje met je door hoe alles werkt. Ik groei trouwens met je mee, maar daarover straks meer."},
+  {titel:"Start met een les 📖",
+   txt:"Bij <b>Lessen</b> begin je altijd met de <b>spiekbrief</b>: eerst even de grammatica lezen, dán pas oefenen. Zo snap je niet alleen dát iets goed is, maar ook waaróm."},
+  {titel:"Woordjes: max 15 nieuwe per dag 🧠",
+   txt:"Dat is expres! Je brein onthoudt het best in kleine porties. De app laat elk woord op het juiste moment terugkomen (spaced repetition). Door nu rustig op te bouwen, herhaal je later moeiteloos hónderden woorden per dag."},
+  {titel:"Dan de zinnetjes ✍️",
+   txt:"Vertaal de zinnen in je eigen woorden. Weet je iets niet? Spiek gerust in de spiekbrief of zoek het online op. Ook opzoeken is leren!"},
+  {titel:"Fouten zijn goud waard 💛",
+   txt:"Fouten maken is helemaal niet erg, daar leer je juist het meest van. De app onthoudt wat je lastig vindt en laat precies díe dingen vaker terugkomen, tot ze vastzitten."},
+  {titel:"De Speeltuin 🧩",
+   txt:"Woordenzoeker, Memory, Palabra Duel (tegen elkaar!) en Spaanse muziek. Voelt als spelen, maar stiekem oefen je gewoon je woordjes."},
+  {titel:"Ik groei met je mee ✨",
+   txt:"Alles wat je oefent levert XP op, en daarvan groei ik: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
+];
+function showTour(stap){
+  var wrap = document.getElementById("tourWrap");
+  if(!wrap){
+    wrap = document.createElement("div");
+    wrap.id = "tourWrap"; wrap.className = "tourwrap";
+    document.body.appendChild(wrap);
+  }
+  var t = TOUR[stap];
+  var dots = TOUR.map(function(_, i){ return "<span class='"+(i===stap?"aan":"")+"'></span>"; }).join("");
+  var laatste = stap === TOUR.length - 1;
+  wrap.innerHTML = "<div class='tourcard'>"+
+    "<div class='tourpet'>"+petSVG()+"</div>"+
+    "<h3>"+t.titel+"</h3>"+
+    "<p>"+t.txt+"</p>"+
+    "<div class='tourdots'>"+dots+"</div>"+
+    "<div class='row center'>"+
+    (laatste ? "<button class='primary' id='btnTourKlaar'>¡Vamos! 🎉</button>"
+             : "<button class='primary' id='btnTourVolg'>Volgende →</button>"+
+               "<button class='ghost' id='btnTourSkip'>Overslaan</button>")+
+    "</div></div>";
+  var bv = document.getElementById("btnTourVolg");
+  if(bv) bv.onclick = function(){ showTour(stap + 1); };
+  var bk = document.getElementById("btnTourKlaar");
+  if(bk) bk.onclick = closeTour;
+  var bs = document.getElementById("btnTourSkip");
+  if(bs) bs.onclick = closeTour;
+}
+function closeTour(){
+  var wrap = document.getElementById("tourWrap");
+  if(wrap && wrap.remove) wrap.remove();
+  else if(wrap) wrap.innerHTML = "";
+  if(!S.tour){ S.tour = true; persist(); }
+}
+
 /* ================= MEMORY (PAREJAS) ================= */
 var mem = null;
 function memPool(){
