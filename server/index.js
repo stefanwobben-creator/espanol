@@ -355,7 +355,21 @@ app.post("/api/groep/weg", async (req, res) => {
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
-// GET /api/groep/:gcode — naam + klassement van leden (geen sync-codes naar buiten)
+// week-hulpjes: maandag t/m zondag, in UTC
+function weekDates(offsetWeeks) {
+  const now = new Date();
+  const dag = (now.getUTCDay() + 6) % 7; // 0 = maandag
+  const maandag = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dag + offsetWeeks * 7);
+  const out = [];
+  for (let i = 0; i < 7; i++) out.push(new Date(maandag + i * 86400000).toISOString().slice(0, 10));
+  return out;
+}
+function sumXp(state, dates) {
+  const xp = (state && state.xp) || {};
+  return dates.reduce((s, d) => s + (xp[d] || 0), 0);
+}
+
+// GET /api/groep/:gcode — naam + klassement (met week-race en winnaar van vorige week)
 app.get("/api/groep/:gcode", async (req, res) => {
   try {
     const g = await pool.query("SELECT gcode, naam FROM groups WHERE gcode=$1", [String(req.params.gcode).toLowerCase().trim()]);
@@ -365,15 +379,22 @@ app.get("/api/groep/:gcode", async (req, res) => {
       [g.rows[0].gcode]);
     const vandaag = new Date().toISOString().slice(0, 10);
     const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const dezeWeek = weekDates(0);
+    const vorigeWeekDagen = weekDates(-1);
     const spelers = r.rows.map((row) => {
       const st = row.state || {};
       let lessen = 0;
       if (st.lessons) for (const k in st.lessons) { if (st.lessons[k] && st.lessons[k].done) lessen++; }
       const sd = st.streak || {};
       const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
-      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen };
-    }).sort((a, b) => b.txp - a.txp);
-    ok(res, { groep: g.rows[0], spelers });
+      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen,
+        weekXp: sumXp(st, dezeWeek), vorigeXp: sumXp(st, vorigeWeekDagen) };
+    }).sort((a, b) => (b.weekXp - a.weekXp) || (b.txp - a.txp));
+    // winnaar van vorige week (alleen als er echt gespeeld is)
+    let vorigeWeek = null;
+    const top = [...spelers].sort((a, b) => b.vorigeXp - a.vorigeXp)[0];
+    if (top && top.vorigeXp > 0) vorigeWeek = { winnaar: top.naam, xp: top.vorigeXp, week: vorigeWeekDagen[0] };
+    ok(res, { groep: g.rows[0], spelers, vorigeWeek, week: dezeWeek[0] });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 

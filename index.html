@@ -220,6 +220,8 @@
       </div>
       <p class="muted" style="margin:10px 0 4px" id="lblTaal">Moedertaal / mother tongue:</p>
       <div class="row" id="langRow"></div>
+      <p class="muted" style="margin:10px 0 4px" id="lblDoel">Dagdoel:</p>
+      <div class="row" id="doelRow"></div>
       <p class="muted" style="margin:10px 0 4px" id="lblMailUitleg">Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.</p>
       <input type="email" id="newProfMail" placeholder="E-mail (optioneel)" autocomplete="email">
       <p class="muted" style="margin:10px 0 4px" id="lblGroepUitleg"></p>
@@ -424,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.6";
+var APP_VERSIE = "v10.7";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1339,7 +1341,7 @@ function activeProfile(){
   return null;
 }
 
-var newTrack = null, newLang = "nl";
+var newTrack = null, newLang = "nl", newDoel = 30;
 /* ---- aanmeldscherm in de eigen taal (browsertaal als startpunt) ---- */
 var SIGNUP_TXT = {
  nl:{welkom:"Welkom! Maak je profiel", nieuw:"Nieuw profiel", kies:"Wie gaat er oefenen?", naamPh:"Naam",
@@ -1351,7 +1353,8 @@ var SIGNUP_TXT = {
      hint:"Kies een niveau, of doe de test van 10 vragen (2 minuten).",
      syncKop:"Oefen je al op een ander apparaat?", syncUitleg:"Vul je sync-code in (te vinden op je andere apparaat op je profielpagina) en ga verder waar je was.",
      syncKnop:"Haal mijn voortgang op", herstel:"Code kwijt? Herstel via je e-mailadres", herstelPh:"Het e-mailadres van je profiel",
-     herstelKnop:"Zoek mijn voortgang", badge:"kies profiel"},
+     herstelKnop:"Zoek mijn voortgang", badge:"kies profiel",
+     doel:"Dagdoel (kies wat bij jou past, aanpassen kan altijd):", d10:"Relaxed · 10 XP", d30:"Normaal · 30 XP", d60:"Fanatiek · 60 XP"},
  en:{welkom:"Welcome! Create your profile", nieuw:"New profile", kies:"Who's practising?", naamPh:"Name",
      niveau:"Level:", a0:"A0 · completely new", a1:"A1 · a few words", a2:"A2 · I know the basics", b1:"B1 · coming soon",
      taal:"Mother tongue:", mailUitleg:"Optional: e-mail, so you can recover your progress if you ever lose your access code.",
@@ -1361,7 +1364,8 @@ var SIGNUP_TXT = {
      hint:"Pick a level, or take the 10-question test (2 minutes).",
      syncKop:"Already practising on another device?", syncUitleg:"Enter your sync code (found on your profile page on your other device) and continue where you left off.",
      syncKnop:"Get my progress", herstel:"Lost your code? Recover via e-mail", herstelPh:"The e-mail address of your profile",
-     herstelKnop:"Find my progress", badge:"pick a profile"},
+     herstelKnop:"Find my progress", badge:"pick a profile",
+     doel:"Daily goal (pick what fits you, you can change it anytime):", d10:"Relaxed · 10 XP", d30:"Normal · 30 XP", d60:"Serious · 60 XP"},
  fr:{welkom:"Bienvenue ! Crée ton profil", nieuw:"Nouveau profil", kies:"Qui va pratiquer ?", naamPh:"Prénom",
      niveau:"Niveau :", a0:"A0 · totalement débutant", a1:"A1 · quelques mots", a2:"A2 · je connais les bases", b1:"B1 · bientôt",
      taal:"Langue maternelle :", mailUitleg:"Facultatif : e-mail, pour retrouver ta progression si tu perds ton code d'accès.",
@@ -1371,7 +1375,8 @@ var SIGNUP_TXT = {
      hint:"Choisis un niveau, ou fais le test de 10 questions (2 minutes).",
      syncKop:"Tu pratiques déjà sur un autre appareil ?", syncUitleg:"Saisis ton code de synchronisation (sur ta page de profil de l'autre appareil) et reprends où tu en étais.",
      syncKnop:"Récupérer ma progression", herstel:"Code perdu ? Récupère via ton e-mail", herstelPh:"L'adresse e-mail de ton profil",
-     herstelKnop:"Retrouver ma progression", badge:"choisis un profil"},
+     herstelKnop:"Retrouver ma progression", badge:"choisis un profil",
+     doel:"Objectif quotidien (modifiable à tout moment) :", d10:"Tranquille · 10 XP", d30:"Normal · 30 XP", d60:"Motivé · 60 XP"},
  de:{welkom:"Willkommen! Erstelle dein Profil", nieuw:"Neues Profil", kies:"Wer übt?", naamPh:"Name",
      niveau:"Niveau:", a0:"A0 · ganz neu", a1:"A1 · ein paar Wörter", a2:"A2 · ich kenne die Basics", b1:"B1 · bald",
      taal:"Muttersprache:", mailUitleg:"Optional: E-Mail, damit du deinen Fortschritt wiederfindest, falls du deinen Zugangscode verlierst.",
@@ -1381,8 +1386,21 @@ var SIGNUP_TXT = {
      hint:"Wähle ein Niveau oder mach den Test mit 10 Fragen (2 Minuten).",
      syncKop:"Übst du schon auf einem anderen Gerät?", syncUitleg:"Gib deinen Sync-Code ein (auf der Profilseite deines anderen Geräts) und mach weiter, wo du warst.",
      syncKnop:"Fortschritt holen", herstel:"Code verloren? Über E-Mail wiederherstellen", herstelPh:"Die E-Mail-Adresse deines Profils",
-     herstelKnop:"Fortschritt suchen", badge:"Profil wählen"}
+     herstelKnop:"Fortschritt suchen", badge:"Profil wählen",
+     doel:"Tagesziel (jederzeit änderbar):", d10:"Entspannt · 10 XP", d30:"Normal · 30 XP", d60:"Ehrgeizig · 60 XP"}
 };
+function renderDoelRow(){
+  var row = document.getElementById("doelRow");
+  if(!row) return;
+  var d = SIGNUP_TXT[newLang] || SIGNUP_TXT.nl;
+  var opties = [{n:10, l:d.d10}, {n:30, l:d.d30}, {n:60, l:d.d60}];
+  row.innerHTML = opties.map(function(o){
+    return "<button class='ghost trackpick doelpick"+(o.n===newDoel?" active":"")+"' data-doel='"+o.n+"'>"+o.l+"</button>";
+  }).join("");
+  row.querySelectorAll(".doelpick").forEach(function(b){
+    b.onclick = function(){ newDoel = +b.getAttribute("data-doel"); renderDoelRow(); };
+  });
+}
 function applySignupLang(){
   var d = SIGNUP_TXT[newLang] || SIGNUP_TXT.nl;
   function zet(id, txt, isHtml){ var e = document.getElementById(id); if(e){ if(isHtml) e.innerHTML = txt; else e.textContent = txt; } }
@@ -1396,6 +1414,8 @@ function applySignupLang(){
     var l = b.getAttribute("data-lvl"); if(lv[l]) b.textContent = lv[l];
   });
   zet("lblTaal", d.taal);
+  zet("lblDoel", d.doel);
+  renderDoelRow();
   zet("lblMailUitleg", d.mailUitleg);
   ph("newProfMail", d.mailPh);
   zet("lblGroepUitleg", d.groepUitleg, true);
@@ -1531,7 +1551,7 @@ function renderProfileScreen(){
     var mail = (document.getElementById("newProfMail") ? document.getElementById("newProfMail").value : "").trim();
     var gc = (document.getElementById("newProfGroep") ? document.getElementById("newProfGroep").value : "").trim().toLowerCase();
     if(gc) pendingGroep = gc;
-    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1", lang:newLang, mail:mail});
+    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1", lang:newLang, mail:mail, doel:newDoel});
     saveProfiles();
     selectProfile(name);
   };
@@ -1585,7 +1605,7 @@ function renderPlacement(){
       var mailP = (document.getElementById("newProfMail") ? document.getElementById("newProfMail").value : "").trim();
       var gcP = (document.getElementById("newProfGroep") ? document.getElementById("newProfGroep").value : "").trim().toLowerCase();
       if(gcP) pendingGroep = gcP;
-      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1", lang:newLang, mail:mailP});
+      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1", lang:newLang, mail:mailP, doel:newDoel});
       saveProfiles();
       document.getElementById("placeCard").classList.add("hidden");
       selectProfile(pName);
@@ -1630,6 +1650,7 @@ function boot(){
   S = store.load() || defaultState();
   if(!S.lang) S.lang = p.lang || "nl"; // moedertaal per profiel, synct mee via S
   if(!S.mail && p.mail) S.mail = p.mail; // optioneel e-mailadres (voor herstel), synct mee
+  if(!S.doel && p.doel) S.doel = p.doel; // gekozen dagdoel bij aanmelden
   buildNav();
   S.xp = S.xp || {};
   S.streak = S.streak || {count:0, last:""};
@@ -1665,6 +1686,7 @@ function boot(){
     if(!alBinnen) setTimeout(function(){ joinViaLink(pg); }, 2500);
   }
   if(!S.tour) showTour(0);
+  else setTimeout(checkWeekWinnaar, 4000);
 }
 
 /* ================= DAGDOEL, XP & STREAK ================= */
@@ -2490,6 +2512,12 @@ function petSVG(){
   var medaille = lvl>=8 ? "<g><path d='M86 138 L100 152 L114 138' stroke='#c0392b' stroke-width='5' fill='none'/><circle cx='100' cy='152' r='9' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/><text x='100' y='156' text-anchor='middle' font-size='10' font-weight='bold' fill='#a5661e'>1</text></g>" : "";
   var roos = lvl>=6 ? "<g><path d='M113 112 q14 4 22 0' stroke='#3a7d44' stroke-width='2.5' fill='none'/><circle cx='137' cy='111' r='6' fill='#c0392b'/><circle cx='134' cy='108' r='3' fill='#e85a8a'/></g>" : "";
   var baard = lvl>=10 ? "<path d='M82 116 Q84 142 100 144 Q116 142 118 116 Q109 124 100 122 Q91 124 82 116 Z' fill='#f5f0e8' stroke='#ddd5c8' stroke-width='2'/>" : "";
+  var lauwer = (typeof weekIdNu === "function" && S.weekWin === weekIdNu())
+    ? "<g><path d='M58 78 q-8 -22 12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>"+
+      "<path d='M142 78 q8 -22 -12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>"+
+      "<g fill='#a9c45f'><ellipse cx='58' cy='68' rx='6' ry='3.5' transform='rotate(-40 58 68)'/><ellipse cx='62' cy='56' rx='6' ry='3.5' transform='rotate(-60 62 56)'/><ellipse cx='70' cy='47' rx='6' ry='3.5' transform='rotate(-75 70 47)'/>"+
+      "<ellipse cx='142' cy='68' rx='6' ry='3.5' transform='rotate(40 142 68)'/><ellipse cx='138' cy='56' rx='6' ry='3.5' transform='rotate(60 138 56)'/><ellipse cx='130' cy='47' rx='6' ry='3.5' transform='rotate(75 130 47)'/></g>"+
+      "<circle cx='100' cy='40' r='4' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/></g>" : "";
   return "<svg viewBox='0 0 200 180'>"+ aura + sterren +
     "<ellipse cx='100' cy='166' rx='60' ry='12' fill='#00000012'/>"+ g +
     // kieuwen (axolotl!)
@@ -2507,7 +2535,7 @@ function petSVG(){
     blush +
     "<path d='"+mouth+"' stroke='#2d2a26' stroke-width='3.5' fill='none' stroke-linecap='round'/>"+
     (lvl>=3?"<path d='M84 116 Q92 110 100 116 Q108 110 116 116' stroke='"+(lvl>=10?"#f5f0e8":"#7a5636")+"' stroke-width='4' fill='none' stroke-linecap='round'/>":"")+
-    baard + roos + medaille +
+    baard + roos + medaille + lauwer +
     (w.gafas?"<g><circle cx='78' cy='88' r='13' fill='#2d2a26cc'/><circle cx='122' cy='88' r='13' fill='#2d2a26cc'/><path d='M91 88 L109 88' stroke='#2d2a26' stroke-width='4'/></g>":"")+
     (w.flor?"<g><circle cx='143' cy='52' r='6' fill='#e85a8a'/><circle cx='153' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='64' r='6' fill='#e85a8a'/><circle cx='133' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='58' r='5' fill='#ffd54d'/></g>":"")+
     (w.sombrero?"<g><ellipse cx='100' cy='46' rx='52' ry='12' fill='#c98a3d'/><path d='M74 46 Q100 4 126 46 Z' fill='#b5762e'/><path d='M74 46 Q100 58 126 46' fill='none' stroke='#a5661e' stroke-width='3'/></g>":"")+
@@ -4073,6 +4101,61 @@ function groepBewaar(g){
   }
 }
 function groepLink(g){ return "https://vamos.stefanwobben.nl/?groep=" + g.gcode; }
+function weekIdNu(){
+  var t = today();
+  var p = t.split("-");
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var dag = (d.getDay() + 6) % 7; // 0 = maandag
+  return addDays(t, -dag);
+}
+function checkWeekWinnaar(){
+  var wk = weekIdNu();
+  S.weekOnthuld = S.weekOnthuld || {};
+  var lijst = (S.groepen || []).slice(0, 3);
+  for(var i = 0; i < lijst.length; i++){
+    (function(g){
+      if(S.weekOnthuld[g.gcode] === wk) return;
+      api("/api/groep/" + g.gcode).then(function(res){
+        if(!res || !res.ok) return;
+        S.weekOnthuld[g.gcode] = wk; persist();
+        if(!res.vorigeWeek || !res.vorigeWeek.winnaar) return;
+        var ik = activeProfile();
+        var benIk = ik && res.vorigeWeek.winnaar.toLowerCase() === ik.name.toLowerCase();
+        if(benIk && S.weekWin !== wk){
+          S.weekWin = wk;
+          S.tapas = (S.tapas || 0) + 5;
+          persist();
+        }
+        toonWinnaarReveal(g.naam, res.vorigeWeek.winnaar, res.vorigeWeek.xp, benIk);
+      });
+    })(lijst[i]);
+    break; // maximaal één onthulling per keer opstarten
+  }
+}
+function toonWinnaarReveal(groepNaam, winnaar, xp, benIk){
+  var nl = profLang() === "nl";
+  var wrap = document.createElement("div");
+  wrap.className = "tourwrap"; wrap.id = "winWrap";
+  wrap.innerHTML = "<div class='tourcard'>"+
+    "<p style='font-size:2.4rem; margin:0'>🏆</p>"+
+    "<h3>"+groepNaam+"</h3>"+
+    "<p>"+(nl ? "De winnaar van vorige week is..." : "Last week's winner is...")+"</p>"+
+    "<p id='winNaam' style='font-size:1.5rem; font-weight:800; margin:6px 0; min-height:1.5em'>&nbsp;</p>"+
+    "<p class='muted' id='winSub'></p>"+
+    "<div class='row center'><button class='primary' id='btnWinOk'>¡Olé! 🎉</button></div></div>";
+  if(document.body && document.body.appendChild) document.body.appendChild(wrap);
+  var ok2 = document.getElementById("btnWinOk");
+  if(ok2) ok2.onclick = function(){ if(wrap.remove) wrap.remove(); else wrap.innerHTML = ""; };
+  setTimeout(function(){
+    var el = document.getElementById("winNaam");
+    if(el) el.textContent = "🥇 " + winnaar + " · " + xp + " XP";
+    var sub = document.getElementById("winSub");
+    if(sub) sub.textContent = benIk
+      ? (nl ? "¡Eres tú! +5 tapas én een gouden lauwerkrans voor Chispa, een week lang. 👑" : "It's you! +5 tapas and a golden laurel wreath for Chispa, for a whole week. 👑")
+      : (nl ? "¡Felicidades, " + winnaar + "! Deze week nieuwe ronde, nieuwe kansen." : "¡Felicidades, " + winnaar + "! New week, new chances.");
+    confetti(["🏆","🎉","⭐️"], 24);
+  }, 1400);
+}
 var GROEP_TXT = {
  nl:{kop:"Groepen 👥", intro:"Start een groep met je klasgenoten, collega's, leerlingen of vrienden. Iedereen met de groepscode kan meedoen; elke groep heeft een eigen klassement.",
      mijn:"Jouw groepen", code:"code", nieuwKop:"Nieuwe groep", naamPh:"Naam van de groep (bijv. Clase de martes)", startKnop:"Start groep",
@@ -4126,10 +4209,13 @@ function renderGroepen(){
       if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
       if(st) st.textContent = res.spelers.length + " " + (res.spelers.length===1?gt("deelnemer"):gt("deelnemers")) + " · " + gt("privacy");
       var medailles = ["🥇","🥈","🥉"];
-      lijst.innerHTML = res.spelers.map(function(sp, i){
+      var vorigeWin = res.vorigeWeek ? res.vorigeWeek.winnaar : null;
+      var kopje = "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl"?"De week-race (maandag t/m zondag). Vorige winnaar draagt de 🏆.":"The weekly race (Monday to Sunday). Last week's winner wears the 🏆.")+"</p>";
+      lijst.innerHTML = kopje + res.spelers.map(function(sp, i){
         var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
-        return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+"</b> <span class='muted'>· "+lvl+"</span></span>"+
-          "<span><b>"+sp.txp+" XP</b> · 🔥 "+sp.streak+" · "+sp.lessen+" "+(sp.lessen===1?gt("les"):gt("lessen"))+"</span></div>";
+        var trofee = (vorigeWin && sp.naam === vorigeWin) ? " 🏆" : "";
+        return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+trofee+"</b> <span class='muted'>· "+lvl+"</span></span>"+
+          "<span><b>"+(sp.weekXp!==undefined?sp.weekXp:sp.txp)+" XP</b> "+(profLang()==="nl"?"deze week":"this week")+" <span class='muted'>· "+sp.txp+" tot. · 🔥 "+sp.streak+"</span></span></div>";
       }).join("");
     });
     return;
