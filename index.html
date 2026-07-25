@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v17.0";
+var APP_VERSIE = "v17.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4109,6 +4109,8 @@ var AVT_TXT = {
      baasNaam4:"El Gran Olvido", baasIntro4:"De laatste. Alles wat je ooit leerde, wil hij terug. Alle grammatica door elkaar!",
      gewonnenSub3:"El Bosque is bevrijd. De wolven huilen voor Chispa: 3 tapas!", gewonnenSub4:"",
      volgende3:"El Castillo (B1) wacht...", zinVertaal:"Vertaal de zin:",
+     volgendeOpen:"🎉 De poort is open! Je kunt meteen door naar", verderKnop:"▶ Verder waar je was", nieuwSpel:"↺ Nieuw spel",
+     zekerWeten:"Zeker weten? Dit wist AL je Aventura-voortgang. Tik nogmaals om te wissen.",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blaast gebarsten rotsen op", bommen:"bommen",
@@ -4168,6 +4170,8 @@ var AVT_TXT = {
      baasNaam4:"El Gran Olvido", baasIntro4:"The last one. Everything you ever learned, he wants back. All grammar mixed!",
      gewonnenSub3:"El Bosque is free. The wolves howl for Chispa: 3 tapas!", gewonnenSub4:"",
      volgende3:"El Castillo (B1) awaits...", zinVertaal:"Translate the sentence:",
+     volgendeOpen:"🎉 The gate is open! You can continue straight to", verderKnop:"▶ Continue where you were", nieuwSpel:"↺ New game",
+     zekerWeten:"Are you sure? This erases ALL your Aventura progress. Tap again to erase.",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blows up cracked rocks", bommen:"bombs",
@@ -4564,14 +4568,7 @@ function avtWereldOpen(wid){
   if(wid === "a0") return true;
   var vorige = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(wid) - 1];
   var sv = S.avt && S.avt[vorige];
-  if(!sv || !sv.klaar) return false;
-  return (sv.klaarDag || addDays(today(), -1)) < today();
-}
-function avtWereldMorgen(wid){
-  if(wid === "a0") return false;
-  var vorige = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(wid) - 1];
-  var sv = S.avt && S.avt[vorige];
-  return !!(sv && sv.klaar && sv.klaarDag === today());
+  return !!(sv && sv.klaar);
 }
 function avtSave(){ return avtSaveVan(avtWereld); }
 function avtGear(){
@@ -4607,6 +4604,7 @@ function avtWereldInfo(wid){
 var avt = null, avtTikker = null, avtKeys = false;
 
 function avtStartWereld(){
+  S.avtLaatste = avtWereld;
   var sav = avtSave();
   if(sav.klaar && sav.marea !== today()){
     sav.marea = today(); sav.dood = {}; persist();
@@ -4819,7 +4817,7 @@ function avtMove(dx, dy){
         if(!avtWereldOpen(nw)){
           var vor = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(nw) - 1];
           var vorNaam = AVT_WERELDEN.filter(function(x){ return x.id === vor; })[0].naam;
-          toast(avtWereldMorgen(nw) ? at("morgenSlot") : "🔒 " + at("eerstVersla") + " " + vorNaam);
+          toast("🔒 " + at("eerstVersla") + " " + vorNaam);
           return;
         }
         avtWereld = nw;
@@ -5360,6 +5358,12 @@ function renderFunAvt(){
   var sav = avtSave();
   if(!avt){
     var html = "<h2>" + at("kop") + "</h2><p class='muted'>" + at("kies") + "</p>";
+    var laatste = S.avtLaatste && AVT_WERELDEN.filter(function(x){ return x.id === S.avtLaatste; })[0];
+    var laatsteSv = laatste && S.avt && S.avt[laatste.id];
+    if(laatste && laatsteSv && avtWereldOpen(laatste.id)){
+      var schNm = AVT_SCHERMEN[laatsteSv.scherm] ? AVT_SCHERMEN[laatsteSv.scherm].naam : "";
+      html += "<div class='row'><button class='primary' id='btnAvtVerder' style='flex:1'>" + at("verderKnop") + "<br><span style='font-size:.8rem; font-weight:400; opacity:.85'>" + laatste.naam + " · " + schNm + "</span></button></div>";
+    }
     var a0klaar = avtWereldInfo("a0").klaar;
     var AVT_ICONEN = {a0:"🏖️", a1:"🏘️", a2:"🌲", b1:"🏰"};
     AVT_WERELDEN.forEach(function(w){
@@ -5374,28 +5378,39 @@ function renderFunAvt(){
       } else {
         var vorW = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(w.id) - 1];
         var vorNm = AVT_WERELDEN.filter(function(x){ return x.id === vorW; })[0].naam;
-        var slotTxt = avtWereldMorgen(w.id) ? at("morgenSlot") : at("eerstVersla") + " " + vorNm;
-        html += "<div class='lesson' style='opacity:" + (avtWereldMorgen(w.id) ? ".8" : ".5") + "'><div class='lnum'>" + (avtWereldMorgen(w.id) ? "🌙" : "🔒") + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + slotTxt + "</span></div><div class='lstatus'>" + (avtWereldMorgen(w.id) ? "⏳" : "🔒") + "</div></div>";
+        html += "<div class='lesson' style='opacity:.5'><div class='lnum'>🔒</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + at("eerstVersla") + " " + vorNm + "</span></div><div class='lstatus'>🔒</div></div>";
       }
     });
     html += "<p class='muted' style='font-size:.85rem; margin-top:6px'>🪙 " + (S.monedas||0) + " · " + (a0klaar ? at("mareaUitleg") : at("missie")) + "</p>";
+    var heeftVoortgang = S.avt && Object.keys(S.avt).some(function(k){ return S.avt[k] && (Object.keys(S.avt[k].dood||{}).length || S.avt[k].klaar); });
     html += "<div class='row'><button class='ghost' id='btnAvtTerug'>" + at("terug") + "</button>"+
-      (Object.keys(sav.dood).length || sav.klaar ? "<button class='ghost' id='btnAvtReset' style='font-size:.8rem'>↺ " + at("reset") + "</button>" : "") + "</div>";
+      (heeftVoortgang ? "<button class='ghost' id='btnAvtReset' style='font-size:.8rem'>" + at("nieuwSpel") + "</button>" : "") + "</div>";
     el.innerHTML = html;
     el.querySelectorAll("[data-avtw]").forEach(function(b){
       b.onclick = function(){ avtWereld = b.getAttribute("data-avtw"); avtStartWereld(); };
     });
     var bt = document.getElementById("btnAvtTerug");
     if(bt) bt.onclick = function(){ avtStopAlles(); funView = null; renderFun(); };
+    var bv2 = document.getElementById("btnAvtVerder");
+    if(bv2) bv2.onclick = function(){ avtWereld = S.avtLaatste; avtStartWereld(); };
     var br = document.getElementById("btnAvtReset");
-    if(br) br.onclick = function(){ S.avt = {}; avtSave(); persist(); renderFun(); };
+    if(br) br.onclick = function(){
+      if(!br.dataset.zeker){
+        br.dataset.zeker = "1";
+        br.textContent = "⚠️ " + at("nieuwSpel");
+        toast(at("zekerWeten"));
+        setTimeout(function(){ if(br && br.dataset){ delete br.dataset.zeker; br.textContent = at("nieuwSpel"); } }, 4000);
+        return;
+      }
+      S.avt = {}; S.avtGear = null; S.avtQuest = {}; S.avtLaatste = null; avtSave(); avtGear(); persist(); renderFun();
+    };
     return;
   }
   if(avt.victory){
     var eindB = avtWereld === "b1";
     var subT = {a0:at("gewonnenSub"), a1:at("gewonnenSub2"), a2:at("gewonnenSub3"), b1:at("eindSub")}[avtWereld];
     var volgNm = {a0:"El Pueblo", a1:"El Bosque", a2:"El Castillo"}[avtWereld];
-    var volgT = eindB ? at("eindDaarna") : at("volgendeMorgen") + " <b>" + volgNm + "</b>!";
+    var volgT = eindB ? at("eindDaarna") : at("volgendeOpen") + " <b>" + volgNm + "</b>!";
     el.innerHTML = "<div style='text-align:center'><p style='font-size:3rem; margin:8px'>" + (eindB ? "👑" : "🏆") + "</p>"+
       "<h2>" + (eindB ? at("eindtitel") : at("gewonnen")) + "</h2><p>" + subT + "</p>"+
       "<p style='font-size:2rem'>" + (eindB ? "🌮🌮🌮🌮🌮" : "🌮🌮🌮") + "</p>"+
