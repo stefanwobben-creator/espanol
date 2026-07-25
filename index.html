@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v18.1";
+var APP_VERSIE = "v19.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4312,6 +4312,15 @@ var AVT_TXT = {
      gewonnenSub3:"El Bosque is bevrijd. De wolven huilen voor Chispa: 3 tapas!", gewonnenSub4:"",
      volgende3:"El Castillo (B1) wacht...", zinVertaal:"Vertaal de zin:",
      volgendeOpen:"🎉 De poort is open! Je kunt meteen door naar", verderKnop:"▶ Verder waar je was", nieuwSpel:"↺ Nieuw spel",
+     cronNaam:"El Cronista", cronIntro:"De oude schildpad schrijft jouw kroniek. Bevrijde werelden blijven vrij: bij hem kies je zélf je uitdagingen.",
+     cronUitleg:"🐢 Bevrijde werelden blijven vrij. Bezoek El Cronista voor je kroniek, heroefening en dagelijkse uitdagingen.",
+     cronKroniek:"Jouw kroniek", cronBevrijd:"bevrijd op", cronVerslagen:"Olvidos verslagen", cronVeroverd:"Veroverd (zit goed)", cronHard:"Hardnekkige vijanden",
+     cronOefen:"🐢 Oefen je hardnekkige 5", cronOefenSub:"+5 🪙 per dag", cronSchrijf:"Schrijf het in het Spaans:",
+     cronGoed:"¡Bien! De Cronista knikt.", cronFout:"De Cronista schrijft op:", cronKlaarTxt:"De Cronista sluit zijn boek:",
+     cronBeloning:"+5 🪙", cronMorgen:"morgen weer", cronGeen:"Nog geen hardnekkige vijanden. ¡Muy bien!",
+     bord:"Uitdagingsbord", bordMarea:"🌊 Roep de marea op", bordMareaSub:"elite-Olvidos keren terug in deze wereld (schrijven!)",
+     bordRev:"⚔️ Baas-revancha", bordRevSub:"vecht opnieuw in de arena (+10 🪙)", bordKlaar:"✅ Uitdaging volbracht! De wereld is weer vrij. +5 🪙",
+     cronTeaser:"🐢 Er is iemand verschenen bij het beginpunt van deze wereld...",
      zekerWeten:"Zeker weten? Dit wist AL je Aventura-voortgang. Tik nogmaals om te wissen.",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
@@ -4373,6 +4382,15 @@ var AVT_TXT = {
      gewonnenSub3:"El Bosque is free. The wolves howl for Chispa: 3 tapas!", gewonnenSub4:"",
      volgende3:"El Castillo (B1) awaits...", zinVertaal:"Translate the sentence:",
      volgendeOpen:"🎉 The gate is open! You can continue straight to", verderKnop:"▶ Continue where you were", nieuwSpel:"↺ New game",
+     cronNaam:"El Cronista", cronIntro:"The old turtle writes your chronicle. Freed worlds stay free: with him you choose your own challenges.",
+     cronUitleg:"🐢 Freed worlds stay free. Visit El Cronista for your chronicle, focused practice and daily challenges.",
+     cronKroniek:"Your chronicle", cronBevrijd:"freed on", cronVerslagen:"Olvidos defeated", cronVeroverd:"Conquered (solid)", cronHard:"Stubborn enemies",
+     cronOefen:"🐢 Practise your stubborn 5", cronOefenSub:"+5 🪙 per day", cronSchrijf:"Write it in Spanish:",
+     cronGoed:"¡Bien! The Cronista nods.", cronFout:"The Cronista writes down:", cronKlaarTxt:"The Cronista closes his book:",
+     cronBeloning:"+5 🪙", cronMorgen:"again tomorrow", cronGeen:"No stubborn enemies yet. ¡Muy bien!",
+     bord:"Challenge board", bordMarea:"🌊 Summon the marea", bordMareaSub:"elite Olvidos return to this world (typing!)",
+     bordRev:"⚔️ Boss rematch", bordRevSub:"fight again in the arena (+10 🪙)", bordKlaar:"✅ Challenge complete! The world is free again. +5 🪙",
+     cronTeaser:"🐢 Someone has appeared at this world's starting point...",
      zekerWeten:"Are you sure? This erases ALL your Aventura progress. Tap again to erase.",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
@@ -4803,15 +4821,23 @@ function avtWereldInfo(wid){
   });
   return {tot:tot, over:over, totC:totC, gevC:gevC, klaar:!!(sv && sv.klaar)};
 }
+var AVT_CRON = {a0:{s:0, x:4, y:2}, a1:{s:8, x:2, y:4}, a2:{s:13, x:2, y:2}, b1:{s:18, x:5, y:3}};
+function avtCronSvg(){
+  return "<ellipse cx='0' cy='13' rx='13' ry='3' fill='#00000015'/>"+
+    "<ellipse cx='0' cy='2' rx='12' ry='9' fill='#8fae62' stroke='#6f8e4a' stroke-width='2'/>"+
+    "<path d='M-8 -2 l4 4 M-3 -5 l3 5 M3 -5 l-3 5 M8 -2 l-4 4' stroke='#6f8e4a' stroke-width='1.2'/>"+
+    "<circle cx='11' cy='-4' r='5' fill='#b8cf8e' stroke='#8fae62' stroke-width='1.5'/>"+
+    "<circle cx='12.5' cy='-5' r='1' fill='#2d2a26'/>"+
+    "<rect x='9' y='-7.5' width='5' height='2' rx='1' fill='#8a6a3e'/>"+
+    "<rect x='-16' y='-3' width='9' height='11' rx='1.5' fill='#f5ead6' stroke='#c9ab84' stroke-width='1.5' transform='rotate(-12 -11 2)'/>"+
+    "<path d='M-15 0 h6 M-15 3 h6 M-15 6 h4' stroke='#c9ab84' stroke-width='1' transform='rotate(-12 -11 2)'/>"+
+    "<text x='0' y='-16' text-anchor='middle' font-size='9'>📜</text>";
+}
 var avt = null, avtTikker = null, avtKeys = false;
 
 function avtStartWereld(){
   S.avtLaatste = avtWereld;
   var sav = avtSave();
-  if(sav.klaar && sav.marea !== today()){
-    sav.marea = today(); sav.dood = {}; persist();
-    setTimeout(function(){ toast(at("marea")); }, 600);
-  }
   avt = {scherm:sav.scherm, x:sav.x, y:sav.y, kijk:1, gevecht:null, victory:false, vijanden:[], combo:0};
   avtLaadScherm(avt.scherm, true);
   avtMuziekFrase = 0;
@@ -4990,6 +5016,10 @@ function avtKaartSvg(){
     var cx = cc.x*40+20, cy = cc.y*40+24;
     html += "<g><path d='M"+(cx-7)+" "+cy+" Q"+cx+" "+(cy-11)+" "+(cx+7)+" "+cy+" Q"+cx+" "+(cy+4)+" "+(cx-7)+" "+cy+"' fill='#f5cfae' stroke='#d8a67e' stroke-width='1.5'/><path d='M"+cx+" "+(cy-8)+" v8 M"+(cx-4)+" "+(cy-6)+" l2 6 M"+(cx+4)+" "+(cy-6)+" l-2 6' stroke='#d8a67e' stroke-width='1'/></g>";
   });
+  var cr = AVT_CRON[avtWereld];
+  if(cr && avtSave().klaar && avt.scherm === cr.s){
+    html += "<g style='transform:translate(" + (cr.x*40+20) + "px," + (cr.y*40+22) + "px)'><g class='avtzweefg'>" + avtCronSvg() + "</g></g>";
+  }
   avt.vijanden.forEach(function(v){
     html += "<g class='avtvij' data-avtv='"+v.i+"' style='transform:translate("+(v.x*40+20)+"px,"+(v.y*40+22)+"px); transition:transform .5s ease'><g class='avtzweefg'>" + avtVijandSvg(v.t) + (v.elite ? "<text x='0' y='-16' text-anchor='middle' font-size='10'>⚡</text>" : "") + "</g></g>";
   });
@@ -4999,7 +5029,7 @@ function avtKaartSvg(){
   return html + "</svg>";
 }
 function avtMove(dx, dy){
-  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || escSpel) return;
+  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || avt.cron || escSpel) return;
   var nx = avt.x + dx, ny = avt.y + dy;
   if(dx) avt.kijk = dx;
   var kop = document.getElementById("avtHeldK");
@@ -5023,9 +5053,7 @@ function avtMove(dx, dy){
           return;
         }
         avtWereld = nw;
-        var svW = avtSave();
-        if(svW.klaar && svW.marea !== today()){ svW.marea = today(); svW.dood = {}; persist(); toast(at("marea")); }
-        else { toast(at("wereldOverloop")); }
+        toast(at("wereldOverloop"));
       }
       avtLaadScherm(naar, false); avt.x = ix; avt.y = iy;
       var sv = avtSave(); sv.x = ix; sv.y = iy; persist();
@@ -5129,6 +5157,13 @@ function avtMove(dx, dy){
       setTimeout(renderFun, 200);
     }
   }
+  var crM = AVT_CRON[avtWereld];
+  if(crM && sav.klaar && avt.scherm === crM.s && nx === crM.x && ny === crM.y){
+    avtSfx("kist");
+    avt.cron = {drill:null};
+    renderFun();
+    return;
+  }
   var ck = avt.scherm + ":" + nx + ":" + ny;
   if(AVT_CONCHAS.some(function(cc){ return cc.s === avt.scherm && cc.x === nx && cc.y === ny; }) && !sav.conchas[ck]){
     sav.conchas[ck] = true; S.monedas = (S.monedas||0) + 2; persist();
@@ -5142,7 +5177,7 @@ function avtMove(dx, dy){
   if(sch.baas && ny <= 2 && (!sav.klaar || sav.baasDag !== today())){ avtBaasStart(); }
 }
 function avtTik(){
-  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || escSpel){ return; }
+  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || avt.cron || escSpel){ return; }
   if(!document.getElementById("avtKaart")){ return; }
   avt.vijanden.forEach(function(v){
     if(Math.random() < 0.45) return;
@@ -5325,7 +5360,14 @@ function avtAntwoord(op){
       avt.gevecht = null;
       confetti(["✨","💨"], 10);
       toast(at("weg") + " +" + munt + " 🪙" + (racha ? " · " + at("racha") : ""));
-      if(avtOlvidosOver() === 0){ setTimeout(function(){ toast(at("deurOpen")); avtSfx("kist"); }, 900); }
+      if(avtOlvidosOver() === 0){
+        if(sav2.klaar){
+          S.monedas = (S.monedas||0) + 5; persist();
+          setTimeout(function(){ toast(at("bordKlaar")); avtSfx("win"); confetti(["🕊️","🪙"], 14); }, 700);
+        } else {
+          setTimeout(function(){ toast(at("deurOpen")); avtSfx("kist"); }, 900);
+        }
+      }
       renderFun(); return;
     }
     g.feedback = {goed:true, txt:at("raak")};
@@ -5706,7 +5748,7 @@ function renderFunAvt(){
         var inf = avtWereldInfo(w.id);
         var st = inf.klaar ? "🏆" : "▶";
         var sv2 = S.avt && S.avt[w.id];
-        var voortgang = (inf.klaar ? "✓ " + (profLang()==="nl" ? "bevrijd!" : "freed!") + " · ⚡" : "") + (inf.tot - inf.over) + "/" + inf.tot + " " + at("olvidos") + " · 🐚" + inf.gevC + "/" + inf.totC + (sv2 && sv2.llave ? " · 🗝️" : "");
+        var voortgang = (inf.klaar ? "✓ " + (profLang()==="nl" ? "bevrijd!" : "freed!") + " · 🐢" : (inf.tot - inf.over) + "/" + inf.tot + " " + at("olvidos")) + " · 🐚" + inf.gevC + "/" + inf.totC + (sv2 && sv2.llave && !inf.klaar ? " · 🗝️" : "");
         html += "<div class='lesson' data-avtw='" + w.id + "'><div class='lnum'>" + AVT_ICONEN[w.id] + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + voortgang + "</span></div><div class='lstatus'>" + st + "</div></div>";
       } else {
         var vorW = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(w.id) - 1];
@@ -5714,7 +5756,7 @@ function renderFunAvt(){
         html += "<div class='lesson' style='opacity:.5'><div class='lnum'>🔒</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + at("eerstVersla") + " " + vorNm + "</span></div><div class='lstatus'>🔒</div></div>";
       }
     });
-    html += "<p class='muted' style='font-size:.85rem; margin-top:6px'>🪙 " + (S.monedas||0) + " · " + (a0klaar ? at("mareaUitleg") : at("missie")) + "</p>";
+    html += "<p class='muted' style='font-size:.85rem; margin-top:6px'>🪙 " + (S.monedas||0) + " · " + (a0klaar ? at("cronUitleg") : at("missie")) + "</p>";
     var heeftVoortgang = S.avt && Object.keys(S.avt).some(function(k){ return S.avt[k] && (Object.keys(S.avt[k].dood||{}).length || S.avt[k].klaar); });
     html += "<div class='row'><button class='ghost' id='btnAvtTerug'>" + at("terug") + "</button>"+
       (heeftVoortgang ? "<button class='ghost' id='btnAvtReset' style='font-size:.8rem'>" + at("nieuwSpel") + "</button>" : "") + "</div>";
@@ -5743,13 +5785,126 @@ function renderFunAvt(){
     var eindB = avtWereld === "b1";
     var subT = {a0:at("gewonnenSub"), a1:at("gewonnenSub2"), a2:at("gewonnenSub3"), b1:at("eindSub")}[avtWereld];
     var volgNm = {a0:"El Pueblo", a1:"El Bosque", a2:"El Castillo"}[avtWereld];
-    var volgT = eindB ? at("eindDaarna") : at("volgendeOpen") + " <b>" + volgNm + "</b>!";
+    var volgT = (eindB ? at("eindDaarna") : at("volgendeOpen") + " <b>" + volgNm + "</b>!") + "<br>" + at("cronTeaser");
     el.innerHTML = "<div style='text-align:center'><p style='font-size:3rem; margin:8px'>" + (eindB ? "👑" : "🏆") + "</p>"+
       "<h2>" + (eindB ? at("eindtitel") : at("gewonnen")) + "</h2><p>" + subT + "</p>"+
       "<p style='font-size:2rem'>" + (eindB ? "🌮🌮🌮🌮🌮" : "🌮🌮🌮") + "</p>"+
       "<p class='muted'>" + volgT + "</p>"+
       "<div class='row' style='justify-content:center'><button class='primary' id='btnAvtKlaar'>" + at("kaartTerug") + "</button></div></div>";
     document.getElementById("btnAvtKlaar").onclick = function(){ avtStopAlles(); avt = null; renderFun(); };
+    return;
+  }
+  if(avt.cron){
+    var cw = avt.cron;
+    var arena = {a0:4, a1:12, a2:17, b1:21}[avtWereld];
+    if(cw.drill){
+      var dr = cw.drill;
+      if(dr.i >= dr.lijst.length){
+        var extraC = "";
+        if(sav.cronDag !== today()){
+          sav.cronDag = today(); S.monedas = (S.monedas||0) + 5; persist();
+          extraC = " " + at("cronBeloning");
+          confetti(["🐢","🪙"], 12);
+        }
+        el.innerHTML = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢</span>"+
+          "<p style='font-size:2.2rem; margin:6px'>📜</p>"+
+          "<p><b>" + at("cronKlaarTxt") + "</b> " + dr.goed + "/" + dr.lijst.length + extraC + "</p>"+
+          "<div class='row' style='justify-content:center'><button class='primary' id='btnCronTerug2'>" + at("cronNaam") + "</button></div></div>";
+        document.getElementById("btnCronTerug2").onclick = function(){ cw.drill = null; renderFun(); };
+        return;
+      }
+      var dw = dr.lijst[dr.i];
+      var dh = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢 · " + (dr.i+1) + "/" + dr.lijst.length + "</span>"+
+        "<p class='muted' style='margin:6px 0 2px'>" + at("cronSchrijf") + "</p>"+
+        "<p class='big' style='margin:4px'>" + wTrans(dw) + "</p></div>";
+      if(dr.fb){ dh += "<p style='text-align:center; margin:4px; color:" + (dr.fbGoed ? "var(--good, #3a8a3a)" : "var(--accent)") + "'>" + dr.fb + "</p>"; }
+      dh += "<div class='row'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
+        "<div class='row' style='margin-top:6px'><button class='primary' id='btnCronCheck'>" + at("check") + "</button>"+
+        "<button class='ghost' id='btnCronStop'>" + at("cronNaam") + "</button></div>";
+      el.innerHTML = dh;
+      var ci = document.getElementById("avtInp");
+      ci.focus();
+      var cronCheck = function(){
+        var inp = ci.value || "";
+        if(!norm(inp)) return;
+        var goedc = stripAcc(norm(inp)) === stripAcc(norm(dw.es));
+        avtSrsBij(dw, goedc);
+        if(goedc){ dr.goed++; avtSfx("goed"); dr.fb = at("cronGoed") + " <b class='es'>" + dw.es + "</b>"; dr.fbGoed = true; }
+        else { avtSfx("fout"); dr.fb = at("cronFout") + " <b class='es'>" + dw.es + "</b> · " + wTrans(dw); dr.fbGoed = false; }
+        dr.i++;
+        renderFun();
+      };
+      document.getElementById("btnCronCheck").onclick = cronCheck;
+      ci.addEventListener("keydown", function(e){ if(e.key === "Enter") cronCheck(); });
+      document.getElementById("btnCronStop").onclick = function(){ cw.drill = null; renderFun(); };
+      return;
+    }
+    var inf2 = avtWereldInfo(avtWereld);
+    var sterke = [], hardnekkig = [];
+    WORDS.forEach(function(w){
+      var st = S.srs[w.id];
+      if(st && st.box >= 4) sterke.push({w:w, n:st.n||0});
+      var e = S.errors["woord:" + w.id];
+      if(e && e.count >= 2 && st && st.box <= 1) hardnekkig.push({w:w, c:e.count});
+    });
+    sterke.sort(function(a,b){ return b.n - a.n; });
+    hardnekkig.sort(function(a,b){ return b.c - a.c; });
+    var ch = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢 · " + AVT_WERELDEN.filter(function(x){ return x.id === avtWereld; })[0].naam + "</span>"+
+      "<svg viewBox='-24 -26 48 46' style='width:84px'><g class='avtzweefg'>" + avtCronSvg() + "</g></svg>"+
+      "<p class='muted' style='font-size:.85rem; margin:2px'>" + at("cronIntro") + "</p></div>";
+    ch += "<p style='margin:8px 0 2px'><b>📜 " + at("cronKroniek") + "</b></p>"+
+      "<p class='muted' style='font-size:.9rem'>" + at("cronBevrijd") + " " + (sav.klaarDag || "—") + " · " + inf2.tot + " " + at("cronVerslagen") + " · 🐚 " + inf2.gevC + "/" + inf2.totC + "</p>";
+    if(sterke.length){
+      ch += "<p style='margin:8px 0 2px'><b>🏆 " + at("cronVeroverd") + "</b></p><p style='font-size:.9rem'>"+
+        sterke.slice(0,5).map(function(s){ return "<b class='es'>" + s.w.es + "</b> <span class='muted'>· " + wTrans(s.w) + "</span>"; }).join("<br>") + "</p>";
+    }
+    ch += "<p style='margin:8px 0 2px'><b>👻 " + at("cronHard") + "</b></p>";
+    if(hardnekkig.length){
+      ch += "<p style='font-size:.9rem'>" + hardnekkig.slice(0,5).map(function(h){ return "<b class='es'>" + h.w.es + "</b> <span class='muted'>· " + wTrans(h.w) + " · " + h.c + "×</span>"; }).join("<br>") + "</p>";
+    } else {
+      ch += "<p class='muted' style='font-size:.9rem'>" + at("cronGeen") + "</p>";
+    }
+    ch += "<div class='row' style='margin-top:6px'><button class='primary' id='btnCronDrill'>" + at("cronOefen") + "</button></div>"+
+      "<p class='muted' style='font-size:.75rem; margin:2px 0 8px'>" + (sav.cronDag === today() ? at("cronMorgen") : at("cronOefenSub")) + "</p>";
+    ch += "<p style='margin:8px 0 2px'><b>🪧 " + at("bord") + "</b></p>";
+    var mareaKan = avtOlvidosOver() === 0 && sav.uitdagingDag !== today();
+    var revKan = sav.baasDag !== today();
+    ch += "<div class='lesson'" + (mareaKan ? "" : " style='opacity:.5'") + " id='cronMarea'><div class='lnum'>🌊</div><div class='lbody'><b>" + at("bordMarea") + "</b><span>" + (mareaKan ? at("bordMareaSub") : at("cronMorgen")) + "</span></div><div class='lstatus'>" + (mareaKan ? "▶" : "⏳") + "</div></div>";
+    ch += "<div class='lesson'" + (revKan ? "" : " style='opacity:.5'") + " id='cronRev'><div class='lnum'>⚔️</div><div class='lbody'><b>" + at("bordRev") + "</b><span>" + (revKan ? at("bordRevSub") : at("cronMorgen")) + "</span></div><div class='lstatus'>" + (revKan ? "▶" : "⏳") + "</div></div>";
+    ch += "<div class='row' style='margin-top:8px'><button class='ghost' id='btnCronWeg'>" + at("naarKaart") + "</button></div>";
+    el.innerHTML = ch;
+    document.getElementById("btnCronDrill").onclick = function(){
+      var lijst = hardnekkig.slice(0,5).map(function(h){ return h.w; });
+      if(lijst.length < 5){
+        gameVoorrang(avtWoordPool()).forEach(function(k){
+          if(lijst.length >= 5) return;
+          var wo = WORDS.filter(function(x){ return x.id === k.id; })[0];
+          if(wo && lijst.indexOf(wo) === -1) lijst.push(wo);
+        });
+      }
+      if(!lijst.length){ toast(at("cronGeen")); return; }
+      cw.drill = {lijst:lijst, i:0, goed:0, fb:null};
+      renderFun();
+    };
+    var cm = document.getElementById("cronMarea");
+    if(cm) cm.onclick = function(){
+      if(!mareaKan) return;
+      sav.dood = {}; sav.uitdagingDag = today(); persist();
+      avt.cron = null;
+      avtLaadScherm(avt.scherm, true);
+      avtSfx("baas");
+      toast(at("marea"));
+      renderFun();
+    };
+    var cv = document.getElementById("cronRev");
+    if(cv) cv.onclick = function(){
+      if(!revKan) return;
+      avt.cron = null;
+      avtSfx("baas");
+      avtLaadScherm(arena, false);
+      renderFun();
+    };
+    document.getElementById("btnCronWeg").onclick = function(){ avt.cron = null; renderFun(); };
     return;
   }
   if(avt.tienda){
@@ -6008,7 +6163,7 @@ function renderFunAvt(){
   var over = avtOlvidosOver();
   var html3 = "<div style='display:flex; justify-content:space-between; align-items:center'>"+
     "<span class='kicker'>" + ({a0:"La Costa", a1:"El Pueblo", a2:"El Bosque", b1:"El Castillo"}[avtWereld]) + " · " + sch.naam + "</span>"+
-    "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave && avtWereld !== "b1" ? " · 🗝️" : "") + (avtWereld === "a2" && !avtSave().brug ? " · 🍄" + (avtSave().setas||0) + "/3" : "") + (avtWereld === "b1" ? " · 👑" + avtWachtersDood() + "/3" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
+    "<span>" + avtHarten() + " · " + (over ? "👻" + over : (avtSave().klaar ? "🕊️" : "👻0")) + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave && avtWereld !== "b1" ? " · 🗝️" : "") + (avtWereld === "a2" && !avtSave().brug ? " · 🍄" + (avtSave().setas||0) + "/3" : "") + (avtWereld === "b1" ? " · 👑" + avtWachtersDood() + "/3" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
   html3 += avtKaartSvg();
   if(avtBomBuur() && (avtGear().bommen||0) > 0){
     html3 += "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtBom'>" + at("bomLeg") + " (" + avtGear().bommen + ")</button></div>";
