@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.4";
+var APP_VERSIE = "v19.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2507,8 +2507,9 @@ function dictadoStemKlaar(cb){
   speechSynthesis.onvoiceschanged = function(){ if(deed) return; deed = true; cb(speechSynthesis.getVoices()); };
   setTimeout(function(){ if(deed) return; deed = true; cb(speechSynthesis.getVoices()); }, 600);
 }
-// Kwaliteit van browser-stemmen loopt sterk uiteen; scoor op bekende signalen van betere (vaak cloud- of
-// "enhanced"-)stemmen zodat we niet zomaar de eerste/meest robotachtige es-stem pakken.
+// Kwaliteit van browser-stemmen loopt sterk uiteen. Monica (es-ES) is getest als verreweg de beste
+// klinkende stem, dus die krijgt voorrang; anders scoren we op bekende signalen van betere stemmen
+// zodat we niet zomaar de eerste/meest robotachtige es-stem pakken.
 function dictadoStemScore(v){
   var s = 0;
   if(/google/i.test(v.name)) s += 3;
@@ -2522,15 +2523,9 @@ function dictadoEsStemmen(vs){
 }
 function dictadoBesteStem(esStemmen){
   if(!esStemmen.length) return null;
+  var monica = esStemmen.filter(function(v){ return v.lang && v.lang.toLowerCase() === "es-es" && /^monica/i.test(v.name); })[0];
+  if(monica) return monica;
   return esStemmen.slice().sort(function(a,b){ return dictadoStemScore(b) - dictadoStemScore(a); })[0];
-}
-function dictadoKiesStem(esStemmen){
-  if(!esStemmen.length) return null;
-  if(S.dictadoStem){
-    var m = esStemmen.filter(function(v){ return v.voiceURI === S.dictadoStem; })[0];
-    if(m) return m;
-  }
-  return dictadoBesteStem(esStemmen);
 }
 function dictadoSpreek(tekst){
   if(!window.speechSynthesis) return false;
@@ -2539,7 +2534,7 @@ function dictadoSpreek(tekst){
     dictadoStemKlaar(function(vs){
       var u = new SpeechSynthesisUtterance(tekst);
       u.lang = "es-ES"; u.rate = dRate; u.pitch = 1;
-      var v = dictadoKiesStem(dictadoEsStemmen(vs));
+      var v = dictadoBesteStem(dictadoEsStemmen(vs));
       if(v) u.voice = v;
       speechSynthesis.speak(u);
     });
@@ -2573,8 +2568,6 @@ function renderFunDictado(fresh){
   html += "<p class='muted'>" + fx("dicIntro") + "</p>"+
     "<div class='row'><button class='primary' id='btnDicSpeel'>🔊 " + fx("dicLuister") + "</button>"+
     "<button class='ghost' id='btnDicLangzaam'>🐢 " + (dRate<0.7 ? fx("dicNormaal") : fx("dicLangzaam")) + "</button></div>"+
-    "<div class='row' style='margin-top:2px'><label class='muted' style='font-size:.85rem; display:flex; align-items:center; gap:6px'>🗣️ " + fx("dicStemLbl") + " <select id='dStemSelect' style='max-width:220px'><option>...</option></select></label></div>"+
-    "<p class='muted' style='font-size:.78rem; margin:2px 0 0'>" + fx("dicStemHint") + "</p>"+
     "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
     "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button>"+
     "<button class='ghost' id='btnDicSkip'>" + fx("dicSkip") + "</button>"+
@@ -2589,18 +2582,6 @@ function renderFunDictado(fresh){
   document.getElementById("btnDicSkip").onclick = function(){ renderFunDictado(true); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
   inp.focus();
-  dictadoStemKlaar(function(vs){
-    var esStemmen = dictadoEsStemmen(vs);
-    var sel = document.getElementById("dStemSelect");
-    if(!sel) return;
-    if(!esStemmen.length){ sel.innerHTML = "<option value=''>" + fx("dicStemGeen") + "</option>"; sel.disabled = true; return; }
-    var beste = dictadoKiesStem(esStemmen);
-    sel.innerHTML = esStemmen.map(function(v){
-      var sel2 = beste && v.voiceURI === beste.voiceURI ? " selected" : "";
-      return "<option value=\""+v.voiceURI.replace(/"/g,"&quot;")+"\""+sel2+">"+v.name+" ("+v.lang+")</option>";
-    }).join("");
-    sel.onchange = function(){ S.dictadoStem = sel.value; persist(); dictadoSpreek(s.es); };
-  });
   setTimeout(function(){ dictadoSpreek(s.es); }, 250);
 }
 function checkDictado(){
@@ -6837,9 +6818,7 @@ var FUN_TXT = {
      dicIntro:"Luister goed en typ de Spaanse zin die je hoort. Focus op klanken herkennen, niet op betekenis.",
      dicLuister:"Luister", dicLangzaam:"Langzamer", dicNormaal:"Normale snelheid",
      dicPlaceholder:"Typ wat je hoort...", dicSkip:"Andere zin",
-     dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari.",
-     dicStemLbl:"Stem:", dicStemGeen:"geen Spaanse stem gevonden op dit apparaat",
-     dicStemHint:"Klinkt de stem robotachtig? Zoek in de systeeminstellingen van je computer/telefoon naar 'spraak' of 'tekst-naar-spraak' en installeer een Spaanse stem met 'Enhanced' of 'Premium' in de naam, die klinkt een stuk natuurlijker."},
+     dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari."},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
@@ -6861,9 +6840,7 @@ var FUN_TXT = {
      dicIntro:"Listen carefully and type the Spanish sentence you hear. Focus on recognising sounds, not meaning.",
      dicLuister:"Listen", dicLangzaam:"Slower", dicNormaal:"Normal speed",
      dicPlaceholder:"Type what you hear...", dicSkip:"Different sentence",
-     dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari.",
-     dicStemLbl:"Voice:", dicStemGeen:"no Spanish voice found on this device",
-     dicStemHint:"Voice sounds robotic? Search your computer/phone's system settings for 'speech' or 'text-to-speech' and install a Spanish voice with 'Enhanced' or 'Premium' in the name, it sounds a lot more natural."}
+     dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari."}
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
 var funView = null;
