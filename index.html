@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v14.1";
+var APP_VERSIE = "v15.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4031,8 +4031,21 @@ function renderFunEsc(){
     loopNaar(200, 268, function(){
       escSpel.schat = true;
       S.tapas = (S.tapas||0) + 1; persist();
+      var extra = "";
+      if(funView === "avt" && typeof avtSave === "function"){
+        var savC = avtSave();
+        if(!savC.casa) savC.casa = {};
+        if(savC.casa[escSpel.scene.id] !== today()){
+          savC.casa[escSpel.scene.id] = today();
+          S.monedas = (S.monedas||0) + 5;
+          extra = " · " + at("casaKlaar");
+        } else {
+          extra = " · " + at("casaMorgen");
+        }
+        persist();
+      }
       confetti(["🎁","🌮","🎉","⭐️"], 30);
-      toast("¡Tesoro! +1 tapa 🌮 " + (profLang()==="nl" ? "Chispa is trots op je." : "Chispa is proud of you."));
+      toast("¡Tesoro! +1 tapa 🌮" + extra);
       renderFun();
     });
   };
@@ -4040,6 +4053,7 @@ function renderFunEsc(){
   if(bn) bn.onclick = function(){ escSpel = null; renderFun(); };
   var bt2 = document.getElementById("btnEscTerug");
   if(bt2) bt2.onclick = function(){ escSpel = null; renderFun(); };
+  if(funView === "avt" && bt2){ bt2.textContent = at("naarKaart"); if(bn) bn.classList.add("hidden"); }
 }
 
 /* ================= AVENTURA (Zelda-achtige mini-RPG) ================= */
@@ -4068,6 +4082,8 @@ var AVT_TXT = {
      conchaGevonden:"Een schelp! +2 🪙", conchasAlle:"Alle schelpen gevonden! De zee beloont je: +15 🪙",
      rotsHint:"Deze rots is gebarsten... Met een bomba krijg je hem open. Ergens ligt een kist met eentje, en Mamá Iguana verkoopt ze in de tienda. 💣",
      rotsBom:"Gebarsten rots! Druk op de knop 💣 Bom leggen.",
+     casaKlaar:"De bewoners zijn blij met de etiquetas! +5 🪙", casaMorgen:"Morgen halen ze de stickers er weer af... kom terug voor nieuwe monedas!",
+     naarKaart:"⬅︎ La Costa",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blaast gebarsten rotsen op", bommen:"bommen",
@@ -4100,6 +4116,8 @@ var AVT_TXT = {
      conchaGevonden:"A shell! +2 🪙", conchasAlle:"All shells found! The sea rewards you: +15 🪙",
      rotsHint:"This rock is cracked... A bomba would open it. There's a chest with one somewhere, and Mamá Iguana sells them in the tienda. 💣",
      rotsBom:"Cracked rock! Press the 💣 Place bomb button.",
+     casaKlaar:"The residents love the etiquetas! +5 🪙", casaMorgen:"Tomorrow they peel the stickers off again... come back for more monedas!",
+     naarKaart:"⬅︎ La Costa",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blows up cracked rocks", bommen:"bombs",
@@ -4131,22 +4149,22 @@ var AVT_SCHERMEN = [
   start:{x:1,y:3}, vijanden:[{t:"olvido",x:6,y:2}], exits:{rechts:1}},
  {naam:"Las Dunas", grid:[
    "~~~~..~~~~",
-   "....P.N...",
+   ".H..P.N...",
    "..........",
    "....R.....",
    ".P......P.",
    "........B.",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2}], exits:{links:0, rechts:2, boven:6}},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2}], exits:{links:0, rechts:2, boven:6}, casaScene:"cocina"},
  {naam:"El Palmar", grid:[
    "~~~..~~~~~",
    ".P..P...P.",
    "..........",
-   "..R....C..",
+   "..R.H..C..",
    "..........",
    ".P....P...",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2}], exits:{links:1, rechts:3, boven:7}},
+  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2}], exits:{links:1, rechts:3, boven:7}, casaScene:"jardin"},
  {naam:"Las Rocas", grid:[
    "~~~~~~~~~~",
    "...R....T.",
@@ -4182,16 +4200,16 @@ var AVT_SCHERMEN = [
    "..........",
    "..........",
    "~~~~..~~~~"],
-  start:{x:4,y:5}, vijanden:[{t:"olvido",x:2,y:2},{t:"cangrejo",x:7,y:4}], exits:{onder:1, rechts:7}},
+  start:{x:4,y:5}, vijanden:[{t:"olvido",x:2,y:2},{t:"cangrejo",x:7,y:4}], exits:{onder:1, rechts:7}, casaScene:"salon"},
  {naam:"Los Acantilados", grid:[
    "~~~~~~~~~~",
    ".R.....R..",
-   "..........",
+   "........H.",
    "...P......",
    "..R....R..",
    "..........",
    "~~~..~~~~~"],
-  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:6,y:2},{t:"olvido",x:4,y:4}], exits:{links:6, onder:2}}
+  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:6,y:2},{t:"olvido",x:4,y:4}], exits:{links:6, onder:2}, casaScene:"super"}
 ];
 var AVT_CONCHAS = [{s:0,x:8,y:5},{s:1,x:1,y:1},{s:2,x:9,y:4},{s:3,x:4,y:3},{s:4,x:8,y:4},{s:6,x:8,y:1},{s:7,x:1,y:5}];
 var AVT_TYPES = {
@@ -4438,6 +4456,10 @@ function avtTegel(c, x, y){
     "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='10' height='12' fill='#8a6a3e'/>"+
     "<text x='"+(px+20)+"' y='"+(py+20)+"' text-anchor='middle' font-size='9'>🪙</text>";
   if(c === "N") return zand + "<text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='24'>🎣</text>";
+  if(c === "H") return zand + "<rect x='"+(px+6)+"' y='"+(py+14)+"' width='28' height='22' rx='2' fill='#f5ead6' stroke='#c9ab84' stroke-width='2'/>"+
+    "<path d='M"+(px+3)+" "+(py+16)+" L"+(px+20)+" "+(py+3)+" L"+(px+37)+" "+(py+16)+" Z' fill='#d97f5f' stroke='#b96044' stroke-width='2'/>"+
+    "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='9' height='14' rx='1.5' fill='#8a6a3e'/>"+
+    "<rect x='"+(px+27)+"' y='"+(py+20)+"' width='6' height='6' fill='#bcdcf0' stroke='#8fb8d4' stroke-width='1.5'/>";
   if(c === "F") return zand + "<path d='M"+(px+14)+" "+(py+38)+" L"+(px+16)+" "+(py+6)+" L"+(px+24)+" "+(py+6)+" L"+(px+26)+" "+(py+38)+" Z' fill='#f5f0e6' stroke='#c9beac' stroke-width='1.5'/>"+
     "<path d='M"+(px+15)+" "+(py+30)+" h10 M"+(px+15.5)+" "+(py+20)+" h9' stroke='#e8503a' stroke-width='5'/>"+
     "<rect x='"+(px+16)+"' y='"+(py+2)+"' width='8' height='6' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/>";
@@ -4488,7 +4510,7 @@ function avtKaartSvg(){
   return html + "</svg>";
 }
 function avtMove(dx, dy){
-  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca) return;
+  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || escSpel) return;
   var nx = avt.x + dx, ny = avt.y + dy;
   if(dx) avt.kijk = dx;
   var kop = document.getElementById("avtHeldK");
@@ -4512,6 +4534,11 @@ function avtMove(dx, dy){
   if(!avtVrij(nx, ny)){
     var cb = AVT_SCHERMEN[avt.scherm].grid[ny].charAt(nx);
     if(cb === "K" && !avtSave().rotsOpen){ toast(at((avtSave().bommen||0) > 0 ? "rotsBom" : "rotsHint")); }
+    if(cb === "H" || cb === "F"){
+      var scId = AVT_SCHERMEN[avt.scherm].casaScene;
+      var sc = ESCENAS.filter(function(x){ return x.id === scId; })[0];
+      if(sc){ avtSfx("kist"); escStart(sc); }
+    }
     return;
   }
   avt.x = nx; avt.y = ny;
@@ -4564,7 +4591,7 @@ function avtMove(dx, dy){
   if(sch.baas && ny <= 2 && (!sav.klaar || sav.baasDag !== today())){ avtBaasStart(); }
 }
 function avtTik(){
-  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca){ return; }
+  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || escSpel){ return; }
   if(!document.getElementById("avtKaart")){ return; }
   avt.vijanden.forEach(function(v){
     if(Math.random() < 0.45) return;
@@ -4744,6 +4771,7 @@ function avtHarten(){
 }
 function renderFunAvt(){
   var el = document.getElementById("funCard");
+  if(escSpel){ renderFunEsc(); return; }
   var sav = avtSave();
   if(!avt){
     var html = "<h2>" + at("kop") + "</h2><p class='muted'>" + at("kies") + "</p>";
@@ -5376,14 +5404,12 @@ function renderFun(){
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftEsc'><div class='lnum'>\ud83c\udff7\ufe0f</div><div class='lbody'><b>Etiquetas</b><span>plak de Spaanse woorden op de juiste plek in de keuken, tuin, supermarkt...</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.</p>";
   document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
-  document.getElementById("ftEsc").onclick = function(){ funView = "esc"; escSpel = null; navPush({t:"fun", v:"esc"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
 
