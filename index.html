@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.5";
+var APP_VERSIE = "v19.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2577,7 +2577,13 @@ function renderFunDictado(fresh){
   var inp = document.getElementById("dInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
   document.getElementById("btnDicSpeel").onclick = function(){ dictadoSpreek(s.es); };
-  document.getElementById("btnDicLangzaam").onclick = function(){ dRate = dRate<0.7 ? 0.82 : 0.55; renderFunDictado(false); };
+  document.getElementById("btnDicLangzaam").onclick = function(){
+    // alleen tempo wisselen + opnieuw afspelen, GEEN volledige her-render: anders verdwijnt wat de speler al typte
+    dRate = dRate<0.7 ? 0.82 : 0.55;
+    var btn = document.getElementById("btnDicLangzaam");
+    if(btn) btn.innerHTML = "🐢 " + (dRate<0.7 ? fx("dicNormaal") : fx("dicLangzaam"));
+    dictadoSpreek(s.es);
+  };
   document.getElementById("btnDicCheck").onclick = checkDictado;
   document.getElementById("btnDicSkip").onclick = function(){ renderFunDictado(true); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
