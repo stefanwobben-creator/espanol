@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v11.0";
+var APP_VERSIE = "v11.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2444,12 +2444,26 @@ function renderQuizMenu(){
   var el = document.getElementById("qMenu");
   var html = "";
   var list = scopeLesson ? QUIZZES.filter(function(q){ return scopeLesson.quizzes.indexOf(q.id) !== -1; }) : QUIZZES;
-  list.forEach(function(qz){
+  function kaart(qz){
     var best = S.quiz[qz.id];
-    html += "<div class='card'><h2>"+qz.titel+"</h2>"+
+    var gehaald = best !== undefined && best / qz.vragen.length >= 0.8;
+    return "<div class='card'><h2>"+qz.titel+(gehaald ? " ✓" : "")+"</h2>"+
       "<p class='muted'>"+qz.vragen.length+" vragen"+(best!==undefined?(" · beste score: "+best+"/"+qz.vragen.length):"")+"</p>"+
-      "<button class='primary' data-quiz='"+qz.id+"'>Start</button></div>";
-  });
+      "<button class='"+(gehaald ? "ghost" : "primary")+"' data-quiz='"+qz.id+"'>"+(gehaald ? "Nog eens" : "Start")+"</button></div>";
+  }
+  var teDoen = list.filter(function(qz){ var b = S.quiz[qz.id]; return b === undefined || b / qz.vragen.length < 0.8; });
+  var gehaald = list.filter(function(qz){ return teDoen.indexOf(qz) === -1; });
+  if(teDoen.length){
+    html += "<p style='margin:4px 0'><b>Nog te doen</b> <span class='muted'>· "+teDoen.length+"</span></p>";
+    teDoen.forEach(function(qz){ html += kaart(qz); });
+  }
+  if(gehaald.length){
+    html += "<p style='margin:14px 0 4px'><b>Gehaald</b> <span class='muted'>· opnieuw doen is prima herhaling</span></p>";
+    gehaald.forEach(function(qz){ html += kaart(qz); });
+  }
+  if(!teDoen.length && list.length){
+    html = "<p style='margin:4px 0'><b>Alles gehaald ✓</b> <span class='muted'>· herhalen mag altijd</span></p>" + html;
+  }
   el.innerHTML = html;
   el.querySelectorAll("button[data-quiz]").forEach(function(b){
     b.onclick = function(){ startQuiz(b.getAttribute("data-quiz")); };
@@ -4697,13 +4711,37 @@ function renderFunDuel(){
   });
 }
 /* ================= SPIEKBRIEF ================= */
+function quizzenBijSpiek(idx){
+  // welke toetsjes horen bij dit spiekbrief-onderwerp? (via de lessen die het onderwerp gebruiken)
+  var ids = {};
+  tLessons().forEach(function(l){
+    if(!l.stub && l.spiek && l.spiek.indexOf(idx) !== -1){
+      (l.quizzes || []).forEach(function(q){ ids[q] = true; });
+    }
+  });
+  return QUIZZES.filter(function(q){ return ids[q.id]; });
+}
 function renderCheat(){
   var el = document.getElementById("cheat");
   el.innerHTML = "<div class='card'><h2>Grammatica 📝</h2>"+
     "<p class='muted'>De spiekbrieven van jouw lessen, per onderwerp uitklapbaar. Woorden opzoeken? Gebruik het 📖-knopje rechtsonder.</p>"+
-    CHEATSHEET.map(function(c){
-      return "<details><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
+    CHEATSHEET.map(function(c, i){
+      var qs = quizzenBijSpiek(i);
+      var knoppen = qs.map(function(q){
+        var best = S.quiz[q.id];
+        var gehaald = best !== undefined && best / q.vragen.length >= 0.8;
+        return "<button class='ghost' data-spiekquiz='"+q.id+"' style='margin-top:8px'>🧪 "+(gehaald ? "Toetsje nog eens: " : "Doe het toetsje: ")+q.titel+(gehaald ? " ✓" : "")+"</button>";
+      }).join(" ");
+      return "<details><summary>"+c.titel+"</summary><div class='inner'>"+c.html+(knoppen ? "<div class='row'>"+knoppen+"</div>" : "")+"</div></details>";
     }).join("")+"</div>";
+  el.querySelectorAll("button[data-spiekquiz]").forEach(function(b){
+    b.onclick = function(){
+      var qid = b.getAttribute("data-spiekquiz");
+      scopeLesson = null;
+      show("toetsjes");
+      startQuiz(qid);
+    };
+  });
 }
 
 /* ================= VOORTGANG ================= */
