@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v16.0";
+var APP_VERSIE = "v16.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4090,6 +4090,10 @@ var AVT_TXT = {
      biblio:"La Biblioteca", biblioSub:"Het kruiswoord van de bibliothecaris: jouw geleerde woorden, kriskras door elkaar.", kruisKies:"Kies een omschrijving en typ het Spaanse woord:",
      kruisGoed:"¡Exacto!", kruisFout:"Nee... kijk nog eens goed.", kruisKlaar:"Kruiswoord opgelost!", kruisBeloning:"+5 🪙 (dagbeloning)",
      llaveCamp:"🗝️ ¡La Llave del Campanario! De kerkdeur kan nu open.", kruisNieuw:"Nieuw kruiswoord", kruisWeinig:"Leer eerst wat meer woordjes voor een kruiswoord!",
+     questVraag:"Mamá Iguana: \"Sin pescado fresco geen taco especial... El Pescador aan de kust van Las Dunas heeft vast wat voor je!\"",
+     questPescado:"El Pescador geeft je una caja de pescado fresco 🐟. Breng hem naar La Taquería in El Pueblo!",
+     questKlaar:"🌮✨ ¡El Taco Especial! Mamá Iguana is dolblij met de vis: +15 🪙 en +2 tapas!",
+     wereldOverloop:"Je wandelt verder langs de kust...",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blaast gebarsten rotsen op", bommen:"bommen",
@@ -4130,6 +4134,10 @@ var AVT_TXT = {
      biblio:"La Biblioteca", biblioSub:"The librarian's crossword: your learned words, criss-crossed.", kruisKies:"Pick a clue and type the Spanish word:",
      kruisGoed:"¡Exacto!", kruisFout:"No... look again.", kruisKlaar:"Crossword solved!", kruisBeloning:"+5 🪙 (daily reward)",
      llaveCamp:"🗝️ ¡La Llave del Campanario! The church door can open now.", kruisNieuw:"New crossword", kruisWeinig:"Learn a few more words first for a crossword!",
+     questVraag:"Mamá Iguana: \"Sin pescado fresco no taco especial... El Pescador on the Las Dunas coast surely has some for you!\"",
+     questPescado:"El Pescador hands you una caja de pescado fresco 🐟. Bring it to La Taquería in El Pueblo!",
+     questKlaar:"🌮✨ ¡El Taco Especial! Mamá Iguana is thrilled with the fish: +15 🪙 and +2 tapas!",
+     wereldOverloop:"You walk on along the coast...",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blows up cracked rocks", bommen:"bombs",
@@ -4185,7 +4193,7 @@ var AVT_SCHERMEN = [
    "....R.R...",
    "..........",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:3},{t:"cangrejo",x:5,y:5},{t:"pulpo",x:7,y:3}], exits:{links:2}, arena:4, w:"a0"},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:3},{t:"cangrejo",x:5,y:5},{t:"pulpo",x:7,y:3}], exits:{links:2, rechts:8}, arena:4, w:"a0"},
  {naam:"El Templo", grid:[
    "RRRRRRRRRR",
    "R........R",
@@ -4226,11 +4234,11 @@ var AVT_SCHERMEN = [
    "xxxxxxxxxx",
    "x,,,,,,,,x",
    "x,,O,,Q,,x",
-   "x,,,,,,,,,",
+   ",,,,,,,,,,",
    "x,,,,,,,,x",
    "x,,,,,,,,x",
    "xxxx,,xxxx"],
-  start:{x:1,y:3}, vijanden:[{t:"olvido",x:5,y:4},{t:"pulpo",x:7,y:5}], exits:{rechts:9, onder:10}, w:"a1"},
+  start:{x:1,y:3}, vijanden:[{t:"olvido",x:5,y:4},{t:"pulpo",x:7,y:5}], exits:{links:3, rechts:9, onder:10}, w:"a1"},
  {naam:"La Calle Mayor", grid:[
    "xxxxxxxxxx",
    "x,,,,,,,,x",
@@ -4422,7 +4430,23 @@ function avtSaveVan(wid){
   return a;
 }
 function avtSave(){ return avtSaveVan(avtWereld); }
-function avtHeeftLupa(){ return !!((S.avt && S.avt.a0 && S.avt.a0.lupa) || avtSave().lupa); }
+function avtGear(){
+  if(!S.avtGear){
+    var a0 = (S.avt && S.avt.a0) || {}, a1 = (S.avt && S.avt.a1) || {};
+    S.avtGear = {
+      maxHarten: Math.max(a0.maxHarten||3, a1.maxHarten||3),
+      harten: Math.max(a0.harten||3, a1.harten||3),
+      sombrero: !!(a0.sombrero || a1.sombrero),
+      amuleto: !!(a0.amuleto || a1.amuleto),
+      bommen: (a0.bommen||0) + (a1.bommen||0),
+      lupa: !!(a0.lupa || a1.lupa)
+    };
+  }
+  if(S.avtGear.harten > S.avtGear.maxHarten) S.avtGear.harten = S.avtGear.maxHarten;
+  if(S.avtGear.harten < 0) S.avtGear.harten = 0;
+  return S.avtGear;
+}
+function avtHeeftLupa(){ return !!avtGear().lupa; }
 function avtWereldInfo(wid){
   var sv = S.avt && S.avt[wid];
   var tot = 0, over = 0, totC = 0, gevC = 0;
@@ -4473,7 +4497,7 @@ function avtVrijOp(si, x, y){
   if(y < 0 || y > 6) return false;
   if(x < 0 || x > 9) return false;
   var c = AVT_SCHERMEN[si].grid[y].charAt(x);
-  if(c === "K") return !!avtSave().rotsOpen;
+  if(c === "K") return !!avtSaveVan(AVT_SCHERMEN[si].w).rotsOpen;
   return c === "." || c === "," || c === "C" || c === "T" || c === "S" || c === "N" || c === "g" || c === "B" || c === "L" || c === "U";
 }
 function avtVrij(x, y){ return avtVrijOp(avt.scherm, x, y); }
@@ -4597,7 +4621,7 @@ function avtKaartSvg(){
   });
   html += "<g id='avtHeld' style='transform:translate("+(avt.x*40+20)+"px,"+(avt.y*40+22)+"px); transition:transform .22s ease'>"+
     "<g id='avtHeldK' transform='scale("+(avt.kijk<0?-1:1)+" 1)'><g transform='scale(0.85)'>" + escChispaMini() +
-    (avtSave().sombrero ? "<g transform='translate(0,-13)'><ellipse cx='0' cy='2' rx='13' ry='4' fill='#d9a441' stroke='#b8862f' stroke-width='1.5'/><path d='M-6 1 q0 -8 6 -8 q6 0 6 8 Z' fill='#d9a441' stroke='#b8862f' stroke-width='1.5'/></g>" : "") + "</g></g></g>";
+    (avtGear().sombrero ? "<g transform='translate(0,-13)'><ellipse cx='0' cy='2' rx='13' ry='4' fill='#d9a441' stroke='#b8862f' stroke-width='1.5'/><path d='M-6 1 q0 -8 6 -8 q6 0 6 8 Z' fill='#d9a441' stroke='#b8862f' stroke-width='1.5'/></g>" : "") + "</g></g></g>";
   return html + "</svg>";
 }
 function avtMove(dx, dy){
@@ -4616,6 +4640,14 @@ function avtMove(dx, dy){
     var ix = nx > 9 ? 0 : (nx < 0 ? 9 : nx);
     var iy = ny < 0 ? 6 : (ny > 6 ? 0 : ny);
     if(naar != null && avtVrijOp(naar, ix, iy)){
+      var nw = AVT_SCHERMEN[naar].w;
+      if(nw !== avtWereld){
+        if(nw === "a1" && !avtWereldInfo("a0").klaar){ toast("🔒 " + at("slotA1")); return; }
+        avtWereld = nw;
+        var svW = avtSave();
+        if(svW.klaar && svW.marea !== today()){ svW.marea = today(); svW.dood = {}; persist(); toast(at("marea")); }
+        else { toast(at("wereldOverloop")); }
+      }
       avtLaadScherm(naar, false); avt.x = ix; avt.y = iy;
       var sv = avtSave(); sv.x = ix; sv.y = iy; persist();
       renderFun();
@@ -4624,13 +4656,23 @@ function avtMove(dx, dy){
   }
   if(!avtVrij(nx, ny)){
     var cb = AVT_SCHERMEN[avt.scherm].grid[ny].charAt(nx);
-    if(cb === "K" && !avtSave().rotsOpen){ toast(at((avtSave().bommen||0) > 0 ? "rotsBom" : "rotsHint")); }
+    if(cb === "K" && !avtSave().rotsOpen){ toast(at((avtGear().bommen||0) > 0 ? "rotsBom" : "rotsHint")); }
     if(cb === "H" || cb === "F"){
       var scId = AVT_SCHERMEN[avt.scherm].casaScene;
       var sc = ESCENAS.filter(function(x){ return x.id === scId; })[0];
       if(sc){ avtSfx("kist"); escStart(sc); }
     }
-    if(cb === "Q"){ avtSfx("kist"); avtSnakeStart(); }
+    if(cb === "Q"){
+      var qst = S.avtQuest = S.avtQuest || {};
+      if(qst.heb && !qst.klaar){
+        qst.klaar = true; S.monedas = (S.monedas||0) + 15; S.tapas = (S.tapas||0) + 2; persist();
+        avtSfx("win"); confetti(["🐟","🌮","🎉"], 22);
+        toast(at("questKlaar"));
+        renderFun(); return;
+      }
+      if(!qst.vraag && !qst.klaar){ qst.vraag = true; persist(); toast("🦎 " + at("questVraag")); }
+      avtSfx("kist"); avtSnakeStart();
+    }
     if(cb === "W"){ avtSfx("kist"); avtKruisStart(); }
     return;
   }
@@ -4642,7 +4684,7 @@ function avtMove(dx, dy){
   var sch = AVT_SCHERMEN[avt.scherm];
   var c = sch.grid[ny].charAt(nx);
   if(c === "C" && !sav.kist){
-    sav.kist = true; sav.lupa = true; persist();
+    sav.kist = true; sav.lupa = true; avtGear().lupa = true; persist();
     avtSfx("kist"); confetti(["🔍","✨"], 14); toast(at("kist"));
     setTimeout(renderFun, 250);
   }
@@ -4654,7 +4696,7 @@ function avtMove(dx, dy){
   if(c === "K" && sav.rotsOpen){ avtSfx("baas"); avtLaadScherm(5, false); renderFun(); return; }
   if(c === "U"){ avtLaadScherm(3, false); avt.x = 2; avt.y = 3; sav.x = 2; sav.y = 3; persist(); renderFun(); return; }
   if(c === "B" && !sav.bomKist){
-    sav.bomKist = true; sav.bommen = (sav.bommen||0) + 1; persist();
+    sav.bomKist = true; avtGear().bommen = (avtGear().bommen||0) + 1; persist();
     avtSfx("kist"); confetti(["💣","✨"], 10); toast(at("bomGevonden"));
     setTimeout(renderFun, 250);
   }
@@ -4665,7 +4707,13 @@ function avtMove(dx, dy){
   }
   if(c === "S"){ avt.tienda = true; avtSfx("kist"); renderFun(); return; }
   if(c === "N"){
-    if(sav.pescaDag === today()){ toast("🎣 " + at("pescaKlaar")); }
+    var qst2 = S.avtQuest = S.avtQuest || {};
+    if(qst2.vraag && !qst2.heb && !qst2.klaar){
+      qst2.heb = true; persist();
+      avtSfx("kist"); confetti(["🐟","✨"], 12);
+      toast("🎣 " + at("questPescado"));
+    }
+    else if(sav.pescaDag === today()){ toast("🎣 " + at("pescaKlaar")); }
     else {
       var zin = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
       avt.pesca = {zin:zin, pog:0, hint:false};
@@ -4723,7 +4771,14 @@ function avtNieuweVraag(){
     return;
   }
   var pool = gameVoorrang(avtWoordPool());
-  var w = pool[0] === g.vorige ? (pool[1] || pool[0]) : pool[0];
+  if(!avt.recent) avt.recent = [];
+  var vers = pool.filter(function(x){ return avt.recent.indexOf(x.id) === -1; });
+  if(vers.length < 4) { avt.recent = []; vers = pool; }
+  var top = vers.slice(0, Math.min(12, vers.length));
+  var w = top[Math.floor(Math.random() * top.length)];
+  if(w === g.vorige && top.length > 1){ w = top[(top.indexOf(w) + 1) % top.length]; }
+  avt.recent.push(w.id);
+  if(avt.recent.length > 10) avt.recent.shift();
   g.vorige = w;
   g.naarEs = (g.v && g.v.elite) ? true : Math.random() < 0.5;
   if(g.v && g.v.elite){ g.w = w; g.opties = []; g.hintWeg = false; g.hintTxt = null; return; }
@@ -4767,17 +4822,17 @@ function avtSrsBij(w, goed){
   S.srs[w.id] = st; persist(); updateBadge();
 }
 function avtHartKwijt(){
-  var sav = avtSave();
-  sav.harten--;
+  var gr = avtGear();
+  gr.harten--;
   avtSfx("hart");
-  if(sav.harten <= 0){
-    if(sav.amuleto){
-      sav.amuleto = false; sav.harten = sav.maxHarten; persist();
+  if(gr.harten <= 0){
+    if(gr.amuleto){
+      gr.amuleto = false; gr.harten = gr.maxHarten; persist();
       avtSfx("kist"); confetti(["🔮","✨"], 12);
       toast(at("amuletRedt"));
       return false;
     }
-    sav.harten = sav.maxHarten;
+    gr.harten = gr.maxHarten;
     var sch = AVT_SCHERMEN[avt.scherm];
     avt.x = sch.start.x; avt.y = sch.start.y;
     if(avt.gevecht && avt.gevecht.baas){ avtLaadScherm(3, false); }
@@ -4800,14 +4855,14 @@ function avtAntwoord(op){
         var sav = avtSave();
         sav.baasDag = today();
         if(g.revancha){
-          sav.harten = sav.maxHarten; persist();
+          avtGear().harten = avtGear().maxHarten; persist();
           S.monedas = (S.monedas||0) + 10; S.tapas = (S.tapas||0) + 1; persist();
           avt.gevecht = null;
           avtSfx("win"); confetti(["🏆","🪙","🌮"], 25);
           toast("🏆 " + at("revWin"));
           renderFun(); return;
         }
-        sav.klaar = true; sav.harten = sav.maxHarten; persist();
+        sav.klaar = true; avtGear().harten = avtGear().maxHarten; persist();
         S.tapas = (S.tapas||0) + 3; S.monedas = (S.monedas||0) + 10; persist();
         avt.gevecht = null; avt.victory = true;
         avtMuziekStop();
@@ -4996,8 +5051,8 @@ function avtKruisBekend(x, y){
 }
 /* ---- render ---- */
 function avtHarten(){
-  var sav = avtSave(), s = "";
-  for(var i=0;i<sav.maxHarten;i++){ s += i < sav.harten ? "❤️" : "🖤"; }
+  var gr = avtGear(), s = "";
+  for(var i=0;i<gr.maxHarten;i++){ s += i < gr.harten ? "❤️" : "🖤"; }
   return s;
 }
 function renderFunAvt(){
@@ -5044,12 +5099,13 @@ function renderFunAvt(){
     return;
   }
   if(avt.tienda){
+    var gr = avtGear();
     var items = [
       {id:"tapa", label:at("koopTapa"), prijs:5, weg:false, doe:function(){ S.tapas = (S.tapas||0) + 1; }},
-      {id:"hart", label:at("koopHart"), prijs:25, weg:sav.maxHarten >= 4, doe:function(){ sav.maxHarten = 4; sav.harten = 4; }},
-      {id:"sombrero", label:at("koopSombrero"), prijs:10, weg:!!sav.sombrero, doe:function(){ sav.sombrero = true; }},
-      {id:"amulet", label:at("koopAmulet") + " · " + at("amuletUitleg"), prijs:15, weg:!!sav.amuleto, doe:function(){ sav.amuleto = true; }},
-      {id:"bom", label:at("koopBom") + " · " + at("bomUitleg") + ((sav.bommen||0) ? " (" + sav.bommen + ")" : ""), prijs:8, weg:false, doe:function(){ sav.bommen = (sav.bommen||0) + 1; }}
+      {id:"hart", label:at("koopHart"), prijs:25, weg:gr.maxHarten >= 4, doe:function(){ gr.maxHarten = 4; gr.harten = 4; }},
+      {id:"sombrero", label:at("koopSombrero"), prijs:10, weg:!!gr.sombrero, doe:function(){ gr.sombrero = true; }},
+      {id:"amulet", label:at("koopAmulet") + " · " + at("amuletUitleg"), prijs:15, weg:!!gr.amuleto, doe:function(){ gr.amuleto = true; }},
+      {id:"bom", label:at("koopBom") + " · " + at("bomUitleg") + ((gr.bommen||0) ? " (" + gr.bommen + ")" : ""), prijs:8, weg:false, doe:function(){ gr.bommen = (gr.bommen||0) + 1; }}
     ];
     var th = "<div style='text-align:center'><span class='kicker'>" + at("tienda") + "</span>"+
       "<p style='font-size:2.2rem; margin:4px'>🦎⛱️</p>"+
@@ -5268,7 +5324,7 @@ function renderFunAvt(){
     html2 += "<div class='row' style='margin-top:8px; justify-content:space-between'>"+
       "<span style='align-self:center'>" + avtHarten() + ((avt.combo||0) >= 2 ? " 🔥" + avt.combo : "") + " · 🪙" + (S.monedas||0) + "</span>"+
       (avtHeeftLupa() ? "<button class='ghost' id='btnAvtHint' style='font-size:.85rem'" + (g.hintWeg ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
-      (sav.harten < sav.maxHarten && (S.tapas||0) > 0 ? "<button class='ghost' id='btnAvtTapa' style='font-size:.85rem'>" + at("tapaKnop") + "</button>" : "")+
+      (avtGear().harten < avtGear().maxHarten && (S.tapas||0) > 0 ? "<button class='ghost' id='btnAvtTapa' style='font-size:.85rem'>" + at("tapaKnop") + "</button>" : "")+
       (!g.baas ? "<button class='ghost' id='btnAvtVlucht' style='font-size:.85rem'>" + at("vlucht") + "</button>" : "")+
       "</div>";
     el.innerHTML = html2;
@@ -5305,8 +5361,9 @@ function renderFunAvt(){
     };
     var btp = document.getElementById("btnAvtTapa");
     if(btp) btp.onclick = function(){
-      if((S.tapas||0) < 1 || sav.harten >= 3) return;
-      S.tapas--; sav.harten++; persist(); avtSfx("kist"); renderFun();
+      var gr2 = avtGear();
+      if((S.tapas||0) < 1 || gr2.harten >= gr2.maxHarten) return;
+      S.tapas--; gr2.harten++; persist(); avtSfx("kist"); renderFun();
     };
     var bv = document.getElementById("btnAvtVlucht");
     if(bv) bv.onclick = function(){ avt.gevecht = null; renderFun(); };
@@ -5317,15 +5374,15 @@ function renderFunAvt(){
   var over = avtOlvidosOver();
   var html3 = "<div style='display:flex; justify-content:space-between; align-items:center'>"+
     "<span class='kicker'>" + (avtWereld === "a1" ? "El Pueblo" : "La Costa") + " · " + sch.naam + "</span>"+
-    "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtSave().bommen||0) > 0 ? " · 💣" + avtSave().bommen : "") + (avtSave().llave ? " · 🗝️" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
+    "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave ? " · 🗝️" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
   html3 += avtKaartSvg();
   var buurK = null;
   [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
     var bx = avt.x + d[0], by = avt.y + d[1];
     if(by >= 0 && by <= 6 && bx >= 0 && bx <= 9 && sch.grid[by].charAt(bx) === "K" && !avtSave().rotsOpen) buurK = {x:bx, y:by};
   });
-  if(buurK && (avtSave().bommen||0) > 0){
-    html3 += "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtBom'>" + at("bomLeg") + " (" + avtSave().bommen + ")</button></div>";
+  if(buurK && (avtGear().bommen||0) > 0){
+    html3 += "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtBom'>" + at("bomLeg") + " (" + avtGear().bommen + ")</button></div>";
   }
   html3 += "<div class='avtdpad'>"+
     "<span></span><button data-avtd='0,-1'>▲</button><span></span>"+
@@ -5338,8 +5395,8 @@ function renderFunAvt(){
   var bb = document.getElementById("btnAvtBom");
   if(bb) bb.onclick = function(){
     var savB2 = avtSave();
-    if((savB2.bommen||0) < 1 || savB2.rotsOpen) return;
-    savB2.bommen--; savB2.rotsOpen = true; persist();
+    if((avtGear().bommen||0) < 1 || savB2.rotsOpen) return;
+    avtGear().bommen--; savB2.rotsOpen = true; persist();
     avtSfx("boom"); confetti(["💥","🪨"], 16); toast(at("boom"));
     renderFun();
   };
