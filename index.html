@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.0";
+var APP_VERSIE = "v19.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4321,6 +4321,7 @@ var AVT_TXT = {
      bord:"Uitdagingsbord", bordMarea:"🌊 Roep de marea op", bordMareaSub:"elite-Olvidos keren terug in deze wereld (schrijven!)",
      bordRev:"⚔️ Baas-revancha", bordRevSub:"vecht opnieuw in de arena (+10 🪙)", bordKlaar:"✅ Uitdaging volbracht! De wereld is weer vrij. +5 🪙",
      cronTeaser:"🐢 Er is iemand verschenen bij het beginpunt van deze wereld...",
+     ookGoed:"Ook goed:", vormTip:"({o} bij mannelijke, {a} bij vrouwelijke woorden)",
      zekerWeten:"Zeker weten? Dit wist AL je Aventura-voortgang. Tik nogmaals om te wissen.",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
@@ -4391,6 +4392,7 @@ var AVT_TXT = {
      bord:"Challenge board", bordMarea:"🌊 Summon the marea", bordMareaSub:"elite Olvidos return to this world (typing!)",
      bordRev:"⚔️ Boss rematch", bordRevSub:"fight again in the arena (+10 🪙)", bordKlaar:"✅ Challenge complete! The world is free again. +5 🪙",
      cronTeaser:"🐢 Someone has appeared at this world's starting point...",
+     ookGoed:"Also correct:", vormTip:"({o} with masculine, {a} with feminine words)",
      zekerWeten:"Are you sure? This erases ALL your Aventura progress. Tap again to erase.",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
@@ -5266,6 +5268,26 @@ function avtBaasStart(){
   avtNieuweVraag();
   renderFun();
 }
+function esVormen(es){
+  var delen = es.split("/").map(function(s){ return s.trim(); }).filter(Boolean);
+  if(delen.length > 1) delen.push(es);
+  return delen;
+}
+function woordGetypt(inp, es){
+  var geg = stripAcc(norm(inp));
+  var vormen = esVormen(es);
+  var los = vormen.some(function(v){ return stripAcc(norm(v)) === geg; });
+  var exact = vormen.some(function(v){ return norm(v) === norm(inp); });
+  return {goed:los, accentMis:los && !exact};
+}
+function vormFeedback(inp, es){
+  var vormen = esVormen(es).filter(function(v){ return v !== es; });
+  if(vormen.length < 2) return "";
+  var geg = stripAcc(norm(inp));
+  var anders = vormen.filter(function(v){ return stripAcc(norm(v)) !== geg; });
+  if(!anders.length || anders.length === vormen.length) return "";
+  return " · " + at("ookGoed") + " <b class='es'>" + anders.join(", ") + "</b>";
+}
 function avtSrsBij(w, goed){
   var t = today();
   var st = S.srs[w.id];
@@ -5808,6 +5830,7 @@ function renderFunAvt(){
         }
         el.innerHTML = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢</span>"+
           "<p style='font-size:2.2rem; margin:6px'>📜</p>"+
+          (dr.fb ? "<p style='margin:4px; color:" + (dr.fbGoed ? "var(--good, #3a8a3a)" : "var(--accent)") + "'>" + dr.fb + "</p>" : "")+
           "<p><b>" + at("cronKlaarTxt") + "</b> " + dr.goed + "/" + dr.lijst.length + extraC + "</p>"+
           "<div class='row' style='justify-content:center'><button class='primary' id='btnCronTerug2'>" + at("cronNaam") + "</button></div></div>";
         document.getElementById("btnCronTerug2").onclick = function(){ cw.drill = null; renderFun(); };
@@ -5827,9 +5850,10 @@ function renderFunAvt(){
       var cronCheck = function(){
         var inp = ci.value || "";
         if(!norm(inp)) return;
-        var goedc = stripAcc(norm(inp)) === stripAcc(norm(dw.es));
+        var chkD = woordGetypt(inp, dw.es);
+        var goedc = chkD.goed;
         avtSrsBij(dw, goedc);
-        if(goedc){ dr.goed++; avtSfx("goed"); dr.fb = at("cronGoed") + " <b class='es'>" + dw.es + "</b>"; dr.fbGoed = true; }
+        if(goedc){ dr.goed++; avtSfx("goed"); dr.fb = at("cronGoed") + " <b class='es'>" + dw.es + "</b>" + vormFeedback(inp, dw.es); dr.fbGoed = true; }
         else { avtSfx("fout"); dr.fb = at("cronFout") + " <b class='es'>" + dw.es + "</b> · " + wTrans(dw); dr.fbGoed = false; }
         dr.i++;
         renderFun();
@@ -6125,10 +6149,17 @@ function renderFunAvt(){
         var inp = si.value || "";
         if(!norm(inp)) return;
         var doel = g.zin ? g.zin.es : g.w.es;
-        var goedb = g.zin
-          ? [g.zin.es].concat(g.zin.alt||[]).some(function(a){ return stripAcc(norm(inp)) === stripAcc(norm(a)); })
-          : stripAcc(norm(inp)) === stripAcc(norm(doel));
-        if(goedb && norm(inp) !== norm(doel) && stripAcc(norm(inp)) === stripAcc(norm(doel))){ toast(at("accent") + doel); }
+        var goedb, accentMis = false, vormFb = "";
+        if(g.zin){
+          goedb = [g.zin.es].concat(g.zin.alt||[]).some(function(a){ return stripAcc(norm(inp)) === stripAcc(norm(a)); });
+          accentMis = goedb && norm(inp) !== norm(doel) && stripAcc(norm(inp)) === stripAcc(norm(doel));
+        } else {
+          var chk = woordGetypt(inp, doel);
+          goedb = chk.goed; accentMis = chk.accentMis;
+          if(goedb) vormFb = vormFeedback(inp, doel);
+        }
+        if(accentMis){ toast(at("accent") + doel); }
+        else if(goedb && vormFb){ toast("✓ " + vormFb.replace(/<[^>]+>/g, "").replace("· ", "")); }
         avtAntwoord({goed:goedb});
       };
       document.getElementById("btnAvtSchrijf").onclick = schrijfCheck;
