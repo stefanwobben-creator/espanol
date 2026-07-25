@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v11.4";
+var APP_VERSIE = "v11.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3281,6 +3281,18 @@ function verbPopup(term){
 }
 
 /* ================= WOORDENZOEKER ================= */
+function gameVoorrang(pool){
+  function score(id){
+    var e = S.errors["woord:" + id];
+    if(e && e.count >= 3) return 2;            // hardnekkig: komt het eerst
+    var st = S.srs[id];
+    if(st && st.box <= 1) return 1;            // wankel: daarna
+    return 0;                                   // de rest vult aan
+  }
+  return pool.slice().sort(function(a, b){
+    return (score(b.id) - score(a.id)) || (Math.random() - 0.5);
+  });
+}
 var ws = null;
 function wsWoordPool(){
   var artikelen = {el:1, la:1, los:1, las:1, un:1, una:1};
@@ -3289,15 +3301,15 @@ function wsWoordPool(){
     if(!S.srs[w.id]) return; // alleen geleerde woorden
     var kern = w.es.toLowerCase().split("/")[0].trim().split(" ").filter(function(t){ return !artikelen[t]; })[0] || "";
     kern = stripAcc(kern).replace(/[^a-z]/g, "");
-    if(kern.length >= 4 && kern.length <= 9) pool.push({woord:kern, nl:wTrans(w), es:w.es});
+    if(kern.length >= 4 && kern.length <= 9) pool.push({woord:kern, nl:wTrans(w), es:w.es, id:w.id});
   });
   return pool;
 }
 function wsStart(){
   var pool = wsWoordPool();
   if(pool.length < 4){ toast("Leer eerst wat meer woordjes, dan kan de puzzel gevuld worden!"); return; }
-  // husselen en 6 kiezen
-  pool.sort(function(){ return Math.random() - 0.5; });
+  // moeilijke woorden eerst, dan aanvullen met toeval
+  pool = gameVoorrang(pool);
   var gekozen = [];
   pool.forEach(function(p){ if(gekozen.length < 6 && !gekozen.some(function(g){ return g.woord === p.woord; })) gekozen.push(p); });
   var N = 10;
@@ -4069,14 +4081,14 @@ function memPool(){
     if(!S.srs[w.id]) return; // alleen geleerde woorden
     var es = w.es.split("/")[0].trim();
     var nl = wTrans(w).split("/")[0].trim();
-    if(es.length >= 2 && es.length <= 18 && nl.length <= 18) pool.push({es:es, nl:nl});
+    if(es.length >= 2 && es.length <= 18 && nl.length <= 18) pool.push({es:es, nl:nl, id:w.id});
   });
   return pool;
 }
 function memStart(){
   var pool = memPool();
   if(pool.length < 4){ toast("Leer eerst wat meer woordjes, dan kan het spel gevuld worden!"); return; }
-  pool.sort(function(){ return Math.random() - 0.5; });
+  pool = gameVoorrang(pool);
   var paren = [];
   pool.forEach(function(p){ if(paren.length < 6 && !paren.some(function(x){ return x.es === p.es; })) paren.push(p); });
   var cards = [];
@@ -4118,7 +4130,7 @@ function renderFunMem(){
   var el = document.getElementById("funCard");
   var html = "<h2>Memory · Parejas 🃏</h2>";
   if(!mem){
-    html += "<p class='muted'>Draai kaartjes om en zoek de paren: Spaans woord bij Nederlandse vertaling. Met jouw eigen geleerde woorden.</p>"+
+    html += "<p class='muted'>Draai kaartjes om en zoek de paren: Spaans woord bij Nederlandse vertaling. Met jouw eigen geleerde woorden, en jouw lastige woorden doen extra vaak mee.</p>"+
       (S.memBest ? "<p class='muted'>Jouw record: <b>"+S.memBest+" beurten</b> 🏅</p>" : "")+
       "<div class='row'><button class='primary' id='btnMem'>Nieuw spel</button>"+
       "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
@@ -4644,7 +4656,7 @@ function renderFunWs(){
   var el = document.getElementById("funCard");
   var html = "<h2>Woordenzoeker \ud83d\udd0d</h2>";
   if(!ws){
-    html += "<p class='muted'>Zes van jouw geleerde woorden, verstopt in een raster.</p>"+
+    html += "<p class='muted'>Zes van jouw geleerde woorden, verstopt in een raster. Woorden die jij lastig vindt, krijgen stiekem voorrang.</p>"+
       "<div class='row'><button class='primary' id='btnWs'>Nieuwe woordenzoeker</button>"+
       "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
     el.innerHTML = html;
