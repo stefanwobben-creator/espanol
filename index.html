@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v17.5";
+var APP_VERSIE = "v18.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1154,197 +1154,215 @@ var B_WORDS = [
 ];
 
 var B_SENTENCES = [
- {id:"bs1", lvl:1, nl:"Hallo, ik heet Ana.", es:"Hola, me llamo Ana.", alt:["hola me llamo ana"],
-  uitleg:"Me llamo = letterlijk 'ik noem mij'. Zo stel je je voor.", tag:"basis"},
- {id:"bs2", lvl:1, nl:"Ik ben twaalf jaar.", es:"Tengo doce años.", alt:["tengo doce años","tengo 12 años","tengo doce anos"],
-  uitleg:"Verrassing: in het Spaans HEB je jaren (tener), je bent ze niet. Tengo = ik heb.", tag:"tener"},
- {id:"bs3", lvl:1, nl:"Ik woon in Nederland.", es:"Vivo en los Países Bajos.", alt:["vivo en los países bajos","vivo en los paises bajos","vivo en holanda"],
-  uitleg:"Vivir = wonen. Vivo, vives, vive. Nederland = los Países Bajos (letterlijk: de Lage Landen).", tag:"basis"},
- {id:"bs4", lvl:1, nl:"Dit is mijn moeder.", es:"Esta es mi madre.", alt:["esta es mi madre","ésta es mi madre"],
-  uitleg:"Esta (vrouwelijk) omdat madre vrouwelijk is. Mi = mijn.", tag:"basis"},
- {id:"bs5", lvl:1, nl:"Ik heb een hond.", es:"Tengo un perro.", alt:["tengo un perro"],
-  uitleg:"Tener = hebben: tengo. Un perro = een hond (mannelijk, dus un).", tag:"tener"},
- {id:"bs6", lvl:1, nl:"De kat is klein.", es:"El gato es pequeño.", alt:["el gato es pequeño","el gato es pequeno"],
-  uitleg:"Ser (es) voor een eigenschap: klein zijn hoort bij de kat. Pequeño met ñ!", tag:"ser-estar"},
- {id:"bs7", lvl:1, nl:"Ik spreek een beetje Spaans.", es:"Hablo un poco de español.", alt:["hablo un poco de español","hablo un poco de espanol","hablo un poco español"],
-  uitleg:"Hablar = spreken: hablo. Un poco de = een beetje.", tag:"basis"},
- {id:"bs8", lvl:1, nl:"Waar is het huis?", es:"¿Dónde está la casa?", alt:["dónde está la casa","donde esta la casa"],
-  uitleg:"Estar (está) voor plaats: waar iets zich bevindt. Dónde met accent in een vraag.", tag:"ser-estar"},
- {id:"bs9", lvl:2, nl:"Ik vind chocolade lekker.", es:"Me gusta el chocolate.", alt:["me gusta el chocolate"],
-  uitleg:"Letterlijk: 'chocolade bevalt mij'. Me gusta + el/la + het ding.", tag:"gustar"},
- {id:"bs10", lvl:2, nl:"Wij eten paella.", es:"Comemos paella.", alt:["comemos paella","nosotros comemos paella"],
-  uitleg:"Comer = eten. Wij-vorm: comemos. Het woordje 'wij' mag weg, de uitgang -emos zegt het al.", tag:"basis"},
- {id:"bs11", lvl:2, nl:"Ik ga naar school.", es:"Voy a la escuela.", alt:["voy a la escuela","voy al colegio"],
-  uitleg:"Ir = gaan, en is onregelmatig: voy, vas, va. Altijd met a (naartoe).", tag:"basis"},
- {id:"bs12", lvl:2, nl:"Mijn vriend is aardig.", es:"Mi amigo es simpático.", alt:["mi amigo es simpático","mi amigo es simpatico"],
-  uitleg:"Ser (es) voor karakter. Simpático = aardig (níét 'sympathiek zeuren': gewoon aardig).", tag:"ser-estar"},
- {id:"bs13", lvl:2, nl:"Het water is koud.", es:"El agua está fría.", alt:["el agua está fría","el agua esta fria"],
-  uitleg:"Estar voor een toestand (nú koud). Gek weetje: agua is vrouwelijk maar krijgt el, en het bijvoeglijk naamwoord blijft vrouwelijk: fría.", tag:"ser-estar"},
- {id:"bs14", lvl:2, nl:"Tot morgen!", es:"¡Hasta mañana!", alt:["hasta mañana","hasta manana"],
-  uitleg:"Hasta = tot. Ook handig: hasta luego (tot straks).", tag:"basis"},
- {id:"bs15", lvl:1, nl:"Hoe zeg je dit in het Spaans?", es:"¿Cómo se dice esto en español?",
+ {id:"bs1", lvl:1, nl:"Hallo, ik heet Ana.", en:"Hello, my name is Ana.", es:"Hola, me llamo Ana.", alt:["hola me llamo ana"],
+  uitleg:"Me llamo = letterlijk 'ik noem mij'. Zo stel je je voor.", ue:"Me llamo = literally 'I call myself'. That's how you introduce yourself.", tag:"basis"},
+ {id:"bs2", lvl:1, nl:"Ik ben twaalf jaar.", en:"I am twelve years old.", es:"Tengo doce años.", alt:["tengo doce años","tengo 12 años","tengo doce anos"],
+  uitleg:"Verrassing: in het Spaans HEB je jaren (tener), je bent ze niet. Tengo = ik heb.", ue:"Surprise: in Spanish you HAVE years (tener), you aren't them. Tengo = I have.", tag:"tener"},
+ {id:"bs3", lvl:1, nl:"Ik woon in Nederland.", en:"I live in the Netherlands.", es:"Vivo en los Países Bajos.", alt:["vivo en los países bajos","vivo en los paises bajos","vivo en holanda"],
+  uitleg:"Vivir = wonen. Vivo, vives, vive. Nederland = los Países Bajos (letterlijk: de Lage Landen).", ue:"Vivir = to live. Vivo, vives, vive. The Netherlands = los Países Bajos (literally: the Low Countries).", tag:"basis"},
+ {id:"bs4", lvl:1, nl:"Dit is mijn moeder.", en:"This is my mother.", es:"Esta es mi madre.", alt:["esta es mi madre","ésta es mi madre"],
+  uitleg:"Esta (vrouwelijk) omdat madre vrouwelijk is. Mi = mijn.", ue:"Esta (feminine) because madre is feminine. Mi = my.", tag:"basis"},
+ {id:"bs5", lvl:1, nl:"Ik heb een hond.", en:"I have a dog.", es:"Tengo un perro.", alt:["tengo un perro"],
+  uitleg:"Tener = hebben: tengo. Un perro = een hond (mannelijk, dus un).", ue:"Tener = to have: tengo. Un perro = a dog (masculine, so un).", tag:"tener"},
+ {id:"bs6", lvl:1, nl:"De kat is klein.", en:"The cat is small.", es:"El gato es pequeño.", alt:["el gato es pequeño","el gato es pequeno"],
+  uitleg:"Ser (es) voor een eigenschap: klein zijn hoort bij de kat. Pequeño met ñ!", ue:"Ser (es) for a characteristic: being small is part of the cat. Pequeño with ñ!", tag:"ser-estar"},
+ {id:"bs7", lvl:1, nl:"Ik spreek een beetje Spaans.", en:"I speak a little Spanish.", es:"Hablo un poco de español.", alt:["hablo un poco de español","hablo un poco de espanol","hablo un poco español"],
+  uitleg:"Hablar = spreken: hablo. Un poco de = een beetje.", ue:"Hablar = to speak: hablo. Un poco de = a little.", tag:"basis"},
+ {id:"bs8", lvl:1, nl:"Waar is het huis?", en:"Where is the house?", es:"¿Dónde está la casa?", alt:["dónde está la casa","donde esta la casa"],
+  uitleg:"Estar (está) voor plaats: waar iets zich bevindt. Dónde met accent in een vraag.", ue:"Estar (está) for location: where something is. Dónde takes an accent in a question.", tag:"ser-estar"},
+ {id:"bs9", lvl:2, nl:"Ik vind chocolade lekker.", en:"I like chocolate.", es:"Me gusta el chocolate.", alt:["me gusta el chocolate"],
+  uitleg:"Letterlijk: 'chocolade bevalt mij'. Me gusta + el/la + het ding.", ue:"Literally: 'chocolate pleases me'. Me gusta + el/la + the thing.", tag:"gustar"},
+ {id:"bs10", lvl:2, nl:"Wij eten paella.", en:"We eat paella.", es:"Comemos paella.", alt:["comemos paella","nosotros comemos paella"],
+  uitleg:"Comer = eten. Wij-vorm: comemos. Het woordje 'wij' mag weg, de uitgang -emos zegt het al.", ue:"Comer = to eat. We-form: comemos. You can drop 'we': the ending -emos already says it.", tag:"basis"},
+ {id:"bs11", lvl:2, nl:"Ik ga naar school.", en:"I go to school.", es:"Voy a la escuela.", alt:["voy a la escuela","voy al colegio"],
+  uitleg:"Ir = gaan, en is onregelmatig: voy, vas, va. Altijd met a (naartoe).", ue:"Ir = to go, and it's irregular: voy, vas, va. Always with a (to).", tag:"basis"},
+ {id:"bs12", lvl:2, nl:"Mijn vriend is aardig.", en:"My friend is nice.", es:"Mi amigo es simpático.", alt:["mi amigo es simpático","mi amigo es simpatico"],
+  uitleg:"Ser (es) voor karakter. Simpático = aardig (níét 'sympathiek zeuren': gewoon aardig).", ue:"Ser (es) for character. Simpático = nice, friendly (a false friend of 'sympathetic').", tag:"ser-estar"},
+ {id:"bs13", lvl:2, nl:"Het water is koud.", en:"The water is cold.", es:"El agua está fría.", alt:["el agua está fría","el agua esta fria"],
+  uitleg:"Estar voor een toestand (nú koud). Gek weetje: agua is vrouwelijk maar krijgt el, en het bijvoeglijk naamwoord blijft vrouwelijk: fría.", ue:"Estar for a state (cold right now). Fun fact: agua is feminine but takes el, and the adjective stays feminine: fría.", tag:"ser-estar"},
+ {id:"bs14", lvl:2, nl:"Tot morgen!", en:"See you tomorrow!", es:"¡Hasta mañana!", alt:["hasta mañana","hasta manana"],
+  uitleg:"Hasta = tot. Ook handig: hasta luego (tot straks).", ue:"Hasta = until. Also handy: hasta luego (see you later).", tag:"basis"},
+ {id:"bs15", lvl:1, nl:"Hoe zeg je dit in het Spaans?", en:"How do you say this in Spanish?", es:"¿Cómo se dice esto en español?",
   alt:["cómo se dice esto en español","como se dice esto en espanol","cómo se dice en español"],
-  uitleg:"Dé overlevingszin voor in de les. Se dice = 'zegt men'.", tag:"les0"},
- {id:"bs16", lvl:1, nl:"Ik begrijp het niet.", es:"No entiendo.",
+  uitleg:"Dé overlevingszin voor in de les. Se dice = 'zegt men'.", ue:"THE survival sentence for class. Se dice = 'one says'.", tag:"les0"},
+ {id:"bs16", lvl:1, nl:"Ik begrijp het niet.", en:"I don't understand.", es:"No entiendo.",
   alt:["no entiendo","no lo entiendo"],
-  uitleg:"Entender → entiendo (e wordt ie). Met no ervoor maak je het ontkennend.", tag:"les0"},
- {id:"bs17", lvl:1, nl:"Hoe heet jij?", es:"¿Cómo te llamas?",
+  uitleg:"Entender → entiendo (e wordt ie). Met no ervoor maak je het ontkennend.", ue:"Entender → entiendo (e becomes ie). Put no in front to make it negative.", tag:"les0"},
+ {id:"bs17", lvl:1, nl:"Hoe heet jij?", en:"What is your name?", es:"¿Cómo te llamas?",
   alt:["cómo te llamas","como te llamas"],
-  uitleg:"Letterlijk: 'hoe noem je je?'. Antwoord: Me llamo...", tag:"les1"},
- {id:"bs18", lvl:1, nl:"Ik ben Nederlandse.", es:"Soy holandesa.",
+  uitleg:"Letterlijk: 'hoe noem je je?'. Antwoord: Me llamo...", ue:"Literally: 'how do you call yourself?'. Answer: Me llamo...", tag:"les1"},
+ {id:"bs18", lvl:1, nl:"Ik ben Nederlandse.", en:"I am Dutch. (female)", es:"Soy holandesa.",
   alt:["soy holandesa","soy holandés","soy holandes"],
-  uitleg:"Nationaliteit = ser. Meisje/vrouw: holandesa, jongen/man: holandés. Zonder hoofdletter!", tag:"les1"},
- {id:"bs19", lvl:1, nl:"Zij is lerares.", es:"Es profesora.",
+  uitleg:"Nationaliteit = ser. Meisje/vrouw: holandesa, jongen/man: holandés. Zonder hoofdletter!", ue:"Nationality = ser. Girl/woman: holandesa, boy/man: holandés. No capital letter!", tag:"les1"},
+ {id:"bs19", lvl:1, nl:"Zij is lerares.", en:"She is a teacher.", es:"Es profesora.",
   alt:["es profesora","ella es profesora"],
-  uitleg:"Beroep = ser, en zonder lidwoord: es profesora (niet 'es una profesora').", tag:"les1"},
- {id:"bs20", lvl:2, nl:"Ik studeer Spaans en lees veel.", es:"Estudio español y leo mucho.",
+  uitleg:"Beroep = ser, en zonder lidwoord: es profesora (niet 'es una profesora').", ue:"Profession = ser, and without an article: es profesora (not 'es una profesora').", tag:"les1"},
+ {id:"bs20", lvl:2, nl:"Ik studeer Spaans en lees veel.", en:"I study Spanish and read a lot.", es:"Estudio español y leo mucho.",
   alt:["estudio español y leo mucho","estudio espanol y leo mucho"],
-  uitleg:"Twee regelmatige presente-vormen: estudio (-ar) en leo (-er).", tag:"les2"},
- {id:"bs21", lvl:1, nl:"Waar ligt Santiago?", es:"¿Dónde está Santiago?",
+  uitleg:"Twee regelmatige presente-vormen: estudio (-ar) en leo (-er).", ue:"Two regular present-tense forms: estudio (-ar) and leo (-er).", tag:"les2"},
+ {id:"bs21", lvl:1, nl:"Waar ligt Santiago?", en:"Where is Santiago?", es:"¿Dónde está Santiago?",
   alt:["dónde está santiago","donde esta santiago","¿dónde está santiago?"],
-  uitleg:"Voor de plaats van iets met een naam (een stad, een persoon) gebruik je estar: ¿dónde está...?", tag:"hay-estar"},
- {id:"bs22", lvl:1, nl:"Santiago ligt in het noorden van Spanje.", es:"Santiago está en el norte de España.",
+  uitleg:"Voor de plaats van iets met een naam (een stad, een persoon) gebruik je estar: ¿dónde está...?", ue:"For the location of something with a name (a city, a person) use estar: ¿dónde está...?", tag:"hay-estar"},
+ {id:"bs22", lvl:1, nl:"Santiago ligt in het noorden van Spanje.", en:"Santiago is in the north of Spain.", es:"Santiago está en el norte de España.",
   alt:["santiago está en el norte de españa","santiago esta en el norte de espana"],
-  uitleg:"Está (van estar) voor waar iets ligt. Windrichtingen met el: el norte, el sur.", tag:"hay-estar"},
- {id:"bs23", lvl:1, nl:"In mijn stad is er een heel mooi park.", es:"En mi ciudad hay un parque muy bonito.",
+  uitleg:"Está (van estar) voor waar iets ligt. Windrichtingen met el: el norte, el sur.", ue:"Está (from estar) for where something is. Compass points take el: el norte, el sur.", tag:"hay-estar"},
+ {id:"bs23", lvl:1, nl:"In mijn stad is er een heel mooi park.", en:"In my city there is a very beautiful park.", es:"En mi ciudad hay un parque muy bonito.",
   alt:["en mi ciudad hay un parque muy bonito","hay un parque muy bonito en mi ciudad"],
-  uitleg:"Hay = er is / er zijn. En muy + bijvoeglijk naamwoord: muy bonito.", tag:"hay-estar"},
- {id:"bs24", lvl:1, nl:"Er zijn veel mensen op het strand.", es:"Hay mucha gente en la playa.",
+  uitleg:"Hay = er is / er zijn. En muy + bijvoeglijk naamwoord: muy bonito.", ue:"Hay = there is / there are. And muy + adjective: muy bonito.", tag:"hay-estar"},
+ {id:"bs24", lvl:1, nl:"Er zijn veel mensen op het strand.", en:"There are a lot of people on the beach.", es:"Hay mucha gente en la playa.",
   alt:["hay mucha gente en la playa","en la playa hay mucha gente"],
-  uitleg:"La gente (de mensen) is in het Spaans enkelvoud én vrouwelijk: mucha gente. Hay blijft gewoon hay.", tag:"muy-mucho"},
- {id:"bs25", lvl:1, nl:"In het zuiden is het heel warm.", es:"En el sur hace mucho calor.",
+  uitleg:"La gente (de mensen) is in het Spaans enkelvoud én vrouwelijk: mucha gente. Hay blijft gewoon hay.", ue:"La gente (people) is singular AND feminine in Spanish: mucha gente. Hay simply stays hay.", tag:"muy-mucho"},
+ {id:"bs25", lvl:1, nl:"In het zuiden is het heel warm.", en:"In the south it is very hot.", es:"En el sur hace mucho calor.",
   alt:["en el sur hace mucho calor","hace mucho calor en el sur"],
-  uitleg:"Het weer doe je met hacer: hace calor (het 'maakt' warmte). Heel warm = mucho calor, want calor is een zelfstandig naamwoord (dus geen muy).", tag:"muy-mucho"},
- {id:"bs26", lvl:1, nl:"Het regent veel in het noorden.", es:"Llueve mucho en el norte.",
+  uitleg:"Het weer doe je met hacer: hace calor (het 'maakt' warmte). Heel warm = mucho calor, want calor is een zelfstandig naamwoord (dus geen muy).", ue:"Weather uses hacer: hace calor (it 'makes' heat). Very hot = mucho calor, because calor is a noun (so no muy).", tag:"muy-mucho"},
+ {id:"bs26", lvl:1, nl:"Het regent veel in het noorden.", en:"It rains a lot in the north.", es:"Llueve mucho en el norte.",
   alt:["llueve mucho en el norte","en el norte llueve mucho"],
-  uitleg:"Llueve = het regent (van llover). Na een werkwoord komt mucho, los: llueve mucho.", tag:"muy-mucho"},
- {id:"bs27", lvl:1, nl:"De stad is heel groot en heel mooi.", es:"La ciudad es muy grande y muy bonita.",
+  uitleg:"Llueve = het regent (van llover). Na een werkwoord komt mucho, los: llueve mucho.", ue:"Llueve = it rains (from llover). After a verb use mucho on its own: llueve mucho.", tag:"muy-mucho"},
+ {id:"bs27", lvl:1, nl:"De stad is heel groot en heel mooi.", en:"The city is very big and very beautiful.", es:"La ciudad es muy grande y muy bonita.",
   alt:["la ciudad es muy grande y muy bonita"],
-  uitleg:"Muy + bijvoeglijk naamwoord: muy grande, muy bonita. Bonita eindigt op -a, want la ciudad is vrouwelijk.", tag:"muy-mucho"},
- {id:"bs28", lvl:1, nl:"Hoeveel kost het T-shirt?", es:"¿Cuánto cuesta la camiseta?",
+  uitleg:"Muy + bijvoeglijk naamwoord: muy grande, muy bonita. Bonita eindigt op -a, want la ciudad is vrouwelijk.", ue:"Muy + adjective: muy grande, muy bonita. Bonita ends in -a, because la ciudad is feminine.", tag:"muy-mucho"},
+ {id:"bs28", lvl:1, nl:"Hoeveel kost het T-shirt?", en:"How much does the T-shirt cost?", es:"¿Cuánto cuesta la camiseta?",
   alt:["cuánto cuesta la camiseta","cuanto cuesta la camiseta"],
-  uitleg:"¿Cuánto cuesta...? = hoeveel kost...? Dé winkelzin. Cuánto met accent, want het is een vraag.", tag:"les4"},
- {id:"bs29", lvl:1, nl:"De schoenen kosten vijftig euro.", es:"Los zapatos cuestan cincuenta euros.",
+  uitleg:"¿Cuánto cuesta...? = hoeveel kost...? Dé winkelzin. Cuánto met accent, want het is een vraag.", ue:"¿Cuánto cuesta...? = how much does ... cost? THE shopping sentence. Cuánto with an accent, because it's a question.", tag:"les4"},
+ {id:"bs29", lvl:1, nl:"De schoenen kosten vijftig euro.", en:"The shoes cost fifty euros.", es:"Los zapatos cuestan cincuenta euros.",
   alt:["los zapatos cuestan cincuenta euros","los zapatos cuestan 50 euros"],
-  uitleg:"Zapatos is meervoud, dus cuestan (niet cuesta). Cincuenta = 50. Euro krijgt een -s: euros.", tag:"les4"},
- {id:"bs30", lvl:1, nl:"Ik vind deze jurk mooi.", es:"Me gusta este vestido.",
+  uitleg:"Zapatos is meervoud, dus cuestan (niet cuesta). Cincuenta = 50. Euro krijgt een -s: euros.", ue:"Zapatos is plural, so cuestan (not cuesta). Cincuenta = 50. Euro takes an -s: euros.", tag:"les4"},
+ {id:"bs30", lvl:1, nl:"Ik vind deze jurk mooi.", en:"I like this dress.", es:"Me gusta este vestido.",
   alt:["me gusta este vestido"],
-  uitleg:"Me gusta = ik vind ... leuk/mooi. Este = deze (mannelijk, want el vestido).", tag:"les4"},
- {id:"bs31", lvl:2, nl:"Welke heb je liever, de rode of de zwarte?", es:"¿Cuál prefieres, la roja o la negra?",
+  uitleg:"Me gusta = ik vind ... leuk/mooi. Este = deze (mannelijk, want el vestido).", ue:"Me gusta = I like ... . Este = this (masculine, because el vestido).", tag:"les4"},
+ {id:"bs31", lvl:2, nl:"Welke heb je liever, de rode of de zwarte?", en:"Which one do you prefer, the red one or the black one?", es:"¿Cuál prefieres, la roja o la negra?",
   alt:["cuál prefieres la roja o la negra","cual prefieres la roja o la negra"],
-  uitleg:"Cuál = welke (als je kiest uit een groepje). Prefieres van preferir (e→ie). La roja = de rode (bijvoorbeeld una camiseta).", tag:"les4"},
- {id:"bs32", lvl:1, nl:"De broek is heel duur.", es:"El pantalón es muy caro.",
+  uitleg:"Cuál = welke (als je kiest uit een groepje). Prefieres van preferir (e→ie). La roja = de rode (bijvoorbeeld una camiseta).", ue:"Cuál = which (choosing from a group). Prefieres from preferir (e→ie). La roja = the red one (a camiseta, for example).", tag:"les4"},
+ {id:"bs32", lvl:1, nl:"De broek is heel duur.", en:"The trousers are very expensive.", es:"El pantalón es muy caro.",
   alt:["el pantalón es muy caro","el pantalon es muy caro"],
-  uitleg:"Let op: el pantalón is in het Spaans enkelvoud (één broek). Caro = duur, met -o want pantalón is mannelijk.", tag:"les4"},
- {id:"bs33", lvl:2, nl:"Ik moet een jas kopen.", es:"Tengo que comprar una chaqueta.",
+  uitleg:"Let op: el pantalón is in het Spaans enkelvoud (één broek). Caro = duur, met -o want pantalón is mannelijk.", ue:"Note: el pantalón is singular in Spanish (one pair of trousers). Caro = expensive, with -o because pantalón is masculine.", tag:"les4"},
+ {id:"bs33", lvl:2, nl:"Ik moet een jas kopen.", en:"I have to buy a jacket.", es:"Tengo que comprar una chaqueta.",
   alt:["tengo que comprar una chaqueta"],
-  uitleg:"Tener que + infinitief = moeten: tengo que comprar. Vergeet het woordje que niet!", tag:"les4"},
- {id:"bs34", lvl:2, nl:"Ik draag een wit T-shirt en blauwe schoenen.", es:"Llevo una camiseta blanca y zapatos azules.",
+  uitleg:"Tener que + infinitief = moeten: tengo que comprar. Vergeet het woordje que niet!", ue:"Tener que + infinitive = to have to: tengo que comprar. Don't forget the little word que!", tag:"les4"},
+ {id:"bs34", lvl:2, nl:"Ik draag een wit T-shirt en blauwe schoenen.", en:"I am wearing a white T-shirt and blue shoes.", es:"Llevo una camiseta blanca y zapatos azules.",
   alt:["llevo una camiseta blanca y zapatos azules","llevo una camiseta blanca y unos zapatos azules"],
-  uitleg:"Llevar = dragen. Kleuren passen zich aan: blanca (bij camiseta, v) en azules (meervoud; azul heeft geen aparte vrouwelijke vorm).", tag:"les4"}
+  uitleg:"Llevar = dragen. Kleuren passen zich aan: blanca (bij camiseta, v) en azules (meervoud; azul heeft geen aparte vrouwelijke vorm).", ue:"Llevar = to wear. Colours agree: blanca (with camiseta, f) and azules (plural; azul has no separate feminine form).", tag:"les4"}
 ];
 
 var B_QUIZZES = [
- {id:"bq-ellla", titel:"El of la?", vragen:[
-  {q:"___ casa", nl:"het huis (la casa)", opts:["el","la"], c:1, u:"Woorden op -a zijn meestal vrouwelijk: la casa."},
-  {q:"___ libro", nl:"het boek (el libro)", opts:["el","la"], c:0, u:"Woorden op -o zijn meestal mannelijk: el libro."},
-  {q:"___ perro", nl:"de hond (el perro)", opts:["el","la"], c:0, u:"-o = mannelijk: el perro."},
-  {q:"___ familia", nl:"de familie (la familia)", opts:["el","la"], c:1, u:"-a = vrouwelijk: la familia."},
-  {q:"___ día", nl:"de dag (el día)", opts:["el","la"], c:0, u:"Instinker! Día eindigt op -a maar is mannelijk: el día. Buenos días!"},
-  {q:"___ mano", nl:"de hand (la mano)", opts:["el","la"], c:1, u:"Instinker! Mano (hand) eindigt op -o maar is vrouwelijk: la mano."},
-  {q:"___ escuela", nl:"de school (la escuela)", opts:["el","la"], c:1, u:"-a = vrouwelijk: la escuela."},
-  {q:"___ agua", nl:"het water (el agua)", opts:["el","la"], c:0, u:"Instinker! Agua is vrouwelijk, maar krijgt el omdat het woord met een beklemtoonde a begint. El agua fría."},
-  {q:"___ gato", nl:"de kat (el gato)", opts:["el","la"], c:0, u:"-o = mannelijk: el gato."},
-  {q:"___ noche", nl:"de nacht (la noche)", opts:["el","la"], c:1, u:"Die moet je leren: la noche. Buenas noches!"}
+ {id:"bq-ellla", titel:"El of la?", titelEn:"El or la?", vragen:[
+  {q:"___ casa", nl:"het huis (la casa)", ne:"the house (la casa)", opts:["el","la"], c:1, u:"Woorden op -a zijn meestal vrouwelijk: la casa.", ue:"Words ending in -a are usually feminine: la casa."},
+  {q:"___ libro", nl:"het boek (el libro)", ne:"the book (el libro)", opts:["el","la"], c:0, u:"Woorden op -o zijn meestal mannelijk: el libro.", ue:"Words ending in -o are usually masculine: el libro."},
+  {q:"___ perro", nl:"de hond (el perro)", ne:"the dog (el perro)", opts:["el","la"], c:0, u:"-o = mannelijk: el perro.", ue:"-o = masculine: el perro."},
+  {q:"___ familia", nl:"de familie (la familia)", ne:"the family (la familia)", opts:["el","la"], c:1, u:"-a = vrouwelijk: la familia.", ue:"-a = feminine: la familia."},
+  {q:"___ día", nl:"de dag (el día)", ne:"the day (el día)", opts:["el","la"], c:0, u:"Instinker! Día eindigt op -a maar is mannelijk: el día. Buenos días!", ue:"Trick question! Día ends in -a but is masculine: el día. Buenos días!"},
+  {q:"___ mano", nl:"de hand (la mano)", ne:"the hand (la mano)", opts:["el","la"], c:1, u:"Instinker! Mano (hand) eindigt op -o maar is vrouwelijk: la mano.", ue:"Trick question! Mano (hand) ends in -o but is feminine: la mano."},
+  {q:"___ escuela", nl:"de school (la escuela)", ne:"the school (la escuela)", opts:["el","la"], c:1, u:"-a = vrouwelijk: la escuela.", ue:"-a = feminine: la escuela."},
+  {q:"___ agua", nl:"het water (el agua)", ne:"the water (el agua)", opts:["el","la"], c:0, u:"Instinker! Agua is vrouwelijk, maar krijgt el omdat het woord met een beklemtoonde a begint. El agua fría.", ue:"Trick question! Agua is feminine, but takes el because the word starts with a stressed a. El agua fría."},
+  {q:"___ gato", nl:"de kat (el gato)", ne:"the cat (el gato)", opts:["el","la"], c:0, u:"-o = mannelijk: el gato.", ue:"-o = masculine: el gato."},
+  {q:"___ noche", nl:"de nacht (la noche)", ne:"the night (la noche)", opts:["el","la"], c:1, u:"Die moet je leren: la noche. Buenas noches!", ue:"One to memorise: la noche. Buenas noches!"}
  ]},
- {id:"bq-serestar", titel:"Ser of estar?", vragen:[
-  {q:"Yo ___ holandesa.", nl:"Ik ben Nederlandse.", opts:["soy","estoy"], c:0, u:"Nationaliteit is wie je bent: ser (soy)."},
-  {q:"Yo ___ en casa.", nl:"Ik ben thuis.", opts:["soy","estoy"], c:1, u:"Plaats (waar je bent): estar (estoy)."},
-  {q:"La casa ___ grande.", nl:"Het huis is groot.", opts:["es","está"], c:0, u:"Eigenschap (groot zijn hoort bij het huis): ser."},
-  {q:"Mi padre ___ cansado.", nl:"Mijn vader is moe.", opts:["es","está"], c:1, u:"Toestand (nu moe, straks niet meer): estar."},
-  {q:"Nosotros ___ amigos.", nl:"Wij zijn vrienden.", opts:["somos","estamos"], c:0, u:"Wat je (voor elkaar) bent: ser (somos)."},
-  {q:"Mis amigos ___ en Madrid.", nl:"Mijn vrienden zijn in Madrid.", opts:["son","están"], c:1, u:"Plaats: estar (están)."},
-  {q:"Ella ___ mi madre.", nl:"Zij is mijn moeder.", opts:["es","está"], c:0, u:"Identiteit: ser."},
-  {q:"Yo ___ bien, gracias.", nl:"Met mij gaat het goed, dank je.", opts:["soy","estoy"], c:1, u:"Hoe het met je gaat = toestand: estar. ¿Cómo estás? Estoy bien."}
+ {id:"bq-serestar", titel:"Ser of estar?", titelEn:"Ser or estar?", vragen:[
+  {q:"Yo ___ holandesa.", nl:"Ik ben Nederlandse.", ne:"I am Dutch. (female)", opts:["soy","estoy"], c:0, u:"Nationaliteit is wie je bent: ser (soy).", ue:"Nationality is who you are: ser (soy)."},
+  {q:"Yo ___ en casa.", nl:"Ik ben thuis.", ne:"I am at home.", opts:["soy","estoy"], c:1, u:"Plaats (waar je bent): estar (estoy).", ue:"Location (where you are): estar (estoy)."},
+  {q:"La casa ___ grande.", nl:"Het huis is groot.", ne:"The house is big.", opts:["es","está"], c:0, u:"Eigenschap (groot zijn hoort bij het huis): ser.", ue:"Characteristic (being big is part of the house): ser."},
+  {q:"Mi padre ___ cansado.", nl:"Mijn vader is moe.", ne:"My father is tired.", opts:["es","está"], c:1, u:"Toestand (nu moe, straks niet meer): estar.", ue:"State (tired now, not later): estar."},
+  {q:"Nosotros ___ amigos.", nl:"Wij zijn vrienden.", ne:"We are friends.", opts:["somos","estamos"], c:0, u:"Wat je (voor elkaar) bent: ser (somos).", ue:"What you are (to each other): ser (somos)."},
+  {q:"Mis amigos ___ en Madrid.", nl:"Mijn vrienden zijn in Madrid.", ne:"My friends are in Madrid.", opts:["son","están"], c:1, u:"Plaats: estar (están).", ue:"Location: estar (están)."},
+  {q:"Ella ___ mi madre.", nl:"Zij is mijn moeder.", ne:"She is my mother.", opts:["es","está"], c:0, u:"Identiteit: ser.", ue:"Identity: ser."},
+  {q:"Yo ___ bien, gracias.", nl:"Met mij gaat het goed, dank je.", ne:"I am fine, thank you.", opts:["soy","estoy"], c:1, u:"Hoe het met je gaat = toestand: estar. ¿Cómo estás? Estoy bien.", ue:"How you are doing = state: estar. ¿Cómo estás? Estoy bien."}
  ]},
- {id:"bq-getallen", titel:"Getallen 1-10", vragen:[
-  {q:"cinco = ?", opts:["4","5","6"], c:1, u:"cinco = 5."},
-  {q:"ocho = ?", opts:["6","7","8"], c:2, u:"ocho = 8."},
-  {q:"3 = ?", opts:["dos","tres","seis"], c:1, u:"tres = 3."},
-  {q:"siete = ?", opts:["6","7","9"], c:1, u:"siete = 7."},
-  {q:"10 = ?", opts:["nueve","diez","dos"], c:1, u:"diez = 10."},
-  {q:"nueve = ?", opts:["9","7","6"], c:0, u:"nueve = 9. Nueve lijkt op 'nieuw' (nuevo), negen is het."},
-  {q:"4 = ?", opts:["cuatro","cinco","seis"], c:0, u:"cuatro = 4, denk aan 'kwartet'."},
-  {q:"seis = ?", opts:["7","16","6"], c:2, u:"seis = 6."}
+ {id:"bq-getallen", titel:"Getallen 1-10", titelEn:"Numbers 1-10", vragen:[
+  {q:"cinco = ?", opts:["4","5","6"], c:1, u:"cinco = 5.", ue:"cinco = 5."},
+  {q:"ocho = ?", opts:["6","7","8"], c:2, u:"ocho = 8.", ue:"ocho = 8."},
+  {q:"3 = ?", opts:["dos","tres","seis"], c:1, u:"tres = 3.", ue:"tres = 3."},
+  {q:"siete = ?", opts:["6","7","9"], c:1, u:"siete = 7.", ue:"siete = 7."},
+  {q:"10 = ?", opts:["nueve","diez","dos"], c:1, u:"diez = 10.", ue:"diez = 10."},
+  {q:"nueve = ?", opts:["9","7","6"], c:0, u:"nueve = 9. Nueve lijkt op 'nieuw' (nuevo), negen is het.", ue:"nueve = 9. Nueve looks like 'new' (nuevo), but it's nine."},
+  {q:"4 = ?", opts:["cuatro","cinco","seis"], c:0, u:"cuatro = 4, denk aan 'kwartet'.", ue:"cuatro = 4, think of 'quartet'."},
+  {q:"seis = ?", opts:["7","16","6"], c:2, u:"seis = 6.", ue:"seis = 6."}
  ]},
- {id:"bq-hayestar", titel:"Hay of está/están?", vragen:[
-  {q:"En mi pueblo ___ una plaza.", nl:"In mijn dorp is er een plein.", opts:["hay","está"], c:0, u:"Iets nieuws met un/una: hay."},
-  {q:"¿Dónde ___ el museo?", nl:"Waar is het museum?", opts:["hay","está"], c:1, u:"Iets bepaalds met el/la (of een naam): está."},
-  {q:"Madrid ___ en el centro de España.", nl:"Madrid ligt in het midden van Spanje.", opts:["hay","está"], c:1, u:"Een naam (Madrid): está."},
-  {q:"En la playa ___ mucha gente.", nl:"Op het strand zijn veel mensen.", opts:["hay","está"], c:0, u:"Mucha gente is onbepaald (niet DE mensen): hay."},
-  {q:"La iglesia ___ en la plaza.", nl:"De kerk staat op het plein.", opts:["hay","está"], c:1, u:"LA iglesia = bepaald: está."},
-  {q:"¿___ un parque cerca?", nl:"Is er een park in de buurt?", opts:["Hay","Está"], c:0, u:"Un parque = onbepaald: hay."},
-  {q:"Los museos ___ en el centro.", nl:"De musea zijn in het centrum.", opts:["hay","están"], c:1, u:"Bepaald én meervoud: están. Estar verandert mee, hay nooit."},
-  {q:"En el norte ___ montañas.", nl:"In het noorden zijn er bergen.", opts:["hay","están"], c:0, u:"Bergen in het algemeen, zonder lidwoord: hay. Ook bij meervoud blijft het gewoon hay."}
+ {id:"bq-hayestar", titel:"Hay of está/están?", titelEn:"Hay or está/están?", vragen:[
+  {q:"En mi pueblo ___ una plaza.", nl:"In mijn dorp is er een plein.", ne:"In my village there is a square.", opts:["hay","está"], c:0, u:"Iets nieuws met un/una: hay.", ue:"Something new with un/una: hay."},
+  {q:"¿Dónde ___ el museo?", nl:"Waar is het museum?", ne:"Where is the museum?", opts:["hay","está"], c:1, u:"Iets bepaalds met el/la (of een naam): está.", ue:"Something definite with el/la (or a name): está."},
+  {q:"Madrid ___ en el centro de España.", nl:"Madrid ligt in het midden van Spanje.", ne:"Madrid is in the centre of Spain.", opts:["hay","está"], c:1, u:"Een naam (Madrid): está.", ue:"A name (Madrid): está."},
+  {q:"En la playa ___ mucha gente.", nl:"Op het strand zijn veel mensen.", ne:"There are a lot of people on the beach.", opts:["hay","está"], c:0, u:"Mucha gente is onbepaald (niet DE mensen): hay.", ue:"Mucha gente is indefinite (not THE people): hay."},
+  {q:"La iglesia ___ en la plaza.", nl:"De kerk staat op het plein.", ne:"The church is on the square.", opts:["hay","está"], c:1, u:"LA iglesia = bepaald: está.", ue:"LA iglesia = definite: está."},
+  {q:"¿___ un parque cerca?", nl:"Is er een park in de buurt?", ne:"Is there a park nearby?", opts:["Hay","Está"], c:0, u:"Un parque = onbepaald: hay.", ue:"Un parque = indefinite: hay."},
+  {q:"Los museos ___ en el centro.", nl:"De musea zijn in het centrum.", ne:"The museums are in the centre.", opts:["hay","están"], c:1, u:"Bepaald én meervoud: están. Estar verandert mee, hay nooit.", ue:"Definite AND plural: están. Estar changes form, hay never does."},
+  {q:"En el norte ___ montañas.", nl:"In het noorden zijn er bergen.", ne:"In the north there are mountains.", opts:["hay","están"], c:0, u:"Bergen in het algemeen, zonder lidwoord: hay. Ook bij meervoud blijft het gewoon hay.", ue:"Mountains in general, no article: hay. Even in the plural it simply stays hay."}
  ]},
- {id:"bq-muymucho", titel:"Muy of mucho?", vragen:[
-  {q:"La ciudad es ___ grande.", nl:"De stad is heel groot.", opts:["muy","mucho"], c:0, u:"Voor een bijvoeglijk naamwoord: muy."},
-  {q:"En la playa hay ___ gente.", nl:"Op het strand zijn veel mensen.", opts:["muy","mucha"], c:1, u:"Gente is een zelfstandig naamwoord (en vrouwelijk): mucha gente."},
-  {q:"Llueve ___ en el norte.", nl:"Het regent veel in het noorden.", opts:["muy","mucho"], c:1, u:"Na een werkwoord: mucho. Llueve mucho."},
-  {q:"Hace ___ calor.", nl:"Het is heel warm.", opts:["muy","mucho"], c:1, u:"Calor is een zelfstandig naamwoord: mucho calor (letterlijk: veel warmte)."},
-  {q:"El pueblo es ___ bonito.", nl:"Het dorp is heel mooi.", opts:["muy","mucho"], c:0, u:"Muy + bonito (bijvoeglijk naamwoord)."},
-  {q:"Tengo ___ amigos.", nl:"Ik heb veel vrienden.", opts:["muy","muchos"], c:1, u:"Amigos = zelfstandig naamwoord in het meervoud: muchos amigos."},
-  {q:"Hace ___ frío en las montañas.", nl:"Het is heel koud in de bergen.", opts:["muy","mucho"], c:1, u:"Frío is hier een zelfstandig naamwoord: mucho frío."},
-  {q:"El clima es ___ bueno.", nl:"Het klimaat is heel goed.", opts:["muy","mucho"], c:0, u:"Muy + bueno. En onthoud: el clima, ondanks de -a."}
+ {id:"bq-muymucho", titel:"Muy of mucho?", titelEn:"Muy or mucho?", vragen:[
+  {q:"La ciudad es ___ grande.", nl:"De stad is heel groot.", ne:"The city is very big.", opts:["muy","mucho"], c:0, u:"Voor een bijvoeglijk naamwoord: muy.", ue:"Before an adjective: muy."},
+  {q:"En la playa hay ___ gente.", nl:"Op het strand zijn veel mensen.", ne:"There are a lot of people on the beach.", opts:["muy","mucha"], c:1, u:"Gente is een zelfstandig naamwoord (en vrouwelijk): mucha gente.", ue:"Gente is a noun (and feminine): mucha gente."},
+  {q:"Llueve ___ en el norte.", nl:"Het regent veel in het noorden.", ne:"It rains a lot in the north.", opts:["muy","mucho"], c:1, u:"Na een werkwoord: mucho. Llueve mucho.", ue:"After a verb: mucho. Llueve mucho."},
+  {q:"Hace ___ calor.", nl:"Het is heel warm.", ne:"It is very hot.", opts:["muy","mucho"], c:1, u:"Calor is een zelfstandig naamwoord: mucho calor (letterlijk: veel warmte).", ue:"Calor is a noun: mucho calor (literally: much heat)."},
+  {q:"El pueblo es ___ bonito.", nl:"Het dorp is heel mooi.", ne:"The village is very pretty.", opts:["muy","mucho"], c:0, u:"Muy + bonito (bijvoeglijk naamwoord).", ue:"Muy + bonito (adjective)."},
+  {q:"Tengo ___ amigos.", nl:"Ik heb veel vrienden.", ne:"I have many friends.", opts:["muy","muchos"], c:1, u:"Amigos = zelfstandig naamwoord in het meervoud: muchos amigos.", ue:"Amigos = plural noun: muchos amigos."},
+  {q:"Hace ___ frío en las montañas.", nl:"Het is heel koud in de bergen.", ne:"It is very cold in the mountains.", opts:["muy","mucho"], c:1, u:"Frío is hier een zelfstandig naamwoord: mucho frío.", ue:"Frío is a noun here: mucho frío."},
+  {q:"El clima es ___ bueno.", nl:"Het klimaat is heel goed.", ne:"The climate is very good.", opts:["muy","mucho"], c:0, u:"Muy + bueno. En onthoud: el clima, ondanks de -a.", ue:"Muy + bueno. And remember: el clima, despite the -a."}
  ]},
- {id:"bq-kleuren", titel:"Kleuren: welke vorm?", vragen:[
-  {q:"la camiseta ___", nl:"het rode T-shirt", opts:["roja","rojo"], c:0, u:"Camiseta is vrouwelijk, dus ook de kleur: roja."},
-  {q:"el vestido ___", nl:"de zwarte jurk", opts:["negro","negra"], c:0, u:"El vestido is mannelijk (ondanks dat 'jurk' vrouwelijk klinkt): negro."},
-  {q:"los zapatos ___", nl:"de witte schoenen", opts:["blancos","blancas"], c:0, u:"Zapatos is mannelijk meervoud: blancos."},
-  {q:"la chaqueta ___", nl:"de blauwe jas", opts:["azul","azula"], c:0, u:"Azul heeft géén aparte vrouwelijke vorm: la chaqueta azul. 'Azula' bestaat niet."},
-  {q:"los pantalones ___", nl:"de groene broeken", opts:["verdes","verdos"], c:0, u:"Verde is voor m en v hetzelfde; meervoud met -s: verdes."},
-  {q:"la casa ___", nl:"het gele huis", opts:["amarilla","amarillo"], c:0, u:"Casa is vrouwelijk: amarilla."},
-  {q:"¿De qué ___ es tu coche?", nl:"Welke kleur heeft jouw auto?", opts:["color","colora"], c:0, u:"¿De qué color es...? = welke kleur heeft...? El color is mannelijk."},
-  {q:"las camisetas ___", nl:"de rode T-shirts", opts:["rojas","rojos"], c:0, u:"Camisetas is vrouwelijk meervoud: rojas."}
+ {id:"bq-kleuren", titel:"Kleuren: welke vorm?", titelEn:"Colours: which form?", vragen:[
+  {q:"la camiseta ___", nl:"het rode T-shirt", ne:"the red T-shirt", opts:["roja","rojo"], c:0, u:"Camiseta is vrouwelijk, dus ook de kleur: roja.", ue:"Camiseta is feminine, so the colour is too: roja."},
+  {q:"el vestido ___", nl:"de zwarte jurk", ne:"the black dress", opts:["negro","negra"], c:0, u:"El vestido is mannelijk (ondanks dat 'jurk' vrouwelijk klinkt): negro.", ue:"El vestido is masculine (even though a dress sounds feminine): negro."},
+  {q:"los zapatos ___", nl:"de witte schoenen", ne:"the white shoes", opts:["blancos","blancas"], c:0, u:"Zapatos is mannelijk meervoud: blancos.", ue:"Zapatos is masculine plural: blancos."},
+  {q:"la chaqueta ___", nl:"de blauwe jas", ne:"the blue jacket", opts:["azul","azula"], c:0, u:"Azul heeft géén aparte vrouwelijke vorm: la chaqueta azul. 'Azula' bestaat niet.", ue:"Azul has NO separate feminine form: la chaqueta azul. 'Azula' doesn't exist."},
+  {q:"los pantalones ___", nl:"de groene broeken", ne:"the green trousers", opts:["verdes","verdos"], c:0, u:"Verde is voor m en v hetzelfde; meervoud met -s: verdes.", ue:"Verde is the same for m and f; plural with -s: verdes."},
+  {q:"la casa ___", nl:"het gele huis", ne:"the yellow house", opts:["amarilla","amarillo"], c:0, u:"Casa is vrouwelijk: amarilla.", ue:"Casa is feminine: amarilla."},
+  {q:"¿De qué ___ es tu coche?", nl:"Welke kleur heeft jouw auto?", ne:"What colour is your car?", opts:["color","colora"], c:0, u:"¿De qué color es...? = welke kleur heeft...? El color is mannelijk.", ue:"¿De qué color es...? = what colour is...? El color is masculine."},
+  {q:"las camisetas ___", nl:"de rode T-shirts", ne:"the red T-shirts", opts:["rojas","rojos"], c:0, u:"Camisetas is vrouwelijk meervoud: rojas.", ue:"Camisetas is feminine plural: rojas."}
  ]},
- {id:"bq-getallen100", titel:"Getallen boven de 100", vragen:[
-  {q:"100 = ?", nl:"honderd", opts:["cien","ciento","cientos"], c:0, u:"Precies 100 = cien. Ciento alleen in 101-199: ciento dos."},
-  {q:"150 = ciento ___", nl:"honderdvijftig", opts:["cincuenta","quince","cinco"], c:0, u:"150 = ciento cincuenta. Boven de 100 wordt cien → ciento."},
-  {q:"200 = ?", nl:"tweehonderd", opts:["doscientos","dos cientos","doscien"], c:0, u:"200 = doscientos, aan elkaar. Voor iets vrouwelijks: doscientas (doscientas personas)."},
-  {q:"500 = ?", nl:"vijfhonderd", opts:["quinientos","cincocientos","cinquientos"], c:0, u:"Instinker! 500 = quinientos, onregelmatig (niet 'cincocientos')."},
-  {q:"1000 = ?", nl:"duizend", opts:["mil","un mil","mile"], c:0, u:"1000 = mil, zónder un: mil euros. 2000 = dos mil."},
-  {q:"La camiseta cuesta ___ euros. (23)", nl:"Het T-shirt kost 23 euro.", opts:["veintitrés","veinte y tres","veintetres"], c:0, u:"21-29 schrijf je als één woord: veintitrés, mét accent."},
-  {q:"365 = trescientos sesenta y ___", nl:"driehonderdvijfenzestig", opts:["cinco","seis","siete"], c:0, u:"365 = trescientos sesenta y cinco. De y komt alleen tussen tientallen en eenheden."},
-  {q:"700 = ?", nl:"zevenhonderd", opts:["setecientos","sietecientos","setencientos"], c:0, u:"Instinker! 700 = setecientos (zonder ie). Net zo: 900 = novecientos."}
+ {id:"bq-getallen100", titel:"Getallen boven de 100", titelEn:"Numbers above 100", vragen:[
+  {q:"100 = ?", nl:"honderd", ne:"one hundred", opts:["cien","ciento","cientos"], c:0, u:"Precies 100 = cien. Ciento alleen in 101-199: ciento dos.", ue:"Exactly 100 = cien. Ciento only in 101-199: ciento dos."},
+  {q:"150 = ciento ___", nl:"honderdvijftig", ne:"one hundred and fifty", opts:["cincuenta","quince","cinco"], c:0, u:"150 = ciento cincuenta. Boven de 100 wordt cien → ciento.", ue:"150 = ciento cincuenta. Above 100, cien becomes ciento."},
+  {q:"200 = ?", nl:"tweehonderd", ne:"two hundred", opts:["doscientos","dos cientos","doscien"], c:0, u:"200 = doscientos, aan elkaar. Voor iets vrouwelijks: doscientas (doscientas personas).", ue:"200 = doscientos, one word. Before something feminine: doscientas (doscientas personas)."},
+  {q:"500 = ?", nl:"vijfhonderd", ne:"five hundred", opts:["quinientos","cincocientos","cinquientos"], c:0, u:"Instinker! 500 = quinientos, onregelmatig (niet 'cincocientos').", ue:"Trick question! 500 = quinientos, irregular (not 'cincocientos')."},
+  {q:"1000 = ?", nl:"duizend", ne:"one thousand", opts:["mil","un mil","mile"], c:0, u:"1000 = mil, zónder un: mil euros. 2000 = dos mil.", ue:"1000 = mil, WITHOUT un: mil euros. 2000 = dos mil."},
+  {q:"La camiseta cuesta ___ euros. (23)", nl:"Het T-shirt kost 23 euro.", ne:"The T-shirt costs 23 euros.", opts:["veintitrés","veinte y tres","veintetres"], c:0, u:"21-29 schrijf je als één woord: veintitrés, mét accent.", ue:"21-29 are written as one word: veintitrés, WITH an accent."},
+  {q:"365 = trescientos sesenta y ___", nl:"driehonderdvijfenzestig", ne:"three hundred and sixty-five", opts:["cinco","seis","siete"], c:0, u:"365 = trescientos sesenta y cinco. De y komt alleen tussen tientallen en eenheden.", ue:"365 = trescientos sesenta y cinco. The y only goes between tens and units."},
+  {q:"700 = ?", nl:"zevenhonderd", ne:"seven hundred", opts:["setecientos","sietecientos","setencientos"], c:0, u:"Instinker! 700 = setecientos (zonder ie). Net zo: 900 = novecientos.", ue:"Trick question! 700 = setecientos (no ie). Same idea: 900 = novecientos."}
  ]}
 ];
 
 var B_CHEATSHEET = [
- {titel:"Uitspraak: de rare letters",
+ {titel:"Uitspraak: de rare letters", titelEn:"Pronunciation: the odd letters",
   html:"<p><b>j</b> = harde Nederlandse g: <i>jota</i> klinkt als 'gota'. <b>ll</b> = j: <i>me llamo</i> = 'me jamo'. "+
   "<b>ñ</b> = nj: <i>mañana</i> = 'manjana'. <b>h</b> is altijd stil: <i>hola</i> = 'ola'. "+
-  "<b>rr</b> = rollende r: <i>perro</i>. <b>c</b> voor e/i = Engelse th (in Spanje): <i>gracias</i> = 'grathias'.</p>"},
- {titel:"El en la (lidwoorden)",
+  "<b>rr</b> = rollende r: <i>perro</i>. <b>c</b> voor e/i = Engelse th (in Spanje): <i>gracias</i> = 'grathias'.</p>",
+  htmlEn:"<p><b>j</b> = a strong h, like the ch in Scottish <i>loch</i>: <i>jota</i> sounds like 'hota'. <b>ll</b> = y: <i>me llamo</i> = 'me yamo'. "+
+  "<b>ñ</b> = ny as in canyon: <i>mañana</i> = 'manyana'. <b>h</b> is always silent: <i>hola</i> = 'ola'. "+
+  "<b>rr</b> = rolled r: <i>perro</i>. <b>c</b> before e/i = th as in 'think' (in Spain): <i>gracias</i> = 'grathias'.</p>"},
+ {titel:"El en la (lidwoorden)", titelEn:"El and la (articles)",
   html:"<p>Elk woord is mannelijk (el) of vrouwelijk (la). Vuistregel: <b>-o = el</b> (el libro), <b>-a = la</b> (la casa).</p>"+
   "<p>Bekende uitzonderingen: el día, la mano, el agua (vrouwelijk, maar el vanwege de a-klank), la noche.</p>"+
-  "<p>Meervoud: el → los, la → las. Los libros, las casas.</p>"},
- {titel:"Ser of estar (twee keer 'zijn')",
+  "<p>Meervoud: el → los, la → las. Los libros, las casas.</p>",
+  htmlEn:"<p>Every noun is masculine (el) or feminine (la). Rule of thumb: <b>-o = el</b> (el libro), <b>-a = la</b> (la casa).</p>"+
+  "<p>Famous exceptions: el día, la mano, el agua (feminine, but takes el because of the stressed a-sound), la noche.</p>"+
+  "<p>Plural: el → los, la → las. Los libros, las casas.</p>"},
+ {titel:"Ser of estar (twee keer 'zijn')", titelEn:"Ser or estar (two ways to 'be')",
   html:"<p><b>Ser</b> = wat/wie je bent (eigenschap, identiteit, nationaliteit): soy, eres, es, somos, sois, son. <i>Soy holandesa. El gato es pequeño.</i></p>"+
   "<p><b>Estar</b> = waar je bent en hoe je je voelt (plaats, toestand): estoy, estás, está, estamos, estáis, están. <i>Estoy en casa. Estoy bien.</i></p>"+
-  "<p>Test: kan het morgen anders zijn (plek, humeur)? Dan estar. Is het gewoon zo (naam, afkomst, groot/klein)? Dan ser.</p>"},
- {titel:"Tener (hebben) en je leeftijd",
+  "<p>Test: kan het morgen anders zijn (plek, humeur)? Dan estar. Is het gewoon zo (naam, afkomst, groot/klein)? Dan ser.</p>",
+  htmlEn:"<p><b>Ser</b> = what/who you are (characteristic, identity, nationality): soy, eres, es, somos, sois, son. <i>Soy holandesa. El gato es pequeño.</i></p>"+
+  "<p><b>Estar</b> = where you are and how you feel (location, state): estoy, estás, está, estamos, estáis, están. <i>Estoy en casa. Estoy bien.</i></p>"+
+  "<p>Test: could it be different tomorrow (place, mood)? Then estar. Is it simply the way things are (name, origin, big/small)? Then ser.</p>"},
+ {titel:"Tener (hebben) en je leeftijd", titelEn:"Tener (to have) and your age",
   html:"<p>Tener = hebben: tengo, tienes, tiene, tenemos, tenéis, tienen.</p>"+
   "<p>Let op: in het Spaans <b>heb</b> je je leeftijd: <i>Tengo doce años</i> = ik ben 12 (letterlijk: ik heb 12 jaren). "+
-  "Vraag: <i>¿Cuántos años tienes?</i></p>"},
- {titel:"Vraagwoorden",
+  "Vraag: <i>¿Cuántos años tienes?</i></p>",
+  htmlEn:"<p>Tener = to have: tengo, tienes, tiene, tenemos, tenéis, tienen.</p>"+
+  "<p>Note: in Spanish you <b>have</b> your age: <i>Tengo doce años</i> = I am 12 (literally: I have 12 years). "+
+  "Question: <i>¿Cuántos años tienes?</i></p>"},
+ {titel:"Vraagwoorden", titelEn:"Question words",
   html:"<p>¿Qué? = wat · ¿Dónde? = waar · ¿Quién? = wie · ¿Cómo? = hoe · ¿Cuándo? = wanneer · ¿Cuánto? = hoeveel · ¿Por qué? = waarom</p>"+
-  "<p>Altijd met accent in een vraag, en vergeet de omgekeerde vraagtekens niet: ¿Cómo estás?</p>"},
- {titel:"Ser, tener en llamarse (jezelf voorstellen)",
+  "<p>Altijd met accent in een vraag, en vergeet de omgekeerde vraagtekens niet: ¿Cómo estás?</p>",
+  htmlEn:"<p>¿Qué? = what · ¿Dónde? = where · ¿Quién? = who · ¿Cómo? = how · ¿Cuándo? = when · ¿Cuánto? = how much · ¿Por qué? = why</p>"+
+  "<p>Always with an accent in a question, and don't forget the upside-down question marks: ¿Cómo estás?</p>"},
+ {titel:"Ser, tener en llamarse (jezelf voorstellen)", titelEn:"Ser, tener and llamarse (introducing yourself)",
   html:"<p><b>Ser</b> (zijn): soy, eres, es. <i>Soy holandesa. Es profesora</i> (beroep zonder lidwoord!).</p>"+
   "<p><b>Tener</b> (hebben): tengo, tienes, tiene. Ook voor leeftijd: <i>Tengo doce años.</i></p>"+
   "<p><b>Llamarse</b> (heten): me llamo, te llamas, se llama. <i>¿Cómo te llamas? Me llamo Elise.</i></p>"+
-  "<p>Nationaliteiten: man -és/-o, vrouw -esa/-a: holandés/holandesa, español/española. Zonder hoofdletter.</p>"},
- {titel:"Presente: de drie rijtjes",
+  "<p>Nationaliteiten: man -és/-o, vrouw -esa/-a: holandés/holandesa, español/española. Zonder hoofdletter.</p>",
+  htmlEn:"<p><b>Ser</b> (to be): soy, eres, es. <i>Soy holandesa. Es profesora</i> (professions without an article!).</p>"+
+  "<p><b>Tener</b> (to have): tengo, tienes, tiene. Also for age: <i>Tengo doce años.</i></p>"+
+  "<p><b>Llamarse</b> (to be called): me llamo, te llamas, se llama. <i>¿Cómo te llamas? Me llamo Elise.</i></p>"+
+  "<p>Nationalities: man -és/-o, woman -esa/-a: holandés/holandesa, español/española. No capital letter.</p>"},
+ {titel:"Presente: de drie rijtjes", titelEn:"Present tense: the three patterns",
   html:"<p>Werkwoorden eindigen op -ar, -er of -ir. Haal de uitgang eraf en plak het rijtje erop:</p>"+
   "<table><tr><th></th><th>hablar</th><th>leer</th><th>vivir</th></tr>"+
   "<tr><td>yo</td><td>hablo</td><td>leo</td><td>vivo</td></tr>"+
@@ -1353,35 +1371,67 @@ var B_CHEATSHEET = [
   "<tr><td>nosotros</td><td>hablamos</td><td>leemos</td><td>vivimos</td></tr>"+
   "<tr><td>vosotros</td><td>habláis</td><td>leéis</td><td>vivís</td></tr>"+
   "<tr><td>ellos/ellas</td><td>hablan</td><td>leen</td><td>viven</td></tr></table>"+
-  "<p>Het woordje yo/tú mag meestal weg: de uitgang zegt al wie het doet.</p>"},
- {titel:"Hay of está (er is / het ligt)",
+  "<p>Het woordje yo/tú mag meestal weg: de uitgang zegt al wie het doet.</p>",
+  htmlEn:"<p>Verbs end in -ar, -er or -ir. Take the ending off and add the pattern:</p>"+
+  "<table><tr><th></th><th>hablar</th><th>leer</th><th>vivir</th></tr>"+
+  "<tr><td>yo</td><td>hablo</td><td>leo</td><td>vivo</td></tr>"+
+  "<tr><td>tú</td><td>hablas</td><td>lees</td><td>vives</td></tr>"+
+  "<tr><td>él/ella</td><td>habla</td><td>lee</td><td>vive</td></tr>"+
+  "<tr><td>nosotros</td><td>hablamos</td><td>leemos</td><td>vivimos</td></tr>"+
+  "<tr><td>vosotros</td><td>habláis</td><td>leéis</td><td>vivís</td></tr>"+
+  "<tr><td>ellos/ellas</td><td>hablan</td><td>leen</td><td>viven</td></tr></table>"+
+  "<p>You can usually drop yo/tú: the ending already tells you who is doing it.</p>"},
+ {titel:"Hay of está (er is / het ligt)", titelEn:"Hay or está (there is / it is located)",
   html:"<p><b>Hay</b> = er is / er zijn. Voor iets nieuws of onbepaalds: <i>hay un parque, hay mucha gente, hay montañas.</i> Hay verandert nooit van vorm, ook niet in het meervoud.</p>"+
   "<p><b>Está / están</b> (van estar) = ligt / staat / bevindt zich. Voor iets bepaalds of met een naam: <i>el museo está en el centro, Madrid está en España.</i></p>"+
-  "<p>Test: kun je er 'er' voor zetten (ER is een park)? Dan hay. Gaat het over iets met el/la of een naam? Dan está.</p>"},
- {titel:"Muy of mucho + het weer",
+  "<p>Test: kun je er 'er' voor zetten (ER is een park)? Dan hay. Gaat het over iets met el/la of een naam? Dan está.</p>",
+  htmlEn:"<p><b>Hay</b> = there is / there are. For something new or indefinite: <i>hay un parque, hay mucha gente, hay montañas.</i> Hay never changes form, not even in the plural.</p>"+
+  "<p><b>Está / están</b> (from estar) = is located / stands. For something definite or with a name: <i>el museo está en el centro, Madrid está en España.</i></p>"+
+  "<p>Test: can you say 'THERE is...' (THERE is a park)? Then hay. Is it about something with el/la or a name? Then está.</p>"},
+ {titel:"Muy of mucho + het weer", titelEn:"Muy or mucho + the weather",
   html:"<p><b>Muy</b> + bijvoeglijk naamwoord: <i>muy grande, muy bonito.</i><br>"+
   "<b>Mucho/mucha/muchos/muchas</b> + zelfstandig naamwoord: <i>mucha gente, muchos amigos.</i><br>"+
   "Werkwoord + <b>mucho</b>: <i>llueve mucho.</i></p>"+
   "<p>Het weer doe je met <b>hacer</b>: <i>hace calor</i> (het is warm), <i>hace frío</i> (koud), <i>hace sol</i> (zonnig), <i>hace buen tiempo</i> (mooi weer). En: <i>llueve</i> = het regent.</p>"+
-  "<p>Daarom ook <i>hace MUCHO calor</i>: calor is een zelfstandig naamwoord (warmte), dus mucho en geen muy.</p>"},
- {titel:"Kleuren (en hun uitgangen)",
+  "<p>Daarom ook <i>hace MUCHO calor</i>: calor is een zelfstandig naamwoord (warmte), dus mucho en geen muy.</p>",
+  htmlEn:"<p><b>Muy</b> + adjective: <i>muy grande, muy bonito.</i><br>"+
+  "<b>Mucho/mucha/muchos/muchas</b> + noun: <i>mucha gente, muchos amigos.</i><br>"+
+  "Verb + <b>mucho</b>: <i>llueve mucho.</i></p>"+
+  "<p>Weather works with <b>hacer</b>: <i>hace calor</i> (it's hot), <i>hace frío</i> (cold), <i>hace sol</i> (sunny), <i>hace buen tiempo</i> (nice weather). And: <i>llueve</i> = it rains.</p>"+
+  "<p>That's why it's <i>hace MUCHO calor</i>: calor is a noun (heat), so mucho and not muy.</p>"},
+ {titel:"Kleuren (en hun uitgangen)", titelEn:"Colours (and their endings)",
   html:"<p>rojo = rood · azul = blauw · verde = groen · amarillo = geel · negro = zwart · blanco = wit · naranja = oranje · rosa = roze · gris = grijs · marrón = bruin</p>"+
   "<p>Kleuren zijn bijvoeglijke naamwoorden en passen zich aan het woord aan:</p>"+
   "<p><b>-o/-a:</b> el vestido roj<b>o</b>, la camiseta roj<b>a</b>. <b>-e of medeklinker:</b> zelfde vorm voor m en v: la chaqueta azul, el coche verde.</p>"+
   "<p>Meervoud: +s of +es: zapatos blancos, camisetas rojas, pantalones azules.</p>"+
-  "<p>Vragen naar kleur: <i>¿De qué color es?</i> Uitzondering: naranja en rosa veranderen nooit (la camiseta naranja).</p>"},
- {titel:"Getallen van 100 tot 1000",
+  "<p>Vragen naar kleur: <i>¿De qué color es?</i> Uitzondering: naranja en rosa veranderen nooit (la camiseta naranja).</p>",
+  htmlEn:"<p>rojo = red · azul = blue · verde = green · amarillo = yellow · negro = black · blanco = white · naranja = orange · rosa = pink · gris = grey · marrón = brown</p>"+
+  "<p>Colours are adjectives and agree with the noun:</p>"+
+  "<p><b>-o/-a:</b> el vestido roj<b>o</b>, la camiseta roj<b>a</b>. <b>-e or consonant:</b> same form for m and f: la chaqueta azul, el coche verde.</p>"+
+  "<p>Plural: +s or +es: zapatos blancos, camisetas rojas, pantalones azules.</p>"+
+  "<p>Asking about colour: <i>¿De qué color es?</i> Exception: naranja and rosa never change (la camiseta naranja).</p>"},
+ {titel:"Getallen van 100 tot 1000", titelEn:"Numbers from 100 to 1000",
   html:"<p><b>100 = cien</b>, maar 101-199 = <b>ciento</b>...: ciento dos, ciento cincuenta.</p>"+
   "<p>Honderdtallen: 200 doscientos · 300 trescientos · 400 cuatrocientos · <b>500 quinientos</b> (!) · 600 seiscientos · <b>700 setecientos</b> (!) · 800 ochocientos · <b>900 novecientos</b> (!). De drie met (!) zijn onregelmatig.</p>"+
   "<p><b>1000 = mil</b> (zonder un): mil euros, dos mil, diez mil.</p>"+
   "<p>De <b>y</b> komt alleen tussen tientallen en eenheden: trescientos sesenta <b>y</b> cinco (365). Niet na het honderdtal: ciento <i>(geen y)</i> cincuenta.</p>"+
-  "<p>Bij vrouwelijke woorden: doscient<b>as</b> personas.</p>"},
- {titel:"Este/ese, qué/cuál en tener que",
+  "<p>Bij vrouwelijke woorden: doscient<b>as</b> personas.</p>",
+  htmlEn:"<p><b>100 = cien</b>, but 101-199 = <b>ciento</b>...: ciento dos, ciento cincuenta.</p>"+
+  "<p>Hundreds: 200 doscientos · 300 trescientos · 400 cuatrocientos · <b>500 quinientos</b> (!) · 600 seiscientos · <b>700 setecientos</b> (!) · 800 ochocientos · <b>900 novecientos</b> (!). The three marked (!) are irregular.</p>"+
+  "<p><b>1000 = mil</b> (without un): mil euros, dos mil, diez mil.</p>"+
+  "<p>The <b>y</b> only goes between tens and units: trescientos sesenta <b>y</b> cinco (365). Not after the hundred: ciento <i>(no y)</i> cincuenta.</p>"+
+  "<p>With feminine nouns: doscient<b>as</b> personas.</p>"},
+ {titel:"Este/ese, qué/cuál en tener que", titelEn:"Este/ese, qué/cuál and tener que",
   html:"<p><b>Aanwijzen:</b> este/esta = deze (dichtbij), ese/esa = die (verder weg): <i>este vestido, esa camiseta</i>. Meervoud: estos/estas, esos/esas.</p>"+
   "<p><b>¿Qué?</b> = wat (open vraag): <i>¿Qué quieres?</i> <b>¿Cuál?</b> = welke (kiezen uit een groepje): <i>¿Cuál prefieres, la roja o la negra?</i></p>"+
   "<p><b>Tener que + infinitief</b> = moeten: <i>tengo que comprar zapatos, tienes que estudiar</i>. Vergeet que niet!</p>"+
   "<p><b>Preferir</b> (e→ie): prefiero, prefieres, prefiere, preferimos, preferís, prefieren.</p>"+
-  "<p><b>In de winkel:</b> ¿Cuánto cuesta? (ev) / ¿Cuánto cuestan? (mv) · ¿Qué talla tienes? = welke maat heb je? · Es muy caro/barato.</p>"}
+  "<p><b>In de winkel:</b> ¿Cuánto cuesta? (ev) / ¿Cuánto cuestan? (mv) · ¿Qué talla tienes? = welke maat heb je? · Es muy caro/barato.</p>",
+  htmlEn:"<p><b>Pointing:</b> este/esta = this (close by), ese/esa = that (further away): <i>este vestido, esa camiseta</i>. Plural: estos/estas, esos/esas.</p>"+
+  "<p><b>¿Qué?</b> = what (open question): <i>¿Qué quieres?</i> <b>¿Cuál?</b> = which (choosing from a group): <i>¿Cuál prefieres, la roja o la negra?</i></p>"+
+  "<p><b>Tener que + infinitive</b> = to have to: <i>tengo que comprar zapatos, tienes que estudiar</i>. Don't forget que!</p>"+
+  "<p><b>Preferir</b> (e→ie): prefiero, prefieres, prefiere, preferimos, preferís, prefieren.</p>"+
+  "<p><b>In the shop:</b> ¿Cuánto cuesta? (sg) / ¿Cuánto cuestan? (pl) · ¿Qué talla tienes? = what size are you? · Es muy caro/barato.</p>"}
 ];
 
 var TRACKS = {
@@ -1411,21 +1461,21 @@ TRACKS.a2.lessons = [
 ];
 
 TRACKS.beginner.lessons = [
- {id:"a0-0", num:0, titel:"En el aula", doel:"Begroeten, jezelf redden in de les en tellen tot 10",
+ {id:"a0-0", num:0, titel:"En el aula", doel:"Begroeten, jezelf redden in de les en tellen tot 10", doelEn:"Greetings, surviving in class and counting to 10",
   spiek:[0,4], words:rng("b",1,10).concat(["b35","b36","b39"]), sents:["bs1","bs14","bs15","bs16"], quizzes:["bq-getallen"]},
- {id:"a0-1", num:1, titel:"Nosotros y nosotras", doel:"Jezelf voorstellen: naam, leeftijd, land en familie",
+ {id:"a0-1", num:1, titel:"Nosotros y nosotras", doel:"Jezelf voorstellen: naam, leeftijd, land en familie", doelEn:"Introducing yourself: name, age, country and family",
   spiek:[5,3], words:rng("b",41,50).concat(["b37"]).concat(rng("b",17,20)), sents:["bs2","bs3","bs17","bs18","bs19"], quizzes:["bq-serestar"]},
- {id:"a0-2", num:2, titel:"Quiero aprender español", doel:"El of la, en je eerste werkwoorden in het presente",
+ {id:"a0-2", num:2, titel:"Quiero aprender español", doel:"El of la, en je eerste werkwoorden in het presente", doelEn:"El or la, and your first verbs in the present tense",
   spiek:[1,6], words:rng("b",11,16).concat(rng("b",21,34)).concat(["b38","b40"]).concat(rng("b",51,56)), sents:["bs5","bs6","bs9","bs10","bs11","bs13","bs20"], quizzes:["bq-ellla"]},
- {id:"a0-3", num:3, titel:"¿Dónde está Santiago?", doel:"Waar is het? Plaatsen, klimaat en hay/estar",
+ {id:"a0-3", num:3, titel:"¿Dónde está Santiago?", doel:"Waar is het? Plaatsen, klimaat en hay/estar", doelEn:"Where is it? Places, climate and hay/estar",
   spiek:[7,8], words:rng("b",57,74), sents:rng("bs",21,27), quizzes:["bq-hayestar","bq-muymucho"]},
- {id:"a0-4", num:4, titel:"¿Cuál prefieres?", doel:"Winkelen: kleuren, kleding en getallen boven 100",
+ {id:"a0-4", num:4, titel:"¿Cuál prefieres?", doel:"Winkelen: kleuren, kleding en getallen boven 100", doelEn:"Shopping: colours, clothes and numbers above 100",
   spiek:[9,10,11], words:rng("b",75,96), sents:rng("bs",28,34), quizzes:["bq-kleuren","bq-getallen100"]},
- {id:"a0-5", num:5, titel:"Tus amigos son mis amigos", doel:"Familie, vrienden en gustar", stub:true},
- {id:"a0-6", num:6, titel:"Día a día", doel:"Je dagelijkse routine en de klok", stub:true},
- {id:"a0-7", num:7, titel:"¡A comer!", doel:"Eten bestellen en over eten praten", stub:true},
- {id:"a0-8", num:8, titel:"El barrio ideal", doel:"Jouw ideale buurt beschrijven", stub:true},
- {id:"a0-9", num:9, titel:"¿Sabes conducir?", doel:"Wat kun jij? Vaardigheden en de perfecto", stub:true}
+ {id:"a0-5", num:5, titel:"Tus amigos son mis amigos", doel:"Familie, vrienden en gustar", doelEn:"Family, friends and gustar", stub:true},
+ {id:"a0-6", num:6, titel:"Día a día", doel:"Je dagelijkse routine en de klok", doelEn:"Your daily routine and telling the time", stub:true},
+ {id:"a0-7", num:7, titel:"¡A comer!", doel:"Eten bestellen en over eten praten", doelEn:"Ordering food and talking about food", stub:true},
+ {id:"a0-8", num:8, titel:"El barrio ideal", doel:"Jouw ideale buurt beschrijven", doelEn:"Describing your ideal neighbourhood", stub:true},
+ {id:"a0-9", num:9, titel:"¿Sabes conducir?", doel:"Wat kun jij? Vaardigheden en de perfecto", doelEn:"What can you do? Skills and the perfecto", stub:true}
 ];
 
 /* ================= OPSLAG ================= */
@@ -2362,11 +2412,11 @@ function renderSentence(fresh){
   var allowIds = allowedSentIds();
   var doneCount = allowIds.filter(function(id){ return !!S.done[id]; }).length;
   var el = document.getElementById("sCard");
-  el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+"Vertalen · niveau "+s.lvl+" · "+doneCount+"/"+allowIds.length+" gehaald</span>"+
-    "<p class='big'>"+s.nl+"</p>"+
-    "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='Typ de Spaanse zin...'>"+
-    "<div class='row'><button class='primary' id='btnCheck'>Controleer</button>"+
-    "<button class='ghost' id='btnSkip'>Andere zin</button></div>"+
+  el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done")+"</span>"+
+    "<p class='big'>"+zinPrompt(s)+"</p>"+
+    "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='"+ct("Typ de Spaanse zin...","Type the Spanish sentence...")+"'>"+
+    "<div class='row'><button class='primary' id='btnCheck'>"+ct("Controleer","Check")+"</button>"+
+    "<button class='ghost' id='btnSkip'>"+ct("Andere zin","Different sentence")+"</button></div>"+
     "<div id='sFeedback'></div>";
   var inp = document.getElementById("sInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkSentence(); });
@@ -2388,26 +2438,26 @@ function checkSentence(){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
     S.done[s.id] = true; gehaald = true; addXP(5);
   } else if(loose){
-    html = "<div class='feedback bijna'>Bijna! Alleen de accenten: <b>"+s.es+"</b> (+4 XP)</div>";
+    html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 XP)</div>";
     S.done[s.id] = true; gehaald = true; addXP(4);
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
-      html = "<div class='feedback bijna'>Zó dichtbij! "+d.m+" woord"+(d.m>1?"en":"")+" wijkt af (onderstreept): <b>"+d.html+"</b> (+2 XP)</div>"+
-        "<p class='muted' style='margin-top:6px'>Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak meer goede vertalingen. Vraag het in de les of aan Claude.</p>";
+      html = "<div class='feedback bijna'>"+ct("Zó dichtbij! "+d.m+" woord"+(d.m>1?"en":"")+" wijkt af (onderstreept): ","So close! "+d.m+" word"+(d.m>1?"s":"")+" differ"+(d.m>1?"":"s")+" (underlined): ")+"<b>"+d.html+"</b> (+2 XP)</div>"+
+        "<p class='muted' style='margin-top:6px'>"+ct("Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak meer goede vertalingen. Vraag het in de les of aan Claude.","Think your version might also be correct Spanish? Quite possible: there are often several good translations. Ask in class or ask Claude.")+"</p>";
       addXP(2); retryable = true;
       logError(s.id, "zin", s.tag, given);
     } else {
-      html = "<div class='feedback fout'>Nog niet. Het antwoord is: <b>"+d.html+"</b></div>";
+      html = "<div class='feedback fout'>"+ct("Nog niet. Het antwoord is: ","Not yet. The answer is: ")+"<b>"+d.html+"</b></div>";
       logError(s.id, "zin", s.tag, given); addXP(1); retryable = true;
     }
   }
-  html += "<div class='uitleg'><b>Waarom:</b> "+s.uitleg+"</div>";
+  html += "<div class='uitleg'><b>"+ct("Waarom:","Why:")+"</b> "+zinUitleg(s)+"</div>";
   html += "<div class='row'>"+
-    (retryable ? "<button class='primary' id='btnRetry'>Probeer opnieuw</button>"+
-                 "<button class='ghost' id='btnAiCheck'>🤖 Is mijn variant ook goed?</button>"+
-                 "<button class='ghost' id='btnNext'>Volgende zin →</button>"
-               : "<button class='primary' id='btnNext'>Volgende zin →</button><button class='ghost' id='btnAiUitleg'>🤖 Meer uitleg</button>")+
+    (retryable ? "<button class='primary' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
+                 "<button class='ghost' id='btnAiCheck'>🤖 "+ct("Is mijn variant ook goed?","Is my version also correct?")+"</button>"+
+                 "<button class='ghost' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
+               : "<button class='primary' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button><button class='ghost' id='btnAiUitleg'>🤖 "+ct("Meer uitleg","More explanation")+"</button>")+
     "</div><div id='aiFb'></div>";
   fb.innerHTML = html;
   persist();
@@ -2457,22 +2507,22 @@ function renderQuizMenu(){
   function kaart(qz){
     var best = S.quiz[qz.id];
     var gehaald = best !== undefined && best / qz.vragen.length >= 0.8;
-    return "<div class='card'><h2>"+qz.titel+(gehaald ? " ✓" : "")+"</h2>"+
-      "<p class='muted'>"+qz.vragen.length+" vragen"+(best!==undefined?(" · beste score: "+best+"/"+qz.vragen.length):"")+"</p>"+
-      "<button class='"+(gehaald ? "ghost" : "primary")+"' data-quiz='"+qz.id+"'>"+(gehaald ? "Nog eens" : "Start")+"</button></div>";
+    return "<div class='card'><h2>"+quizTitel(qz)+(gehaald ? " ✓" : "")+"</h2>"+
+      "<p class='muted'>"+qz.vragen.length+ct(" vragen"," questions")+(best!==undefined?(ct(" · beste score: "," · best score: ")+best+"/"+qz.vragen.length):"")+"</p>"+
+      "<button class='"+(gehaald ? "ghost" : "primary")+"' data-quiz='"+qz.id+"'>"+(gehaald ? ct("Nog eens","Once more") : "Start")+"</button></div>";
   }
   var teDoen = list.filter(function(qz){ var b = S.quiz[qz.id]; return b === undefined || b / qz.vragen.length < 0.8; });
   var gehaald = list.filter(function(qz){ return teDoen.indexOf(qz) === -1; });
   if(teDoen.length){
-    html += "<p style='margin:4px 0'><b>Nog te doen</b> <span class='muted'>· "+teDoen.length+"</span></p>";
+    html += "<p style='margin:4px 0'><b>"+ct("Nog te doen","To do")+"</b> <span class='muted'>· "+teDoen.length+"</span></p>";
     teDoen.forEach(function(qz){ html += kaart(qz); });
   }
   if(gehaald.length){
-    html += "<p style='margin:14px 0 4px'><b>Gehaald</b> <span class='muted'>· opnieuw doen is prima herhaling</span></p>";
+    html += "<p style='margin:14px 0 4px'><b>"+ct("Gehaald","Passed")+"</b> <span class='muted'>· "+ct("opnieuw doen is prima herhaling","redoing them is great review")+"</span></p>";
     gehaald.forEach(function(qz){ html += kaart(qz); });
   }
   if(!teDoen.length && list.length){
-    html = "<p style='margin:4px 0'><b>Alles gehaald ✓</b> <span class='muted'>· herhalen mag altijd</span></p>" + html;
+    html = "<p style='margin:4px 0'><b>"+ct("Alles gehaald ✓","All passed ✓")+"</b> <span class='muted'>· "+ct("herhalen mag altijd","reviewing is always allowed")+"</span></p>" + html;
   }
   el.innerHTML = html;
   el.querySelectorAll("button[data-quiz]").forEach(function(b){
@@ -2497,20 +2547,20 @@ function renderQuestion(){
     var pct = st.score/qz.vragen.length;
     if(pct === 1){ S.tapas = (S.tapas||0) + 2; persist(); confetti(["⭐️","🌮","🎉"], 20); }
     checkLessonComplete();
-    var msg = pct===1 ? "¡Perfecto! Foutloos. +2 tapas 🌮" : pct>=0.8 ? "¡Muy bien! Bijna foutloos." :
-              pct>=0.6 ? "Goede basis, kijk de uitleg van je fouten nog even terug." :
-              "Deze regel verdient nog aandacht. Lees de spiekbrief en probeer opnieuw.";
-    el.innerHTML = "<span class='kicker'>"+qz.titel+"</span>"+
+    var msg = pct===1 ? ct("¡Perfecto! Foutloos. +2 tapas 🌮","¡Perfecto! Flawless. +2 tapas 🌮") : pct>=0.8 ? ct("¡Muy bien! Bijna foutloos.","¡Muy bien! Nearly flawless.") :
+              pct>=0.6 ? ct("Goede basis, kijk de uitleg van je fouten nog even terug.","Good basis; do reread the explanations of your mistakes.") :
+              ct("Deze regel verdient nog aandacht. Lees de spiekbrief en probeer opnieuw.","This rule needs more attention. Read the cheat sheet and try again.");
+    el.innerHTML = "<span class='kicker'>"+quizTitel(qz)+"</span>"+
       "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
-      "<div class='row'><button class='primary' id='btnRetry'>Opnieuw</button>"+
-      "<button class='ghost' id='btnMenu'>Terug naar toetsjes</button></div>";
+      "<div class='row'><button class='primary' id='btnRetry'>"+ct("Opnieuw","Again")+"</button>"+
+      "<button class='ghost' id='btnMenu'>"+ct("Terug naar toetsjes","Back to quizzes")+"</button></div>";
     document.getElementById("btnRetry").onclick = function(){ startQuiz(qz.id); };
     document.getElementById("btnMenu").onclick = closeQuiz;
     return;
   }
   var v = qz.vragen[st.i];
   st.locked = false;
-  var html = "<span class='kicker'>"+qz.titel+" · vraag "+(st.i+1)+"/"+qz.vragen.length+"</span>"+
+  var html = "<span class='kicker'>"+quizTitel(qz)+ct(" · vraag "," · question ")+(st.i+1)+"/"+qz.vragen.length+"</span>"+
     "<div class='progressbar'><div style='width:"+Math.round(100*st.i/qz.vragen.length)+"%'></div></div>"+
     "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>";
   v.opts.forEach(function(o,idx){
@@ -2532,9 +2582,9 @@ function answerQuestion(idx, btn){
   var goed = idx === v.c;
   if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+st.i, "quiz", st.qz.id, v.q); addXP(1); }
   var fb = document.getElementById("qFeedback");
-  fb.innerHTML = (v.nl ? "<div class='feedback "+(goed?"ok":"bijna")+"'>Vertaling: "+v.nl+"</div>" : "")+
-    "<div class='uitleg'><b>"+(goed?"Goed! ":"")+"Waarom:</b> "+v.u+"</div>"+
-    "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.qz.vragen.length ? "Volgende →" : "Uitslag →")+"</button></div>";
+  fb.innerHTML = (v.nl ? "<div class='feedback "+(goed?"ok":"bijna")+"'>"+ct("Vertaling: ","Translation: ")+vraagVert(v)+"</div>" : "")+
+    "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+ct("Waarom:","Why:")+"</b> "+vraagWaarom(v)+"</div>"+
+    "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.qz.vragen.length ? ct("Volgende →","Next →") : ct("Uitslag →","Result →"))+"</button></div>";
   document.getElementById("btnNextQ").onclick = function(){ st.i++; renderQuestion(); };
 }
 
@@ -2553,13 +2603,13 @@ function ritmeCard(){
   var over = 0;
   WORDS.forEach(function(w){ var st = S.srs[w.id]; if(st && st.due <= t) over++; });
   function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
-  return "<div class='card'><span class='kicker'>Vandaag · minimale basis</span>"+
+  return "<div class='card'><span class='kicker'>"+ct("Vandaag · minimale basis","Today · minimum routine")+"</span>"+
     "<div class='ritme'>"+
-    chip(nieuw >= MIN_NEW_PER_DAY, "nieuwe woorden "+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
-    chip(over === 0, over === 0 ? "herhalingen bij" : over+" herhalingen open")+
-    chip(xp >= dagdoel(), "dagdoel "+Math.min(xp,dagdoel())+"/"+dagdoel()+" XP")+
+    chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
+    chip(over === 0, over === 0 ? ct("herhalingen bij","reviews done") : over+ct(" herhalingen open"," reviews open"))+
+    chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" XP")+
     "</div>"+
-    "<p class='muted' style='margin-top:8px'>Dit is genoeg om vooruit te blijven gaan. Alles daarboven (lessen, liedjes, puzzels) is extra: leuk, maar hoeft niet.</p></div>";
+    "<p class='muted' style='margin-top:8px'>"+ct("Dit is genoeg om vooruit te blijven gaan. Alles daarboven (lessen, liedjes, puzzels) is extra: leuk, maar hoeft niet.","This is enough to keep moving forward. Everything on top (lessons, songs, puzzles) is extra: fun, but optional.")+"</p></div>";
 }
 
 function renderLessons(){
@@ -2586,8 +2636,8 @@ function renderLessons(){
     if(l.stub){ sub += " · volgt in de wekelijkse update"; }
     else if(p && !p.done && lessonUnlocked(i)){
       var parts = [];
-      if(!p.spiek) parts.push("start met de spiekbrief");
-      else { parts.push("woorden "+p.w+"/"+p.wt); parts.push("zinnen "+p.s+"/"+p.stt); parts.push("toetsjes "+p.q+"/"+p.qt); }
+      if(!p.spiek) parts.push(ct("start met de spiekbrief","start with the cheat sheet"));
+      else { parts.push(ct("woorden ","words ")+p.w+"/"+p.wt); parts.push(ct("zinnen ","sentences ")+p.s+"/"+p.stt); parts.push(ct("toetsjes ","quizzes ")+p.q+"/"+p.qt); }
       sub = parts.join(" · ");
     }
     html += "<div class='"+cls+"' data-les='"+(l.stub||!lessonUnlocked(i)?"":l.id)+"'>"+
@@ -2597,8 +2647,8 @@ function renderLessons(){
   });
   var rl = reviewLessons();
   if(rl.length){
-    html += "<div class='card' style='margin-top:4px'><span class='kicker'>Opfrissen · A1</span>"+
-      "<p class='muted' style='margin:6px 0 0'>De basis zakt weg als je hem nooit meer aanraakt. Deze lessen staan altijd open; de woorden draaien mee in je herhaalsysteem.</p></div>";
+    html += "<div class='card' style='margin-top:4px'><span class='kicker'>"+ct("Opfrissen · A1","Refresh · A1")+"</span>"+
+      "<p class='muted' style='margin:6px 0 0'>"+ct("De basis zakt weg als je hem nooit meer aanraakt. Deze lessen staan altijd open; de woorden draaien mee in je herhaalsysteem.","The basics fade if you never touch them again. These lessons stay open; their words keep rotating through your review system.")+"</p></div>";
     rl.forEach(function(l){
       var p = lessonProgress(l);
       var cls = "lesson" + (p.done ? " done" : "");
@@ -2631,33 +2681,33 @@ function renderLessonView(){
   el.classList.remove("hidden");
   var p = lessonProgress(l);
   var chips = "<div class='chips'>"+
-    "<span class='chip"+(p.spiek?" ok":"")+"'>Spiekbrief "+(p.spiek?"✓":"")+"</span>"+
-    "<span class='chip"+(p.w===p.wt?" ok":"")+"'>Woorden "+p.w+"/"+p.wt+"</span>"+
-    "<span class='chip"+(p.s===p.stt?" ok":"")+"'>Zinnen "+p.s+"/"+p.stt+"</span>"+
-    "<span class='chip"+(p.q===p.qt?" ok":"")+"'>Toetsjes "+p.q+"/"+p.qt+"</span></div>";
+    "<span class='chip"+(p.spiek?" ok":"")+"'>"+ct("Spiekbrief ","Cheat sheet ")+(p.spiek?"✓":"")+"</span>"+
+    "<span class='chip"+(p.w===p.wt?" ok":"")+"'>"+ct("Woorden ","Words ")+p.w+"/"+p.wt+"</span>"+
+    "<span class='chip"+(p.s===p.stt?" ok":"")+"'>"+ct("Zinnen ","Sentences ")+p.s+"/"+p.stt+"</span>"+
+    "<span class='chip"+(p.q===p.qt?" ok":"")+"'>"+ct("Toetsjes ","Quizzes ")+p.q+"/"+p.qt+"</span></div>";
   var html = "<div class='card"+(p.done?" celebrate":"")+"'>"+
-    "<span class='kicker'>Les "+l.num+"</span>"+
+    "<span class='kicker'>"+ct("Les ","Lesson ")+l.num+"</span>"+
     "<p class='big' style='margin:4px 0'>"+l.titel+"</p>"+
-    "<p class='muted'>"+l.doel+"</p>"+chips;
+    "<p class='muted'>"+lesDoel(l)+"</p>"+chips;
   if(p.done){
-    html += "<p><b>¡Lección completada!</b> 🎉 En alles blijft gewoon herhaalbaar, juist goed voor je geheugen. Kies wat je wilt oefenen:</p>"+
+    html += "<p><b>¡Lección completada!</b> 🎉 "+ct("En alles blijft gewoon herhaalbaar, juist goed voor je geheugen. Kies wat je wilt oefenen:","And everything stays available for review, which is exactly what your memory likes. Pick what you want to practise:")+"</p>"+
       "<div class='row'>"+
-      "<button class='primary' id='btnLesWoorden'>Woordjes herhalen</button>"+
-      "<button class='primary' id='btnLesZinnen'>Zinnen herhalen</button>"+
-      "<button class='primary' id='btnLesToets'>Toetsjes opnieuw</button>"+
-      "</div><div class='row'><button class='ghost' id='btnLesSpiek'>Spiekbrief teruglezen</button>"+
-      "<button class='ghost' id='btnLesTerug'>Naar het lesoverzicht</button></div></div>";
+      "<button class='primary' id='btnLesWoorden'>"+ct("Woordjes herhalen","Review words")+"</button>"+
+      "<button class='primary' id='btnLesZinnen'>"+ct("Zinnen herhalen","Review sentences")+"</button>"+
+      "<button class='primary' id='btnLesToets'>"+ct("Toetsjes opnieuw","Redo quizzes")+"</button>"+
+      "</div><div class='row'><button class='ghost' id='btnLesSpiek'>"+ct("Spiekbrief teruglezen","Reread the cheat sheet")+"</button>"+
+      "<button class='ghost' id='btnLesTerug'>"+ct("Naar het lesoverzicht","Back to lessons")+"</button></div></div>";
   } else if(!p.spiek){
-    html += "<p>Elke les begint met de spiekbrief: lees de uitleg hieronder rustig door (dit is de theorie van de les), daarna gaan we oefenen.</p></div>";
+    html += "<p>"+ct("Elke les begint met de spiekbrief: lees de uitleg hieronder rustig door (dit is de theorie van de les), daarna gaan we oefenen.","Every lesson starts with the cheat sheet: read the explanation below at your own pace (this is the lesson's theory), then we practise.")+"</p></div>";
     (l.spiek||[]).forEach(function(ci){
       var c = lessonCheat(l)[ci];
-      if(c) html += "<details open><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
+      if(c) html += "<details open><summary>"+spiekTitel(c)+"</summary><div class='inner'>"+spiekHtml(c)+"</div></details>";
     });
-    html += "<div class='card'><div class='row'><button class='primary' id='btnSpiekKlaar'>Gelezen! Naar de oefeningen → (+3 XP)</button>"+
-      "<button class='ghost' id='btnLesTerug'>Terug</button></div></div>";
+    html += "<div class='card'><div class='row'><button class='primary' id='btnSpiekKlaar'>"+ct("Gelezen! Naar de oefeningen →","Read it! To the exercises →")+" (+3 XP)</button>"+
+      "<button class='ghost' id='btnLesTerug'>"+ct("Terug","Back")+"</button></div></div>";
   } else {
     html += "<div class='row'>"+
-      "<button class='primary' id='btnLesWoorden'>Woordjes ("+p.w+"/"+p.wt+")</button>"+
+      "<button class='primary' id='btnLesWoorden'>"+ct("Woordjes","Words")+" ("+p.w+"/"+p.wt+")</button>"+
       "<button class='primary' id='btnLesZinnen'>Zinnen ("+p.s+"/"+p.stt+")</button>"+
       "<button class='primary' id='btnLesToets'>Toetsjes ("+p.q+"/"+p.qt+")</button>"+
       "</div><p class='muted' style='margin-top:10px'>Toetsjes tellen als gehaald vanaf 80% goed. Alles af? Dan ontgrendelt de volgende les vanzelf.</p>"+
@@ -2689,7 +2739,7 @@ function renderLessonSpiek(l){
     "<p class='big' style='margin:4px 0'>"+l.titel+"</p></div>";
   (l.spiek||[]).forEach(function(ci){
     var c = lessonCheat(l)[ci];
-    if(c) html += "<details open><summary>"+c.titel+"</summary><div class='inner'>"+c.html+"</div></details>";
+    if(c) html += "<details open><summary>"+spiekTitel(c)+"</summary><div class='inner'>"+spiekHtml(c)+"</div></details>";
   });
   html += "<div class='card'><div class='row'><button class='primary' id='btnSpiekTerug'>Terug naar de les →</button></div></div>";
   el.innerHTML = html;
@@ -3409,6 +3459,15 @@ function tt(key){
   if(!e) return key;
   return e[profLang()] || e.nl;
 }
+function ct(nl, en){ return profLang() === "nl" ? nl : en; }
+function zinPrompt(z){ return profLang() === "nl" ? z.nl : (z.en || z.nl); }
+function zinUitleg(z){ return profLang() === "nl" ? z.uitleg : (z.ue || z.uitleg); }
+function vraagVert(v){ return profLang() === "nl" ? v.nl : (v.ne || v.nl); }
+function vraagWaarom(v){ return profLang() === "nl" ? v.u : (v.ue || v.u); }
+function quizTitel(qz){ return profLang() === "nl" ? qz.titel : (qz.titelEn || qz.titel); }
+function spiekTitel(c){ return profLang() === "nl" ? c.titel : (c.titelEn || c.titel); }
+function spiekHtml(c){ return profLang() === "nl" ? c.html : (c.htmlEn || c.html); }
+function lesDoel(l){ return profLang() === "nl" ? l.doel : (l.doelEn || l.doel); }
 function wTrans(w){
   var l = profLang();
   if(l !== "nl" && TRANS[l] && TRANS[l][w.id]) return TRANS[l][w.id];
@@ -3728,11 +3787,11 @@ function renderDic(){
   }).slice();
   lijst.sort(function(a, b){ var ka = dicSortKey(a), kb = dicSortKey(b); return ka < kb ? -1 : (ka > kb ? 1 : 0); });
   var freqN = (typeof FREQ !== "undefined") ? FREQ.length : 0;
-  var html = "<h2>Jouw woordenboek 📖</h2>"+
-    "<p class='muted'>Alle "+WORDS.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. "+
-    "⚪ nog niet gehad · 🔴 lastig · 🟡 bezig · 🟢 zit goed. Tik op een woord voor meer."+
-    (freqN ? " De zoekbalk kent daarnaast de <b>"+freqN.toLocaleString("nl-NL")+"</b> meestgebruikte Spaanse woorden." : "")+"</p>"+
-    "<input type='text' id='dicZoek' placeholder='Zoek in het Spaans of Nederlands...' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+  var html = "<h2>"+ct("Jouw woordenboek","Your dictionary")+" 📖</h2>"+
+    "<p class='muted'>"+ct("Alle "+WORDS.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. ","All "+WORDS.length+" lesson words in alphabetical order; you've seen <b>"+geleerd+"</b> so far. ")+
+    "⚪ "+ct("nog niet gehad","not seen yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+". "+ct("Tik op een woord voor meer.","Tap a word for more.")+
+    (freqN ? ct(" De zoekbalk kent daarnaast de <b>"+freqN.toLocaleString("nl-NL")+"</b> meestgebruikte Spaanse woorden."," The search bar also knows the <b>"+freqN.toLocaleString("en-GB")+"</b> most frequent Spanish words (glosses in Dutch for now).") : "")+"</p>"+
+    "<input type='text' id='dicZoek' placeholder='"+ct("Zoek in het Spaans of Nederlands...","Search in Spanish or your language...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
   var letter = "";
   lijst.forEach(function(w){
     var st = S.srs[w.id];
@@ -3749,11 +3808,11 @@ function renderDic(){
     if(open){
       var info = (typeof DICINFO !== "undefined" && DICINFO[w.id]) || null;
       html += "<div class='dicbody'>"+
-        "<p><b>"+wTrans(w)+"</b>"+(profLang()!=="nl" && wTrans(w)!==w.nl ? " <span class='muted'>· nl: "+w.nl+"</span>" : "")+(w.tag ? " <span class='muted'>· thema: "+w.tag+"</span>" : "")+"</p>";
+        "<p><b>"+wTrans(w)+"</b>"+(profLang()!=="nl" && wTrans(w)!==w.nl ? " <span class='muted'>· nl: "+w.nl+"</span>" : "")+(w.tag ? " <span class='muted'>· "+ct("thema: ","topic: ")+w.tag+"</span>" : "")+"</p>";
       var rng = (typeof FREQRANG !== "undefined") ? FREQRANG[w.id] : null;
-      var rline = rng ? "#"+rng.toLocaleString("nl-NL")+" van de meestgebruikte Spaanse woorden" : "";
+      var rline = rng ? "#"+rng.toLocaleString("nl-NL")+ct(" van de meestgebruikte Spaanse woorden"," of the most frequent Spanish words") : "";
       if(st){
-        html += "<p class='muted'>"+(rline ? rline+" · " : "")+"volgende herhaling: "+(st.due <= today() ? "vandaag" : st.due)+"</p>";
+        html += "<p class='muted'>"+(rline ? rline+" · " : "")+ct("volgende herhaling: ","next review: ")+(st.due <= today() ? ct("vandaag","today") : st.due)+"</p>";
       } else if(rline){
         html += "<p class='muted'>"+rline+"</p>";
       }
@@ -3768,7 +3827,7 @@ function renderDic(){
         if(vb){ vbEs = vb.es; vbNl = vb.nl; }
       }
       if(vbEs){
-        html += "<p>Voorbeeld: <span class='es'>"+vbEs+"</span><br><span class='muted'>"+vbNl+"</span></p>";
+        html += "<p>"+ct("Voorbeeld: ","Example: ")+"<span class='es'>"+vbEs+"</span><br><span class='muted'>"+vbNl+"</span></p>";
       }
       html += "</div>";
     }
@@ -5588,7 +5647,7 @@ function renderFunAvt(){
     var ph = "<div style='text-align:center'><span class='kicker'>" + at("pesca") + "</span>"+
       "<p style='font-size:2.4rem; margin:4px'>🎣</p>"+
       "<p class='muted' style='font-size:.9rem'>" + at("pescaVraag") + "</p>"+
-      "<p class='big' style='margin:6px'>" + pz.zin.nl + "</p></div>";
+      "<p class='big' style='margin:6px'>" + zinPrompt(pz.zin) + "</p></div>";
     if(pz.fb){ ph += "<p style='text-align:center; color:var(--accent); margin:4px'>" + pz.fb + "</p>"; }
     if(pz.hintTxt){ ph += "<p style='text-align:center; letter-spacing:.12em; margin:4px'><span class='muted'>🔍</span> " + pz.hintTxt + "</p>"; }
     ph += "<div class='row'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
@@ -5733,7 +5792,7 @@ function renderFunAvt(){
       beeld = "<svg viewBox='-40 -40 80 80' style='width:110px'><g class='avtzweefg'>" + avtVijandSvg(g.v.t, true) + (typ ? "<text x='0' y='-30' text-anchor='middle' font-size='13'>⚡</text>" : "") + "</g></svg>";
       for(var j=0;j<(g.v.maxHp||AVT_TYPES[g.v.t].hp);j++){ pips += j < g.v.hp ? "🟣" : "⚪️"; }
     }
-    var vraagTxt = g.baas ? g.vraag.q : (g.zin ? g.zin.nl : (g.naarEs ? wTrans(g.w) : g.w.es));
+    var vraagTxt = g.baas ? g.vraag.q : (g.zin ? zinPrompt(g.zin) : (g.naarEs ? wTrans(g.w) : g.w.es));
     var vraagLabel = g.baas ? kop + ":" : (g.zin ? at("zinVertaal") : (g.naarEs ? at("vraagNaar") : at("vraagVan")));
     var html2 = "<div style='text-align:center'>"+
       "<span class='kicker'>" + kop + " · " + sub + "</span><br>" + beeld +
@@ -6650,16 +6709,16 @@ function quizzenBijSpiek(idx){
 }
 function renderCheat(){
   var el = document.getElementById("cheat");
-  el.innerHTML = "<div class='card'><h2>Grammatica 📝</h2>"+
-    "<p class='muted'>De spiekbrieven van jouw lessen, per onderwerp uitklapbaar. Woorden opzoeken? Gebruik het 📖-knopje rechtsonder.</p>"+
+  el.innerHTML = "<div class='card'><h2>"+ct("Grammatica","Grammar")+" 📝</h2>"+
+    "<p class='muted'>"+ct("De spiekbrieven van jouw lessen, per onderwerp uitklapbaar. Woorden opzoeken? Gebruik het 📖-knopje rechtsonder.","The cheat sheets from your lessons, expandable per topic. Looking up words? Use the 📖 button at the bottom right.")+"</p>"+
     CHEATSHEET.map(function(c, i){
       var qs = quizzenBijSpiek(i);
       var knoppen = qs.map(function(q){
         var best = S.quiz[q.id];
         var gehaald = best !== undefined && best / q.vragen.length >= 0.8;
-        return "<button class='ghost' data-spiekquiz='"+q.id+"' style='margin-top:8px'>🧪 "+(gehaald ? "Toetsje nog eens: " : "Doe het toetsje: ")+q.titel+(gehaald ? " ✓" : "")+"</button>";
+        return "<button class='ghost' data-spiekquiz='"+q.id+"' style='margin-top:8px'>🧪 "+(gehaald ? ct("Toetsje nog eens: ","Quiz once more: ") : ct("Doe het toetsje: ","Take the quiz: "))+quizTitel(q)+(gehaald ? " ✓" : "")+"</button>";
       }).join(" ");
-      return "<details><summary>"+c.titel+"</summary><div class='inner'>"+c.html+(knoppen ? "<div class='row'>"+knoppen+"</div>" : "")+"</div></details>";
+      return "<details><summary>"+spiekTitel(c)+"</summary><div class='inner'>"+spiekHtml(c)+(knoppen ? "<div class='row'>"+knoppen+"</div>" : "")+"</div></details>";
     }).join("")+"</div>";
   el.querySelectorAll("button[data-spiekquiz]").forEach(function(b){
     b.onclick = function(){
