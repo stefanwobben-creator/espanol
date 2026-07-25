@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v11.1";
+var APP_VERSIE = "v11.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3666,6 +3666,8 @@ function dicModal(){
   }
   wrap.classList.remove("hidden");
   renderDic();
+  var zoek = document.getElementById("dicZoek");
+  if(zoek){ zoek.focus(); if(zoek.select) zoek.select(); }
 }
 function dicSluit(){
   var wrap = document.getElementById("dicWrap");
