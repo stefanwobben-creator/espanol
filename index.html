@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v16.1";
+var APP_VERSIE = "v17.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4094,6 +4094,21 @@ var AVT_TXT = {
      questPescado:"El Pescador geeft je una caja de pescado fresco 🐟. Breng hem naar La Taquería in El Pueblo!",
      questKlaar:"🌮✨ ¡El Taco Especial! Mamá Iguana is dolblij met de vis: +15 🪙 en +2 tapas!",
      wereldOverloop:"Je wandelt verder langs de kust...",
+     morgenSlot:"⏳ opent morgen! Kom dan terug.", eerstVersla:"versla eerst",
+     volgendeMorgen:"🌙 Kom morgen terug: dan opent", eindtitel:"¡CAMPEÓN DE LA MEMORIA!",
+     eindSub:"Je hebt alle vier de werelden bevrijd. El Gran Olvido is verslagen: wat jij geleerd hebt, raakt niemand meer kwijt. +5 tapas en +25 monedas!",
+     eindDaarna:"De werelden blijven open: elke dag nieuwe mareas, revanchas en dagklusjes. En Chispa? Die is trots.",
+     lenIntro:"El Leñador: \"Mi puente is kapot... Breng me 3 setas mágicas 🍄 uit het bos, dan bouw ik hem voor je!\"",
+     lenBezig:"El Leñador: \"Nog niet genoeg setas... je hebt er\"", lenKlaar:"El Leñador timmert de brug! 🌉 De weg over de río is open.",
+     lenGroet:"El Leñador zwaait: \"¡Buen camino, amigo!\"", setaGevonden:"Una seta mágica! 🍄",
+     brugKapot:"De brug is kapot... El Leñador op El Sendero kan vast helpen. 🪓",
+     ahor:"El Ahorcado", ahorSub:"Raad je woord letter voor letter, vóór de Olvido-mist Chispa bereikt. 3 goede woorden = beloning!",
+     ahorGoed:"¡Palabra completa!", ahorFout:"De mist heeft Chispa bereikt... het woord was:", ahorNieuw:"Nieuw woord", ahorReeks:"woorden goed",
+     llaveClaro:"🗝️ ¡La Llave del Claro! De weg naar La Guarida is open.",
+     guardianes:"Guardianes", baasNaam3:"La Loba del Tiempo", baasIntro3:"De wolvin die je verleden tijd opeet. A2-grammatica!",
+     baasNaam4:"El Gran Olvido", baasIntro4:"De laatste. Alles wat je ooit leerde, wil hij terug. Alle grammatica door elkaar!",
+     gewonnenSub3:"El Bosque is bevrijd. De wolven huilen voor Chispa: 3 tapas!", gewonnenSub4:"",
+     volgende3:"El Castillo (B1) wacht...", zinVertaal:"Vertaal de zin:",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blaast gebarsten rotsen op", bommen:"bommen",
@@ -4138,6 +4153,21 @@ var AVT_TXT = {
      questPescado:"El Pescador hands you una caja de pescado fresco 🐟. Bring it to La Taquería in El Pueblo!",
      questKlaar:"🌮✨ ¡El Taco Especial! Mamá Iguana is thrilled with the fish: +15 🪙 and +2 tapas!",
      wereldOverloop:"You walk on along the coast...",
+     morgenSlot:"⏳ opens tomorrow! Come back then.", eerstVersla:"first defeat",
+     volgendeMorgen:"🌙 Come back tomorrow: then we open", eindtitel:"¡CAMPEÓN DE LA MEMORIA!",
+     eindSub:"You freed all four worlds. El Gran Olvido is defeated: nothing you learned can be taken away. +5 tapas and +25 monedas!",
+     eindDaarna:"The worlds stay open: new mareas, rematches and daily jobs every day. And Chispa? Proud.",
+     lenIntro:"El Leñador: \"Mi puente is broken... Bring me 3 setas mágicas 🍄 from the forest and I'll build it for you!\"",
+     lenBezig:"El Leñador: \"Not enough setas yet... you have\"", lenKlaar:"El Leñador hammers the bridge together! 🌉 The way across the río is open.",
+     lenGroet:"El Leñador waves: \"¡Buen camino, amigo!\"", setaGevonden:"Una seta mágica! 🍄",
+     brugKapot:"The bridge is broken... El Leñador on El Sendero can surely help. 🪓",
+     ahor:"El Ahorcado", ahorSub:"Guess your word letter by letter before the Olvido fog reaches Chispa. 3 correct words = reward!",
+     ahorGoed:"¡Palabra completa!", ahorFout:"The fog reached Chispa... the word was:", ahorNieuw:"New word", ahorReeks:"words solved",
+     llaveClaro:"🗝️ ¡La Llave del Claro! The way to La Guarida is open.",
+     guardianes:"Guardianes", baasNaam3:"La Loba del Tiempo", baasIntro3:"The she-wolf who eats your past tenses. A2 grammar!",
+     baasNaam4:"El Gran Olvido", baasIntro4:"The last one. Everything you ever learned, he wants back. All grammar mixed!",
+     gewonnenSub3:"El Bosque is free. The wolves howl for Chispa: 3 tapas!", gewonnenSub4:"",
+     volgende3:"El Castillo (B1) awaits...", zinVertaal:"Translate the sentence:",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blows up cracked rocks", bommen:"bombs",
@@ -4240,14 +4270,14 @@ var AVT_SCHERMEN = [
    "xxxx,,xxxx"],
   start:{x:1,y:3}, vijanden:[{t:"olvido",x:5,y:4},{t:"pulpo",x:7,y:5}], exits:{links:3, rechts:9, onder:10}, w:"a1"},
  {naam:"La Calle Mayor", grid:[
-   "xxxxxxxxxx",
+   "xxxx,,xxxx",
    "x,,,,,,,,x",
    "x,W,,x,,,x",
    ",,,,,,,,,x",
    "x,x,,,,x,x",
    "x,,,,,,,,x",
    "xxxx,,xxxx"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:6,y:1},{t:"cangrejo",x:3,y:5},{t:"olvido",x:7,y:3}], exits:{links:8, onder:11}, w:"a1"},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:6,y:1},{t:"cangrejo",x:3,y:5},{t:"olvido",x:7,y:3}], exits:{links:8, onder:11, boven:13}, w:"a1"},
  {naam:"El Mercado", grid:[
    "xxxx,,xxxx",
    "x,,,,,,,,x",
@@ -4274,13 +4304,96 @@ var AVT_SCHERMEN = [
    "G........G",
    "G........G",
    "GGGGGGGGGG"],
-  start:{x:4,y:5}, vijanden:[], baas:true, w:"a1"}
+  start:{x:4,y:5}, vijanden:[], baas:true, w:"a1"},
+ {naam:"La Entrada del Bosque", grid:[
+   "AAAAAAAAAA",
+   "AbbbbbbbDA",
+   "AbbAAbbbbA",
+   "Abbbbbbbbb",
+   "AbAbbAbbbA",
+   "AbbbbbbbbA",
+   "AAAAbbAAAA"],
+  start:{x:4,y:5}, vijanden:[{t:"lobo",x:6,y:2},{t:"olvido",x:2,y:4}], exits:{onder:9, rechts:14}, w:"a2"},
+ {naam:"El Sendero", grid:[
+   "AAAAAAAAAA",
+   "AbbbbAbbbA",
+   "AbMbbbbbbA",
+   "bbbbbbbbbb",
+   "AbbAbbAbbA",
+   "AbbbbDbbbA",
+   "AAAAAAAAAA"],
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:4,y:1},{t:"lobo",x:7,y:4}], exits:{links:13, rechts:15}, w:"a2"},
+ {naam:"El Río", grid:[
+   "AAAAAAAAAA",
+   "Abbb~bbbbA",
+   "AbDb~bbbbA",
+   "bbbb=bbbbb",
+   "Abbb~bbAbA",
+   "Abbb~bbbbA",
+   "AAAAAAAAAA"],
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:4},{t:"lobo",x:7,y:2},{t:"olvido",x:7,y:5}], exits:{links:14, rechts:16}, w:"a2"},
+ {naam:"El Claro Oscuro", grid:[
+   "AAAAbbAAAA",
+   "AbbbbbbJbA",
+   "AbbAbbbbbA",
+   "bbbbbbbbbA",
+   "AbbbbAbbTA",
+   "AbbbbbbbbA",
+   "AAAAAAAAAA"],
+  start:{x:0,y:3}, vijanden:[{t:"lobo",x:3,y:5},{t:"lobo",x:5,y:2},{t:"olvido",x:6,y:3}], exits:{links:15, boven:18}, arena:17, w:"a2"},
+ {naam:"La Guarida", grid:[
+   "GGGGGGGGGG",
+   "G........G",
+   "G........G",
+   "G........G",
+   "G........G",
+   "G........G",
+   "GGGGGGGGGG"],
+  start:{x:4,y:5}, vijanden:[], baas:true, w:"a2"},
+ {naam:"El Puente Levadizo", grid:[
+   "GGGGggGGGG",
+   "G~~~gg~~~G",
+   "G~~~gg~~~G",
+   "GggggggggG",
+   "G~~~gg~~~G",
+   "G~~~gg~~~G",
+   "GGGGggGGGG"],
+  start:{x:4,y:5}, vijanden:[{t:"guardian",x:2,y:3},{t:"olvido",x:7,y:3}], exits:{onder:16, boven:19}, w:"b1"},
+ {naam:"El Patio", grid:[
+   "GGGGGGGGGG",
+   "GggggggggG",
+   "GggGGggggG",
+   "Gggggggggg",
+   "GggGGggggG",
+   "GggggggggG",
+   "GGGGggGGGG"],
+  start:{x:4,y:5}, vijanden:[{t:"guardian",x:6,y:1},{t:"lobo",x:3,y:5},{t:"olvido",x:7,y:4}], exits:{onder:18, rechts:20}, w:"b1"},
+ {naam:"La Torre", grid:[
+   "GGGGGGGGGG",
+   "GggggggggG",
+   "GggGTGgggG",
+   "gggggggggG",
+   "GggGGggggG",
+   "GggggggggG",
+   "GGGGGGGGGG"],
+  start:{x:0,y:3}, vijanden:[{t:"guardian",x:7,y:4},{t:"lobo",x:2,y:4}], exits:{links:19}, arena:21, w:"b1"},
+ {naam:"El Trono", grid:[
+   "GGGGGGGGGG",
+   "G........G",
+   "G........G",
+   "G........G",
+   "G........G",
+   "G........G",
+   "GGGGGGGGGG"],
+  start:{x:4,y:5}, vijanden:[], baas:true, w:"b1"}
 ];
-var AVT_CONCHAS = [{s:0,x:8,y:5},{s:1,x:1,y:1},{s:2,x:9,y:4},{s:3,x:4,y:3},{s:4,x:8,y:4},{s:6,x:8,y:1},{s:7,x:1,y:5},{s:8,x:8,y:5},{s:9,x:1,y:5},{s:10,x:8,y:1},{s:11,x:1,y:4}];
+var AVT_CONCHAS = [{s:0,x:8,y:5},{s:1,x:1,y:1},{s:2,x:9,y:4},{s:3,x:4,y:3},{s:4,x:8,y:4},{s:6,x:8,y:1},{s:7,x:1,y:5},{s:8,x:8,y:5},{s:9,x:1,y:5},{s:10,x:8,y:1},{s:11,x:1,y:4},{s:13,x:1,y:5},{s:16,x:1,y:5},{s:19,x:1,y:1},{s:20,x:8,y:5}];
 var AVT_TYPES = {
   olvido:  {es:"el Olvido",  hp:1, nl:"vergeet-monstertje", en:"forget-monster"},
   cangrejo:{es:"el Cangrejo Confuso", hp:1, nl:"verwarde krab", en:"confused crab"},
-  pulpo:   {es:"el Pulpo Olvidón", hp:2, nl:"vergeetachtige octopus", en:"forgetful octopus"}
+  pulpo:   {es:"el Pulpo Olvidón", hp:2, nl:"vergeetachtige octopus", en:"forgetful octopus"},
+  lobo:    {es:"el Lobo del Olvido", hp:2, nl:"vergeet-wolf", en:"forget-wolf"},
+  guardian:{es:"el Guardián del Sello", hp:3, nl:"zegelwachter (schrijven!)", en:"seal guardian (typing!)"}
 };
 var AVT_BAAS_VRAGEN = [
  {q:"Yo ___ Chispa.", o:["soy","estoy","es"], a:0, u:"soy: wie je bent → ser"},
@@ -4306,6 +4419,18 @@ var AVT_BAAS2_VRAGEN = [
  {q:"Tengo ___ estudiar.", o:["que","de","a"], a:0, u:"tener que + infinitief = moeten"},
  {q:"Ella no ___ venir hoy.", o:["puede","puedo","podemos"], a:0, u:"poder: o→ue, ella puede"},
  {q:"A Juan ___ gustan los perros.", o:["le","me","te"], a:0, u:"aan hem → le gustan"}
+];
+var AVT_BAAS3_VRAGEN = [
+ {q:"Ayer ___ a la playa.", o:["fui","he ido","voy"], a:0, u:"ayer (afgesloten verleden) → indefinido: fui"},
+ {q:"Hoy ___ mucho.", o:["he trabajado","trabajé","trabajo"], a:0, u:"hoy (nog open) → perfecto: he trabajado"},
+ {q:"¿Has estado ___ en Madrid?", o:["alguna vez","ayer","anoche"], a:0, u:"alguna vez hoort bij het perfecto"},
+ {q:"Mañana voy ___ estudiar.", o:["a","de","que"], a:0, u:"ir a + infinitief = gaan doen"},
+ {q:"Me duele ___ cabeza.", o:["la","mi","el"], a:0, u:"doler + lidwoord: me duele la cabeza"},
+ {q:"El AVE es ___ rápido que el bus.", o:["más","muy","tan"], a:0, u:"vergelijken: más ... que"},
+ {q:"¿Las naranjas? ___ compré en el mercado.", o:["Las","Los","Les"], a:0, u:"lijdend voorwerp v. mv. → las"},
+ {q:"Anoche no ___ nada.", o:["dormí","he dormido","duermo"], a:0, u:"anoche → indefinido: dormí"},
+ {q:"¿Un café? — No, ya ___ tomado uno.", o:["he","ha","había"], a:0, u:"ya + perfecto: ya he tomado"},
+ {q:"Toma la primera calle ___ la derecha.", o:["a","en","por"], a:0, u:"a la derecha = rechtsaf"}
 ];
 /* ---- audio: chiptune + sfx via WebAudio, geen bestanden nodig ---- */
 var avtAC = null, avtMuziekTimer = null, avtMuziekFrase = 0;
@@ -4421,13 +4546,32 @@ function avtSfx(naam){
 
 /* ---- savegame + runtime ---- */
 var avtWereld = "a0";
+var AVT_START = {a0:0, a1:8, a2:13, b1:18};
 function avtSaveVan(wid){
   if(!S.avt) S.avt = {};
-  if(!S.avt[wid]) S.avt[wid] = {scherm:(wid === "a1" ? 8 : 0), x:1, y:3, harten:3, dood:{}, kist:false, lupa:false, klaar:false};
+  if(!S.avt[wid]){
+    var st0 = AVT_SCHERMEN[AVT_START[wid] || 0].start;
+    S.avt[wid] = {scherm:(AVT_START[wid] || 0), x:st0.x, y:st0.y, harten:3, dood:{}, kist:false, lupa:false, klaar:false};
+  }
   var a = S.avt[wid];
   if(!a.maxHarten) a.maxHarten = 3;
   if(!a.conchas) a.conchas = {};
+  if(a.klaar && !a.klaarDag) a.klaarDag = addDays(today(), -1);
   return a;
+}
+var AVT_VOLGORDE = ["a0","a1","a2","b1"];
+function avtWereldOpen(wid){
+  if(wid === "a0") return true;
+  var vorige = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(wid) - 1];
+  var sv = S.avt && S.avt[vorige];
+  if(!sv || !sv.klaar) return false;
+  return (sv.klaarDag || addDays(today(), -1)) < today();
+}
+function avtWereldMorgen(wid){
+  if(wid === "a0") return false;
+  var vorige = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(wid) - 1];
+  var sv = S.avt && S.avt[vorige];
+  return !!(sv && sv.klaar && sv.klaarDag === today());
 }
 function avtSave(){ return avtSaveVan(avtWereld); }
 function avtGear(){
@@ -4498,7 +4642,8 @@ function avtVrijOp(si, x, y){
   if(x < 0 || x > 9) return false;
   var c = AVT_SCHERMEN[si].grid[y].charAt(x);
   if(c === "K") return !!avtSaveVan(AVT_SCHERMEN[si].w).rotsOpen;
-  return c === "." || c === "," || c === "C" || c === "T" || c === "S" || c === "N" || c === "g" || c === "B" || c === "L" || c === "U";
+  if(c === "=") return !!avtSaveVan(AVT_SCHERMEN[si].w).brug;
+  return c === "." || c === "," || c === "C" || c === "T" || c === "S" || c === "N" || c === "g" || c === "B" || c === "L" || c === "U" || c === "b" || c === "D";
 }
 function avtVrij(x, y){ return avtVrijOp(avt.scherm, x, y); }
 function avtOlvidosOver(){
@@ -4522,6 +4667,19 @@ function avtVijandSvg(t, groot){
       "<path d='M-8 6 l-3 3 M-3 7 l-1 3 M3 7 l1 3 M8 6 l3 3' stroke='#e2704d' stroke-width='2' stroke-linecap='round'/>"+
       "<circle cx='-3.5' cy='-2' r='1.8' fill='#2d2a26'/><circle cx='3.5' cy='-2' r='1.8' fill='#2d2a26'/>"+
       "<path d='M-2 3 Q0 4.5 2 3' stroke='#2d2a26' stroke-width='1.2' fill='none'/>";
+  } else if(t === "lobo"){
+    svg = "<path d='M-9 -8 l-3 -6 5 2 M9 -8 l3 -6 -5 2' fill='#8e9aab' stroke='#6d7a8c' stroke-width='1.5'/>"+
+      "<ellipse cx='0' cy='0' rx='11' ry='8' fill='#a5b1c2' stroke='#8492a6' stroke-width='1.5'/>"+
+      "<path d='M8 2 q7 0 9 -4 l0 5 q-4 3 -9 2 Z' fill='#a5b1c2' stroke='#8492a6' stroke-width='1'/>"+
+      "<ellipse cx='-4' cy='3' rx='5' ry='3.5' fill='#d8dee8'/>"+
+      "<circle cx='-4' cy='-2.5' r='1.8' fill='#2d2a26'/><circle cx='3' cy='-2.5' r='1.8' fill='#2d2a26'/>"+
+      "<ellipse cx='-8' cy='1' rx='1.6' ry='1.2' fill='#2d2a26'/>";
+  } else if(t === "guardian"){
+    svg = "<path d='M-10 6 Q-12 -8 0 -10 Q12 -8 10 6 L7 3 L4 7 L0 3 L-4 7 L-7 3 Z' fill='#7d8ba0' stroke='#5c6a80' stroke-width='1.5'/>"+
+      "<path d='M-9 -6 a9 6 0 0 1 18 0 l0 3 l-18 0 Z' fill='#c9d2de' stroke='#9aa7b8' stroke-width='1.5'/>"+
+      "<path d='M0 -12 q3 -5 7 -4 q-2 4 -7 4' fill='#e8503a'/>"+
+      "<circle cx='-3.5' cy='-2' r='1.8' fill='#2d2a26'/><circle cx='3.5' cy='-2' r='1.8' fill='#2d2a26'/>"+
+      "<rect x='-2' y='2' width='4' height='5' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1'/>";
   } else if(t === "pulpo"){
     svg = "<ellipse cx='0' cy='-2' rx='9' ry='8' fill='#b79ad1' stroke='#9878b8' stroke-width='1.5'/>"+
       "<path d='M-8 4 q-3 4 -1 7 M-3 6 q-1 4 1 7 M3 6 q3 4 1 7 M8 4 q4 3 2 6' stroke='#9878b8' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
@@ -4532,7 +4690,7 @@ function avtVijandSvg(t, groot){
   return "<g transform='scale(" + s + ")'>" + svg + "</g>";
 }
 function avtBaasSvg(hp){
-  var sch = 1 + (hp / 5) * 1.6;
+  var sch = 1 + (Math.min(hp, 5) / 5) * 1.6;
   return "<g transform='scale(" + sch.toFixed(2) + ")'>"+
     "<path d='M-30 18 Q-38 -22 0 -28 Q38 -22 30 18 L24 10 L17 20 L9 11 L0 21 L-9 11 L-17 20 L-24 10 Z' fill='#7d8ba0' stroke='#5c6a80' stroke-width='2.5'/>"+
     "<path d='M-16 -26 l4 -8 4 6 4 -9 4 8 5 -6 3 8' stroke='#5c6a80' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
@@ -4566,6 +4724,22 @@ function avtTegel(c, x, y){
     "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='10' height='12' fill='#8a6a3e'/>"+
     "<text x='"+(px+20)+"' y='"+(py+20)+"' text-anchor='middle' font-size='9'>🪙</text>";
   if(c === "N") return zand + "<text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='24'>🎣</text>";
+  var bos = "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#a8bf8a" : "#b0c693")+"'/>";
+  if(c === "A") return bos + "<path d='M"+(px+20)+" "+(py+36)+" v-8' stroke='#7a5c3e' stroke-width='5'/><path d='M"+(px+20)+" "+(py+4)+" L"+(px+34)+" "+(py+18)+" L"+(px+27)+" "+(py+18)+" L"+(px+37)+" "+(py+30)+" L"+(px+3)+" "+(py+30)+" L"+(px+13)+" "+(py+18)+" L"+(px+6)+" "+(py+18)+" Z' fill='#5d8a4e' stroke='#48703c' stroke-width='1.5'/>";
+  if(c === "b") return bos + ((x*3+y*7)%5===0 ? "<path d='M"+(px+10)+" "+(py+30)+" q2 -4 4 0 M"+(px+26)+" "+(py+14)+" q2 -4 4 0' stroke='#93ab77' stroke-width='1.5' fill='none'/>" : "");
+  if(c === "D"){
+    var sk2 = avtSave().setaTiles || {};
+    if(sk2[(avt ? avt.scherm : 0) + ":" + x + ":" + y]) return bos;
+    return bos + "<path d='M"+(px+20)+" "+(py+34)+" v-8' stroke='#e8e0d0' stroke-width='5'/><path d='M"+(px+8)+" "+(py+26)+" a12 10 0 0 1 24 0 Z' fill='#e8503a' stroke='#c73e2a' stroke-width='1.5'/><circle cx='"+(px+14)+"' cy='"+(py+21)+"' r='2' fill='#fff'/><circle cx='"+(px+24)+"' cy='"+(py+19)+"' r='2.5' fill='#fff'/>";
+  }
+  if(c === "="){
+    var brg = avtSave().brug;
+    var wtr = "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='#8ec9e8'/>";
+    if(brg) return wtr + "<rect x='"+px+"' y='"+(py+6)+"' width='40' height='28' fill='#c9a36e' stroke='#8a6a3e' stroke-width='2'/><path d='M"+(px+10)+" "+(py+6)+" v28 M"+(px+20)+" "+(py+6)+" v28 M"+(px+30)+" "+(py+6)+" v28' stroke='#8a6a3e' stroke-width='1.5'/>";
+    return wtr + "<path d='M"+px+" "+(py+12)+" l12 6 -4 8 M"+(px+40)+" "+(py+24)+" l-12 -4 4 -8' stroke='#8a6a3e' stroke-width='4' fill='none' stroke-linecap='round'/>";
+  }
+  if(c === "M") return bos + "<text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='24'>\ud83e\ude93</text>";
+  if(c === "J") return bos + "<rect x='"+(px+6)+"' y='"+(py+14)+"' width='28' height='22' rx='2' fill='#8a6a3e' stroke='#6a5230' stroke-width='2'/><path d='M"+(px+3)+" "+(py+16)+" L"+(px+20)+" "+(py+3)+" L"+(px+37)+" "+(py+16)+" Z' fill='#5d4a2e' stroke='#463a24' stroke-width='2'/><rect x='"+(px+15)+"' y='"+(py+22)+"' width='9' height='14' rx='1.5' fill='#463a24'/><text x='"+(px+29)+"' y='"+(py+22)+"' text-anchor='middle' font-size='9'>\u2754</text>";
   if(c === "H") return zand + "<rect x='"+(px+6)+"' y='"+(py+14)+"' width='28' height='22' rx='2' fill='#f5ead6' stroke='#c9ab84' stroke-width='2'/>"+
     "<path d='M"+(px+3)+" "+(py+16)+" L"+(px+20)+" "+(py+3)+" L"+(px+37)+" "+(py+16)+" Z' fill='#d97f5f' stroke='#b96044' stroke-width='2'/>"+
     "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='9' height='14' rx='1.5' fill='#8a6a3e'/>"+
@@ -4625,7 +4799,7 @@ function avtKaartSvg(){
   return html + "</svg>";
 }
 function avtMove(dx, dy){
-  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || escSpel) return;
+  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || escSpel) return;
   var nx = avt.x + dx, ny = avt.y + dy;
   if(dx) avt.kijk = dx;
   var kop = document.getElementById("avtHeldK");
@@ -4642,7 +4816,12 @@ function avtMove(dx, dy){
     if(naar != null && avtVrijOp(naar, ix, iy)){
       var nw = AVT_SCHERMEN[naar].w;
       if(nw !== avtWereld){
-        if(nw === "a1" && !avtWereldInfo("a0").klaar){ toast("🔒 " + at("slotA1")); return; }
+        if(!avtWereldOpen(nw)){
+          var vor = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(nw) - 1];
+          var vorNaam = AVT_WERELDEN.filter(function(x){ return x.id === vor; })[0].naam;
+          toast(avtWereldMorgen(nw) ? at("morgenSlot") : "🔒 " + at("eerstVersla") + " " + vorNaam);
+          return;
+        }
         avtWereld = nw;
         var svW = avtSave();
         if(svW.klaar && svW.marea !== today()){ svW.marea = today(); svW.dood = {}; persist(); toast(at("marea")); }
@@ -4662,6 +4841,20 @@ function avtMove(dx, dy){
       var sc = ESCENAS.filter(function(x){ return x.id === scId; })[0];
       if(sc){ avtSfx("kist"); escStart(sc); }
     }
+    if(cb === "=" && !avtSave().brug){ toast("\ud83c\udf09 " + at("brugKapot")); }
+    if(cb === "M"){
+      var sv3 = avtSave();
+      if(sv3.brug){ toast("\ud83e\ude93 " + at("lenGroet")); }
+      else if((sv3.setas||0) >= 3){
+        sv3.brug = true; persist();
+        avtSfx("win"); confetti(["\ud83c\udf09","\u2728"], 18);
+        toast(at("lenKlaar"));
+        setTimeout(renderFun, 250);
+      }
+      else if(!sv3.lenIntro){ sv3.lenIntro = true; persist(); toast("\ud83e\ude93 " + at("lenIntro")); }
+      else { toast("\ud83e\ude93 " + at("lenBezig") + " " + (sv3.setas||0) + "/3."); }
+    }
+    if(cb === "J"){ avtSfx("kist"); avtAhorStart(); }
     if(cb === "Q"){
       var qst = S.avtQuest = S.avtQuest || {};
       if(qst.heb && !qst.klaar){
@@ -4689,7 +4882,7 @@ function avtMove(dx, dy){
     setTimeout(renderFun, 250);
   }
   if(c === "T"){
-    if(!sav.llave){ toast(at("sleutelNodig")); }
+    if(avtWereld !== "b1" && !sav.llave){ toast(at("sleutelNodig")); }
     else if(avtOlvidosOver() > 0){ toast(at("deurDicht") + avtOlvidosOver()); }
     else { avtSfx("baas"); avtLaadScherm(AVT_SCHERMEN[avt.scherm].arena, false); renderFun(); }
   }
@@ -4720,6 +4913,16 @@ function avtMove(dx, dy){
       renderFun(); return;
     }
   }
+  if(c === "D"){
+    sav.setaTiles = sav.setaTiles || {};
+    var sk = avt.scherm + ":" + nx + ":" + ny;
+    if(!sav.setaTiles[sk]){
+      sav.setaTiles[sk] = true; sav.setas = (sav.setas||0) + 1; persist();
+      avtSfx("kist"); confetti(["\ud83c\udf44","\u2728"], 8);
+      toast(at("setaGevonden") + " (" + sav.setas + "/3)");
+      setTimeout(renderFun, 200);
+    }
+  }
   var ck = avt.scherm + ":" + nx + ":" + ny;
   if(AVT_CONCHAS.some(function(cc){ return cc.s === avt.scherm && cc.x === nx && cc.y === ny; }) && !sav.conchas[ck]){
     sav.conchas[ck] = true; S.monedas = (S.monedas||0) + 2; persist();
@@ -4733,7 +4936,7 @@ function avtMove(dx, dy){
   if(sch.baas && ny <= 2 && (!sav.klaar || sav.baasDag !== today())){ avtBaasStart(); }
 }
 function avtTik(){
-  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || escSpel){ return; }
+  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || escSpel){ return; }
   if(!document.getElementById("avtKaart")){ return; }
   avt.vijanden.forEach(function(v){
     if(Math.random() < 0.45) return;
@@ -4770,6 +4973,19 @@ function avtNieuweVraag(){
     g.opties = volg; g.hintWeg = false;
     return;
   }
+  if(avtWereld === "b1" && g.v){
+    if(!avt.recentZ) avt.recentZ = [];
+    var zp = SENTENCES.filter(function(z){ return avt.recentZ.indexOf(z.id) === -1; });
+    if(zp.length < 3){ avt.recentZ = []; zp = SENTENCES.slice(); }
+    var foutZ = zp.filter(function(z){ return S.errors["zin:" + z.id]; });
+    var zin = (foutZ.length && Math.random() < 0.5)
+      ? foutZ[Math.floor(Math.random() * foutZ.length)]
+      : zp[Math.floor(Math.random() * zp.length)];
+    avt.recentZ.push(zin.id);
+    if(avt.recentZ.length > 8) avt.recentZ.shift();
+    g.zin = zin; g.w = null; g.opties = []; g.hintWeg = false; g.hintTxt = null;
+    return;
+  }
   var pool = gameVoorrang(avtWoordPool());
   if(!avt.recent) avt.recent = [];
   var vers = pool.filter(function(x){ return avt.recent.indexOf(x.id) === -1; });
@@ -4780,8 +4996,9 @@ function avtNieuweVraag(){
   avt.recent.push(w.id);
   if(avt.recent.length > 10) avt.recent.shift();
   g.vorige = w;
-  g.naarEs = (g.v && g.v.elite) ? true : Math.random() < 0.5;
-  if(g.v && g.v.elite){ g.w = w; g.opties = []; g.hintWeg = false; g.hintTxt = null; return; }
+  var getypt = g.v && (g.v.elite || g.v.t === "guardian" || avtWereld === "a2");
+  g.naarEs = getypt ? true : Math.random() < 0.5;
+  if(getypt){ g.w = w; g.opties = []; g.hintWeg = false; g.hintTxt = null; return; }
   var fout = [];
   var rest = avtWoordPool().filter(function(x){ return x.id !== w.id; }).sort(function(){ return Math.random() - 0.5; });
   for(var i=0; i<rest.length && fout.length<3; i++){ fout.push(rest[i]); }
@@ -4799,8 +5016,11 @@ function avtGevechtStart(vijand){
 function avtBaasStart(){
   avtSfx("baas");
   var rev = avtSave().klaar;
-  var hp = rev ? 6 : 5;
-  var vragen = (avtWereld === "a1" ? AVT_BAAS2_VRAGEN : AVT_BAAS_VRAGEN).slice().sort(function(){ return Math.random() - 0.5; });
+  var basisHp = avtWereld === "b1" ? 8 : (avtWereld === "a2" ? 6 : 5);
+  var hp = basisHp + (rev ? 1 : 0);
+  var set = avtWereld === "a1" ? AVT_BAAS2_VRAGEN : avtWereld === "a2" ? AVT_BAAS3_VRAGEN :
+    avtWereld === "b1" ? AVT_BAAS_VRAGEN.concat(AVT_BAAS2_VRAGEN, AVT_BAAS3_VRAGEN) : AVT_BAAS_VRAGEN;
+  var vragen = set.slice().sort(function(){ return Math.random() - 0.5; });
   avt.gevecht = {baas:true, revancha:rev, hp:hp, maxHp:hp, baasVragen:vragen, baasIdx:0, feedback:null};
   avtNieuweVraag();
   renderFun();
@@ -4862,8 +5082,9 @@ function avtAntwoord(op){
           toast("🏆 " + at("revWin"));
           renderFun(); return;
         }
-        sav.klaar = true; avtGear().harten = avtGear().maxHarten; persist();
-        S.tapas = (S.tapas||0) + 3; S.monedas = (S.monedas||0) + 10; persist();
+        sav.klaar = true; sav.klaarDag = today(); avtGear().harten = avtGear().maxHarten; persist();
+        var eind = avtWereld === "b1";
+        S.tapas = (S.tapas||0) + (eind ? 5 : 3); S.monedas = (S.monedas||0) + (eind ? 25 : 10); persist();
         avt.gevecht = null; avt.victory = true;
         avtMuziekStop();
         avtSfx("win"); confetti(["🏆","🎉","⭐️","🌮"], 40);
@@ -4884,12 +5105,13 @@ function avtAntwoord(op){
   var w = g.w;
   if(op.goed){
     avt.combo = (avt.combo||0) + 1;
-    avtSrsBij(w, true); avtSfx("goed");
+    if(g.zin){ addXP(3); persist(); updateBadge(); } else { avtSrsBij(w, true); }
+    avtSfx("goed");
     g.v.hp--;
     if(g.v.hp <= 0){
       var sav2 = avtSave();
       sav2.dood[avt.scherm + ":" + g.v.i] = true;
-      var munt = g.v.elite ? 3 : (g.v.t === "pulpo" ? 2 : 1);
+      var munt = g.v.t === "guardian" ? 5 : (g.v.elite ? 3 : (g.v.t === "pulpo" || g.v.t === "lobo" ? 2 : 1));
       var racha = avt.combo >= 3;
       if(racha) munt *= 2;
       S.monedas = (S.monedas||0) + munt; persist();
@@ -4904,8 +5126,10 @@ function avtAntwoord(op){
     avtNieuweVraag(); renderFun();
   } else {
     avt.combo = 0;
-    avtSrsBij(w, false); avtSfx("fout");
-    var juistTxt = g.naarEs ? w.es : wTrans(w);
+    if(g.zin){ logError(g.zin.id, "zin", g.zin.tag, g.zin.es); addXP(1); persist(); updateBadge(); }
+    else { avtSrsBij(w, false); }
+    avtSfx("fout");
+    var juistTxt = g.zin ? g.zin.es : (g.naarEs ? w.es : wTrans(w));
     if(avtHartKwijt()) return;
     g.feedback = {goed:false, txt:at("fout") + "<b>" + juistTxt + "</b>"};
     avtNieuweVraag(); renderFun();
@@ -5049,7 +5273,82 @@ function avtKruisBekend(x, y){
   }
   return null;
 }
+/* ---- El Ahorcado: galgje met je eigen woorden ---- */
+function avtAhorStart(){
+  avt.ahor = {reeks:0, beloond:false};
+  if(!avtAhorWoord()){ avt.ahor = null; return; }
+  renderFun();
+}
+function avtAhorWoord(){
+  var pool = gameVoorrang(wsWoordPool()).filter(function(k){ return k.woord.length >= 4 && k.woord.length <= 9; });
+  if(pool.length < 3){ toast("🪵 " + at("kruisWeinig")); return false; }
+  if(!avt.recent) avt.recent = [];
+  var vers = pool.filter(function(x){ return avt.recent.indexOf(x.id) === -1; });
+  if(vers.length < 2){ avt.recent = []; vers = pool; }
+  var top = vers.slice(0, Math.min(10, vers.length));
+  var k = top[Math.floor(Math.random() * top.length)];
+  avt.recent.push(k.id);
+  if(avt.recent.length > 10) avt.recent.shift();
+  var a = avt.ahor;
+  a.w = k; a.gok = {}; a.fout = 0; a.af = null; a.hint = false;
+  return true;
+}
+function avtAhorGok(ch){
+  var a = avt.ahor;
+  if(!a || !a.w || a.af || a.gok[ch]) return;
+  a.gok[ch] = true;
+  var kern = a.w.woord;
+  var wOrig = WORDS.filter(function(x){ return x.id === a.w.id; })[0];
+  if(kern.indexOf(ch) >= 0){
+    avtSfx("stap");
+    var compleet = kern.split("").every(function(l){ return a.gok[l]; });
+    if(compleet){
+      a.af = "goed"; a.reeks++;
+      if(wOrig) avtSrsBij(wOrig, true); else { addXP(2); updateBadge(); }
+      avtSfx("goed"); confetti(["🪵","✨"], 8);
+      if(a.reeks >= 3 && !a.beloond){
+        a.beloond = true;
+        var sv = avtSave();
+        if(avtWereld === "a2" && !sv.llave){
+          sv.llave = true; persist();
+          avtSfx("win"); confetti(["🗝️","🌲","✨"], 22);
+          toast(at("llaveClaro"));
+        } else if(sv.ahorDag !== today()){
+          sv.ahorDag = today(); S.monedas = (S.monedas||0) + 5; persist();
+          confetti(["🪙"], 10); toast("🪵 +5 🪙");
+        }
+      }
+    }
+  } else {
+    a.fout++;
+    avtSfx("fout");
+    if(a.fout >= 6){
+      a.af = "fout"; a.reeks = 0;
+      if(wOrig) avtSrsBij(wOrig, false);
+    }
+  }
+  renderFun();
+}
+function avtAhorSvg(){
+  var a = avt.ahor;
+  var fx = 30 + a.fout * 42;
+  return "<svg viewBox='0 0 400 110' style='width:100%; border-radius:12px; border:1.5px solid var(--border)'>"+
+    "<rect width='400' height='110' fill='#eef2e4'/>"+
+    "<rect y='88' width='400' height='22' fill='#b0c693'/>"+
+    "<g transform='translate(340,72)'>" + escChispaMini() + "</g>"+
+    "<g transform='translate(" + fx + ",72) scale(" + (1 + a.fout * 0.12) + ")' opacity='" + (0.45 + a.fout * 0.09) + "'><g class='avtzweefg'>" + avtVijandSvg("olvido") + "</g></g>"+
+    (a.fout >= 5 ? "<text x='340' y='34' text-anchor='middle' font-size='15'>😰</text>" : "")+
+    "</svg>";
+}
 /* ---- render ---- */
+function avtWachtersDood(){
+  var sv = avtSave(), d = 0;
+  AVT_SCHERMEN.forEach(function(sc, si2){
+    if(sc.w !== avtWereld) return;
+    sc.vijanden.forEach(function(v, j){ if(v.t === "guardian" && sv.dood[si2 + ":" + j]) d++; });
+  });
+  return d;
+}
 function avtHarten(){
   var gr = avtGear(), s = "";
   for(var i=0;i<gr.maxHarten;i++){ s += i < gr.harten ? "❤️" : "🖤"; }
@@ -5062,18 +5361,21 @@ function renderFunAvt(){
   if(!avt){
     var html = "<h2>" + at("kop") + "</h2><p class='muted'>" + at("kies") + "</p>";
     var a0klaar = avtWereldInfo("a0").klaar;
+    var AVT_ICONEN = {a0:"🏖️", a1:"🏘️", a2:"🌲", b1:"🏰"};
     AVT_WERELDEN.forEach(function(w){
       var sub = profLang() === "nl" ? w.nl : w.en;
-      var open = w.id === "a0" || (w.id === "a1" && a0klaar);
+      var open = avtWereldOpen(w.id);
       if(open){
         var inf = avtWereldInfo(w.id);
         var st = inf.klaar ? "🏆" : "▶";
         var sv2 = S.avt && S.avt[w.id];
         var voortgang = (inf.klaar ? "✓ " + (profLang()==="nl" ? "bevrijd!" : "freed!") + " · ⚡" : "") + (inf.tot - inf.over) + "/" + inf.tot + " " + at("olvidos") + " · 🐚" + inf.gevC + "/" + inf.totC + (sv2 && sv2.llave ? " · 🗝️" : "");
-        html += "<div class='lesson' data-avtw='" + w.id + "'><div class='lnum'>" + (w.id === "a1" ? "🏘️" : "🏖️") + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + voortgang + "</span></div><div class='lstatus'>" + st + "</div></div>";
+        html += "<div class='lesson' data-avtw='" + w.id + "'><div class='lnum'>" + AVT_ICONEN[w.id] + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + voortgang + "</span></div><div class='lstatus'>" + st + "</div></div>";
       } else {
-        var slotTxt = (w.id === "a1") ? at("slotA1") : at("binnenkort");
-        html += "<div class='lesson' style='opacity:.5'><div class='lnum'>🔒</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + slotTxt + "</span></div><div class='lstatus'>🔒</div></div>";
+        var vorW = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(w.id) - 1];
+        var vorNm = AVT_WERELDEN.filter(function(x){ return x.id === vorW; })[0].naam;
+        var slotTxt = avtWereldMorgen(w.id) ? at("morgenSlot") : at("eerstVersla") + " " + vorNm;
+        html += "<div class='lesson' style='opacity:" + (avtWereldMorgen(w.id) ? ".8" : ".5") + "'><div class='lnum'>" + (avtWereldMorgen(w.id) ? "🌙" : "🔒") + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + slotTxt + "</span></div><div class='lstatus'>" + (avtWereldMorgen(w.id) ? "⏳" : "🔒") + "</div></div>";
       }
     });
     html += "<p class='muted' style='font-size:.85rem; margin-top:6px'>🪙 " + (S.monedas||0) + " · " + (a0klaar ? at("mareaUitleg") : at("missie")) + "</p>";
@@ -5090,10 +5392,14 @@ function renderFunAvt(){
     return;
   }
   if(avt.victory){
-    el.innerHTML = "<div style='text-align:center'><p style='font-size:3rem; margin:8px'>🏆</p>"+
-      "<h2>" + at("gewonnen") + "</h2><p>" + (avtWereld === "a1" ? at("gewonnenSub2") : at("gewonnenSub")) + "</p>"+
-      "<p style='font-size:2rem'>🌮🌮🌮</p>"+
-      "<p class='muted'>" + (avtWereld === "a1" ? at("volgende2") : at("volgende")) + "</p>"+
+    var eindB = avtWereld === "b1";
+    var subT = {a0:at("gewonnenSub"), a1:at("gewonnenSub2"), a2:at("gewonnenSub3"), b1:at("eindSub")}[avtWereld];
+    var volgNm = {a0:"El Pueblo", a1:"El Bosque", a2:"El Castillo"}[avtWereld];
+    var volgT = eindB ? at("eindDaarna") : at("volgendeMorgen") + " <b>" + volgNm + "</b>!";
+    el.innerHTML = "<div style='text-align:center'><p style='font-size:3rem; margin:8px'>" + (eindB ? "👑" : "🏆") + "</p>"+
+      "<h2>" + (eindB ? at("eindtitel") : at("gewonnen")) + "</h2><p>" + subT + "</p>"+
+      "<p style='font-size:2rem'>" + (eindB ? "🌮🌮🌮🌮🌮" : "🌮🌮🌮") + "</p>"+
+      "<p class='muted'>" + volgT + "</p>"+
       "<div class='row' style='justify-content:center'><button class='primary' id='btnAvtKlaar'>" + at("kaartTerug") + "</button></div></div>";
     document.getElementById("btnAvtKlaar").onclick = function(){ avtStopAlles(); avt = null; renderFun(); };
     return;
@@ -5288,12 +5594,55 @@ function renderFunAvt(){
     if(kwg) kwg.onclick = function(){ avt.kruis = null; renderFun(); };
     return;
   }
+  if(avt.ahor){
+    var ah = avt.ahor;
+    var hh = "<div style='text-align:center'><span class='kicker'>" + at("ahor") + " 🪵</span>"+
+      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("ahorSub") + "</p>"+
+      "<p style='margin:2px'>🔥 " + ah.reeks + "/3 " + at("ahorReeks") + "</p></div>";
+    hh += avtAhorSvg();
+    var kern = ah.w.woord;
+    var toon = kern.split("").map(function(l){ return ah.gok[l] ? l.toUpperCase() : "·"; }).join(" ");
+    hh += "<p style='text-align:center; font-size:1.5rem; letter-spacing:.2em; font-weight:800; margin:8px 0 2px'>" + toon + "</p>";
+    hh += "<p class='muted' style='text-align:center; font-size:.85rem; margin:2px'>" + ah.w.nl + " · " + "❌".repeat(ah.fout) + "⚪️".repeat(Math.max(0, 6 - ah.fout)) + "</p>";
+    if(ah.af === "goed"){
+      hh += "<p style='text-align:center; margin:6px'>🎉 " + at("ahorGoed") + " <b class='es'>" + ah.w.es + "</b> · " + ah.w.nl + "</p>";
+    } else if(ah.af === "fout"){
+      hh += "<p style='text-align:center; margin:6px; color:var(--accent)'>💨 " + at("ahorFout") + " <b class='es'>" + ah.w.es + "</b> · " + ah.w.nl + "</p>";
+    } else {
+      hh += "<div style='display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-top:6px'>";
+      "abcdefghijklmnopqrstuvwxyz".split("").forEach(function(l){
+        var gedaan = !!ah.gok[l];
+        hh += "<button class='ghost' data-avtgok='" + l + "' style='min-width:34px; padding:7px 0; font-size:.9rem" + (gedaan ? (kern.indexOf(l) >= 0 ? "; background:#e4f2d8" : "; opacity:.25") : "") + "'" + (gedaan ? " disabled" : "") + ">" + l + "</button>";
+      });
+      hh += "</div>";
+    }
+    hh += "<div class='row' style='margin-top:8px'>"+
+      (ah.af ? "<button class='primary' id='btnAvtAhorNieuw'>" + at("ahorNieuw") + "</button>" : "")+
+      (!ah.af && avtHeeftLupa() && !ah.hint ? "<button class='ghost' id='btnAvtAhorHint'>" + at("hint") + "</button>" : "")+
+      "<button class='ghost' id='btnAvtAhorWeg'>" + at("naarKaart") + "</button></div>";
+    el.innerHTML = hh;
+    el.querySelectorAll("[data-avtgok]").forEach(function(b){
+      b.onclick = function(){ avtAhorGok(b.getAttribute("data-avtgok")); };
+    });
+    var ahn = document.getElementById("btnAvtAhorNieuw");
+    if(ahn) ahn.onclick = function(){ if(avtAhorWoord()) renderFun(); };
+    var ahh = document.getElementById("btnAvtAhorHint");
+    if(ahh) ahh.onclick = function(){
+      ah.hint = true;
+      var mis = ah.w.woord.split("").filter(function(l){ return !ah.gok[l]; });
+      if(mis.length) avtAhorGok(mis[Math.floor(Math.random() * mis.length)]);
+      else renderFun();
+    };
+    document.getElementById("btnAvtAhorWeg").onclick = function(){ avt.ahor = null; renderFun(); };
+    return;
+  }
   if(avt.gevecht){
     var g = avt.gevecht;
     var kop, sub, beeld, pips = "";
-    var typ = !g.baas && g.v.elite;
+    var typ = !g.baas && (!!g.zin || g.v.elite || g.v.t === "guardian" || avtWereld === "a2");
     if(g.baas){
-      kop = (avtWereld === "a1" ? at("baasNaam2") : at("baasNaam")) + (g.revancha ? " ⚡" : ""); sub = (avtWereld === "a1" ? at("baasIntro2") : at("baasIntro"));
+      var bnSuf = {a0:"", a1:"2", a2:"3", b1:"4"}[avtWereld] || "";
+      kop = at("baasNaam" + bnSuf) + (g.revancha ? " ⚡" : ""); sub = at("baasIntro" + bnSuf);
       beeld = "<svg viewBox='-70 -70 140 120' style='width:150px'><g class='avtzweefg'>" + avtBaasSvg(g.hp) + "</g></svg>";
       for(var i=0;i<g.maxHp;i++){ pips += i < g.hp ? "🟣" : "⚪️"; }
     } else {
@@ -5302,8 +5651,8 @@ function renderFunAvt(){
       beeld = "<svg viewBox='-40 -40 80 80' style='width:110px'><g class='avtzweefg'>" + avtVijandSvg(g.v.t, true) + (typ ? "<text x='0' y='-30' text-anchor='middle' font-size='13'>⚡</text>" : "") + "</g></svg>";
       for(var j=0;j<(g.v.maxHp||AVT_TYPES[g.v.t].hp);j++){ pips += j < g.v.hp ? "🟣" : "⚪️"; }
     }
-    var vraagTxt = g.baas ? g.vraag.q : (g.naarEs ? wTrans(g.w) : g.w.es);
-    var vraagLabel = g.baas ? "El Olvido Gigante vraagt:" : (g.naarEs ? at("vraagNaar") : at("vraagVan"));
+    var vraagTxt = g.baas ? g.vraag.q : (g.zin ? g.zin.nl : (g.naarEs ? wTrans(g.w) : g.w.es));
+    var vraagLabel = g.baas ? kop + ":" : (g.zin ? at("zinVertaal") : (g.naarEs ? at("vraagNaar") : at("vraagVan")));
     var html2 = "<div style='text-align:center'>"+
       "<span class='kicker'>" + kop + " · " + sub + "</span><br>" + beeld +
       "<p style='margin:2px'>" + pips + "</p>"+
@@ -5338,8 +5687,11 @@ function renderFunAvt(){
       var schrijfCheck = function(){
         var inp = si.value || "";
         if(!norm(inp)) return;
-        var goedb = stripAcc(norm(inp)) === stripAcc(norm(g.w.es));
-        if(goedb && norm(inp) !== norm(g.w.es)){ toast(at("accent") + g.w.es); }
+        var doel = g.zin ? g.zin.es : g.w.es;
+        var goedb = g.zin
+          ? [g.zin.es].concat(g.zin.alt||[]).some(function(a){ return stripAcc(norm(inp)) === stripAcc(norm(a)); })
+          : stripAcc(norm(inp)) === stripAcc(norm(doel));
+        if(goedb && norm(inp) !== norm(doel) && stripAcc(norm(inp)) === stripAcc(norm(doel))){ toast(at("accent") + doel); }
         avtAntwoord({goed:goedb});
       };
       document.getElementById("btnAvtSchrijf").onclick = schrijfCheck;
@@ -5351,7 +5703,7 @@ function renderFunAvt(){
       if(typ){
         var si2 = document.getElementById("avtInp");
         if(si2) g.inpTmp = si2.value;
-        g.hintTxt = g.w.es.split(" ").map(function(wrd){ return wrd.slice(0,1) + wrd.slice(1).replace(/[^ ]/g,"·"); }).join(" ");
+        g.hintTxt = (g.zin ? g.zin.es : g.w.es).split(" ").map(function(wrd){ return wrd.slice(0,1) + wrd.slice(1).replace(/[^ ]/g,"·"); }).join(" ");
       } else {
         var fouten = g.opties.filter(function(o){ return !o.goed && !o.weg; });
         fouten.sort(function(){ return Math.random() - 0.5; });
@@ -5373,8 +5725,8 @@ function renderFunAvt(){
   var sch = AVT_SCHERMEN[avt.scherm];
   var over = avtOlvidosOver();
   var html3 = "<div style='display:flex; justify-content:space-between; align-items:center'>"+
-    "<span class='kicker'>" + (avtWereld === "a1" ? "El Pueblo" : "La Costa") + " · " + sch.naam + "</span>"+
-    "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave ? " · 🗝️" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
+    "<span class='kicker'>" + ({a0:"La Costa", a1:"El Pueblo", a2:"El Bosque", b1:"El Castillo"}[avtWereld]) + " · " + sch.naam + "</span>"+
+    "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave && avtWereld !== "b1" ? " · 🗝️" : "") + (avtWereld === "a2" && !avtSave().brug ? " · 🍄" + (avtSave().setas||0) + "/3" : "") + (avtWereld === "b1" ? " · 👑" + avtWachtersDood() + "/3" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
   html3 += avtKaartSvg();
   var buurK = null;
   [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
@@ -5413,13 +5765,14 @@ function renderFunAvt(){
     try{
       document.addEventListener("keydown", function(e){
         if(funView !== "avt" || !avt) return;
+        if(avt.ahor && avt.ahor.w && !avt.ahor.af && /^[a-zñ]$/.test(e.key)){ avtAhorGok(e.key); e.preventDefault(); return; }
         var m = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0], w:[0,-1], s:[0,1], a:[-1,0], d:[1,0]}[e.key];
         if(!m) return;
         if(avt.snake && !avt.snake.dood){
           if(!(m[0] === -avt.snake.d[0] && m[1] === -avt.snake.d[1])) avt.snake.vlg = m;
           e.preventDefault(); return;
         }
-        if(avt.gevecht || avt.victory || avt.kruis || avt.tienda || avt.pesca) return;
+        if(avt.gevecht || avt.victory || avt.kruis || avt.tienda || avt.pesca || avt.ahor) return;
         if(!document.getElementById("avtKaart")) return;
         e.preventDefault(); avtMove(m[0], m[1]);
       });
