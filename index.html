@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v11.5";
+var APP_VERSIE = "v11.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3299,8 +3299,9 @@ function wsWoordPool(){
   var pool = [];
   WORDS.forEach(function(w){
     if(!S.srs[w.id]) return; // alleen geleerde woorden
-    var kern = w.es.toLowerCase().split("/")[0].trim().split(" ").filter(function(t){ return !artikelen[t]; })[0] || "";
-    kern = stripAcc(kern).replace(/[^a-z]/g, "");
+    var delen = w.es.toLowerCase().split("/")[0].trim().split(" ").filter(function(t){ return !artikelen[t]; });
+    if(delen.length !== 1) return; // uitdrukkingen van meer woorden passen niet in een woordenzoeker
+    var kern = stripAcc(delen[0]).replace(/[^a-z]/g, "");
     if(kern.length >= 4 && kern.length <= 9) pool.push({woord:kern, nl:wTrans(w), es:w.es, id:w.id});
   });
   return pool;
@@ -4676,7 +4677,7 @@ function renderFunWs(){
   }
   html += "</div><p class='muted'>Tik de eerste en laatste letter van een woord. Zoek:</p><p style='line-height:2'>"+
     ws.woorden.map(function(w, i){
-      if(w.found) return "<s>"+w.woord+"</s>";
+      if(w.found) return "<span class='muted'>✓ <b class='es'>"+(w.es||w.woord)+"</b> · "+w.nl+"</span>";
       return "<b>"+w.nl+"</b>"+(w.hint
         ? " <span class='es'>("+(w.es||w.woord)+")</span>"
         : " <button class='wshint' data-hint='"+i+"' title='Hint: laat het Spaanse woord zien'>\ud83d\udca1</button>");
