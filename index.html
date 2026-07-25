@@ -139,6 +139,8 @@
           background:var(--accent); color:#fff; font-size:1.5rem; cursor:pointer; z-index:90;
           box-shadow:0 6px 18px rgba(212,85,43,.45); display:flex; align-items:center; justify-content:center;}
   .dicfab:active{transform:scale(.94);}
+  @keyframes eschop{0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)}}
+  .escloopt .eschuppel{animation:eschop .32s ease-in-out infinite;}
   .appfooter{text-align:center; margin:30px 0 6px; font-size:.85rem; color:var(--muted);}
   .appfooter a{color:var(--muted); text-decoration:none; border-bottom:1px dotted var(--muted);}
   .appfooter a:hover{color:var(--accent); border-color:var(--accent);}
@@ -426,7 +428,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v11.6";
+var APP_VERSIE = "v12.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3905,8 +3907,18 @@ var escSpel = null;
 function escStart(scene){
   var rest = scene.objecten.map(function(o){ return o.id; });
   rest.sort(function(){ return Math.random() - 0.5; });
-  escSpel = {scene:scene, rest:rest, gelabeld:{}, mis:false};
+  escSpel = {scene:scene, rest:rest, gelabeld:{}, mis:false, pos:{x:200, y:278}, kijk:1, bezig:false, schat:false};
   renderFun();
+}
+function escChispaMini(){
+  return "<ellipse cx='0' cy='14' rx='13' ry='3' fill='#00000015'/>"+
+    "<g class='eschuppel'>"+
+    "<path d='M-11 -12 q-5 -5 -8 -2 M-13 -6 q-6 -2 -8 1 M11 -12 q5 -5 8 -2 M13 -6 q6 -2 8 1' stroke='#e46a9a' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
+    "<ellipse cx='0' cy='0' rx='13' ry='11' fill='#f8b8ce' stroke='#ef97b8' stroke-width='2'/>"+
+    "<path d='M11 6 q8 4 11 -2' stroke='#ef97b8' stroke-width='4' fill='none' stroke-linecap='round'/>"+
+    "<circle cx='-4.5' cy='-2' r='2' fill='#2d2a26'/><circle cx='4.5' cy='-2' r='2' fill='#2d2a26'/>"+
+    "<path d='M-4 4 Q0 7 4 4' stroke='#2d2a26' stroke-width='1.5' fill='none' stroke-linecap='round'/>"+
+    "</g>";
 }
 function escSvg(){
   var s = escSpel.scene;
@@ -3919,6 +3931,15 @@ function escSvg(){
       html += "<text x='"+o.x+"' y='"+o.y+"' text-anchor='middle' font-size='13' font-weight='800' fill='#2d2a26' stroke='#ffffff' stroke-width='4' style='paint-order:stroke' pointer-events='none'>"+o.es+"</text>";
     }
   });
+  if(!escSpel.rest.length && !escSpel.schat){
+    html += "<g data-schat='1' style='cursor:pointer'><ellipse cx='200' cy='262' rx='26' ry='6' fill='#00000018'/>"+
+      "<rect x='178' y='230' width='44' height='30' rx='5' fill='#b78a55' stroke='#8a6a3e' stroke-width='3'/>"+
+      "<path d='M178 240 h44' stroke='#8a6a3e' stroke-width='3'/>"+
+      "<rect x='195' y='236' width='10' height='10' rx='2' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/>"+
+      "<text x='200' y='222' text-anchor='middle' font-size='13' font-weight='800' fill='#2d2a26' stroke='#fff' stroke-width='4' style='paint-order:stroke'>el tesoro</text></g>";
+  }
+  html += "<g id='escSprite' style='transform:translate("+escSpel.pos.x+"px,"+escSpel.pos.y+"px); transition:transform .85s ease'>"+
+    "<g id='escSpriteInner' transform='scale("+(escSpel.kijk<0?-1:1)+" 1)'>"+escChispaMini()+"</g></g>";
   return html + "</svg>";
 }
 function renderFunEsc(){
@@ -3943,40 +3964,72 @@ function renderFunEsc(){
   var sp = escSpel;
   var doelId = sp.rest[0];
   var doel = doelId ? sp.scene.objecten.filter(function(o){ return o.id === doelId; })[0] : null;
-  var html = "<h2>"+sp.scene.titel.es+" 🏷️</h2>";
+  var html = "<h2>"+sp.scene.titel.es+" 🗺️</h2>";
   if(doel){
-    html += "<p class='muted' style='margin:4px 0'>"+et("uitleg")+"</p>"+
+    html += "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl" ? "Breng Chispa naar:" : "Walk Chispa to:")+"</p>"+
       "<p style='margin:4px 0 10px; font-size:1.25rem'><b class='es'>"+doel.es+"</b> <span class='muted'>· "+escVert(doel)+"</span></p>";
+  } else if(!sp.schat){
+    html += "<p style='margin:4px 0 10px'><b>"+(profLang()==="nl" ? "Alles gelabeld! Loop naar de schatkist 🎁" : "All labelled! Walk to the treasure chest 🎁")+"</b></p>";
   } else {
-    html += "<p style='margin:4px 0 10px'><b>"+et("klaar")+"</b> 🎉</p>";
+    html += "<p style='margin:4px 0 10px'><b>"+et("klaar")+"</b> 🎉 <span class='muted'>+1 tapa</span></p>";
   }
   html += escSvg();
   html += "<div class='row' style='margin-top:10px'>"+
     (doel ? "" : "<button class='primary' id='btnEscNieuw'>"+et("nogEen")+"</button>")+
     "<button class='ghost' id='btnEscTerug'>"+et("kop")+"</button></div>";
   el.innerHTML = html;
+  function loopNaar(x, y, klaarDan){
+    var spr = document.getElementById("escSprite");
+    escSpel.kijk = x < escSpel.pos.x ? -1 : 1;
+    var inner = document.getElementById("escSpriteInner");
+    if(inner) inner.setAttribute("transform", "scale("+escSpel.kijk+" 1)");
+    if(spr){
+      spr.setAttribute("class", "escloopt");
+      spr.style.transform = "translate("+x+"px,"+y+"px)";
+    }
+    escSpel.bezig = true;
+    setTimeout(function(){
+      escSpel.pos = {x:x, y:y};
+      escSpel.bezig = false;
+      if(spr) spr.setAttribute("class", "");
+      klaarDan();
+    }, spr ? 900 : 30);
+  }
   el.querySelectorAll("[data-esc]").forEach(function(g){
     g.onclick = function(){
-      if(!escSpel || !escSpel.rest.length) return;
+      if(!escSpel || escSpel.bezig || !escSpel.rest.length) return;
       var geklikt = g.getAttribute("data-esc");
+      var o = escSpel.scene.objecten.filter(function(x){ return x.id === geklikt; })[0];
       var doelNu = escSpel.rest[0];
-      if(geklikt === doelNu){
-        escSpel.gelabeld[doelNu] = true;
-        escSpel.rest.shift();
-        addXP(escSpel.mis ? 1 : 2);
-        escSpel.mis = false;
-        if(!escSpel.rest.length){
-          S.tapas = (S.tapas||0) + 1; persist();
-          confetti(["🏷️","🎉","🌮"], 24);
-          toast("¡"+escSpel.scene.titel.es+" "+et("af")+"! +1 tapa 🌮");
+      loopNaar(o.x, Math.min(o.y + 22, 280), function(){
+        if(geklikt === doelNu){
+          escSpel.gelabeld[doelNu] = true;
+          escSpel.rest.shift();
+          addXP(escSpel.mis ? 1 : 2);
+          escSpel.mis = false;
+          confetti(["✨","🏷️"], 8);
+          if(!escSpel.rest.length){
+            toast(profLang()==="nl" ? "Alles gevonden! Er verschijnt iets glimmends... 👀" : "All found! Something shiny appears... 👀");
+          }
+          renderFun();
+        } else {
+          escSpel.mis = true;
+          toast("🤔 " + (profLang()==="nl" ? "Dit is " : "This is ") + o.es + " (" + escVert(o) + "). " + (profLang()==="nl" ? "Zoek verder!" : "Keep looking!"));
         }
-        renderFun();
-      } else {
-        escSpel.mis = true;
-        toast(et("fout"));
-      }
+      });
     };
   });
+  var schatEl = el.querySelector("[data-schat]");
+  if(schatEl) schatEl.onclick = function(){
+    if(escSpel.bezig || escSpel.schat) return;
+    loopNaar(200, 268, function(){
+      escSpel.schat = true;
+      S.tapas = (S.tapas||0) + 1; persist();
+      confetti(["🎁","🌮","🎉","⭐️"], 30);
+      toast("¡Tesoro! +1 tapa 🌮 " + (profLang()==="nl" ? "Chispa is trots op je." : "Chispa is proud of you."));
+      renderFun();
+    });
+  };
   var bn = document.getElementById("btnEscNieuw");
   if(bn) bn.onclick = function(){ escSpel = null; renderFun(); };
   var bt2 = document.getElementById("btnEscTerug");
