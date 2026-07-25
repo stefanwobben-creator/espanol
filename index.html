@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v17.2";
+var APP_VERSIE = "v17.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4833,7 +4833,10 @@ function avtMove(dx, dy){
   }
   if(!avtVrij(nx, ny)){
     var cb = AVT_SCHERMEN[avt.scherm].grid[ny].charAt(nx);
-    if(cb === "K" && !avtSave().rotsOpen){ toast(at((avtGear().bommen||0) > 0 ? "rotsBom" : "rotsHint")); }
+    if(cb === "K" && !avtSave().rotsOpen){
+      toast(at((avtGear().bommen||0) > 0 ? "rotsBom" : "rotsHint"));
+      if((avtGear().bommen||0) > 0 && !document.getElementById("btnAvtBom")){ setTimeout(renderFun, 120); }
+    }
     if(cb === "H" || cb === "F"){
       var scId = AVT_SCHERMEN[avt.scherm].casaScene;
       var sc = ESCENAS.filter(function(x){ return x.id === scId; })[0];
@@ -4867,11 +4870,14 @@ function avtMove(dx, dy){
     if(cb === "W"){ avtSfx("kist"); avtKruisStart(); }
     return;
   }
+  var bomKnopVoor = !!document.getElementById("btnAvtBom");
   avt.x = nx; avt.y = ny;
   avtSfx("stap");
   var held = document.getElementById("avtHeld");
   if(held) held.style.transform = "translate(" + (nx*40+20) + "px," + (ny*40+22) + "px)";
   var sav = avtSave(); sav.x = nx; sav.y = ny; persist();
+  var bomKnopNa = !!(avtBomBuur() && (avtGear().bommen||0) > 0);
+  if(bomKnopVoor !== bomKnopNa){ setTimeout(renderFun, 240); }
   var sch = AVT_SCHERMEN[avt.scherm];
   var c = sch.grid[ny].charAt(nx);
   if(c === "C" && !sav.kist){
@@ -5343,6 +5349,22 @@ function avtAhorSvg(){
     "</svg>";
 }
 /* ---- render ---- */
+function avtBomBuur(){
+  if(!avt) return null;
+  var sch = AVT_SCHERMEN[avt.scherm], b = null;
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
+    var bx = avt.x + d[0], by = avt.y + d[1];
+    if(by >= 0 && by <= 6 && bx >= 0 && bx <= 9 && sch.grid[by].charAt(bx) === "K" && !avtSave().rotsOpen) b = {x:bx, y:by};
+  });
+  return b;
+}
+function avtBomLeg(){
+  var sav = avtSave();
+  if(!avtBomBuur() || (avtGear().bommen||0) < 1 || sav.rotsOpen) return;
+  avtGear().bommen--; sav.rotsOpen = true; persist();
+  avtSfx("boom"); confetti(["💥","🪨"], 16); toast(at("boom"));
+  renderFun();
+}
 function avtWachtersDood(){
   var sv = avtSave(), d = 0;
   AVT_SCHERMEN.forEach(function(sc, si2){
@@ -5786,12 +5808,7 @@ function renderFunAvt(){
     "<span class='kicker'>" + ({a0:"La Costa", a1:"El Pueblo", a2:"El Bosque", b1:"El Castillo"}[avtWereld]) + " · " + sch.naam + "</span>"+
     "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave && avtWereld !== "b1" ? " · 🗝️" : "") + (avtWereld === "a2" && !avtSave().brug ? " · 🍄" + (avtSave().setas||0) + "/3" : "") + (avtWereld === "b1" ? " · 👑" + avtWachtersDood() + "/3" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
   html3 += avtKaartSvg();
-  var buurK = null;
-  [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
-    var bx = avt.x + d[0], by = avt.y + d[1];
-    if(by >= 0 && by <= 6 && bx >= 0 && bx <= 9 && sch.grid[by].charAt(bx) === "K" && !avtSave().rotsOpen) buurK = {x:bx, y:by};
-  });
-  if(buurK && (avtGear().bommen||0) > 0){
+  if(avtBomBuur() && (avtGear().bommen||0) > 0){
     html3 += "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtBom'>" + at("bomLeg") + " (" + avtGear().bommen + ")</button></div>";
   }
   html3 += "<div class='avtdpad'>"+
@@ -5803,13 +5820,7 @@ function renderFunAvt(){
     b.onclick = function(){ var d = b.getAttribute("data-avtd").split(","); avtMove(+d[0], +d[1]); };
   });
   var bb = document.getElementById("btnAvtBom");
-  if(bb) bb.onclick = function(){
-    var savB2 = avtSave();
-    if((avtGear().bommen||0) < 1 || savB2.rotsOpen) return;
-    avtGear().bommen--; savB2.rotsOpen = true; persist();
-    avtSfx("boom"); confetti(["💥","🪨"], 16); toast(at("boom"));
-    renderFun();
-  };
+  if(bb) bb.onclick = avtBomLeg;
   document.getElementById("btnAvtWerelden").onclick = function(){ avtStopAlles(); avt = null; renderFun(); };
   document.getElementById("btnAvtGeluid").onclick = function(){
     S.avtStil = !S.avtStil; persist();
@@ -5824,6 +5835,9 @@ function renderFunAvt(){
       document.addEventListener("keydown", function(e){
         if(funView !== "avt" || !avt) return;
         if(avt.ahor && avt.ahor.w && !avt.ahor.af && /^[a-zñ]$/.test(e.key)){ avtAhorGok(e.key); e.preventDefault(); return; }
+        if(e.key === " " && !avt.gevecht && !avt.victory && !avt.kruis && !avt.tienda && !avt.pesca && !avt.snake && !avt.ahor && !escSpel && document.getElementById("avtKaart")){
+          e.preventDefault(); avtBomLeg(); return;
+        }
         var m = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0], w:[0,-1], s:[0,1], a:[-1,0], d:[1,0]}[e.key];
         if(!m) return;
         if(avt.snake && !avt.snake.dood){
