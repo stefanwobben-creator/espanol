@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v11.3";
+var APP_VERSIE = "v11.4";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4784,14 +4784,18 @@ function renderStats(){
   var t2 = today();
   var xpToday = S.xp[t2] || 0;
   // ---- koers & prognose over de laatste 14 dagen ----
-  var nieuw14 = 0, doel14 = 0, actief14 = 0;
-  for(var d14 = 0; d14 < 14; d14++){
+  var nieuw14 = 0, doel14 = 0, actief14 = 0, eersteActief = null;
+  for(var d14 = 13; d14 >= 0; d14--){
     var dag = addDays(t2, -d14);
     nieuw14 += (S.newIntro && S.newIntro[dag]) || 0;
-    if((S.xp[dag] || 0) > 0) actief14++;
+    if((S.xp[dag] || 0) > 0){ actief14++; if(eersteActief === null) eersteActief = d14; }
     if((S.xp[dag] || 0) >= dagdoel()) doel14++;
   }
-  var tempo = nieuw14 / 14; // nieuwe woorden per dag, rustdagen meegeteld (eerlijk tempo)
+  // tempo rekenen vanaf je eerste actieve dag in het venster: wie net begint,
+  // wordt niet afgerekend op de lege dagen ervoor
+  var venster = eersteActief === null ? 14 : (eersteActief + 1);
+  var tempo = nieuw14 / Math.max(1, venster);
+  var tempoActief = actief14 ? nieuw14 / actief14 : 0;
   var vast = boxes[3] + boxes[4] + boxes[5]; // zit goed (1 week of langer interval)
   function prog(dagen){
     var tot = seen + Math.round(tempo * dagen);
@@ -4801,9 +4805,14 @@ function renderStats(){
   if(actief14 === 0){
     koersHtml += "<p class='muted'>Nog geen activiteit in de afgelopen twee weken. Begin vandaag met 5 woordjes, dan staat hier morgen je koers.</p>";
   } else {
-    var oordeel = doel14 >= 11 ? "Je ligt ijzersterk op koers 💪" : doel14 >= 7 ? "Je ligt netjes op koers ✓" : doel14 >= 3 ? "Je bent onderweg, maar er is ruimte: pak vandaag je dagdoel" : "De motor hapert een beetje: één klein dagje oppakken is genoeg om weer te rollen";
-    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · dagdoel gehaald op "+doel14+" van de laatste 14 dagen · "+actief14+" dagen actief</span></p>"+
-      "<p class='muted' style='margin:6px 0'>Je kent nu <b>"+seen+"</b> woorden, waarvan <b>"+vast+"</b> stevig in je geheugen zitten (herhaalinterval van een week of langer). Tempo: ±"+(Math.round(tempo*10)/10)+" nieuwe woorden per dag.</p>";
+    var ratio = doel14 / Math.max(1, Math.min(14, venster));
+    var oordeel = ratio >= 0.8 ? "Je ligt ijzersterk op koers 💪" : ratio >= 0.5 ? "Je ligt netjes op koers ✓" : ratio >= 0.2 ? "Je bent onderweg, maar er is ruimte: pak vandaag je dagdoel" : "De motor hapert een beetje: één klein dagje oppakken is genoeg om weer te rollen";
+    var doelNoemer = Math.min(14, venster);
+    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · dagdoel gehaald op "+doel14+" van de laatste "+doelNoemer+" dagen · "+actief14+" dagen actief</span></p>"+
+      "<p class='muted' style='margin:6px 0'>Je kent nu <b>"+seen+"</b> woorden, waarvan <b>"+vast+"</b> stevig in je geheugen zitten (herhaalinterval van een week of langer)."+
+      (vast === 0 && seen > 0 ? " Heel logisch als je net begonnen bent: een week-interval kan pas na een week bestaan, ze komen eraan." : "")+
+      " Tempo: ±"+(Math.round(tempo*10)/10)+" nieuwe woorden per dag"+
+      (actief14 ? " (±"+(Math.round(tempoActief*10)/10)+" per actieve dag, het maximum is 15)" : "")+".</p>";
     if(tempo > 0){
       koersHtml += "<div class='statgrid'>"+
         "<div class='stat'><b>"+prog(7)+"</b><span class='muted'>woorden over 1 week</span></div>"+
