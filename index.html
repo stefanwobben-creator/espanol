@@ -552,7 +552,29 @@ var WORDS = [
  {id:"w119", es:"alquilar", nl:"huren (én verhuren)", tag:"les4"},
  {id:"w120", es:"el alquiler", nl:"de huur(prijs)", tag:"les4"},
  {id:"w121", es:"el ascensor", nl:"de lift", tag:"les4"},
- {id:"w122", es:"encantar", nl:"geweldig vinden (me encanta)", tag:"les4"}
+ {id:"w122", es:"encantar", nl:"geweldig vinden (me encanta)", tag:"les4"},
+ {id:"w123", es:"pedir un favor", nl:"een gunst vragen, om hulp vragen", tag:"les5"},
+ {id:"w124", es:"el favor", nl:"de gunst", tag:"les5"},
+ {id:"w125", es:"prestar", nl:"uitlenen (aan iemand)", tag:"les5"},
+ {id:"w126", es:"dejar", nl:"(uit)lenen, laten", tag:"les5"},
+ {id:"w127", es:"pedir prestado / prestada", nl:"lenen (van iemand)", tag:"les5"},
+ {id:"w128", es:"¿podrías...?", nl:"zou je kunnen...?", tag:"les5"},
+ {id:"w129", es:"¿te importaría...?", nl:"zou je het erg vinden om...?", tag:"les5"},
+ {id:"w130", es:"la excusa", nl:"het excuus, de smoes", tag:"les5"},
+ {id:"w131", es:"disculparse", nl:"zich verontschuldigen", tag:"les5"},
+ {id:"w132", es:"perdonar", nl:"vergeven", tag:"les5"},
+ {id:"w133", es:"lo siento (mucho)", nl:"het spijt me (erg)", tag:"les5"},
+ {id:"w134", es:"el ruido", nl:"het lawaai", tag:"les5"},
+ {id:"w135", es:"molestar", nl:"storen, hinderen", tag:"les5"},
+ {id:"w136", es:"el vecino / la vecina", nl:"de buurman / buurvrouw", tag:"les5"},
+ {id:"w137", es:"ahora mismo", nl:"nu meteen", tag:"les5"},
+ {id:"w138", es:"en este momento", nl:"op dit moment", tag:"les5"},
+ {id:"w139", es:"ocupado / ocupada", nl:"bezig, druk", tag:"les5"},
+ {id:"w140", es:"la llave", nl:"de sleutel", tag:"les5"},
+ {id:"w141", es:"el móvil", nl:"de mobiel, de telefoon", tag:"les5"},
+ {id:"w142", es:"el permiso", nl:"de toestemming", tag:"les5"},
+ {id:"w143", es:"cenar", nl:"avondeten, dineren", tag:"les5"},
+ {id:"w144", es:"ducharse", nl:"douchen", tag:"les5"}
 ];
 
 var SENTENCES = [
@@ -685,7 +707,31 @@ var SENTENCES = [
   uitleg:"Hay = er is/er staat, voor dingen met un/una. Het Nederlandse 'staan' vertaal je hier gewoon met hay.", tag:"hay"},
  {id:"s44", lvl:2, nl:"Wij huren een flat in de buitenwijken van Alicante.", es:"Alquilamos un piso en las afueras de Alicante.",
   alt:["alquilamos un piso en las afueras de alicante"],
-  uitleg:"Alquilar = huren (regelmatig -ar werkwoord). Las afueras is altijd meervoud: en las afueras.", tag:"les4"}
+  uitleg:"Alquilar = huren (regelmatig -ar werkwoord). Las afueras is altijd meervoud: en las afueras.", tag:"les4"},
+ {id:"s45", lvl:1, nl:"Ik ben nu aan het eten.", es:"Estoy comiendo ahora.",
+  alt:["estoy comiendo ahora","ahora estoy comiendo","estoy comiendo ahora mismo"],
+  uitleg:"Estar + gerundio = ergens mee bezig zijn. Comer → comiendo (-er/-ir krijgen -iendo, -ar krijgt -ando).", tag:"les5"},
+ {id:"s46", lvl:1, nl:"Zou je me je mobiel kunnen lenen?", es:"¿Podrías prestarme tu móvil?",
+  alt:["podrías prestarme tu móvil","me podrías prestar tu móvil","podrías dejarme tu móvil","me podrías dejar tu móvil","podrias prestarme tu movil"],
+  uitleg:"¿Podrías + infinitief? = zou je kunnen...? Prestar of dejar = uitlenen. Het pronomen me mag achteraan de infinitief (prestarme) of vóór podrías (me podrías prestar).", tag:"les5"},
+ {id:"s47", lvl:2, nl:"Zou je het erg vinden om het raam te openen?", es:"¿Te importaría abrir la ventana?",
+  alt:["te importaría abrir la ventana","te importaria abrir la ventana"],
+  uitleg:"¿Te importaría + infinitief? = zou je het erg vinden om...? Extra beleefd. La ventana = het raam.", tag:"les5"},
+ {id:"s48", lvl:1, nl:"Het spijt me, ik kan nu niet praten.", es:"Lo siento, no puedo hablar ahora.",
+  alt:["lo siento no puedo hablar ahora","lo siento, ahora no puedo hablar","lo siento ahora no puedo hablar"],
+  uitleg:"Lo siento = het spijt me (letterlijk: ik voel het). Daarna gewoon no puedo + infinitief.", tag:"les5"},
+ {id:"s49", lvl:1, nl:"Sorry, ben je bezig?", es:"Perdona, ¿estás ocupado?",
+  alt:["perdona estás ocupado","perdona, estás ocupada","perdona estás ocupada","perdona estas ocupado","perdona estas ocupada"],
+  uitleg:"Perdona = sorry (tegen iemand die je tutoyeert; tegen usted: perdone). Ocupado/ocupada past zich aan de persoon aan.", tag:"les5"},
+ {id:"s50", lvl:1, nl:"Mag ik je een gunst vragen?", es:"¿Puedo pedirte un favor?",
+  alt:["puedo pedirte un favor","te puedo pedir un favor"],
+  uitleg:"¿Puedo + infinitief? = mag ik...? Pedir + te plakt aan elkaar: pedirte. Ook goed: ¿te puedo pedir un favor?", tag:"les5"},
+ {id:"s51", lvl:2, nl:"De buren zijn muziek aan het luisteren.", es:"Los vecinos están escuchando música.",
+  alt:["los vecinos están escuchando música","los vecinos estan escuchando musica"],
+  uitleg:"Meervoud: están + gerundio. Escuchar → escuchando (-ar → -ando).", tag:"les5"},
+ {id:"s52", lvl:2, nl:"Mijn moeder is zich aan het douchen.", es:"Mi madre se está duchando.",
+  alt:["mi madre se está duchando","mi madre está duchándose","mi madre se esta duchando","mi madre esta duchandose"],
+  uitleg:"Bij wederkerende werkwoorden mag se vóór estar (se está duchando) of vastgeplakt achter het gerundio (está duchándose, dan mét accent).", tag:"les5"}
 ];
 
 var QUIZZES = [
@@ -836,6 +882,42 @@ var QUIZZES = [
    u:"Piso is mannelijk: el nuestro."},
   {q:"Esa cama no es mía, es ___.", nl:"Dat bed is niet van mij, het is het hare.", opts:["suya","suyo"], c:0,
    u:"Cama is vrouwelijk: suya. Na ser weer zonder lidwoord."}
+ ]},
+ {id:"q-gerundio", titel:"Estar + gerundio: waar ben je mee bezig?", vragen:[
+  {q:"Ahora mismo ___ español.", nl:"Ik ben nu net Spaans aan het studeren.", opts:["estoy estudiando","estudiando"], c:0,
+   u:"Het gerundio kan niet alleen staan: altijd estar erbij. Estoy estudiando."},
+  {q:"Estamos ___ la cena.", nl:"We zijn het avondeten aan het klaarmaken.", opts:["preparando","preparar"], c:0,
+   u:"Na estar komt het gerundio: -ar → -ando. Preparando."},
+  {q:"Elisa está ___ un libro.", nl:"Elisa is een boek aan het lezen.", opts:["leyendo","leiendo"], c:0,
+   u:"Leer is onregelmatig: de i tussen twee klinkers wordt een y. Leyendo (net als oír → oyendo)."},
+  {q:"Los niños están ___.", nl:"De kinderen zijn aan het slapen.", opts:["durmiendo","dormiendo"], c:0,
+   u:"Dormir wisselt o→u in het gerundio: durmiendo. Zelfde familie als murió/durmió."},
+  {q:"¿Qué ___ haciendo?", nl:"Wat ben je aan het doen?", opts:["estás","eres"], c:0,
+   u:"Bezig zijn = toestand = estar, nooit ser. ¿Qué estás haciendo?"},
+  {q:"Mi padre se está ___.", nl:"Mijn vader is aan het douchen.", opts:["duchando","ducha"], c:0,
+   u:"Se está duchando. Het se mag ook achteraan: está duchándose (dan met accent)."},
+  {q:"No puedo salir: ___ trabajando.", nl:"Ik kan niet weg: ik ben aan het werken.", opts:["estoy","soy"], c:0,
+   u:"Wat je nú aan het doen bent: estar + gerundio. Handig als excuus."},
+  {q:"¿Ahora? Es que ___ comiendo.", nl:"Nu? Ik ben namelijk aan het eten.", opts:["estamos","somos"], c:0,
+   u:"Es que... = het zit zo... (dé excuus-opener). Daarna estar + gerundio: estamos comiendo."}
+ ]},
+ {id:"q-cortesia", titel:"Beleefd vragen: puedo, podrías, te importaría", vragen:[
+  {q:"___ abrir la ventana? Hace calor.", nl:"Mag ik het raam openen? Het is warm.", opts:["¿Puedo","¿Podrías"], c:0,
+   u:"Je vraagt toestemming om het zélf te doen: ¿puedo...? Podrías is als de ander iets moet doen."},
+  {q:"___ ayudarme con la maleta?", nl:"Zou je me kunnen helpen met de koffer?", opts:["¿Podrías","¿Puedo"], c:0,
+   u:"De ander doet het werk: ¿podrías + infinitief? Beleefder dan ¿puedes?"},
+  {q:"¿Te ___ bajar la música?", nl:"Zou je het erg vinden om de muziek zachter te zetten?", opts:["importaría","importas"], c:0,
+   u:"¿Te importaría + infinitief? = zou je het erg vinden om...? De allerbeleefdste vorm."},
+  {q:"¿Me ___ tu diccionario? Olvidé el mío.", nl:"Leen je me je woordenboek? Ik ben het mijne vergeten.", opts:["dejas","pides"], c:0,
+   u:"¿Me dejas...? / ¿me prestas...? = leen je me...? Pedir is juist iets vrágen."},
+  {q:"Le pido dinero prestado ___ mi hermano.", nl:"Ik leen geld van mijn broer.", opts:["a","de"], c:0,
+   u:"Pedir prestado A alguien: in het Spaans 'aan' iemand, ook al zegt het Nederlands 'van'."},
+  {q:"Señor López, ¿___ firmar aquí?", nl:"Meneer López, zou u hier kunnen tekenen?", opts:["podría","podrías"], c:0,
+   u:"Tegen usted: podría (zonder -s). Podrías is de tú-vorm."},
+  {q:"___, ¿me puede decir la hora?", nl:"Pardon, kunt u me zeggen hoe laat het is?", opts:["Perdone","Perdona"], c:0,
+   u:"Tegen een onbekende (usted): perdone. Perdona is voor vrienden en familie (tú)."},
+  {q:"Lo siento, no puedo: es que estoy ___.", nl:"Sorry, ik kan niet: ik ben namelijk bezig.", opts:["ocupado","ocupo"], c:0,
+   u:"Estar ocupado/ocupada = bezig zijn. Een vrouw zegt: estoy ocupada."}
  ]}
 ];
 
@@ -935,7 +1017,30 @@ var CHEATSHEET = [
   "<b>Estar</b> voor waar iets ligt: <i>el piso está en el centro, cerca de la playa.</i><br>"+
   "<b>Hay</b> = er is/er staat: <i>en el salón hay un sofá y dos sillas.</i></p>"+
   "<p><b>Gustar-familie</b> bij wonen: <i>me gusta el barrio</i>, <i>me encanta la terraza</i>. Encantar = geweldig vinden, dus zónder mucho.</p>"+
-  "<p><b>Preferir</b> vervoeg je gewoon mét persoon (schoenwerkwoord e→ie): <i>prefiero, prefieres, prefiere... Prefiero un piso amueblado.</i></p>"}
+  "<p><b>Preferir</b> vervoeg je gewoon mét persoon (schoenwerkwoord e→ie): <i>prefiero, prefieres, prefiere... Prefiero un piso amueblado.</i></p>"},
+ {titel:"Estar + gerundio (waar je nú mee bezig bent)",
+  html:"<p><b>Estar + gerundio</b> = aan het ... zijn: <i>estoy comiendo</i> (ik ben aan het eten).</p>"+
+  "<p>Gerundio maken: <b>-ar → -ando</b> (hablar → habl<b>ando</b>), <b>-er/-ir → -iendo</b> (comer → com<b>iendo</b>, escribir → escrib<b>iendo</b>).</p>"+
+  "<p>Onregelmatig: leer → le<b>y</b>endo, oír → o<b>y</b>endo (i tussen klinkers wordt y) · dormir → d<b>u</b>rmiendo · pedir → p<b>i</b>diendo · repetir → rep<b>i</b>tiendo.</p>"+
+  "<p>Wederkerend: het pronomen mag vóór estar (<i>se está duchando</i>) of achter het gerundio geplakt (<i>está duchándose</i>, dan mét accent).</p>"+
+  "<p>Valkuil: gebruik het alleen voor wat nú (of tijdelijk) bezig is. Voor gewoontes gewoon presente: <i>vivo en Alicante</i>, niet 'estoy viviendo' als je er gewoon woont.</p>"},
+ {titel:"Beleefd vragen en lenen (puedo, podrías, te importaría)",
+  html:"<p>Drie niveaus van beleefdheid:</p>"+
+  "<table><tr><th>vorm</th><th>gebruik</th><th>voorbeeld</th></tr>"+
+  "<tr><td>¿Puedo...?</td><td>toestemming vragen (ik doe het)</td><td><i>¿Puedo abrir la ventana?</i></td></tr>"+
+  "<tr><td>¿Podrías...?</td><td>verzoek (jij doet het)</td><td><i>¿Podrías ayudarme?</i></td></tr>"+
+  "<tr><td>¿Te importaría...?</td><td>extra beleefd verzoek</td><td><i>¿Te importaría bajar la música?</i></td></tr></table>"+
+  "<p><b>Lenen:</b> <i>¿me prestas...?</i> / <i>¿me dejas...?</i> = leen je me...? · <i>pedir prestado</i> = lenen ván iemand: <i>le pedí el coche prestado <b>a</b> mi vecino</i> (Spaans zegt 'aan', niet 'van').</p>"+
+  "<p><b>Excuses:</b> <i>lo siento (mucho)</i> = het spijt me · <i>perdona / perdone</i> = sorry, pardon · <i>es que...</i> = het zit zo... (leidt je smoes in: <i>es que estoy trabajando</i>).</p>"},
+ {titel:"Tú of usted?",
+  html:"<p><b>Tú</b> = informeel: familie, vrienden, collega's, iedereen van je eigen leeftijd. In Spanje de standaard.</p>"+
+  "<p><b>Usted</b> = formeel: oudere onbekenden, loketten, artsen, klanten. Usted gebruikt de <b>hij/zij-vorm</b> van het werkwoord: <i>¿usted habla neerlandés?</i></p>"+
+  "<table><tr><th>tú</th><th>usted</th></tr>"+
+  "<tr><td>¿Podrías...?</td><td>¿Podría...?</td></tr>"+
+  "<tr><td>¿Te importaría...?</td><td>¿Le importaría...?</td></tr>"+
+  "<tr><td>Perdona</td><td>Perdone</td></tr>"+
+  "<tr><td>¿Cómo estás?</td><td>¿Cómo está?</td></tr></table>"+
+  "<p>Meervoud: vosotros (informeel, alleen in Spanje) en ustedes (formeel; in Latijns-Amerika áltijd).</p>"}
 ];
 
 /* ================= BEGINNERSTRACK ================= */
@@ -1013,7 +1118,29 @@ var B_WORDS = [
  {id:"b71", es:"hace frío", nl:"het is koud", tag:"les3"},
  {id:"b72", es:"llueve", nl:"het regent", tag:"les3"},
  {id:"b73", es:"la gente", nl:"de mensen (enkelvoud in het Spaans!)", tag:"les3"},
- {id:"b74", es:"bonito / bonita", nl:"mooi", tag:"les3"}
+ {id:"b74", es:"bonito / bonita", nl:"mooi", tag:"les3"},
+ {id:"b75", es:"la ropa", nl:"de kleding", tag:"les4"},
+ {id:"b76", es:"la camiseta", nl:"het T-shirt", tag:"les4"},
+ {id:"b77", es:"el pantalón", nl:"de broek", tag:"les4"},
+ {id:"b78", es:"el vestido", nl:"de jurk", tag:"les4"},
+ {id:"b79", es:"los zapatos", nl:"de schoenen", tag:"les4"},
+ {id:"b80", es:"la chaqueta", nl:"de jas, het jasje", tag:"les4"},
+ {id:"b81", es:"rojo / roja", nl:"rood", tag:"les4"},
+ {id:"b82", es:"azul", nl:"blauw", tag:"les4"},
+ {id:"b83", es:"verde", nl:"groen", tag:"les4"},
+ {id:"b84", es:"amarillo / amarilla", nl:"geel", tag:"les4"},
+ {id:"b85", es:"negro / negra", nl:"zwart", tag:"les4"},
+ {id:"b86", es:"blanco / blanca", nl:"wit", tag:"les4"},
+ {id:"b87", es:"la tienda", nl:"de winkel", tag:"les4"},
+ {id:"b88", es:"comprar", nl:"kopen", tag:"les4"},
+ {id:"b89", es:"caro / cara", nl:"duur", tag:"les4"},
+ {id:"b90", es:"barato / barata", nl:"goedkoop", tag:"les4"},
+ {id:"b91", es:"el precio", nl:"de prijs", tag:"les4"},
+ {id:"b92", es:"cien", nl:"honderd", tag:"les4"},
+ {id:"b93", es:"¿cuánto cuesta?", nl:"hoeveel kost het?", tag:"les4"},
+ {id:"b94", es:"preferir", nl:"liever willen, de voorkeur geven aan", tag:"les4"},
+ {id:"b95", es:"llevar", nl:"dragen, aanhebben", tag:"les4"},
+ {id:"b96", es:"la talla", nl:"de (kleding)maat", tag:"les4"}
 ];
 
 var B_SENTENCES = [
@@ -1083,7 +1210,28 @@ var B_SENTENCES = [
   uitleg:"Llueve = het regent (van llover). Na een werkwoord komt mucho, los: llueve mucho.", tag:"muy-mucho"},
  {id:"bs27", lvl:1, nl:"De stad is heel groot en heel mooi.", es:"La ciudad es muy grande y muy bonita.",
   alt:["la ciudad es muy grande y muy bonita"],
-  uitleg:"Muy + bijvoeglijk naamwoord: muy grande, muy bonita. Bonita eindigt op -a, want la ciudad is vrouwelijk.", tag:"muy-mucho"}
+  uitleg:"Muy + bijvoeglijk naamwoord: muy grande, muy bonita. Bonita eindigt op -a, want la ciudad is vrouwelijk.", tag:"muy-mucho"},
+ {id:"bs28", lvl:1, nl:"Hoeveel kost het T-shirt?", es:"¿Cuánto cuesta la camiseta?",
+  alt:["cuánto cuesta la camiseta","cuanto cuesta la camiseta"],
+  uitleg:"¿Cuánto cuesta...? = hoeveel kost...? Dé winkelzin. Cuánto met accent, want het is een vraag.", tag:"les4"},
+ {id:"bs29", lvl:1, nl:"De schoenen kosten vijftig euro.", es:"Los zapatos cuestan cincuenta euros.",
+  alt:["los zapatos cuestan cincuenta euros","los zapatos cuestan 50 euros"],
+  uitleg:"Zapatos is meervoud, dus cuestan (niet cuesta). Cincuenta = 50. Euro krijgt een -s: euros.", tag:"les4"},
+ {id:"bs30", lvl:1, nl:"Ik vind deze jurk mooi.", es:"Me gusta este vestido.",
+  alt:["me gusta este vestido"],
+  uitleg:"Me gusta = ik vind ... leuk/mooi. Este = deze (mannelijk, want el vestido).", tag:"les4"},
+ {id:"bs31", lvl:2, nl:"Welke heb je liever, de rode of de zwarte?", es:"¿Cuál prefieres, la roja o la negra?",
+  alt:["cuál prefieres la roja o la negra","cual prefieres la roja o la negra"],
+  uitleg:"Cuál = welke (als je kiest uit een groepje). Prefieres van preferir (e→ie). La roja = de rode (bijvoorbeeld una camiseta).", tag:"les4"},
+ {id:"bs32", lvl:1, nl:"De broek is heel duur.", es:"El pantalón es muy caro.",
+  alt:["el pantalón es muy caro","el pantalon es muy caro"],
+  uitleg:"Let op: el pantalón is in het Spaans enkelvoud (één broek). Caro = duur, met -o want pantalón is mannelijk.", tag:"les4"},
+ {id:"bs33", lvl:2, nl:"Ik moet een jas kopen.", es:"Tengo que comprar una chaqueta.",
+  alt:["tengo que comprar una chaqueta"],
+  uitleg:"Tener que + infinitief = moeten: tengo que comprar. Vergeet het woordje que niet!", tag:"les4"},
+ {id:"bs34", lvl:2, nl:"Ik draag een wit T-shirt en blauwe schoenen.", es:"Llevo una camiseta blanca y zapatos azules.",
+  alt:["llevo una camiseta blanca y zapatos azules","llevo una camiseta blanca y unos zapatos azules"],
+  uitleg:"Llevar = dragen. Kleuren passen zich aan: blanca (bij camiseta, v) en azules (meervoud; azul heeft geen aparte vrouwelijke vorm).", tag:"les4"}
 ];
 
 var B_QUIZZES = [
@@ -1138,6 +1286,26 @@ var B_QUIZZES = [
   {q:"Tengo ___ amigos.", nl:"Ik heb veel vrienden.", opts:["muy","muchos"], c:1, u:"Amigos = zelfstandig naamwoord in het meervoud: muchos amigos."},
   {q:"Hace ___ frío en las montañas.", nl:"Het is heel koud in de bergen.", opts:["muy","mucho"], c:1, u:"Frío is hier een zelfstandig naamwoord: mucho frío."},
   {q:"El clima es ___ bueno.", nl:"Het klimaat is heel goed.", opts:["muy","mucho"], c:0, u:"Muy + bueno. En onthoud: el clima, ondanks de -a."}
+ ]},
+ {id:"bq-kleuren", titel:"Kleuren: welke vorm?", vragen:[
+  {q:"la camiseta ___", nl:"het rode T-shirt", opts:["roja","rojo"], c:0, u:"Camiseta is vrouwelijk, dus ook de kleur: roja."},
+  {q:"el vestido ___", nl:"de zwarte jurk", opts:["negro","negra"], c:0, u:"El vestido is mannelijk (ondanks dat 'jurk' vrouwelijk klinkt): negro."},
+  {q:"los zapatos ___", nl:"de witte schoenen", opts:["blancos","blancas"], c:0, u:"Zapatos is mannelijk meervoud: blancos."},
+  {q:"la chaqueta ___", nl:"de blauwe jas", opts:["azul","azula"], c:0, u:"Azul heeft géén aparte vrouwelijke vorm: la chaqueta azul. 'Azula' bestaat niet."},
+  {q:"los pantalones ___", nl:"de groene broeken", opts:["verdes","verdos"], c:0, u:"Verde is voor m en v hetzelfde; meervoud met -s: verdes."},
+  {q:"la casa ___", nl:"het gele huis", opts:["amarilla","amarillo"], c:0, u:"Casa is vrouwelijk: amarilla."},
+  {q:"¿De qué ___ es tu coche?", nl:"Welke kleur heeft jouw auto?", opts:["color","colora"], c:0, u:"¿De qué color es...? = welke kleur heeft...? El color is mannelijk."},
+  {q:"las camisetas ___", nl:"de rode T-shirts", opts:["rojas","rojos"], c:0, u:"Camisetas is vrouwelijk meervoud: rojas."}
+ ]},
+ {id:"bq-getallen100", titel:"Getallen boven de 100", vragen:[
+  {q:"100 = ?", nl:"honderd", opts:["cien","ciento","cientos"], c:0, u:"Precies 100 = cien. Ciento alleen in 101-199: ciento dos."},
+  {q:"150 = ciento ___", nl:"honderdvijftig", opts:["cincuenta","quince","cinco"], c:0, u:"150 = ciento cincuenta. Boven de 100 wordt cien → ciento."},
+  {q:"200 = ?", nl:"tweehonderd", opts:["doscientos","dos cientos","doscien"], c:0, u:"200 = doscientos, aan elkaar. Voor iets vrouwelijks: doscientas (doscientas personas)."},
+  {q:"500 = ?", nl:"vijfhonderd", opts:["quinientos","cincocientos","cinquientos"], c:0, u:"Instinker! 500 = quinientos, onregelmatig (niet 'cincocientos')."},
+  {q:"1000 = ?", nl:"duizend", opts:["mil","un mil","mile"], c:0, u:"1000 = mil, zónder un: mil euros. 2000 = dos mil."},
+  {q:"La camiseta cuesta ___ euros. (23)", nl:"Het T-shirt kost 23 euro.", opts:["veintitrés","veinte y tres","veintetres"], c:0, u:"21-29 schrijf je als één woord: veintitrés, mét accent."},
+  {q:"365 = trescientos sesenta y ___", nl:"driehonderdvijfenzestig", opts:["cinco","seis","siete"], c:0, u:"365 = trescientos sesenta y cinco. De y komt alleen tussen tientallen en eenheden."},
+  {q:"700 = ?", nl:"zevenhonderd", opts:["setecientos","sietecientos","setencientos"], c:0, u:"Instinker! 700 = setecientos (zonder ie). Net zo: 900 = novecientos."}
  ]}
 ];
 
@@ -1185,12 +1353,30 @@ var B_CHEATSHEET = [
   "<b>Mucho/mucha/muchos/muchas</b> + zelfstandig naamwoord: <i>mucha gente, muchos amigos.</i><br>"+
   "Werkwoord + <b>mucho</b>: <i>llueve mucho.</i></p>"+
   "<p>Het weer doe je met <b>hacer</b>: <i>hace calor</i> (het is warm), <i>hace frío</i> (koud), <i>hace sol</i> (zonnig), <i>hace buen tiempo</i> (mooi weer). En: <i>llueve</i> = het regent.</p>"+
-  "<p>Daarom ook <i>hace MUCHO calor</i>: calor is een zelfstandig naamwoord (warmte), dus mucho en geen muy.</p>"}
+  "<p>Daarom ook <i>hace MUCHO calor</i>: calor is een zelfstandig naamwoord (warmte), dus mucho en geen muy.</p>"},
+ {titel:"Kleuren (en hun uitgangen)",
+  html:"<p>rojo = rood · azul = blauw · verde = groen · amarillo = geel · negro = zwart · blanco = wit · naranja = oranje · rosa = roze · gris = grijs · marrón = bruin</p>"+
+  "<p>Kleuren zijn bijvoeglijke naamwoorden en passen zich aan het woord aan:</p>"+
+  "<p><b>-o/-a:</b> el vestido roj<b>o</b>, la camiseta roj<b>a</b>. <b>-e of medeklinker:</b> zelfde vorm voor m en v: la chaqueta azul, el coche verde.</p>"+
+  "<p>Meervoud: +s of +es: zapatos blancos, camisetas rojas, pantalones azules.</p>"+
+  "<p>Vragen naar kleur: <i>¿De qué color es?</i> Uitzondering: naranja en rosa veranderen nooit (la camiseta naranja).</p>"},
+ {titel:"Getallen van 100 tot 1000",
+  html:"<p><b>100 = cien</b>, maar 101-199 = <b>ciento</b>...: ciento dos, ciento cincuenta.</p>"+
+  "<p>Honderdtallen: 200 doscientos · 300 trescientos · 400 cuatrocientos · <b>500 quinientos</b> (!) · 600 seiscientos · <b>700 setecientos</b> (!) · 800 ochocientos · <b>900 novecientos</b> (!). De drie met (!) zijn onregelmatig.</p>"+
+  "<p><b>1000 = mil</b> (zonder un): mil euros, dos mil, diez mil.</p>"+
+  "<p>De <b>y</b> komt alleen tussen tientallen en eenheden: trescientos sesenta <b>y</b> cinco (365). Niet na het honderdtal: ciento <i>(geen y)</i> cincuenta.</p>"+
+  "<p>Bij vrouwelijke woorden: doscient<b>as</b> personas.</p>"},
+ {titel:"Este/ese, qué/cuál en tener que",
+  html:"<p><b>Aanwijzen:</b> este/esta = deze (dichtbij), ese/esa = die (verder weg): <i>este vestido, esa camiseta</i>. Meervoud: estos/estas, esos/esas.</p>"+
+  "<p><b>¿Qué?</b> = wat (open vraag): <i>¿Qué quieres?</i> <b>¿Cuál?</b> = welke (kiezen uit een groepje): <i>¿Cuál prefieres, la roja o la negra?</i></p>"+
+  "<p><b>Tener que + infinitief</b> = moeten: <i>tengo que comprar zapatos, tienes que estudiar</i>. Vergeet que niet!</p>"+
+  "<p><b>Preferir</b> (e→ie): prefiero, prefieres, prefiere, preferimos, preferís, prefieren.</p>"+
+  "<p><b>In de winkel:</b> ¿Cuánto cuesta? (ev) / ¿Cuánto cuestan? (mv) · ¿Qué talla tienes? = welke maat heb je? · Es muy caro/barato.</p>"}
 ];
 
 var TRACKS = {
-  a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-3"},
-  beginner: {label:"A0 · AULA 1", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"a0-batch-3"}
+  a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-4"},
+  beginner: {label:"A0 · AULA 1", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"a0-batch-4"}
 };
 
 /* ================= LESSEN (volgens AULA-inhoudsopgave) ================= */
@@ -1205,7 +1391,8 @@ TRACKS.a2.lessons = [
   spiek:[7], words:rng("w",83,98), sents:rng("s",31,36), quizzes:["q-soyasi"]},
  {id:"a2-4", num:4, titel:"Hogar, dulce hogar", doel:"Een woning beschrijven en vergelijken",
   spiek:[8,9,10], words:rng("w",99,122), sents:rng("s",37,44), quizzes:["q-hogar","q-posesivos"]},
- {id:"a2-5", num:5, titel:"¿Cómo va todo?", doel:"Formeel en informeel: vragen, lenen, excuses", stub:true},
+ {id:"a2-5", num:5, titel:"¿Cómo va todo?", doel:"Formeel en informeel: vragen, lenen, excuses",
+  spiek:[11,12,13], words:rng("w",123,144), sents:rng("s",45,52), quizzes:["q-gerundio","q-cortesia"]},
  {id:"a2-6", num:6, titel:"Guía del ocio", doel:"Vrije tijd en plannen (perfecto vs indefinido, ir a + infinitief)", stub:true},
  {id:"a2-7", num:7, titel:"¿Comes de todo?", doel:"Eten, recepten en gewoontes", stub:true},
  {id:"a2-8", num:8, titel:"Estamos muy bien", doel:"Lichaam, gezondheid en advies geven", stub:true},
@@ -1222,7 +1409,8 @@ TRACKS.beginner.lessons = [
   spiek:[1,6], words:rng("b",11,16).concat(rng("b",21,34)).concat(["b38","b40"]).concat(rng("b",51,56)), sents:["bs5","bs6","bs9","bs10","bs11","bs13","bs20"], quizzes:["bq-ellla"]},
  {id:"a0-3", num:3, titel:"¿Dónde está Santiago?", doel:"Waar is het? Plaatsen, klimaat en hay/estar",
   spiek:[7,8], words:rng("b",57,74), sents:rng("bs",21,27), quizzes:["bq-hayestar","bq-muymucho"]},
- {id:"a0-4", num:4, titel:"¿Cuál prefieres?", doel:"Winkelen: kleuren, kleding en getallen boven 100", stub:true},
+ {id:"a0-4", num:4, titel:"¿Cuál prefieres?", doel:"Winkelen: kleuren, kleding en getallen boven 100",
+  spiek:[9,10,11], words:rng("b",75,96), sents:rng("bs",28,34), quizzes:["bq-kleuren","bq-getallen100"]},
  {id:"a0-5", num:5, titel:"Tus amigos son mis amigos", doel:"Familie, vrienden en gustar", stub:true},
  {id:"a0-6", num:6, titel:"Día a día", doel:"Je dagelijkse routine en de klok", stub:true},
  {id:"a0-7", num:7, titel:"¡A comer!", doel:"Eten bestellen en over eten praten", stub:true},
@@ -3073,7 +3261,7 @@ function wsCellClick(r, c){
 }
 /* ================= TALEN (i18n) ================= */
 var UI_LANGS = {nl:{naam:"Nederlands", vlag:"🇳🇱", kort:"NL"}, en:{naam:"English", vlag:"🇬🇧", kort:"EN"}, fr:{naam:"Français", vlag:"🇫🇷", kort:"FR"}, de:{naam:"Deutsch", vlag:"🇩🇪", kort:"DE"}};
-var TRANS = {en:{"w1":"insecure","w2":"insecurity","w3":"anxious, tense","w4":"anxiety, tension","w5":"frustrated","w6":"frustration","w7":"easily scared, fearful","w8":"fear","w9":"excited, full of anticipation","w10":"joyful anticipation (not: illusion!)","w11":"ridiculous","w12":"enthusiastic","w13":"shy","w14":"funny, fun","w15":"happy, content","w16":"sad","w17":"free","w18":"to feel","w19":"to worry","w20":"to feel terrible","w21":"to learn","w22":"to forget","w23":"to remember","w24":"to repeat","w25":"to translate","w26":"to look up, to search","w27":"dictionary","w28":"word","w29":"sentence, phrase","w30":"sound","w31":"to pronounce","w32":"to improve","w33":"challenge","w34":"mistake, error","w35":"to be hard/difficult (for someone); to cost","w36":"to overcome the fear","w37":"vocabulary","w38":"grammar","w39":"to understand","w40":"Spanish speaker","w41":"to be born","w42":"to marry","w43":"to divorce","w44":"to die","w45":"to move (house)","w46":"to influence","w47":"to travel","w48":"life","w49":"death","w50":"painting","w51":"(artist's) work","w52":"era, time","w53":"famous","w54":"painter","w55":"suffering","w56":"exhibition","w57":"to stumble, to trip","w58":"to swim","w59":"sea","w60":"to make decisions","w61":"to discover","w62":"loved ones","w63":"country","w64":"everyone","w65":"biography","w66":"achievement","w67":"to be successful","w68":"prize, award","w69":"to begin (to)","w70":"to finish, to end","w71":"during","w72":"until","w73":"century","w74":"to retire","w75":"war","w76":"to flee","w77":"to compose","w78":"to direct, to lead","w79":"to star in","w80":"to achieve, to manage to","w81":"singer","w82":"to leave, to go away","w83":"hair","w84":"eyes","w85":"tall","w86":"short (height)","w87":"slim","w88":"handsome, pretty","w89":"to wear glasses","w90":"beard","w91":"to look like, to resemble","w92":"to get along well/badly with","w93":"character, personality","w94":"open (personality)","w95":"quiet (person)","w96":"funny","w97":"partner, couple","w98":"to know (someone), to meet","w99":"flat, apartment","w100":"bedroom","w101":"kitchen","w102":"bathroom","w103":"living room","w104":"terrace","w105":"balcony","w106":"garden","w107":"wardrobe, closet","w108":"bed","w109":"sofa (masculine, despite the -a!)","w110":"furniture","w111":"furnished","w112":"bright, light-filled","w113":"spacious","w114":"cosy, welcoming","w115":"noisy","w116":"quiet, calm","w117":"neighbourhood","w118":"the outskirts (always plural)","w119":"to rent (and rent out)","w120":"rent (price)","w121":"lift, elevator","w122":"to love (something) (me encanta)","b1":"hello","b2":"goodbye","b3":"thank you","b4":"please","b5":"yes / no","b6":"good morning","b7":"good evening, good night","b8":"see you tomorrow","b9":"my name is...","b10":"how are you?","b11":"house","b12":"dog","b13":"cat","b14":"book","b15":"school","b16":"friend","b17":"family","b18":"mother","b19":"father","b20":"brother / sister","b21":"to eat","b22":"to drink","b23":"to speak, to talk","b24":"to live","b25":"to be (essence/traits)","b26":"to be (place/state)","b27":"to have","b28":"to go","b29":"big","b30":"small","b31":"pretty, nice","b32":"nice, kind","b33":"water","b34":"food","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"the Netherlands","b38":"a little","b39":"where?","b40":"a lot, much","b41":"Dutch (person)","b42":"Spanish (person)","b43":"name","b44":"work, job","b45":"teacher","b46":"student","b47":"to work","b48":"to study","b49":"year","b50":"what's your name?","b51":"to read","b52":"to write","b53":"to listen","b54":"to understand","b55":"word","b56":"language","b57":"city","b58":"village","b59":"beach","b60":"mountain","b61":"river","b62":"sea","b63":"north","b64":"south","b65":"park","b66":"square","b67":"museum","b68":"church","b69":"climate (el, despite the -a)","b70":"it's hot","b71":"it's cold","b72":"it rains / it's raining","b73":"people (singular in Spanish!)","b74":"pretty, nice"}, fr:{"w1":"peu sûr de soi","w2":"l'insécurité","w3":"anxieux, tendu","w4":"l'anxiété","w5":"frustré","w6":"la frustration","w7":"peureux, craintif","w8":"la peur","w9":"enthousiaste, impatient","w10":"la joie anticipée (pas : illusion !)","w11":"ridicule","w12":"enthousiaste","w13":"timide","w14":"amusant, drôle","w15":"content","w16":"triste","w17":"libre","w18":"se sentir","w19":"s'inquiéter","w20":"se sentir très mal","w21":"apprendre","w22":"oublier","w23":"se souvenir de","w24":"répéter","w25":"traduire","w26":"chercher","w27":"le dictionnaire","w28":"le mot","w29":"la phrase","w30":"le son","w31":"prononcer","w32":"améliorer","w33":"le défi","w34":"l'erreur, la faute","w35":"coûter (de l'effort)","w36":"surmonter la peur","w37":"le vocabulaire","w38":"la grammaire","w39":"comprendre","w40":"l'hispanophone","w41":"naître","w42":"se marier (avec)","w43":"divorcer","w44":"mourir","w45":"déménager","w46":"influencer","w47":"voyager","w48":"la vie","w49":"la mort","w50":"le tableau","w51":"l'œuvre","w52":"l'époque","w53":"célèbre","w54":"le peintre / la peintre","w55":"la souffrance","w56":"l'exposition","w57":"trébucher","w58":"nager","w59":"la mer","w60":"prendre des décisions","w61":"découvrir","w62":"les proches, les êtres chers","w63":"le pays","w64":"tout le monde","w65":"la biographie","w66":"la réussite, l'exploit","w67":"avoir du succès","w68":"le prix (qu'on gagne)","w69":"commencer (à)","w70":"terminer, finir","w71":"pendant","w72":"jusqu'à","w73":"le siècle","w74":"prendre sa retraite","w75":"la guerre","w76":"fuir","w77":"composer","w78":"diriger, réaliser","w79":"jouer le rôle principal dans","w80":"réussir à, obtenir","w81":"le chanteur / la chanteuse","w82":"s'en aller, partir","w83":"les cheveux","w84":"les yeux","w85":"grand (de taille)","w86":"petit (de taille)","w87":"mince","w88":"beau, joli","w89":"porter des lunettes","w90":"la barbe","w91":"ressembler à","w92":"bien / mal s'entendre avec","w93":"le caractère","w94":"ouvert (caractère)","w95":"silencieux, réservé","w96":"drôle","w97":"le/la partenaire, le couple","w98":"connaître, rencontrer","w99":"l'appartement","w100":"la chambre","w101":"la cuisine","w102":"la salle de bains","w103":"le salon","w104":"la terrasse","w105":"le balcon","w106":"le jardin","w107":"l'armoire","w108":"le lit","w109":"le canapé (masculin malgré le -a !)","w110":"les meubles","w111":"meublé","w112":"lumineux","w113":"spacieux","w114":"accueillant, chaleureux","w115":"bruyant","w116":"tranquille, calme","w117":"le quartier","w118":"la banlieue (toujours pluriel en espagnol)","w119":"louer","w120":"le loyer","w121":"l'ascenseur","w122":"adorer (me encanta)","b1":"bonjour, salut","b2":"au revoir","b3":"merci","b4":"s'il te plaît / s'il vous plaît","b5":"oui / non","b6":"bonjour (le matin)","b7":"bonsoir, bonne nuit","b8":"à demain","b9":"je m'appelle...","b10":"comment ça va ?","b11":"la maison","b12":"le chien","b13":"le chat","b14":"le livre","b15":"l'école","b16":"l'ami / l'amie","b17":"la famille","b18":"la mère","b19":"le père","b20":"le frère / la sœur","b21":"manger","b22":"boire","b23":"parler","b24":"vivre, habiter","b25":"être (caractéristiques)","b26":"être (lieu/état)","b27":"avoir","b28":"aller","b29":"grand","b30":"petit","b31":"joli, beau","b32":"sympathique, gentil","b33":"l'eau","b34":"la nourriture","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"les Pays-Bas","b38":"un peu","b39":"où ?","b40":"beaucoup","b41":"néerlandais / néerlandaise","b42":"espagnol / espagnole","b43":"le nom","b44":"le travail","b45":"le professeur / la professeure","b46":"l'étudiant / l'étudiante","b47":"travailler","b48":"étudier","b49":"l'année, l'an","b50":"comment tu t'appelles ?","b51":"lire","b52":"écrire","b53":"écouter","b54":"comprendre","b55":"le mot","b56":"la langue (el idioma : masculin !)","b57":"la ville","b58":"le village","b59":"la plage","b60":"la montagne","b61":"la rivière, le fleuve","b62":"la mer","b63":"le nord","b64":"le sud","b65":"le parc","b66":"la place","b67":"le musée","b68":"l'église","b69":"le climat (el clima : masculin !)","b70":"il fait chaud","b71":"il fait froid","b72":"il pleut","b73":"les gens (singulier en espagnol !)","b74":"joli, beau"}, de:{"w1":"unsicher","w2":"die Unsicherheit","w3":"angespannt, ängstlich","w4":"die Anspannung, die Angst","w5":"frustriert","w6":"die Frustration","w7":"schreckhaft, ängstlich veranlagt","w8":"die Angst","w9":"voller Vorfreude, begeistert","w10":"die Vorfreude (nicht: Illusion!)","w11":"lächerlich","w12":"begeistert","w13":"schüchtern","w14":"lustig, unterhaltsam","w15":"zufrieden, froh","w16":"traurig","w17":"frei","w18":"sich fühlen","w19":"sich Sorgen machen","w20":"sich elend fühlen","w21":"lernen","w22":"vergessen","w23":"sich erinnern, behalten","w24":"wiederholen","w25":"übersetzen","w26":"suchen, nachschlagen","w27":"das Wörterbuch","w28":"das Wort","w29":"der Satz","w30":"der Laut, der Klang","w31":"aussprechen","w32":"verbessern","w33":"die Herausforderung","w34":"der Fehler","w35":"schwerfallen (auch: kosten)","w36":"die Angst überwinden","w37":"der Wortschatz","w38":"die Grammatik","w39":"verstehen","w40":"der/die Spanischsprachige","w41":"geboren werden","w42":"heiraten","w43":"sich scheiden lassen","w44":"sterben","w45":"umziehen","w46":"beeinflussen","w47":"reisen","w48":"das Leben","w49":"der Tod","w50":"das Gemälde","w51":"das Werk (eines Künstlers)","w52":"die Epoche, die Zeit","w53":"berühmt","w54":"der Maler / die Malerin","w55":"das Leiden","w56":"die Ausstellung","w57":"stolpern","w58":"schwimmen","w59":"das Meer","w60":"Entscheidungen treffen","w61":"entdecken","w62":"die Liebsten, die Nahestehenden","w63":"das Land","w64":"alle, jeder","w65":"die Biografie","w66":"die Leistung, der Erfolg","w67":"Erfolg haben","w68":"der Preis (den man gewinnt)","w69":"anfangen (mit)","w70":"beenden, enden","w71":"während","w72":"bis","w73":"das Jahrhundert","w74":"in Rente gehen","w75":"der Krieg","w76":"fliehen","w77":"komponieren","w78":"Regie führen, leiten","w79":"die Hauptrolle spielen in","w80":"erreichen, schaffen","w81":"der Sänger / die Sängerin","w82":"weggehen, aufbrechen","w83":"das Haar","w84":"die Augen","w85":"groß (von Statur)","w86":"klein (von Statur)","w87":"schlank","w88":"gutaussehend, hübsch","w89":"eine Brille tragen","w90":"der Bart","w91":"ähneln, aussehen wie","w92":"sich gut/schlecht verstehen mit","w93":"der Charakter","w94":"offen (Charakter)","w95":"still, ruhig (Person)","w96":"witzig, lustig","w97":"der Partner / die Partnerin, das Paar","w98":"kennen, kennenlernen","w99":"die Wohnung","w100":"das Schlafzimmer","w101":"die Küche","w102":"das Badezimmer","w103":"das Wohnzimmer","w104":"die Terrasse","w105":"der Balkon","w106":"der Garten","w107":"der Schrank","w108":"das Bett","w109":"das Sofa (männlich, trotz -a!)","w110":"die Möbel","w111":"möbliert","w112":"hell, lichtdurchflutet","w113":"geräumig","w114":"gemütlich, einladend","w115":"laut","w116":"ruhig","w117":"das Viertel, die Nachbarschaft","w118":"die Vororte (immer Plural)","w119":"mieten (und vermieten)","w120":"die Miete","w121":"der Aufzug","w122":"etwas lieben (me encanta)","b1":"hallo","b2":"tschüss, auf Wiedersehen","b3":"danke","b4":"bitte","b5":"ja / nein","b6":"guten Morgen","b7":"guten Abend, gute Nacht","b8":"bis morgen","b9":"ich heiße...","b10":"wie geht's?","b11":"das Haus","b12":"der Hund","b13":"die Katze","b14":"das Buch","b15":"die Schule","b16":"der Freund / die Freundin","b17":"die Familie","b18":"die Mutter","b19":"der Vater","b20":"der Bruder / die Schwester","b21":"essen","b22":"trinken","b23":"sprechen, reden","b24":"wohnen, leben","b25":"sein (Eigenschaften)","b26":"sein (Ort/Zustand)","b27":"haben","b28":"gehen","b29":"groß","b30":"klein","b31":"schön, hübsch","b32":"nett, sympathisch","b33":"das Wasser","b34":"das Essen","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"die Niederlande","b38":"ein bisschen","b39":"wo?","b40":"viel","b41":"niederländisch / Niederländer(in)","b42":"spanisch / Spanier(in)","b43":"der Name","b44":"die Arbeit","b45":"der Lehrer / die Lehrerin","b46":"der Student / die Studentin","b47":"arbeiten","b48":"studieren, lernen","b49":"das Jahr","b50":"wie heißt du?","b51":"lesen","b52":"schreiben","b53":"zuhören","b54":"verstehen","b55":"das Wort","b56":"die Sprache (el idioma: männlich!)","b57":"die Stadt","b58":"das Dorf","b59":"der Strand","b60":"der Berg","b61":"der Fluss","b62":"das Meer","b63":"der Norden","b64":"der Süden","b65":"der Park","b66":"der Platz","b67":"das Museum","b68":"die Kirche","b69":"das Klima (el clima: männlich!)","b70":"es ist heiß","b71":"es ist kalt","b72":"es regnet","b73":"die Leute (im Spanischen Singular!)","b74":"schön, hübsch"}};
+var TRANS = {en:{"w1":"insecure","w2":"insecurity","w3":"anxious, tense","w4":"anxiety, tension","w5":"frustrated","w6":"frustration","w7":"easily scared, fearful","w8":"fear","w9":"excited, full of anticipation","w10":"joyful anticipation (not: illusion!)","w11":"ridiculous","w12":"enthusiastic","w13":"shy","w14":"funny, fun","w15":"happy, content","w16":"sad","w17":"free","w18":"to feel","w19":"to worry","w20":"to feel terrible","w21":"to learn","w22":"to forget","w23":"to remember","w24":"to repeat","w25":"to translate","w26":"to look up, to search","w27":"dictionary","w28":"word","w29":"sentence, phrase","w30":"sound","w31":"to pronounce","w32":"to improve","w33":"challenge","w34":"mistake, error","w35":"to be hard/difficult (for someone); to cost","w36":"to overcome the fear","w37":"vocabulary","w38":"grammar","w39":"to understand","w40":"Spanish speaker","w41":"to be born","w42":"to marry","w43":"to divorce","w44":"to die","w45":"to move (house)","w46":"to influence","w47":"to travel","w48":"life","w49":"death","w50":"painting","w51":"(artist's) work","w52":"era, time","w53":"famous","w54":"painter","w55":"suffering","w56":"exhibition","w57":"to stumble, to trip","w58":"to swim","w59":"sea","w60":"to make decisions","w61":"to discover","w62":"loved ones","w63":"country","w64":"everyone","w65":"biography","w66":"achievement","w67":"to be successful","w68":"prize, award","w69":"to begin (to)","w70":"to finish, to end","w71":"during","w72":"until","w73":"century","w74":"to retire","w75":"war","w76":"to flee","w77":"to compose","w78":"to direct, to lead","w79":"to star in","w80":"to achieve, to manage to","w81":"singer","w82":"to leave, to go away","w83":"hair","w84":"eyes","w85":"tall","w86":"short (height)","w87":"slim","w88":"handsome, pretty","w89":"to wear glasses","w90":"beard","w91":"to look like, to resemble","w92":"to get along well/badly with","w93":"character, personality","w94":"open (personality)","w95":"quiet (person)","w96":"funny","w97":"partner, couple","w98":"to know (someone), to meet","w99":"flat, apartment","w100":"bedroom","w101":"kitchen","w102":"bathroom","w103":"living room","w104":"terrace","w105":"balcony","w106":"garden","w107":"wardrobe, closet","w108":"bed","w109":"sofa (masculine, despite the -a!)","w110":"furniture","w111":"furnished","w112":"bright, light-filled","w113":"spacious","w114":"cosy, welcoming","w115":"noisy","w116":"quiet, calm","w117":"neighbourhood","w118":"the outskirts (always plural)","w119":"to rent (and rent out)","w120":"rent (price)","w121":"lift, elevator","w122":"to love (something) (me encanta)","b1":"hello","b2":"goodbye","b3":"thank you","b4":"please","b5":"yes / no","b6":"good morning","b7":"good evening, good night","b8":"see you tomorrow","b9":"my name is...","b10":"how are you?","b11":"house","b12":"dog","b13":"cat","b14":"book","b15":"school","b16":"friend","b17":"family","b18":"mother","b19":"father","b20":"brother / sister","b21":"to eat","b22":"to drink","b23":"to speak, to talk","b24":"to live","b25":"to be (essence/traits)","b26":"to be (place/state)","b27":"to have","b28":"to go","b29":"big","b30":"small","b31":"pretty, nice","b32":"nice, kind","b33":"water","b34":"food","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"the Netherlands","b38":"a little","b39":"where?","b40":"a lot, much","b41":"Dutch (person)","b42":"Spanish (person)","b43":"name","b44":"work, job","b45":"teacher","b46":"student","b47":"to work","b48":"to study","b49":"year","b50":"what's your name?","b51":"to read","b52":"to write","b53":"to listen","b54":"to understand","b55":"word","b56":"language","b57":"city","b58":"village","b59":"beach","b60":"mountain","b61":"river","b62":"sea","b63":"north","b64":"south","b65":"park","b66":"square","b67":"museum","b68":"church","b69":"climate (el, despite the -a)","b70":"it's hot","b71":"it's cold","b72":"it rains / it's raining","b73":"people (singular in Spanish!)","b74":"pretty, nice","w123":"to ask a favour","w124":"favour","w125":"to lend","w126":"to lend, to let","w127":"to borrow","w128":"could you...?","w129":"would you mind...?","w130":"excuse","w131":"to apologize","w132":"to forgive","w133":"I'm (so) sorry","w134":"noise","w135":"to bother, to disturb","w136":"neighbour","w137":"right now","w138":"at this moment","w139":"busy","w140":"key","w141":"mobile phone","w142":"permission","w143":"to have dinner","w144":"to take a shower","b75":"clothes","b76":"T-shirt","b77":"trousers, pants","b78":"dress","b79":"shoes","b80":"jacket","b81":"red","b82":"blue","b83":"green","b84":"yellow","b85":"black","b86":"white","b87":"shop, store","b88":"to buy","b89":"expensive","b90":"cheap","b91":"price","b92":"a hundred","b93":"how much is it?","b94":"to prefer","b95":"to wear","b96":"(clothing) size"}, fr:{"w1":"peu sûr de soi","w2":"l'insécurité","w3":"anxieux, tendu","w4":"l'anxiété","w5":"frustré","w6":"la frustration","w7":"peureux, craintif","w8":"la peur","w9":"enthousiaste, impatient","w10":"la joie anticipée (pas : illusion !)","w11":"ridicule","w12":"enthousiaste","w13":"timide","w14":"amusant, drôle","w15":"content","w16":"triste","w17":"libre","w18":"se sentir","w19":"s'inquiéter","w20":"se sentir très mal","w21":"apprendre","w22":"oublier","w23":"se souvenir de","w24":"répéter","w25":"traduire","w26":"chercher","w27":"le dictionnaire","w28":"le mot","w29":"la phrase","w30":"le son","w31":"prononcer","w32":"améliorer","w33":"le défi","w34":"l'erreur, la faute","w35":"coûter (de l'effort)","w36":"surmonter la peur","w37":"le vocabulaire","w38":"la grammaire","w39":"comprendre","w40":"l'hispanophone","w41":"naître","w42":"se marier (avec)","w43":"divorcer","w44":"mourir","w45":"déménager","w46":"influencer","w47":"voyager","w48":"la vie","w49":"la mort","w50":"le tableau","w51":"l'œuvre","w52":"l'époque","w53":"célèbre","w54":"le peintre / la peintre","w55":"la souffrance","w56":"l'exposition","w57":"trébucher","w58":"nager","w59":"la mer","w60":"prendre des décisions","w61":"découvrir","w62":"les proches, les êtres chers","w63":"le pays","w64":"tout le monde","w65":"la biographie","w66":"la réussite, l'exploit","w67":"avoir du succès","w68":"le prix (qu'on gagne)","w69":"commencer (à)","w70":"terminer, finir","w71":"pendant","w72":"jusqu'à","w73":"le siècle","w74":"prendre sa retraite","w75":"la guerre","w76":"fuir","w77":"composer","w78":"diriger, réaliser","w79":"jouer le rôle principal dans","w80":"réussir à, obtenir","w81":"le chanteur / la chanteuse","w82":"s'en aller, partir","w83":"les cheveux","w84":"les yeux","w85":"grand (de taille)","w86":"petit (de taille)","w87":"mince","w88":"beau, joli","w89":"porter des lunettes","w90":"la barbe","w91":"ressembler à","w92":"bien / mal s'entendre avec","w93":"le caractère","w94":"ouvert (caractère)","w95":"silencieux, réservé","w96":"drôle","w97":"le/la partenaire, le couple","w98":"connaître, rencontrer","w99":"l'appartement","w100":"la chambre","w101":"la cuisine","w102":"la salle de bains","w103":"le salon","w104":"la terrasse","w105":"le balcon","w106":"le jardin","w107":"l'armoire","w108":"le lit","w109":"le canapé (masculin malgré le -a !)","w110":"les meubles","w111":"meublé","w112":"lumineux","w113":"spacieux","w114":"accueillant, chaleureux","w115":"bruyant","w116":"tranquille, calme","w117":"le quartier","w118":"la banlieue (toujours pluriel en espagnol)","w119":"louer","w120":"le loyer","w121":"l'ascenseur","w122":"adorer (me encanta)","b1":"bonjour, salut","b2":"au revoir","b3":"merci","b4":"s'il te plaît / s'il vous plaît","b5":"oui / non","b6":"bonjour (le matin)","b7":"bonsoir, bonne nuit","b8":"à demain","b9":"je m'appelle...","b10":"comment ça va ?","b11":"la maison","b12":"le chien","b13":"le chat","b14":"le livre","b15":"l'école","b16":"l'ami / l'amie","b17":"la famille","b18":"la mère","b19":"le père","b20":"le frère / la sœur","b21":"manger","b22":"boire","b23":"parler","b24":"vivre, habiter","b25":"être (caractéristiques)","b26":"être (lieu/état)","b27":"avoir","b28":"aller","b29":"grand","b30":"petit","b31":"joli, beau","b32":"sympathique, gentil","b33":"l'eau","b34":"la nourriture","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"les Pays-Bas","b38":"un peu","b39":"où ?","b40":"beaucoup","b41":"néerlandais / néerlandaise","b42":"espagnol / espagnole","b43":"le nom","b44":"le travail","b45":"le professeur / la professeure","b46":"l'étudiant / l'étudiante","b47":"travailler","b48":"étudier","b49":"l'année, l'an","b50":"comment tu t'appelles ?","b51":"lire","b52":"écrire","b53":"écouter","b54":"comprendre","b55":"le mot","b56":"la langue (el idioma : masculin !)","b57":"la ville","b58":"le village","b59":"la plage","b60":"la montagne","b61":"la rivière, le fleuve","b62":"la mer","b63":"le nord","b64":"le sud","b65":"le parc","b66":"la place","b67":"le musée","b68":"l'église","b69":"le climat (el clima : masculin !)","b70":"il fait chaud","b71":"il fait froid","b72":"il pleut","b73":"les gens (singulier en espagnol !)","b74":"joli, beau","w123":"demander un service","w124":"le service, la faveur","w125":"prêter","w126":"prêter, laisser","w127":"emprunter","w128":"pourrais-tu... ?","w129":"ça te dérangerait de... ?","w130":"l'excuse","w131":"s'excuser","w132":"pardonner","w133":"je suis (vraiment) désolé","w134":"le bruit","w135":"déranger, gêner","w136":"le voisin / la voisine","w137":"tout de suite","w138":"en ce moment","w139":"occupé / occupée","w140":"la clé","w141":"le portable","w142":"la permission","w143":"dîner","w144":"se doucher","b75":"les vêtements","b76":"le t-shirt","b77":"le pantalon","b78":"la robe","b79":"les chaussures","b80":"la veste","b81":"rouge","b82":"bleu","b83":"vert","b84":"jaune","b85":"noir","b86":"blanc","b87":"le magasin","b88":"acheter","b89":"cher","b90":"bon marché, pas cher","b91":"le prix","b92":"cent","b93":"combien ça coûte ?","b94":"préférer","b95":"porter","b96":"la taille"}, de:{"w1":"unsicher","w2":"die Unsicherheit","w3":"angespannt, ängstlich","w4":"die Anspannung, die Angst","w5":"frustriert","w6":"die Frustration","w7":"schreckhaft, ängstlich veranlagt","w8":"die Angst","w9":"voller Vorfreude, begeistert","w10":"die Vorfreude (nicht: Illusion!)","w11":"lächerlich","w12":"begeistert","w13":"schüchtern","w14":"lustig, unterhaltsam","w15":"zufrieden, froh","w16":"traurig","w17":"frei","w18":"sich fühlen","w19":"sich Sorgen machen","w20":"sich elend fühlen","w21":"lernen","w22":"vergessen","w23":"sich erinnern, behalten","w24":"wiederholen","w25":"übersetzen","w26":"suchen, nachschlagen","w27":"das Wörterbuch","w28":"das Wort","w29":"der Satz","w30":"der Laut, der Klang","w31":"aussprechen","w32":"verbessern","w33":"die Herausforderung","w34":"der Fehler","w35":"schwerfallen (auch: kosten)","w36":"die Angst überwinden","w37":"der Wortschatz","w38":"die Grammatik","w39":"verstehen","w40":"der/die Spanischsprachige","w41":"geboren werden","w42":"heiraten","w43":"sich scheiden lassen","w44":"sterben","w45":"umziehen","w46":"beeinflussen","w47":"reisen","w48":"das Leben","w49":"der Tod","w50":"das Gemälde","w51":"das Werk (eines Künstlers)","w52":"die Epoche, die Zeit","w53":"berühmt","w54":"der Maler / die Malerin","w55":"das Leiden","w56":"die Ausstellung","w57":"stolpern","w58":"schwimmen","w59":"das Meer","w60":"Entscheidungen treffen","w61":"entdecken","w62":"die Liebsten, die Nahestehenden","w63":"das Land","w64":"alle, jeder","w65":"die Biografie","w66":"die Leistung, der Erfolg","w67":"Erfolg haben","w68":"der Preis (den man gewinnt)","w69":"anfangen (mit)","w70":"beenden, enden","w71":"während","w72":"bis","w73":"das Jahrhundert","w74":"in Rente gehen","w75":"der Krieg","w76":"fliehen","w77":"komponieren","w78":"Regie führen, leiten","w79":"die Hauptrolle spielen in","w80":"erreichen, schaffen","w81":"der Sänger / die Sängerin","w82":"weggehen, aufbrechen","w83":"das Haar","w84":"die Augen","w85":"groß (von Statur)","w86":"klein (von Statur)","w87":"schlank","w88":"gutaussehend, hübsch","w89":"eine Brille tragen","w90":"der Bart","w91":"ähneln, aussehen wie","w92":"sich gut/schlecht verstehen mit","w93":"der Charakter","w94":"offen (Charakter)","w95":"still, ruhig (Person)","w96":"witzig, lustig","w97":"der Partner / die Partnerin, das Paar","w98":"kennen, kennenlernen","w99":"die Wohnung","w100":"das Schlafzimmer","w101":"die Küche","w102":"das Badezimmer","w103":"das Wohnzimmer","w104":"die Terrasse","w105":"der Balkon","w106":"der Garten","w107":"der Schrank","w108":"das Bett","w109":"das Sofa (männlich, trotz -a!)","w110":"die Möbel","w111":"möbliert","w112":"hell, lichtdurchflutet","w113":"geräumig","w114":"gemütlich, einladend","w115":"laut","w116":"ruhig","w117":"das Viertel, die Nachbarschaft","w118":"die Vororte (immer Plural)","w119":"mieten (und vermieten)","w120":"die Miete","w121":"der Aufzug","w122":"etwas lieben (me encanta)","b1":"hallo","b2":"tschüss, auf Wiedersehen","b3":"danke","b4":"bitte","b5":"ja / nein","b6":"guten Morgen","b7":"guten Abend, gute Nacht","b8":"bis morgen","b9":"ich heiße...","b10":"wie geht's?","b11":"das Haus","b12":"der Hund","b13":"die Katze","b14":"das Buch","b15":"die Schule","b16":"der Freund / die Freundin","b17":"die Familie","b18":"die Mutter","b19":"der Vater","b20":"der Bruder / die Schwester","b21":"essen","b22":"trinken","b23":"sprechen, reden","b24":"wohnen, leben","b25":"sein (Eigenschaften)","b26":"sein (Ort/Zustand)","b27":"haben","b28":"gehen","b29":"groß","b30":"klein","b31":"schön, hübsch","b32":"nett, sympathisch","b33":"das Wasser","b34":"das Essen","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"die Niederlande","b38":"ein bisschen","b39":"wo?","b40":"viel","b41":"niederländisch / Niederländer(in)","b42":"spanisch / Spanier(in)","b43":"der Name","b44":"die Arbeit","b45":"der Lehrer / die Lehrerin","b46":"der Student / die Studentin","b47":"arbeiten","b48":"studieren, lernen","b49":"das Jahr","b50":"wie heißt du?","b51":"lesen","b52":"schreiben","b53":"zuhören","b54":"verstehen","b55":"das Wort","b56":"die Sprache (el idioma: männlich!)","b57":"die Stadt","b58":"das Dorf","b59":"der Strand","b60":"der Berg","b61":"der Fluss","b62":"das Meer","b63":"der Norden","b64":"der Süden","b65":"der Park","b66":"der Platz","b67":"das Museum","b68":"die Kirche","b69":"das Klima (el clima: männlich!)","b70":"es ist heiß","b71":"es ist kalt","b72":"es regnet","b73":"die Leute (im Spanischen Singular!)","b74":"schön, hübsch","w123":"um einen Gefallen bitten","w124":"der Gefallen","w125":"verleihen, ausleihen (an jemanden)","w126":"leihen, lassen","w127":"sich leihen (von jemandem)","w128":"könntest du...?","w129":"würde es dir etwas ausmachen...?","w130":"die Ausrede, die Entschuldigung","w131":"sich entschuldigen","w132":"verzeihen","w133":"es tut mir (sehr) leid","w134":"der Lärm","w135":"stören","w136":"der Nachbar / die Nachbarin","w137":"sofort, gerade jetzt","w138":"in diesem Moment","w139":"beschäftigt","w140":"der Schlüssel","w141":"das Handy","w142":"die Erlaubnis","w143":"zu Abend essen","w144":"duschen","b75":"die Kleidung","b76":"das T-Shirt","b77":"die Hose","b78":"das Kleid","b79":"die Schuhe","b80":"die Jacke","b81":"rot","b82":"blau","b83":"grün","b84":"gelb","b85":"schwarz","b86":"weiß","b87":"das Geschäft, der Laden","b88":"kaufen","b89":"teuer","b90":"billig, günstig","b91":"der Preis","b92":"hundert","b93":"wie viel kostet das?","b94":"vorziehen, lieber mögen","b95":"tragen, anhaben","b96":"die (Kleider)Größe"}};
 var TXT = {
   lessen:{nl:"Lessen",en:"Lessons",fr:"Leçons",de:"Lektionen"},
   woorden:{nl:"Woordjes",en:"Words",fr:"Mots",de:"Wörter"},
@@ -3315,7 +3503,51 @@ var DICINFO = {
  b71:{v:"En Holanda hace frío en enero.|In Nederland is het koud in januari.",r:"met hacer: hace frío · hizo frío"},
  b72:{v:"Hoy llueve mucho.|Vandaag regent het hard.",r:"van llover (o→ue), alleen 3e persoon: llueve (het regent) · llovió (het regende)"},
  b73:{v:"La gente aquí es muy amable.|De mensen hier zijn erg vriendelijk.",r:"enkelvoud in het Spaans: la gente es... (niet: son)"},
- b74:{v:"El pueblo es muy bonito.|Het dorp is erg mooi."}
+ b74:{v:"El pueblo es muy bonito.|Het dorp is erg mooi."},
+ w123:{v:"¿Puedo pedirte un favor?|Mag ik je een gunst vragen?",r:"pedir (e→i): pido · pides · pide · pedimos · pedís · piden — indefinido: pedí · pediste · pidió · pedimos · pedisteis · pidieron"},
+ w124:{v:"¿Me haces un favor?|Doe je me een plezier?",r:"zn (m) · mv: los favores · por favor = alsjeblieft"},
+ w125:{v:"¿Me prestas tu diccionario?|Leen je me je woordenboek?",r:"presente: presto · prestas · presta · prestamos · prestáis · prestan — indefinido: presté · prestaste · prestó · prestamos · prestasteis · prestaron"},
+ w126:{v:"¿Me dejas tu móvil un momento?|Leen je me je mobiel even?",r:"presente: dejo · dejas · deja · dejamos · dejáis · dejan — ook: laten (déjame pensar = laat me denken)"},
+ w127:{v:"Le pedí el coche prestado a mi vecino.|Ik leende de auto van mijn buurman.",r:"pedir prestado A alguien: het Spaans zegt 'aan', het Nederlands 'van'"},
+ w128:{v:"¿Podrías hablar más despacio?|Zou je langzamer kunnen praten?",r:"condicional van poder: podría · podrías · podría · podríamos · podríais · podrían · usted: ¿podría...?"},
+ w129:{v:"¿Te importaría cerrar la puerta?|Zou je het erg vinden om de deur dicht te doen?",r:"altijd + infinitief · usted: ¿le importaría...?"},
+ w130:{v:"Siempre tiene una excusa para no venir.|Hij heeft altijd een smoes om niet te komen.",r:"zn (v) · mv: las excusas · poner excusas = smoezen verzinnen"},
+ w131:{v:"Se disculpó por llegar tarde.|Hij verontschuldigde zich omdat hij te laat kwam.",r:"presente: me disculpo · te disculpas · se disculpa — disculparse POR algo"},
+ w132:{v:"Perdona, no te vi.|Sorry, ik zag je niet.",r:"presente: perdono · perdonas · perdona — perdona (tú) / perdone (usted) = sorry, pardon"},
+ w133:{v:"Lo siento mucho, fue mi error.|Het spijt me erg, het was mijn fout.",r:"van sentir (letterlijk: ik voel het) · lo siento · lo sentimos = het spijt ons"},
+ w134:{v:"Hay mucho ruido en la calle.|Er is veel lawaai op straat.",r:"zn (m) · mv: los ruidos · hacer ruido = lawaai maken"},
+ w135:{v:"Perdona, ¿te molesto?|Sorry, stoor ik je?",r:"presente: molesto · molestas · molesta — werkt ook als gustar: me molesta el ruido = het lawaai stoort me"},
+ w136:{v:"Mis vecinos son muy simpáticos.|Mijn buren zijn erg aardig.",r:"zn: el vecino / la vecina · mv: los vecinos · el barrio = de buurt"},
+ w137:{v:"Voy ahora mismo.|Ik kom nu meteen.",r:"vaste uitdrukking · versterkt ahora"},
+ w138:{v:"En este momento estoy cenando.|Op dit moment ben ik aan het avondeten.",r:"vaste uitdrukking · vaak met estar + gerundio"},
+ w139:{v:"No puedo, estoy muy ocupada.|Ik kan niet, ik ben erg druk.",r:"bn: ocupado/ocupada · met estar: estoy ocupado = ik ben bezig"},
+ w140:{v:"No encuentro las llaves de casa.|Ik kan de huissleutels niet vinden.",r:"zn (v) · mv: las llaves"},
+ w141:{v:"Se me olvidó el móvil en casa.|Ik ben mijn mobiel thuis vergeten.",r:"zn (m) · mv: los móviles · in Latijns-Amerika: el celular"},
+ w142:{v:"¿Me das permiso para salir antes?|Geef je me toestemming om eerder weg te gaan?",r:"zn (m) · pedir permiso = toestemming vragen · con permiso = mag ik even?"},
+ w143:{v:"Los españoles cenan muy tarde.|Spanjaarden eten heel laat 's avonds.",r:"presente: ceno · cenas · cena · cenamos · cenáis · cenan · la cena = het avondeten"},
+ w144:{v:"Me ducho por la mañana.|Ik douche 's ochtends.",r:"presente: me ducho · te duchas · se ducha · nos duchamos · os ducháis · se duchan · gerundio: duchándose"},
+ b75:{v:"Me gusta tu ropa.|Ik vind je kleding leuk.",r:"zn (v), altijd enkelvoud: la ropa (niet 'las ropas')"},
+ b76:{v:"Llevo una camiseta blanca.|Ik draag een wit T-shirt.",r:"zn (v) · mv: las camisetas"},
+ b77:{v:"El pantalón es muy caro.|De broek is erg duur.",r:"zn (m) · in het Spaans enkelvoud (één broek), maar los pantalones hoor je ook"},
+ b78:{v:"¡Qué vestido tan bonito!|Wat een mooie jurk!",r:"zn (m, ondanks 'de jurk'): el vestido · mv: los vestidos"},
+ b79:{v:"Estos zapatos son cómodos.|Deze schoenen zitten lekker.",r:"zn (m mv) · enkelvoud: el zapato"},
+ b80:{v:"Necesito una chaqueta para el invierno.|Ik heb een jas nodig voor de winter.",r:"zn (v) · mv: las chaquetas"},
+ b81:{v:"La camiseta roja es bonita.|Het rode T-shirt is mooi.",r:"bn: rojo/roja · mv: rojos/rojas"},
+ b82:{v:"El mar es azul.|De zee is blauw.",r:"bn: azul (m=v!) · mv: azules"},
+ b83:{v:"Me gusta el vestido verde.|Ik vind de groene jurk mooi.",r:"bn: verde (m=v) · mv: verdes"},
+ b84:{v:"El sol es amarillo.|De zon is geel.",r:"bn: amarillo/amarilla · mv: amarillos/amarillas"},
+ b85:{v:"Mi gato es negro.|Mijn kat is zwart.",r:"bn: negro/negra · mv: negros/negras"},
+ b86:{v:"Las casas del pueblo son blancas.|De huizen van het dorp zijn wit.",r:"bn: blanco/blanca · mv: blancos/blancas"},
+ b87:{v:"La tienda está cerrada.|De winkel is dicht.",r:"zn (v) · mv: las tiendas · la tienda de ropa = de kledingwinkel"},
+ b88:{v:"Quiero comprar unos zapatos.|Ik wil schoenen kopen.",r:"presente: compro · compras · compra · compramos · compráis · compran"},
+ b89:{v:"Este restaurante es muy caro.|Dit restaurant is erg duur.",r:"bn: caro/cara · mv: caros/caras"},
+ b90:{v:"La fruta es barata en el mercado.|Fruit is goedkoop op de markt.",r:"bn: barato/barata · mv: baratos/baratas"},
+ b91:{v:"¿Qué precio tiene?|Wat is de prijs?",r:"zn (m) · mv: los precios"},
+ b92:{v:"Cien euros es mucho dinero.|Honderd euro is veel geld.",r:"precies 100 = cien · 101-199 = ciento... · 200 = doscientos"},
+ b93:{v:"¿Cuánto cuesta la camiseta?|Hoeveel kost het T-shirt?",r:"meervoud: ¿cuánto cuestan los zapatos? · van costar (o→ue)"},
+ b94:{v:"¿Cuál prefieres, el rojo o el azul?|Welke heb je liever, de rode of de blauwe?",r:"presente (e→ie): prefiero · prefieres · prefiere · preferimos · preferís · prefieren"},
+ b95:{v:"Hoy llevo un vestido negro.|Vandaag draag ik een zwarte jurk.",r:"presente: llevo · llevas · lleva · llevamos · lleváis · llevan"},
+ b96:{v:"¿Qué talla tienes?|Welke maat heb je?",r:"zn (v) · mv: las tallas · voor schoenen: el número"}
 };
 
 var dicOpen = null, dicZoek = "";
