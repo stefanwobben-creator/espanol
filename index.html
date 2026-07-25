@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.7";
+var APP_VERSIE = "v19.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2498,7 +2498,8 @@ function checkSentence(){
 }
 
 /* ================= DICTADO (luister & typ, browser text-to-speech) ================= */
-var dIdx = null, dRate = 0.82;
+var dIdx = null;
+var DIC_RATE_NORMAL = 0.82, DIC_RATE_LENTO = 0.55;
 function dictadoStemKlaar(cb){
   if(!window.speechSynthesis){ cb(null); return; }
   var vs = speechSynthesis.getVoices();
@@ -2529,13 +2530,13 @@ function dictadoBesteStem(esStemmen){
   if(monica) return monica;
   return esStemmen.slice().sort(function(a,b){ return dictadoStemScore(b) - dictadoStemScore(a); })[0];
 }
-function dictadoSpreek(tekst){
+function dictadoSpreek(tekst, rate){
   if(!window.speechSynthesis) return false;
   try{
     speechSynthesis.cancel();
     dictadoStemKlaar(function(vs){
       var u = new SpeechSynthesisUtterance(tekst);
-      u.lang = "es-ES"; u.rate = dRate; u.pitch = 1;
+      u.lang = "es-ES"; u.rate = rate || DIC_RATE_NORMAL; u.pitch = 1;
       var v = dictadoBesteStem(dictadoEsStemmen(vs));
       if(v) u.voice = v;
       speechSynthesis.speak(u);
@@ -2568,8 +2569,8 @@ function renderFunDictado(fresh){
     return;
   }
   html += "<p class='muted'>" + fx("dicIntro") + "</p>"+
-    "<div class='row'><button class='primary' id='btnDicSpeel'>🔊 " + fx("dicLuister") + "</button>"+
-    "<button class='ghost' id='btnDicLangzaam'>🐢 " + (dRate<0.7 ? fx("dicNormaal") : fx("dicLangzaam")) + "</button></div>"+
+    "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
+    "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>"+
     "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
     "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button>"+
     "<button class='ghost' id='btnDicSkip'>" + fx("dicSkip") + "</button>"+
@@ -2578,19 +2579,13 @@ function renderFunDictado(fresh){
   el.innerHTML = html;
   var inp = document.getElementById("dInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
-  document.getElementById("btnDicSpeel").onclick = function(){ dictadoSpreek(s.es); };
-  document.getElementById("btnDicLangzaam").onclick = function(){
-    // alleen tempo wisselen + opnieuw afspelen, GEEN volledige her-render: anders verdwijnt wat de speler al typte
-    dRate = dRate<0.7 ? 0.82 : 0.55;
-    var btn = document.getElementById("btnDicLangzaam");
-    if(btn) btn.innerHTML = "🐢 " + (dRate<0.7 ? fx("dicNormaal") : fx("dicLangzaam"));
-    dictadoSpreek(s.es);
-  };
+  document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s.es, DIC_RATE_NORMAL); };
+  document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(s.es, DIC_RATE_LENTO); };
   document.getElementById("btnDicCheck").onclick = checkDictado;
   document.getElementById("btnDicSkip").onclick = function(){ renderFunDictado(true); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
   inp.focus();
-  setTimeout(function(){ dictadoSpreek(s.es); }, 250);
+  setTimeout(function(){ dictadoSpreek(s.es, DIC_RATE_NORMAL); }, 250);
 }
 function checkDictado(){
   var s = dIdx;
@@ -2601,7 +2596,7 @@ function checkDictado(){
   var answers = [norm(s.es)].concat((s.alt||[]).map(norm));
   var exact = answers.indexOf(given) !== -1;
   var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
-  var html = "", retryable = false;
+  var html = "";
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
     S.done[s.id] = true; addXP(5);
@@ -2612,34 +2607,19 @@ function checkDictado(){
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
       html = "<div class='feedback bijna'>"+ct("Zó dichtbij! Dit hoorde je: ","So close! What you should've heard: ")+"<b>"+d.html+"</b> (+2 XP)</div>";
-      addXP(2); retryable = true;
+      addXP(2);
       logError(s.id, "dictado", s.tag, given);
     } else {
       html = "<div class='feedback fout'>"+ct("Nog niet. Je hoorde: ","Not yet. You heard: ")+"<b>"+d.html+"</b></div>";
-      logError(s.id, "dictado", s.tag, given); addXP(1); retryable = true;
+      logError(s.id, "dictado", s.tag, given); addXP(1);
     }
   }
   html += "<div class='uitleg'>"+ct("Vertaling: ","Translation: ")+zinPrompt(s)+"</div>";
-  html += "<div class='row'>"+
-    (retryable ? "<button class='primary' id='btnDicRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
-                 "<button class='ghost' id='btnDicHerhaal'>🔊 " + ct("Nog een keer horen","Listen again") + "</button>"+
-                 "<button class='ghost' id='btnDicNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
-               : "<button class='primary' id='btnDicNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"+
-                 "<button class='ghost' id='btnDicHerhaal'>🔊 " + ct("Nog een keer horen","Listen again") + "</button>")+
-    "</div>";
+  // geen aparte knoppenrij hier: Luister normal/lento, Controleer en Volgende zin staan al vast
+  // in het scherm erboven, dus opnieuw tonen is overbodig (feedback Stefan).
   fb.innerHTML = html;
   persist();
   checkLessonComplete();
-  var bn = document.getElementById("btnDicNext");
-  if(bn) bn.onclick = function(){ renderFunDictado(true); };
-  var br = document.getElementById("btnDicRetry");
-  if(br) br.onclick = function(){
-    document.getElementById("dFeedback").innerHTML="";
-    var ii = document.getElementById("dInput");
-    if(ii){ ii.value=""; ii.focus(); }
-  };
-  var bh = document.getElementById("btnDicHerhaal");
-  if(bh) bh.onclick = function(){ dictadoSpreek(s.es); };
 }
 
 /* ================= TOETSJES ================= */
@@ -6824,8 +6804,8 @@ var FUN_TXT = {
      memWeinig:"Leer eerst wat meer woordjes, dan kan het spel gevuld worden!",
      dicS:"luister naar een Spaanse zin en typ wat je hoort",
      dicIntro:"Luister goed en typ de Spaanse zin die je hoort. Focus op klanken herkennen, niet op betekenis.",
-     dicLuister:"Luister", dicLangzaam:"Langzamer", dicNormaal:"Normale snelheid",
-     dicPlaceholder:"Typ wat je hoort...", dicSkip:"Andere zin",
+     dicNormal:"Luister normal", dicLento:"Luister lento",
+     dicPlaceholder:"Typ wat je hoort...", dicSkip:"Volgende zin",
      dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari."},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
@@ -6846,8 +6826,8 @@ var FUN_TXT = {
      memWeinig:"Learn a few more words first, then the game can be filled!",
      dicS:"listen to a Spanish sentence and type what you hear",
      dicIntro:"Listen carefully and type the Spanish sentence you hear. Focus on recognising sounds, not meaning.",
-     dicLuister:"Listen", dicLangzaam:"Slower", dicNormaal:"Normal speed",
-     dicPlaceholder:"Type what you hear...", dicSkip:"Different sentence",
+     dicNormal:"Listen normal", dicLento:"Listen lento",
+     dicPlaceholder:"Type what you hear...", dicSkip:"Next sentence",
      dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari."}
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
