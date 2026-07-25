@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.12";
+var APP_VERSIE = "v19.13";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2556,7 +2556,8 @@ function dictadoBesteStem(esStemmen){
   if(monica) return monica;
   return esStemmen.slice().sort(function(a,b){ return dictadoStemScore(b) - dictadoStemScore(a); })[0];
 }
-function dictadoSpreek(tekst, rate){
+// Web Speech API blijft de fallback: robuust maar robotachtig (afhankelijk van OS/browser-stemmen).
+function dictadoSpreekTTS(tekst, rate){
   if(!window.speechSynthesis) return false;
   try{
     speechSynthesis.cancel();
@@ -2569,6 +2570,25 @@ function dictadoSpreek(tekst, rate){
     });
     return true;
   }catch(e){ return false; }
+}
+// Eerste keus: echte, voorgegenereerde audio (audio/dictado/<id>.mp3, via ElevenLabs — zie
+// tools/generate-dictado-audio.js). Klinkt op elk apparaat hetzelfde en veel vloeiender dan
+// browser-TTS. Bestaat een bestand nog niet (bv. net toegevoegde zin), dan valt dit terug op
+// dictadoSpreekTTS() zonder dat de gebruiker iets van de fallback merkt.
+var dictadoAudioEl = null;
+function dictadoSpreek(zin, rate){
+  try{
+    if(dictadoAudioEl){ dictadoAudioEl.pause(); }
+    var a = new Audio("audio/dictado/" + zin.id + ".mp3");
+    dictadoAudioEl = a;
+    a.playbackRate = rate || DIC_RATE_NORMAL;
+    var teruggevallen = false;
+    function valTerug(){ if(teruggevallen) return; teruggevallen = true; dictadoSpreekTTS(zin.es, rate); }
+    a.addEventListener("error", valTerug);
+    var p = a.play();
+    if(p && p.catch) p.catch(valTerug);
+    return true;
+  }catch(e){ return dictadoSpreekTTS(zin.es, rate); }
 }
 function pickDictado(){
   var allow = {};
@@ -2602,15 +2622,8 @@ function renderFunDictado(){
   if(dRonde.n >= dRonde.lengte){ renderDictadoRondeKlaar(); return; }
   if(!dIdx) dIdx = pickDictado();
   var s = dIdx;
-  var kanSpreken = !!window.speechSynthesis;
-  var html = "<h2>Dictado 🔊</h2>";
-  if(!kanSpreken){
-    html += "<p class='muted'>" + fx("dicGeen") + "</p><div class='row'><button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
-    el.innerHTML = html;
-    document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
-    return;
-  }
-  html += "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>"+
+  var html = "<h2>Dictado 🔊</h2>"+
+    "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("dicIntro") + "</p>"+
     "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
     "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>"+
@@ -2622,13 +2635,13 @@ function renderFunDictado(){
   el.innerHTML = html;
   var inp = document.getElementById("dInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
-  document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s.es, DIC_RATE_NORMAL); };
-  document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(s.es, DIC_RATE_LENTO); };
+  document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s, DIC_RATE_NORMAL); };
+  document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(s, DIC_RATE_LENTO); };
   document.getElementById("btnDicCheck").onclick = checkDictado;
   document.getElementById("btnDicSkip").onclick = function(){ dictadoVolgende(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
   inp.focus();
-  setTimeout(function(){ dictadoSpreek(s.es, DIC_RATE_NORMAL); }, 250);
+  setTimeout(function(){ dictadoSpreek(s, DIC_RATE_NORMAL); }, 250);
 }
 function renderDictadoRondeKlaar(){
   var el = document.getElementById("funCard");
@@ -2659,7 +2672,7 @@ function dictadoGok(){
   if(fb) fb.innerHTML = "<p class='muted'>🎲 " + ct("Herkansing! Nog een keer luisteren (nu lento) en typen.","Retry! Listen once more (now lento) and type.") + "</p>";
   var ii = document.getElementById("dInput");
   if(ii){ ii.value=""; ii.focus(); }
-  dictadoSpreek(dIdx.es, DIC_RATE_LENTO);
+  dictadoSpreek(dIdx, DIC_RATE_LENTO);
 }
 function checkDictado(){
   var s = dIdx;
