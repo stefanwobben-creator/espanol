@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v13.0";
+var APP_VERSIE = "v13.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4167,40 +4167,79 @@ function avtNoot(freq, wanneer, duur, type, vol){
     o.start(wanneer); o.stop(wanneer + duur + 0.05);
   }catch(e){}
 }
-/* E-frygisch dominant: het klinkt meteen Spaans */
+/* Spaanse gitaar: getokkelde snaren (twee licht ontstemde zaagtanden door een filter) */
 var AVT_N = {E3:164.81, F3:174.61, Gs3:207.65, A3:220, B3:246.94, C4:261.63, D4:293.66, E4:329.63, F4:349.23, Gs4:415.30, A4:440, E2:82.41, F2:87.31, A2:110};
-var AVT_FRASES = [
- ["E4","F4","E4","D4","C4","D4","E4",null,"A3","B3","C4","D4","E4","D4","C4","B3"],
- ["A3","C4","E4","A4","Gs4","F4","E4",null,"F4","E4","D4","C4","B3","C4","D4","E4"]
+function avtPluk(freq, wanneer, duur, vol){
+  var ac = avtCtx(); if(!ac || S.avtStil || !freq) return;
+  try{
+    var g = ac.createGain();
+    g.gain.setValueAtTime(vol, wanneer);
+    g.gain.exponentialRampToValueAtTime(0.0001, wanneer + duur);
+    var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = Math.min(freq*4, 4200); f.Q.value = 1;
+    [-4, 4].forEach(function(det){
+      var o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq; o.detune.value = det;
+      o.connect(f); o.start(wanneer); o.stop(wanneer + duur + 0.05);
+    });
+    f.connect(g); g.connect(ac.destination);
+  }catch(e){}
+}
+function avtPalmas(wanneer, vol){
+  var ac = avtCtx(); if(!ac || S.avtStil) return;
+  try{
+    var n = Math.floor(ac.sampleRate * 0.045);
+    var buf = ac.createBuffer(1, n, ac.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0;i<n;i++){ d[i] = (Math.random()*2 - 1) * Math.pow(1 - i/n, 2); }
+    var src = ac.createBufferSource(); src.buffer = buf;
+    var bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1900; bp.Q.value = 0.9;
+    var g = ac.createGain(); g.gain.value = vol;
+    src.connect(bp); bp.connect(g); g.connect(ac.destination); src.start(wanneer);
+  }catch(e){}
+}
+/* Andalusische cadens Am-G-F-E met tresillo-ritme (3-3-2), het flamenco-DNA */
+var AVT_CADENS = [
+ {bas:110.00, mel:[659.26,0,523.25,0,440,0,493.88,523.25]},
+ {bas:98.00,  mel:[493.88,0,392.00,0,587.33,523.25,493.88,440]},
+ {bas:87.31,  mel:[440,0,349.23,0,523.25,493.88,440,415.30]},
+ {bas:82.41,  mel:[415.30,440,493.88,415.30,329.63,0,415.30,0]}
 ];
+var AVT_FALSETA = [659.26,587.33,523.25,493.88,440,415.30,349.23,329.63];
 function avtMuziekStap(){
   if(funView !== "avt" || !avt || avt.victory){ avtMuziekStop(); return; }
   var ac = avtCtx(); if(!ac){ return; }
-  var stap = (avt && avt.gevecht && avt.gevecht.baas) ? 0.17 : 0.22;
+  var acht = (avt.gevecht && avt.gevecht.baas) ? 0.125 : 0.165;
   var t0 = ac.currentTime + 0.05;
-  var mel = AVT_FRASES[avtMuziekFrase % 2];
-  for(var i=0;i<mel.length;i++){
-    if(mel[i]) avtNoot(AVT_N[mel[i]], t0 + i*stap, stap*0.9, "square", 0.030);
-    if(i % 2 === 0){
-      var bas = (avtMuziekFrase % 2 === 1 && i < 8) ? "F2" : (i % 4 === 0 ? "E2" : "A2");
-      avtNoot(AVT_N[bas], t0 + i*stap, stap*1.6, "triangle", 0.05);
+  var falseta = avtMuziekFrase % 2 === 1;
+  AVT_CADENS.forEach(function(bar, b){
+    var tb = t0 + b * 8 * acht;
+    [0,3,6].forEach(function(i){
+      avtPluk(bar.bas, tb + i*acht, acht*2.8, 0.11);
+      avtPluk(bar.bas*2, tb + i*acht, acht*1.6, 0.045);
+      avtPalmas(tb + i*acht, i === 0 ? 0.10 : 0.055);
+    });
+    if(falseta && b === 3){
+      AVT_FALSETA.forEach(function(f, i){ avtPluk(f, tb + i*acht*0.5, acht*1.1, 0.055); });
+      avtPluk(329.63, tb + 4*acht, acht*3.6, 0.075);
+      avtPalmas(tb + 4*acht, 0.09);
+    } else {
+      bar.mel.forEach(function(f, i){ if(f) avtPluk(f, tb + i*acht, acht*1.9, 0.06); });
     }
-  }
+  });
   avtMuziekFrase++;
-  avtMuziekTimer = setTimeout(avtMuziekStap, mel.length * stap * 1000);
+  avtMuziekTimer = setTimeout(avtMuziekStap, 4 * 8 * acht * 1000);
 }
 function avtMuziekStart(){ if(avtMuziekTimer || S.avtStil) return; avtMuziekStap(); }
 function avtMuziekStop(){ if(avtMuziekTimer){ clearTimeout(avtMuziekTimer); avtMuziekTimer = null; } }
 function avtSfx(naam){
   var ac = avtCtx(); if(!ac || S.avtStil) return;
   var t = ac.currentTime + 0.02;
-  if(naam === "goed"){ avtNoot(AVT_N.E4,t,0.09,"square",0.06); avtNoot(AVT_N.A4,t+0.08,0.09,"square",0.06); avtNoot(659.3,t+0.16,0.15,"square",0.06); }
+  if(naam === "goed"){ avtPluk(AVT_N.A4,t,0.18,0.10); avtPluk(659.26,t+0.07,0.28,0.10); }
   if(naam === "fout"){ avtNoot(110,t,0.28,"sawtooth",0.07); avtNoot(103.8,t+0.05,0.25,"sawtooth",0.05); }
   if(naam === "hart"){ avtNoot(AVT_N.C4,t,0.12,"triangle",0.08); avtNoot(AVT_N.A3,t+0.13,0.2,"triangle",0.08); }
-  if(naam === "kist"){ [AVT_N.C4,AVT_N.E4,AVT_N.A4,659.3,880].forEach(function(f,i){ avtNoot(f,t+i*0.07,0.12,"triangle",0.06); }); }
+  if(naam === "kist"){ [AVT_N.A3,AVT_N.E4,AVT_N.A4,523.25,659.26].forEach(function(f,i){ avtPluk(f,t+i*0.045,0.35,0.08); }); }
   if(naam === "stap"){ avtNoot(196,t,0.04,"square",0.015); }
   if(naam === "encuentro"){ avtNoot(AVT_N.E3,t,0.12,"square",0.06); avtNoot(AVT_N.F3,t+0.12,0.22,"square",0.06); }
-  if(naam === "win"){ [AVT_N.E4,AVT_N.E4,AVT_N.E4,AVT_N.Gs4,AVT_N.A4,659.3,880].forEach(function(f,i){ avtNoot(f,t+i*0.12,0.18,"square",0.06); avtNoot(f/2,t+i*0.12,0.2,"triangle",0.06); }); }
+  if(naam === "win"){ [AVT_N.E4,AVT_N.Gs4,AVT_N.B3,AVT_N.A4,523.25,659.26,880].forEach(function(f,i){ avtPluk(f,t+i*0.11,0.3,0.09); avtPluk(f/2,t+i*0.11,0.35,0.07); }); avtPalmas(t+0.77,0.12); avtPalmas(t+0.99,0.12); }
   if(naam === "baas"){ avtNoot(AVT_N.E2,t,0.5,"sawtooth",0.08); avtNoot(AVT_N.F2,t+0.5,0.5,"sawtooth",0.08); avtNoot(AVT_N.E2,t+1.0,0.7,"sawtooth",0.09); }
 }
 
