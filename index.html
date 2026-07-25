@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.10";
+var APP_VERSIE = "v19.11";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2719,6 +2719,159 @@ function checkDictado(){
   checkLessonComplete();
   var bg = document.getElementById("btnDicGok");
   if(bg) bg.onclick = dictadoGok;
+}
+
+/* ================= CONJUGADOR (sprint: vervoeg het werkwoord, presente) ================= */
+var VERBOS = [
+  // regelmatige voorbeelden (-ar/-er/-ir)
+  {inf:"hablar", nl:"praten, spreken", presente:["hablo","hablas","habla","hablamos","habláis","hablan"]},
+  {inf:"trabajar", nl:"werken", presente:["trabajo","trabajas","trabaja","trabajamos","trabajáis","trabajan"]},
+  {inf:"estudiar", nl:"studeren", presente:["estudio","estudias","estudia","estudiamos","estudiáis","estudian"]},
+  {inf:"comprar", nl:"kopen", presente:["compro","compras","compra","compramos","compráis","compran"]},
+  {inf:"comer", nl:"eten", presente:["como","comes","come","comemos","coméis","comen"]},
+  {inf:"aprender", nl:"leren", presente:["aprendo","aprendes","aprende","aprendemos","aprendéis","aprenden"]},
+  {inf:"leer", nl:"lezen", presente:["leo","lees","lee","leemos","leéis","leen"]},
+  {inf:"beber", nl:"drinken", presente:["bebo","bebes","bebe","bebemos","bebéis","beben"]},
+  {inf:"vivir", nl:"wonen, leven", presente:["vivo","vives","vive","vivimos","vivís","viven"]},
+  {inf:"escribir", nl:"schrijven", presente:["escribo","escribes","escribe","escribimos","escribís","escriben"]},
+  {inf:"abrir", nl:"openen", presente:["abro","abres","abre","abrimos","abrís","abren"]},
+  // onregelmatig / klinkerwissel (hoogfrequent, sluit aan bij FREQ + bestaande zinnen)
+  {inf:"ser", nl:"zijn", presente:["soy","eres","es","somos","sois","son"]},
+  {inf:"estar", nl:"zijn, zich bevinden", presente:["estoy","estás","está","estamos","estáis","están"]},
+  {inf:"tener", nl:"hebben", presente:["tengo","tienes","tiene","tenemos","tenéis","tienen"]},
+  {inf:"ir", nl:"gaan", presente:["voy","vas","va","vamos","vais","van"]},
+  {inf:"hacer", nl:"doen, maken", presente:["hago","haces","hace","hacemos","hacéis","hacen"]},
+  {inf:"poder", nl:"kunnen", presente:["puedo","puedes","puede","podemos","podéis","pueden"]},
+  {inf:"querer", nl:"willen, houden van", presente:["quiero","quieres","quiere","queremos","queréis","quieren"]},
+  {inf:"decir", nl:"zeggen", presente:["digo","dices","dice","decimos","decís","dicen"]},
+  {inf:"saber", nl:"weten", presente:["sé","sabes","sabe","sabemos","sabéis","saben"]},
+  {inf:"poner", nl:"zetten, leggen", presente:["pongo","pones","pone","ponemos","ponéis","ponen"]},
+  {inf:"salir", nl:"weggaan, uitgaan", presente:["salgo","sales","sale","salimos","salís","salen"]},
+  {inf:"venir", nl:"komen", presente:["vengo","vienes","viene","venimos","venís","vienen"]},
+  {inf:"dar", nl:"geven", presente:["doy","das","da","damos","dais","dan"]},
+  {inf:"ver", nl:"zien", presente:["veo","ves","ve","vemos","veis","ven"]},
+  {inf:"jugar", nl:"spelen", presente:["juego","juegas","juega","jugamos","jugáis","juegan"]},
+  {inf:"pedir", nl:"vragen om, bestellen", presente:["pido","pides","pide","pedimos","pedís","piden"]},
+  {inf:"dormir", nl:"slapen", presente:["duermo","duermes","duerme","dormimos","dormís","duermen"]},
+  {inf:"empezar", nl:"beginnen", presente:["empiezo","empiezas","empieza","empezamos","empezáis","empiezan"]},
+  {inf:"volver", nl:"terugkeren, teruggaan", presente:["vuelvo","vuelves","vuelve","volvemos","volvéis","vuelven"]},
+  {inf:"pensar", nl:"denken", presente:["pienso","piensas","piensa","pensamos","pensáis","piensan"]},
+  {inf:"sentir", nl:"voelen", presente:["siento","sientes","siente","sentimos","sentís","sienten"]},
+  {inf:"preferir", nl:"liever hebben, verkiezen", presente:["prefiero","prefieres","prefiere","preferimos","preferís","prefieren"]}
+];
+var CONJ_PRONOMBRES = ["yo","tú","él / ella / usted","nosotros / nosotras","vosotros / vosotras","ellos / ellas / ustedes"];
+var CONJ_RONDE_LEN = 10;
+var conjIdx = null; // {verb, p}
+var conjRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
+function pickConjugacion(){
+  var fouten = [];
+  VERBOS.forEach(function(v){
+    for(var p=0; p<6; p++){
+      var e = S.errors["conj:"+v.inf+"-"+p];
+      if(e && e.count > 0) fouten.push({verb:v, p:p});
+    }
+  });
+  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
+  var verb = VERBOS[Math.floor(Math.random()*VERBOS.length)];
+  return {verb:verb, p:Math.floor(Math.random()*6)};
+}
+function conjugadorNieuweRonde(){
+  conjRonde = {n:0, lengte:CONJ_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
+  conjIdx = pickConjugacion();
+}
+function conjugadorKickerTekst(){
+  return ct("Werkwoord ","Verb ") + (conjRonde.n+1) + "/" + conjRonde.lengte + (conjRonde.streak > 0 ? " · 🔥 " + conjRonde.streak : "");
+}
+function conjugadorVolgende(){
+  conjRonde.n++;
+  conjIdx = conjRonde.n < conjRonde.lengte ? pickConjugacion() : null;
+  renderFunConjugador();
+}
+function renderFunConjugador(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!conjRonde) conjugadorNieuweRonde();
+  if(conjRonde.n >= conjRonde.lengte){ renderConjugadorRondeKlaar(); return; }
+  if(!conjIdx) conjIdx = pickConjugacion();
+  var c = conjIdx, v = c.verb;
+  var html = "<h2>Conjugador 🎯</h2>"+
+    "<span class='kicker' id='cjKicker'>" + conjugadorKickerTekst() + "</span>"+
+    "<p class='muted'>" + fx("cjIntro") + "</p>"+
+    "<div class='card' style='text-align:center; margin:10px 0'>"+
+      "<p class='muted' style='margin:0 0 2px'>"+v.inf+" <span style='font-weight:400'>("+v.nl+")</span></p>"+
+      "<p class='big' style='margin:4px 0'>"+CONJ_PRONOMBRES[c.p]+"</p>"+
+      "<p class='muted' style='margin:0'>"+ct("presente","present tense")+"</p>"+
+    "</div>"+
+    "<input type='text' id='cjInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("cjPlaceholder")+"'>"+
+    "<div class='row'><button class='primary' id='btnCjCheck'>" + ct("Controleer","Check") + "</button>"+
+    "<button class='ghost' id='btnCjSkip'>" + fx("cjSkip") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
+    "<div id='cjFeedback'></div>";
+  el.innerHTML = html;
+  var inp = document.getElementById("cjInput");
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkConjugador(); });
+  document.getElementById("btnCjCheck").onclick = checkConjugador;
+  document.getElementById("btnCjSkip").onclick = function(){ conjugadorVolgende(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+  inp.focus();
+}
+function renderConjugadorRondeKlaar(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var perfect = conjRonde.goed === conjRonde.lengte;
+  var goedGenoeg = conjRonde.goed >= Math.ceil(conjRonde.lengte * 0.75);
+  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
+  if(bonus > 0 && !conjRonde.beloond){
+    S.tapas = (S.tapas||0) + bonus; conjRonde.beloond = true; persist();
+    if(perfect) confetti(["🎯","🔥","🎉"], 24);
+  }
+  var html = "<h2>Conjugador 🎯</h2>"+
+    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
+      ct("Ronde klaar: ","Round done: ") + conjRonde.goed + "/" + conjRonde.lengte +
+      (conjRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + conjRonde.besteStreak : "") +
+    "</div>"+
+    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
+    "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+  el.innerHTML = html;
+  document.getElementById("btnCjNieuweRonde").onclick = function(){ conjugadorNieuweRonde(); renderFunConjugador(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+}
+function checkConjugador(){
+  var c = conjIdx, v = c.verb;
+  var inpEl = document.getElementById("cjInput");
+  var given = norm((inpEl && inpEl.value) || "");
+  if(!given) return;
+  var fb = document.getElementById("cjFeedback");
+  var correct = v.presente[c.p];
+  var exact = norm(correct) === given;
+  var loose = !exact && stripAcc(norm(correct)) === stripAcc(given);
+  var goedBeantwoord = exact || loose;
+  var html = "";
+  if(exact){
+    html = "<div class='feedback ok'>¡Perfecto! ✓ (+3 XP)</div>";
+    addXP(3);
+  } else if(loose){
+    html = "<div class='feedback bijna'>"+ct("Bijna! Alleen het accent: ","Almost! Just the accent: ")+"<b>"+correct+"</b> (+2 XP)</div>";
+    addXP(2);
+  } else {
+    html = "<div class='feedback fout'>"+ct("Nog niet. Het antwoord is: ","Not yet. The answer is: ")+"<b>"+correct+"</b></div>";
+    logError(v.inf+"-"+c.p, "conj", v.inf, given); addXP(1);
+  }
+  if(goedBeantwoord){
+    conjRonde.goed++; conjRonde.streak++;
+    if(conjRonde.streak > conjRonde.besteStreak) conjRonde.besteStreak = conjRonde.streak;
+    if(conjRonde.streak % 3 === 0){
+      S.tapas = (S.tapas||0) + 1; persist();
+      html += "<div class='feedback ok' style='margin-top:4px'>🔥 " + conjRonde.streak + ct(" op een rij! +1 🌮 tapa"," in a row! +1 🌮 tapa") + "</div>";
+    }
+  } else {
+    conjRonde.streak = 0;
+  }
+  var kickerEl = document.getElementById("cjKicker");
+  if(kickerEl) kickerEl.textContent = conjugadorKickerTekst();
+  fb.innerHTML = html;
+  persist();
 }
 
 /* ================= TOETSJES ================= */
@@ -6915,7 +7068,10 @@ var FUN_TXT = {
      dicIntro:"Luister goed en typ de Spaanse zin die je hoort. Focus op klanken herkennen, niet op betekenis.",
      dicNormal:"Luister normal", dicLento:"Luister lento",
      dicPlaceholder:"Typ wat je hoort...", dicSkip:"Volgende zin",
-     dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari."},
+     dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari.",
+     cjS:"rondes van 10 vervoegingen, bouw een streak op, presente van 32 werkwoorden",
+     cjIntro:"Typ de juiste vervoeging (presente) voor dit werkwoord en deze persoon.",
+     cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord"},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
@@ -6937,7 +7093,10 @@ var FUN_TXT = {
      dicIntro:"Listen carefully and type the Spanish sentence you hear. Focus on recognising sounds, not meaning.",
      dicNormal:"Listen normal", dicLento:"Listen lento",
      dicPlaceholder:"Type what you hear...", dicSkip:"Next sentence",
-     dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari."}
+     dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari.",
+     cjS:"rounds of 10 conjugations, build a streak, present tense of 32 verbs",
+     cjIntro:"Type the correct conjugation (present tense) for this verb and this person.",
+     cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb"}
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
 var funView = null;
@@ -6951,6 +7110,7 @@ function renderFun(){
   if(funView === "esc"){ renderFunEsc(); return; }
   if(funView === "kruis"){ renderFunKruisLos(); return; }
   if(funView === "dictado"){ renderFunDictado(); return; }
+  if(funView === "conj"){ renderFunConjugador(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
@@ -6959,6 +7119,7 @@ function renderFun(){
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>" + fx("wsT") + "</b><span>" + fx("wsS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>" + fx("krS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDictado'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>Dictado</b><span>" + fx("dicS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftConj'><div class='lnum'>\ud83c\udfaf</div><div class='lbody'><b>Conjugador</b><span>" + fx("cjS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
@@ -6967,6 +7128,7 @@ function renderFun(){
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftKruis").onclick = function(){ funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); };
   document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
+  document.getElementById("ftConj").onclick = function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
