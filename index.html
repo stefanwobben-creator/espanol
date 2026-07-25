@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.2";
+var APP_VERSIE = "v19.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2495,6 +2495,126 @@ function checkSentence(){
       bu.classList.add("hidden");
     });
   };
+}
+
+/* ================= DICTADO (luister & typ, browser text-to-speech) ================= */
+var dIdx = null, dRate = 0.82;
+function dictadoStemKlaar(cb){
+  if(!window.speechSynthesis){ cb(null); return; }
+  var vs = speechSynthesis.getVoices();
+  if(vs && vs.length){ cb(vs); return; }
+  var deed = false;
+  speechSynthesis.onvoiceschanged = function(){ if(deed) return; deed = true; cb(speechSynthesis.getVoices()); };
+  setTimeout(function(){ if(deed) return; deed = true; cb(speechSynthesis.getVoices()); }, 600);
+}
+function dictadoSpreek(tekst){
+  if(!window.speechSynthesis) return false;
+  try{
+    speechSynthesis.cancel();
+    dictadoStemKlaar(function(vs){
+      var u = new SpeechSynthesisUtterance(tekst);
+      u.lang = "es-ES"; u.rate = dRate; u.pitch = 1;
+      if(vs && vs.length){
+        var es = vs.filter(function(v){ return /^es/i.test(v.lang); });
+        var v = es.filter(function(v){ return v.lang.toLowerCase() === "es-es"; })[0] || es[0];
+        if(v) u.voice = v;
+      }
+      speechSynthesis.speak(u);
+    });
+    return true;
+  }catch(e){ return false; }
+}
+function pickDictado(){
+  var allow = {};
+  allowedSentIds().forEach(function(id){ allow[id] = true; });
+  var pool = SENTENCES.filter(function(x){ return allow[x.id]; });
+  if(!pool.length) pool = SENTENCES;
+  var fouten = pool.filter(function(x){ var e = S.errors["dictado:"+x.id]; return e && e.count > 0; });
+  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
+  var gedaan = pool.filter(function(x){ return !!S.done[x.id]; });
+  var use = gedaan.length >= 4 ? gedaan : pool;
+  return use[Math.floor(Math.random()*use.length)];
+}
+function renderFunDictado(fresh){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(fresh || dIdx===null) dIdx = pickDictado();
+  var s = dIdx;
+  var kanSpreken = !!window.speechSynthesis;
+  var html = "<h2>Dictado 🔊</h2>";
+  if(!kanSpreken){
+    html += "<p class='muted'>" + fx("dicGeen") + "</p><div class='row'><button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    el.innerHTML = html;
+    document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+    return;
+  }
+  html += "<p class='muted'>" + fx("dicIntro") + "</p>"+
+    "<div class='row'><button class='primary' id='btnDicSpeel'>🔊 " + fx("dicLuister") + "</button>"+
+    "<button class='ghost' id='btnDicLangzaam'>🐢 " + (dRate<0.7 ? fx("dicNormaal") : fx("dicLangzaam")) + "</button></div>"+
+    "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
+    "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button>"+
+    "<button class='ghost' id='btnDicSkip'>" + fx("dicSkip") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
+    "<div id='dFeedback'></div>";
+  el.innerHTML = html;
+  var inp = document.getElementById("dInput");
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
+  document.getElementById("btnDicSpeel").onclick = function(){ dictadoSpreek(s.es); };
+  document.getElementById("btnDicLangzaam").onclick = function(){ dRate = dRate<0.7 ? 0.82 : 0.55; renderFunDictado(false); };
+  document.getElementById("btnDicCheck").onclick = checkDictado;
+  document.getElementById("btnDicSkip").onclick = function(){ renderFunDictado(true); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+  inp.focus();
+  setTimeout(function(){ dictadoSpreek(s.es); }, 250);
+}
+function checkDictado(){
+  var s = dIdx;
+  var inpEl = document.getElementById("dInput");
+  var given = norm((inpEl && inpEl.value) || "");
+  if(!given) return;
+  var fb = document.getElementById("dFeedback");
+  var answers = [norm(s.es)].concat((s.alt||[]).map(norm));
+  var exact = answers.indexOf(given) !== -1;
+  var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
+  var html = "", retryable = false;
+  if(exact){
+    html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
+    S.done[s.id] = true; addXP(5);
+  } else if(loose){
+    html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 XP)</div>";
+    S.done[s.id] = true; addXP(4);
+  } else {
+    var d = bestDiff(given, s);
+    if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
+      html = "<div class='feedback bijna'>"+ct("Zó dichtbij! Dit hoorde je: ","So close! What you should've heard: ")+"<b>"+d.html+"</b> (+2 XP)</div>";
+      addXP(2); retryable = true;
+      logError(s.id, "dictado", s.tag, given);
+    } else {
+      html = "<div class='feedback fout'>"+ct("Nog niet. Je hoorde: ","Not yet. You heard: ")+"<b>"+d.html+"</b></div>";
+      logError(s.id, "dictado", s.tag, given); addXP(1); retryable = true;
+    }
+  }
+  html += "<div class='uitleg'>"+ct("Vertaling: ","Translation: ")+zinPrompt(s)+"</div>";
+  html += "<div class='row'>"+
+    (retryable ? "<button class='primary' id='btnDicRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
+                 "<button class='ghost' id='btnDicHerhaal'>🔊 " + ct("Nog een keer horen","Listen again") + "</button>"+
+                 "<button class='ghost' id='btnDicNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
+               : "<button class='primary' id='btnDicNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"+
+                 "<button class='ghost' id='btnDicHerhaal'>🔊 " + ct("Nog een keer horen","Listen again") + "</button>")+
+    "</div>";
+  fb.innerHTML = html;
+  persist();
+  checkLessonComplete();
+  var bn = document.getElementById("btnDicNext");
+  if(bn) bn.onclick = function(){ renderFunDictado(true); };
+  var br = document.getElementById("btnDicRetry");
+  if(br) br.onclick = function(){
+    document.getElementById("dFeedback").innerHTML="";
+    var ii = document.getElementById("dInput");
+    if(ii){ ii.value=""; ii.focus(); }
+  };
+  var bh = document.getElementById("btnDicHerhaal");
+  if(bh) bh.onclick = function(){ dictadoSpreek(s.es); };
 }
 
 /* ================= TOETSJES ================= */
@@ -6676,7 +6796,12 @@ var FUN_TXT = {
      memIntro:"Draai kaartjes om en zoek de paren: Spaans woord bij de vertaling. Met jouw eigen geleerde woorden, en jouw lastige woorden doen extra vaak mee.",
      memRecord:"Jouw record:", memBeurten:"beurten", memNieuw:"Nieuw spel", memBeurtenLbl:"Beurten:", memRecLbl:"record:",
      memKlaar:"\u00a1Muy bien! Compleet in", memNieuwRec:"Nieuw record! \ud83c\udfc5",
-     memWeinig:"Leer eerst wat meer woordjes, dan kan het spel gevuld worden!"},
+     memWeinig:"Leer eerst wat meer woordjes, dan kan het spel gevuld worden!",
+     dicS:"luister naar een Spaanse zin en typ wat je hoort",
+     dicIntro:"Luister goed en typ de Spaanse zin die je hoort. Focus op klanken herkennen, niet op betekenis.",
+     dicLuister:"Luister", dicLangzaam:"Langzamer", dicNormaal:"Normale snelheid",
+     dicPlaceholder:"Typ wat je hoort...", dicSkip:"Andere zin",
+     dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari."},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
@@ -6693,7 +6818,12 @@ var FUN_TXT = {
      memIntro:"Flip cards and find the pairs: Spanish word with its translation. Uses your own learned words, and your tricky words show up extra often.",
      memRecord:"Your record:", memBeurten:"turns", memNieuw:"New game", memBeurtenLbl:"Turns:", memRecLbl:"record:",
      memKlaar:"\u00a1Muy bien! Complete in", memNieuwRec:"New record! \ud83c\udfc5",
-     memWeinig:"Learn a few more words first, then the game can be filled!"}
+     memWeinig:"Learn a few more words first, then the game can be filled!",
+     dicS:"listen to a Spanish sentence and type what you hear",
+     dicIntro:"Listen carefully and type the Spanish sentence you hear. Focus on recognising sounds, not meaning.",
+     dicLuister:"Listen", dicLangzaam:"Slower", dicNormaal:"Normal speed",
+     dicPlaceholder:"Type what you hear...", dicSkip:"Different sentence",
+     dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari."}
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
 var funView = null;
@@ -6706,6 +6836,7 @@ function renderFun(){
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "esc"){ renderFunEsc(); return; }
   if(funView === "kruis"){ renderFunKruisLos(); return; }
+  if(funView === "dictado"){ renderFunDictado(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
@@ -6713,6 +6844,7 @@ function renderFun(){
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>" + fx("muS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>" + fx("wsT") + "</b><span>" + fx("wsS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>" + fx("krS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftDictado'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>Dictado</b><span>" + fx("dicS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
@@ -6720,6 +6852,7 @@ function renderFun(){
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftKruis").onclick = function(){ funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); };
+  document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
