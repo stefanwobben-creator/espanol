@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.11";
+var APP_VERSIE = "v19.12";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2872,6 +2872,159 @@ function checkConjugador(){
   if(kickerEl) kickerEl.textContent = conjugadorKickerTekst();
   fb.innerHTML = html;
   persist();
+}
+
+/* ================= ZINNEN HUSSELEN (woordvolgorde-scramble met eigen SENTENCES) ================= */
+var HU_RONDE_LEN = 8;
+var huIdx = null;      // huidige zin (SENTENCES-item)
+var huRonde = null;    // {n, lengte, goed, streak, besteStreak, beloond}
+var huBank = null;     // [{w, used}] geschudde woorden
+var huGebouwd = null;  // [index in huBank], in de volgorde die de speler tikte
+function husselenTokens(zin){ return zin.split(/\s+/); }
+function shuffleArr(arr){
+  var a = arr.slice();
+  for(var i=a.length-1; i>0; i--){ var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function pickHusselen(){
+  var allow = {};
+  allowedSentIds().forEach(function(id){ allow[id] = true; });
+  var pool = SENTENCES.filter(function(x){ return allow[x.id] && husselenTokens(x.es).length >= 3; });
+  if(!pool.length) pool = SENTENCES.filter(function(x){ return husselenTokens(x.es).length >= 3; });
+  if(!pool.length) pool = SENTENCES;
+  var fouten = pool.filter(function(x){ var e = S.errors["husselen:"+x.id]; return e && e.count > 0; });
+  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
+  var gedaan = pool.filter(function(x){ return !!S.done[x.id]; });
+  var use = gedaan.length >= 4 ? gedaan : pool;
+  return use[Math.floor(Math.random()*use.length)];
+}
+function husselenNieuweOpgave(){
+  huIdx = pickHusselen();
+  var tokens = husselenTokens(huIdx.es);
+  var geschud = shuffleArr(tokens), pogingen = 0;
+  // niet toevallig de oorspronkelijke volgorde teruggeven
+  while(tokens.length > 1 && geschud.join(" ") === tokens.join(" ") && pogingen < 10){ geschud = shuffleArr(tokens); pogingen++; }
+  huBank = geschud.map(function(w){ return {w:w, used:false}; });
+  huGebouwd = [];
+}
+function husselenNieuweRonde(){
+  huRonde = {n:0, lengte:HU_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
+  husselenNieuweOpgave();
+}
+function husselenKickerTekst(){
+  return ct("Zin ","Sentence ") + (huRonde.n+1) + "/" + huRonde.lengte + (huRonde.streak > 0 ? " · 🔥 " + huRonde.streak : "");
+}
+function husselenVolgende(){
+  huRonde.n++;
+  if(huRonde.n < huRonde.lengte) husselenNieuweOpgave(); else huIdx = null;
+  renderFunHusselen();
+}
+function renderFunHusselen(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!huRonde) husselenNieuweRonde();
+  if(huRonde.n >= huRonde.lengte){ renderHusselenRondeKlaar(); return; }
+  if(!huIdx) husselenNieuweOpgave();
+  var s = huIdx;
+  var html = "<h2>" + fx("huT") + " 🧩</h2>"+
+    "<span class='kicker' id='huKicker'>" + husselenKickerTekst() + "</span>"+
+    "<p class='muted'>" + fx("huIntro") + "</p>"+
+    "<p class='big' style='margin:8px 0; font-size:1.1rem'>" + zinPrompt(s) + "</p>"+
+    "<div id='huGebouwdRij' style='min-height:44px; border:1px dashed #999; border-radius:8px; padding:6px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:6px'>"+
+      (huGebouwd.length ? huGebouwd.map(function(idx,pos){ return "<button class='ghost hu-tile' data-pos='"+pos+"' data-mode='gebouwd'>"+huBank[idx].w+"</button>"; }).join("") :
+        "<span class='muted' style='font-size:.85rem'>" + fx("huLeeg") + "</span>")+
+    "</div>"+
+    "<div id='huBankRij' style='display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px'>"+
+      huBank.map(function(t,idx){ return t.used ? "" : "<button class='ghost hu-tile' data-idx='"+idx+"' data-mode='bank'>"+t.w+"</button>"; }).join("")+
+    "</div>"+
+    "<div class='row'><button class='primary' id='btnHuCheck'"+(huGebouwd.length===huBank.length?"":" disabled")+">" + ct("Controleer","Check") + "</button>"+
+    "<button class='ghost' id='btnHuReset'>" + ct("Opnieuw","Reset") + "</button>"+
+    "<button class='ghost' id='btnHuSkip'>" + fx("huSkip") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
+    "<div id='huFeedback'></div>";
+  el.innerHTML = html;
+  el.querySelectorAll(".hu-tile").forEach(function(b){
+    b.onclick = function(){
+      if(b.getAttribute("data-mode") === "bank"){
+        var idx = +b.getAttribute("data-idx");
+        huBank[idx].used = true;
+        huGebouwd.push(idx);
+      } else {
+        var pos = +b.getAttribute("data-pos");
+        var idx2 = huGebouwd[pos];
+        huBank[idx2].used = false;
+        huGebouwd.splice(pos, 1);
+      }
+      renderFunHusselen();
+    };
+  });
+  var bc = document.getElementById("btnHuCheck");
+  if(bc) bc.onclick = checkHusselen;
+  document.getElementById("btnHuReset").onclick = function(){
+    huGebouwd.forEach(function(idx){ huBank[idx].used = false; });
+    huGebouwd = [];
+    renderFunHusselen();
+  };
+  document.getElementById("btnHuSkip").onclick = function(){ husselenVolgende(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+}
+function renderHusselenRondeKlaar(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var perfect = huRonde.goed === huRonde.lengte;
+  var goedGenoeg = huRonde.goed >= Math.ceil(huRonde.lengte * 0.75);
+  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
+  if(bonus > 0 && !huRonde.beloond){
+    S.tapas = (S.tapas||0) + bonus; huRonde.beloond = true; persist();
+    if(perfect) confetti(["🧩","🔥","🎉"], 24);
+  }
+  var html = "<h2>" + fx("huT") + " 🧩</h2>"+
+    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
+      ct("Ronde klaar: ","Round done: ") + huRonde.goed + "/" + huRonde.lengte +
+      (huRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + huRonde.besteStreak : "") +
+    "</div>"+
+    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
+    "<div class='row'><button class='primary' id='btnHuNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+  el.innerHTML = html;
+  document.getElementById("btnHuNieuweRonde").onclick = function(){ husselenNieuweRonde(); renderFunHusselen(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+}
+function checkHusselen(){
+  var s = huIdx;
+  if(huGebouwd.length !== huBank.length) return;
+  var built = huGebouwd.map(function(idx){ return huBank[idx].w; }).join(" ");
+  var fb = document.getElementById("huFeedback");
+  var goedBeantwoord = norm(built) === norm(s.es);
+  var html = "";
+  if(goedBeantwoord){
+    html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 XP)</div>";
+    S.done[s.id] = true; addXP(4);
+  } else {
+    html = "<div class='feedback fout'>"+ct("Nog niet. De juiste volgorde is: ","Not yet. The correct order is: ")+"<b>"+s.es+"</b></div>";
+    logError(s.id, "husselen", s.tag, built); addXP(1);
+  }
+  if(goedBeantwoord){
+    huRonde.goed++; huRonde.streak++;
+    if(huRonde.streak > huRonde.besteStreak) huRonde.besteStreak = huRonde.streak;
+    if(huRonde.streak % 3 === 0){
+      S.tapas = (S.tapas||0) + 1; persist();
+      html += "<div class='feedback ok' style='margin-top:4px'>🔥 " + huRonde.streak + ct(" op een rij! +1 🌮 tapa"," in a row! +1 🌮 tapa") + "</div>";
+    }
+  } else {
+    huRonde.streak = 0;
+  }
+  var kickerEl = document.getElementById("huKicker");
+  if(kickerEl) kickerEl.textContent = husselenKickerTekst();
+  html += "<div class='uitleg'>"+ct("Waarom: ","Why: ")+zinUitleg(s)+"</div>"+
+    "<div class='row' style='margin-top:6px'><button class='primary' id='btnHuVolgende'>" + fx("huSkip") + " →</button></div>";
+  fb.innerHTML = html;
+  persist();
+  checkLessonComplete();
+  var bv = document.getElementById("btnHuVolgende");
+  if(bv) bv.onclick = function(){ husselenVolgende(); };
+  var bc = document.getElementById("btnHuCheck"); if(bc) bc.disabled = true;
+  var br = document.getElementById("btnHuReset"); if(br) br.disabled = true;
 }
 
 /* ================= TOETSJES ================= */
@@ -7071,7 +7224,10 @@ var FUN_TXT = {
      dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari.",
      cjS:"rondes van 10 vervoegingen, bouw een streak op, presente van 32 werkwoorden",
      cjIntro:"Typ de juiste vervoeging (presente) voor dit werkwoord en deze persoon.",
-     cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord"},
+     cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord",
+     huT:"Zinnen husselen", huS:"rondes van 8 zinnen, tik de Spaanse woorden in de juiste volgorde",
+     huIntro:"Tik de woorden hieronder aan in de juiste volgorde om deze zin te bouwen.",
+     huLeeg:"Tik hieronder de woorden in de juiste volgorde", huSkip:"Volgende zin"},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
@@ -7096,7 +7252,10 @@ var FUN_TXT = {
      dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari.",
      cjS:"rounds of 10 conjugations, build a streak, present tense of 32 verbs",
      cjIntro:"Type the correct conjugation (present tense) for this verb and this person.",
-     cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb"}
+     cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb",
+     huT:"Scramble sentences", huS:"rounds of 8 sentences, tap the Spanish words in the right order",
+     huIntro:"Tap the words below in the right order to build this sentence.",
+     huLeeg:"Tap the words below in the right order", huSkip:"Next sentence"}
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
 var funView = null;
@@ -7111,6 +7270,7 @@ function renderFun(){
   if(funView === "kruis"){ renderFunKruisLos(); return; }
   if(funView === "dictado"){ renderFunDictado(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
+  if(funView === "hu"){ renderFunHusselen(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
@@ -7120,6 +7280,7 @@ function renderFun(){
     "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>" + fx("krS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDictado'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>Dictado</b><span>" + fx("dicS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftConj'><div class='lnum'>\ud83c\udfaf</div><div class='lbody'><b>Conjugador</b><span>" + fx("cjS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftHu'><div class='lnum'>\ud83e\udde9</div><div class='lbody'><b>" + fx("huT") + "</b><span>" + fx("huS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
@@ -7129,6 +7290,7 @@ function renderFun(){
   document.getElementById("ftKruis").onclick = function(){ funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); };
   document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
   document.getElementById("ftConj").onclick = function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); };
+  document.getElementById("ftHu").onclick = function(){ funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
