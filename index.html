@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.1";
+var APP_VERSIE = "v19.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4322,6 +4322,7 @@ var AVT_TXT = {
      bordRev:"⚔️ Baas-revancha", bordRevSub:"vecht opnieuw in de arena (+10 🪙)", bordKlaar:"✅ Uitdaging volbracht! De wereld is weer vrij. +5 🪙",
      cronTeaser:"🐢 Er is iemand verschenen bij het beginpunt van deze wereld...",
      ookGoed:"Ook goed:", vormTip:"({o} bij mannelijke, {a} bij vrouwelijke woorden)",
+     gramVraag:"De Gramático overhoort:",
      zekerWeten:"Zeker weten? Dit wist AL je Aventura-voortgang. Tik nogmaals om te wissen.",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
@@ -4393,6 +4394,7 @@ var AVT_TXT = {
      bordRev:"⚔️ Boss rematch", bordRevSub:"fight again in the arena (+10 🪙)", bordKlaar:"✅ Challenge complete! The world is free again. +5 🪙",
      cronTeaser:"🐢 Someone has appeared at this world's starting point...",
      ookGoed:"Also correct:", vormTip:"({o} with masculine, {a} with feminine words)",
+     gramVraag:"The Gramático quizzes you:",
      zekerWeten:"Are you sure? This erases ALL your Aventura progress. Tap again to erase.",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
@@ -4431,7 +4433,7 @@ var AVT_SCHERMEN = [
    ".P......P.",
    "........B.",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2}], exits:{links:0, rechts:2, boven:6}, casaScene:"cocina", w:"a0"},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2},{t:"gramatico",x:5,y:3}], exits:{links:0, rechts:2, boven:6}, casaScene:"cocina", w:"a0"},
  {naam:"El Palmar", grid:[
    "~~~..~~~~~",
    ".P..P...P.",
@@ -4440,7 +4442,7 @@ var AVT_SCHERMEN = [
    "..........",
    ".P....P...",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2}], exits:{links:1, rechts:3, boven:7}, casaScene:"jardin", w:"a0"},
+  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2},{t:"gramatico",x:3,y:2}], exits:{links:1, rechts:3, boven:7}, casaScene:"jardin", w:"a0"},
  {naam:"Las Rocas", grid:[
    "~~~~~~~~~~",
    "...R....T.",
@@ -4503,7 +4505,7 @@ var AVT_SCHERMEN = [
    "x,x,,,,x,x",
    "x,,,,,,,,x",
    "xxxx,,xxxx"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:6,y:1},{t:"cangrejo",x:3,y:5},{t:"olvido",x:7,y:3}], exits:{links:8, onder:11, boven:13}, w:"a1"},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:6,y:1},{t:"cangrejo",x:3,y:5},{t:"olvido",x:7,y:3},{t:"gramatico",x:5,y:5}], exits:{links:8, onder:11, boven:13}, w:"a1"},
  {naam:"El Mercado", grid:[
    "xxxx,,xxxx",
    "x,,,,,,,,x",
@@ -4512,7 +4514,7 @@ var AVT_SCHERMEN = [
    "x,x,,,x,,x",
    "x,,,,,,,,x",
    "xxxxxxxxxx"],
-  start:{x:4,y:1}, vijanden:[{t:"pulpo",x:6,y:4},{t:"olvido",x:4,y:1}], exits:{boven:8, rechts:11}, w:"a1"},
+  start:{x:4,y:1}, vijanden:[{t:"pulpo",x:6,y:4},{t:"olvido",x:4,y:1},{t:"gramatico",x:7,y:1}], exits:{boven:8, rechts:11}, w:"a1"},
  {naam:"La Iglesia", grid:[
    "xxxx,,xxxx",
    "x,,,,,,,,x",
@@ -4548,7 +4550,7 @@ var AVT_SCHERMEN = [
    "AbbAbbAbbA",
    "AbbbbDbbbA",
    "AAAAAAAAAA"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:4,y:1},{t:"lobo",x:7,y:4}], exits:{links:13, rechts:15}, w:"a2"},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:4,y:1},{t:"lobo",x:7,y:4},{t:"gramatico",x:8,y:2}], exits:{links:13, rechts:15}, w:"a2"},
  {naam:"El Río", grid:[
    "AAAAAAAAAA",
    "Abbb~bbbbA",
@@ -4566,7 +4568,7 @@ var AVT_SCHERMEN = [
    "AbbbbAbbTA",
    "AbbbbbbbbA",
    "AAAAAAAAAA"],
-  start:{x:0,y:3}, vijanden:[{t:"lobo",x:3,y:5},{t:"lobo",x:5,y:2},{t:"olvido",x:6,y:3}], exits:{links:15, boven:18}, arena:17, w:"a2"},
+  start:{x:0,y:3}, vijanden:[{t:"lobo",x:3,y:5},{t:"lobo",x:5,y:2},{t:"olvido",x:6,y:3},{t:"gramatico",x:2,y:5}], exits:{links:15, boven:18}, arena:17, w:"a2"},
  {naam:"La Guarida", grid:[
    "GGGGGGGGGG",
    "G........G",
@@ -4593,7 +4595,7 @@ var AVT_SCHERMEN = [
    "GggGGggggG",
    "GggggggggG",
    "GGGGggGGGG"],
-  start:{x:4,y:5}, vijanden:[{t:"guardian",x:6,y:1},{t:"lobo",x:3,y:5},{t:"olvido",x:7,y:4}], exits:{onder:18, rechts:20}, w:"b1"},
+  start:{x:4,y:5}, vijanden:[{t:"guardian",x:6,y:1},{t:"lobo",x:3,y:5},{t:"olvido",x:7,y:4},{t:"gramatico",x:5,y:1}], exits:{onder:18, rechts:20}, w:"b1"},
  {naam:"La Torre", grid:[
    "GGGGGGGGGG",
    "GggggggggG",
@@ -4619,7 +4621,8 @@ var AVT_TYPES = {
   cangrejo:{es:"el Cangrejo Confuso", hp:1, nl:"verwarde krab", en:"confused crab"},
   pulpo:   {es:"el Pulpo Olvidón", hp:2, nl:"vergeetachtige octopus", en:"forgetful octopus"},
   lobo:    {es:"el Lobo del Olvido", hp:2, nl:"vergeet-wolf", en:"forget-wolf"},
-  guardian:{es:"el Guardián del Sello", hp:3, nl:"zegelwachter (schrijven!)", en:"seal guardian (typing!)"}
+  guardian:{es:"el Guardián del Sello", hp:3, nl:"zegelwachter (schrijven!)", en:"seal guardian (typing!)"},
+  gramatico:{es:"el Olvido Gramático", hp:2, nl:"grammatica-overhoorder", en:"grammar quizzer"}
 };
 var AVT_BAAS_VRAGEN = [
  {q:"Yo ___ Chispa.", o:["soy","estoy","es"], a:0, u:"soy: wie je bent → ser"},
@@ -4853,7 +4856,9 @@ function avtLaadScherm(i, behoudPos){
   var sch = AVT_SCHERMEN[i];
   if(!behoudPos){ avt.x = sch.start.x; avt.y = sch.start.y; }
   avt.vijanden = [];
+  var vrijeWereld = sav.klaar && sav.uitdagingDag !== today();
   sch.vijanden.forEach(function(v, j){
+    if(vrijeWereld) return;
     if(sav.dood[i + ":" + j]) return;
     var hp = AVT_TYPES[v.t].hp + (sav.klaar ? 1 : 0);
     avt.vijanden.push({i:j, t:v.t, x:v.x, y:v.y, hp:hp, maxHp:hp, elite:!!sav.klaar});
@@ -4902,6 +4907,13 @@ function avtVijandSvg(t, groot){
       "<ellipse cx='-4' cy='3' rx='5' ry='3.5' fill='#d8dee8'/>"+
       "<circle cx='-4' cy='-2.5' r='1.8' fill='#2d2a26'/><circle cx='3' cy='-2.5' r='1.8' fill='#2d2a26'/>"+
       "<ellipse cx='-8' cy='1' rx='1.6' ry='1.2' fill='#2d2a26'/>";
+  } else if(t === "gramatico"){
+    svg = "<path d='M-11 6 Q-13 -8 0 -10 Q13 -8 11 6 L8 3 L5 7 L2 3 L-1 7 L-4 3 L-7 7 Z' fill='#c3b9cf' stroke='#a193b1' stroke-width='1.5'/>"+
+      "<path d='M-9 -9 L0 -14 L9 -9 L0 -5 Z' fill='#4a4238' stroke='#2d2a26' stroke-width='1'/>"+
+      "<path d='M9 -9 l0 5' stroke='#e0a800' stroke-width='1.2'/><circle cx='9' cy='-3' r='1.3' fill='#ffd54d'/>"+
+      "<circle cx='-4' cy='-2' r='1.8' fill='#2d2a26'/>"+
+      "<circle cx='4' cy='-2' r='3' fill='none' stroke='#2d2a26' stroke-width='1'/><circle cx='4' cy='-2' r='1.6' fill='#2d2a26'/>"+
+      "<path d='M-4 4 Q0 5.5 4 4' stroke='#2d2a26' stroke-width='1.2' fill='none'/>";
   } else if(t === "guardian"){
     svg = "<path d='M-10 6 Q-12 -8 0 -10 Q12 -8 10 6 L7 3 L4 7 L0 3 L-4 7 L-7 3 Z' fill='#7d8ba0' stroke='#5c6a80' stroke-width='1.5'/>"+
       "<path d='M-9 -6 a9 6 0 0 1 18 0 l0 3 l-18 0 Z' fill='#c9d2de' stroke='#9aa7b8' stroke-width='1.5'/>"+
@@ -5207,6 +5219,31 @@ function avtWoordPool(){
   pool.forEach(function(w){ if(!uniek[w.id]){ uniek[w.id] = 1; uit.push(w); } });
   return uit;
 }
+function gramVormVraag(){
+  var paren = WORDS.filter(function(w){ return w.es.indexOf("/") !== -1 && S.srs[w.id]; });
+  if(!paren.length) paren = WORDS.filter(function(w){ return w.es.indexOf("/") !== -1; });
+  if(!paren.length) return null;
+  var w = paren[Math.floor(Math.random() * paren.length)];
+  var v = esVormen(w.es).filter(function(x){ return x !== w.es; });
+  if(v.length < 2) return null;
+  var kies = Math.floor(Math.random() * 2);
+  var doel = v[kies], ander = v[1 - kies];
+  if(/^(el|la|un|una)\s/.test(doel) && /^(el|la|un|una)\s/.test(ander)){
+    var rest = doel.split(" ").slice(1).join(" ");
+    return {q:"___ " + rest, o:[doel.split(" ")[0], ander.split(" ")[0]], a:0, u:doel + " · " + wTrans(w)};
+  }
+  var vertDelen = wTrans(w).split("/").map(function(s){ return s.trim(); }).filter(Boolean);
+  if(vertDelen.length === v.length){
+    var di = v.indexOf(doel);
+    return {q:vertDelen[di] + " = ___", o:[doel, ander], a:0, u:w.es + " · " + wTrans(w)};
+  }
+  if((/o$/.test(doel) && /a$/.test(ander)) || (/a$/.test(doel) && /o$/.test(ander))){
+    var vrouwelijk = /a$/.test(doel);
+    var ctx = vrouwelijk ? "la casa" : "el libro";
+    return {q:ctx + " … ___", o:[doel, ander], a:0, u:ctx + " → " + doel + " (" + (vrouwelijk ? "-a" : "-o") + ") · " + wTrans(w)};
+  }
+  return null;
+}
 function avtNieuweVraag(){
   var g = avt.gevecht;
   if(g.baas){
@@ -5214,6 +5251,16 @@ function avtNieuweVraag(){
     var volg = g.vraag.o.map(function(o, i){ return {t:o, goed:i === g.vraag.a}; });
     volg.sort(function(){ return Math.random() - 0.5; });
     g.opties = volg; g.hintWeg = false;
+    return;
+  }
+  if(g.v && g.v.t === "gramatico"){
+    var set2 = avtWereld === "a1" ? AVT_BAAS2_VRAGEN : avtWereld === "a2" ? AVT_BAAS3_VRAGEN :
+      avtWereld === "b1" ? AVT_BAAS_VRAGEN.concat(AVT_BAAS2_VRAGEN, AVT_BAAS3_VRAGEN) : AVT_BAAS_VRAGEN;
+    var gv = (Math.random() < 0.5 ? gramVormVraag() : null) || set2[Math.floor(Math.random() * set2.length)];
+    g.vraagG = gv; g.zin = null; g.w = null;
+    var vg = gv.o.map(function(o, i2){ return {t:o, goed:i2 === gv.a}; });
+    vg.sort(function(){ return Math.random() - 0.5; });
+    g.opties = vg; g.hintWeg = false; g.hintTxt = null;
     return;
   }
   if(avtWereld === "b1" && g.v){
@@ -5368,13 +5415,15 @@ function avtAntwoord(op){
   var w = g.w;
   if(op.goed){
     avt.combo = (avt.combo||0) + 1;
-    if(g.zin){ addXP(3); persist(); updateBadge(); } else { avtSrsBij(w, true); }
+    if(g.vraagG){ addXP(2); persist(); updateBadge(); }
+    else if(g.zin){ addXP(3); persist(); updateBadge(); }
+    else { avtSrsBij(w, true); }
     avtSfx("goed");
     g.v.hp--;
     if(g.v.hp <= 0){
       var sav2 = avtSave();
       sav2.dood[avt.scherm + ":" + g.v.i] = true;
-      var munt = g.v.t === "guardian" ? 5 : (g.v.elite ? 3 : (g.v.t === "pulpo" || g.v.t === "lobo" ? 2 : 1));
+      var munt = g.v.t === "guardian" ? 5 : (g.v.elite ? 3 : (g.v.t === "pulpo" || g.v.t === "lobo" || g.v.t === "gramatico" ? 2 : 1));
       var racha = avt.combo >= 3;
       if(racha) munt *= 2;
       S.monedas = (S.monedas||0) + munt; persist();
@@ -5396,10 +5445,11 @@ function avtAntwoord(op){
     avtNieuweVraag(); renderFun();
   } else {
     avt.combo = 0;
-    if(g.zin){ logError(g.zin.id, "zin", g.zin.tag, g.zin.es); addXP(1); persist(); updateBadge(); }
+    if(g.vraagG){ addXP(1); persist(); updateBadge(); }
+    else if(g.zin){ logError(g.zin.id, "zin", g.zin.tag, g.zin.es); addXP(1); persist(); updateBadge(); }
     else { avtSrsBij(w, false); }
     avtSfx("fout");
-    var juistTxt = g.zin ? g.zin.es : (g.naarEs ? w.es : wTrans(w));
+    var juistTxt = g.vraagG ? (g.vraagG.o[g.vraagG.a] + " · " + g.vraagG.u) : (g.zin ? g.zin.es : (g.naarEs ? w.es : wTrans(w)));
     if(avtHartKwijt()) return;
     g.feedback = {goed:false, txt:at("fout") + "<b>" + juistTxt + "</b>"};
     avtNieuweVraag(); renderFun();
@@ -6100,7 +6150,7 @@ function renderFunAvt(){
   if(avt.gevecht){
     var g = avt.gevecht;
     var kop, sub, beeld, pips = "";
-    var typ = !g.baas && (!!g.zin || g.v.elite || g.v.t === "guardian" || avtWereld === "a2");
+    var typ = !g.baas && !g.vraagG && (!!g.zin || g.v.elite || g.v.t === "guardian" || avtWereld === "a2");
     if(g.baas){
       var bnSuf = {a0:"", a1:"2", a2:"3", b1:"4"}[avtWereld] || "";
       kop = at("baasNaam" + bnSuf) + (g.revancha ? " ⚡" : ""); sub = at("baasIntro" + bnSuf);
@@ -6112,8 +6162,8 @@ function renderFunAvt(){
       beeld = "<svg viewBox='-40 -40 80 80' style='width:110px'><g class='avtzweefg'>" + avtVijandSvg(g.v.t, true) + (typ ? "<text x='0' y='-30' text-anchor='middle' font-size='13'>⚡</text>" : "") + "</g></svg>";
       for(var j=0;j<(g.v.maxHp||AVT_TYPES[g.v.t].hp);j++){ pips += j < g.v.hp ? "🟣" : "⚪️"; }
     }
-    var vraagTxt = g.baas ? g.vraag.q : (g.zin ? zinPrompt(g.zin) : (g.naarEs ? wTrans(g.w) : g.w.es));
-    var vraagLabel = g.baas ? kop + ":" : (g.zin ? at("zinVertaal") : (g.naarEs ? at("vraagNaar") : at("vraagVan")));
+    var vraagTxt = g.baas ? g.vraag.q : (g.vraagG ? g.vraagG.q : (g.zin ? zinPrompt(g.zin) : (g.naarEs ? wTrans(g.w) : g.w.es)));
+    var vraagLabel = g.baas ? kop + ":" : (g.vraagG ? at("gramVraag") : (g.zin ? at("zinVertaal") : (g.naarEs ? at("vraagNaar") : at("vraagVan"))));
     var html2 = "<div style='text-align:center'>"+
       "<span class='kicker'>" + kop + " · " + sub + "</span><br>" + beeld +
       "<p style='margin:2px'>" + pips + "</p>"+
