@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v15.0";
+var APP_VERSIE = "v16.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4083,7 +4083,13 @@ var AVT_TXT = {
      rotsHint:"Deze rots is gebarsten... Met een bomba krijg je hem open. Ergens ligt een kist met eentje, en Mamá Iguana verkoopt ze in de tienda. 💣",
      rotsBom:"Gebarsten rots! Druk op de knop 💣 Bom leggen.",
      casaKlaar:"De bewoners zijn blij met de etiquetas! +5 🪙", casaMorgen:"Morgen halen ze de stickers er weer af... kom terug voor nieuwe monedas!",
-     naarKaart:"⬅︎ La Costa",
+     naarKaart:"⬅︎ kaart",
+     slotA1:"eerst La Costa bevrijden", baasNaam2:"El Olvido Sabio", baasIntro2:"De geleerde onder de Olvidos. Hij toetst je A1-grammatica!",
+     gewonnenSub2:"El Pueblo is bevrijd. De klokken luiden voor Chispa: 3 tapas!", volgende2:"El Bosque (A2) opent in een volgende update...",
+     taq:"La Taquería", taqDoel:"Eet minstens 8 taco's zonder jezelf of de muur te raken!", taqDood:"Auw! Dat waren er", taqWin:"¡Qué rico! Doel gehaald:", taqBeloning:"+6 🪙 (dagbeloning)", taqNog:"Otra vez 🌮", taqRecord:"récord",
+     biblio:"La Biblioteca", biblioSub:"Het kruiswoord van de bibliothecaris: jouw geleerde woorden, kriskras door elkaar.", kruisKies:"Kies een omschrijving en typ het Spaanse woord:",
+     kruisGoed:"¡Exacto!", kruisFout:"Nee... kijk nog eens goed.", kruisKlaar:"Kruiswoord opgelost!", kruisBeloning:"+5 🪙 (dagbeloning)",
+     llaveCamp:"🗝️ ¡La Llave del Campanario! De kerkdeur kan nu open.", kruisNieuw:"Nieuw kruiswoord", kruisWeinig:"Leer eerst wat meer woordjes voor een kruiswoord!",
      accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
      revWin:"¡Revancha gewonnen! +10 🪙 en +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blaast gebarsten rotsen op", bommen:"bommen",
@@ -4117,7 +4123,13 @@ var AVT_TXT = {
      rotsHint:"This rock is cracked... A bomba would open it. There's a chest with one somewhere, and Mamá Iguana sells them in the tienda. 💣",
      rotsBom:"Cracked rock! Press the 💣 Place bomb button.",
      casaKlaar:"The residents love the etiquetas! +5 🪙", casaMorgen:"Tomorrow they peel the stickers off again... come back for more monedas!",
-     naarKaart:"⬅︎ La Costa",
+     naarKaart:"⬅︎ map",
+     slotA1:"free La Costa first", baasNaam2:"El Olvido Sabio", baasIntro2:"The scholar among the Olvidos. He tests your A1 grammar!",
+     gewonnenSub2:"El Pueblo is free. The bells ring for Chispa: 3 tapas!", volgende2:"El Bosque (A2) opens in a future update...",
+     taq:"La Taquería", taqDoel:"Eat at least 8 tacos without hitting yourself or the wall!", taqDood:"Ouch! That was", taqWin:"¡Qué rico! Goal reached:", taqBeloning:"+6 🪙 (daily reward)", taqNog:"Otra vez 🌮", taqRecord:"record",
+     biblio:"La Biblioteca", biblioSub:"The librarian's crossword: your learned words, criss-crossed.", kruisKies:"Pick a clue and type the Spanish word:",
+     kruisGoed:"¡Exacto!", kruisFout:"No... look again.", kruisKlaar:"Crossword solved!", kruisBeloning:"+5 🪙 (daily reward)",
+     llaveCamp:"🗝️ ¡La Llave del Campanario! The church door can open now.", kruisNieuw:"New crossword", kruisWeinig:"Learn a few more words first for a crossword!",
      accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
      revWin:"¡Rematch won! +10 🪙 and +1 🌮",
      koopBom:"💣 Bomba", bomUitleg:"blows up cracked rocks", bommen:"bombs",
@@ -4146,7 +4158,7 @@ var AVT_SCHERMEN = [
    "...P...R..",
    "..........",
    "~~~~~~~~~~"],
-  start:{x:1,y:3}, vijanden:[{t:"olvido",x:6,y:2}], exits:{rechts:1}},
+  start:{x:1,y:3}, vijanden:[{t:"olvido",x:6,y:2}], exits:{rechts:1}, w:"a0"},
  {naam:"Las Dunas", grid:[
    "~~~~..~~~~",
    ".H..P.N...",
@@ -4155,7 +4167,7 @@ var AVT_SCHERMEN = [
    ".P......P.",
    "........B.",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2}], exits:{links:0, rechts:2, boven:6}, casaScene:"cocina"},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2}], exits:{links:0, rechts:2, boven:6}, casaScene:"cocina", w:"a0"},
  {naam:"El Palmar", grid:[
    "~~~..~~~~~",
    ".P..P...P.",
@@ -4164,7 +4176,7 @@ var AVT_SCHERMEN = [
    "..........",
    ".P....P...",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2}], exits:{links:1, rechts:3, boven:7}, casaScene:"jardin"},
+  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2}], exits:{links:1, rechts:3, boven:7}, casaScene:"jardin", w:"a0"},
  {naam:"Las Rocas", grid:[
    "~~~~~~~~~~",
    "...R....T.",
@@ -4173,7 +4185,7 @@ var AVT_SCHERMEN = [
    "....R.R...",
    "..........",
    "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:3},{t:"cangrejo",x:5,y:5},{t:"pulpo",x:7,y:3}], exits:{links:2}},
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:3},{t:"cangrejo",x:5,y:5},{t:"pulpo",x:7,y:3}], exits:{links:2}, arena:4, w:"a0"},
  {naam:"El Templo", grid:[
    "RRRRRRRRRR",
    "R........R",
@@ -4182,7 +4194,7 @@ var AVT_SCHERMEN = [
    "R........R",
    "R........R",
    "RRRRRRRRRR"],
-  start:{x:4,y:5}, vijanden:[], baas:true},
+  start:{x:4,y:5}, vijanden:[], baas:true, w:"a0"},
  {naam:"La Cueva Secreta", grid:[
    "GGGGGGGGGG",
    "GggggggggG",
@@ -4191,7 +4203,7 @@ var AVT_SCHERMEN = [
    "GGgggGGggG",
    "GggggUgggG",
    "GGGGGGGGGG"],
-  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:7,y:3}]},
+  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:7,y:3}], w:"a0"},
  {naam:"El Faro", grid:[
    "~~~~~~~~~~",
    "....F.....",
@@ -4200,7 +4212,7 @@ var AVT_SCHERMEN = [
    "..........",
    "..........",
    "~~~~..~~~~"],
-  start:{x:4,y:5}, vijanden:[{t:"olvido",x:2,y:2},{t:"cangrejo",x:7,y:4}], exits:{onder:1, rechts:7}, casaScene:"salon"},
+  start:{x:4,y:5}, vijanden:[{t:"olvido",x:2,y:2},{t:"cangrejo",x:7,y:4}], exits:{onder:1, rechts:7}, casaScene:"salon", w:"a0"},
  {naam:"Los Acantilados", grid:[
    "~~~~~~~~~~",
    ".R.....R..",
@@ -4209,9 +4221,54 @@ var AVT_SCHERMEN = [
    "..R....R..",
    "..........",
    "~~~..~~~~~"],
-  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:6,y:2},{t:"olvido",x:4,y:4}], exits:{links:6, onder:2}, casaScene:"super"}
+  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:6,y:2},{t:"olvido",x:4,y:4}], exits:{links:6, onder:2}, casaScene:"super", w:"a0"},
+ {naam:"La Plaza", grid:[
+   "xxxxxxxxxx",
+   "x,,,,,,,,x",
+   "x,,O,,Q,,x",
+   "x,,,,,,,,,",
+   "x,,,,,,,,x",
+   "x,,,,,,,,x",
+   "xxxx,,xxxx"],
+  start:{x:1,y:3}, vijanden:[{t:"olvido",x:5,y:4},{t:"pulpo",x:7,y:5}], exits:{rechts:9, onder:10}, w:"a1"},
+ {naam:"La Calle Mayor", grid:[
+   "xxxxxxxxxx",
+   "x,,,,,,,,x",
+   "x,W,,x,,,x",
+   ",,,,,,,,,x",
+   "x,x,,,,x,x",
+   "x,,,,,,,,x",
+   "xxxx,,xxxx"],
+  start:{x:0,y:3}, vijanden:[{t:"olvido",x:6,y:1},{t:"cangrejo",x:3,y:5},{t:"olvido",x:7,y:3}], exits:{links:8, onder:11}, w:"a1"},
+ {naam:"El Mercado", grid:[
+   "xxxx,,xxxx",
+   "x,,,,,,,,x",
+   "x,S,,x,,,x",
+   "x,,,,,,,,,",
+   "x,x,,,x,,x",
+   "x,,,,,,,,x",
+   "xxxxxxxxxx"],
+  start:{x:4,y:1}, vijanden:[{t:"pulpo",x:6,y:4},{t:"olvido",x:4,y:1}], exits:{boven:8, rechts:11}, w:"a1"},
+ {naam:"La Iglesia", grid:[
+   "xxxx,,xxxx",
+   "x,,,,,,,,x",
+   "x,,xTx,,,x",
+   ",,,,,,,,,x",
+   "x,,,,,,,,x",
+   "x,,,,,,,,x",
+   "xxxxxxxxxx"],
+  start:{x:4,y:1}, vijanden:[{t:"olvido",x:6,y:4},{t:"cangrejo",x:2,y:5},{t:"pulpo",x:7,y:1}], exits:{links:10, boven:9}, arena:12, w:"a1"},
+ {naam:"El Campanario", grid:[
+   "GGGGGGGGGG",
+   "G........G",
+   "G........G",
+   "G........G",
+   "G........G",
+   "G........G",
+   "GGGGGGGGGG"],
+  start:{x:4,y:5}, vijanden:[], baas:true, w:"a1"}
 ];
-var AVT_CONCHAS = [{s:0,x:8,y:5},{s:1,x:1,y:1},{s:2,x:9,y:4},{s:3,x:4,y:3},{s:4,x:8,y:4},{s:6,x:8,y:1},{s:7,x:1,y:5}];
+var AVT_CONCHAS = [{s:0,x:8,y:5},{s:1,x:1,y:1},{s:2,x:9,y:4},{s:3,x:4,y:3},{s:4,x:8,y:4},{s:6,x:8,y:1},{s:7,x:1,y:5},{s:8,x:8,y:5},{s:9,x:1,y:5},{s:10,x:8,y:1},{s:11,x:1,y:4}];
 var AVT_TYPES = {
   olvido:  {es:"el Olvido",  hp:1, nl:"vergeet-monstertje", en:"forget-monster"},
   cangrejo:{es:"el Cangrejo Confuso", hp:1, nl:"verwarde krab", en:"confused crab"},
@@ -4230,6 +4287,18 @@ var AVT_BAAS_VRAGEN = [
  {q:"quince =", o:["15","5","50"], a:0, u:"quince = 15 (cinco 5, cincuenta 50)"}
 ];
 
+var AVT_BAAS2_VRAGEN = [
+ {q:"Me ___ las tapas.", o:["gustan","gusta","gustas"], a:0, u:"meervoud (las tapas) → gustan"},
+ {q:"___ hermana se llama Ana.", o:["Mi","Mis","Yo"], a:0, u:"één zus → mi (mis = meervoud)"},
+ {q:"¿___ hora es?", o:["Qué","Cuál","Cómo"], a:0, u:"¿Qué hora es? = hoe laat is het?"},
+ {q:"Yo ___ ir a la playa.", o:["quiero","quiere","queremos"], a:0, u:"querer: yo quiero (e→ie)"},
+ {q:"Nosotros ___ al cine.", o:["vamos","van","voy"], a:0, u:"ir: voy, vas, va, vamos"},
+ {q:"Son ___ tres. (15:00)", o:["las","los","la"], a:0, u:"uren zijn vrouwelijk: son las tres"},
+ {q:"¿___ te levantas?", o:["A qué hora","Qué hora","Cuándo es"], a:0, u:"a qué hora = hoe laat (tijdstip)"},
+ {q:"Tengo ___ estudiar.", o:["que","de","a"], a:0, u:"tener que + infinitief = moeten"},
+ {q:"Ella no ___ venir hoy.", o:["puede","puedo","podemos"], a:0, u:"poder: o→ue, ella puede"},
+ {q:"A Juan ___ gustan los perros.", o:["le","me","te"], a:0, u:"aan hem → le gustan"}
+];
 /* ---- audio: chiptune + sfx via WebAudio, geen bestanden nodig ---- */
 var avtAC = null, avtMuziekTimer = null, avtMuziekFrase = 0;
 function avtCtx(){
@@ -4343,13 +4412,29 @@ function avtSfx(naam){
 }
 
 /* ---- savegame + runtime ---- */
-function avtSave(){
+var avtWereld = "a0";
+function avtSaveVan(wid){
   if(!S.avt) S.avt = {};
-  if(!S.avt.a0) S.avt.a0 = {scherm:0, x:1, y:3, harten:3, dood:{}, kist:false, lupa:false, klaar:false};
-  var a = S.avt.a0;
+  if(!S.avt[wid]) S.avt[wid] = {scherm:(wid === "a1" ? 8 : 0), x:1, y:3, harten:3, dood:{}, kist:false, lupa:false, klaar:false};
+  var a = S.avt[wid];
   if(!a.maxHarten) a.maxHarten = 3;
   if(!a.conchas) a.conchas = {};
   return a;
+}
+function avtSave(){ return avtSaveVan(avtWereld); }
+function avtHeeftLupa(){ return !!((S.avt && S.avt.a0 && S.avt.a0.lupa) || avtSave().lupa); }
+function avtWereldInfo(wid){
+  var sv = S.avt && S.avt[wid];
+  var tot = 0, over = 0, totC = 0, gevC = 0;
+  AVT_SCHERMEN.forEach(function(sch, i){
+    if(sch.w !== wid) return;
+    sch.vijanden.forEach(function(v, j){ tot++; if(!(sv && sv.dood && sv.dood[i + ":" + j])) over++; });
+  });
+  AVT_CONCHAS.forEach(function(cc){
+    if(AVT_SCHERMEN[cc.s].w !== wid) return;
+    totC++; if(sv && sv.conchas && sv.conchas[cc.s + ":" + cc.x + ":" + cc.y]) gevC++;
+  });
+  return {tot:tot, over:over, totC:totC, gevC:gevC, klaar:!!(sv && sv.klaar)};
 }
 var avt = null, avtTikker = null, avtKeys = false;
 
@@ -4382,6 +4467,7 @@ function avtLaadScherm(i, behoudPos){
 function avtStopAlles(){
   avtMuziekStop();
   if(avtTikker){ clearInterval(avtTikker); avtTikker = null; }
+  if(avtSnakeTimer){ clearInterval(avtSnakeTimer); avtSnakeTimer = null; }
 }
 function avtVrijOp(si, x, y){
   if(y < 0 || y > 6) return false;
@@ -4393,7 +4479,7 @@ function avtVrijOp(si, x, y){
 function avtVrij(x, y){ return avtVrijOp(avt.scherm, x, y); }
 function avtOlvidosOver(){
   var sav = avtSave(), n = 0;
-  AVT_SCHERMEN.forEach(function(sch, i){ sch.vijanden.forEach(function(v, j){ if(!sav.dood[i + ":" + j]) n++; }); });
+  AVT_SCHERMEN.forEach(function(sch, i){ if(sch.w !== avtWereld) return; sch.vijanden.forEach(function(v, j){ if(!sav.dood[i + ":" + j]) n++; }); });
   return n;
 }
 
@@ -4460,6 +4546,11 @@ function avtTegel(c, x, y){
     "<path d='M"+(px+3)+" "+(py+16)+" L"+(px+20)+" "+(py+3)+" L"+(px+37)+" "+(py+16)+" Z' fill='#d97f5f' stroke='#b96044' stroke-width='2'/>"+
     "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='9' height='14' rx='1.5' fill='#8a6a3e'/>"+
     "<rect x='"+(px+27)+"' y='"+(py+20)+"' width='6' height='6' fill='#bcdcf0' stroke='#8fb8d4' stroke-width='1.5'/>";
+  if(c === ",") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><path d='M"+px+" "+(py+20)+" h40 M"+(px+20)+" "+py+" v20' stroke='#dccdb2' stroke-width='1'/>";
+  if(c === "x") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='#e8dcc8'/><rect x='"+(px+3)+"' y='"+(py+12)+"' width='34' height='26' fill='#faf6ee' stroke='#cfc5b4' stroke-width='2'/><path d='M"+px+" "+(py+14)+" L"+(px+20)+" "+(py+2)+" L"+(px+40)+" "+(py+14)+" Z' fill='#d97f5f' stroke='#b96044' stroke-width='2'/><rect x='"+(px+16)+"' y='"+(py+22)+"' width='8' height='8' fill='#bcdcf0' stroke='#8fb8d4' stroke-width='1.5'/>";
+  if(c === "O") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><ellipse cx='"+(px+20)+"' cy='"+(py+26)+"' rx='15' ry='9' fill='#8ec9e8' stroke='#b8b0a4' stroke-width='3'/><path d='M"+(px+20)+" "+(py+24)+" q-4 -12 0 -16 q4 4 0 16 M"+(px+14)+" "+(py+24)+" q-2 -7 -5 -8 M"+(px+26)+" "+(py+24)+" q2 -7 5 -8' stroke='#bfe2f5' stroke-width='2.5' fill='none' stroke-linecap='round'/>";
+  if(c === "Q") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><rect x='"+(px+5)+"' y='"+(py+16)+"' width='30' height='20' fill='#f5ead6' stroke='#c9ab84' stroke-width='2'/><path d='M"+(px+2)+" "+(py+16)+" h36 l-3 -9 h-30 Z' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/><path d='M"+(px+8)+" "+(py+16)+" v-8 M"+(px+16)+" "+(py+16)+" v-9 M"+(px+24)+" "+(py+16)+" v-9 M"+(px+32)+" "+(py+16)+" v-8' stroke='#e8503a' stroke-width='2.5'/><text x='"+(px+20)+"' y='"+(py+31)+"' text-anchor='middle' font-size='12'>🌮</text>";
+  if(c === "W") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><rect x='"+(px+4)+"' y='"+(py+10)+"' width='32' height='28' fill='#f0e6d2' stroke='#c9ab84' stroke-width='2'/><path d='M"+(px+2)+" "+(py+10)+" h36' stroke='#b96044' stroke-width='4'/><path d='M"+(px+9)+" "+(py+38)+" v-22 M"+(px+17)+" "+(py+38)+" v-22 M"+(px+25)+" "+(py+38)+" v-22 M"+(px+33)+" "+(py+38)+" v-22' stroke='#d9c5a8' stroke-width='3'/><text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='11'>📚</text>";
   if(c === "F") return zand + "<path d='M"+(px+14)+" "+(py+38)+" L"+(px+16)+" "+(py+6)+" L"+(px+24)+" "+(py+6)+" L"+(px+26)+" "+(py+38)+" Z' fill='#f5f0e6' stroke='#c9beac' stroke-width='1.5'/>"+
     "<path d='M"+(px+15)+" "+(py+30)+" h10 M"+(px+15.5)+" "+(py+20)+" h9' stroke='#e8503a' stroke-width='5'/>"+
     "<rect x='"+(px+16)+"' y='"+(py+2)+"' width='8' height='6' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/>";
@@ -4510,7 +4601,7 @@ function avtKaartSvg(){
   return html + "</svg>";
 }
 function avtMove(dx, dy){
-  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || escSpel) return;
+  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || escSpel) return;
   var nx = avt.x + dx, ny = avt.y + dy;
   if(dx) avt.kijk = dx;
   var kop = document.getElementById("avtHeldK");
@@ -4539,6 +4630,8 @@ function avtMove(dx, dy){
       var sc = ESCENAS.filter(function(x){ return x.id === scId; })[0];
       if(sc){ avtSfx("kist"); escStart(sc); }
     }
+    if(cb === "Q"){ avtSfx("kist"); avtSnakeStart(); }
+    if(cb === "W"){ avtSfx("kist"); avtKruisStart(); }
     return;
   }
   avt.x = nx; avt.y = ny;
@@ -4556,7 +4649,7 @@ function avtMove(dx, dy){
   if(c === "T"){
     if(!sav.llave){ toast(at("sleutelNodig")); }
     else if(avtOlvidosOver() > 0){ toast(at("deurDicht") + avtOlvidosOver()); }
-    else { avtSfx("baas"); avtLaadScherm(4, false); renderFun(); }
+    else { avtSfx("baas"); avtLaadScherm(AVT_SCHERMEN[avt.scherm].arena, false); renderFun(); }
   }
   if(c === "K" && sav.rotsOpen){ avtSfx("baas"); avtLaadScherm(5, false); renderFun(); return; }
   if(c === "U"){ avtLaadScherm(3, false); avt.x = 2; avt.y = 3; sav.x = 2; sav.y = 3; persist(); renderFun(); return; }
@@ -4584,14 +4677,15 @@ function avtMove(dx, dy){
     sav.conchas[ck] = true; S.monedas = (S.monedas||0) + 2; persist();
     avtSfx("kist");
     var tot = Object.keys(sav.conchas).length;
-    if(tot >= AVT_CONCHAS.length){ S.monedas += 15; persist(); confetti(["🐚","✨"], 20); toast(at("conchasAlle")); }
-    else { toast("🐚 " + at("conchaGevonden") + " (" + tot + "/" + AVT_CONCHAS.length + ")"); }
+    var totC = AVT_CONCHAS.filter(function(cc){ return AVT_SCHERMEN[cc.s].w === avtWereld; }).length;
+    if(tot >= totC){ S.monedas += 15; persist(); confetti(["🐚","✨"], 20); toast(at("conchasAlle")); }
+    else { toast("🐚 " + at("conchaGevonden") + " (" + tot + "/" + totC + ")"); }
     setTimeout(renderFun, 200);
   }
   if(sch.baas && ny <= 2 && (!sav.klaar || sav.baasDag !== today())){ avtBaasStart(); }
 }
 function avtTik(){
-  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || escSpel){ return; }
+  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || escSpel){ return; }
   if(!document.getElementById("avtKaart")){ return; }
   avt.vijanden.forEach(function(v){
     if(Math.random() < 0.45) return;
@@ -4651,7 +4745,7 @@ function avtBaasStart(){
   avtSfx("baas");
   var rev = avtSave().klaar;
   var hp = rev ? 6 : 5;
-  var vragen = AVT_BAAS_VRAGEN.slice().sort(function(){ return Math.random() - 0.5; });
+  var vragen = (avtWereld === "a1" ? AVT_BAAS2_VRAGEN : AVT_BAAS_VRAGEN).slice().sort(function(){ return Math.random() - 0.5; });
   avt.gevecht = {baas:true, revancha:rev, hp:hp, maxHp:hp, baasVragen:vragen, baasIdx:0, feedback:null};
   avtNieuweVraag();
   renderFun();
@@ -4763,6 +4857,143 @@ function avtAntwoord(op){
   }
 }
 
+/* ---- La Taquería: snake met taco's ---- */
+var avtSnakeTimer = null;
+var AVT_NUM_ES = ["uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte"];
+function avtSnakeStart(){
+  avt.snake = {d:[1,0], vlg:[1,0], slang:[[4,6],[3,6],[2,6]], eten:0, dood:false};
+  avtSnakeTaco();
+  if(avtSnakeTimer) clearInterval(avtSnakeTimer);
+  avtSnakeTimer = setInterval(avtSnakeTik, 190);
+  renderFun();
+}
+function avtSnakeTaco(){
+  var s = avt.snake;
+  for(var p=0; p<200; p++){
+    var x = 1 + Math.floor(Math.random() * 14), y = 1 + Math.floor(Math.random() * 10);
+    if(!s.slang.some(function(sg){ return sg[0] === x && sg[1] === y; })){ s.taco = [x, y]; return; }
+  }
+  s.taco = [7, 5];
+}
+function avtSnakeTik(){
+  if(funView !== "avt" || !avt || !avt.snake){ if(avtSnakeTimer){ clearInterval(avtSnakeTimer); avtSnakeTimer = null; } return; }
+  var s = avt.snake;
+  if(s.dood) return;
+  s.d = s.vlg;
+  var kop = [s.slang[0][0] + s.d[0], s.slang[0][1] + s.d[1]];
+  var raak = kop[0] < 1 || kop[0] > 14 || kop[1] < 1 || kop[1] > 10 ||
+    s.slang.some(function(sg){ return sg[0] === kop[0] && sg[1] === kop[1]; });
+  if(raak){
+    s.dood = true;
+    avtSfx("fout");
+    var sav = avtSave();
+    if(s.eten > (sav.snakeBest||0)){ sav.snakeBest = s.eten; }
+    if(s.eten >= 8 && sav.snakeDag !== today()){
+      sav.snakeDag = today();
+      S.monedas = (S.monedas||0) + 6;
+      addXP(3); updateBadge();
+      confetti(["🌮","🪙"], 16);
+    }
+    persist();
+    renderFun();
+    return;
+  }
+  s.slang.unshift(kop);
+  if(kop[0] === s.taco[0] && kop[1] === s.taco[1]){
+    s.eten++;
+    avtSfx("goed");
+    avtSnakeTaco();
+  } else {
+    s.slang.pop();
+  }
+  renderFun();
+}
+function avtSnakeSvg(){
+  var s = avt.snake, C = 25;
+  var html = "<svg viewBox='0 0 400 300' style='width:100%; border-radius:12px; border:1.5px solid var(--border)'>";
+  html += "<rect width='400' height='300' fill='#f5e2b4'/>";
+  html += "<rect x='25' y='25' width='350' height='250' fill='#fdf6ec' stroke='#c9ab84' stroke-width='3'/>";
+  html += "<text x='" + (s.taco[0]*C + 12) + "' y='" + (s.taco[1]*C + 20) + "' text-anchor='middle' font-size='18'>🌮</text>";
+  for(var i = s.slang.length - 1; i >= 1; i--){
+    var sg = s.slang[i];
+    html += "<circle cx='" + (sg[0]*C + 12) + "' cy='" + (sg[1]*C + 12) + "' r='9' fill='#f8b8ce' stroke='#ef97b8' stroke-width='1.5' opacity='" + (0.55 + 0.45 * (1 - i / s.slang.length)).toFixed(2) + "'/>";
+  }
+  var k = s.slang[0];
+  html += "<g transform='translate(" + (k[0]*C + 12) + "," + (k[1]*C + 12) + ") scale(0.75)'>" + escChispaMini() + "</g>";
+  return html + "</svg>";
+}
+/* ---- La Biblioteca: kruiswoord uit je eigen woorden ---- */
+function avtKruisStart(){
+  var kandidaten = gameVoorrang(wsWoordPool()).filter(function(k){ return k.woord.length >= 4 && k.woord.length <= 8; });
+  if(kandidaten.length < 4){ toast("📚 " + at("kruisWeinig")); return; }
+  var beste = null;
+  for(var poging = 0; poging < 6 && !beste; poging++){
+    var pool = kandidaten.slice(0, 18).sort(function(){ return Math.random() - 0.5; });
+    var cellen = {}, woorden = [];
+    function zet(k, x, y, dx, dy){
+      for(var i = 0; i < k.woord.length; i++){ cellen[(x + dx*i) + "," + (y + dy*i)] = k.woord.charAt(i); }
+      woorden.push({k:k, x:x, y:y, dx:dx, dy:dy, klaar:false, hint:false});
+    }
+    function past(k, x, y, dx, dy){
+      var kruist = false;
+      for(var i = 0; i < k.woord.length; i++){
+        var cx = x + dx*i, cy = y + dy*i;
+        var bez = cellen[cx + "," + cy];
+        if(bez){
+          if(bez !== k.woord.charAt(i)) return false;
+          kruist = true;
+        } else {
+          if(dx && (cellen[cx + "," + (cy-1)] || cellen[cx + "," + (cy+1)])) return false;
+          if(dy && (cellen[(cx-1) + "," + cy] || cellen[(cx+1) + "," + cy])) return false;
+        }
+      }
+      if(cellen[(x - dx) + "," + (y - dy)]) return false;
+      if(cellen[(x + dx*k.woord.length) + "," + (y + dy*k.woord.length)]) return false;
+      return kruist;
+    }
+    zet(pool[0], 0, 0, 1, 0);
+    for(var w = 1; w < pool.length && woorden.length < 6; w++){
+      var kand = pool[w], geplaatst = false;
+      for(var wi = 0; wi < woorden.length && !geplaatst; wi++){
+        var pw = woorden[wi];
+        var dx = pw.dx ? 0 : 1, dy = pw.dx ? 1 : 0;
+        for(var a = 0; a < pw.k.woord.length && !geplaatst; a++){
+          var ch = pw.k.woord.charAt(a);
+          for(var b = 0; b < kand.woord.length && !geplaatst; b++){
+            if(kand.woord.charAt(b) !== ch) continue;
+            var nx = pw.x + pw.dx*a - dx*b, ny2 = pw.y + pw.dy*a - dy*b;
+            if(past(kand, nx, ny2, dx, dy)){ zet(kand, nx, ny2, dx, dy); geplaatst = true; }
+          }
+        }
+      }
+    }
+    if(woorden.length >= 4) beste = {cellen:cellen, woorden:woorden};
+  }
+  if(!beste){ toast("📚 " + at("kruisWeinig")); return; }
+  avt.kruis = beste;
+  avt.kruis.sel = 0;
+  renderFun();
+}
+function avtKruisCellen(){
+  var kr = avt.kruis, minX = 99, maxX = -99, minY = 99, maxY = -99;
+  Object.keys(kr.cellen).forEach(function(key){
+    var p = key.split(",");
+    minX = Math.min(minX, +p[0]); maxX = Math.max(maxX, +p[0]);
+    minY = Math.min(minY, +p[1]); maxY = Math.max(maxY, +p[1]);
+  });
+  return {minX:minX, maxX:maxX, minY:minY, maxY:maxY};
+}
+function avtKruisBekend(x, y){
+  var kr = avt.kruis;
+  for(var i = 0; i < kr.woorden.length; i++){
+    var wo = kr.woorden[i];
+    if(!wo.klaar) continue;
+    for(var j = 0; j < wo.k.woord.length; j++){
+      if(wo.x + wo.dx*j === x && wo.y + wo.dy*j === y) return wo.k.woord.charAt(j).toUpperCase();
+    }
+  }
+  return null;
+}
 /* ---- render ---- */
 function avtHarten(){
   var sav = avtSave(), s = "";
@@ -4775,36 +5006,39 @@ function renderFunAvt(){
   var sav = avtSave();
   if(!avt){
     var html = "<h2>" + at("kop") + "</h2><p class='muted'>" + at("kies") + "</p>";
+    var a0klaar = avtWereldInfo("a0").klaar;
     AVT_WERELDEN.forEach(function(w){
       var sub = profLang() === "nl" ? w.nl : w.en;
-      if(w.open){
-        var st = sav.klaar ? "🏆" : (avtOlvidosOver() < 8 ? "▶" : "▶");
-        var schelpen = Object.keys(sav.conchas).length;
-        var totO = 0;
-        AVT_SCHERMEN.forEach(function(sc){ totO += sc.vijanden.length; });
-        var voortgang = (sav.klaar ? "✓ " + (profLang()==="nl" ? "bevrijd!" : "freed!") + " · ⚡" : "") + (totO - avtOlvidosOver()) + "/" + totO + " " + at("olvidos") + " · 🐚" + schelpen + "/" + AVT_CONCHAS.length + " · 🪙" + (S.monedas||0) + (sav.llave ? " · 🗝️" : "");
-        html += "<div class='lesson' data-avtw='" + w.id + "'><div class='lnum'>🏖️</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + voortgang + "</span></div><div class='lstatus'>" + st + "</div></div>";
+      var open = w.id === "a0" || (w.id === "a1" && a0klaar);
+      if(open){
+        var inf = avtWereldInfo(w.id);
+        var st = inf.klaar ? "🏆" : "▶";
+        var sv2 = S.avt && S.avt[w.id];
+        var voortgang = (inf.klaar ? "✓ " + (profLang()==="nl" ? "bevrijd!" : "freed!") + " · ⚡" : "") + (inf.tot - inf.over) + "/" + inf.tot + " " + at("olvidos") + " · 🐚" + inf.gevC + "/" + inf.totC + (sv2 && sv2.llave ? " · 🗝️" : "");
+        html += "<div class='lesson' data-avtw='" + w.id + "'><div class='lnum'>" + (w.id === "a1" ? "🏘️" : "🏖️") + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + voortgang + "</span></div><div class='lstatus'>" + st + "</div></div>";
       } else {
-        html += "<div class='lesson' style='opacity:.5'><div class='lnum'>🔒</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + at("binnenkort") + "</span></div><div class='lstatus'>🔒</div></div>";
+        var slotTxt = (w.id === "a1") ? at("slotA1") : at("binnenkort");
+        html += "<div class='lesson' style='opacity:.5'><div class='lnum'>🔒</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + slotTxt + "</span></div><div class='lstatus'>🔒</div></div>";
       }
     });
-    html += "<p class='muted' style='font-size:.85rem'>" + (sav.klaar ? at("mareaUitleg") : at("missie")) + "</p>";
+    html += "<p class='muted' style='font-size:.85rem; margin-top:6px'>🪙 " + (S.monedas||0) + " · " + (a0klaar ? at("mareaUitleg") : at("missie")) + "</p>";
     html += "<div class='row'><button class='ghost' id='btnAvtTerug'>" + at("terug") + "</button>"+
       (Object.keys(sav.dood).length || sav.klaar ? "<button class='ghost' id='btnAvtReset' style='font-size:.8rem'>↺ " + at("reset") + "</button>" : "") + "</div>";
     el.innerHTML = html;
-    var w0 = el.querySelector("[data-avtw]");
-    if(w0) w0.onclick = function(){ avtStartWereld(); };
+    el.querySelectorAll("[data-avtw]").forEach(function(b){
+      b.onclick = function(){ avtWereld = b.getAttribute("data-avtw"); avtStartWereld(); };
+    });
     var bt = document.getElementById("btnAvtTerug");
     if(bt) bt.onclick = function(){ avtStopAlles(); funView = null; renderFun(); };
     var br = document.getElementById("btnAvtReset");
-    if(br) br.onclick = function(){ S.avt.a0 = null; avtSave(); persist(); renderFun(); };
+    if(br) br.onclick = function(){ S.avt = {}; avtSave(); persist(); renderFun(); };
     return;
   }
   if(avt.victory){
     el.innerHTML = "<div style='text-align:center'><p style='font-size:3rem; margin:8px'>🏆</p>"+
-      "<h2>" + at("gewonnen") + "</h2><p>" + at("gewonnenSub") + "</p>"+
+      "<h2>" + at("gewonnen") + "</h2><p>" + (avtWereld === "a1" ? at("gewonnenSub2") : at("gewonnenSub")) + "</p>"+
       "<p style='font-size:2rem'>🌮🌮🌮</p>"+
-      "<p class='muted'>" + at("volgende") + "</p>"+
+      "<p class='muted'>" + (avtWereld === "a1" ? at("volgende2") : at("volgende")) + "</p>"+
       "<div class='row' style='justify-content:center'><button class='primary' id='btnAvtKlaar'>" + at("kaartTerug") + "</button></div></div>";
     document.getElementById("btnAvtKlaar").onclick = function(){ avtStopAlles(); avt = null; renderFun(); };
     return;
@@ -4849,7 +5083,7 @@ function renderFunAvt(){
     if(pz.hintTxt){ ph += "<p style='text-align:center; letter-spacing:.12em; margin:4px'><span class='muted'>🔍</span> " + pz.hintTxt + "</p>"; }
     ph += "<div class='row'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
       "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtPescaCheck'>" + at("check") + "</button>"+
-      (sav.lupa ? "<button class='ghost' id='btnAvtPescaHint'" + (pz.hint ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
+      (avtHeeftLupa() ? "<button class='ghost' id='btnAvtPescaHint'" + (pz.hint ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
       "<button class='ghost' id='btnAvtPescaWeg'>⬅︎</button></div>";
     el.innerHTML = ph;
     var pi = document.getElementById("avtInp");
@@ -4887,12 +5121,123 @@ function renderFunAvt(){
     document.getElementById("btnAvtPescaWeg").onclick = function(){ avt.pesca = null; renderFun(); };
     return;
   }
+  if(avt.snake){
+    var sn = avt.snake;
+    var sh = "<div style='text-align:center'><span class='kicker'>" + at("taq") + " 🌮</span>"+
+      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("taqDoel") + "</p>"+
+      "<p style='margin:4px'><b>🌮 " + sn.eten + "</b>" + (sn.eten > 0 ? " · ¡" + AVT_NUM_ES[Math.min(sn.eten, 20) - 1] + "!" : "") + " · " + at("taqRecord") + ": " + (sav.snakeBest||0) + "</p></div>";
+    sh += avtSnakeSvg();
+    if(sn.dood){
+      sh += "<p style='text-align:center; margin:8px 0 2px'>" + (sn.eten >= 8 ? "🎉 " + at("taqWin") + " 🌮" + sn.eten + " · " + at("taqBeloning") : "💥 " + at("taqDood") + " 🌮" + sn.eten) + "</p>";
+      sh += "<div class='row' style='justify-content:center; margin-top:6px'><button class='primary' id='btnAvtSnakeNog'>" + at("taqNog") + "</button><button class='ghost' id='btnAvtSnakeWeg'>" + at("naarKaart") + "</button></div>";
+    } else {
+      sh += "<div class='avtdpad'>"+
+        "<span></span><button data-avtsd='0,-1'>▲</button><span></span>"+
+        "<button data-avtsd='-1,0'>◀</button><button data-avtsd='0,1'>▼</button><button data-avtsd='1,0'>▶</button></div>"+
+        "<div class='row' style='margin-top:6px'><button class='ghost' id='btnAvtSnakeWeg' style='font-size:.85rem'>" + at("naarKaart") + "</button></div>";
+    }
+    el.innerHTML = sh;
+    el.querySelectorAll("[data-avtsd]").forEach(function(b){
+      b.onclick = function(){
+        var d = b.getAttribute("data-avtsd").split(",").map(Number);
+        if(!(d[0] === -sn.d[0] && d[1] === -sn.d[1])) sn.vlg = d;
+      };
+    });
+    var sb = document.getElementById("btnAvtSnakeNog");
+    if(sb) sb.onclick = function(){ avtSnakeStart(); };
+    var sw = document.getElementById("btnAvtSnakeWeg");
+    if(sw) sw.onclick = function(){ if(avtSnakeTimer){ clearInterval(avtSnakeTimer); avtSnakeTimer = null; } avt.snake = null; renderFun(); };
+    return;
+  }
+  if(avt.kruis){
+    var kr = avt.kruis;
+    var bnd = avtKruisCellen();
+    var cel = Math.min(28, Math.floor(340 / (bnd.maxX - bnd.minX + 1)));
+    var kh = "<div style='text-align:center'><span class='kicker'>" + at("biblio") + " 📚</span>"+
+      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("biblioSub") + "</p></div>";
+    kh += "<div style='overflow-x:auto; text-align:center'><div style='display:inline-block; margin:4px auto'>";
+    for(var ky = bnd.minY; ky <= bnd.maxY; ky++){
+      kh += "<div style='display:flex'>";
+      for(var kx = bnd.minX; kx <= bnd.maxX; kx++){
+        var kch = kr.cellen[kx + "," + ky];
+        if(!kch){ kh += "<div style='width:" + cel + "px; height:" + cel + "px'></div>"; continue; }
+        var bek = avtKruisBekend(kx, ky);
+        var num = "";
+        kr.woorden.forEach(function(wo, wi2){ if(wo.x === kx && wo.y === ky && !num) num = String(wi2 + 1); });
+        kh += "<div style='width:" + cel + "px; height:" + cel + "px; border:1.5px solid var(--border); background:" + (bek ? "#f2fbe8" : "#fff") + "; position:relative; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:" + Math.floor(cel*0.55) + "px'>"+
+          (num ? "<span class='muted' style='position:absolute; top:-1px; left:2px; font-size:8px; font-weight:600'>" + num + "</span>" : "")+
+          (bek || "") + "</div>";
+      }
+      kh += "</div>";
+    }
+    kh += "</div></div>";
+    kh += "<p class='muted' style='font-size:.8rem; margin:6px 0 2px'>" + at("kruisKies") + "</p><div style='display:flex; flex-wrap:wrap; gap:4px'>";
+    kr.woorden.forEach(function(wo, wi3){
+      kh += "<button class='ghost' data-avtkw='" + wi3 + "' style='font-size:.8rem; padding:5px 8px" + (wo.klaar ? "; opacity:.45" : (wi3 === kr.sel ? "; border-color:var(--accent); border-width:2px" : "")) + "'" + (wo.klaar ? " disabled" : "") + ">" + (wi3 + 1) + (wo.dx ? "→" : "↓") + " " + wo.k.nl + (wo.klaar ? " ✓" : "") + "</button>";
+    });
+    kh += "</div>";
+    var selW = kr.woorden[kr.sel];
+    var allesKlaar = kr.woorden.every(function(w4){ return w4.klaar; });
+    if(selW && !selW.klaar){
+      if(selW.hint){ kh += "<p style='text-align:center; letter-spacing:.15em; margin:6px 2px 0'><span class='muted'>🔍</span> " + selW.k.woord.charAt(0) + selW.k.woord.slice(1).replace(/./g, "·") + "</p>"; }
+      kh += "<div class='row' style='margin-top:6px'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
+        "<div class='row' style='margin-top:4px'><button class='primary' id='btnAvtKruisCheck'>" + at("check") + "</button>"+
+        (avtHeeftLupa() && !selW.hint ? "<button class='ghost' id='btnAvtKruisHint'>" + at("hint") + "</button>" : "")+
+        "<button class='ghost' id='btnAvtKruisWeg'>" + at("naarKaart") + "</button></div>";
+    } else {
+      kh += "<div class='row' style='margin-top:8px'>" + (allesKlaar ? "<button class='primary' id='btnAvtKruisNieuw'>" + at("kruisNieuw") + "</button>" : "") + "<button class='ghost' id='btnAvtKruisWeg'>" + at("naarKaart") + "</button></div>";
+    }
+    el.innerHTML = kh;
+    el.querySelectorAll("[data-avtkw]").forEach(function(b){
+      b.onclick = function(){ kr.sel = +b.getAttribute("data-avtkw"); renderFun(); var ii = document.getElementById("avtInp"); if(ii) ii.focus(); };
+    });
+    var ki = document.getElementById("avtInp");
+    if(ki){
+      ki.focus();
+      var kcheck = function(){
+        var inp = ki.value || "";
+        if(!norm(inp)) return;
+        var wo = kr.woorden[kr.sel];
+        var wOrig = WORDS.filter(function(x){ return x.id === wo.k.id; })[0];
+        if(stripAcc(norm(inp)).replace(/[^a-z]/g, "") === wo.k.woord){
+          wo.klaar = true;
+          if(wOrig) avtSrsBij(wOrig, true); else { addXP(2); updateBadge(); }
+          avtSfx("goed");
+          if(kr.woorden.every(function(w5){ return w5.klaar; })){
+            var savK = avtSave();
+            var extra = "";
+            if(avtWereld === "a1" && !savK.llave){ savK.llave = true; extra = " " + at("llaveCamp"); avtSfx("win"); confetti(["🗝️","📚","✨"], 22); }
+            else if(savK.kruisDag !== today()){ savK.kruisDag = today(); S.monedas = (S.monedas||0) + 5; extra = " " + at("kruisBeloning"); confetti(["📚","🪙"], 14); }
+            persist();
+            toast("🎉 " + at("kruisKlaar") + extra);
+          } else {
+            for(var q = 0; q < kr.woorden.length; q++){ if(!kr.woorden[q].klaar){ kr.sel = q; break; } }
+          }
+          renderFun();
+        } else {
+          if(wOrig) avtSrsBij(wOrig, false);
+          avtSfx("fout");
+          toast("🤔 " + at("kruisFout"));
+        }
+      };
+      var kb = document.getElementById("btnAvtKruisCheck");
+      if(kb) kb.onclick = kcheck;
+      ki.addEventListener("keydown", function(e){ if(e.key === "Enter") kcheck(); });
+    }
+    var kht = document.getElementById("btnAvtKruisHint");
+    if(kht) kht.onclick = function(){ kr.woorden[kr.sel].hint = true; renderFun(); };
+    var knw = document.getElementById("btnAvtKruisNieuw");
+    if(knw) knw.onclick = function(){ avt.kruis = null; avtKruisStart(); };
+    var kwg = document.getElementById("btnAvtKruisWeg");
+    if(kwg) kwg.onclick = function(){ avt.kruis = null; renderFun(); };
+    return;
+  }
   if(avt.gevecht){
     var g = avt.gevecht;
     var kop, sub, beeld, pips = "";
     var typ = !g.baas && g.v.elite;
     if(g.baas){
-      kop = at("baasNaam") + (g.revancha ? " ⚡" : ""); sub = at("baasIntro");
+      kop = (avtWereld === "a1" ? at("baasNaam2") : at("baasNaam")) + (g.revancha ? " ⚡" : ""); sub = (avtWereld === "a1" ? at("baasIntro2") : at("baasIntro"));
       beeld = "<svg viewBox='-70 -70 140 120' style='width:150px'><g class='avtzweefg'>" + avtBaasSvg(g.hp) + "</g></svg>";
       for(var i=0;i<g.maxHp;i++){ pips += i < g.hp ? "🟣" : "⚪️"; }
     } else {
@@ -4922,7 +5267,7 @@ function renderFunAvt(){
     }
     html2 += "<div class='row' style='margin-top:8px; justify-content:space-between'>"+
       "<span style='align-self:center'>" + avtHarten() + ((avt.combo||0) >= 2 ? " 🔥" + avt.combo : "") + " · 🪙" + (S.monedas||0) + "</span>"+
-      (sav.lupa ? "<button class='ghost' id='btnAvtHint' style='font-size:.85rem'" + (g.hintWeg ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
+      (avtHeeftLupa() ? "<button class='ghost' id='btnAvtHint' style='font-size:.85rem'" + (g.hintWeg ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
       (sav.harten < sav.maxHarten && (S.tapas||0) > 0 ? "<button class='ghost' id='btnAvtTapa' style='font-size:.85rem'>" + at("tapaKnop") + "</button>" : "")+
       (!g.baas ? "<button class='ghost' id='btnAvtVlucht' style='font-size:.85rem'>" + at("vlucht") + "</button>" : "")+
       "</div>";
@@ -4971,7 +5316,7 @@ function renderFunAvt(){
   var sch = AVT_SCHERMEN[avt.scherm];
   var over = avtOlvidosOver();
   var html3 = "<div style='display:flex; justify-content:space-between; align-items:center'>"+
-    "<span class='kicker'>La Costa · " + sch.naam + "</span>"+
+    "<span class='kicker'>" + (avtWereld === "a1" ? "El Pueblo" : "La Costa") + " · " + sch.naam + "</span>"+
     "<span>" + avtHarten() + " · 👻" + over + " · 🪙" + (S.monedas||0) + " · 🌮" + (S.tapas||0) + ((avtSave().bommen||0) > 0 ? " · 💣" + avtSave().bommen : "") + (avtSave().llave ? " · 🗝️" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
   html3 += avtKaartSvg();
   var buurK = null;
@@ -5010,10 +5355,16 @@ function renderFunAvt(){
     avtKeys = true;
     try{
       document.addEventListener("keydown", function(e){
-        if(funView !== "avt" || !avt || avt.gevecht || avt.victory) return;
-        if(!document.getElementById("avtKaart")) return;
+        if(funView !== "avt" || !avt) return;
         var m = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0], w:[0,-1], s:[0,1], a:[-1,0], d:[1,0]}[e.key];
-        if(m){ e.preventDefault(); avtMove(m[0], m[1]); }
+        if(!m) return;
+        if(avt.snake && !avt.snake.dood){
+          if(!(m[0] === -avt.snake.d[0] && m[1] === -avt.snake.d[1])) avt.snake.vlg = m;
+          e.preventDefault(); return;
+        }
+        if(avt.gevecht || avt.victory || avt.kruis || avt.tienda || avt.pesca) return;
+        if(!document.getElementById("avtKaart")) return;
+        e.preventDefault(); avtMove(m[0], m[1]);
       });
     }catch(e){}
   }
