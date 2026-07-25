@@ -145,6 +145,8 @@
   .avtdpad{display:grid; grid-template-columns:64px 64px 64px; gap:6px; justify-content:center; margin-top:10px;}
   .avtdpad button{font-size:1.15rem; padding:12px 0; border:1.5px solid var(--border); border-radius:12px; background:var(--card, #fff); cursor:pointer;}
   .avtdpad button:active{transform:scale(.94);}
+  button{touch-action:manipulation;}
+  .avtdpad button, .memcard, .wsgrid button, .avtopt{touch-action:manipulation; -webkit-user-select:none; user-select:none;}
   .avtopt{min-height:44px;}
   .escloopt .eschuppel{animation:eschop .32s ease-in-out infinite;}
   .appfooter{text-align:center; margin:30px 0 6px; font-size:.85rem; color:var(--muted);}
@@ -434,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v17.4";
+var APP_VERSIE = "v17.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3316,7 +3318,7 @@ function wsWoordPool(){
 }
 function wsStart(){
   var pool = wsWoordPool();
-  if(pool.length < 4){ toast("Leer eerst wat meer woordjes, dan kan de puzzel gevuld worden!"); return; }
+  if(pool.length < 4){ toast(fx("wsWeinig")); return; }
   // moeilijke woorden eerst, dan aanvullen met toeval
   pool = gameVoorrang(pool);
   var gekozen = [];
@@ -5464,7 +5466,7 @@ function renderFunKruisLos(){
     if(!kruisLos){ funView = null; renderFun(); return; }
   }
   renderKruisUI(el, kruisLos, {
-    tLabel: "← Speeltuin",
+    tLabel: fx("terug"),
     hintAltijd: true,
     weg: function(){ kruisLos = null; funView = null; renderFun(); },
     nieuw: function(){ kruisLos = kruisBouw(); renderFun(); },
@@ -5957,7 +5959,7 @@ function memPool(){
 }
 function memStart(){
   var pool = memPool();
-  if(pool.length < 4){ toast("Leer eerst wat meer woordjes, dan kan het spel gevuld worden!"); return; }
+  if(pool.length < 4){ toast(fx("memWeinig")); return; }
   pool = gameVoorrang(pool);
   var paren = [];
   pool.forEach(function(p){ if(paren.length < 6 && !paren.some(function(x){ return x.es === p.es; })) paren.push(p); });
@@ -6000,10 +6002,10 @@ function renderFunMem(){
   var el = document.getElementById("funCard");
   var html = "<h2>Memory · Parejas 🃏</h2>";
   if(!mem){
-    html += "<p class='muted'>Draai kaartjes om en zoek de paren: Spaans woord bij Nederlandse vertaling. Met jouw eigen geleerde woorden, en jouw lastige woorden doen extra vaak mee.</p>"+
-      (S.memBest ? "<p class='muted'>Jouw record: <b>"+S.memBest+" beurten</b> 🏅</p>" : "")+
-      "<div class='row'><button class='primary' id='btnMem'>Nieuw spel</button>"+
-      "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
+    html += "<p class='muted'>" + fx("memIntro") + "</p>"+
+      (S.memBest ? "<p class='muted'>" + fx("memRecord") + " <b>"+S.memBest+" " + fx("memBeurten") + "</b> 🏅</p>" : "")+
+      "<div class='row'><button class='primary' id='btnMem'>" + fx("memNieuw") + "</button>"+
+      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
     el.innerHTML = html;
     var b0 = document.getElementById("btnMem");
     if(b0) b0.onclick = memStart;
@@ -6021,13 +6023,13 @@ function renderFunMem(){
       html += "<button class='memcard dicht' data-mem='"+i+"'>?</button>";
     }
   });
-  html += "</div><p class='muted'>Beurten: <b>"+mem.beurten+"</b>"+(S.memBest ? " · record: "+S.memBest : "")+"</p>";
+  html += "</div><p class='muted'>" + fx("memBeurtenLbl") + " <b>"+mem.beurten+"</b>"+(S.memBest ? " · " + fx("memRecLbl") + " "+S.memBest : "")+"</p>";
   if(mem.klaar){
-    html += "<p><b>¡Muy bien! Compleet in "+mem.beurten+" beurten.</b>"+
-      (S.memBest === mem.beurten ? " Nieuw record! 🏅" : "")+"</p>";
+    html += "<p><b>" + fx("memKlaar") + " "+mem.beurten+" " + fx("memBeurten") + ".</b>"+
+      (S.memBest === mem.beurten ? " " + fx("memNieuwRec") : "")+"</p>";
   }
-  html += "<div class='row'><button class='ghost' id='btnMemNieuw'>Nieuw spel</button>"+
-    "<button class='ghost' id='btnFunTerug'>← Speeltuin</button></div>";
+  html += "<div class='row'><button class='ghost' id='btnMemNieuw'>" + fx("memNieuw") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("button[data-mem]").forEach(function(b){
     b.onclick = function(){ memClick(+b.getAttribute("data-mem")); };
@@ -6221,6 +6223,43 @@ function renderDuel(){
   if(nieuwBtn) nieuwBtn.onclick = duelNieuw;
 }
 
+var FUN_TXT = {
+ nl:{kop:"Speeltuin \ud83e\udde9", intro:"Leren, vermomd als spelen. Kies je vermaak:",
+     avS:"een echte mini-game: red de vier werelden van de Olvidos, met muziek en eindbazen",
+     muS:"liedjes kijken en de taal eruit oogsten",
+     wsT:"Woordenzoeker", wsS:"puzzel met jouw geleerde woorden",
+     krS:"kruiswoord uit jouw geleerde woorden, elke keer een nieuwe puzzel",
+     meS:"match Spaans met jouw taal, in zo min mogelijk beurten",
+     duS:"woordduel tegen elkaar, AI als scheidsrechter",
+     klassement:"\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.",
+     terug:"\u2190 Speeltuin",
+     wsIntro:"Zes van jouw geleerde woorden, verstopt in een raster. Woorden die jij lastig vindt, krijgen stiekem voorrang.",
+     wsNieuw:"Nieuwe woordenzoeker", wsZoek:"Tik de eerste en laatste letter van een woord. Zoek:",
+     wsHintT:"Hint: laat het Spaanse woord zien", wsPuzzelNieuw:"Nieuwe puzzel",
+     wsWeinig:"Leer eerst wat meer woordjes, dan kan de puzzel gevuld worden!",
+     memIntro:"Draai kaartjes om en zoek de paren: Spaans woord bij de vertaling. Met jouw eigen geleerde woorden, en jouw lastige woorden doen extra vaak mee.",
+     memRecord:"Jouw record:", memBeurten:"beurten", memNieuw:"Nieuw spel", memBeurtenLbl:"Beurten:", memRecLbl:"record:",
+     memKlaar:"\u00a1Muy bien! Compleet in", memNieuwRec:"Nieuw record! \ud83c\udfc5",
+     memWeinig:"Leer eerst wat meer woordjes, dan kan het spel gevuld worden!"},
+ en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
+     avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
+     muS:"watch songs and harvest the language from them",
+     wsT:"Word search", wsS:"a puzzle with the words you've learned",
+     krS:"a crossword from your own learned words, a new puzzle every time",
+     meS:"match Spanish with your language, in as few turns as possible",
+     duS:"word duel against each other, AI as referee",
+     klassement:"\ud83c\udfc6 Leaderboards live with your groups (family, classmates...): tap your <b>name</b> at the top and start or open a group.",
+     terug:"\u2190 Playground",
+     wsIntro:"Six of your learned words, hidden in a grid. Words you struggle with secretly get priority.",
+     wsNieuw:"New word search", wsZoek:"Tap the first and last letter of a word. Find:",
+     wsHintT:"Hint: show the Spanish word", wsPuzzelNieuw:"New puzzle",
+     wsWeinig:"Learn a few more words first, then the puzzle can be filled!",
+     memIntro:"Flip cards and find the pairs: Spanish word with its translation. Uses your own learned words, and your tricky words show up extra often.",
+     memRecord:"Your record:", memBeurten:"turns", memNieuw:"New game", memBeurtenLbl:"Turns:", memRecLbl:"record:",
+     memKlaar:"\u00a1Muy bien! Complete in", memNieuwRec:"New record! \ud83c\udfc5",
+     memWeinig:"Learn a few more words first, then the game can be filled!"}
+};
+function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
 var funView = null;
 
 function renderFun(){
@@ -6233,14 +6272,14 @@ function renderFun(){
   if(funView === "kruis"){ renderFunKruisLos(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
-  el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
-    "<div class='lesson' id='ftAvt'><div class='lnum'>\ud83d\uddfa\ufe0f</div><div class='lbody'><b>Aventura</b><span>een echte mini-game: red La Costa van de Olvidos, met muziek en een eindbaas</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>kruiswoord uit jouw geleerde woorden, elke keer een nieuwe puzzel</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<p class='muted' style='font-size:.85rem; margin-top:10px'>\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.</p>";
+  el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
+    "<div class='lesson' id='ftAvt'><div class='lnum'>\ud83d\uddfa\ufe0f</div><div class='lbody'><b>Aventura</b><span>" + fx("avS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>" + fx("muS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>" + fx("wsT") + "</b><span>" + fx("wsS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>" + fx("krS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
   document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
@@ -6528,11 +6567,11 @@ function renderFamilia(){
 
 function renderFunWs(){
   var el = document.getElementById("funCard");
-  var html = "<h2>Woordenzoeker \ud83d\udd0d</h2>";
+  var html = "<h2>" + fx("wsT") + " \ud83d\udd0d</h2>";
   if(!ws){
-    html += "<p class='muted'>Zes van jouw geleerde woorden, verstopt in een raster. Woorden die jij lastig vindt, krijgen stiekem voorrang.</p>"+
-      "<div class='row'><button class='primary' id='btnWs'>Nieuwe woordenzoeker</button>"+
-      "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
+    html += "<p class='muted'>" + fx("wsIntro") + "</p>"+
+      "<div class='row'><button class='primary' id='btnWs'>" + fx("wsNieuw") + "</button>"+
+      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
     el.innerHTML = html;
     var b0 = document.getElementById("btnWs");
     if(b0) b0.onclick = wsStart;
@@ -6548,15 +6587,15 @@ function renderFunWs(){
       html += "<button class='"+cls+"' data-ws='"+k+"'>"+ws.grid[r][c].toUpperCase()+"</button>";
     }
   }
-  html += "</div><p class='muted'>Tik de eerste en laatste letter van een woord. Zoek:</p><p style='line-height:2'>"+
+  html += "</div><p class='muted'>" + fx("wsZoek") + "</p><p style='line-height:2'>"+
     ws.woorden.map(function(w, i){
       if(w.found) return "<span class='muted'>✓ <b class='es'>"+(w.es||w.woord)+"</b> · "+w.nl+"</span>";
       return "<b>"+w.nl+"</b>"+(w.hint
         ? " <span class='es'>("+(w.es||w.woord)+")</span>"
-        : " <button class='wshint' data-hint='"+i+"' title='Hint: laat het Spaanse woord zien'>\ud83d\udca1</button>");
+        : " <button class='wshint' data-hint='"+i+"' title='" + fx("wsHintT") + "'>\ud83d\udca1</button>");
     }).join(" \u00b7 ")+"</p>"+
-    "<div class='row'><button class='ghost' id='btnWsNieuw'>Nieuwe puzzel</button>"+
-    "<button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
+    "<div class='row'><button class='ghost' id='btnWsNieuw'>" + fx("wsPuzzelNieuw") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("button[data-ws]").forEach(function(b){
     b.onclick = function(){
