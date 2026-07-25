@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.8";
+var APP_VERSIE = "v19.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2499,7 +2499,9 @@ function checkSentence(){
 
 /* ================= DICTADO (luister & typ, browser text-to-speech) ================= */
 var dIdx = null;
-var DIC_RATE_NORMAL = 0.82, DIC_RATE_LENTO = 0.55;
+var DIC_RATE_NORMAL = 0.82, DIC_RATE_LENTO = 0.55, DIC_RONDE_LEN = 8;
+var dRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
+var dGokt = false; // al een tapa ingezet op de huidige zin?
 function dictadoStemKlaar(cb){
   if(!window.speechSynthesis){ cb(null); return; }
   var vs = speechSynthesis.getVoices();
@@ -2555,10 +2557,26 @@ function pickDictado(){
   var use = gedaan.length >= 4 ? gedaan : pool;
   return use[Math.floor(Math.random()*use.length)];
 }
-function renderFunDictado(fresh){
+function dictadoNieuweRonde(){
+  dRonde = {n:0, lengte:DIC_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
+  dIdx = pickDictado();
+  dGokt = false;
+}
+function dictadoKickerTekst(){
+  return ct("Zin ","Sentence ") + (dRonde.n+1) + "/" + dRonde.lengte + (dRonde.streak > 0 ? " · 🔥 " + dRonde.streak : "");
+}
+function dictadoVolgende(){
+  dRonde.n++;
+  dGokt = false;
+  dIdx = dRonde.n < dRonde.lengte ? pickDictado() : null;
+  renderFunDictado();
+}
+function renderFunDictado(){
   var el = document.getElementById("funCard");
   if(!el) return;
-  if(fresh || dIdx===null) dIdx = pickDictado();
+  if(!dRonde) dictadoNieuweRonde();
+  if(dRonde.n >= dRonde.lengte){ renderDictadoRondeKlaar(); return; }
+  if(!dIdx) dIdx = pickDictado();
   var s = dIdx;
   var kanSpreken = !!window.speechSynthesis;
   var html = "<h2>Dictado 🔊</h2>";
@@ -2568,7 +2586,8 @@ function renderFunDictado(fresh){
     document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
     return;
   }
-  html += "<p class='muted'>" + fx("dicIntro") + "</p>"+
+  html += "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>"+
+    "<p class='muted'>" + fx("dicIntro") + "</p>"+
     "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
     "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>"+
     "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
@@ -2582,10 +2601,41 @@ function renderFunDictado(fresh){
   document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s.es, DIC_RATE_NORMAL); };
   document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(s.es, DIC_RATE_LENTO); };
   document.getElementById("btnDicCheck").onclick = checkDictado;
-  document.getElementById("btnDicSkip").onclick = function(){ renderFunDictado(true); };
+  document.getElementById("btnDicSkip").onclick = function(){ dictadoVolgende(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
   inp.focus();
   setTimeout(function(){ dictadoSpreek(s.es, DIC_RATE_NORMAL); }, 250);
+}
+function renderDictadoRondeKlaar(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var perfect = dRonde.goed === dRonde.lengte;
+  var goedGenoeg = dRonde.goed >= Math.ceil(dRonde.lengte * 0.75);
+  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
+  if(bonus > 0 && !dRonde.beloond){
+    S.tapas = (S.tapas||0) + bonus; dRonde.beloond = true; persist();
+    if(perfect) confetti(["🌮","🔥","🎉"], 24);
+  }
+  var html = "<h2>Dictado 🔊</h2>"+
+    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
+      ct("Ronde klaar: ","Round done: ") + dRonde.goed + "/" + dRonde.lengte +
+      (dRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + dRonde.besteStreak : "") +
+    "</div>"+
+    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
+    "<div class='row'><button class='primary' id='btnDicNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+  el.innerHTML = html;
+  document.getElementById("btnDicNieuweRonde").onclick = function(){ dictadoNieuweRonde(); renderFunDictado(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+}
+function dictadoGok(){
+  if((S.tapas||0) < 1 || dGokt) return;
+  S.tapas--; dGokt = true; persist();
+  var fb = document.getElementById("dFeedback");
+  if(fb) fb.innerHTML = "<p class='muted'>🎲 " + ct("Herkansing! Nog een keer luisteren (nu lento) en typen.","Retry! Listen once more (now lento) and type.") + "</p>";
+  var ii = document.getElementById("dInput");
+  if(ii){ ii.value=""; ii.focus(); }
+  dictadoSpreek(dIdx.es, DIC_RATE_LENTO);
 }
 function checkDictado(){
   var s = dIdx;
@@ -2596,6 +2646,7 @@ function checkDictado(){
   var answers = [norm(s.es)].concat((s.alt||[]).map(norm));
   var exact = answers.indexOf(given) !== -1;
   var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
+  var goedBeantwoord = exact || loose;
   var html = "";
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
@@ -2614,12 +2665,36 @@ function checkDictado(){
       logError(s.id, "dictado", s.tag, given); addXP(1);
     }
   }
+  // ronde-boekhouding: een herkansing (dGokt) telt niet nogmaals mee voor de rondescore/streak,
+  // die is al bij de eerste (foute) poging verwerkt — maar wint wél apart tapas terug bij succes.
+  if(goedBeantwoord && dGokt){
+    S.tapas = (S.tapas||0) + 2; persist();
+    html += "<div class='feedback ok' style='margin-top:4px'>🎲 " + ct("Gewonnen! +2 🌮 tapas terug","Won! +2 🌮 tapas back") + "</div>";
+  } else if(goedBeantwoord && !dGokt){
+    dRonde.goed++; dRonde.streak++;
+    if(dRonde.streak > dRonde.besteStreak) dRonde.besteStreak = dRonde.streak;
+    if(dRonde.streak % 3 === 0){
+      S.tapas = (S.tapas||0) + 1; persist();
+      html += "<div class='feedback ok' style='margin-top:4px'>🔥 " + dRonde.streak + ct(" op een rij! +1 🌮 tapa"," in a row! +1 🌮 tapa") + "</div>";
+    }
+  } else if(!goedBeantwoord && !dGokt){
+    dRonde.streak = 0;
+  }
+  // live bijwerken zonder de kaart te herbouwen (anders verdwijnt het invoerveld, zie v19.6-fix)
+  var kickerEl = document.getElementById("dKicker");
+  if(kickerEl) kickerEl.textContent = dictadoKickerTekst();
   html += "<div class='uitleg'>"+ct("Vertaling: ","Translation: ")+zinPrompt(s)+"</div>";
   // geen aparte knoppenrij hier: Luister normal/lento, Controleer en Volgende zin staan al vast
-  // in het scherm erboven, dus opnieuw tonen is overbodig (feedback Stefan).
+  // in het scherm erboven, dus opnieuw tonen is overbodig (feedback Stefan) — behalve de gok-knop,
+  // die is nieuw en dus niet elders al zichtbaar.
+  if(!goedBeantwoord && !dGokt && (S.tapas||0) >= 1){
+    html += "<div class='row' style='margin-top:6px'><button class='ghost' id='btnDicGok'>🎲 " + ct("Zet 1 🌮 in voor een herkansing","Stake 1 🌮 for a retry") + "</button></div>";
+  }
   fb.innerHTML = html;
   persist();
   checkLessonComplete();
+  var bg = document.getElementById("btnDicGok");
+  if(bg) bg.onclick = dictadoGok;
 }
 
 /* ================= TOETSJES ================= */
@@ -6802,7 +6877,7 @@ var FUN_TXT = {
      memRecord:"Jouw record:", memBeurten:"beurten", memNieuw:"Nieuw spel", memBeurtenLbl:"Beurten:", memRecLbl:"record:",
      memKlaar:"\u00a1Muy bien! Compleet in", memNieuwRec:"Nieuw record! \ud83c\udfc5",
      memWeinig:"Leer eerst wat meer woordjes, dan kan het spel gevuld worden!",
-     dicS:"luister naar een Spaanse zin en typ wat je hoort",
+     dicS:"rondes van 8 zinnen, bouw een streak op en zet tapas in bij een foute",
      dicIntro:"Luister goed en typ de Spaanse zin die je hoort. Focus op klanken herkennen, niet op betekenis.",
      dicNormal:"Luister normal", dicLento:"Luister lento",
      dicPlaceholder:"Typ wat je hoort...", dicSkip:"Volgende zin",
@@ -6824,7 +6899,7 @@ var FUN_TXT = {
      memRecord:"Your record:", memBeurten:"turns", memNieuw:"New game", memBeurtenLbl:"Turns:", memRecLbl:"record:",
      memKlaar:"\u00a1Muy bien! Complete in", memNieuwRec:"New record! \ud83c\udfc5",
      memWeinig:"Learn a few more words first, then the game can be filled!",
-     dicS:"listen to a Spanish sentence and type what you hear",
+     dicS:"rounds of 8 sentences, build a streak and stake tapas on a wrong one",
      dicIntro:"Listen carefully and type the Spanish sentence you hear. Focus on recognising sounds, not meaning.",
      dicNormal:"Listen normal", dicLento:"Listen lento",
      dicPlaceholder:"Type what you hear...", dicSkip:"Next sentence",
@@ -6857,7 +6932,7 @@ function renderFun(){
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
   document.getElementById("ftKruis").onclick = function(){ funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); };
-  document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
+  document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
