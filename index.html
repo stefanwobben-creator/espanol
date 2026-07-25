@@ -426,7 +426,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v10.8";
+var APP_VERSIE = "v10.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2314,6 +2314,11 @@ function pickSentence(){
   allowedSentIds().forEach(function(id){ allow[id] = true; });
   var pool = SENTENCES.filter(function(x){ return allow[x.id]; });
   if(!pool.length) pool = SENTENCES;
+  // zinnen waar je eerder de mist mee inging, komen extra vaak terug (ook als ze al 'gehaald' zijn)
+  var fouten = pool.filter(function(x){ var e = S.errors["zin:"+x.id]; return e && e.count > 0; });
+  if(fouten.length && Math.random() < 0.4){
+    return fouten[Math.floor(Math.random()*fouten.length)];
+  }
   var open = pool.filter(function(x){ return !S.done[x.id]; });
   var use = open.length ? open : pool;
   use = use.slice().sort(function(a,b){ return a.lvl-b.lvl; });
@@ -2984,6 +2989,77 @@ function ytId(url){
   return m ? m[1] : (url.match(/^[A-Za-z0-9_-]{8,}$/) ? url : null);
 }
 
+var SONG_OOGST = [
+ {match:"sigue", lvl:"A2", intro:"Reggaeton met een cadeautje: de titel zelf is een gebiedende wijs. Sigue = ga door!",
+  oogst:[
+   {es:"sigue", nl:"ga door / ga verder", u:"Imperativo van seguir (e→i). Hetzelfde werkwoord ken je uit de app: seguir = volgen, doorgaan."},
+   {es:"no pares", nl:"stop niet", u:"Negatieve imperativo van parar: no + subjuntivo-vorm. No pares = niet stoppen dus!"},
+   {es:"bailando", nl:"dansend, aan het dansen", u:"Gerundio van bailar. Estar + gerundio = ermee bezig zijn: estamos bailando."},
+   {es:"conmigo / contigo", nl:"met mij / met jou", u:"Onthoud: niet con mí of con ti, maar één woord: conmigo, contigo."},
+   {es:"otra vez", nl:"nog een keer, opnieuw", u:"Letterlijk: een andere keer. Hoor je in zó veel liedjes: otra vez, una vez más."}
+  ],
+  vragen:[
+   {q:"'Sigue' is de gebiedende wijs van...", opts:["seguir","sentir"], c:0, u:"Seguir (e→i): sigo, sigues, sigue... en als bevel: ¡sigue!"},
+   {q:"'No pares' betekent...", opts:["stop niet","niet praten"], c:0, u:"Parar = stoppen. No pares = stop niet, ga door."}
+  ]},
+ {match:"tu eres ajena", lvl:"A2", intro:"Klassieke bachata vol ser-vormen en gevoelswoorden die je uit je lessen kent.",
+  oogst:[
+   {es:"tú eres", nl:"jij bent", u:"Ser, niet estar: het gaat om wie ze wezenlijk is (van een ander), niet waar ze is."},
+   {es:"ajena / ajeno", nl:"van een ander", u:"Cosa ajena = andermans bezit. Tú eres ajena = je bent (de geliefde) van iemand anders."},
+   {es:"me duele", nl:"het doet me pijn", u:"Doler werkt als gustar: me duele el corazón = mijn hart doet pijn. Komt in AULA les 8!"},
+   {es:"el corazón", nl:"het hart", u:"Hét bachata-woord. Meervoud: los corazones."},
+   {es:"amarte", nl:"jou liefhebben", u:"Amar + te: het pronomen plakt achteraan de infinitief, net als olvidarte in La Bachata."},
+   {es:"aunque", nl:"hoewel, ook al", u:"Handig verbindingswoord: aunque me duele = ook al doet het me pijn."}
+  ],
+  vragen:[
+   {q:"'Tú eres ajena' gebruikt ser omdat...", opts:["het een eigenschap/identiteit is","ze ergens is"], c:0, u:"Ser voor wat iemand ís; estar voor plaats of tijdelijke toestand."},
+   {q:"'Me duele' werkt grammaticaal zoals...", opts:["me gusta","yo hablo"], c:0, u:"Doler en gustar draaien de zin om: het onderwerp is wat pijn doet of bevalt."}
+  ]},
+ {match:"chan chan", lvl:"A0/A2", intro:"Cubaanse klassieker van Buena Vista Social Club: rustig tempo, perfect om je oor te trainen. Het lied reist van dorp naar dorp.",
+  oogst:[
+   {es:"de ... a ...", nl:"van ... naar ...", u:"De Alto Cedro a Marcané: zo beschrijf je een route. De Madrid a Alicante."},
+   {es:"quiero", nl:"ik wil", u:"Van querer (e→ie): quiero, quieres, quiere... Ook: ik hou van je = te quiero."},
+   {es:"el camino", nl:"de weg, het pad", u:"Ken je uit het frequentiewoordenboek: camino = weg; en el camino = onderweg."},
+   {es:"el mar", nl:"de zee", u:"Die ken je al uit je lessen! Junto al mar = aan zee."},
+   {es:"la vergüenza", nl:"de schaamte", u:"Qué vergüenza = wat gênant. Mooi woord om de ü-klank te oefenen: ver-gwen-sa."}
+  ],
+  vragen:[
+   {q:"'De Alto Cedro a Marcané' beschrijft...", opts:["een route (van... naar...)","een tijdstip"], c:0, u:"de + plaats + a + plaats = van A naar B. Het hele lied is een reisje door Cuba."},
+   {q:"'Quiero' komt van...", opts:["querer","quedar"], c:0, u:"Querer (e→ie) = willen, houden van."}
+  ]},
+ {match:"si antes te hubiera conocido", lvl:"A2", intro:"Karol G met een titel die één grote grammaticales is: wat als ik je eerder had gekend?",
+  oogst:[
+   {es:"si te hubiera conocido antes", nl:"als ik je eerder had gekend", u:"Sneak preview van B1: si + hubiera + participio = een als-het-anders-was-gelopen-fantasie. Herken hem, gebruiken komt later."},
+   {es:"conocido", nl:"gekend, leren kennen", u:"Participio van conocer, dat je al kent: conocí a mi pareja bailando salsa."},
+   {es:"antes", nl:"eerder, vroeger", u:"Tegenhanger van después (daarna). Antes de + infinitief = voordat."},
+   {es:"bailar contigo", nl:"met jou dansen", u:"Twee bekenden in één: bailar + contigo. Dé zin voor op de salsavloer."},
+   {es:"el destino", nl:"het lot, de bestemming", u:"Dubbele betekenis: je reisbestemming én het noodlot. Liedjes gebruiken vooral die tweede."}
+  ],
+  vragen:[
+   {q:"'Conocido' is het participio van...", opts:["conocer","cocinar"], c:0, u:"Conocer = kennen/leren kennen. Cocinar = koken (dat doe jij met Japans eten)."},
+   {q:"'Si... hubiera...' drukt uit:", opts:["een fantasie over hoe het had kunnen lopen","een plan voor morgen"], c:0, u:"Verleden-hypothese: het is niet gebeurd, maar stel je voor. B1-grammatica, alvast in je oor."}
+  ]},
+ {match:"que calor", lvl:"A0/A2", intro:"Major Lazer met J Balvin: één grote warmte-les, en je kent de kern al uit je eigen lessen.",
+  oogst:[
+   {es:"qué calor", nl:"wat is het heet!", u:"Uitroep: ¡qué + zelfstandig naamwoord! Vergelijk hace calor (het is warm) uit je A0-les: dat is de neutrale melding, dit is de verzuchting."},
+   {es:"baila", nl:"dans!", u:"Imperativo van bailar. Baila conmigo = dans met me."},
+   {es:"despacio", nl:"langzaam", u:"Ken je uit het frequentiewoordenboek (en van dat andere liedje). Tegenovergestelde: rápido."},
+   {es:"el verano", nl:"de zomer", u:"Seizoenen: primavera, verano, otoño, invierno. In Alicante duurt el verano lekker lang."},
+   {es:"la playa", nl:"het strand", u:"Die ken je al! Vamos a la playa is nu dus geen loze kreet meer."}
+  ],
+  vragen:[
+   {q:"'¡Qué calor!' verhoudt zich tot 'hace calor' als...", opts:["uitroep tegenover neutrale mededeling","verleden tegenover heden"], c:0, u:"Hace calor = het is warm (feit). ¡Qué calor! = pff, wat een hitte (gevoel)."},
+   {q:"'Baila' is...", opts:["een bevel: dans!","hij danste"], c:0, u:"Imperativo van bailar. Hij danste zou bailó zijn (indefinido)."}
+  ]}
+];
+function songOogstVoor(titel){
+  var t = stripAcc(String(titel||"").toLowerCase()).replace(/[^a-z0-9 ]/g, "").trim();
+  if(!t) return null;
+  for(var i = 0; i < SONG_OOGST.length; i++){
+    if(t.indexOf(SONG_OOGST[i].match) !== -1) return SONG_OOGST[i];
+  }
+  return null;
+}
 function renderSongs(){
   document.getElementById("songView").classList.add("hidden");
   var el = document.getElementById("songList");
@@ -3018,8 +3094,9 @@ function renderSongs(){
       return off.length > 3 && (mijn.indexOf(off) !== -1 || off.indexOf(mijn) !== -1);
     });
     if(alGedekt) return;
+    var heeftOogst = (ms.oogst && ms.oogst.length) || songOogstVoor(ms.titel);
     html += "<div class='lesson' data-mysong='"+i+"'><div class='lnum'>🎵</div>"+
-      "<div class='lbody'><b>"+ms.titel+"</b><span>zelf toegevoegd · taaloogst volgt vannacht</span></div><div class='lstatus'>▶</div></div>";
+      "<div class='lbody'><b>"+ms.titel+"</b><span>zelf toegevoegd · "+(heeftOogst ? "met taaloogst 🌾" : "taaloogst volgt bij de nachtelijke update")+"</span></div><div class='lstatus'>▶</div></div>";
   });
   html += "<div class='card'><h2>Zelf een lied toevoegen</h2>"+
     "<p class='muted'>Plak een YouTube-link. De video werkt direct; de woordjes en uitleg maakt Claude bij de volgende wekelijkse update.</p>"+
@@ -3059,6 +3136,13 @@ function renderSongs(){
 
 function openSong(sg, skipPush){
   if(!sg) return;
+  // zelf toegevoegd liedje zonder oogst: kijk of de bibliotheek hem kent (jouw eigen video blijft)
+  if(sg.eigen && (!sg.oogst || !sg.oogst.length)){
+    var bib = songOogstVoor(sg.titel);
+    if(bib){
+      sg = Object.assign({}, sg, {lvl:bib.lvl, intro:bib.intro, oogst:bib.oogst, vragen:bib.vragen, eigen:true});
+    }
+  }
   if(!skipPush) navPush({t:"song", id:sg.id});
   document.getElementById("songList").classList.add("hidden");
   var el = document.getElementById("songView");
