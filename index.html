@@ -434,7 +434,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v17.1";
+var APP_VERSIE = "v17.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5200,9 +5200,9 @@ function avtSnakeSvg(){
   return html + "</svg>";
 }
 /* ---- La Biblioteca: kruiswoord uit je eigen woorden ---- */
-function avtKruisStart(){
+function kruisBouw(){
   var kandidaten = gameVoorrang(wsWoordPool()).filter(function(k){ return k.woord.length >= 4 && k.woord.length <= 8; });
-  if(kandidaten.length < 4){ toast("📚 " + at("kruisWeinig")); return; }
+  if(kandidaten.length < 4){ toast("📚 " + at("kruisWeinig")); return null; }
   var beste = null;
   for(var poging = 0; poging < 6 && !beste; poging++){
     var pool = kandidaten.slice(0, 18).sort(function(){ return Math.random() - 0.5; });
@@ -5246,13 +5246,18 @@ function avtKruisStart(){
     }
     if(woorden.length >= 4) beste = {cellen:cellen, woorden:woorden};
   }
-  if(!beste){ toast("📚 " + at("kruisWeinig")); return; }
-  avt.kruis = beste;
-  avt.kruis.sel = 0;
+  if(!beste){ toast("📚 " + at("kruisWeinig")); return null; }
+  beste.sel = 0;
+  return beste;
+}
+function avtKruisStart(){
+  var b = kruisBouw();
+  if(!b) return;
+  avt.kruis = b;
   renderFun();
 }
-function avtKruisCellen(){
-  var kr = avt.kruis, minX = 99, maxX = -99, minY = 99, maxY = -99;
+function avtKruisCellen(kr){
+  var minX = 99, maxX = -99, minY = 99, maxY = -99;
   Object.keys(kr.cellen).forEach(function(key){
     var p = key.split(",");
     minX = Math.min(minX, +p[0]); maxX = Math.max(maxX, +p[0]);
@@ -5260,8 +5265,7 @@ function avtKruisCellen(){
   });
   return {minX:minX, maxX:maxX, minY:minY, maxY:maxY};
 }
-function avtKruisBekend(x, y){
-  var kr = avt.kruis;
+function avtKruisBekend(kr, x, y){
   for(var i = 0; i < kr.woorden.length; i++){
     var wo = kr.woorden[i];
     if(!wo.klaar) continue;
@@ -5351,6 +5355,111 @@ function avtHarten(){
   var gr = avtGear(), s = "";
   for(var i=0;i<gr.maxHarten;i++){ s += i < gr.harten ? "❤️" : "🖤"; }
   return s;
+}
+function renderKruisUI(el, kr, opts){
+    var bnd = avtKruisCellen(kr);
+    var cel = Math.min(28, Math.floor(340 / (bnd.maxX - bnd.minX + 1)));
+    var kh = "<div style='text-align:center'><span class='kicker'>" + at("biblio") + " 📚</span>"+
+      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("biblioSub") + "</p></div>";
+    kh += "<div style='overflow-x:auto; text-align:center'><div style='display:inline-block; margin:4px auto'>";
+    for(var ky = bnd.minY; ky <= bnd.maxY; ky++){
+      kh += "<div style='display:flex'>";
+      for(var kx = bnd.minX; kx <= bnd.maxX; kx++){
+        var kch = kr.cellen[kx + "," + ky];
+        if(!kch){ kh += "<div style='width:" + cel + "px; height:" + cel + "px'></div>"; continue; }
+        var bek = avtKruisBekend(kr, kx, ky);
+        var num = "";
+        kr.woorden.forEach(function(wo, wi2){ if(wo.x === kx && wo.y === ky && !num) num = String(wi2 + 1); });
+        kh += "<div style='width:" + cel + "px; height:" + cel + "px; border:1.5px solid var(--border); background:" + (bek ? "#f2fbe8" : "#fff") + "; position:relative; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:" + Math.floor(cel*0.55) + "px'>"+
+          (num ? "<span class='muted' style='position:absolute; top:-1px; left:2px; font-size:8px; font-weight:600'>" + num + "</span>" : "")+
+          (bek || "") + "</div>";
+      }
+      kh += "</div>";
+    }
+    kh += "</div></div>";
+    kh += "<p class='muted' style='font-size:.8rem; margin:6px 0 2px'>" + at("kruisKies") + "</p><div style='display:flex; flex-wrap:wrap; gap:4px'>";
+    kr.woorden.forEach(function(wo, wi3){
+      kh += "<button class='ghost' data-avtkw='" + wi3 + "' style='font-size:.8rem; padding:5px 8px" + (wo.klaar ? "; opacity:.45" : (wi3 === kr.sel ? "; border-color:var(--accent); border-width:2px" : "")) + "'" + (wo.klaar ? " disabled" : "") + ">" + (wi3 + 1) + (wo.dx ? "→" : "↓") + " " + wo.k.nl + (wo.klaar ? " ✓" : "") + "</button>";
+    });
+    kh += "</div>";
+    var selW = kr.woorden[kr.sel];
+    var allesKlaar = kr.woorden.every(function(w4){ return w4.klaar; });
+    if(selW && !selW.klaar){
+      if(selW.hint){ kh += "<p style='text-align:center; letter-spacing:.15em; margin:6px 2px 0'><span class='muted'>🔍</span> " + selW.k.woord.charAt(0) + selW.k.woord.slice(1).replace(/./g, "·") + "</p>"; }
+      kh += "<div class='row' style='margin-top:6px'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
+        "<div class='row' style='margin-top:4px'><button class='primary' id='btnAvtKruisCheck'>" + at("check") + "</button>"+
+        ((opts.hintAltijd || avtHeeftLupa()) && !selW.hint ? "<button class='ghost' id='btnAvtKruisHint'>" + at("hint") + "</button>" : "")+
+        "<button class='ghost' id='btnAvtKruisWeg'>" + opts.tLabel + "</button></div>";
+    } else {
+      kh += "<div class='row' style='margin-top:8px'>" + (allesKlaar ? "<button class='primary' id='btnAvtKruisNieuw'>" + at("kruisNieuw") + "</button>" : "") + "<button class='ghost' id='btnAvtKruisWeg'>" + opts.tLabel + "</button></div>";
+    }
+    el.innerHTML = kh;
+    el.querySelectorAll("[data-avtkw]").forEach(function(b){
+      b.onclick = function(){ kr.sel = +b.getAttribute("data-avtkw"); renderFun(); var ii = document.getElementById("avtInp"); if(ii) ii.focus(); };
+    });
+    var ki = document.getElementById("avtInp");
+    if(ki){
+      ki.focus();
+      var kcheck = function(){
+        var inp = ki.value || "";
+        if(!norm(inp)) return;
+        var wo = kr.woorden[kr.sel];
+        var wOrig = WORDS.filter(function(x){ return x.id === wo.k.id; })[0];
+        if(stripAcc(norm(inp)).replace(/[^a-z]/g, "") === wo.k.woord){
+          wo.klaar = true;
+          if(wOrig) avtSrsBij(wOrig, true); else { addXP(2); updateBadge(); }
+          avtSfx("goed");
+          if(kr.woorden.every(function(w5){ return w5.klaar; })){
+            opts.beloond();
+          } else {
+            for(var q = 0; q < kr.woorden.length; q++){ if(!kr.woorden[q].klaar){ kr.sel = q; break; } }
+          }
+          renderFun();
+        } else {
+          if(wOrig) avtSrsBij(wOrig, false);
+          avtSfx("fout");
+          toast("🤔 " + at("kruisFout"));
+        }
+      };
+      var kb = document.getElementById("btnAvtKruisCheck");
+      if(kb) kb.onclick = kcheck;
+      ki.addEventListener("keydown", function(e){ if(e.key === "Enter") kcheck(); });
+    }
+    var kht = document.getElementById("btnAvtKruisHint");
+    if(kht) kht.onclick = function(){ kr.woorden[kr.sel].hint = true; renderFun(); };
+    var knw = document.getElementById("btnAvtKruisNieuw");
+    if(knw) knw.onclick = function(){ opts.nieuw(); };
+    var kwg = document.getElementById("btnAvtKruisWeg");
+    if(kwg) kwg.onclick = function(){ opts.weg(); };
+}
+
+var kruisLos = null;
+function renderFunKruisLos(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!kruisLos){
+    kruisLos = kruisBouw();
+    if(!kruisLos){ funView = null; renderFun(); return; }
+  }
+  renderKruisUI(el, kruisLos, {
+    tLabel: "← Speeltuin",
+    hintAltijd: true,
+    weg: function(){ kruisLos = null; funView = null; renderFun(); },
+    nieuw: function(){ kruisLos = kruisBouw(); renderFun(); },
+    beloond: function(){
+      var extra = "";
+      if(S.kruisLosDag !== today()){
+        S.kruisLosDag = today();
+        S.monedas = (S.monedas||0) + 5;
+        extra = " " + at("kruisBeloning");
+        confetti(["📚","🪙"], 14);
+      } else {
+        confetti(["📚","✨"], 10);
+      }
+      persist();
+      toast("🎉 " + at("kruisKlaar") + extra);
+    }
+  });
 }
 function renderFunAvt(){
   var el = document.getElementById("funCard");
@@ -5527,86 +5636,20 @@ function renderFunAvt(){
     return;
   }
   if(avt.kruis){
-    var kr = avt.kruis;
-    var bnd = avtKruisCellen();
-    var cel = Math.min(28, Math.floor(340 / (bnd.maxX - bnd.minX + 1)));
-    var kh = "<div style='text-align:center'><span class='kicker'>" + at("biblio") + " 📚</span>"+
-      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("biblioSub") + "</p></div>";
-    kh += "<div style='overflow-x:auto; text-align:center'><div style='display:inline-block; margin:4px auto'>";
-    for(var ky = bnd.minY; ky <= bnd.maxY; ky++){
-      kh += "<div style='display:flex'>";
-      for(var kx = bnd.minX; kx <= bnd.maxX; kx++){
-        var kch = kr.cellen[kx + "," + ky];
-        if(!kch){ kh += "<div style='width:" + cel + "px; height:" + cel + "px'></div>"; continue; }
-        var bek = avtKruisBekend(kx, ky);
-        var num = "";
-        kr.woorden.forEach(function(wo, wi2){ if(wo.x === kx && wo.y === ky && !num) num = String(wi2 + 1); });
-        kh += "<div style='width:" + cel + "px; height:" + cel + "px; border:1.5px solid var(--border); background:" + (bek ? "#f2fbe8" : "#fff") + "; position:relative; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:" + Math.floor(cel*0.55) + "px'>"+
-          (num ? "<span class='muted' style='position:absolute; top:-1px; left:2px; font-size:8px; font-weight:600'>" + num + "</span>" : "")+
-          (bek || "") + "</div>";
+    renderKruisUI(el, avt.kruis, {
+      tLabel: at("naarKaart"),
+      hintAltijd: false,
+      weg: function(){ avt.kruis = null; renderFun(); },
+      nieuw: function(){ avt.kruis = null; avtKruisStart(); },
+      beloond: function(){
+        var savK = avtSave();
+        var extra = "";
+        if(avtWereld === "a1" && !savK.llave){ savK.llave = true; extra = " " + at("llaveCamp"); avtSfx("win"); confetti(["🗝️","📚","✨"], 22); }
+        else if(savK.kruisDag !== today()){ savK.kruisDag = today(); S.monedas = (S.monedas||0) + 5; extra = " " + at("kruisBeloning"); confetti(["📚","🪙"], 14); }
+        persist();
+        toast("🎉 " + at("kruisKlaar") + extra);
       }
-      kh += "</div>";
-    }
-    kh += "</div></div>";
-    kh += "<p class='muted' style='font-size:.8rem; margin:6px 0 2px'>" + at("kruisKies") + "</p><div style='display:flex; flex-wrap:wrap; gap:4px'>";
-    kr.woorden.forEach(function(wo, wi3){
-      kh += "<button class='ghost' data-avtkw='" + wi3 + "' style='font-size:.8rem; padding:5px 8px" + (wo.klaar ? "; opacity:.45" : (wi3 === kr.sel ? "; border-color:var(--accent); border-width:2px" : "")) + "'" + (wo.klaar ? " disabled" : "") + ">" + (wi3 + 1) + (wo.dx ? "→" : "↓") + " " + wo.k.nl + (wo.klaar ? " ✓" : "") + "</button>";
     });
-    kh += "</div>";
-    var selW = kr.woorden[kr.sel];
-    var allesKlaar = kr.woorden.every(function(w4){ return w4.klaar; });
-    if(selW && !selW.klaar){
-      if(selW.hint){ kh += "<p style='text-align:center; letter-spacing:.15em; margin:6px 2px 0'><span class='muted'>🔍</span> " + selW.k.woord.charAt(0) + selW.k.woord.slice(1).replace(/./g, "·") + "</p>"; }
-      kh += "<div class='row' style='margin-top:6px'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
-        "<div class='row' style='margin-top:4px'><button class='primary' id='btnAvtKruisCheck'>" + at("check") + "</button>"+
-        (avtHeeftLupa() && !selW.hint ? "<button class='ghost' id='btnAvtKruisHint'>" + at("hint") + "</button>" : "")+
-        "<button class='ghost' id='btnAvtKruisWeg'>" + at("naarKaart") + "</button></div>";
-    } else {
-      kh += "<div class='row' style='margin-top:8px'>" + (allesKlaar ? "<button class='primary' id='btnAvtKruisNieuw'>" + at("kruisNieuw") + "</button>" : "") + "<button class='ghost' id='btnAvtKruisWeg'>" + at("naarKaart") + "</button></div>";
-    }
-    el.innerHTML = kh;
-    el.querySelectorAll("[data-avtkw]").forEach(function(b){
-      b.onclick = function(){ kr.sel = +b.getAttribute("data-avtkw"); renderFun(); var ii = document.getElementById("avtInp"); if(ii) ii.focus(); };
-    });
-    var ki = document.getElementById("avtInp");
-    if(ki){
-      ki.focus();
-      var kcheck = function(){
-        var inp = ki.value || "";
-        if(!norm(inp)) return;
-        var wo = kr.woorden[kr.sel];
-        var wOrig = WORDS.filter(function(x){ return x.id === wo.k.id; })[0];
-        if(stripAcc(norm(inp)).replace(/[^a-z]/g, "") === wo.k.woord){
-          wo.klaar = true;
-          if(wOrig) avtSrsBij(wOrig, true); else { addXP(2); updateBadge(); }
-          avtSfx("goed");
-          if(kr.woorden.every(function(w5){ return w5.klaar; })){
-            var savK = avtSave();
-            var extra = "";
-            if(avtWereld === "a1" && !savK.llave){ savK.llave = true; extra = " " + at("llaveCamp"); avtSfx("win"); confetti(["🗝️","📚","✨"], 22); }
-            else if(savK.kruisDag !== today()){ savK.kruisDag = today(); S.monedas = (S.monedas||0) + 5; extra = " " + at("kruisBeloning"); confetti(["📚","🪙"], 14); }
-            persist();
-            toast("🎉 " + at("kruisKlaar") + extra);
-          } else {
-            for(var q = 0; q < kr.woorden.length; q++){ if(!kr.woorden[q].klaar){ kr.sel = q; break; } }
-          }
-          renderFun();
-        } else {
-          if(wOrig) avtSrsBij(wOrig, false);
-          avtSfx("fout");
-          toast("🤔 " + at("kruisFout"));
-        }
-      };
-      var kb = document.getElementById("btnAvtKruisCheck");
-      if(kb) kb.onclick = kcheck;
-      ki.addEventListener("keydown", function(e){ if(e.key === "Enter") kcheck(); });
-    }
-    var kht = document.getElementById("btnAvtKruisHint");
-    if(kht) kht.onclick = function(){ kr.woorden[kr.sel].hint = true; renderFun(); };
-    var knw = document.getElementById("btnAvtKruisNieuw");
-    if(knw) knw.onclick = function(){ avt.kruis = null; avtKruisStart(); };
-    var kwg = document.getElementById("btnAvtKruisWeg");
-    if(kwg) kwg.onclick = function(){ avt.kruis = null; renderFun(); };
     return;
   }
   if(avt.ahor){
@@ -6173,18 +6216,21 @@ function renderFun(){
   if(funView === "ws"){ renderFunWs(); return; }
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "esc"){ renderFunEsc(); return; }
+  if(funView === "kruis"){ renderFunKruisLos(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>Speeltuin \ud83e\udde9</h2><p class='muted'>Leren, vermomd als spelen. Kies je vermaak:</p>"+
     "<div class='lesson' id='ftAvt'><div class='lnum'>\ud83d\uddfa\ufe0f</div><div class='lbody'><b>Aventura</b><span>een echte mini-game: red La Costa van de Olvidos, met muziek en een eindbaas</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>liedjes kijken en de taal eruit oogsten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>Woordenzoeker</b><span>puzzel met jouw geleerde woorden</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>kruiswoord uit jouw geleerde woorden, elke keer een nieuwe puzzel</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>match Spaans met Nederlands, in zo min mogelijk beurten</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>woordduel tegen elkaar, AI als scheidsrechter</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.</p>";
   document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
+  document.getElementById("ftKruis").onclick = function(){ funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
