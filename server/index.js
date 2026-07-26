@@ -387,6 +387,12 @@ app.get("/api/groep/:gcode", async (req, res) => {
       const xp = (st && st.xp) || {};
       return dates.reduce((s, d) => s + ((xp[d] || 0) >= doel ? 1 : 0), 0);
     }
+    // "Start je les"-flow-voltooiingen deze week: st.lesFlow is een datum->true map (client-side
+    // gededupliceerd, dus een dag met meerdere herhalingen telt hier gewoon 1x mee).
+    function lesDagenTellen(st, dates) {
+      const lf = (st && st.lesFlow) || {};
+      return dates.reduce((s, d) => s + (lf[d] ? 1 : 0), 0);
+    }
     const spelers = r.rows.map((row) => {
       const st = row.state || {};
       let lessen = 0;
@@ -395,7 +401,7 @@ app.get("/api/groep/:gcode", async (req, res) => {
       const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
       const doel = st.doel || 30;
       return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, doel,
-        weekXp: sumXp(st, dezeWeek), weekDagen: dagenGehaald(st, dezeWeek),
+        weekXp: sumXp(st, dezeWeek), weekDagen: dagenGehaald(st, dezeWeek), weekLessen: lesDagenTellen(st, dezeWeek),
         vorigeXp: sumXp(st, vorigeWeekDagen), vorigeDagen: dagenGehaald(st, vorigeWeekDagen) };
     }).sort((a, b) => (b.weekDagen - a.weekDagen) || (b.weekXp / (a.doel * 7) - a.weekXp / (b.doel * 7)) || (b.txp - a.txp));
     // winnaar vorige week: meeste dagen eigen doel gehaald; tiebreak: % van eigen weekdoel

@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.13";
+var APP_VERSIE = "v19.14";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1495,7 +1495,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, dir:"es-nl", newIntro:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
 function persist(){ store.save(S); scheduleSync(); }
 
@@ -1784,6 +1784,7 @@ function renderProfileScreen(){
       S.xp=S.xp||{}; S.streak=S.streak||{count:0,last:""}; S.tapaP=S.tapaP||0; S.fed=S.fed||"";
       S.owned=S.owned||{}; S.wear=S.wear||{}; S.lessons=S.lessons||{}; S.txp=S.txp||0; S.tapas=S.tapas||0;
       S.quizSrs=S.quizSrs||{};
+      S.lesFlow=S.lesFlow||{}; S.lesFlowSpel=S.lesFlowSpel||{};
       store.save(S);
       mergeServerGroepen(res);
       boot();
@@ -1911,8 +1912,10 @@ function boot(){
   S.wear = S.wear || {};
   S.lessons = S.lessons || {};
   S.quizSrs = S.quizSrs || {};
+  S.lesFlow = S.lesFlow || {};
+  S.lesFlowSpel = S.lesFlowSpel || {};
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null;
-  scopeLesson = null; curLesson = null;
+  scopeLesson = null; curLesson = null; lesFlow = null;
   document.getElementById("userName").textContent = p.name;
   document.getElementById("tab-profiel").classList.add("hidden");
   document.getElementById("goalLine").classList.remove("hidden");
@@ -2314,6 +2317,7 @@ function renderWord(){
   var el = document.getElementById("wCard");
   if(!wQueue.length){ buildQueue(); }
   if(!wQueue.length){
+    if(lesFlow && lesFlow.stap === "woorden"){ lesFlowVolgende(); return; }
     el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · woordjes":"Woordjes")+"</span>"+
       "<p class='big'>Alles gedaan ✓</p>"+
       "<p class='muted'>Je hebt "+wSessionDone+" kaartje(s) gedaan. "+
@@ -2338,11 +2342,14 @@ function renderWord(){
   var isNew = !S.srs[wCur.id];
   var kort = UI_LANGS[profLang()].kort;
   var front = S.dir==="es-nl" ? wCur.es : wTrans(wCur);
-  el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+tt("woorden")+" · "+wQueue.length+" "+tt("teGaan")+" "+(isNew?"· <span style='color:var(--accent)'>nuevo</span>":"")+"</span>"+
+  var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
+  el.innerHTML = (inFlow ? lesFlowBannerHtml() : "")+
+    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+tt("woorden")+" · "+wQueue.length+" "+tt("teGaan")+" "+(isNew?"· <span style='color:var(--accent)'>nuevo</span>":"")+"</span>"+
     "<p class='big'>"+front+"</p>"+
     "<p class='muted'>"+(S.dir==="es-nl"?tt("watBetekent"):tt("hoeZegJe"))+"</p>"+
     "<div class='row'><button class='primary' id='btnShow'>"+tt("toonAntwoord")+"</button>"+
     "<button class='ghost' id='btnDir'>↔ "+(S.dir==="es-nl"?"ES → "+kort:kort+" → ES")+"</button></div>";
+  lesFlowWireStopKnop();
   document.getElementById("btnShow").onclick = showWord;
   document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
 }
@@ -2352,12 +2359,15 @@ function showWord(){
   var el = document.getElementById("wCard");
   var front = S.dir==="es-nl" ? wCur.es : wTrans(wCur);
   var back  = S.dir==="es-nl" ? wTrans(wCur) : wCur.es;
-  el.innerHTML = "<span class='kicker'>"+tt("woorden")+" · "+wQueue.length+" "+tt("teGaan")+"</span>"+
+  var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
+  el.innerHTML = (inFlow ? lesFlowBannerHtml() : "")+
+    "<span class='kicker'>"+tt("woorden")+" · "+wQueue.length+" "+tt("teGaan")+"</span>"+
     "<p class='big'>"+front+"</p>"+
     "<p class='big' style='color:var(--accent)'>"+back+"</p>"+
     "<span class='tag'>"+wCur.tag+"</span>"+
     "<div class='row'><button class='good' id='btnGood'>"+tt("wistIk")+"</button>"+
     "<button class='bad' id='btnBad'>"+tt("wistNiet")+"</button></div>";
+  lesFlowWireStopKnop();
   document.getElementById("btnGood").onclick = function(){ answerWord(true); };
   document.getElementById("btnBad").onclick = function(){ answerWord(false); };
 }
@@ -2435,13 +2445,16 @@ function renderSentence(fresh){
   var s = sIdx;
   var allowIds = allowedSentIds();
   var doneCount = allowIds.filter(function(id){ return !!S.done[id]; }).length;
+  var inFlowVertalen = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "vertalen");
   var el = document.getElementById("sCard");
-  el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done")+"</span>"+
+  el.innerHTML = (inFlowVertalen ? lesFlowBannerHtml() : "")+
+    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+(6-lesFlow.vertalenTeGaan)+"/5" : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
     "<p class='big'>"+zinPrompt(s)+"</p>"+
     "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='"+ct("Typ de Spaanse zin...","Type the Spanish sentence...")+"'>"+
     "<div class='row'><button class='primary' id='btnCheck'>"+ct("Controleer","Check")+"</button>"+
     "<button class='ghost' id='btnSkip'>"+ct("Andere zin","Different sentence")+"</button></div>"+
     "<div id='sFeedback'></div>";
+  lesFlowWireStopKnop();
   var inp = document.getElementById("sInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkSentence(); });
   document.getElementById("btnCheck").onclick = checkSentence;
@@ -2488,7 +2501,13 @@ function checkSentence(){
   if(gehaald){ checkLessonComplete(); }
   var rauw = document.getElementById("sInput") ? document.getElementById("sInput").value : "";
   var bn = document.getElementById("btnNext");
-  if(bn) bn.onclick = function(){ renderSentence(true); };
+  if(bn) bn.onclick = function(){
+    if(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "vertalen"){
+      lesFlow.vertalenTeGaan--;
+      if(lesFlow.vertalenTeGaan <= 0){ S.lesFlowSpel.vertalen = today(); persist(); lesFlowVolgende(); return; }
+    }
+    renderSentence(true);
+  };
   var br = document.getElementById("btnRetry");
   if(br) br.onclick = function(){ renderSentence(false); };
   var ba = document.getElementById("btnAiCheck");
@@ -2622,7 +2641,8 @@ function renderFunDictado(){
   if(dRonde.n >= dRonde.lengte){ renderDictadoRondeKlaar(); return; }
   if(!dIdx) dIdx = pickDictado();
   var s = dIdx;
-  var html = "<h2>Dictado 🔊</h2>"+
+  var inFlowDicR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
+  var html = (inFlowDicR ? lesFlowBannerHtml() : "")+"<h2>Dictado 🔊</h2>"+
     "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("dicIntro") + "</p>"+
     "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
@@ -2633,6 +2653,7 @@ function renderFunDictado(){
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='dFeedback'></div>";
   el.innerHTML = html;
+  lesFlowWireStopKnop();
   var inp = document.getElementById("dInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
   document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s, DIC_RATE_NORMAL); };
@@ -2653,15 +2674,23 @@ function renderDictadoRondeKlaar(){
     S.tapas = (S.tapas||0) + bonus; dRonde.beloond = true; persist();
     if(perfect) confetti(["🌮","🔥","🎉"], 24);
   }
-  var html = "<h2>Dictado 🔊</h2>"+
+  var inFlowDic = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
+  if(inFlowDic){ S.lesFlowSpel.dictado = today(); persist(); }
+  var html = (inFlowDic ? lesFlowBannerHtml() : "")+"<h2>Dictado 🔊</h2>"+
     "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
       ct("Ronde klaar: ","Round done: ") + dRonde.goed + "/" + dRonde.lengte +
       (dRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + dRonde.besteStreak : "") +
     "</div>"+
     (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
-    "<div class='row'><button class='primary' id='btnDicNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    (inFlowDic ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
+      : "<div class='row'><button class='primary' id='btnDicNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
   el.innerHTML = html;
+  lesFlowWireStopKnop();
+  if(inFlowDic){
+    document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
+    return;
+  }
   document.getElementById("btnDicNieuweRonde").onclick = function(){ dictadoNieuweRonde(); renderFunDictado(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
 }
@@ -2807,7 +2836,8 @@ function renderFunConjugador(){
   if(conjRonde.n >= conjRonde.lengte){ renderConjugadorRondeKlaar(); return; }
   if(!conjIdx) conjIdx = pickConjugacion();
   var c = conjIdx, v = c.verb;
-  var html = "<h2>Conjugador 🎯</h2>"+
+  var inFlowCjR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "conj");
+  var html = (inFlowCjR ? lesFlowBannerHtml() : "")+"<h2>Conjugador 🎯</h2>"+
     "<span class='kicker' id='cjKicker'>" + conjugadorKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("cjIntro") + "</p>"+
     "<div class='card' style='text-align:center; margin:10px 0'>"+
@@ -2821,6 +2851,7 @@ function renderFunConjugador(){
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='cjFeedback'></div>";
   el.innerHTML = html;
+  lesFlowWireStopKnop();
   var inp = document.getElementById("cjInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkConjugador(); });
   document.getElementById("btnCjCheck").onclick = checkConjugador;
@@ -2838,15 +2869,23 @@ function renderConjugadorRondeKlaar(){
     S.tapas = (S.tapas||0) + bonus; conjRonde.beloond = true; persist();
     if(perfect) confetti(["🎯","🔥","🎉"], 24);
   }
-  var html = "<h2>Conjugador 🎯</h2>"+
+  var inFlowCj = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "conj");
+  if(inFlowCj){ S.lesFlowSpel.conj = today(); persist(); }
+  var html = (inFlowCj ? lesFlowBannerHtml() : "")+"<h2>Conjugador 🎯</h2>"+
     "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
       ct("Ronde klaar: ","Round done: ") + conjRonde.goed + "/" + conjRonde.lengte +
       (conjRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + conjRonde.besteStreak : "") +
     "</div>"+
     (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
-    "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    (inFlowCj ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
+      : "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
   el.innerHTML = html;
+  lesFlowWireStopKnop();
+  if(inFlowCj){
+    document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
+    return;
+  }
   document.getElementById("btnCjNieuweRonde").onclick = function(){ conjugadorNieuweRonde(); renderFunConjugador(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
 }
@@ -2939,7 +2978,8 @@ function renderFunHusselen(){
   if(huRonde.n >= huRonde.lengte){ renderHusselenRondeKlaar(); return; }
   if(!huIdx) husselenNieuweOpgave();
   var s = huIdx;
-  var html = "<h2>" + fx("huT") + " 🧩</h2>"+
+  var inFlowHuR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "hu");
+  var html = (inFlowHuR ? lesFlowBannerHtml() : "")+"<h2>" + fx("huT") + " 🧩</h2>"+
     "<span class='kicker' id='huKicker'>" + husselenKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("huIntro") + "</p>"+
     "<p class='big' style='margin:8px 0; font-size:1.1rem'>" + zinPrompt(s) + "</p>"+
@@ -2956,6 +2996,7 @@ function renderFunHusselen(){
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='huFeedback'></div>";
   el.innerHTML = html;
+  lesFlowWireStopKnop();
   el.querySelectorAll(".hu-tile").forEach(function(b){
     b.onclick = function(){
       if(b.getAttribute("data-mode") === "bank"){
@@ -2991,15 +3032,23 @@ function renderHusselenRondeKlaar(){
     S.tapas = (S.tapas||0) + bonus; huRonde.beloond = true; persist();
     if(perfect) confetti(["🧩","🔥","🎉"], 24);
   }
-  var html = "<h2>" + fx("huT") + " 🧩</h2>"+
+  var inFlowHu = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "hu");
+  if(inFlowHu){ S.lesFlowSpel.hu = today(); persist(); }
+  var html = (inFlowHu ? lesFlowBannerHtml() : "")+"<h2>" + fx("huT") + " 🧩</h2>"+
     "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
       ct("Ronde klaar: ","Round done: ") + huRonde.goed + "/" + huRonde.lengte +
       (huRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + huRonde.besteStreak : "") +
     "</div>"+
     (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
-    "<div class='row'><button class='primary' id='btnHuNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    (inFlowHu ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
+      : "<div class='row'><button class='primary' id='btnHuNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
   el.innerHTML = html;
+  lesFlowWireStopKnop();
+  if(inFlowHu){
+    document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
+    return;
+  }
   document.getElementById("btnHuNieuweRonde").onclick = function(){ husselenNieuweRonde(); renderFunHusselen(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
 }
@@ -3101,6 +3150,16 @@ function renderQuestion(){
     var msg = pct===1 ? ct("¡Perfecto! Foutloos. +2 tapas 🌮","¡Perfecto! Flawless. +2 tapas 🌮") : pct>=0.8 ? ct("¡Muy bien! Bijna foutloos.","¡Muy bien! Nearly flawless.") :
               pct>=0.6 ? ct("Goede basis, kijk de uitleg van je fouten nog even terug.","Good basis; do reread the explanations of your mistakes.") :
               ct("Deze regel verdient nog aandacht. Lees de spiekbrief en probeer opnieuw.","This rule needs more attention. Read the cheat sheet and try again.");
+    if(lesFlow && lesFlow.stap === "toetsjes"){
+      lesFlow.quizzesTeDoen = (lesFlow.quizzesTeDoen||[]).filter(function(id){ return id !== qz.id; });
+      el.innerHTML = lesFlowBannerHtml()+
+        "<span class='kicker'>"+quizTitel(qz)+"</span>"+
+        "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
+        "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>";
+      lesFlowWireStopKnop();
+      document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
+      return;
+    }
     el.innerHTML = "<span class='kicker'>"+quizTitel(qz)+"</span>"+
       "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
       "<div class='row'><button class='primary' id='btnRetry'>"+ct("Opnieuw","Again")+"</button>"+
@@ -3111,7 +3170,9 @@ function renderQuestion(){
   }
   var v = qz.vragen[st.i];
   st.locked = false;
-  var html = "<span class='kicker'>"+quizTitel(qz)+ct(" · vraag "," · question ")+(st.i+1)+"/"+qz.vragen.length+"</span>"+
+  var inFlowQuiz = !!(lesFlow && lesFlow.stap === "toetsjes");
+  var html = (inFlowQuiz ? lesFlowBannerHtml() : "")+
+    "<span class='kicker'>"+quizTitel(qz)+ct(" · vraag "," · question ")+(st.i+1)+"/"+qz.vragen.length+"</span>"+
     "<div class='progressbar'><div style='width:"+Math.round(100*st.i/qz.vragen.length)+"%'></div></div>"+
     "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>";
   v.opts.forEach(function(o,idx){
@@ -3119,6 +3180,7 @@ function renderQuestion(){
   });
   html += "<div id='qFeedback'></div>";
   el.innerHTML = html;
+  lesFlowWireStopKnop();
   el.querySelectorAll(".opt").forEach(function(b){
     b.onclick = function(){ answerQuestion(+b.getAttribute("data-i"), b); };
   });
@@ -3145,24 +3207,158 @@ function closeQuiz(){
   renderQuizMenu();
 }
 
+/* ================= START JE LES (herhaalbare dagelijkse flow) ================= */
+// Eén doorlopende flow: woordjes (bestaande due+nieuw-wachtrij) -> toetsjes (due grammatica) ->
+// 1 ronde productie (Dictado/Conjugador/Zinnen husselen/Vertalen, automatisch geroteerd).
+// Bewust herhaalbaar op dezelfde dag (Stefans moeder wil een les kunnen overdoen als ze 'm niet
+// meer weet) -> gewoon opnieuw lesFlowStart() aanroepen bouwt alles vers op. Voltooiing wordt
+// bijgehouden in S.lesFlow (datum->true, dedupliceert vanzelf bij herhaling dezelfde dag) en levert
+// een variabele tapas-bonus voor Chispa op (variable-ratio beloning, motiverender dan een vast bedrag).
+var lesFlow = null; // {stap: null|"woorden"|"toetsjes"|"produceren", quizzesTeDoen:[...ids], gekozenSpel, vertalenTeGaan}
+var PRODUCTIE_MODI = ["dictado","conj","hu","vertalen"];
+
+function lesFlowKiesSpel(){
+  var sp = S.lesFlowSpel || {};
+  var beste = null, besteDatum = null;
+  PRODUCTIE_MODI.forEach(function(m){
+    var d = sp[m] || "0000-00-00";
+    if(besteDatum === null || d < besteDatum){ besteDatum = d; beste = [m]; }
+    else if(d === besteDatum){ beste.push(m); }
+  });
+  return beste[Math.floor(Math.random()*beste.length)];
+}
+
+function lesFlowStapNaam(){
+  if(!lesFlow) return "";
+  if(lesFlow.stap === "woorden") return ct("Woordjes","Words");
+  if(lesFlow.stap === "toetsjes") return ct("Toetsjes","Quizzes");
+  if(lesFlow.stap === "produceren") return ct("Oefenen","Practice");
+  return "";
+}
+function lesFlowStapNum(){
+  if(!lesFlow) return 0;
+  if(lesFlow.stap === "woorden") return 1;
+  if(lesFlow.stap === "toetsjes") return 2;
+  if(lesFlow.stap === "produceren") return 3;
+  return 0;
+}
+function lesFlowBannerHtml(){
+  if(!lesFlow) return "";
+  return "<div class='card' style='margin-bottom:10px'><span class='kicker'>🚦 "+ct("Start je les","Start your session")+" · "+ct("stap","step")+" "+lesFlowStapNum()+"/3 · "+lesFlowStapNaam()+"</span>"+
+    "<div class='row' style='margin-top:6px'><button class='ghost' id='btnLesFlowStop' style='font-size:.8rem'>"+ct("Later verder","Continue later")+"</button></div></div>";
+}
+function lesFlowWireStopKnop(){
+  var bs = document.getElementById("btnLesFlowStop");
+  if(bs) bs.onclick = lesFlowStop;
+}
+function lesFlowStop(){
+  lesFlow = null;
+  show("lessen");
+}
+
+function lesFlowStart(){
+  lesFlow = {stap:null, quizzesTeDoen:[], gekozenSpel:null, vertalenTeGaan:0};
+  lesFlowVolgende();
+}
+
+function lesFlowVolgende(){
+  if(!lesFlow) return;
+  if(lesFlow.stap === null){
+    lesFlow.stap = "woorden";
+    buildQueue();
+    if(wQueue.length){ show("woorden"); return; }
+  }
+  if(lesFlow.stap === "woorden"){
+    lesFlow.stap = "toetsjes";
+    var due = quizDueList();
+    if(due.length){
+      lesFlow.quizzesTeDoen = due.map(function(q){ return q.id; });
+      show("toetsjes");
+      startQuiz(lesFlow.quizzesTeDoen[0]);
+      return;
+    }
+  }
+  if(lesFlow.stap === "toetsjes"){
+    if(lesFlow.quizzesTeDoen && lesFlow.quizzesTeDoen.length){
+      show("toetsjes");
+      startQuiz(lesFlow.quizzesTeDoen[0]);
+      return;
+    }
+    lesFlow.stap = "produceren";
+    lesFlow.gekozenSpel = lesFlowKiesSpel();
+    lesFlowOpenProductie();
+    return;
+  }
+  if(lesFlow.stap === "produceren"){
+    lesFlowKlaar();
+    return;
+  }
+}
+
+function lesFlowOpenProductie(){
+  var m = lesFlow.gekozenSpel;
+  if(m === "dictado"){ funView = "dictado"; dIdx = null; dRonde = null; show("speeltuin"); return; }
+  if(m === "conj"){ funView = "conj"; conjIdx = null; conjRonde = null; show("speeltuin"); return; }
+  if(m === "hu"){ funView = "hu"; huIdx = null; huRonde = null; show("speeltuin"); return; }
+  // vertalen: geen aparte "ronde"-teller zoals de andere spellen, dus we tellen zelf 5 zinnen
+  lesFlow.vertalenTeGaan = 5;
+  show("vertalen");
+}
+
+function lesFlowKlaarBonus(){
+  // variabele beloning (variable-ratio, motiverender dan een vast bedrag): 1-3 basis, ~15% kans op
+  // een extra "jackpot" van +3. Eerste opzet, kan later getuned worden op basis van hoe het aanvoelt.
+  var bonus = 1 + Math.floor(Math.random()*3);
+  if(Math.random() < 0.15) bonus += 3;
+  return bonus;
+}
+
+function lesFlowKlaar(){
+  var t = today();
+  var nieuw = !S.lesFlow[t];
+  S.lesFlow[t] = true;
+  var bonus = lesFlowKlaarBonus();
+  S.tapas = (S.tapas||0) + bonus;
+  persist();
+  lesFlow = null;
+  // eerst netjes terug naar het Lessen-tabblad (de flow kan vanuit elk ander tabblad, zoals
+  // Speeltuin of Vertalen, afronden, dus zonder show() hier zou dit scherm onzichtbaar blijven
+  // achter het nog actieve tabblad)
+  show("lessen");
+  var el = document.getElementById("lessonList");
+  confetti(["🎉","🌮","✨","💃"], 30);
+  el.innerHTML = "<div class='card celebrate'><span class='kicker'>"+ct("Les afgerond","Session complete")+" 🎉</span>"+
+    "<p class='big' style='margin:6px 0'>"+ct("¡Muy bien! Chispa is blij met je.","¡Muy bien! Chispa is happy with you.")+"</p>"+
+    "<p class='muted'>+"+bonus+" 🌮 "+ct("tapas voor Chispa","tapas for Chispa")+(nieuw ? "" : " · "+ct("(je had vandaag al een les afgerond — telt gewoon nog een keer mee voor Chispa, maar niet dubbel voor de week)","(you'd already finished a session today — still counts for Chispa, just not twice for the week)"))+"</p>"+
+    "<div class='row'><button class='primary' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button>"+
+    "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>";
+  document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
+  document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
+}
+
 /* ================= LESSEN: WEERGAVE ================= */
+// Vervangt de oude losse-chips-dashboard-focus: "Start je les" is nu de primaire call-to-action.
+// De losse voortgangschips blijven staan, maar als compacte subregel onder de knop (voor wie het
+// precieze detail wil zien), niet meer als het hoofdelement van het scherm.
 function ritmeCard(){
   var t = today();
+  var gedaanVandaag = !!S.lesFlow[t];
   var nieuw = newToday();
   var xp = S.xp[t] || 0;
-  // openstaande herhalingen (alleen due, geen nieuwe)
   var over = 0;
   WORDS.forEach(function(w){ var st = S.srs[w.id]; if(st && st.due <= t) over++; });
   var qOver = quizDueCount();
   function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
-  return "<div class='card'><span class='kicker'>"+ct("Vandaag · minimale basis","Today · minimum routine")+"</span>"+
-    "<div class='ritme'>"+
+  return "<div class='card"+(gedaanVandaag?" celebrate":"")+"'>"+
+    "<span class='kicker'>"+(gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : ct("Start je les","Start your session"))+"</span>"+
+    "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+(gedaanVandaag ? ct("¡Muy bien! Chispa is trots op je.","¡Muy bien! Chispa is proud of you.") : ct("Woordjes, een toetsje en één keer oefenen. Klaar in een paar minuten.","Words, a quiz and one practice round. Done in a few minutes."))+"</p>"+
+    "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>"+
+    "<div class='ritme' style='margin-top:10px'>"+
     chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
     chip(over === 0, over === 0 ? ct("herhalingen bij","reviews done") : over+ct(" herhalingen open"," reviews open"))+
     chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" XP")+
     (qOver > 0 ? chip(false, "🔁 "+qOver+ct(" grammatica-herhaling"+(qOver>1?"en":"")+" open"," grammar review"+(qOver>1?"s":"")+" open")) : "")+
-    "</div>"+
-    "<p class='muted' style='margin-top:8px'>"+ct("Dit is genoeg om vooruit te blijven gaan. Alles daarboven (lessen, liedjes, puzzels) is extra: leuk, maar hoeft niet.","This is enough to keep moving forward. Everything on top (lessons, songs, puzzles) is extra: fun, but optional.")+"</p></div>";
+    "</div></div>";
 }
 
 function renderLessons(){
@@ -3212,6 +3408,8 @@ function renderLessons(){
     });
   }
   listEl.innerHTML = html;
+  var bsf = document.getElementById("btnStartLesFlow");
+  if(bsf) bsf.onclick = function(){ lesFlowStart(); };
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
     if(lid){ el2.onclick = function(){
@@ -7502,7 +7700,9 @@ function renderGroepen(){
         var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
         var trofee = (vorigeWin && sp.naam === vorigeWin) ? " 🏆" : "";
         var hoofd = (sp.weekDagen !== undefined)
-          ? "<b>"+sp.weekDagen+"/7</b> "+(profLang()==="nl"?"dagen doel ✓":"days goal ✓")+" <span class='muted'>· "+(sp.weekXp||0)+" XP · 🔥 "+sp.streak+"</span>"
+          ? "<b>"+sp.weekDagen+"/7</b> "+(profLang()==="nl"?"dagen doel ✓":"days goal ✓")+
+            (sp.weekLessen !== undefined ? " <span class='muted'>· "+sp.weekLessen+"/7 "+(profLang()==="nl"?"lessen":"sessions")+"</span>" : "")+
+            " <span class='muted'>· "+(sp.weekXp||0)+" XP · 🔥 "+sp.streak+"</span>"
           : "<b>"+sp.txp+" XP</b> · 🔥 "+sp.streak;
         return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+trofee+"</b> <span class='muted'>· "+lvl+"</span></span>"+
           "<span>"+hoofd+"</span></div>";
