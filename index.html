@@ -424,6 +424,12 @@
     <div class="card hidden" id="qCard"></div>
   </section>
 
+  <!-- LEZEN -->
+  <section id="tab-lezen" class="hidden">
+    <div id="lezenMenu"></div>
+    <div class="card hidden" id="lezenCard"></div>
+  </section>
+
   <!-- SPIEKBRIEF -->
   <section id="tab-spiekbrief" class="hidden">
     <div id="cheat"></div>
@@ -436,7 +442,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.22";
+var APP_VERSIE = "v19.23";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -674,7 +680,75 @@ var WORDS = [
  {id:"w231", es:"la celebración", nl:"de viering", tag:"les10"},
  {id:"w232", es:"inesperado / inesperada", nl:"onverwacht", tag:"les10"},
  {id:"w233", es:"realizarse", nl:"uitkomen (een droom)", tag:"les10"},
- {id:"w234", es:"el sueño", nl:"de droom", tag:"les10"}
+ {id:"w234", es:"el sueño", nl:"de droom", tag:"les10"},
+ // Woordenschat uit "Las Crónicas de Chispa" (het Chispa-boek, v19.23): 5 woorden per hoofdstuk,
+ // tag = hoofdstuk-id (boek-1..boek-13). Komt pas in de Woordjes-wachtrij zodra dat hoofdstuk
+ // uitgelezen is, zie allowedWordIds(). Bewust lichtgewicht (geen DICINFO/TRANS), zie batchlog.
+ {id:"w235", es:"el huevo", nl:"het ei", tag:"boek-1"},
+ {id:"w236", es:"la playa", nl:"het strand", tag:"boek-1"},
+ {id:"w237", es:"el cangrejo", nl:"de krab", tag:"boek-1"},
+ {id:"w238", es:"la ola", nl:"de golf", tag:"boek-1"},
+ {id:"w239", es:"olvidarse", nl:"vergeten", tag:"boek-1"},
+ {id:"w240", es:"la gaviota", nl:"de meeuw", tag:"boek-2"},
+ {id:"w241", es:"la ballena", nl:"de walvis", tag:"boek-2"},
+ {id:"w242", es:"la nube", nl:"de wolk", tag:"boek-2"},
+ {id:"w243", es:"el pico", nl:"de snavel", tag:"boek-2"},
+ {id:"w244", es:"torpe", nl:"onhandig", tag:"boek-2"},
+ {id:"w245", es:"la tortuga", nl:"de schildpad", tag:"boek-3"},
+ {id:"w246", es:"llorar", nl:"huilen", tag:"boek-3"},
+ {id:"w247", es:"el corazón", nl:"het hart", tag:"boek-3"},
+ {id:"w248", es:"el ritmo", nl:"het ritme", tag:"boek-3"},
+ {id:"w249", es:"el humo", nl:"de rook", tag:"boek-3"},
+ {id:"w250", es:"la calle", nl:"de straat", tag:"boek-4"},
+ {id:"w251", es:"vacío / vacía", nl:"leeg", tag:"boek-4"},
+ {id:"w252", es:"reír", nl:"lachen", tag:"boek-4"},
+ {id:"w253", es:"recordar", nl:"zich herinneren", tag:"boek-4"},
+ {id:"w254", es:"de vuelta", nl:"terug", tag:"boek-4"},
+ {id:"w255", es:"la hoja", nl:"het blad", tag:"boek-5"},
+ {id:"w256", es:"correr", nl:"rennen", tag:"boek-5"},
+ {id:"w257", es:"la cola", nl:"de staart", tag:"boek-5"},
+ {id:"w258", es:"respirar", nl:"ademen", tag:"boek-5"},
+ {id:"w259", es:"fuerte", nl:"sterk", tag:"boek-5"},
+ {id:"w260", es:"el acordeón", nl:"de accordeon", tag:"boek-6"},
+ {id:"w261", es:"el banco", nl:"de bank (zitbank)", tag:"boek-6"},
+ {id:"w262", es:"temblar", nl:"trillen", tag:"boek-6"},
+ {id:"w263", es:"las lágrimas", nl:"de tranen", tag:"boek-6"},
+ {id:"w264", es:"suficiente", nl:"genoeg", tag:"boek-6"},
+ {id:"w265", es:"la niebla", nl:"de mist", tag:"boek-7"},
+ {id:"w266", es:"la esquina", nl:"de hoek (van een straat)", tag:"boek-7"},
+ {id:"w267", es:"el rincón", nl:"het hoekje", tag:"boek-7"},
+ {id:"w268", es:"asustado / asustada", nl:"bang", tag:"boek-7"},
+ {id:"w269", es:"faltar", nl:"ontbreken", tag:"boek-7"},
+ {id:"w270", es:"el árbol", nl:"de boom", tag:"boek-8"},
+ {id:"w271", es:"apenas", nl:"nauwelijks", tag:"boek-8"},
+ {id:"w272", es:"el silencio", nl:"de stilte", tag:"boek-8"},
+ {id:"w273", es:"el molino", nl:"de molen", tag:"boek-8"},
+ {id:"w274", es:"confundido / confundida", nl:"verward", tag:"boek-8"},
+ {id:"w275", es:"el gigante", nl:"de reus", tag:"boek-9"},
+ {id:"w276", es:"merecer", nl:"verdienen", tag:"boek-9"},
+ {id:"w277", es:"tonto / tonta", nl:"dwaas", tag:"boek-9"},
+ {id:"w278", es:"rendirse", nl:"opgeven", tag:"boek-9"},
+ {id:"w279", es:"asentir", nl:"knikken", tag:"boek-9"},
+ {id:"w280", es:"el tejón", nl:"de das (dier)", tag:"boek-10"},
+ {id:"w281", es:"la astucia", nl:"de sluwheid", tag:"boek-10"},
+ {id:"w282", es:"compartir", nl:"delen", tag:"boek-10"},
+ {id:"w283", es:"el truco", nl:"de truc", tag:"boek-10"},
+ {id:"w284", es:"travieso / traviesa", nl:"ondeugend", tag:"boek-10"},
+ {id:"w285", es:"el fuego", nl:"het vuur", tag:"boek-11"},
+ {id:"w286", es:"destruir", nl:"vernietigen", tag:"boek-11"},
+ {id:"w287", es:"espeso / espesa", nl:"dik (van mist, vloeistof)", tag:"boek-11"},
+ {id:"w288", es:"antiguo / antigua", nl:"oud, oeroud", tag:"boek-11"},
+ {id:"w289", es:"el miedo", nl:"de angst", tag:"boek-11"},
+ {id:"w290", es:"apagado / apagada", nl:"uitgedoofd, gedimd", tag:"boek-12"},
+ {id:"w291", es:"el hermano", nl:"de broer", tag:"boek-12"},
+ {id:"w292", es:"demasiado tarde", nl:"te laat", tag:"boek-12"},
+ {id:"w293", es:"crecer", nl:"groeien", tag:"boek-12"},
+ {id:"w294", es:"dorado / dorada", nl:"goudkleurig", tag:"boek-12"},
+ {id:"w295", es:"la estación", nl:"het seizoen", tag:"boek-13"},
+ {id:"w296", es:"brillante", nl:"stralend", tag:"boek-13"},
+ {id:"w297", es:"terminar", nl:"eindigen", tag:"boek-13"},
+ {id:"w298", es:"aprender", nl:"leren", tag:"boek-13"},
+ {id:"w299", es:"el recuerdo", nl:"de herinnering", tag:"boek-13"}
 ];
 
 var SENTENCES = [
@@ -1882,7 +1956,74 @@ var B_WORDS = [
  {id:"b183", es:"haber", nl:"hebben (hulpwerkwoord)", tag:"les9"},
  {id:"b184", es:"hecho", nl:"gedaan, gemaakt (voltooid deelwoord van hacer)", tag:"les9"},
  {id:"b185", es:"visto", nl:"gezien (voltooid deelwoord van ver)", tag:"les9"},
- {id:"b186", es:"el carnet de conducir", nl:"het rijbewijs", tag:"les9"}
+ {id:"b186", es:"el carnet de conducir", nl:"het rijbewijs", tag:"les9"},
+ // Woordenschat uit "Las Crónicas de Chispa" (het Chispa-boek, v19.23), zie de bijbehorende
+ // toelichting boven de A2-versie van deze lijst (WORDS, tag boek-1..boek-13).
+ {id:"b187", es:"el huevo", nl:"het ei", tag:"boek-1"},
+ {id:"b188", es:"la playa", nl:"het strand", tag:"boek-1"},
+ {id:"b189", es:"el cangrejo", nl:"de krab", tag:"boek-1"},
+ {id:"b190", es:"la ola", nl:"de golf", tag:"boek-1"},
+ {id:"b191", es:"olvidarse", nl:"vergeten", tag:"boek-1"},
+ {id:"b192", es:"la gaviota", nl:"de meeuw", tag:"boek-2"},
+ {id:"b193", es:"la ballena", nl:"de walvis", tag:"boek-2"},
+ {id:"b194", es:"la nube", nl:"de wolk", tag:"boek-2"},
+ {id:"b195", es:"el pico", nl:"de snavel", tag:"boek-2"},
+ {id:"b196", es:"torpe", nl:"onhandig", tag:"boek-2"},
+ {id:"b197", es:"la tortuga", nl:"de schildpad", tag:"boek-3"},
+ {id:"b198", es:"llorar", nl:"huilen", tag:"boek-3"},
+ {id:"b199", es:"el corazón", nl:"het hart", tag:"boek-3"},
+ {id:"b200", es:"el ritmo", nl:"het ritme", tag:"boek-3"},
+ {id:"b201", es:"el humo", nl:"de rook", tag:"boek-3"},
+ {id:"b202", es:"la calle", nl:"de straat", tag:"boek-4"},
+ {id:"b203", es:"vacío / vacía", nl:"leeg", tag:"boek-4"},
+ {id:"b204", es:"reír", nl:"lachen", tag:"boek-4"},
+ {id:"b205", es:"recordar", nl:"zich herinneren", tag:"boek-4"},
+ {id:"b206", es:"de vuelta", nl:"terug", tag:"boek-4"},
+ {id:"b207", es:"la hoja", nl:"het blad", tag:"boek-5"},
+ {id:"b208", es:"correr", nl:"rennen", tag:"boek-5"},
+ {id:"b209", es:"la cola", nl:"de staart", tag:"boek-5"},
+ {id:"b210", es:"respirar", nl:"ademen", tag:"boek-5"},
+ {id:"b211", es:"fuerte", nl:"sterk", tag:"boek-5"},
+ {id:"b212", es:"el acordeón", nl:"de accordeon", tag:"boek-6"},
+ {id:"b213", es:"el banco", nl:"de bank (zitbank)", tag:"boek-6"},
+ {id:"b214", es:"temblar", nl:"trillen", tag:"boek-6"},
+ {id:"b215", es:"las lágrimas", nl:"de tranen", tag:"boek-6"},
+ {id:"b216", es:"suficiente", nl:"genoeg", tag:"boek-6"},
+ {id:"b217", es:"la niebla", nl:"de mist", tag:"boek-7"},
+ {id:"b218", es:"la esquina", nl:"de hoek (van een straat)", tag:"boek-7"},
+ {id:"b219", es:"el rincón", nl:"het hoekje", tag:"boek-7"},
+ {id:"b220", es:"asustado / asustada", nl:"bang", tag:"boek-7"},
+ {id:"b221", es:"faltar", nl:"ontbreken", tag:"boek-7"},
+ {id:"b222", es:"el árbol", nl:"de boom", tag:"boek-8"},
+ {id:"b223", es:"apenas", nl:"nauwelijks", tag:"boek-8"},
+ {id:"b224", es:"el silencio", nl:"de stilte", tag:"boek-8"},
+ {id:"b225", es:"el molino", nl:"de molen", tag:"boek-8"},
+ {id:"b226", es:"confundido / confundida", nl:"verward", tag:"boek-8"},
+ {id:"b227", es:"el gigante", nl:"de reus", tag:"boek-9"},
+ {id:"b228", es:"merecer", nl:"verdienen", tag:"boek-9"},
+ {id:"b229", es:"tonto / tonta", nl:"dwaas", tag:"boek-9"},
+ {id:"b230", es:"rendirse", nl:"opgeven", tag:"boek-9"},
+ {id:"b231", es:"asentir", nl:"knikken", tag:"boek-9"},
+ {id:"b232", es:"el tejón", nl:"de das (dier)", tag:"boek-10"},
+ {id:"b233", es:"la astucia", nl:"de sluwheid", tag:"boek-10"},
+ {id:"b234", es:"compartir", nl:"delen", tag:"boek-10"},
+ {id:"b235", es:"el truco", nl:"de truc", tag:"boek-10"},
+ {id:"b236", es:"travieso / traviesa", nl:"ondeugend", tag:"boek-10"},
+ {id:"b237", es:"el fuego", nl:"het vuur", tag:"boek-11"},
+ {id:"b238", es:"destruir", nl:"vernietigen", tag:"boek-11"},
+ {id:"b239", es:"espeso / espesa", nl:"dik (van mist, vloeistof)", tag:"boek-11"},
+ {id:"b240", es:"antiguo / antigua", nl:"oud, oeroud", tag:"boek-11"},
+ {id:"b241", es:"el miedo", nl:"de angst", tag:"boek-11"},
+ {id:"b242", es:"apagado / apagada", nl:"uitgedoofd, gedimd", tag:"boek-12"},
+ {id:"b243", es:"el hermano", nl:"de broer", tag:"boek-12"},
+ {id:"b244", es:"demasiado tarde", nl:"te laat", tag:"boek-12"},
+ {id:"b245", es:"crecer", nl:"groeien", tag:"boek-12"},
+ {id:"b246", es:"dorado / dorada", nl:"goudkleurig", tag:"boek-12"},
+ {id:"b247", es:"la estación", nl:"het seizoen", tag:"boek-13"},
+ {id:"b248", es:"brillante", nl:"stralend", tag:"boek-13"},
+ {id:"b249", es:"terminar", nl:"eindigen", tag:"boek-13"},
+ {id:"b250", es:"aprender", nl:"leren", tag:"boek-13"},
+ {id:"b251", es:"el recuerdo", nl:"de herinnering", tag:"boek-13"}
 ];
 
 var B_SENTENCES = [
@@ -2628,6 +2769,325 @@ TRACKS.beginner.lessons = [
   spiek:[20,21], words:rng("b",169,186), sents:rng("bs",63,69), quizzes:["bq-saberpoder","bq-perfecto"]}
 ];
 
+/* ================= CHISPA-BOEK: "Las Crónicas de Chispa" (v19.23) =================
+   Eén doorlopend verhaal, los van de lessen-tracks maar wel gekoppeld aan lesvoortgang
+   voor het ontgrendelen (drempel = benodigd aantal voltooide lessen in het EIGEN track,
+   zie boekOntgrendeld()). Woordenschat per hoofdstuk staat als losse WORDS/B_WORDS-entries
+   (tag "boek-N"), niet in dit object zelf — zie boekWoorden(). Begripsvragen zijn multiple
+   choice (opts/c, zelfde patroon als QUIZZES) zodat ze meetellen voor tapas/XP; de
+   reflectievraag is open en wordt NIET gescoord. */
+var BOOK = [
+ {id:"boek-1", num:1, deel:"La Costa", titel:"El huevo que no sabía", drempel:0,
+  tekst:"En la playa de La Costa, entre las piedras y el agua azul, hay un huevo pequeño y redondo.\n\n"+
+   "El huevo no sabe quién es. No tiene nombre. No tiene canción.\n\n"+
+   "Un día, el huevo se abre. Poco a poco, sale una criatura pequeña, con ojos grandes y curiosos. Es Chispa.\n\n"+
+   "—¿Quién soy?— pregunta Chispa.\n\n"+
+   "Un cangrejo viejo camina cerca. Se llama Cangrejo Rojo, y conoce la playa desde hace muchos años.\n\n"+
+   "—No sé quién eres —dice el cangrejo—. Pero sé que ya eres especial, aunque todavía no lo sabes.\n\n"+
+   "—¿Cómo puedo ser especial si no sé nada?— pregunta Chispa.\n\n"+
+   "—El mar tampoco sabe qué forma tiene una ola, hasta que la ola llega —dice el cangrejo—. Tú también vas a llegar, poco a poco.\n\n"+
+   "Chispa mira el mar. Es grande, azul, y hace un sonido suave: shhh... shhh...\n\n"+
+   "—¿Ese sonido es una canción?— pregunta Chispa.\n\n"+
+   "—Sí —dice el cangrejo—. El mar tiene su canción. Las estrellas tienen su canción. Y tú también vas a tener la tuya.\n\n"+
+   "—¿Y cuál es mi canción?— pregunta Chispa.\n\n"+
+   "El cangrejo sonríe (una sonrisa de cangrejo, un poco torcida).\n\n"+
+   "—Eso, pequeño Chispa, lo vas a descubrir tú mismo. Poco a poco. Paso a paso.\n\n"+
+   "Chispa se queda en la playa, mirando el mar, escuchando el viento.\n\n"+
+   "Por la noche, cuando todo está oscuro y tranquilo, el cangrejo mira hacia las montañas lejanas y suspira.\n\n"+
+   "—Hace mucho tiempo —dice, en voz baja, casi para sí mismo—, había muchas canciones en esta playa. Ahora, algunas ya no se oyen. Se olvidan, poco a poco, como se olvida un sueño por la mañana.\n\n"+
+   "Chispa no entiende bien qué significa eso. Pero algo, dentro de él, se queda pensando.",
+  vragen:[
+   {q:"¿Dónde está el huevo al principio de la historia?", opts:["En la playa de La Costa","En el bosque","En una casa"], c:0},
+   {q:"¿Quién habla con Chispa cuando sale del huevo?", opts:["Una gaviota","Un cangrejo","Una tortuga"], c:1},
+   {q:"Según Chispa, ¿qué es el sonido \"shhh... shhh...\"?", opts:["El viento","Una canción del mar","Un animal"], c:1},
+   {q:"Al final, ¿qué dice el cangrejo sobre las canciones de la playa?", opts:["Que nunca cambian","Que algunas se olvidan poco a poco","Que solo él las conoce"], c:1}
+  ],
+  reflectie:"¿Tú tienes una \"canción\" propia? ¿Cómo es?"},
+
+ {id:"boek-2", num:2, deel:"La Costa", titel:"La gaviota que dejó de cantar", drempel:0,
+  tekst:"Chispa camina por la playa. El sol está alto y el viento huele a sal.\n\n"+
+   "Arriba, en el cielo, hay muchas gaviotas. Vuelan, juegan, y cantan: —¡Ha, ha, ha!\n\n"+
+   "Pero una gaviota pequeña está sola, sentada en una piedra. No vuela. No canta.\n\n"+
+   "—Hola —dice Chispa—. ¿Por qué no cantas con las otras?\n\n"+
+   "La gaviota mira al suelo.\n\n"+
+   "—Yo también cantaba —dice—. Pero un día, oí la canción de las ballenas. Es enorme, profunda, hermosa. Mi canción es... pequeña. Y un poco rara.\n\n"+
+   "—¿Y por eso no cantas?— pregunta Chispa.\n\n"+
+   "—¿Para qué cantar, si mi canción no es tan bonita como la de las ballenas?— dice la gaviota, muy triste.\n\n"+
+   "Chispa piensa en las palabras del cangrejo: \"El mar tiene su canción. Las estrellas tienen su canción. Y tú también vas a tener la tuya.\"\n\n"+
+   "—Tu canción no tiene que ser como la de las ballenas —dice Chispa—. Tiene que ser tuya.\n\n"+
+   "La gaviota mira a Chispa. Despacio, abre el pico. Al principio, solo sale un sonido pequeño y torpe: —Pí... pío...\n\n"+
+   "Pero después, canta un poco más. Y un poco más.\n\n"+
+   "Y algo extraño pasa: cerca de ellos, una nube gris y fría, pegada a las rocas, se hace más fina. Casi transparente.\n\n"+
+   "—¿Qué es esa nube?— pregunta Chispa, un poco nervioso.\n\n"+
+   "—No lo sé —dice la gaviota—. Pero cuando canto, parece que se va.\n\n"+
+   "Chispa siente algo nuevo dentro de él: dos notas pequeñas, como el principio de una canción. Su canción.\n\n"+
+   "—Me llamo Pluma —dice la gaviota, sonriendo por primera vez.\n\n"+
+   "Esa tarde, mientras el sol se esconde detrás del mar, Chispa oye, muy lejos, un sonido diferente. No es el viento. No es el mar.\n\n"+
+   "Es una voz. Y suena triste.",
+  vragen:[
+   {q:"¿Qué animal está triste y no canta?", opts:["Un pez","Una gaviota","Una ballena"], c:1},
+   {q:"¿Por qué dejó de cantar la gaviota?", opts:["Pensaba que su canción era muy pequeña comparada con la de las ballenas","No sabía cantar","Estaba enferma"], c:0},
+   {q:"¿Qué le dice Chispa sobre su canción?", opts:["Que debe cantar como las ballenas","Que su canción no tiene que ser como la de las ballenas, tiene que ser suya","Que mejor no cante nunca"], c:1},
+   {q:"¿Qué le pasa a la nube gris cuando la gaviota canta?", opts:["Se hace más grande","Se hace más fina, casi transparente","No pasa nada"], c:1},
+   {q:"¿Qué oye Chispa al final del capítulo?", opts:["El viento","Una voz triste, muy lejos","El mar"], c:1}
+  ],
+  reflectie:"¿Alguna vez no hiciste algo porque pensabas que otra persona lo hacía mejor? ¿Qué pasó?"},
+
+ {id:"boek-3", num:3, deel:"La Costa", titel:"La voz en las rocas", drempel:0,
+  tekst:"Chispa y Pluma caminan hacia las rocas, buscando la voz triste.\n\n"+
+   "Detrás de una roca grande, encuentran a una tortuga pequeña. Está boca abajo, y no puede moverse bien.\n\n"+
+   "—¿Estás bien?— pregunta Chispa.\n\n"+
+   "—No sé dónde está mi casa —dice la tortuga, casi llorando—. Y no sé... no sé cómo me llamo. Lo olvidé.\n\n"+
+   "Pluma mira a Chispa, preocupada. Nunca oyeron algo así: una criatura que olvidó su propio nombre.\n\n"+
+   "—¿Cómo puedes olvidar tu nombre?— pregunta Chispa.\n\n"+
+   "—Estaba sola, mucho tiempo —dice la tortuga—. Y cuando estás sola mucho tiempo, algunas cosas... se van.\n\n"+
+   "Chispa ayuda a la tortuga a ponerse derecha. Con cuidado, escucha su corazón: pum... pum... pum...\n\n"+
+   "—Escucha esto —dice Chispa—. Tu corazón tiene un ritmo. Como una canción pequeñita, debajo de todo.\n\n"+
+   "La tortuga escucha su propio corazón por primera vez. Pum... pum... pum...\n\n"+
+   "—Es... bonito —dice, sorprendida.\n\n"+
+   "—Tal vez tu nombre no está perdido —dice Pluma—. Tal vez solo está debajo, como tu corazón. Esperando.\n\n"+
+   "La tortuga cierra los ojos. Piensa. Piensa mucho.\n\n"+
+   "—Marea —dice, despacio—. Creo que... me llamo Marea.\n\n"+
+   "En ese momento, una nube gris grande, la más grande que Chispa vio hasta ahora, se levanta de las rocas y se va, como humo en el viento.\n\n"+
+   "Chispa siente una nota más en su canción. Ahora son tres.\n\n"+
+   "—Gracias —dice Marea—. Ahora sé quién soy. Un poco.\n\n"+
+   "Los tres miran hacia las montañas, donde empieza un camino largo, hacia un pueblo pequeño con luces amarillas.\n\n"+
+   "—Vamos a caminar juntos —dice Chispa—. Todavía hay canciones que encontrar.",
+  vragen:[
+   {q:"¿Qué animal encuentran detrás de la roca?", opts:["Una tortuga","Un pez","Un cangrejo"], c:0},
+   {q:"¿Qué problema tiene la tortuga?", opts:["No puede nadar","Olvidó su propio nombre","Tiene hambre"], c:1},
+   {q:"¿Qué escucha Chispa en el cuerpo de la tortuga?", opts:["Su respiración","El ritmo de su corazón","Nada"], c:1},
+   {q:"¿Cómo se llama la tortuga al final?", opts:["Marea","Pluma","Sol"], c:0},
+   {q:"¿Adónde deciden ir los tres al final del capítulo?", opts:["De vuelta al mar","Hacia un pueblo, en las montañas","A dormir"], c:1}
+  ],
+  reflectie:"¿Conoces a alguien que estuvo solo mucho tiempo? ¿Cómo lo ayudaste, o cómo lo puedes ayudar?"},
+
+ {id:"boek-4", num:4, deel:"El Pueblo", titel:"Las luces amarillas", drempel:3,
+  tekst:"El camino a El Pueblo es largo. Chispa, Pluma y Marea caminan durante todo el día.\n\n"+
+   "Cuando llegan, ya es de noche. El Pueblo tiene calles pequeñas, casas de piedra, y muchas luces amarillas en las ventanas.\n\n"+
+   "Pero algo no está bien. Las calles están vacías. Nadie habla. Nadie ríe.\n\n"+
+   "—Antes, este pueblo tenía música por todas partes —dice una voz.\n\n"+
+   "Es un perro viejo, sentado en la puerta de una casa. Tiene los ojos tristes.\n\n"+
+   "—¿Quién eres?— pregunta Chispa.\n\n"+
+   "—No sé —dice el perro—. Mi persona se fue hace mucho tiempo. Ella siempre decía mi nombre. Ahora... nadie lo dice. Y yo ya no lo recuerdo.\n\n"+
+   "Chispa mira a Pluma y a Marea. Los tres piensan lo mismo: otra canción perdida.\n\n"+
+   "—¿Podemos ayudarte?— pregunta Chispa.\n\n"+
+   "El perro levanta la cabeza, un poco.\n\n"+
+   "—Nadie puede darme mi nombre de vuelta —dice—. Solo ella podía.\n\n"+
+   "Marea da un paso adelante. Ella también olvidó su nombre, una vez.\n\n"+
+   "—Eso no es verdad —dice Marea—. Yo también pensaba eso. Pero el nombre no viene de otra persona. Viene de ti.\n\n"+
+   "El perro mira a Marea, sorprendido. Nadie le dijo eso antes.\n\n"+
+   "Chispa se sienta cerca del perro, en silencio, esperando.",
+  vragen:[
+   {q:"¿Cómo están las calles de El Pueblo cuando llegan?", opts:["Llenas de gente","Vacías y en silencio","Llenas de música"], c:1},
+   {q:"¿Quién está sentado en la puerta de una casa?", opts:["Un perro viejo","Un gato","Una gaviota"], c:0},
+   {q:"¿Por qué el perro olvidó su nombre?", opts:["Porque nunca tuvo nombre","Porque su persona se fue y ya nadie lo dice","Porque es muy joven"], c:1},
+   {q:"¿Qué le dice Marea al perro?", opts:["Que su nombre no viene de otra persona, viene de él","Que necesita otra persona para tener nombre","Que no importa el nombre"], c:0}
+  ],
+  reflectie:"¿De dónde crees que viene tu propio nombre, o quién eres? ¿De otras personas, de ti mismo, o de las dos cosas?"},
+
+ {id:"boek-5", num:5, deel:"El Pueblo", titel:"El perro que se llamaba a sí mismo", drempel:3,
+  tekst:"Pasan la noche cerca del perro. Por la mañana, el sol entra por las calles vacías de El Pueblo.\n\n"+
+   "—¿Cómo puedo encontrar mi nombre yo solo?— pregunta el perro.\n\n"+
+   "—¿Qué te gusta hacer?— pregunta Chispa.\n\n"+
+   "El perro piensa.\n\n"+
+   "—Me gusta el sol. Me gusta correr detrás de las hojas cuando hace viento. Me gusta... dormir en un lugar caliente.\n\n"+
+   "—Eso también eres tú —dice Pluma—. No solo el nombre que decía tu persona.\n\n"+
+   "El perro se levanta, despacio. Corre un poco, detrás de una hoja que pasa con el viento. Por primera vez en mucho tiempo, mueve la cola.\n\n"+
+   "—Me siento... un poco yo mismo otra vez —dice.\n\n"+
+   "Cierra los ojos. Respira.\n\n"+
+   "—Sol —dice—. Creo que mi nombre es Sol. Porque me gusta, y porque yo lo digo.\n\n"+
+   "Chispa sonríe. Siente una nota más en su canción: ahora tiene cuatro.\n\n"+
+   "Sol mira hacia las calles vacías del pueblo.\n\n"+
+   "—Hay más como yo —dice—. Personas y animales que perdieron algo. Los conozco a todos. Puedo llevarlos con ustedes.\n\n"+
+   "—Sí, por favor —dice Marea—. Cuantas más canciones encontremos, más fuertes somos.\n\n"+
+   "Sol camina delante de ellos, con la cola un poco más alta que antes.",
+  vragen:[
+   {q:"¿Qué cosas dice el perro que le gustan?", opts:["El sol, correr detrás de las hojas, dormir en un lugar caliente","Solo dormir","Nada, está muy triste"], c:0},
+   {q:"¿Cómo decide su propio nombre?", opts:["Alguien se lo dice","Él lo elige, algo que le gusta y que él mismo dice","Lo busca en un libro"], c:1},
+   {q:"¿Qué nombre elige el perro?", opts:["Sol","Fuego","Viento"], c:0},
+   {q:"¿Qué ofrece hacer Sol al final del capítulo?", opts:["Quedarse solo","Llevarlos a conocer a otros que perdieron algo","Volver a La Costa"], c:1}
+  ],
+  reflectie:"¿Qué cosas simples te gustan, que también dicen algo sobre quién eres?"},
+
+ {id:"boek-6", num:6, deel:"El Pueblo", titel:"La abuela que dejó de tocar", drempel:3,
+  tekst:"Sol los lleva a la plaza del pueblo. Allí, sentada sola en un banco, hay una mujer mayor con un acordeón viejo en las piernas.\n\n"+
+   "—Se llama Doña Inés —dice Sol—. Antes tocaba música todos los días. Toda la plaza bailaba.\n\n"+
+   "—¿Por qué dejó de tocar?— pregunta Chispa.\n\n"+
+   "—Un día, empezó a tocar, y nadie la escuchó —dice Sol—. Todos caminaban rápido, mirando otras cosas. Desde entonces, no toca más.\n\n"+
+   "Chispa se acerca a Doña Inés.\n\n"+
+   "—¿Puede tocar algo para mí?— pregunta.\n\n"+
+   "Doña Inés lo mira, sorprendida.\n\n"+
+   "—¿Para ti? ¿Solo para ti?\n\n"+
+   "—Sí —dice Chispa—. Yo quiero escuchar.\n\n"+
+   "Doña Inés mira el acordeón. Sus manos, viejas y un poco temblorosas, tocan las primeras notas. Es una música lenta, un poco triste, muy bonita.\n\n"+
+   "Chispa, Pluma, Marea y Sol escuchan en silencio, sin moverse.\n\n"+
+   "Cuando termina, hay lágrimas en los ojos de Doña Inés.\n\n"+
+   "—Nadie escuchó así, en mucho tiempo —dice.\n\n"+
+   "—No hace falta un pueblo entero para escuchar una canción —dice Chispa—. A veces, con una persona es suficiente.\n\n"+
+   "Doña Inés toca otra vez, más fuerte ahora. Y en las casas de alrededor, empiezan a abrirse las ventanas, una por una.\n\n"+
+   "Una nube gris grande sale de la plaza, despacio, y desaparece entre las nubes normales del cielo.\n\n"+
+   "Chispa siente su canción crecer: cinco notas ahora, y también una melodía pequeña.",
+  vragen:[
+   {q:"¿Quién es Doña Inés?", opts:["Una mujer mayor que tocaba el acordeón","La madre de Sol","Una gaviota"], c:0},
+   {q:"¿Por qué dejó de tocar música?", opts:["Se rompió el acordeón","Un día nadie la escuchó","Ya no le gustaba la música"], c:1},
+   {q:"¿Qué le pide Chispa a Doña Inés?", opts:["Que le enseñe a tocar","Que toque algo solo para él","Que deje de tocar"], c:1},
+   {q:"¿Qué pasa con las ventanas del pueblo cuando ella toca más fuerte?", opts:["Se cierran","Se abren, una por una","No pasa nada"], c:1}
+  ],
+  reflectie:"¿Alguna vez dejaste de hacer algo porque nadie parecía notarlo? ¿Qué te ayudaría a empezar de nuevo?"},
+
+ {id:"boek-7", num:7, deel:"El Pueblo", titel:"La plaza llena de canciones", drempel:3,
+  tekst:"Esa tarde, toda la plaza de El Pueblo está llena de gente y animales. Doña Inés toca el acordeón. Sol corre entre las piernas de la gente, feliz. Marea canta con su ritmo lento, pum-pum-pum. Pluma vuela en círculos, cantando su canción pequeña y un poco rara.\n\n"+
+   "Chispa está en el centro, escuchando todo junto.\n\n"+
+   "Entonces, algo cambia. La niebla gris, que estaba en las esquinas de la plaza, en los rincones oscuros, empieza a moverse. No se va del todo. Pero se hace más fina, más transparente, en todas partes al mismo tiempo.\n\n"+
+   "—Nunca vi tanta niebla junta —dice Chispa, un poco asustado—. ¿De dónde viene todo esto?\n\n"+
+   "Cangrejo Rojo, que los siguió desde La Costa caminando muy despacio, llega justo a tiempo.\n\n"+
+   "—Viene de lejos —dice el cangrejo—. De un lugar donde las canciones más viejas del mundo se olvidaron primero. Un castillo, en medio de un bosque oscuro.\n\n"+
+   "—¿Tenemos que ir allí?— pregunta Marea.\n\n"+
+   "—Todavía no —dice el cangrejo—. Primero, el bosque. Ahí viven criaturas que pueden enseñarte algo que todavía no sabes.\n\n"+
+   "Chispa mira su pequeño grupo: Pluma, Marea, Sol, Doña Inés tocando en la plaza detrás de ellos.\n\n"+
+   "—¿Qué me falta saber?— pregunta Chispa.\n\n"+
+   "—Eso —dice el cangrejo, con su sonrisa torcida— lo vas a descubrir en el bosque.",
+  vragen:[
+   {q:"¿Quién está tocando música en la plaza?", opts:["Sol","Doña Inés","Pluma"], c:1},
+   {q:"¿Qué le pasa a la niebla cuando todos cantan juntos?", opts:["Desaparece del todo","Se hace más fina en todas partes","Se hace más grande"], c:1},
+   {q:"¿Quién llega a la plaza, caminando desde La Costa?", opts:["Cangrejo Rojo","Un pez","Nadie nuevo"], c:0},
+   {q:"¿Adónde dice el cangrejo que tienen que ir después?", opts:["De vuelta a casa","Al bosque, donde viven criaturas que les pueden enseñar algo","A dormir en la plaza"], c:1}
+  ],
+  reflectie:"¿Qué crees que le falta saber a Chispa todavía?"},
+
+ {id:"boek-8", num:8, deel:"El Bosque", titel:"La entrada del bosque", drempel:6,
+  tekst:"El bosque es diferente a todo lo que Chispa conoció antes. Los árboles son altos y viejos, y la luz del sol apenas entra entre las hojas.\n\n"+
+   "Aquí, por primera vez, Chispa canta su canción en voz alta. No son solo notas dentro de él: ahora es una melodía pequeña, con cinco notas y un ritmo lento, pum-pum-pum, como el corazón de Marea.\n\n"+
+   "—Suena bien —dice Pluma—. Suena a ti.\n\n"+
+   "Caminan entre los árboles durante horas. El bosque está en silencio, un silencio diferente al de El Pueblo: no triste, sino... expectante. Como si algo, o alguien, estuviera observando.\n\n"+
+   "De repente, oyen un ruido: metal contra metal, y una voz que grita.\n\n"+
+   "—¡Atrás, monstruo! ¡No vas a pasar!\n\n"+
+   "Entre los árboles, ven a una criatura extraña: un búho grande, con un casco de metal viejo y torcido en la cabeza, y una rama larga como espada. Está luchando contra... un molino de viento, abandonado y cubierto de plantas.\n\n"+
+   "—¿Está luchando contra un molino?— pregunta Sol, confundido.\n\n"+
+   "—Para él, no es un molino —dice Marea, en voz baja—. Para él, es algo mucho más grande.",
+  vragen:[
+   {q:"¿Cómo es el bosque, comparado con La Costa y El Pueblo?", opts:["Más alegre y con más luz","Más oscuro, con árboles altos y viejos","Igual que El Pueblo"], c:1},
+   {q:"¿Qué hace Chispa por primera vez en el bosque?", opts:["Canta su canción en voz alta","Aprende a volar","Se pierde"], c:0},
+   {q:"¿Contra qué está luchando el búho?", opts:["Contra un monstruo real","Contra un molino de viento abandonado","Contra otro pájaro"], c:1},
+   {q:"¿Qué dice Marea sobre lo que ve el búho?", opts:["Que está loco","Que para él, no es un molino, es algo mucho más grande","Que tiene razón, es un monstruo"], c:1}
+  ],
+  reflectie:"¿Alguna vez creíste en algo con mucha fuerza, aunque otras personas pensaban que no era real o importante?"},
+
+ {id:"boek-9", num:9, deel:"El Bosque", titel:"Don Búho y los gigantes", drempel:6,
+  tekst:"El búho para de luchar cuando ve al grupo acercarse. Los mira con sus ojos grandes y serios.\n\n"+
+   "—Me llamo Don Búho —dice—. Guardián de este bosque contra los gigantes.\n\n"+
+   "—Eso no es un gigante —dice Sol, con cuidado—. Es un molino viejo.\n\n"+
+   "Don Búho se queda en silencio un momento.\n\n"+
+   "—Lo sé —dice, finalmente—. Sé que es un molino. Pero hace muchos años, decidí que algo en este bosque merecía ser protegido. Y ya no puedo parar. Si paro, ¿qué queda de mí?\n\n"+
+   "Chispa se sienta cerca de él.\n\n"+
+   "—¿Por qué empezaste?— pregunta.\n\n"+
+   "—Porque alguien tiene que creer en algo, en un mundo donde tantas cosas se olvidan —dice Don Búho—. Aunque los demás piensen que soy tonto. Aunque luche contra molinos y no contra monstruos de verdad.\n\n"+
+   "Pluma piensa en su propia canción, la que casi no cantó porque le pareció pequeña y rara.\n\n"+
+   "—Tal vez no importa si el molino es real —dice Pluma—. Importa que tú sigues intentando. Eso también es una canción.\n\n"+
+   "Don Búho la mira, sorprendido. Se quita el casco viejo, despacio.\n\n"+
+   "—Nadie me dijo eso antes —dice—. Solo \"deja de pelear con la nada\".\n\n"+
+   "—No es la nada —dice Chispa—. Es tu manera de no rendirte.\n\n"+
+   "Don Búho asiente, lentamente. Por primera vez, no parece cansado, sino en paz.\n\n"+
+   "—Vengan —dice—. Los voy a llevar a ver a alguien más. Alguien que sobrevive de una manera muy diferente a la mía.",
+  vragen:[
+   {q:"¿Cómo se llama el búho?", opts:["Don Búho","Cangrejo Rojo","Rufo"], c:0},
+   {q:"¿Contra qué cree que lucha, aunque sabe que en realidad es un molino?", opts:["Contra gigantes","Contra otros búhos","Contra el tiempo"], c:0},
+   {q:"¿Por qué sigue luchando, aunque sabe la verdad?", opts:["Porque alguien tiene que creer en algo, en un mundo donde tantas cosas se olvidan","Porque le pagan por hacerlo","Porque no tiene otra cosa que hacer"], c:0},
+   {q:"¿Qué le dice Pluma sobre su lucha?", opts:["Que debe parar inmediatamente","Que no importa si el molino es real, importa que él sigue intentando, eso también es una canción","Que está perdiendo el tiempo"], c:1}
+  ],
+  reflectie:"¿Crees que Don Búho es tonto, valiente, o las dos cosas a la vez? ¿Por qué?"},
+
+ {id:"boek-10", num:10, deel:"El Bosque", titel:"Rufo, el zorro listo", drempel:6,
+  tekst:"Don Búho los lleva a una parte del bosque donde los árboles son más bajos y hay poca comida. Allí vive un zorro joven y flaco, llamado Rufo.\n\n"+
+   "—Bienvenidos a mi humilde reino —dice Rufo, haciendo una reverencia exagerada—. No hay mucho, pero lo que hay, es mío. O casi mío.\n\n"+
+   "—¿Casi?— pregunta Chispa.\n\n"+
+   "—Trabajo para un tejón viejo —dice Rufo—. Él tiene la comida, la casa, todo. Yo consigo lo que necesito... con un poco de astucia.\n\n"+
+   "—¿Eso está bien?— pregunta Marea, con cuidado.\n\n"+
+   "Rufo se ríe, sin ofenderse.\n\n"+
+   "—El mundo no siempre es justo, pequeña tortuga. El tejón tiene más de lo que necesita, y no comparte. Entonces yo tomo un poco, sin que se dé cuenta. Nadie sale herido. Y yo puedo comer.\n\n"+
+   "Don Búho mueve la cabeza, un poco incómodo.\n\n"+
+   "—Yo lucho contra molinos por un ideal —dice—. Él sobrevive con trucos. Somos muy diferentes.\n\n"+
+   "—Pero los dos seguimos aquí —dice Rufo, sonriendo—. Tú con tu casco torcido, yo con mis trucos. Eso también cuenta.\n\n"+
+   "Chispa piensa en esto. Su canción, la de Pluma, la de Marea, la de Sol: todas son diferentes. Ninguna es la única manera correcta.\n\n"+
+   "—¿Tú también tienes una canción?— pregunta Chispa.\n\n"+
+   "Rufo lo mira, sorprendido por la pregunta.\n\n"+
+   "—Nadie me preguntó eso antes —dice—. Creo que sí. Es rápida, un poco traviesa, y se ríe de sí misma cuando algo sale mal.\n\n"+
+   "Rufo tararea algo rápido y juguetón. Chispa siente una nota nueva en su propia canción: alegre, un poco pícara.",
+  vragen:[
+   {q:"¿Para quién trabaja Rufo?", opts:["Para un tejón viejo","Para Don Búho","Para nadie"], c:0},
+   {q:"¿Cómo consigue comida Rufo?", opts:["Con astucia, sin que su jefe se dé cuenta","Cazando él mismo","No come nunca"], c:0},
+   {q:"¿Qué piensa Don Búho de la manera de vivir de Rufo?", opts:["Le parece perfecta","Le parece muy diferente a la suya, un poco incómodo","No dice nada"], c:1},
+   {q:"¿Cómo describe Rufo su propia canción?", opts:["Rápida, un poco traviesa, que se ríe de sí misma","Lenta y triste","No tiene canción"], c:0}
+  ],
+  reflectie:"Don Búho cree en un ideal, aunque parezca tonto. Rufo sobrevive con astucia, aunque no siempre sea 'correcto'. ¿Con cuál de los dos te identificas más, y por qué?"},
+
+ {id:"boek-11", num:11, deel:"El Bosque", titel:"El corazón del bosque", drempel:6,
+  tekst:"Esa noche, todos se sientan juntos alrededor de un pequeño fuego: Chispa, Pluma, Marea, Sol, Don Búho y Rufo.\n\n"+
+   "—Cangrejo Rojo dijo que hay algo que todavía no sé —dice Chispa—. ¿Alguno de ustedes lo sabe?\n\n"+
+   "Don Búho mira las estrellas entre las ramas de los árboles.\n\n"+
+   "—La niebla no es un monstruo —dice, despacio—. No viene a destruir. Viene cuando una canción se queda demasiado tiempo sin ser escuchada. Cuando algo, o alguien, está solo, mucho tiempo.\n\n"+
+   "—Como yo, en las rocas —dice Marea.\n\n"+
+   "—Como yo, en la plaza vacía —dice Sol.\n\n"+
+   "—Entonces, ¿cómo la paramos?— pregunta Chispa.\n\n"+
+   "—No creo que se pueda \"parar\" del todo —dice Rufo, sin su humor de siempre—. Olvidar es parte de la vida. Hasta las canciones más bonitas, a veces, se hacen silencio.\n\n"+
+   "—Pero se puede recordar más rápido de lo que se olvida —dice Pluma—. Si estamos juntos.\n\n"+
+   "Chispa se queda en silencio, escuchando el fuego, escuchando su propia canción: ahora tiene muchas notas, un ritmo, una melodía, y algo alegre al final.\n\n"+
+   "—Todavía falta una parte —dice Chispa—. La más antigua. La que empezó todo esto.\n\n"+
+   "Don Búho asiente.\n\n"+
+   "—En el castillo, en el centro del bosque —dice—. Ahí está la canción más vieja del mundo. Y ahí está la niebla más espesa.\n\n"+
+   "—Vamos todos juntos —dice Sol.\n\n"+
+   "—Vamos todos juntos —repite Chispa, y por primera vez, no tiene miedo.",
+  vragen:[
+   {q:"¿Qué dice Don Búho que es realmente la niebla?", opts:["Un monstruo que quiere destruir todo","Algo que viene cuando una canción se queda mucho tiempo sin ser escuchada","Un tipo de lluvia"], c:1},
+   {q:"Según Rufo, ¿se puede parar el olvido por completo?", opts:["Sí, fácilmente","No, olvidar es parte de la vida","No lo sabe"], c:1},
+   {q:"¿Qué dice Pluma que sí es posible?", opts:["Recordar más rápido de lo que se olvida, si están juntos","Olvidar para siempre","Nada, ya es demasiado tarde"], c:0},
+   {q:"¿Qué falta todavía en la canción de Chispa?", opts:["Nada, ya está completa","La parte más antigua, la que empezó todo","Un nombre"], c:1}
+  ],
+  reflectie:"Rufo dice que olvidar es parte de la vida. ¿Estás de acuerdo? ¿Por qué sí o por qué no?"},
+
+ {id:"boek-12", num:12, deel:"El Castillo", titel:"La canción más vieja del mundo", drempel:10,
+  tekst:"El castillo está en el centro del bosque, viejo y cubierto de plantas. La niebla aquí es tan espesa que apenas se puede ver.\n\n"+
+   "Chispa entra primero, seguido de todos los demás: Pluma, Marea, Sol, Don Búho, Rufo, y Cangrejo Rojo, que los alcanzó justo a tiempo, caminando muy despacio pero sin parar nunca.\n\n"+
+   "En el centro del castillo, en una sala grande y silenciosa, hay una luz pequeña, casi apagada. Es una canción, la más vieja del mundo, casi olvidada por completo.\n\n"+
+   "Cangrejo Rojo se acerca, despacio. Sus ojos, normalmente tranquilos, ahora tienen lágrimas.\n\n"+
+   "—Esta canción... la conozco —dice—. Era de mi hermano. Hace muchos años, él se quedó aquí, en el bosque, y yo nunca volví a buscarlo. Pensé... pensé que ya era demasiado tarde.\n\n"+
+   "Chispa se acerca a Cangrejo Rojo.\n\n"+
+   "—Nunca es demasiado tarde para escuchar —dice Chispa, con las mismas palabras que Cangrejo Rojo le dijo a él, en la playa, el primer día.\n\n"+
+   "Todos se acercan a la luz pequeña. Chispa empieza a cantar su propia canción: las notas de Pluma, el ritmo de Marea, el nombre de Sol, la melodía de Doña Inés, la valentía torcida de Don Búho, la risa lista de Rufo.\n\n"+
+   "Uno por uno, los demás cantan también, cada uno con su propia voz, su propio ritmo, su propia manera.\n\n"+
+   "La luz pequeña, casi apagada, empieza a crecer. No explota, no hace ruido fuerte. Simplemente... se hace un poco más brillante. Un poco más viva.\n\n"+
+   "La niebla del castillo no desaparece del todo. Pero se hace fina, transparente, como una nube normal en un día de sol.\n\n"+
+   "Chispa siente que su propia canción, por fin, está completa.\n\n"+
+   "Y entonces, algo cambia en él: crece, brilla, y por un momento, parece que tiene alas hechas de luz dorada.",
+  vragen:[
+   {q:"¿De quién era la canción más vieja del mundo?", opts:["Del hermano de Cangrejo Rojo","De Don Búho","De nadie, siempre estuvo sola"], c:0},
+   {q:"¿Qué le pasó al hermano de Cangrejo Rojo?", opts:["Se fue a otro país","Se quedó en el bosque hace muchos años, y Cangrejo Rojo nunca volvió a buscarlo","Nunca existió"], c:1},
+   {q:"¿Qué hacen todos juntos frente a la luz pequeña?", opts:["Se van corriendo","Cantan, cada uno con su propia voz","Se quedan en silencio"], c:1},
+   {q:"¿Desaparece la niebla completamente al final?", opts:["Sí, del todo","No, pero se hace fina y transparente","No cambia nada"], c:1},
+   {q:"¿Qué le pasa a Chispa al final del capítulo?", opts:["No le pasa nada especial","Crece, brilla, y parece tener alas de luz dorada","Se va a dormir"], c:1}
+  ],
+  reflectie:"Cangrejo Rojo pensó que ya era demasiado tarde para buscar a su hermano. ¿Alguna vez pensaste que algo era \"demasiado tarde\"? ¿Qué pasó?"},
+
+ {id:"boek-13", num:13, deel:"Epílogo", titel:"El huevo nuevo", drempel:10,
+  tekst:"Han pasado muchas estaciones. Chispa, ahora grande y brillante, camina otra vez por la playa de La Costa, donde todo empezó.\n\n"+
+   "Cangrejo Rojo todavía está ahí, un poco más viejo, pero con la misma sonrisa torcida.\n\n"+
+   "—¿Cómo se siente, ser una canción completa?— pregunta el cangrejo.\n\n"+
+   "—No creo que una canción se termine nunca del todo —dice Chispa—. Todavía aprendo notas nuevas.\n\n"+
+   "En ese momento, entre las piedras, ven algo: un huevo pequeño y redondo.\n\n"+
+   "El huevo no sabe quién es. No tiene nombre. No tiene canción.\n\n"+
+   "Chispa se acerca, despacio, y se sienta a su lado, como Cangrejo Rojo hizo una vez con él.\n\n"+
+   "—No sé quién eres —dice Chispa—. Pero sé que ya eres especial, aunque todavía no lo sabes.\n\n"+
+   "El mar hace su sonido de siempre: shhh... shhh...\n\n"+
+   "Y en algún lugar, muy lejos, empieza una nueva canción.",
+  vragen:[
+   {q:"¿Dónde está Chispa al final de la historia?", opts:["En el bosque","Otra vez en la playa de La Costa","En El Pueblo"], c:1},
+   {q:"¿Qué encuentran entre las piedras?", opts:["Un huevo nuevo, pequeño y redondo","Un tesoro","Nada"], c:0},
+   {q:"¿Qué le dice Chispa al nuevo huevo?", opts:["Que se vaya","Casi las mismas palabras que Cangrejo Rojo le dijo a él, al principio","Nada, no le habla"], c:1}
+  ],
+  reflectie:"De todos los personajes del libro (Pluma, Marea, Sol, Doña Inés, Don Búho, Rufo, Cangrejo Rojo), ¿cuál te gustó más, y por qué?"}
+];
+
 /* ================= OPSLAG ================= */
 var store = {
   ok:(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })(),
@@ -2645,7 +3105,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
 function persist(){ store.save(S); scheduleSync(); }
 
@@ -3062,9 +3522,10 @@ function boot(){
   S.wear = S.wear || {};
   S.lessons = S.lessons || {};
   S.quizSrs = S.quizSrs || {};
+  S.boek = S.boek || {};
   S.lesFlow = S.lesFlow || {};
   S.lesFlowSpel = S.lesFlowSpel || {};
-  wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null;
+  wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
   document.getElementById("userName").textContent = p.name;
   document.getElementById("tab-profiel").classList.add("hidden");
@@ -3360,6 +3821,16 @@ function doneLessonCount(){
   return n;
 }
 
+/* ================= CHISPA-BOEK (Lezen) ================= */
+// Toegang is gekoppeld aan voortgang in het EIGEN track (A0 en A2 zijn permanent gescheiden trajecten
+// zonder onderlinge afhankelijkheid), vandaar doneLessonCount() als drempel i.p.v. track-identiteit.
+function boekOntgrendeld(h){ return doneLessonCount() >= h.drempel; }
+function boekWoorden(h){
+  // WORDS is de runtime-pool van het actieve profiel (voor A2 al samengevoegd met B_WORDS als opfris),
+  // dus filteren op tag is hier al track-correct zonder los van TRACKS.* te hoeven lezen.
+  return WORDS.filter(function(w){ return w.tag === h.id; }).map(function(w){ return w.id; });
+}
+
 /* ================= LES-HELPERS ================= */
 var scopeLesson = null, curLesson = null;
 
@@ -3449,6 +3920,10 @@ function allowedWordIds(){
   var ls = tLessons(), out = [];
   for(var i=0;i<ls.length;i++){ if(!ls[i].stub && lessonUnlocked(i)) out = out.concat(ls[i].words); }
   if(!out.length) out = WORDS.map(function(w){ return w.id; });
+  // Uitgelezen Chispa-boek-hoofdstukken: hun woordenlijst gaat automatisch de Woordjes-wachtrij in.
+  BOOK.forEach(function(h){
+    if(S.boek[h.id] && S.boek[h.id].done) out = out.concat(boekWoorden(h));
+  });
   return out;
 }
 function allowedSentIds(){
@@ -4430,6 +4905,7 @@ function checkHusselen(){
 
 /* ================= TOETSJES ================= */
 var qState = null;
+var bState = null;
 
 function renderQuizMenu(){
   var el = document.getElementById("qMenu");
@@ -4544,6 +5020,119 @@ function closeQuiz(){
   document.getElementById("qCard").classList.add("hidden");
   document.getElementById("qMenu").classList.remove("hidden");
   renderQuizMenu();
+}
+
+/* ================= LEZEN (Chispa-boek) ================= */
+function boekEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function renderBoekMenu(){
+  var el = document.getElementById("lezenMenu");
+  var html = "";
+  var huidigDeel = null;
+  BOOK.forEach(function(h){
+    if(h.deel !== huidigDeel){ huidigDeel = h.deel; html += "<p style='margin:14px 0 4px'><b>"+huidigDeel+"</b></p>"; }
+    var ontgrendeld = boekOntgrendeld(h);
+    var klaar = !!(S.boek[h.id] && S.boek[h.id].done);
+    html += "<div class='card'><h2>"+h.num+". "+h.titel+(klaar ? " ✓" : "")+"</h2>"+
+      (ontgrendeld
+        ? "<button class='"+(klaar ? "ghost" : "primary")+"' data-boek='"+h.id+"'>"+(klaar ? ct("Nog eens lezen","Read again") : ct("Lezen","Read"))+"</button>"
+        : "<p class='muted'>"+ct("Ontgrendelt na "+h.drempel+" afgeronde lessen","Unlocks after "+h.drempel+" completed lessons")+" <span class='muted'>· "+doneLessonCount()+"/"+h.drempel+"</span></p>")+
+      "</div>";
+  });
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-boek]").forEach(function(b){
+    b.onclick = function(){ startBoek(b.getAttribute("data-boek")); };
+  });
+}
+
+function startBoek(id){
+  var h = BOOK.filter(function(x){ return x.id===id; })[0];
+  if(!h || !boekOntgrendeld(h)) return;
+  bState = {h:h, fase:"lectura", i:0, score:0, locked:false};
+  document.getElementById("lezenMenu").classList.add("hidden");
+  document.getElementById("lezenCard").classList.remove("hidden");
+  renderBoekLectura();
+}
+
+function renderBoekLectura(){
+  var h = bState.h;
+  var el = document.getElementById("lezenCard");
+  var paras = h.tekst.split("\n\n").map(function(p){ return "<p>"+p+"</p>"; }).join("");
+  el.innerHTML = "<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
+    "<h2>"+h.titel+"</h2>"+paras+
+    "<div class='row'><button class='primary' id='btnBoekVragen'>"+ct("Naar de vragen →","To the questions →")+"</button>"+
+    "<button class='ghost' id='btnBoekMenu'>"+ct("Terug","Back")+"</button></div>";
+  document.getElementById("btnBoekVragen").onclick = function(){ bState.fase = "vragen"; bState.i = 0; bState.score = 0; renderBoekVraag(); };
+  document.getElementById("btnBoekMenu").onclick = closeBoek;
+}
+
+function renderBoekVraag(){
+  var st = bState, h = st.h;
+  var el = document.getElementById("lezenCard");
+  if(st.i >= h.vragen.length){ renderBoekReflectie(); return; }
+  var v = h.vragen[st.i];
+  st.locked = false;
+  var html = "<span class='kicker'>"+h.titel+ct(" · vraag "," · question ")+(st.i+1)+"/"+h.vragen.length+"</span>"+
+    "<div class='progressbar'><div style='width:"+Math.round(100*st.i/h.vragen.length)+"%'></div></div>"+
+    "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>";
+  v.opts.forEach(function(o,idx){ html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>"; });
+  html += "<div id='boekFeedback'></div>";
+  el.innerHTML = html;
+  el.querySelectorAll(".opt").forEach(function(b){
+    b.onclick = function(){ answerBoekVraag(+b.getAttribute("data-i"), b); };
+  });
+}
+
+function answerBoekVraag(idx, btn){
+  var st = bState; if(st.locked) return; st.locked = true;
+  var v = st.h.vragen[st.i];
+  var el = document.getElementById("lezenCard");
+  var opts = el.querySelectorAll(".opt");
+  opts[v.c].classList.add("correct");
+  var goed = idx === v.c;
+  if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); addXP(1); }
+  var fb = document.getElementById("boekFeedback");
+  fb.innerHTML = "<div class='row'><button class='primary' id='btnBoekNext'>"+(st.i+1 < st.h.vragen.length ? ct("Volgende →","Next →") : ct("Verder →","Continue →"))+"</button></div>";
+  document.getElementById("btnBoekNext").onclick = function(){ st.i++; renderBoekVraag(); };
+}
+
+function renderBoekReflectie(){
+  var st = bState, h = st.h;
+  var el = document.getElementById("lezenCard");
+  var prevReflectie = (S.boek[h.id] && S.boek[h.id].reflectie) || "";
+  el.innerHTML = "<span class='kicker'>"+h.titel+"</span>"+
+    "<p class='big'>"+st.score+" / "+h.vragen.length+"</p>"+
+    "<p style='margin:10px 0 6px'><b>"+ct("Reflectie (vrijblijvend, niet nagekeken)","Reflection (optional, not graded)")+"</b></p>"+
+    "<p class='muted' style='margin:0 0 8px'>"+boekEsc(h.reflectie)+"</p>"+
+    "<textarea id='boekReflectieInput' rows='3' placeholder='"+ct("Schrijf een paar zinnen in het Spaans (optioneel)…","Write a few sentences in Spanish (optional)…")+"'>"+boekEsc(prevReflectie)+"</textarea>"+
+    "<div class='row' style='margin-top:10px'><button class='primary' id='btnBoekKlaar'>"+ct("Hoofdstuk afronden","Finish chapter")+"</button></div>";
+  document.getElementById("btnBoekKlaar").onclick = finishBoek;
+}
+
+function finishBoek(){
+  var st = bState, h = st.h;
+  var input = document.getElementById("boekReflectieInput");
+  var refl = input ? input.value : "";
+  var vorige = S.boek[h.id];
+  var eersteKeer = !(vorige && vorige.done);
+  var besteScore = vorige && vorige.score !== undefined ? Math.max(vorige.score, st.score) : st.score;
+  S.boek[h.id] = {done:true, score:besteScore, reflectie: refl || (vorige && vorige.reflectie) || ""};
+  persist();
+  var pct = h.vragen.length ? st.score / h.vragen.length : 1;
+  var verdiend = 0;
+  if(eersteKeer) verdiend += 3;
+  if(pct === 1) verdiend += 2;
+  if(verdiend){ S.tapas = (S.tapas||0) + verdiend; persist(); confetti(["📖","🌮","⭐️"], eersteKeer ? 28 : 14); }
+  var msg = eersteKeer ? ct("¡Capítulo terminado! ","Chapter finished! ") : ct("¡Otra vez! ","Once more! ");
+  toast(msg + (verdiend ? "+"+verdiend+" tapas 🌮" : "") + (pct===1 ? " · "+ct("¡foutloos!","flawless!") : ""));
+  closeBoek();
+}
+
+function closeBoek(){
+  var lc = document.getElementById("lezenCard"); if(lc) lc.classList.add("hidden");
+  var lm = document.getElementById("lezenMenu"); if(lm) lm.classList.remove("hidden");
+  bState = null;
+  renderBoekMenu();
 }
 
 /* ================= START JE LES (herhaalbare dagelijkse flow) ================= */
@@ -5589,6 +6178,7 @@ var TXT = {
   woorden:{nl:"Woordjes",en:"Words",fr:"Mots",de:"Wörter"},
   vertalen:{nl:"Vertalen",en:"Translate",fr:"Traduire",de:"Übersetzen"},
   toetsjes:{nl:"Toetsjes",en:"Quizzes",fr:"Quiz",de:"Tests"},
+  lezen:{nl:"Lezen",en:"Reading",fr:"Lecture",de:"Lesen"},
   speeltuin:{nl:"Speeltuin",en:"Playground",fr:"Aire de jeux",de:"Spielplatz"},
   spiekbrief:{nl:"Grammatica",en:"Grammar",fr:"Grammaire",de:"Grammatik"},
   toonAntwoord:{nl:"Toon antwoord",en:"Show answer",fr:"Voir la réponse",de:"Antwort zeigen"},
@@ -9686,6 +10276,7 @@ var TABS = [
   {id:"woorden", label:"Woordjes"},
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes"},
+  {id:"lezen", label:"Lezen"},
   {id:"chispa", label:"Chispa", nav:false},
   {id:"perfil", label:"Profiel", nav:false},
   {id:"steun", label:"Steun", nav:false},
@@ -9712,6 +10303,7 @@ function show(tabId, skipPush){
   if(tabId==="woorden"){ buildQueue(); renderWord(); }
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
+  if(tabId==="lezen"){ closeBoek(); }
   if(tabId==="chispa"){ renderPet(); renderShop(); }
   if(tabId==="perfil"){
     renderPerfil(); renderStats();
