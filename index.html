@@ -442,7 +442,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.23";
+var APP_VERSIE = "v19.24";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3525,7 +3525,7 @@ function boot(){
   S.boek = S.boek || {};
   S.lesFlow = S.lesFlow || {};
   S.lesFlowSpel = S.lesFlowSpel || {};
-  wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null;
+  wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
   document.getElementById("userName").textContent = p.name;
   document.getElementById("tab-profiel").classList.add("hidden");
@@ -4906,6 +4906,7 @@ function checkHusselen(){
 /* ================= TOETSJES ================= */
 var qState = null;
 var bState = null;
+var boekAudioEl = null;
 
 function renderQuizMenu(){
   var el = document.getElementById("qMenu");
@@ -5054,15 +5055,41 @@ function startBoek(id){
   renderBoekLectura();
 }
 
+// Eerste keus: echte, voorgegenereerde audio (audio/boek/<id>.mp3, via ElevenLabs — zie
+// tools/generate-boek-audio.js), één bestand per hoofdstuk, natuurlijk voorleestempo (geen
+// dictado-vertraging nodig, dit is geen luistertoets). Ontbreekt het bestand nog, dan valt dit
+// zonder dat de gebruiker er iets van merkt terug op browser-TTS (dezelfde stem/fallback als
+// Dictado, dictadoSpreekTTS()).
+function boekSpreek(h){
+  boekStop();
+  try{
+    var a = new Audio("audio/boek/" + h.id + ".mp3");
+    boekAudioEl = a;
+    var teruggevallen = false;
+    function valTerug(){ if(teruggevallen) return; teruggevallen = true; dictadoSpreekTTS(h.tekst.replace(/\n\n/g, " "), 1); }
+    a.addEventListener("error", valTerug);
+    var p = a.play();
+    if(p && p.catch) p.catch(valTerug);
+    return true;
+  }catch(e){ return dictadoSpreekTTS(h.tekst.replace(/\n\n/g, " "), 1); }
+}
+function boekStop(){
+  if(boekAudioEl){ try{ boekAudioEl.pause(); }catch(e){} boekAudioEl = null; }
+  if(window.speechSynthesis) speechSynthesis.cancel();
+}
+
 function renderBoekLectura(){
   var h = bState.h;
   var el = document.getElementById("lezenCard");
   var paras = h.tekst.split("\n\n").map(function(p){ return "<p>"+p+"</p>"; }).join("");
   el.innerHTML = "<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
-    "<h2>"+h.titel+"</h2>"+paras+
+    "<h2>"+h.titel+"</h2>"+
+    "<div class='row' style='margin:6px 0 10px'><button class='ghost' id='btnBoekLuister'>🔊 "+ct("Luisteren","Listen")+"</button></div>"+
+    paras+
     "<div class='row'><button class='primary' id='btnBoekVragen'>"+ct("Naar de vragen →","To the questions →")+"</button>"+
     "<button class='ghost' id='btnBoekMenu'>"+ct("Terug","Back")+"</button></div>";
-  document.getElementById("btnBoekVragen").onclick = function(){ bState.fase = "vragen"; bState.i = 0; bState.score = 0; renderBoekVraag(); };
+  document.getElementById("btnBoekLuister").onclick = function(){ boekSpreek(h); };
+  document.getElementById("btnBoekVragen").onclick = function(){ boekStop(); bState.fase = "vragen"; bState.i = 0; bState.score = 0; renderBoekVraag(); };
   document.getElementById("btnBoekMenu").onclick = closeBoek;
 }
 
@@ -5129,6 +5156,7 @@ function finishBoek(){
 }
 
 function closeBoek(){
+  boekStop();
   var lc = document.getElementById("lezenCard"); if(lc) lc.classList.add("hidden");
   var lm = document.getElementById("lezenMenu"); if(lm) lm.classList.remove("hidden");
   bState = null;
@@ -10292,6 +10320,7 @@ function navPush(state){
 function show(tabId, skipPush){
   if(tabId === "diccionario"){ dicModal(); return; } // oude links/history: woordenboek is nu een popup
   if(tabId !== "speeltuin" && typeof avtStopAlles === "function") avtStopAlles();
+  if(tabId !== "lezen" && typeof boekStop === "function") boekStop();
   if(!skipPush) navPush({t:"tab", id:tabId});
   TABS.forEach(function(t){
     document.getElementById("tab-"+t.id).classList.toggle("hidden", t.id!==tabId);
