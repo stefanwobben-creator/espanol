@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.20";
+var APP_VERSIE = "v19.21";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1326,6 +1326,132 @@ var QUIZZES = [
    u:"Alguna vez = ooit, tot nu toe: pretérito perfecto (has vivido)."},
   {q:"El sábado pasado ___ un momento inesperado.", nl:"Afgelopen zaterdag beleefden we een onverwacht moment.", opts:["vivimos","hemos vivido"], c:0,
    u:"El sábado pasado = afgesloten moment: indefinido (vivimos)."}
+ ]},
+ {id:"q-schoenwerkwoorden", titel:"Schoenwerkwoorden: klinkerwissel", spiek:[3], vragen:[
+  {q:"sentirse (yo) → me ___", opts:["siento","sento"], c:0,
+   u:"e→ie in de schoenvormen (niet nosotros/vosotros): me siento."},
+  {q:"empezar (yo) → ___", opts:["empiezo","empezo"], c:0,
+   u:"e→ie, net als sentirse: empiezo."},
+  {q:"costar (él) → ___", opts:["cuesta","costa"], c:0,
+   u:"o→ue: cuesta."},
+  {q:"poder (yo) → ___", opts:["puedo","podo"], c:0,
+   u:"o→ue: puedo."},
+  {q:"pedir (yo) → ___", opts:["pido","pedo"], c:0,
+   u:"e→i: pido."},
+  {q:"repetir (tú) → ___", opts:["repites","repetes"], c:0,
+   u:"e→i: repites."},
+  {q:"sentirse (nosotros) → nos ___", opts:["sentimos","sintimos"], c:0,
+   u:"Nosotros/vosotros houden de gewone klinker, geen wissel: nos sentimos."},
+  {q:"dormir (yo) → ___", opts:["duermo","dormo"], c:0,
+   u:"o→ue: duermo."}
+ ]},
+ {id:"q-signaalwoorden", titel:"Signaalwoorden: indefinido of perfecto?", spiek:[4], vragen:[
+  {q:"Ayer hoort bij...", opts:["indefinido","perfecto"], c:0,
+   u:"Ayer (gisteren) is afgesloten: indefinido."},
+  {q:"Esta semana hoort bij...", opts:["perfecto","indefinido"], c:0,
+   u:"Esta semana loopt nog: perfecto."},
+  {q:"El año pasado hoort bij...", opts:["indefinido","perfecto"], c:0,
+   u:"Een afgesloten periode: indefinido."},
+  {q:"Todavía no hoort bij...", opts:["perfecto","indefinido"], c:0,
+   u:"Todavía no (nog niet) hoort bij perfecto."},
+  {q:"Alguna vez hoort bij...", opts:["perfecto","indefinido"], c:0,
+   u:"Een ervaring tot nu toe: perfecto."},
+  {q:"En 1907 hoort bij...", opts:["indefinido","perfecto"], c:0,
+   u:"Een jaartal is een afgesloten moment: indefinido."},
+  {q:"Hace dos años hoort bij...", opts:["indefinido","perfecto"], c:0,
+   u:"Hace + tijd = geleden, een afgesloten moment: indefinido."},
+  {q:"Últimamente hoort bij...", opts:["perfecto","indefinido"], c:0,
+   u:"Últimamente (de laatste tijd) is een periode die nog loopt: perfecto."}
+ ]},
+ {id:"q-desdedurante", titel:"Desde, desde hace, durante of hasta?", spiek:[6], vragen:[
+  {q:"Vivo aquí ___ marzo.", nl:"Ik woon hier sinds maart.", opts:["desde","hace"], c:0,
+   u:"Desde + moment = sinds, met presente (het loopt nog)."},
+  {q:"Empecé ___ un año.", nl:"Ik begon een jaar geleden.", opts:["hace","desde"], c:0,
+   u:"Hace + tijd = geleden, met indefinido (een afgesloten moment)."},
+  {q:"Estudio español ___ hace un año.", nl:"Ik leer al een jaar Spaans.", opts:["desde","durante"], c:0,
+   u:"Desde hace + duur = al ... lang, met presente."},
+  {q:"Trabajé allí ___ 2010 hasta 2015.", opts:["desde","durante"], c:0,
+   u:"Desde... hasta... = van... tot..."},
+  {q:"___ el verano viví en Alicante.", nl:"Tijdens de zomer woonde ik in Alicante.", opts:["Durante","Desde"], c:0,
+   u:"Durante + periode = tijdens."},
+  {q:"Met een maandnaam gebruik je nooit 'hace', maar wel...", opts:["en marzo","hace marzo"], c:0,
+   u:"'Hace marzo' bestaat niet; met een maandnaam is het en marzo."},
+  {q:"Vivo aquí desde marzo. Welke tijd hoort hierbij?", opts:["presente","indefinido"], c:0,
+   u:"Desde + moment gaat altijd met presente, het loopt nog door."},
+  {q:"Empecé hace un año. Welke tijd hoort hierbij?", opts:["indefinido","presente"], c:0,
+   u:"Hace + tijd wijst op een afgesloten punt in het verleden: indefinido."}
+ ]},
+ {id:"q-casa", titel:"Je huis beschrijven", spiek:[10], vragen:[
+  {q:"El piso ___ luminoso.", nl:"De flat is licht.", opts:["es","está"], c:0,
+   u:"Ser voor een blijvende eigenschap: es luminoso."},
+  {q:"El piso ___ en el centro.", nl:"De flat ligt in het centrum.", opts:["está","es"], c:0,
+   u:"Estar voor waar iets ligt: está en el centro."},
+  {q:"En el salón ___ un sofá.", nl:"In de woonkamer staat een bank.", opts:["hay","está"], c:0,
+   u:"Hay = er is/er staat (onbepaald)."},
+  {q:"Me ___ el barrio.", nl:"De buurt bevalt me.", opts:["gusta","gustan"], c:0,
+   u:"El barrio is enkelvoud: me gusta."},
+  {q:"Me ___ la terraza.", nl:"Ik vind het terras geweldig.", opts:["encanta","encanto"], c:0,
+   u:"Encantar werkt als gustar: me encanta (derde persoon)."},
+  {q:"___ un piso amueblado.", nl:"Ik heb liever een gemeubileerde flat.", opts:["Prefiero","Prefiere"], c:0,
+   u:"Yo-vorm van preferir (e→ie): prefiero."},
+  {q:"La casa ___ antigua.", nl:"Het huis is oud.", opts:["es","está"], c:0,
+   u:"Een blijvend kenmerk: es antigua."},
+  {q:"Om te zeggen wat er allemaal in een kamer staat, gebruik je...", opts:["hay","es"], c:0,
+   u:"Hay gebruik je om op te sommen wat er is: en el salón hay un sofá y dos sillas."}
+ ]},
+ {id:"q-hoeveelheden", titel:"Hoeveelheden: un poco de, bastante, demasiado", spiek:[22], vragen:[
+  {q:"una pizca ___ sal", opts:["de","-"], c:0,
+   u:"Una pizca de + zelfstandig naamwoord: een snufje."},
+  {q:"un poco ___ azúcar", opts:["de","-"], c:0,
+   u:"Un poco de + zelfstandig naamwoord: een beetje."},
+  {q:"una cucharada ___ aceite", opts:["de","-"], c:0,
+   u:"Een eetlepel: una cucharada de."},
+  {q:"Tengo ___ tiempo, no hace falta más.", nl:"Ik heb genoeg tijd, meer is niet nodig.", opts:["bastante","demasiado"], c:0,
+   u:"Bastante = genoeg, behoorlijk wat."},
+  {q:"Has puesto ___ sal, está muy salado.", nl:"Je hebt te veel zout gebruikt, het is erg zout.", opts:["demasiada","demasiado"], c:0,
+   u:"Sal is vrouwelijk: demasiada sal."},
+  {q:"___ azúcar es demasiado.", nl:"Zoveel suiker is te veel.", opts:["Demasiado","Demasiada"], c:0,
+   u:"Azúcar is mannelijk: demasiado azúcar."},
+  {q:"Ya es bastante. Kan bastante ook zonder zelfstandig naamwoord?", opts:["ja, dat kan","nee, altijd met een znw erbij"], c:0,
+   u:"Bastante kan ook alleen staan: ya es bastante (het is al genoeg)."},
+  {q:"Welke uitdrukking betekent 'een snufje'?", opts:["una pizca de","un poco de"], c:0,
+   u:"Una pizca de = een snufje (heel weinig); un poco de is algemener 'een beetje'."}
+ ]},
+ {id:"q-consejos", titel:"Advies geven: imperativo, tener que of deber", spiek:[25], vragen:[
+  {q:"Advies met imperativo (tú): ___ (descansar)", opts:["Descansa","Descansas"], c:0,
+   u:"Imperativo tú: descansa (niet descansas, dat is presente)."},
+  {q:"Advies met tener que: ___ descansar.", opts:["Tienes que","Tengo que"], c:0,
+   u:"Tú-vorm: tienes que descansar."},
+  {q:"Advies met deber: ___ tomar un jarabe.", opts:["Debes","Debo"], c:0,
+   u:"Tú-vorm van deber: debes."},
+  {q:"Welke vorm klinkt het meest direct, als een instructie?", opts:["imperativo","deber"], c:0,
+   u:"Imperativo klinkt het meest direct, zoals een recept."},
+  {q:"Tener que gaat altijd samen met...", opts:["een infinitief","een gerundio"], c:0,
+   u:"Tener que + infinitief."},
+  {q:"Deber gaat altijd samen met...", opts:["een infinitief","een gerundio"], c:0,
+   u:"Deber + infinitief."},
+  {q:"Toma una pastilla. is een voorbeeld van...", opts:["imperativo","tener que"], c:0,
+   u:"Toma is de tú-imperativo van tomar."},
+  {q:"Welke twee vormen klinken vriendelijker/adviserender dan een kaal bevel?", opts:["tener que en deber","alleen imperativo"], c:0,
+   u:"Tener que en deber klinken beide iets zachter dan een kaal imperativo."}
+ ]},
+ {id:"q-conectores", titel:"Een anekdote vertellen: nuttige woorden", spiek:[28], vragen:[
+  {q:"Een verhaal open je meestal met...", opts:["un día / una vez","al final"], c:0,
+   u:"Un día/una vez = op een dag/op een keer, een klassieke opening."},
+  {q:"Gelijktijdigheid druk je uit met...", opts:["mientras","de repente"], c:0,
+   u:"Mientras = terwijl."},
+  {q:"Een plotselinge wending introduceer je met...", opts:["de repente","al final"], c:0,
+   u:"De repente = plotseling."},
+  {q:"Een verhaal sluit je meestal af met...", opts:["al final","un día"], c:0,
+   u:"Al final = uiteindelijk."},
+  {q:"Mientras dormía, sonó el teléfono. Welk deel is de achtergrond?", opts:["dormía (imperfecto)","sonó (indefinido)"], c:0,
+   u:"Mientras + imperfecto beschrijft de achtergrond, waar de gebeurtenis (sonó) doorheen breekt."},
+  {q:"De repente, empezó a llover. Welke tijd hoort bij de repente?", opts:["indefinido","imperfecto"], c:0,
+   u:"De repente wijst op een afgesloten, plotseling moment: indefinido."},
+  {q:"Un día/una vez gebruik je om...", opts:["een anekdote in de tijd te openen","gelijktijdigheid aan te geven"], c:0,
+   u:"Un día/una vez openen een verhaal: op een dag, op een keer."},
+  {q:"Al final combineer je meestal met...", opts:["indefinido (de afsluitende gebeurtenis)","imperfecto (de achtergrond)"], c:0,
+   u:"Al final markeert de laatste, afgesloten gebeurtenis: indefinido."}
  ]}
 ];
 
@@ -2127,6 +2253,66 @@ var B_QUIZZES = [
   {q:"Ya ___ aprendido mucho español.", nl:"Ik heb al veel Spaans geleerd.", ne:"I've already learned a lot of Spanish.", opts:["he","hay"], c:0, u:"Yo-vorm van haber: he.", ue:"Yo-form of haber: he."},
   {q:"Haber (yo · tú · él/ella) = ___", opts:["he · has · ha","soy · eres · es"], c:0, u:"Haber vervoegt: he, has, ha, hemos, habéis, han.", ue:"Haber conjugates: he, has, ha, hemos, habéis, han."},
   {q:"Regelmatige werkwoorden op -ar krijgen als voltooid deelwoord...", opts:["-ado","-ido"], c:0, u:"-ar → -ado (hablado), -er/-ir → -ido (comido, vivido).", ue:"-ar → -ado (hablado), -er/-ir → -ido (comido, vivido)."}
+ ]},
+ {id:"bq-pronunciacion", titel:"Uitspraak: welke letter?", titelEn:"Pronunciation: which letter?", spiek:[0], vragen:[
+  {q:"Hoe klinkt de 'j' in 'jota'?", opts:["als een harde Nederlandse g","als een gewone j"], c:0, u:"j = harde Nederlandse g: jota klinkt als 'gota'.", ue:"j sounds like a strong h, like Scottish 'loch': jota sounds like 'hota'."},
+  {q:"Hoe klinkt 'll' in 'me llamo'?", opts:["als j","als l"], c:0, u:"ll = j: me llamo klinkt als 'me jamo'.", ue:"ll = y: me llamo sounds like 'me yamo'."},
+  {q:"Hoe klinkt 'ñ' in 'mañana'?", opts:["als nj","als een gewone n"], c:0, u:"ñ = nj: mañana klinkt als 'manjana'.", ue:"ñ = ny as in canyon."},
+  {q:"Hoe spreek je de 'h' in 'hola' uit?", opts:["helemaal niet, hij is stil","als een Engelse h"], c:0, u:"h is altijd stil: hola = 'ola'.", ue:"h is always silent: hola = 'ola'."},
+  {q:"Hoe klinkt 'rr' in 'perro'?", opts:["een rollende r","een gewone r"], c:0, u:"rr = een rollende r.", ue:"rr = a rolled r."},
+  {q:"Hoe klinkt de 'c' vóór e/i in 'gracias' (Spanje)?", opts:["als de Engelse th","als een k"], c:0, u:"c voor e/i = Engelse th in Spanje: gracias klinkt als 'grathias'.", ue:"c before e/i = th as in 'think' in Spain."},
+  {q:"'Jamón' spreek je uit met een...", opts:["harde g/h-klank (net als bij jota)","zachte dj-klank"], c:0, u:"De j is altijd een harde g/h-klank, net als bij jota.", ue:"The j is always a strong h-sound, just like in jota."},
+  {q:"'Cielo' begint met een c vóór ie, dus klinkt als...", opts:["thielo","kielo"], c:0, u:"c vóór e/i klinkt als th in Spanje.", ue:"c before e/i sounds like th in Spain."}
+ ]},
+ {id:"bq-edad", titel:"Tener en je leeftijd", titelEn:"Tener and your age", spiek:[3], vragen:[
+  {q:"Tener (yo) → ___", opts:["tengo","teno"], c:0, u:"Yo-vorm van tener: tengo.", ue:"Yo-form of tener: tengo."},
+  {q:"Tener (tú) → ___", opts:["tienes","tenes"], c:0, u:"Tú-vorm (e→ie): tienes.", ue:"Tú-form (e→ie): tienes."},
+  {q:"Tener (nosotros) → ___", opts:["tenemos","tienemos"], c:0, u:"Nosotros houdt de gewone klinker: tenemos.", ue:"Nosotros keeps the regular vowel: tenemos."},
+  {q:"Hoe vraag je iemands leeftijd?", opts:["¿Cuántos años tienes?","¿Cuántos años eres?"], c:0, u:"Leeftijd vraag je met tener, niet ser.", ue:"You ask age with tener, not ser."},
+  {q:"Tengo doce años.", nl:"Ik ben twaalf.", ne:"I am twelve.", opts:["Tengo doce años","Soy doce años"], c:0, u:"Je HEBT je leeftijd in het Spaans (tener), je bent hem niet.", ue:"You HAVE your age in Spanish (tener), you aren't it."},
+  {q:"Tener (él/ella) → ___", opts:["tiene","tenes"], c:0, u:"Hij/zij-vorm: tiene.", ue:"He/she-form: tiene."},
+  {q:"Mi hermano ___ quince años.", opts:["tiene","es"], c:0, u:"Leeftijd = tener, niet ser.", ue:"Age = tener, not ser."},
+  {q:"Tener (ellos) → ___", opts:["tienen","tenen"], c:0, u:"Ellos-vorm: tienen.", ue:"Ellos-form: tienen."}
+ ]},
+ {id:"bq-preguntas", titel:"Vraagwoorden", titelEn:"Question words", spiek:[4], vragen:[
+  {q:"Wat betekent '¿Dónde?'", opts:["waar","wat"], c:0, u:"Dónde = waar.", ue:"Dónde = where."},
+  {q:"Wat betekent '¿Quién?'", opts:["wie","hoe"], c:0, u:"Quién = wie.", ue:"Quién = who."},
+  {q:"Wat betekent '¿Cuándo?'", opts:["wanneer","hoeveel"], c:0, u:"Cuándo = wanneer.", ue:"Cuándo = when."},
+  {q:"Wat betekent '¿Por qué?'", opts:["waarom","wat"], c:0, u:"Por qué = waarom.", ue:"Por qué = why."},
+  {q:"Vraagwoorden krijgen in een vraag altijd...", opts:["een accent","geen accent"], c:0, u:"Altijd met accent in een vraag: qué, dónde, cómo...", ue:"Always with an accent in a question."},
+  {q:"Voor een Spaanse vraag zet je ook...", opts:["een omgekeerd vraagteken ¿ vooraan","niets extra's"], c:0, u:"Vergeet het omgekeerde vraagteken niet: ¿Cómo estás?", ue:"Don't forget the upside-down question mark: ¿Cómo estás?"},
+  {q:"Wat betekent '¿Cuánto?'", opts:["hoeveel","wanneer"], c:0, u:"Cuánto = hoeveel.", ue:"Cuánto = how much."},
+  {q:"Wat betekent '¿Cómo?'", opts:["hoe","wie"], c:0, u:"Cómo = hoe.", ue:"Cómo = how."}
+ ]},
+ {id:"bq-presentarse", titel:"Jezelf voorstellen: ser, tener, llamarse", titelEn:"Introducing yourself: ser, tener, llamarse", spiek:[5], vragen:[
+  {q:"Soy holandesa. Welk werkwoord test dit?", opts:["ser","tener"], c:0, u:"Nationaliteit = ser.", ue:"Nationality = ser."},
+  {q:"Es profesora. Waarom staat er geen lidwoord vóór profesora?", opts:["beroepen krijgen geen lidwoord na ser","dat is een uitzondering zonder reden"], c:0, u:"Beroep na ser: geen lidwoord (es profesora, niet es una profesora).", ue:"Profession after ser: no article (es profesora, not es una profesora)."},
+  {q:"¿Cómo te llamas? hoort bij welk werkwoord?", opts:["llamarse","llevar"], c:0, u:"Llamarse = heten.", ue:"Llamarse = to be called."},
+  {q:"Me llamo Elise. Yo-vorm van llamarse is...", opts:["me llamo","me llama"], c:0, u:"Yo-vorm: me llamo.", ue:"Yo-form: me llamo."},
+  {q:"holandés (man) wordt bij een vrouw...", opts:["holandesa","holandesa's"], c:0, u:"Man op -és, vrouw op -esa: holandés → holandesa.", ue:"Man ending -és, woman ending -esa: holandés → holandesa."},
+  {q:"Nationaliteiten schrijf je in het Spaans met...", opts:["een kleine letter","een hoofdletter"], c:0, u:"Anders dan in het Nederlands: geen hoofdletter (holandés, niet Holandés).", ue:"Unlike Dutch, no capital letter (holandés, not Holandés)."},
+  {q:"Soy holandés. (man) is de vrouwelijke vorm...", opts:["holandesa","holandés"], c:0, u:"Man -és, vrouw -esa: holandesa.", ue:"Man -és, woman -esa: holandesa."},
+  {q:"Welk werkwoord gebruik je voor 'ik ben 12 jaar'?", opts:["tener","ser"], c:0, u:"Leeftijd = tener (tengo doce años), niet ser.", ue:"Age = tener (tengo doce años), not ser."}
+ ]},
+ {id:"bq-presente", titel:"Presente: welk rijtje?", titelEn:"Present tense: which pattern?", spiek:[6], vragen:[
+  {q:"hablar (yo) → ___", opts:["hablo","hablas"], c:0, u:"Yo-vorm -ar: hablo.", ue:"Yo-form -ar: hablo."},
+  {q:"leer (tú) → ___", opts:["lees","leo"], c:0, u:"Tú-vorm -er: lees.", ue:"Tú-form -er: lees."},
+  {q:"vivir (él/ella) → ___", opts:["vive","vivo"], c:0, u:"Hij/zij-vorm -ir: vive.", ue:"He/she-form -ir: vive."},
+  {q:"hablar (nosotros) → ___", opts:["hablamos","hablais"], c:0, u:"Nosotros -ar: hablamos.", ue:"Nosotros -ar: hablamos."},
+  {q:"leer (vosotros) → ___", opts:["leéis","leemos"], c:0, u:"Vosotros -er: leéis.", ue:"Vosotros -er: leéis."},
+  {q:"vivir (ellos) → ___", opts:["viven","viveis"], c:0, u:"Ellos -ir: viven.", ue:"Ellos -ir: viven."},
+  {q:"Het woordje yo/tú vóór het werkwoord...", opts:["mag je meestal weglaten","moet je altijd erbij zeggen"], c:0, u:"De uitgang zegt al wie het doet, dus yo/tú mag vaak weg.", ue:"The ending already tells you who, so you can usually drop yo/tú."},
+  {q:"Welke drie rijtjes zijn er in het presente?", opts:["-ar, -er, -ir","-o, -e, -a"], c:0, u:"Werkwoorden eindigen op -ar, -er of -ir, elk met hun eigen rijtje.", ue:"Verbs end in -ar, -er or -ir, each with its own pattern."}
+ ]},
+ {id:"bq-estecual", titel:"Este/ese, qué/cuál en tener que", titelEn:"Este/ese, qué/cuál and tener que", spiek:[11], vragen:[
+  {q:"Dit t-shirt hier (dichtbij) = ___ camiseta.", opts:["esta","esa"], c:0, u:"Este/esta = deze (dichtbij).", ue:"Este/esta = this (close by)."},
+  {q:"Die jas daar (verder weg) = ___ chaqueta.", opts:["esa","esta"], c:0, u:"Ese/esa = die (verder weg).", ue:"Ese/esa = that (further away)."},
+  {q:"¿Qué quieres? is een...", opts:["open vraag (wat wil je)","keuzevraag uit een groepje"], c:0, u:"Qué = wat, een open vraag.", ue:"Qué = what, an open question."},
+  {q:"¿Cuál prefieres, la roja o la negra? is een...", opts:["keuzevraag uit een groepje","open vraag"], c:0, u:"Cuál = welke, kiezen uit een groepje.", ue:"Cuál = which, choosing from a group."},
+  {q:"Tengo ___ comprar zapatos.", nl:"Ik moet schoenen kopen.", ne:"I have to buy shoes.", opts:["que","de"], c:0, u:"Tener que + infinitief = moeten. Vergeet que niet.", ue:"Tener que + infinitive = to have to. Don't forget que."},
+  {q:"Preferir (yo) → ___", opts:["prefiero","prefero"], c:0, u:"e→ie: prefiero.", ue:"e→ie: prefiero."},
+  {q:"¿Cuánto cuestan? gebruik je bij...", opts:["meerdere dingen (meervoud)","één ding (enkelvoud)"], c:0, u:"Cuestan is meervoud, voor meerdere dingen.", ue:"Cuestan is plural, for multiple items."},
+  {q:"¿Qué talla tienes? betekent...", opts:["welke maat heb je?","hoeveel kost het?"], c:0, u:"Talla = maat (kleding).", ue:"Talla = size (clothing)."}
  ]}
 ];
 
