@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.21";
+var APP_VERSIE = "v19.22";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3217,6 +3217,21 @@ function quizDueList(){
   return QUIZZES.filter(function(qz){ var st = S.quizSrs[qz.id]; return st && st.due <= t; });
 }
 function quizDueCount(){ return quizDueList().length; }
+// Foutgewogen vraagvolgorde binnen een toetsje (26 juli, Stefans verzoek): bij een herhaalbeurt
+// staan vragen die eerder fout gingen vooraan, zodat ze bij elke herkansing extra aandacht krijgen.
+// Bewaart per vraag de ORIGINELE index (oi), want de foutenlog-key ("quiz:<id>#<index>") moet
+// aan de vraag zelf blijven hangen, niet aan zijn wisselende weergavepositie (anders raakt de
+// foutenlog na een eerste herschikking los van de juiste vraag).
+function quizVraagVolgorde(qz){
+  var out = qz.vragen.map(function(v,i){ return {v:v, oi:i}; });
+  out.sort(function(a,b){
+    var ea = S.errors["quiz:"+qz.id+"#"+a.oi], eb = S.errors["quiz:"+qz.id+"#"+b.oi];
+    var wa = !!(ea && ea.count > 0), wb = !!(eb && eb.count > 0);
+    if(wa === wb) return 0;
+    return wa ? -1 : 1;
+  });
+  return out;
+}
 
 function logError(id, type, tag, extra){
   var k = type+":"+id;
@@ -3411,6 +3426,16 @@ function checkLessonComplete(){
       var beloond = null;
       SHOP.forEach(function(it){
         if(it.les === n && !S.owned[it.id]){ S.owned[it.id] = true; S.wear[it.id] = true; beloond = it; }
+      });
+      // Bootstrap grammatica-SRS (26 juli): topic-toetsjes die bij deze les' spiekbrief-onderwerpen horen
+      // maar niet verplicht zijn voor lesvoltooiing (bijv. de losse toetsjes uit de dekkings-ronde), krijgen
+      // nu automatisch een S.quizSrs-startpunt zodra de les klaar is. Zonder dit moet je zo'n toetsje eerst
+      // zelf toevallig vinden via de Grammatica-tab voor hij meedraait in de dagelijkse herhaalcyclus.
+      // Toetsjes die al gespeeld zijn (dus al een quizSrs-entry hebben) worden niet overschreven.
+      (l.spiek||[]).forEach(function(idx){
+        quizzenBijSpiek(idx).forEach(function(qz){
+          if(!S.quizSrs[qz.id]) S.quizSrs[qz.id] = {box:0, due:today()};
+        });
       });
       persist();
       confetti(["🎉","🌮","⭐️","💃","✨"], 36);
@@ -4445,7 +4470,7 @@ function renderQuizMenu(){
 
 function startQuiz(id){
   var qz = QUIZZES.filter(function(x){ return x.id===id; })[0];
-  qState = {qz:qz, i:0, score:0, locked:false};
+  qState = {qz:qz, volgorde:quizVraagVolgorde(qz), i:0, score:0, locked:false};
   document.getElementById("qMenu").classList.add("hidden");
   document.getElementById("qCard").classList.remove("hidden");
   renderQuestion();
@@ -4482,7 +4507,7 @@ function renderQuestion(){
     document.getElementById("btnMenu").onclick = closeQuiz;
     return;
   }
-  var v = qz.vragen[st.i];
+  var v = st.volgorde[st.i].v;
   st.locked = false;
   var inFlowQuiz = !!(lesFlow && lesFlow.stap === "toetsjes");
   var html = (inFlowQuiz ? lesFlowBannerHtml() : "")+
@@ -4502,12 +4527,12 @@ function renderQuestion(){
 
 function answerQuestion(idx, btn){
   var st = qState; if(st.locked) return; st.locked = true;
-  var v = st.qz.vragen[st.i];
+  var item = st.volgorde[st.i], v = item.v;
   var el = document.getElementById("qCard");
   var opts = el.querySelectorAll(".opt");
   opts[v.c].classList.add("correct");
   var goed = idx === v.c;
-  if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+st.i, "quiz", st.qz.id, v.q); addXP(1); }
+  if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+item.oi, "quiz", st.qz.id, v.q); addXP(1); }
   var fb = document.getElementById("qFeedback");
   fb.innerHTML = (v.nl ? "<div class='feedback "+(goed?"ok":"bijna")+"'>"+ct("Vertaling: ","Translation: ")+vraagVert(v)+"</div>" : "")+
     "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+ct("Waarom:","Why:")+"</b> "+vraagWaarom(v)+"</div>"+
