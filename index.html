@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.19";
+var APP_VERSIE = "v19.20";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -955,7 +955,7 @@ var SENTENCES = [
 ];
 
 var QUIZZES = [
- {id:"q-costar", titel:"Cuesta of cuestan (en va of van)", vragen:[
+ {id:"q-costar", titel:"Cuesta of cuestan (en va of van)", spiek:[2], vragen:[
   {q:"Me ___ aprender los verbos.", nl:"Het kost me moeite om de werkwoorden te leren.", opts:["cuesta","cuestan"], c:0,
    u:"Aprender is een infinitief. Eén activiteit = enkelvoud = cuesta."},
   {q:"Me ___ algunos sonidos del español.", nl:"Sommige Spaanse klanken kosten me moeite.", opts:["cuesta","cuestan"], c:1,
@@ -977,7 +977,7 @@ var QUIZZES = [
   {q:"¿Te ___ pronunciar la erre?", nl:"Kost het jou moeite om de r uit te spreken?", opts:["cuesta","cuestan"], c:0,
    u:"Pronunciar is een infinitief, dus cuesta. Te = 'aan jou'."}
  ]},
- {id:"q-ser", titel:"Ser of sentirse", vragen:[
+ {id:"q-ser", titel:"Ser of sentirse", spiek:[1], vragen:[
   {q:"Como ___ un poco tímido, me siento inseguro en clase.", nl:"Omdat ik wat verlegen ben, voel ik me onzeker in de les.", opts:["soy","me siento"], c:0,
    u:"Verlegen zijn is een karaktereigenschap: ser. Test: 'zo ben ik nou eenmaal' → ser."},
   {q:"Cuando veo las dificultades, ___ un poco frustrado.", nl:"Als ik de moeilijkheden zie, voel ik me wat gefrustreerd.", opts:["soy","me siento"], c:1,
@@ -999,7 +999,7 @@ var QUIZZES = [
   {q:"Hoy ___ fatal, no he dormido bien.", nl:"Vandaag voel ik me waardeloos, ik heb slecht geslapen.", opts:["soy","me siento"], c:1,
    u:"Hoy + niet geslapen: duidelijk een toestand van nu, dus me siento fatal."}
  ]},
- {id:"q-tijden", titel:"Indefinido of perfecto", vragen:[
+ {id:"q-tijden", titel:"Indefinido of perfecto", spiek:[0], vragen:[
   {q:"Frida Kahlo ___ en 1907.", nl:"Frida Kahlo werd geboren in 1907.", opts:["nació","ha nacido"], c:0,
    u:"Jaartal in het verleden = afgesloten = indefinido. Haar leven is een gesloten hoofdstuk."},
   {q:"Hoy ___ mucho en clase.", nl:"Vandaag heb ik veel geleerd in de les.", opts:["aprendí","he aprendido"], c:1,
@@ -1025,7 +1025,7 @@ var QUIZZES = [
   {q:"Este año ___ mucho español.", nl:"Dit jaar heb ik veel Spaans geleerd.", opts:["estudié","he estudiado"], c:1,
    u:"Este año is nog niet voorbij: perfecto."}
  ]},
- {id:"q-vormen", titel:"Indefinido: de juiste vorm", vragen:[
+ {id:"q-vormen", titel:"Indefinido: de juiste vorm", spiek:[5], vragen:[
   {q:"yo · practicar → ___", opts:["practicé","practiqué"], c:1,
    u:"-car werkwoorden krijgen qu in de yo-vorm om de k-klank te bewaren: practiqué. Net als buscar → busqué."},
   {q:"yo · empezar → ___", opts:["empecé","empezé"], c:0,
@@ -1047,7 +1047,7 @@ var QUIZZES = [
   {q:"yo · hacer → ___", opts:["hice","hací"], c:0,
    u:"Hacer is onregelmatig: hice, hiciste, hizo (let op de z in hizo)."}
  ]},
- {id:"q-serir", titel:"Fue: ser of ir?", vragen:[
+ {id:"q-serir", titel:"Fue: ser of ir?", spiek:[5], vragen:[
   {q:"La película fue un éxito.", nl:"De film was een succes.", opts:["ser","ir"], c:0, u:"De film WAS een succes: ser. Geen a erachter, wel een beschrijving."},
   {q:"Mi hermano no fue a verla.", nl:"Mijn broer ging hem niet zien.", opts:["ser","ir"], c:1, u:"Hij GING hem niet zien: fue A verla. De a verraadt ir."},
   {q:"Fuimos siempre los primeros de la clase.", nl:"Wij waren altijd de besten van de klas.", opts:["ser","ir"], c:0, u:"Wij WAREN de besten: beschrijving, dus ser."},
@@ -1057,7 +1057,7 @@ var QUIZZES = [
   {q:"Ayer fue un día difícil.", nl:"Gisteren was een moeilijke dag.", opts:["ser","ir"], c:0, u:"Gisteren WAS een moeilijke dag: ser."},
   {q:"¿Fuiste a la fiesta el sábado?", nl:"Ging jij zaterdag naar het feest?", opts:["ser","ir"], c:1, u:"Ging jij NAAR het feest: fuiste a = ir."}
  ]},
- {id:"q-soyasi", titel:"Ser, tener of llevar? (beschrijven)", vragen:[
+ {id:"q-soyasi", titel:"Ser, tener of llevar? (beschrijven)", spiek:[7], vragen:[
   {q:"Mi madre ___ el pelo corto.", nl:"Mijn moeder heeft kort haar.", opts:["es","tiene","lleva"], c:1, u:"Haar en ogen HEB je: tiene el pelo corto."},
   {q:"Mi hermana ___ muy alta.", nl:"Mijn zus is heel lang.", opts:["es","tiene","lleva"], c:0, u:"Lang/klein zijn is een eigenschap: es alta."},
   {q:"Mi padre ___ gafas.", nl:"Mijn vader draagt een bril.", opts:["es","tiene","lleva"], c:2, u:"Een bril DRAAG je: lleva gafas."},
@@ -1067,7 +1067,7 @@ var QUIZZES = [
   {q:"Hoy ___ una camiseta roja.", nl:"Vandaag draag ik een rood T-shirt.", opts:["soy","tengo","llevo"], c:2, u:"Kleding draag je: llevo una camiseta."},
   {q:"Mis ojos ___ verdes.", nl:"Mijn ogen zijn groen.", opts:["son","tienen","llevan"], c:0, u:"Als de ogen zélf het onderwerp zijn: son verdes (eigenschap van de ogen)."}
  ]},
- {id:"q-hogar", titel:"Vergelijken: más, menos of tan... como", vragen:[
+ {id:"q-hogar", titel:"Vergelijken: más, menos of tan... como", spiek:[8], vragen:[
   {q:"Mi casa es ___ grande que la tuya.", nl:"Mijn huis is groter dan het jouwe.", opts:["más","tan"], c:0,
    u:"Groter dan = más grande que. Bij más hoort que."},
   {q:"El salón es tan luminoso ___ la cocina.", nl:"De woonkamer is net zo licht als de keuken.", opts:["que","como"], c:1,
@@ -1085,7 +1085,7 @@ var QUIZZES = [
   {q:"Mi piso tiene ___ luz como el tuyo.", nl:"Mijn flat heeft net zoveel licht als de jouwe.", opts:["tanta","tan"], c:0,
    u:"Bij een zelfstandig naamwoord: tanto/tanta + zn + como. Luz is vrouwelijk: tanta luz como."}
  ]},
- {id:"q-posesivos", titel:"El mío, la tuya: van wie is het?", vragen:[
+ {id:"q-posesivos", titel:"El mío, la tuya: van wie is het?", spiek:[9], vragen:[
   {q:"Mi casa es pequeña; ___ es enorme.", nl:"Mijn huis is klein; het jouwe is enorm.", opts:["la tuya","el tuyo"], c:0,
    u:"Casa is vrouwelijk, dus la tuya. Het geslacht volgt het ding, niet de eigenaar."},
   {q:"Tu balcón es más grande que ___.", nl:"Jouw balkon is groter dan het mijne.", opts:["el mío","la mía"], c:0,
@@ -1103,7 +1103,7 @@ var QUIZZES = [
   {q:"Esa cama no es mía, es ___.", nl:"Dat bed is niet van mij, het is het hare.", opts:["suya","suyo"], c:0,
    u:"Cama is vrouwelijk: suya. Na ser weer zonder lidwoord."}
  ]},
- {id:"q-gerundio", titel:"Estar + gerundio: waar ben je mee bezig?", vragen:[
+ {id:"q-gerundio", titel:"Estar + gerundio: waar ben je mee bezig?", spiek:[11], vragen:[
   {q:"Ahora mismo ___ español.", nl:"Ik ben nu net Spaans aan het studeren.", opts:["estoy estudiando","estudiando"], c:0,
    u:"Het gerundio kan niet alleen staan: altijd estar erbij. Estoy estudiando."},
   {q:"Estamos ___ la cena.", nl:"We zijn het avondeten aan het klaarmaken.", opts:["preparando","preparar"], c:0,
@@ -1121,7 +1121,7 @@ var QUIZZES = [
   {q:"¿Ahora? Es que ___ comiendo.", nl:"Nu? Ik ben namelijk aan het eten.", opts:["estamos","somos"], c:0,
    u:"Es que... = het zit zo... (dé excuus-opener). Daarna estar + gerundio: estamos comiendo."}
  ]},
- {id:"q-cortesia", titel:"Beleefd vragen: puedo, podrías, te importaría", vragen:[
+ {id:"q-cortesia", titel:"Beleefd vragen: puedo, podrías, te importaría", spiek:[12,13], vragen:[
   {q:"___ abrir la ventana? Hace calor.", nl:"Mag ik het raam openen? Het is warm.", opts:["¿Puedo","¿Podrías"], c:0,
    u:"Je vraagt toestemming om het zélf te doen: ¿puedo...? Podrías is als de ander iets moet doen."},
   {q:"___ ayudarme con la maleta?", nl:"Zou je me kunnen helpen met de koffer?", opts:["¿Podrías","¿Puedo"], c:0,
@@ -1139,7 +1139,7 @@ var QUIZZES = [
   {q:"Lo siento, no puedo: es que estoy ___.", nl:"Sorry, ik kan niet: ik ben namelijk bezig.", opts:["ocupado","ocupo"], c:0,
    u:"Estar ocupado/ocupada = bezig zijn. Een vrouw zegt: estoy ocupada."}
  ]},
- {id:"q-imperfecto", titel:"Pretérito imperfecto: de juiste vorm", vragen:[
+ {id:"q-imperfecto", titel:"Pretérito imperfecto: de juiste vorm", spiek:[14], vragen:[
   {q:"yo · jugar → ___", opts:["jugaba","jugué"], c:0,
    u:"Imperfecto -ar: -aba (geen klinkerwissel, geen spellingtruc zoals bij indefinido). Jugué is indefinido."},
   {q:"tú · comer → ___", opts:["comías","comiste"], c:0,
@@ -1161,7 +1161,7 @@ var QUIZZES = [
   {q:"nosotros · hacer → ___", opts:["hacíamos","hicimos"], c:0,
    u:"Hacíamos is imperfecto (gewoon regelmatig: hac-íamos). Hicimos is de onregelmatige indefinido-vorm."}
  ]},
- {id:"q-antesahora", titel:"Antes of ahora? (imperfecto of presente)", vragen:[
+ {id:"q-antesahora", titel:"Antes of ahora? (imperfecto of presente)", spiek:[15,16], vragen:[
   {q:"De pequeño, ___ mucho en la calle.", nl:"Als kind speelde ik veel op straat.", opts:["jugaba","juego"], c:0,
    u:"De pequeño is een signaalwoord voor een gewoonte in het verleden: imperfecto (jugaba), niet presente."},
   {q:"Antes no ___ electricidad en mi pueblo.", nl:"Vroeger was er geen elektriciteit in mijn dorp.", opts:["había","hay"], c:0,
@@ -1179,7 +1179,7 @@ var QUIZZES = [
   {q:"De pequeña, me ___ mucho miedo hablar en público, ahora ya no.", nl:"Als kind was ik erg bang om in het openbaar te spreken, nu niet meer.", opts:["daba","doy"], c:0,
    u:"De pequeña = verleden: daba miedo (imperfecto). Mooie link naar les 1!"}
  ]},
- {id:"q-que", titel:"¡Qué...! uitroepen: adjectief of zelfstandig naamwoord?", vragen:[
+ {id:"q-que", titel:"¡Qué...! uitroepen: adjectief of zelfstandig naamwoord?", spiek:[17,18], vragen:[
   {q:"¡___ divertido!", nl:"Wat leuk!", opts:["Qué","Qué un"], c:0,
    u:"¡Qué + adjectief! zonder lidwoord: qué divertido, qué bien, qué interesante."},
   {q:"¡___ pena!", nl:"Wat jammer!", opts:["Qué","Qué una"], c:0,
@@ -1197,7 +1197,7 @@ var QUIZZES = [
   {q:"¡Qué ___ es este museo!", nl:"Wat een gedoe is dit museum! (informeel)", opts:["rollo","suerte"], c:0,
    u:"Qué rollo = informeel voor 'wat een gedoe/saaie boel', het tegenovergestelde gevoel van qué suerte."}
  ]},
- {id:"q-planes", titel:"Ir a + infinitivo: plannen maken", vragen:[
+ {id:"q-planes", titel:"Ir a + infinitivo: plannen maken", spiek:[19], vragen:[
   {q:"yo · hacer una excursión → voy ___ hacer una excursión", opts:["a","de"], c:0,
    u:"Ir a + infinitief: altijd met 'a' ertussen, nooit 'de'."},
   {q:"tú · reservar el alojamiento → ___ a reservar el alojamiento", opts:["vas","va"], c:0,
@@ -1215,7 +1215,7 @@ var QUIZZES = [
   {q:"¿Vosotros ___ a reservar el concierto?", nl:"Gaan jullie het concert reserveren?", opts:["vais","vamos"], c:0,
    u:"Vosotros-vorm van ir is vais: vais a reservar."}
  ]},
- {id:"q-imperativo", titel:"El imperativo (tú): recepten en instructies", vragen:[
+ {id:"q-imperativo", titel:"El imperativo (tú): recepten en instructies", spiek:[20], vragen:[
   {q:"pelar → ___ las patatas", opts:["pela","pele"], c:0,
    u:"Imperativo tú bij -ar werkwoorden: stam + a. Pelar → pela."},
   {q:"añadir → ___ la sal", opts:["añade","añada"], c:0,
@@ -1233,7 +1233,7 @@ var QUIZZES = [
   {q:"cocinar → no ___ el arroz demasiado tiempo", opts:["cocines","cocina"], c:0,
    u:"Negatief imperativo bij -ar werkwoorden: stam + es. Cocinar → no cocines."}
  ]},
- {id:"q-seimpersonal", titel:"Se impersonal: enkelvoud of meervoud?", vragen:[
+ {id:"q-seimpersonal", titel:"Se impersonal: enkelvoud of meervoud?", spiek:[21], vragen:[
   {q:"Se ___ el arroz veinte minutos.", nl:"De rijst wordt twintig minuten gekookt.", opts:["cocina","cocinan"], c:0,
    u:"El arroz is enkelvoud, dus se + werkwoord in de 3e persoon enkelvoud: se cocina."},
   {q:"Se ___ dos cucharadas de aceite.", nl:"Er zijn twee eetlepels olie nodig.", opts:["necesitan","necesita"], c:0,
@@ -1251,7 +1251,7 @@ var QUIZZES = [
   {q:"Se ___ una pizca de sal y unas hierbas.", nl:"Er wordt een snufje zout en wat kruiden toegevoegd.", opts:["añaden","añade"], c:0,
    u:"Una pizca de sal y unas hierbas is samen meervoudig (twee dingen), dus se añaden."}
  ]},
- {id:"q-doler", titel:"Doler: pijn hebben (werkt als gustar)", vragen:[
+ {id:"q-doler", titel:"Doler: pijn hebben (werkt als gustar)", spiek:[23], vragen:[
   {q:"Me ___ la cabeza.", nl:"Mijn hoofd doet pijn.", opts:["duele","duelen"], c:0,
    u:"La cabeza is enkelvoud, dus me duele."},
   {q:"Me ___ los pies.", nl:"Mijn voeten doen pijn.", opts:["duelen","duele"], c:0,
@@ -1269,7 +1269,7 @@ var QUIZZES = [
   {q:"Me ___ mucho la garganta, creo que tengo un resfriado.", nl:"Mijn keel doet erg pijn, ik denk dat ik verkouden ben.", opts:["duele","duelen"], c:0,
    u:"La garganta is enkelvoud: me duele."}
  ]},
- {id:"q-serestar-salud", titel:"Ser of estar: gezondheid en gemoedstoestand", vragen:[
+ {id:"q-serestar-salud", titel:"Ser of estar: gezondheid en gemoedstoestand", spiek:[24], vragen:[
   {q:"Mi abuela ___ muy sana para su edad.", nl:"Mijn oma is heel gezond voor haar leeftijd.", opts:["es","está"], c:0,
    u:"Blijvende eigenschap van haar: ser (es sana)."},
   {q:"Hoy ___ un poco mejor, gracias.", nl:"Vandaag voel ik me wat beter, dank je.", opts:["estoy","soy"], c:0,
@@ -1287,7 +1287,7 @@ var QUIZZES = [
   {q:"Este jarabe ___ para la tos.", nl:"Deze siroop is voor de hoest.", opts:["es","está"], c:0,
    u:"Ser bij 'is voor/bedoeld voor': es para la tos."}
  ]},
- {id:"q-relatar", titel:"Een verhaal vertellen: indefinido of imperfecto?", vragen:[
+ {id:"q-relatar", titel:"Een verhaal vertellen: indefinido of imperfecto?", spiek:[26], vragen:[
   {q:"Mientras ___ (cenar), alguien llamó a la puerta.", opts:["cenábamos","cenamos"], c:0,
    u:"Achtergrond, bezig zijn met: imperfecto (cenábamos). De onderbrekende gebeurtenis (llamó) is indefinido."},
   {q:"De repente, todos ___ (gritar) '¡sorpresa!'", opts:["gritaron","gritaban"], c:0,
@@ -1309,7 +1309,7 @@ var QUIZZES = [
   {q:"Nunca ___ (vivir, presente perfecto) un momento tan especial.", opts:["he vivido","viví"], c:0,
    u:"Nunca + ervaring tot nu toe (geen afgesloten tijdvak genoemd): pretérito perfecto (he vivido)."}
  ]},
- {id:"q-perfectoindefinido2", titel:"Perfecto of indefinido: open of afgesloten tijdvak?", vragen:[
+ {id:"q-perfectoindefinido2", titel:"Perfecto of indefinido: open of afgesloten tijdvak?", spiek:[27], vragen:[
   {q:"Esta semana ___ varias sorpresas.", nl:"Deze week heb ik verschillende verrassingen gehad.", opts:["he tenido","tuve"], c:0,
    u:"Esta semana = tijdvak dat nog loopt: pretérito perfecto (he tenido)."},
   {q:"El año pasado ___ su cumpleaños en la playa.", nl:"Vorig jaar vierden we haar verjaardag op het strand.", opts:["celebramos","hemos celebrado"], c:0,
@@ -1956,7 +1956,7 @@ var B_SENTENCES = [
 ];
 
 var B_QUIZZES = [
- {id:"bq-ellla", titel:"El of la?", titelEn:"El or la?", vragen:[
+ {id:"bq-ellla", titel:"El of la?", titelEn:"El or la?", spiek:[1], vragen:[
   {q:"___ casa", nl:"het huis (la casa)", ne:"the house (la casa)", opts:["el","la"], c:1, u:"Woorden op -a zijn meestal vrouwelijk: la casa.", ue:"Words ending in -a are usually feminine: la casa."},
   {q:"___ libro", nl:"het boek (el libro)", ne:"the book (el libro)", opts:["el","la"], c:0, u:"Woorden op -o zijn meestal mannelijk: el libro.", ue:"Words ending in -o are usually masculine: el libro."},
   {q:"___ perro", nl:"de hond (el perro)", ne:"the dog (el perro)", opts:["el","la"], c:0, u:"-o = mannelijk: el perro.", ue:"-o = masculine: el perro."},
@@ -1968,7 +1968,7 @@ var B_QUIZZES = [
   {q:"___ gato", nl:"de kat (el gato)", ne:"the cat (el gato)", opts:["el","la"], c:0, u:"-o = mannelijk: el gato.", ue:"-o = masculine: el gato."},
   {q:"___ noche", nl:"de nacht (la noche)", ne:"the night (la noche)", opts:["el","la"], c:1, u:"Die moet je leren: la noche. Buenas noches!", ue:"One to memorise: la noche. Buenas noches!"}
  ]},
- {id:"bq-serestar", titel:"Ser of estar?", titelEn:"Ser or estar?", vragen:[
+ {id:"bq-serestar", titel:"Ser of estar?", titelEn:"Ser or estar?", spiek:[2], vragen:[
   {q:"Yo ___ holandesa.", nl:"Ik ben Nederlandse.", ne:"I am Dutch. (female)", opts:["soy","estoy"], c:0, u:"Nationaliteit is wie je bent: ser (soy).", ue:"Nationality is who you are: ser (soy)."},
   {q:"Yo ___ en casa.", nl:"Ik ben thuis.", ne:"I am at home.", opts:["soy","estoy"], c:1, u:"Plaats (waar je bent): estar (estoy).", ue:"Location (where you are): estar (estoy)."},
   {q:"La casa ___ grande.", nl:"Het huis is groot.", ne:"The house is big.", opts:["es","está"], c:0, u:"Eigenschap (groot zijn hoort bij het huis): ser.", ue:"Characteristic (being big is part of the house): ser."},
@@ -1978,7 +1978,7 @@ var B_QUIZZES = [
   {q:"Ella ___ mi madre.", nl:"Zij is mijn moeder.", ne:"She is my mother.", opts:["es","está"], c:0, u:"Identiteit: ser.", ue:"Identity: ser."},
   {q:"Yo ___ bien, gracias.", nl:"Met mij gaat het goed, dank je.", ne:"I am fine, thank you.", opts:["soy","estoy"], c:1, u:"Hoe het met je gaat = toestand: estar. ¿Cómo estás? Estoy bien.", ue:"How you are doing = state: estar. ¿Cómo estás? Estoy bien."}
  ]},
- {id:"bq-getallen", titel:"Getallen 1-10", titelEn:"Numbers 1-10", vragen:[
+ {id:"bq-getallen", titel:"Getallen 1-10", titelEn:"Numbers 1-10", spiek:[22], vragen:[
   {q:"cinco = ?", opts:["4","5","6"], c:1, u:"cinco = 5.", ue:"cinco = 5."},
   {q:"ocho = ?", opts:["6","7","8"], c:2, u:"ocho = 8.", ue:"ocho = 8."},
   {q:"3 = ?", opts:["dos","tres","seis"], c:1, u:"tres = 3.", ue:"tres = 3."},
@@ -1988,7 +1988,7 @@ var B_QUIZZES = [
   {q:"4 = ?", opts:["cuatro","cinco","seis"], c:0, u:"cuatro = 4, denk aan 'kwartet'.", ue:"cuatro = 4, think of 'quartet'."},
   {q:"seis = ?", opts:["7","16","6"], c:2, u:"seis = 6.", ue:"seis = 6."}
  ]},
- {id:"bq-hayestar", titel:"Hay of está/están?", titelEn:"Hay or está/están?", vragen:[
+ {id:"bq-hayestar", titel:"Hay of está/están?", titelEn:"Hay or está/están?", spiek:[7], vragen:[
   {q:"En mi pueblo ___ una plaza.", nl:"In mijn dorp is er een plein.", ne:"In my village there is a square.", opts:["hay","está"], c:0, u:"Iets nieuws met un/una: hay.", ue:"Something new with un/una: hay."},
   {q:"¿Dónde ___ el museo?", nl:"Waar is het museum?", ne:"Where is the museum?", opts:["hay","está"], c:1, u:"Iets bepaalds met el/la (of een naam): está.", ue:"Something definite with el/la (or a name): está."},
   {q:"Madrid ___ en el centro de España.", nl:"Madrid ligt in het midden van Spanje.", ne:"Madrid is in the centre of Spain.", opts:["hay","está"], c:1, u:"Een naam (Madrid): está.", ue:"A name (Madrid): está."},
@@ -1998,7 +1998,7 @@ var B_QUIZZES = [
   {q:"Los museos ___ en el centro.", nl:"De musea zijn in het centrum.", ne:"The museums are in the centre.", opts:["hay","están"], c:1, u:"Bepaald én meervoud: están. Estar verandert mee, hay nooit.", ue:"Definite AND plural: están. Estar changes form, hay never does."},
   {q:"En el norte ___ montañas.", nl:"In het noorden zijn er bergen.", ne:"In the north there are mountains.", opts:["hay","están"], c:0, u:"Bergen in het algemeen, zonder lidwoord: hay. Ook bij meervoud blijft het gewoon hay.", ue:"Mountains in general, no article: hay. Even in the plural it simply stays hay."}
  ]},
- {id:"bq-muymucho", titel:"Muy of mucho?", titelEn:"Muy or mucho?", vragen:[
+ {id:"bq-muymucho", titel:"Muy of mucho?", titelEn:"Muy or mucho?", spiek:[8], vragen:[
   {q:"La ciudad es ___ grande.", nl:"De stad is heel groot.", ne:"The city is very big.", opts:["muy","mucho"], c:0, u:"Voor een bijvoeglijk naamwoord: muy.", ue:"Before an adjective: muy."},
   {q:"En la playa hay ___ gente.", nl:"Op het strand zijn veel mensen.", ne:"There are a lot of people on the beach.", opts:["muy","mucha"], c:1, u:"Gente is een zelfstandig naamwoord (en vrouwelijk): mucha gente.", ue:"Gente is a noun (and feminine): mucha gente."},
   {q:"Llueve ___ en el norte.", nl:"Het regent veel in het noorden.", ne:"It rains a lot in the north.", opts:["muy","mucho"], c:1, u:"Na een werkwoord: mucho. Llueve mucho.", ue:"After a verb: mucho. Llueve mucho."},
@@ -2008,7 +2008,7 @@ var B_QUIZZES = [
   {q:"Hace ___ frío en las montañas.", nl:"Het is heel koud in de bergen.", ne:"It is very cold in the mountains.", opts:["muy","mucho"], c:1, u:"Frío is hier een zelfstandig naamwoord: mucho frío.", ue:"Frío is a noun here: mucho frío."},
   {q:"El clima es ___ bueno.", nl:"Het klimaat is heel goed.", ne:"The climate is very good.", opts:["muy","mucho"], c:0, u:"Muy + bueno. En onthoud: el clima, ondanks de -a.", ue:"Muy + bueno. And remember: el clima, despite the -a."}
  ]},
- {id:"bq-kleuren", titel:"Kleuren: welke vorm?", titelEn:"Colours: which form?", vragen:[
+ {id:"bq-kleuren", titel:"Kleuren: welke vorm?", titelEn:"Colours: which form?", spiek:[9], vragen:[
   {q:"la camiseta ___", nl:"het rode T-shirt", ne:"the red T-shirt", opts:["roja","rojo"], c:0, u:"Camiseta is vrouwelijk, dus ook de kleur: roja.", ue:"Camiseta is feminine, so the colour is too: roja."},
   {q:"el vestido ___", nl:"de zwarte jurk", ne:"the black dress", opts:["negro","negra"], c:0, u:"El vestido is mannelijk (ondanks dat 'jurk' vrouwelijk klinkt): negro.", ue:"El vestido is masculine (even though a dress sounds feminine): negro."},
   {q:"los zapatos ___", nl:"de witte schoenen", ne:"the white shoes", opts:["blancos","blancas"], c:0, u:"Zapatos is mannelijk meervoud: blancos.", ue:"Zapatos is masculine plural: blancos."},
@@ -2018,7 +2018,7 @@ var B_QUIZZES = [
   {q:"¿De qué ___ es tu coche?", nl:"Welke kleur heeft jouw auto?", ne:"What colour is your car?", opts:["color","colora"], c:0, u:"¿De qué color es...? = welke kleur heeft...? El color is mannelijk.", ue:"¿De qué color es...? = what colour is...? El color is masculine."},
   {q:"las camisetas ___", nl:"de rode T-shirts", ne:"the red T-shirts", opts:["rojas","rojos"], c:0, u:"Camisetas is vrouwelijk meervoud: rojas.", ue:"Camisetas is feminine plural: rojas."}
  ]},
- {id:"bq-getallen100", titel:"Getallen boven de 100", titelEn:"Numbers above 100", vragen:[
+ {id:"bq-getallen100", titel:"Getallen boven de 100", titelEn:"Numbers above 100", spiek:[10], vragen:[
   {q:"100 = ?", nl:"honderd", ne:"one hundred", opts:["cien","ciento","cientos"], c:0, u:"Precies 100 = cien. Ciento alleen in 101-199: ciento dos.", ue:"Exactly 100 = cien. Ciento only in 101-199: ciento dos."},
   {q:"150 = ciento ___", nl:"honderdvijftig", ne:"one hundred and fifty", opts:["cincuenta","quince","cinco"], c:0, u:"150 = ciento cincuenta. Boven de 100 wordt cien → ciento.", ue:"150 = ciento cincuenta. Above 100, cien becomes ciento."},
   {q:"200 = ?", nl:"tweehonderd", ne:"two hundred", opts:["doscientos","dos cientos","doscien"], c:0, u:"200 = doscientos, aan elkaar. Voor iets vrouwelijks: doscientas (doscientas personas).", ue:"200 = doscientos, one word. Before something feminine: doscientas (doscientas personas)."},
@@ -2028,7 +2028,7 @@ var B_QUIZZES = [
   {q:"365 = trescientos sesenta y ___", nl:"driehonderdvijfenzestig", ne:"three hundred and sixty-five", opts:["cinco","seis","siete"], c:0, u:"365 = trescientos sesenta y cinco. De y komt alleen tussen tientallen en eenheden.", ue:"365 = trescientos sesenta y cinco. The y only goes between tens and units."},
   {q:"700 = ?", nl:"zevenhonderd", ne:"seven hundred", opts:["setecientos","sietecientos","setencientos"], c:0, u:"Instinker! 700 = setecientos (zonder ie). Net zo: 900 = novecientos.", ue:"Trick question! 700 = setecientos (no ie). Same idea: 900 = novecientos."}
  ]},
- {id:"bq-posesivos", titel:"Mi, tu, su: van wie is het?", titelEn:"Mi, tu, su: whose is it?", vragen:[
+ {id:"bq-posesivos", titel:"Mi, tu, su: van wie is het?", titelEn:"Mi, tu, su: whose is it?", spiek:[12], vragen:[
   {q:"___ abuelo (van mij)", nl:"mijn opa", ne:"my grandfather", opts:["mi","mis"], c:0, u:"Enkelvoud: mi. Mi verandert niet mee met m/v.", ue:"Singular: mi. Mi doesn't change for m/f."},
   {q:"___ padres (van mij)", nl:"mijn ouders", ne:"my parents", opts:["mi","mis"], c:1, u:"Meervoud: mis.", ue:"Plural: mis."},
   {q:"___ novia (van jou)", nl:"jouw vriendin", ne:"your girlfriend", opts:["tu","tus"], c:0, u:"Enkelvoud: tu (zonder accent, anders is het tú = jij).", ue:"Singular: tu (no accent, otherwise it's tú = you)."},
@@ -2038,7 +2038,7 @@ var B_QUIZZES = [
   {q:"___ hermana (van haar)", nl:"haar zus", ne:"her sister", opts:["su","sus"], c:0, u:"Enkelvoud: su. Su kan 'zijn', 'haar', 'hun' of 'uw' betekenen, afhankelijk van de context.", ue:"Singular: su. Su can mean 'his', 'her', 'their' or 'your' (formal), depending on context."},
   {q:"¿Cómo se llama ___ profesor? (van jullie/u)", nl:"Hoe heet jullie leraar?", ne:"What's your teacher's name?", opts:["su","sus"], c:0, u:"Enkelvoud (één leraar): su.", ue:"Singular (one teacher): su."}
  ]},
- {id:"bq-gustarfamilia", titel:"Gustar met familie en hobby's", titelEn:"Gustar with family and hobbies", vragen:[
+ {id:"bq-gustarfamilia", titel:"Gustar met familie en hobby's", titelEn:"Gustar with family and hobbies", spiek:[13], vragen:[
   {q:"Nos ___ el fútbol.", nl:"Wij houden van voetbal.", ne:"We like football.", opts:["gusta","gustan"], c:0, u:"El fútbol is enkelvoud: nos gusta.", ue:"El fútbol is singular: nos gusta."},
   {q:"A mi hermana le ___ la música.", nl:"Mijn zus houdt van muziek.", ne:"My sister likes music.", opts:["gusta","gustan"], c:0, u:"La música is enkelvoud: le gusta.", ue:"La música is singular: le gusta."},
   {q:"Me ___ los deportes.", nl:"Ik houd van sporten.", ne:"I like sports.", opts:["gusta","gustan"], c:1, u:"Los deportes is meervoud: me gustan.", ue:"Los deportes is plural: me gustan."},
@@ -2048,7 +2048,7 @@ var B_QUIZZES = [
   {q:"¿___ a mi novio?", nl:"Ken je mijn vriend?", ne:"Do you know my boyfriend?", opts:["Conoces","Sabes"], c:0, u:"Voor het kennen van een persoon gebruik je conocer, niet saber.", ue:"For knowing a person, use conocer, not saber."},
   {q:"Mis padres están ___.", nl:"Mijn ouders zijn getrouwd.", ne:"My parents are married.", opts:["casados","casado"], c:0, u:"Padres is meervoud (en gemengd/mannelijk): casados.", ue:"Padres is plural (mixed/masculine): casados."}
  ]},
- {id:"bq-hora", titel:"Hoe laat is het?", titelEn:"What time is it?", vragen:[
+ {id:"bq-hora", titel:"Hoe laat is het?", titelEn:"What time is it?", spiek:[14], vragen:[
   {q:"1:00 = ___ una.", nl:"Het is één uur.", ne:"It's one o'clock.", opts:["es la","son las"], c:0, u:"Bij 1 uur gebruik je es la (enkelvoud).", ue:"For 1 o'clock use es la (singular)."},
   {q:"3:00 = ___ tres.", nl:"Het is drie uur.", ne:"It's three o'clock.", opts:["es la","son las"], c:1, u:"Bij alle andere uren: son las.", ue:"For all other hours: son las."},
   {q:"8:30 = las ocho y ___.", nl:"half negen", ne:"half past eight", opts:["media","cuarto"], c:0, u:"Y media = half (en een half).", ue:"Y media = half past (and a half)."},
@@ -2058,7 +2058,7 @@ var B_QUIZZES = [
   {q:"Ceno ___ la noche.", nl:"Ik eet 's avonds.", ne:"I have dinner in the evening.", opts:["por","en"], c:0, u:"Por la noche/mañana/tarde = 's avonds/'s ochtends/'s middags.", ue:"Por la noche/mañana/tarde = in the evening/morning/afternoon."},
   {q:"¿Qué ___ es?", nl:"Hoe laat is het?", ne:"What time is it?", opts:["hora","tiempo"], c:0, u:"¿Qué hora es? is de vaste vraag naar de tijd.", ue:"¿Qué hora es? is the fixed way to ask the time."}
  ]},
- {id:"bq-reflexivos", titel:"Reflexieve werkwoorden: me, te, se", titelEn:"Reflexive verbs: me, te, se", vragen:[
+ {id:"bq-reflexivos", titel:"Reflexieve werkwoorden: me, te, se", titelEn:"Reflexive verbs: me, te, se", spiek:[15], vragen:[
   {q:"Yo ___ levanto a las siete.", nl:"Ik sta om zeven uur op.", ne:"I get up at seven o'clock.", opts:["me","te"], c:0, u:"Yo hoort bij me: me levanto.", ue:"Yo goes with me: me levanto."},
   {q:"¿A qué hora ___ duchas?", nl:"Hoe laat douche jij?", ne:"What time do you shower?", opts:["te","se"], c:0, u:"Tú hoort bij te: te duchas.", ue:"Tú goes with te: te duchas."},
   {q:"Ella ___ acuesta muy tarde.", nl:"Zij gaat heel laat naar bed.", ne:"She goes to bed very late.", opts:["se","me"], c:0, u:"Ella hoort bij se: se acuesta.", ue:"Ella goes with se: se acuesta."},
@@ -2068,7 +2068,7 @@ var B_QUIZZES = [
   {q:"Waar staat het wederkerend voornaamwoord meestal?", opts:["vóór het vervoegde werkwoord","áchter het vervoegde werkwoord"], c:0, u:"Me/te/se/nos/os/se gaan meestal vóór het vervoegde werkwoord: me levanto, niet levanto me.", ue:"Me/te/se/nos/os/se usually go before the conjugated verb: me levanto, not levanto me."},
   {q:"Ellos ___ duchan por la mañana.", nl:"Zij douchen 's ochtends.", ne:"They shower in the morning.", opts:["se","nos"], c:0, u:"Ellos hoort bij se: se duchan.", ue:"Ellos goes with se: se duchan."}
  ]},
- {id:"bq-querer", titel:"Querer en pedir: bestellen", titelEn:"Querer and pedir: ordering", vragen:[
+ {id:"bq-querer", titel:"Querer en pedir: bestellen", titelEn:"Querer and pedir: ordering", spiek:[16], vragen:[
   {q:"Yo ___ un café.", nl:"Ik wil graag een koffie.", ne:"I'd like a coffee.", opts:["quiero","quiere"], c:0, u:"Yo-vorm van querer (e→ie): quiero.", ue:"Yo-form of querer (e→ie): quiero."},
   {q:"¿Qué ___ comer?", nl:"Wat wil jij eten?", ne:"What do you want to eat?", opts:["quieres","quiero"], c:0, u:"Tú-vorm van querer: quieres.", ue:"Tú-form of querer: quieres."},
   {q:"Voy a ___ el pescado.", nl:"Ik ga de vis bestellen.", ne:"I'm going to order the fish.", opts:["pedir","pido"], c:0, u:"Na 'voy a' komt altijd de infinitief: pedir.", ue:"After 'voy a' you always use the infinitive: pedir."},
@@ -2078,7 +2078,7 @@ var B_QUIZZES = [
   {q:"No ___ carne.", nl:"Ik eet geen vlees.", ne:"I don't eat meat.", opts:["como","comes"], c:0, u:"Yo-vorm van comer: como.", ue:"Yo-form of comer: como."},
   {q:"Me ___ mucho las verduras.", nl:"Ik hou erg van groente.", ne:"I really like vegetables.", opts:["gustan","gusta"], c:0, u:"Las verduras is meervoud: me gustan.", ue:"Las verduras is plural: me gustan."}
  ]},
- {id:"bq-restaurante", titel:"In het restaurant", titelEn:"At the restaurant", vragen:[
+ {id:"bq-restaurante", titel:"In het restaurant", titelEn:"At the restaurant", spiek:[17], vragen:[
   {q:"Het menu (de kaart) = la ___", opts:["carta","carte"], c:0, u:"La carta = het menu in een restaurant (niet 'el menú', dat is meer een vast menu-arrangement).", ue:"La carta = the menu at a restaurant (not 'el menú', which is more a fixed set menu)."},
   {q:"De rekening = la ___", opts:["cuenta","cuento"], c:0, u:"La cuenta = de rekening. El cuento = het verhaal, iets heel anders!", ue:"La cuenta = the bill. El cuento = the story, something completely different!"},
   {q:"De ober/serveerster = el/la ___", opts:["camarero/camarera","cocinero/cocinera"], c:0, u:"Camarero/camarera = ober/serveerster. Cocinero/cocinera = kok.", ue:"Camarero/camarera = waiter/waitress. Cocinero/cocinera = cook."},
@@ -2088,7 +2088,7 @@ var B_QUIZZES = [
   {q:"Fruit = la ___", opts:["fruta","frutería"], c:0, u:"La fruta = fruit. La frutería = de fruitwinkel.", ue:"La fruta = fruit. La frutería = the fruit shop."},
   {q:"Ontbijt/lunch/avondeten in volgorde = el ___, el ___, la ___", opts:["desayuno · almuerzo · cena","almuerzo · desayuno · cena"], c:0, u:"El desayuno (ontbijt) → el almuerzo (lunch) → la cena (avondeten): de juiste volgorde van de dag.", ue:"El desayuno (breakfast) → el almuerzo (lunch) → la cena (dinner): the correct order of the day."}
  ]},
- {id:"bq-preposiciones", titel:"Waar is het? Voorzetsels van plaats", titelEn:"Where is it? Prepositions of place", vragen:[
+ {id:"bq-preposiciones", titel:"Waar is het? Voorzetsels van plaats", titelEn:"Where is it? Prepositions of place", spiek:[18], vragen:[
   {q:"El supermercado está ___ de mi casa.", nl:"De supermarkt is dichtbij mijn huis.", ne:"The supermarket is close to my house.", opts:["cerca","lejos"], c:0, u:"Cerca de = dichtbij.", ue:"Cerca de = close to."},
   {q:"La playa está ___ del centro.", nl:"Het strand is ver van het centrum.", ne:"The beach is far from the centre.", opts:["lejos","cerca"], c:0, u:"Lejos de = ver van.", ue:"Lejos de = far from."},
   {q:"La farmacia está ___ del banco.", nl:"De apotheek is naast de bank.", ne:"The pharmacy is next to the bank.", opts:["al lado","enfrente"], c:0, u:"Al lado de = naast.", ue:"Al lado de = next to."},
@@ -2098,7 +2098,7 @@ var B_QUIZZES = [
   {q:"Voorzetsel + de is nodig bij...", opts:["cerca, lejos, al lado, enfrente","entre"], c:0, u:"Cerca/lejos/al lado/enfrente hebben allemaal 'de' nodig (cerca de, lejos de...). Entre juist niet: entre el banco y la iglesia.", ue:"Cerca/lejos/al lado/enfrente all need 'de' (cerca de, lejos de...). Entre does not: entre el banco y la iglesia."},
   {q:"Prefiero caminar ___ vez de coger el coche.", nl:"Ik loop liever dan de auto te pakken.", ne:"I prefer to walk rather than take the car.", opts:["en","de"], c:0, u:"En vez de = in plaats van.", ue:"En vez de = instead of."}
  ]},
- {id:"bq-barrio", titel:"Je buurt beschrijven", titelEn:"Describing your neighbourhood", vragen:[
+ {id:"bq-barrio", titel:"Je buurt beschrijven", titelEn:"Describing your neighbourhood", spiek:[19], vragen:[
   {q:"Mi barrio es muy ___.", nl:"Mijn buurt is heel veilig.", ne:"My neighbourhood is very safe.", opts:["seguro","segura"], c:0, u:"El barrio is mannelijk: seguro.", ue:"El barrio is masculine: seguro."},
   {q:"Esta calle está muy ___.", nl:"Deze straat is heel schoon.", ne:"This street is very clean.", opts:["limpia","limpio"], c:0, u:"La calle is vrouwelijk: limpia.", ue:"La calle is feminine: limpia."},
   {q:"El parque está muy ___.", nl:"Het park is heel vies.", ne:"The park is very dirty.", opts:["sucio","sucia"], c:0, u:"El parque is mannelijk: sucio.", ue:"El parque is masculine: sucio."},
@@ -2108,7 +2108,7 @@ var B_QUIZZES = [
   {q:"Este barrio es demasiado ___ por la noche.", nl:"Deze buurt is 's nachts te lawaaierig.", ne:"This neighbourhood is too noisy at night.", opts:["ruidoso","tranquilo"], c:0, u:"Ruidoso = lawaaierig, het tegenovergestelde van tranquilo (rustig).", ue:"Ruidoso = noisy, the opposite of tranquilo (quiet)."},
   {q:"Prefiero un barrio ___.", nl:"Ik heb liever een rustige buurt.", ne:"I prefer a quiet neighbourhood.", opts:["tranquilo","ruidoso"], c:0, u:"Tranquilo = rustig.", ue:"Tranquilo = quiet."}
  ]},
- {id:"bq-saberpoder", titel:"Saber of poder?", titelEn:"Saber or poder?", vragen:[
+ {id:"bq-saberpoder", titel:"Saber of poder?", titelEn:"Saber or poder?", spiek:[20], vragen:[
   {q:"___ nadar muy bien.", nl:"Ik kan heel goed zwemmen.", ne:"I can swim very well.", opts:["Sé","Puedo"], c:0, u:"Een aangeleerde vaardigheid: saber. Sé = ik weet/kan.", ue:"A learned skill: saber. Sé = I know/can."},
   {q:"No ___ salir hoy, tengo mucho trabajo.", nl:"Ik kan vandaag niet weg, ik heb veel werk.", ne:"I can't go out today, I have a lot of work.", opts:["puedo","sé"], c:0, u:"Door omstandigheden (geen tijd): poder.", ue:"Due to circumstances (no time): poder."},
   {q:"¿___ conducir?", nl:"Kun jij autorijden?", ne:"Can you drive?", opts:["Sabes","Puedes"], c:0, u:"Autorijden is een vaardigheid die je leert: saber.", ue:"Driving is a skill you learn: saber."},
@@ -2118,7 +2118,7 @@ var B_QUIZZES = [
   {q:"Saber gaat over...", opts:["een aangeleerde vaardigheid","in staat zijn door omstandigheden"], c:0, u:"Saber = weten hoe iets moet, een vaardigheid.", ue:"Saber = knowing how to do something, a skill."},
   {q:"Poder gaat over...", opts:["in staat zijn/toestemming hebben door omstandigheden","een aangeleerde vaardigheid"], c:0, u:"Poder = kunnen door de situatie (mogelijkheid, toestemming).", ue:"Poder = being able to due to the situation (possibility, permission)."}
  ]},
- {id:"bq-perfecto", titel:"Pretérito perfecto", titelEn:"Pretérito perfecto", vragen:[
+ {id:"bq-perfecto", titel:"Pretérito perfecto", titelEn:"Pretérito perfecto", spiek:[21], vragen:[
   {q:"He ___ a tocar la guitarra.", nl:"Ik heb geleerd gitaar te spelen.", ne:"I've learned to play the guitar.", opts:["aprendido","aprendiendo"], c:0, u:"Regelmatig voltooid deelwoord: aprender → aprendido (-er → -ido).", ue:"Regular past participle: aprender → aprendido (-er → -ido)."},
   {q:"¿___ hecho la cena?", nl:"Heb je het avondeten gemaakt?", ne:"Have you made dinner?", opts:["Has","Ha"], c:0, u:"Tú-vorm van haber: has.", ue:"Tú-form of haber: has."},
   {q:"Hacer → voltooid deelwoord: ___", opts:["hecho","hacido"], c:0, u:"Onregelmatig: hacer → hecho.", ue:"Irregular: hacer → hecho."},
@@ -2378,7 +2378,14 @@ var B_CHEATSHEET = [
   "<table><tr><th>haber</th></tr><tr><td>he · has · ha · hemos · habéis · han</td></tr></table>"+
   "<p>Regular past participle: -ar → -ado (hablado), -er/-ir → -ido (comido, vivido, aprendido).</p>"+
   "<p>Irregular past participles to remember: <b>hecho</b> (hacer), <b>visto</b> (ver), <b>dicho</b> (decir), <b>puesto</b> (poner), <b>escrito</b> (escribir).</p>"+
-  "<p>Example: He aprendido a tocar la guitarra. ¿Has hecho la cena? Todavía no he visto esa película.</p>"}
+  "<p>Example: He aprendido a tocar la guitarra. ¿Has hecho la cena? Todavía no he visto esa película.</p>"},
+ {titel:"Getallen 1-10", titelEn:"Numbers 1-10",
+  html:"<table><tr><td>1 uno</td><td>2 dos</td><td>3 tres</td><td>4 cuatro</td><td>5 cinco</td></tr>"+
+  "<tr><td>6 seis</td><td>7 siete</td><td>8 ocho</td><td>9 nueve</td><td>10 diez</td></tr></table>"+
+  "<p>Tip: nueve lijkt op 'nuevo' (nieuw); cuatro doet denken aan een 'kwartet'.</p>",
+  htmlEn:"<table><tr><td>1 uno</td><td>2 dos</td><td>3 tres</td><td>4 cuatro</td><td>5 cinco</td></tr>"+
+  "<tr><td>6 seis</td><td>7 siete</td><td>8 ocho</td><td>9 nueve</td><td>10 diez</td></tr></table>"+
+  "<p>Tip: nueve looks like 'nuevo' (new); cuatro can help you remember 'quartet'.</p>"}
 ];
 
 var TRACKS = {
@@ -2390,48 +2397,48 @@ var TRACKS = {
 function rng(p,a,b){ var r=[]; for(var i=a;i<=b;i++) r.push(p+i); return r; }
 
 TRACKS.a2.lessons = [
- {id:"a2-1", num:1, titel:"El español y tú", doel:"Praten over taal leren: wat je lastig vindt en hoe je je voelt",
+ {id:"a2-1", num:1, titel:"Cómo me siento aprendiendo español", doel:"Praten over taal leren: wat je lastig vindt en hoe je je voelt",
   spiek:[1,2,3,6], words:rng("w",1,40).concat(rng("w",57,64)), sents:rng("s",1,10).concat(rng("s",21,24)), quizzes:["q-costar","q-ser"]},
- {id:"a2-2", num:2, titel:"Una vida de película", doel:"Een biografie vertellen in de verleden tijd",
+ {id:"a2-2", num:2, titel:"Toda una vida", doel:"Een biografie vertellen in de verleden tijd",
   spiek:[0,5,4,6], words:rng("w",41,56).concat(rng("w",65,82)), sents:rng("s",11,20).concat(rng("s",25,30)), quizzes:["q-tijden","q-vormen","q-serir"]},
- {id:"a2-3", num:3, titel:"Yo soy así", doel:"Personen beschrijven: uiterlijk, karakter en relaties",
+ {id:"a2-3", num:3, titel:"¿Cómo eres?", doel:"Personen beschrijven: uiterlijk, karakter en relaties",
   spiek:[7], words:rng("w",83,98), sents:rng("s",31,36), quizzes:["q-soyasi"]},
- {id:"a2-4", num:4, titel:"Hogar, dulce hogar", doel:"Een woning beschrijven en vergelijken",
+ {id:"a2-4", num:4, titel:"Mi casa, tu casa", doel:"Een woning beschrijven en vergelijken",
   spiek:[8,9,10], words:rng("w",99,122), sents:rng("s",37,44), quizzes:["q-hogar","q-posesivos"]},
- {id:"a2-5", num:5, titel:"¿Cómo va todo?", doel:"Formeel en informeel: vragen, lenen, excuses",
+ {id:"a2-5", num:5, titel:"Un favor, por favor", doel:"Formeel en informeel: vragen, lenen, excuses",
   spiek:[11,12,13], words:rng("w",123,144), sents:rng("s",45,52), quizzes:["q-gerundio","q-cortesia"]},
- {id:"a2-6", num:6, titel:"Guía del ocio", doel:"Vrije tijd beoordelen en plannen (¡qué...!, parecer, ir a + infinitief)",
+ {id:"a2-6", num:6, titel:"Planes de fin de semana", doel:"Vrije tijd beoordelen en plannen (¡qué...!, parecer, ir a + infinitief)",
   spiek:[17,18,19], words:rng("w",163,180), sents:rng("s",61,68), quizzes:["q-que","q-planes"]},
- {id:"a2-7", num:7, titel:"¿Comes de todo?", doel:"Koken en eten (imperativo, se impersonal, hoeveelheden)",
+ {id:"a2-7", num:7, titel:"Recetas y consejos", doel:"Koken en eten (imperativo, se impersonal, hoeveelheden)",
   spiek:[20,21,22], words:rng("w",181,198), sents:rng("s",69,76), quizzes:["q-imperativo","q-seimpersonal"]},
- {id:"a2-8", num:8, titel:"Estamos muy bien", doel:"Lichaam, gezondheid en advies geven (doler, ser vs estar)",
+ {id:"a2-8", num:8, titel:"Cuídate", doel:"Lichaam, gezondheid en advies geven (doler, ser vs estar)",
   spiek:[23,24,25], words:rng("w",199,216), sents:rng("s",77,84), quizzes:["q-doler","q-serestar-salud"]},
- {id:"a2-9", num:9, titel:"Antes y ahora", doel:"Vroeger en nu vergelijken (pretérito imperfecto)",
+ {id:"a2-9", num:9, titel:"Cómo cambian las cosas", doel:"Vroeger en nu vergelijken (pretérito imperfecto)",
   spiek:[14,15,16], words:rng("w",145,162), sents:rng("s",53,60), quizzes:["q-imperfecto","q-antesahora"]},
- {id:"a2-10", num:10, titel:"Momentos especiales", doel:"Anekdotes vertellen (indefinido, imperfecto en perfecto samen)",
+ {id:"a2-10", num:10, titel:"Anécdotas para contar", doel:"Anekdotes vertellen (indefinido, imperfecto en perfecto samen)",
   spiek:[26,27,28], words:rng("w",217,234), sents:rng("s",85,92), quizzes:["q-relatar","q-perfectoindefinido2"]}
 ];
 
 TRACKS.beginner.lessons = [
  {id:"a0-0", num:0, titel:"En el aula", doel:"Begroeten, jezelf redden in de les en tellen tot 10", doelEn:"Greetings, surviving in class and counting to 10",
-  spiek:[0,4], words:rng("b",1,10).concat(["b35","b36","b39"]), sents:["bs1","bs14","bs15","bs16"], quizzes:["bq-getallen"]},
- {id:"a0-1", num:1, titel:"Nosotros y nosotras", doel:"Jezelf voorstellen: naam, leeftijd, land en familie", doelEn:"Introducing yourself: name, age, country and family",
-  spiek:[5,3], words:rng("b",41,50).concat(["b37"]).concat(rng("b",17,20)), sents:["bs2","bs3","bs17","bs18","bs19"], quizzes:["bq-serestar"]},
- {id:"a0-2", num:2, titel:"Quiero aprender español", doel:"El of la, en je eerste werkwoorden in het presente", doelEn:"El or la, and your first verbs in the present tense",
+  spiek:[0,4,22], words:rng("b",1,10).concat(["b35","b36","b39"]), sents:["bs1","bs14","bs15","bs16"], quizzes:["bq-getallen"]},
+ {id:"a0-1", num:1, titel:"Un poco sobre mí", doel:"Jezelf voorstellen: naam, leeftijd, land en familie", doelEn:"Introducing yourself: name, age, country and family",
+  spiek:[5,2,3], words:rng("b",41,50).concat(["b37"]).concat(rng("b",17,20)), sents:["bs2","bs3","bs17","bs18","bs19"], quizzes:["bq-serestar"]},
+ {id:"a0-2", num:2, titel:"Empezamos a hablar", doel:"El of la, en je eerste werkwoorden in het presente", doelEn:"El or la, and your first verbs in the present tense",
   spiek:[1,6], words:rng("b",11,16).concat(rng("b",21,34)).concat(["b38","b40"]).concat(rng("b",51,56)), sents:["bs5","bs6","bs9","bs10","bs11","bs13","bs20"], quizzes:["bq-ellla"]},
- {id:"a0-3", num:3, titel:"¿Dónde está Santiago?", doel:"Waar is het? Plaatsen, klimaat en hay/estar", doelEn:"Where is it? Places, climate and hay/estar",
+ {id:"a0-3", num:3, titel:"¿Dónde estamos?", doel:"Waar is het? Plaatsen, klimaat en hay/estar", doelEn:"Where is it? Places, climate and hay/estar",
   spiek:[7,8], words:rng("b",57,74), sents:rng("bs",21,27), quizzes:["bq-hayestar","bq-muymucho"]},
- {id:"a0-4", num:4, titel:"¿Cuál prefieres?", doel:"Winkelen: kleuren, kleding en getallen boven 100", doelEn:"Shopping: colours, clothes and numbers above 100",
+ {id:"a0-4", num:4, titel:"De compras", doel:"Winkelen: kleuren, kleding en getallen boven 100", doelEn:"Shopping: colours, clothes and numbers above 100",
   spiek:[9,10,11], words:rng("b",75,96), sents:rng("bs",28,34), quizzes:["bq-kleuren","bq-getallen100"]},
- {id:"a0-5", num:5, titel:"Tus amigos son mis amigos", doel:"Familie, vrienden en gustar", doelEn:"Family, friends and gustar",
+ {id:"a0-5", num:5, titel:"Mi gente", doel:"Familie, vrienden en gustar", doelEn:"Family, friends and gustar",
   spiek:[12,13], words:rng("b",97,114), sents:rng("bs",35,41), quizzes:["bq-posesivos","bq-gustarfamilia"]},
- {id:"a0-6", num:6, titel:"Día a día", doel:"Je dagelijkse routine en de klok", doelEn:"Your daily routine and telling the time",
+ {id:"a0-6", num:6, titel:"De la mañana a la noche", doel:"Je dagelijkse routine en de klok", doelEn:"Your daily routine and telling the time",
   spiek:[14,15], words:rng("b",115,132), sents:rng("bs",42,48), quizzes:["bq-hora","bq-reflexivos"]},
- {id:"a0-7", num:7, titel:"¡A comer!", doel:"Eten bestellen en over eten praten", doelEn:"Ordering food and talking about food",
+ {id:"a0-7", num:7, titel:"Buen provecho", doel:"Eten bestellen en over eten praten", doelEn:"Ordering food and talking about food",
   spiek:[16,17], words:rng("b",133,150), sents:rng("bs",49,55), quizzes:["bq-querer","bq-restaurante"]},
- {id:"a0-8", num:8, titel:"El barrio ideal", doel:"Jouw ideale buurt beschrijven", doelEn:"Describing your ideal neighbourhood",
+ {id:"a0-8", num:8, titel:"¿Cómo es tu barrio?", doel:"Jouw ideale buurt beschrijven", doelEn:"Describing your ideal neighbourhood",
   spiek:[18,19], words:rng("b",151,168), sents:rng("bs",56,62), quizzes:["bq-preposiciones","bq-barrio"]},
- {id:"a0-9", num:9, titel:"¿Sabes conducir?", doel:"Wat kun jij? Vaardigheden en de perfecto", doelEn:"What can you do? Skills and the perfecto",
+ {id:"a0-9", num:9, titel:"Cosas que ya sé hacer", doel:"Wat kun jij? Vaardigheden en de perfecto", doelEn:"What can you do? Skills and the perfecto",
   spiek:[20,21], words:rng("b",169,186), sents:rng("bs",63,69), quizzes:["bq-saberpoder","bq-perfecto"]}
 ];
 
@@ -3159,6 +3166,14 @@ function tLessons(){
   var p = activeProfile();
   var tr = p ? (TRACKS[p.track] || TRACKS.a2) : TRACKS.a2;
   return tr.lessons || [];
+}
+function trQuizzes(){
+  // De EIGEN toetsjes-pool van het actieve track (dus NIET de samengevoegde runtime `QUIZZES`, die voor
+  // A2-profielen ook alle A0-opfris-toetsjes bevat). Nodig omdat spiek-indexen alleen uniek zijn BINNEN
+  // één cheatsheet (CHEATSHEET vs B_CHEATSHEET) — hetzelfde indexnummer betekent iets anders per track.
+  var p = activeProfile();
+  var tr = p ? (TRACKS[p.track] || TRACKS.a2) : TRACKS.a2;
+  return tr.quizzes || [];
 }
 function reviewLessons(){
   var p = activeProfile();
@@ -9223,14 +9238,24 @@ function renderFunDuel(){
 }
 /* ================= SPIEKBRIEF ================= */
 function quizzenBijSpiek(idx){
-  // welke toetsjes horen bij dit spiekbrief-onderwerp? (via de lessen die het onderwerp gebruiken)
+  // welke toetsjes horen bij dit spiekbrief-onderwerp?
+  // Primair: elk toetsje heeft een eigen `spiek`-veld (welke cheatsheet-index(en) het daadwerkelijk toetst).
+  // Zo krijgt elk onderwerp precies de toetsjes die er inhoudelijk bij horen, i.p.v. alle toetsjes van de
+  // hele les (dat gaf voorheen vaak een verkeerd/te breed toetsje-aanbod bij een specifiek onderwerp).
+  // Let op: gebruikt trQuizzes() (de EIGEN pool van het actieve track), niet de samengevoegde runtime
+  // QUIZZES — anders zou bijv. bij een A2-profiel spiek-index 2 ook A0-toetsjes kunnen matchen, want
+  // spiek-indexen zijn alleen uniek BINNEN één cheatsheet, niet tussen CHEATSHEET en B_CHEATSHEET.
+  var pool = trQuizzes();
+  var directe = pool.filter(function(q){ return q.spiek && q.spiek.indexOf(idx) !== -1; });
+  if(directe.length) return directe;
+  // Fallback, alleen voor een toetsje zonder eigen spiek-veld: via de lessen die dit onderwerp gebruiken.
   var ids = {};
   tLessons().forEach(function(l){
     if(!l.stub && l.spiek && l.spiek.indexOf(idx) !== -1){
       (l.quizzes || []).forEach(function(q){ ids[q] = true; });
     }
   });
-  return QUIZZES.filter(function(q){ return ids[q.id]; });
+  return pool.filter(function(q){ return !q.spiek && ids[q.id]; });
 }
 function renderCheat(){
   var el = document.getElementById("cheat");
