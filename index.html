@@ -436,7 +436,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.14";
+var APP_VERSIE = "v19.15";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2392,6 +2392,33 @@ function answerWord(good){
   S.srs[wCur.id] = st; wSessionDone++; persist(); updateBadge(); checkLessonComplete(); renderWord();
 }
 
+/* ================= ACCENTTOETSEN (invoegen van á é í ñ ó ú ü ¿ ¡ zonder Spaans toetsenbord) ================= */
+var ACCENT_TOETSEN = ["á","é","í","ñ","ó","ú","ü","¿","¡"];
+function accentToetsenHtml(rowId){
+  return "<div class='row' id='"+rowId+"' style='gap:5px; margin-top:6px'>"+
+    ACCENT_TOETSEN.map(function(c){
+      return "<button type='button' class='ghost accent-toets' data-c='"+c+"' style='padding:5px 11px; font-size:1.05rem; min-width:0'>"+c+"</button>";
+    }).join("")+
+    "</div>";
+}
+function wireAccentToetsen(rowId, inputId){
+  var row = document.getElementById(rowId);
+  var inp = document.getElementById(inputId);
+  if(!row || !inp) return;
+  row.querySelectorAll(".accent-toets").forEach(function(b){
+    // voorkomt dat het invoerveld de focus (en cursorpositie) kwijtraakt bij het tikken van de knop
+    b.addEventListener("mousedown", function(e){ e.preventDefault(); });
+    b.onclick = function(){
+      var start = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
+      var end = inp.selectionEnd != null ? inp.selectionEnd : inp.value.length;
+      var c = b.getAttribute("data-c");
+      inp.value = inp.value.slice(0, start) + c + inp.value.slice(end);
+      inp.focus();
+      inp.setSelectionRange(start + c.length, start + c.length);
+    };
+  });
+}
+
 /* ================= VERTALEN ================= */
 function norm(s){
   return s.toLowerCase().trim()
@@ -2451,14 +2478,14 @@ function renderSentence(fresh){
     "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+(6-lesFlow.vertalenTeGaan)+"/5" : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
     "<p class='big'>"+zinPrompt(s)+"</p>"+
     "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='"+ct("Typ de Spaanse zin...","Type the Spanish sentence...")+"'>"+
-    "<div class='row'><button class='primary' id='btnCheck'>"+ct("Controleer","Check")+"</button>"+
-    "<button class='ghost' id='btnSkip'>"+ct("Andere zin","Different sentence")+"</button></div>"+
+    accentToetsenHtml("sAccent")+
+    "<div class='row'><button class='primary' id='btnCheck'>"+ct("Controleer","Check")+"</button></div>"+
     "<div id='sFeedback'></div>";
   lesFlowWireStopKnop();
+  wireAccentToetsen("sAccent", "sInput");
   var inp = document.getElementById("sInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkSentence(); });
   document.getElementById("btnCheck").onclick = checkSentence;
-  document.getElementById("btnSkip").onclick = function(){ renderSentence(true); };
   inp.focus();
 }
 
@@ -2648,12 +2675,14 @@ function renderFunDictado(){
     "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
     "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>"+
     "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
+    accentToetsenHtml("dAccent")+
     "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button>"+
     "<button class='ghost' id='btnDicSkip'>" + fx("dicSkip") + "</button>"+
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='dFeedback'></div>";
   el.innerHTML = html;
   lesFlowWireStopKnop();
+  wireAccentToetsen("dAccent", "dInput");
   var inp = document.getElementById("dInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
   document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s, DIC_RATE_NORMAL); };
@@ -2846,12 +2875,14 @@ function renderFunConjugador(){
       "<p class='muted' style='margin:0'>"+ct("presente","present tense")+"</p>"+
     "</div>"+
     "<input type='text' id='cjInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("cjPlaceholder")+"'>"+
+    accentToetsenHtml("cjAccent")+
     "<div class='row'><button class='primary' id='btnCjCheck'>" + ct("Controleer","Check") + "</button>"+
     "<button class='ghost' id='btnCjSkip'>" + fx("cjSkip") + "</button>"+
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='cjFeedback'></div>";
   el.innerHTML = html;
   lesFlowWireStopKnop();
+  wireAccentToetsen("cjAccent", "cjInput");
   var inp = document.getElementById("cjInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkConjugador(); });
   document.getElementById("btnCjCheck").onclick = checkConjugador;
@@ -3498,6 +3529,10 @@ function renderLessonSpiek(l){
 }
 
 /* ================= CHISPA (tamagotchi) ================= */
+// Chispa's evolutie is bewust opgeknipt in een paar GROTE, zichtbare vormsprongen (ei -> baby ->
+// volwassen -> stralende meestervorm) i.p.v. steeds hetzelfde lijf met alleen een extra accessoire.
+// Binnen zo'n vorm blijft de opbouw wel subtiel (net als voorheen: hoedjes/medailles/baard komen
+// er per niveau geleidelijk bij) — Stefans gekozen aanpak: "duidelijker evolutie per fase".
 function petSVG(){
   var lvl = petLevel(S.txp || 0);
   var mood = petMoodKey();
@@ -3513,7 +3548,56 @@ function petSVG(){
       (w.bufanda?"<rect x='55' y='120' width='90' height='14' rx='7' fill='#c0392b'/>":"")+
       "</svg>";
   }
-  var scale = lvl===1 ? 0.8 : (lvl===2 ? 1 : Math.min(1.12 + (lvl-3)*0.012, 1.2));
+  if(lvl <= 2) return petSVGBaby(lvl, mood, w);
+  return petSVGGroot(lvl, mood, w);
+}
+
+// ================= CHISPA: BABY-VORM (lvl 1-2, bebé/joven) =================
+// Bewust een heel andere, rondere, staartloze vorm dan de volwassen Chispa (petSVGGroot) i.p.v.
+// gewoon een kleinere versie van hetzelfde lijf — zo is de sprong ei -> baby -> volwassen ook echt
+// te zíen, niet alleen te lezen aan het niveau-label.
+function petSVGBaby(lvl, mood, w){
+  var groei = lvl - 1; // 0 = bebé (net uit het ei, kieuwstompjes, dichte oogjes-houding), 1 = joven
+  var scale = 0.7 + groei*0.16;
+  var mouth = mood==="happy" ? "M88 108 Q100 118 112 108" : mood==="ok" ? "M90 111 L110 111" : "M88 113 Q100 105 112 113";
+  var g = "<g transform='translate(100 100) scale("+scale+") translate(-100 -100)'>";
+  var gillLen = 10 + groei*8;
+  // pootjes MOETEN na het lijf getekend worden (anders verdwijnen ze onder de ronde buik) en steken
+  // net onder de rand van de cirkel (die tot cy 166 loopt) uit, zodat ze ook echt zichtbaar zijn
+  var voetjes = groei
+    ? "<ellipse cx='78' cy='168' rx='11' ry='8' fill='#f5b8ce'/><ellipse cx='122' cy='168' rx='11' ry='8' fill='#f5b8ce'/>"
+    : "<ellipse cx='82' cy='165' rx='7' ry='6' fill='#f5b8ce'/><ellipse cx='118' cy='165' rx='7' ry='6' fill='#f5b8ce'/>";
+  return "<svg viewBox='0 0 200 180'>"+
+    "<ellipse cx='100' cy='166' rx='50' ry='11' fill='#00000010'/>"+ g +
+    // piepkleine kieuwstompjes (nog geen lange sierlijke kieuwen zoals bij de volwassen vorm)
+    "<g stroke='#f0a0c0' stroke-width='6' stroke-linecap='round'>"+
+    "<path d='M56 78 q-"+gillLen+" -4 -"+(gillLen+6)+" 4'/><path d='M56 96 q-"+gillLen+" 2 -"+(gillLen+6)+" 10'/>"+
+    "<path d='M144 78 q"+gillLen+" -4 "+(gillLen+6)+" 4'/><path d='M144 96 q"+gillLen+" 2 "+(gillLen+6)+" 10'/></g>"+
+    "<circle cx='"+(40-gillLen)+"' cy='82' r='4' fill='#f6bcd6'/><circle cx='"+(40-gillLen)+"' cy='106' r='4' fill='#f6bcd6'/>"+
+    "<circle cx='"+(160+gillLen)+"' cy='82' r='4' fill='#f6bcd6'/><circle cx='"+(160+gillLen)+"' cy='106' r='4' fill='#f6bcd6'/>"+
+    // rond, plomp lijfje (bewust geen staartuitloop zoals bij de volwassen Chispa)
+    "<circle cx='100' cy='104' r='62' fill='#ffe3ee' stroke='#f5b8ce' stroke-width='3'/>"+
+    voetjes +
+    // grote, sprankelende babyogen
+    "<circle cx='78' cy='96' r='10' fill='#2d2a26'/><circle cx='122' cy='96' r='10' fill='#2d2a26'/>"+
+    "<circle cx='81' cy='93' r='3.4' fill='#fff'/><circle cx='125' cy='93' r='3.4' fill='#fff'/>"+
+    "<ellipse cx='70' cy='112' rx='8' ry='5' fill='#f7b7cd'/><ellipse cx='130' cy='112' rx='8' ry='5' fill='#f7b7cd'/>"+
+    "<path d='"+mouth+"' stroke='#2d2a26' stroke-width='3' fill='none' stroke-linecap='round'/>"+
+    (w.gafas?"<g><circle cx='78' cy='96' r='15' fill='#2d2a26cc'/><circle cx='122' cy='96' r='15' fill='#2d2a26cc'/><path d='M93 96 L107 96' stroke='#2d2a26' stroke-width='4'/></g>":"")+
+    (w.flor?"<circle cx='140' cy='64' r='8' fill='#e85a8a'/><circle cx='140' cy='64' r='3.5' fill='#ffd54d'/>":"")+
+    (w.sombrero?"<g><ellipse cx='100' cy='56' rx='44' ry='10' fill='#c98a3d'/><path d='M78 56 Q100 20 122 56 Z' fill='#b5762e'/></g>":"")+
+    (w.bufanda?"<rect x='62' y='134' width='76' height='12' rx='6' fill='#c0392b'/>":"")+
+    "</g></svg>";
+}
+
+// ================= CHISPA: VOLWASSEN + STRALENDE MEESTERVORM (lvl 3-11) =================
+// lvl 3-8 (maestro t/m campeón): de vertrouwde volwassen vorm, met per niveau geleidelijk meer
+// accessoires (net als voorheen). Vanaf lvl 9 (leyenda) wordt dit expliciet een "stralende
+// meestervorm": groter, warmere kleur met gouden randen, en grote sierveren/vleugels achter het
+// lijf — dát is de tweede grote, in één oogopslag zichtbare sprong (naast ei->baby->volwassen).
+function petSVGGroot(lvl, mood, w){
+  var stralend = lvl >= 9;
+  var scale = stralend ? Math.min(1.22 + (lvl-9)*0.04, 1.3) : Math.min(1.0 + (lvl-3)*0.02, 1.1);
   var mouth = mood==="happy" ? "M85 105 Q100 120 115 105" : mood==="ok" ? "M87 110 L113 110" : "M85 114 Q100 102 115 114";
   var blush = mood==="happy" ? "<ellipse cx='70' cy='100' rx='7' ry='4' fill='#f7b7cd'/><ellipse cx='130' cy='100' rx='7' ry='4' fill='#f7b7cd'/>" : "";
   var g = "<g transform='translate(100 95) scale("+scale+") translate(-100 -95)'>";
@@ -3525,8 +3609,13 @@ function petSVG(){
     else if(lvl>=5)  tierHat = "<g><path d='M70 42 Q100 18 130 42 Q100 50 70 42 Z' fill='#2d2a26'/><circle cx='100' cy='24' r='3.5' fill='#2d2a26'/></g>";
     else if(lvl>=4)  tierHat = "<g><rect x='88' y='34' width='24' height='10' rx='3' fill='#2d2a26'/><path d='M60 34 L100 18 L140 34 L100 44 Z' fill='#2d2a26'/><path d='M136 34 L136 52' stroke='#ffd54d' stroke-width='3'/><circle cx='136' cy='55' r='4' fill='#ffd54d'/></g>";
   }
-  var aura = lvl>=9 ? "<ellipse cx='100' cy='100' rx='84' ry='76' fill='#ffd54d22'/><ellipse cx='100' cy='100' rx='72' ry='66' fill='#ffd54d1c'/>" : "";
-  var sterren = lvl>=11 ? "<g fill='#ffd54d'><path d='M28 30 l3 6 6 1 -4 5 1 6 -6 -3 -6 3 1 -6 -4 -5 6 -1 Z'/><path d='M168 24 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/><path d='M176 120 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/></g>" : "";
+  var aura = stralend ? "<ellipse cx='100' cy='100' rx='"+(84+(lvl-9)*3)+"' ry='"+(76+(lvl-9)*3)+"' fill='#ffd54d22'/><ellipse cx='100' cy='100' rx='"+(72+(lvl-9)*3)+"' ry='"+(66+(lvl-9)*3)+"' fill='#ffd54d1c'/>" : "";
+  var sterren = stralend ? "<g fill='#ffd54d'><path d='M28 30 l3 6 6 1 -4 5 1 6 -6 -3 -6 3 1 -6 -4 -5 6 -1 Z'/><path d='M168 24 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/><path d='M176 120 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/></g>" : "";
+  // grote sierveren/vleugels: het duidelijkste verschil met de gewone volwassen vorm hierboven
+  var vleugels = stralend
+    ? "<g fill='#ffd54d33'><path d='M42 100 Q6 70 10 24 Q34 42 46 78 Z'/><path d='M158 100 Q194 70 190 24 Q166 42 154 78 Z'/></g>"+
+      "<g fill='#ffcb6b55'><path d='M46 112 Q14 96 4 56 Q28 66 50 92 Z'/><path d='M154 112 Q186 96 196 56 Q172 66 150 92 Z'/></g>"
+    : "";
   var medaille = lvl>=8 ? "<g><path d='M86 138 L100 152 L114 138' stroke='#c0392b' stroke-width='5' fill='none'/><circle cx='100' cy='152' r='9' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/><text x='100' y='156' text-anchor='middle' font-size='10' font-weight='bold' fill='#a5661e'>1</text></g>" : "";
   var roos = lvl>=6 ? "<g><path d='M113 112 q14 4 22 0' stroke='#3a7d44' stroke-width='2.5' fill='none'/><circle cx='137' cy='111' r='6' fill='#c0392b'/><circle cx='134' cy='108' r='3' fill='#e85a8a'/></g>" : "";
   var baard = lvl>=10 ? "<path d='M82 116 Q84 142 100 144 Q116 142 118 116 Q109 124 100 122 Q91 124 82 116 Z' fill='#f5f0e8' stroke='#ddd5c8' stroke-width='2'/>" : "";
@@ -3536,23 +3625,26 @@ function petSVG(){
       "<g fill='#a9c45f'><ellipse cx='58' cy='68' rx='6' ry='3.5' transform='rotate(-40 58 68)'/><ellipse cx='62' cy='56' rx='6' ry='3.5' transform='rotate(-60 62 56)'/><ellipse cx='70' cy='47' rx='6' ry='3.5' transform='rotate(-75 70 47)'/>"+
       "<ellipse cx='142' cy='68' rx='6' ry='3.5' transform='rotate(40 142 68)'/><ellipse cx='138' cy='56' rx='6' ry='3.5' transform='rotate(60 138 56)'/><ellipse cx='130' cy='47' rx='6' ry='3.5' transform='rotate(75 130 47)'/></g>"+
       "<circle cx='100' cy='40' r='4' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/></g>" : "";
-  return "<svg viewBox='0 0 200 180'>"+ aura + sterren +
+  var lijfFill = stralend ? "#fbbdd2" : "#f8b8ce";
+  var lijfStroke = stralend ? "#e0a800" : "#ef97b8";
+  var kieuwKleur = stralend ? "#f0a83a" : "#e46a9a";
+  return "<svg viewBox='0 0 200 180'>"+ aura + sterren + vleugels +
     "<ellipse cx='100' cy='166' rx='60' ry='12' fill='#00000012'/>"+ g +
-    // kieuwen (axolotl!)
-    "<g stroke='#e46a9a' stroke-width='7' stroke-linecap='round'>"+
+    // kieuwen (axolotl!) — bij de stralende meestervorm krijgen ze een gouden gloed
+    "<g stroke='"+kieuwKleur+"' stroke-width='7' stroke-linecap='round'>"+
     "<path d='M52 70 Q38 60 34 46'/><path d='M50 84 Q32 80 24 70'/><path d='M52 98 Q36 100 28 94'/>"+
     "<path d='M148 70 Q162 60 166 46'/><path d='M150 84 Q168 80 176 70'/><path d='M148 98 Q164 100 172 94'/></g>"+
     "<circle cx='34' cy='44' r='5' fill='#f08bb0'/><circle cx='22' cy='69' r='5' fill='#f08bb0'/><circle cx='26' cy='94' r='5' fill='#f08bb0'/>"+
     "<circle cx='166' cy='44' r='5' fill='#f08bb0'/><circle cx='178' cy='69' r='5' fill='#f08bb0'/><circle cx='174' cy='94' r='5' fill='#f08bb0'/>"+
     // lijf + kop
-    "<path d='M100 40 C 145 40 158 78 158 105 C 158 140 132 160 100 160 C 68 160 42 140 42 105 C 42 78 55 40 100 40 Z' fill='#f8b8ce' stroke='#ef97b8' stroke-width='3'/>"+
-    "<path d='M78 158 q-6 12 4 14 M122 158 q6 12 -4 14' stroke='#ef97b8' stroke-width='6' fill='none' stroke-linecap='round'/>"+
+    "<path d='M100 40 C 145 40 158 78 158 105 C 158 140 132 160 100 160 C 68 160 42 140 42 105 C 42 78 55 40 100 40 Z' fill='"+lijfFill+"' stroke='"+lijfStroke+"' stroke-width='3'/>"+
+    "<path d='M78 158 q-6 12 4 14 M122 158 q6 12 -4 14' stroke='"+lijfStroke+"' stroke-width='6' fill='none' stroke-linecap='round'/>"+
     // ogen
     "<circle cx='78' cy='88' r='7' fill='#2d2a26'/><circle cx='122' cy='88' r='7' fill='#2d2a26'/>"+
     "<circle cx='80' cy='86' r='2.4' fill='#fff'/><circle cx='124' cy='86' r='2.4' fill='#fff'/>"+
     blush +
     "<path d='"+mouth+"' stroke='#2d2a26' stroke-width='3.5' fill='none' stroke-linecap='round'/>"+
-    (lvl>=3?"<path d='M84 116 Q92 110 100 116 Q108 110 116 116' stroke='"+(lvl>=10?"#f5f0e8":"#7a5636")+"' stroke-width='4' fill='none' stroke-linecap='round'/>":"")+
+    "<path d='M84 116 Q92 110 100 116 Q108 110 116 116' stroke='"+(lvl>=10?"#f5f0e8":"#7a5636")+"' stroke-width='4' fill='none' stroke-linecap='round'/>"+
     baard + roos + medaille + lauwer +
     (w.gafas?"<g><circle cx='78' cy='88' r='13' fill='#2d2a26cc'/><circle cx='122' cy='88' r='13' fill='#2d2a26cc'/><path d='M91 88 L109 88' stroke='#2d2a26' stroke-width='4'/></g>":"")+
     (w.flor?"<g><circle cx='143' cy='52' r='6' fill='#e85a8a'/><circle cx='153' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='64' r='6' fill='#e85a8a'/><circle cx='133' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='58' r='5' fill='#ffd54d'/></g>":"")+
