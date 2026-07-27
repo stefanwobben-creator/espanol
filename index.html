@@ -442,7 +442,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.28";
+var APP_VERSIE = "v19.29";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6269,57 +6269,91 @@ function dicSortKey(w){
   while(delen.length > 1 && artikelen[delen[0]]) delen.shift(); // lidwoord negeren bij sorteren
   return stripAcc(delen.join(" "));
 }
+function dicGroups(lijst){
+  // meerdere WORDS/B_WORDS-entries kunnen dezelfde Spaanse tekst hebben (bv. boekwoordenschat die in
+  // zowel de A2- als A0-woordpool zit, of hetzelfde woord met een andere betekenis per les) — groepeer
+  // die tot 1 rij in het woordenboek i.p.v. het woord meerdere keren na elkaar te tonen.
+  var groups = [], byEs = {};
+  lijst.forEach(function(w){
+    if(!byEs[w.es]){
+      byEs[w.es] = {es: w.es, items: []};
+      groups.push(byEs[w.es]);
+    }
+    byEs[w.es].items.push(w);
+  });
+  return groups;
+}
 function renderDic(){
   var el = document.getElementById("dicCard");
   if(!el) return;
+  var alleGroepen = dicGroups(WORDS);
   var geleerd = 0;
-  WORDS.forEach(function(w){ if(S.srs[w.id]) geleerd++; });
+  alleGroepen.forEach(function(g){ if(g.items.some(function(it){ return S.srs[it.id]; })) geleerd++; });
   var q = stripAcc(dicZoek.toLowerCase());
   var lijst = WORDS.filter(function(w){
     if(!q) return true;
     return stripAcc(w.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(w.nl.toLowerCase()).indexOf(q) !== -1 || stripAcc(wTrans(w).toLowerCase()).indexOf(q) !== -1;
   }).slice();
   lijst.sort(function(a, b){ var ka = dicSortKey(a), kb = dicSortKey(b); return ka < kb ? -1 : (ka > kb ? 1 : 0); });
+  var groepen = dicGroups(lijst);
   var freqN = (typeof FREQ !== "undefined") ? FREQ.length : 0;
   var html = "<h2>"+ct("Jouw woordenboek","Your dictionary")+" 📖</h2>"+
-    "<p class='muted'>"+ct("Alle "+WORDS.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. ","All "+WORDS.length+" lesson words in alphabetical order; you've seen <b>"+geleerd+"</b> so far. ")+
+    "<p class='muted'>"+ct("Alle "+alleGroepen.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. ","All "+alleGroepen.length+" lesson words in alphabetical order; you've seen <b>"+geleerd+"</b> so far. ")+
     "⚪ "+ct("nog niet gehad","not seen yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+". "+ct("Tik op een woord voor meer.","Tap a word for more.")+
     (freqN ? ct(" De zoekbalk kent daarnaast de <b>"+freqN.toLocaleString("nl-NL")+"</b> meestgebruikte Spaanse woorden."," The search bar also knows the <b>"+freqN.toLocaleString("en-GB")+"</b> most frequent Spanish words (top 1,000 with English glosses).") : "")+"</p>"+
     "<input type='text' id='dicZoek' placeholder='"+ct("Zoek in het Spaans of Nederlands...","Search in Spanish or your language...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
   var letter = "";
-  lijst.forEach(function(w){
-    var st = S.srs[w.id];
-    var stip = st ? (st.box <= 1 ? "🔴" : (st.box <= 3 ? "🟡" : "🟢")) : "⚪";
-    var eerste = (dicSortKey(w).charAt(0) || "?").toUpperCase();
+  groepen.forEach(function(g){
+    var w0 = g.items[0];
+    // gecombineerde status: het verst gevorderde item wint (het bolletje is een grove voortgangsindicatie
+    // voor het woord als geheel, geen los overzicht per betekenis)
+    var beste = null;
+    g.items.forEach(function(it){
+      var st = S.srs[it.id];
+      if(st && (!beste || st.box > beste.box)) beste = st;
+    });
+    var stip = beste ? (beste.box <= 1 ? "🔴" : (beste.box <= 3 ? "🟡" : "🟢")) : "⚪";
+    var eerste = (dicSortKey(w0).charAt(0) || "?").toUpperCase();
     if(!q && eerste !== letter){
       letter = eerste;
       html += "<p class='dicletter'>"+letter+"</p>";
     }
-    var open = dicOpen === w.id;
-    html += "<div class='dicrow' data-dic='"+w.id+"'>"+
-      "<div class='dichead'><span><b class='es'>"+w.es+"</b> <span class='dicstip'>"+stip+"</span></span>"+
+    var dicKey = g.es.replace(/"/g, "&quot;");
+    var open = dicOpen === g.es;
+    html += "<div class='dicrow' data-dic=\""+dicKey+"\">"+
+      "<div class='dichead'><span><b class='es'>"+g.es+"</b> <span class='dicstip'>"+stip+"</span></span>"+
       "<span class='muted' style='font-size:.78rem'>"+(open ? "▾" : "▸")+"</span></div>";
     if(open){
-      var info = (typeof DICINFO !== "undefined" && DICINFO[w.id]) || null;
-      html += "<div class='dicbody'>"+
-        "<p><b>"+wTrans(w)+"</b>"+(profLang()!=="nl" && wTrans(w)!==w.nl ? " <span class='muted'>· nl: "+w.nl+"</span>" : "")+(w.tag ? " <span class='muted'>· "+ct("thema: ","topic: ")+w.tag+"</span>" : "")+"</p>";
-      if(st){
-        html += "<p class='muted'>"+ct("volgende herhaling: ","next review: ")+(st.due <= today() ? ct("vandaag","today") : st.due)+"</p>";
-      }
-      if(info && info.r){
-        html += "<p class='dicrijtje'>"+info.r+"</p>";
-      }
-      var vbEs = null, vbNl = null;
-      if(info && info.v){
-        var dl = info.v.split("|"); vbEs = dl[0]; vbNl = dl[1] || "";
-        if(profLang() !== "nl" && typeof DICINFO_EN !== "undefined" && DICINFO_EN[w.id]) vbNl = DICINFO_EN[w.id];
-      } else {
-        var vb = dicVoorbeeld(w);
-        if(vb){ vbEs = vb.es; vbNl = zinPrompt(vb); }
-      }
-      if(vbEs){
-        html += "<p>"+ct("Voorbeeld: ","Example: ")+"<span class='es'>"+vbEs+"</span><br><span class='muted'>"+vbNl+"</span></p>";
-      }
+      html += "<div class='dicbody'>";
+      // dezelfde vertaling+thema maar 2x (bv. boekwoordenschat in zowel A2- als A0-woordpool): 1x tonen.
+      // andere vertaling of ander thema (echt een andere betekenis/les): apart tonen, met eigen voorbeeld.
+      var geziene = {};
+      g.items.forEach(function(it){
+        var gloss = wTrans(it);
+        var key = gloss + "|" + (it.tag || "");
+        if(geziene[key]) return;
+        geziene[key] = true;
+        var st = S.srs[it.id];
+        html += "<p><b>"+gloss+"</b>"+(profLang()!=="nl" && gloss!==it.nl ? " <span class='muted'>· nl: "+it.nl+"</span>" : "")+(it.tag ? " <span class='muted'>· "+ct("thema: ","topic: ")+it.tag+"</span>" : "")+"</p>";
+        if(st){
+          html += "<p class='muted'>"+ct("volgende herhaling: ","next review: ")+(st.due <= today() ? ct("vandaag","today") : st.due)+"</p>";
+        }
+        var info = (typeof DICINFO !== "undefined" && DICINFO[it.id]) || null;
+        if(info && info.r){
+          html += "<p class='dicrijtje'>"+info.r+"</p>";
+        }
+        var vbEs = null, vbNl = null;
+        if(info && info.v){
+          var dl = info.v.split("|"); vbEs = dl[0]; vbNl = dl[1] || "";
+          if(profLang() !== "nl" && typeof DICINFO_EN !== "undefined" && DICINFO_EN[it.id]) vbNl = DICINFO_EN[it.id];
+        } else {
+          var vb = dicVoorbeeld(it);
+          if(vb){ vbEs = vb.es; vbNl = zinPrompt(vb); }
+        }
+        if(vbEs){
+          html += "<p>"+ct("Voorbeeld: ","Example: ")+"<span class='es'>"+vbEs+"</span><br><span class='muted'>"+vbNl+"</span></p>";
+        }
+      });
       html += "</div>";
     }
     html += "</div>";
