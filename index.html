@@ -442,7 +442,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.29";
+var APP_VERSIE = "v19.30";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2244,7 +2244,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
 function persist(){ store.save(S); scheduleSync(); }
 
@@ -2662,6 +2662,9 @@ function boot(){
   S.lessons = S.lessons || {};
   S.quizSrs = S.quizSrs || {};
   S.boek = S.boek || {};
+  S.comp = S.comp || {};
+  S.comp.luisteren = S.comp.luisteren || {};
+  S.comp.schrijven = S.comp.schrijven || {};
   S.lesFlow = S.lesFlow || {};
   S.lesFlowSpel = S.lesFlowSpel || {};
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
@@ -2958,6 +2961,38 @@ function doneLessonCount(){
   var n = 0;
   for(var k in S.lessons){ if(S.lessons[k] && S.lessons[k].done) n++; }
   return n;
+}
+
+/* ================= COMPETENTIES (28 juli) =================
+   Tweelaags model (Stefans keuze na Babbel-vergelijking): boven de bekende oefeningen hangen we de vier
+   officieel geteste CEFR-vaardigheden (Lezen/Luisteren/Schrijven/Spreken), NIET als eigen niveau-claim
+   (zie renderCompetenties(): expliciet geen "je zit op A2"-tekst), puur als voortgangsmeter per vaardigheid.
+   S.done is bewust GEDEELD tussen Vertalen/Dictado/Zinnen husselen (zie checkSentence/checkDictado/
+   checkHusselen: alle drie lezen én schrijven S.done) — dat is prima voor de oefeningen zelf (spaced
+   repetition werkt track-overstijgend), maar te grof om Luisteren en Schrijven apart te meten. Vandaar
+   S.comp: een aparte, additieve boekhouding náást S.done, puur voor deze voortgangsmeting. */
+function compMark(kind, id){
+  S.comp = S.comp || {};
+  S.comp[kind] = S.comp[kind] || {};
+  S.comp[kind][id] = true;
+}
+function berekenCompetenties(){
+  var pct = function(teller, noemer){ return noemer > 0 ? Math.min(100, Math.round(teller / noemer * 100)) : 0; };
+  var boekDone = BOOK.filter(function(h){ return S.boek[h.id] && S.boek[h.id].done; }).length;
+  var lezen = { pct: pct(boekDone, BOOK.length), teller: boekDone, noemer: BOOK.length,
+    bron: ["Lezen (Chispa-boek)"] };
+  var luisterTeller = Object.keys(S.comp.luisteren || {}).length;
+  var luisteren = { pct: pct(luisterTeller, SENTENCES.length), teller: luisterTeller, noemer: SENTENCES.length,
+    bron: ["Dictado"] };
+  var productieTeller = Object.keys(S.comp.schrijven || {}).length;
+  var productiePct = pct(productieTeller, SENTENCES.length);
+  var quizTeller = QUIZZES.filter(function(qz){ return !!S.quizSrs[qz.id]; }).length;
+  var toetsjesPct = pct(quizTeller, QUIZZES.length);
+  var schrijven = { pct: Math.round((productiePct + toetsjesPct) / 2),
+    teller: productieTeller, noemer: SENTENCES.length,
+    bron: ["Vertalen", "Zinnen husselen", "Toetsjes", "Conjugador (telt mee als onderliggend bewijs, niet los gemeten)"] };
+  var spreken = { pct: null, bron: ["Nog geen spreekoefening in de app (backlog)"] };
+  return { lezen: lezen, luisteren: luisteren, schrijven: schrijven, spreken: spreken };
 }
 
 /* ================= CHISPA-BOEK (Lezen) ================= */
@@ -3373,10 +3408,10 @@ function checkSentence(){
     // makkelijk (meerkeuze) telt als lichter bewijs dan zelf typen, dus minder XP
     var xpExact = modus === "makkelijk" ? 2 : 5;
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" XP)</div>";
-    S.done[s.id] = true; gehaald = true; addXP(xpExact);
+    S.done[s.id] = true; gehaald = true; addXP(xpExact); compMark("schrijven", s.id);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 XP)</div>";
-    S.done[s.id] = true; gehaald = true; addXP(4);
+    S.done[s.id] = true; gehaald = true; addXP(4); compMark("schrijven", s.id);
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
@@ -3618,10 +3653,10 @@ function checkDictado(){
   var html = "";
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
-    S.done[s.id] = true; addXP(5);
+    S.done[s.id] = true; addXP(5); compMark("luisteren", s.id);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 XP)</div>";
-    S.done[s.id] = true; addXP(4);
+    S.done[s.id] = true; addXP(4); compMark("luisteren", s.id);
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
@@ -4014,7 +4049,7 @@ function checkHusselen(){
   var html = "";
   if(goedBeantwoord){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 XP)</div>";
-    S.done[s.id] = true; addXP(4);
+    S.done[s.id] = true; addXP(4); compMark("schrijven", s.id);
   } else {
     html = "<div class='feedback fout'>"+ct("Nog niet. De juiste volgorde is: ","Not yet. The correct order is: ")+"<b>"+s.es+"</b></div>";
     logError(s.id, "husselen", s.tag, built); addXP(1);
@@ -9142,6 +9177,41 @@ function renderFun(){
 }
 
 /* ================= PROFIELPAGINA ================= */
+function competentieNaam(kind){
+  return {
+    lezen: ct("Lezen","Reading"), luisteren: ct("Luisteren","Listening"),
+    schrijven: ct("Schrijven","Writing"), spreken: ct("Spreken","Speaking")
+  }[kind] || kind;
+}
+function renderCompetentieRij(kind, c){
+  var naam = competentieNaam(kind);
+  if(c.pct === null){
+    return "<div style='margin:14px 0'>"+
+      "<div style='display:flex; justify-content:space-between; font-size:.9rem; font-weight:600'>"+
+        "<span>"+naam+"</span><span class='muted' style='font-weight:400'>"+ct("nog geen oefening","no exercise yet")+"</span></div>"+
+      "<div class='goalbar' style='margin-top:4px; border:1px dashed var(--border); background:transparent'></div>"+
+      "<p class='muted' style='font-size:.78rem; margin:4px 0 0'>"+c.bron.join(" · ")+"</p></div>";
+  }
+  return "<div style='margin:14px 0'>"+
+    "<div style='display:flex; justify-content:space-between; font-size:.9rem; font-weight:600'>"+
+      "<span>"+naam+"</span><span class='muted' style='font-weight:400'>"+c.pct+"%</span></div>"+
+    "<div class='goalbar' style='margin-top:4px'><div style='width:"+c.pct+"%'></div></div>"+
+    "<p class='muted' style='font-size:.78rem; margin:4px 0 0'>"+c.bron.join(" · ")+" · "+c.teller+"/"+c.noemer+"</p></div>";
+}
+function renderCompetenties(){
+  var c = berekenCompetenties();
+  return "<div class='card' style='margin-top:14px'>"+
+    "<h2 style='margin:0 0 2px'>"+ct("Voortgang per vaardigheid","Progress per skill")+"</h2>"+
+    "<p class='muted' style='margin:0 0 4px; font-size:.86rem'>"+ct(
+      "Hoeveel van de huidige leerstof je al aantoonbaar beheerst, per vaardigheid die ook officieel getoetst wordt (CEFR). Geen niveau-claim, gewoon een eerlijke spiegel.",
+      "How much of the current material you've already demonstrably mastered, per skill that's also officially tested (CEFR). Not a level claim, just an honest mirror."
+    )+"</p>"+
+    renderCompetentieRij("lezen", c.lezen)+
+    renderCompetentieRij("luisteren", c.luisteren)+
+    renderCompetentieRij("schrijven", c.schrijven)+
+    renderCompetentieRij("spreken", c.spreken)+
+    "</div>";
+}
 function renderPerfil(){
   var el = document.getElementById("perfilCard");
   if(!el) return;
@@ -9155,7 +9225,8 @@ function renderPerfil(){
     "<p class='muted' style='margin:2px 0 0'>"+gt("niveauLbl")+": "+lvl+" · "+gt("taalLbl")+": "+lang.vlag+" "+lang.naam+"</p></div></div>"+
     "<p class='muted' style='margin:12px 0 4px'>"+gt("mailLbl")+"</p>"+
     "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
-    "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>";
+    "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>"+
+    renderCompetenties();
   var huidigDoel = S.doel || 30;
   var doelen = [{n:10, lbl:(profLang()==="nl"?"Relaxed · 10":"Relaxed · 10")}, {n:30, lbl:(profLang()==="nl"?"Normaal · 30":"Normal · 30")}, {n:60, lbl:(profLang()==="nl"?"Fanatiek · 60":"Serious · 60")}];
   el.innerHTML += "<p class='muted' style='margin:12px 0 4px'>"+(profLang()==="nl"?"Dagdoel (XP per dag): zelf gekozen doelen werken het best.":"Daily goal (XP per day): self-chosen goals work best.")+"</p>"+
