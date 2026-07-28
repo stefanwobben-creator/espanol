@@ -442,7 +442,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.30";
+var APP_VERSIE = "v19.31";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2981,16 +2981,22 @@ function berekenCompetenties(){
   var boekDone = BOOK.filter(function(h){ return S.boek[h.id] && S.boek[h.id].done; }).length;
   var lezen = { pct: pct(boekDone, BOOK.length), teller: boekDone, noemer: BOOK.length,
     bron: ["Lezen (Chispa-boek)"] };
+  // Luisteren/Schrijven-noemer telt sinds 28 juli ook de nieuwe Klemtoon- resp. Jaartallen-oefening mee
+  // (beide voeden dezelfde S.comp-pool via compMark), niet alleen SENTENCES — anders zou de teller wél
+  // meegroeien met deze nieuwe oefeningen maar de noemer niet, en klopt het percentage niet meer (geen
+  // "eerlijke spiegel" meer, zie COMPETENTIE-MODEL).
+  var luisterNoemer = SENTENCES.length + KLEMTOON.length;
   var luisterTeller = Object.keys(S.comp.luisteren || {}).length;
-  var luisteren = { pct: pct(luisterTeller, SENTENCES.length), teller: luisterTeller, noemer: SENTENCES.length,
-    bron: ["Dictado"] };
+  var luisteren = { pct: pct(luisterTeller, luisterNoemer), teller: luisterTeller, noemer: luisterNoemer,
+    bron: ["Dictado", "Klemtoon"] };
+  var schrijfNoemer = SENTENCES.length + JAARTALLEN.length;
   var productieTeller = Object.keys(S.comp.schrijven || {}).length;
-  var productiePct = pct(productieTeller, SENTENCES.length);
+  var productiePct = pct(productieTeller, schrijfNoemer);
   var quizTeller = QUIZZES.filter(function(qz){ return !!S.quizSrs[qz.id]; }).length;
   var toetsjesPct = pct(quizTeller, QUIZZES.length);
   var schrijven = { pct: Math.round((productiePct + toetsjesPct) / 2),
-    teller: productieTeller, noemer: SENTENCES.length,
-    bron: ["Vertalen", "Zinnen husselen", "Toetsjes", "Conjugador (telt mee als onderliggend bewijs, niet los gemeten)"] };
+    teller: productieTeller, noemer: schrijfNoemer,
+    bron: ["Vertalen", "Zinnen husselen", "Jaartallen", "Toetsjes", "Conjugador (telt mee als onderliggend bewijs, niet los gemeten)"] };
   var spreken = { pct: null, bron: ["Nog geen spreekoefening in de app (backlog)"] };
   return { lezen: lezen, luisteren: luisteren, schrijven: schrijven, spreken: spreken };
 }
@@ -4075,6 +4081,296 @@ function checkHusselen(){
   if(bv) bv.onclick = function(){ husselenVolgende(); };
   var bc = document.getElementById("btnHuCheck"); if(bc) bc.disabled = true;
   var br = document.getElementById("btnHuReset"); if(br) br.disabled = true;
+}
+
+/* ================= JAARTALLEN (28 juli) — kleine gerichte oefening, Stefans idee =================
+   Spaans zegt jaartallen niet "geknipt" zoals het Nederlands/Engels ("negentien negenenzeventig"),
+   maar als één doorlopend getal ("mil novecientos setenta y nueve"). Puur oefenbaar met typen, geen
+   audio nodig. jaarInWoorden() is een eigen kleine getal-naar-woorden-omzetter (geldig 1000-9999,
+   ruim genoeg voor elk jaartal dat hier voorkomt) i.p.v. elk antwoord losstaand uit te schrijven,
+   zodat er nooit een tik-/spelfout in de brondata kan sluipen: het antwoord wordt afgeleid, niet
+   overgetypt. */
+var JAAR_UNIDADES = ["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve"];
+var JAAR_DIEZ = ["diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve"];
+var JAAR_VEINTE = ["veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+var JAAR_DECENAS = {3:"treinta",4:"cuarenta",5:"cincuenta",6:"sesenta",7:"setenta",8:"ochenta",9:"noventa"};
+var JAAR_CENTENAS = {1:"ciento",2:"doscientos",3:"trescientos",4:"cuatrocientos",5:"quinientos",6:"seiscientos",7:"setecientos",8:"ochocientos",9:"novecientos"};
+var JAAR_MIL = {1:"mil",2:"dos mil",3:"tres mil",4:"cuatro mil",5:"cinco mil",6:"seis mil",7:"siete mil",8:"ocho mil",9:"nueve mil"};
+function jaarDosCifras(n){ // 0-99
+  if(n === 0) return "";
+  if(n < 10) return JAAR_UNIDADES[n];
+  if(n < 20) return JAAR_DIEZ[n-10];
+  if(n < 30) return JAAR_VEINTE[n-20];
+  var d = Math.floor(n/10), u = n%10;
+  return JAAR_DECENAS[d] + (u ? " y " + JAAR_UNIDADES[u] : "");
+}
+function jaarTresCifras(n){ // 0-999
+  if(n === 0) return "";
+  var h = Math.floor(n/100), resto = n%100;
+  if(h === 0) return jaarDosCifras(resto);
+  var hWoord = (h === 1 && resto === 0) ? "cien" : JAAR_CENTENAS[h];
+  return resto ? hWoord + " " + jaarDosCifras(resto) : hWoord;
+}
+function jaarInWoorden(jaar){ // bedoeld voor 1000-9999
+  var miles = Math.floor(jaar/1000), resto = jaar%1000;
+  var prefijo = JAAR_MIL[miles] || (miles + " mil");
+  var restoWoord = jaarTresCifras(resto);
+  return restoWoord ? prefijo + " " + restoWoord : prefijo;
+}
+var JAARTALLEN = [
+  {id:"jr1",  jaar:1492, tagNl:"Colón bereikt Amerika",                 tagEn:"Columbus reaches America"},
+  {id:"jr2",  jaar:1810, tagNl:"onafhankelijkheid Latijns-Amerika begint", tagEn:"Latin American independence begins"},
+  {id:"jr3",  jaar:1900, tagNl:null,                                     tagEn:null},
+  {id:"jr4",  jaar:1936, tagNl:"begin Spaanse Burgeroorlog",             tagEn:"start of the Spanish Civil War"},
+  {id:"jr5",  jaar:1969, tagNl:null,                                     tagEn:null},
+  {id:"jr6",  jaar:1975, tagNl:"dood van Franco",                        tagEn:"death of Franco"},
+  {id:"jr7",  jaar:1978, tagNl:"de Spaanse grondwet",                    tagEn:"the Spanish constitution"},
+  {id:"jr8",  jaar:1994, tagNl:null,                                     tagEn:null},
+  {id:"jr9",  jaar:2000, tagNl:null,                                     tagEn:null},
+  {id:"jr10", jaar:2001, tagNl:null,                                     tagEn:null},
+  {id:"jr11", jaar:2010, tagNl:"Spanje wint het WK voetbal",             tagEn:"Spain wins the football World Cup"},
+  {id:"jr12", jaar:2015, tagNl:null,                                     tagEn:null},
+  {id:"jr13", jaar:2022, tagNl:null,                                     tagEn:null},
+  {id:"jr14", jaar:2026, tagNl:"dit jaar",                                tagEn:"this year"},
+  {id:"jr15", jaar:1503, tagNl:null,                                     tagEn:null}
+];
+var jrIdx = null;
+var jrRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
+var GT_RONDE_LEN = 8;
+function pickJaartal(){
+  var fouten = JAARTALLEN.filter(function(x){ var e = S.errors["jaartal:"+x.id]; return e && e.count > 0; });
+  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
+  var gedaan = JAARTALLEN.filter(function(x){ return !!S.done[x.id]; });
+  var use = gedaan.length >= 4 ? gedaan : JAARTALLEN;
+  return use[Math.floor(Math.random()*use.length)];
+}
+function jaartalKickerTekst(){
+  return ct("Jaartal ","Year ") + (jrRonde.n+1) + "/" + jrRonde.lengte + (jrRonde.streak > 0 ? " · 🔥 " + jrRonde.streak : "");
+}
+function jaartalNieuweRonde(){
+  jrRonde = {n:0, lengte:GT_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
+  jrIdx = pickJaartal();
+}
+function jaartalVolgende(){
+  jrRonde.n++;
+  jrIdx = jrRonde.n < jrRonde.lengte ? pickJaartal() : null;
+  renderFunJaartallen();
+}
+function renderFunJaartallen(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!jrRonde) jaartalNieuweRonde();
+  if(jrRonde.n >= jrRonde.lengte){ renderJaartalRondeKlaar(); return; }
+  if(!jrIdx) jrIdx = pickJaartal();
+  var g = jrIdx;
+  var tag = ct(g.tagNl, g.tagEn);
+  var html = "<h2>" + fx("gtT") + " 🔢</h2>"+
+    "<span class='kicker' id='gtKicker'>" + jaartalKickerTekst() + "</span>"+
+    "<p class='muted'>" + fx("gtIntro") + "</p>"+
+    "<div class='big' style='margin:8px 0 2px; font-size:2rem; font-weight:700'>" + g.jaar + "</div>"+
+    (tag ? "<p class='muted' style='margin:0 0 10px; font-style:italic'>" + tag + "</p>" : "<div style='margin-bottom:10px'></div>")+
+    "<input type='text' id='gtInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("gtPlaceholder")+"'>"+
+    accentToetsenHtml("gtAccent")+
+    "<div class='row'><button class='primary' id='btnGtCheck'>" + ct("Controleer","Check") + "</button>"+
+    "<button class='ghost' id='btnGtSkip'>" + fx("gtSkip") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
+    "<div id='gtFeedback'></div>";
+  el.innerHTML = html;
+  wireAccentToetsen("gtAccent", "gtInput");
+  var inp = document.getElementById("gtInput");
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkJaartal(); });
+  document.getElementById("btnGtCheck").onclick = checkJaartal;
+  document.getElementById("btnGtSkip").onclick = function(){ jaartalVolgende(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+  inp.focus();
+}
+function renderJaartalRondeKlaar(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var perfect = jrRonde.goed === jrRonde.lengte;
+  var goedGenoeg = jrRonde.goed >= Math.ceil(jrRonde.lengte * 0.75);
+  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
+  if(bonus > 0 && !jrRonde.beloond){
+    S.tapas = (S.tapas||0) + bonus; jrRonde.beloond = true; persist();
+    if(perfect) confetti(["🔢","🔥","🎉"], 24);
+  }
+  var html = "<h2>" + fx("gtT") + " 🔢</h2>"+
+    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
+      ct("Ronde klaar: ","Round done: ") + jrRonde.goed + "/" + jrRonde.lengte +
+      (jrRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + jrRonde.besteStreak : "") +
+    "</div>"+
+    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
+    "<div class='row'><button class='primary' id='btnGtNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+  el.innerHTML = html;
+  document.getElementById("btnGtNieuweRonde").onclick = function(){ jaartalNieuweRonde(); renderFunJaartallen(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+}
+function checkJaartal(){
+  var g = jrIdx;
+  var given = norm(document.getElementById("gtInput").value || "");
+  if(!given) return;
+  var fb = document.getElementById("gtFeedback");
+  var correct = jaarInWoorden(g.jaar);
+  var exact = norm(correct) === given;
+  var loose = stripAcc(norm(correct)) === stripAcc(given);
+  var goedBeantwoord = exact || loose;
+  var html = "";
+  if(exact){
+    html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 XP)</div>";
+    S.done[g.id] = true; addXP(4); compMark("schrijven", g.id);
+  } else if(loose){
+    html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+correct+"</b> (+3 XP)</div>";
+    S.done[g.id] = true; addXP(3); compMark("schrijven", g.id);
+  } else {
+    html = "<div class='feedback fout'>"+ct("Nog niet. Voluit: ","Not yet, in full: ")+"<b>"+correct+"</b></div>";
+    logError(g.id, "jaartal", "getallen", given); addXP(1);
+  }
+  if(goedBeantwoord){
+    jrRonde.goed++; jrRonde.streak++;
+    if(jrRonde.streak > jrRonde.besteStreak) jrRonde.besteStreak = jrRonde.streak;
+  } else {
+    jrRonde.streak = 0;
+  }
+  var kickerEl = document.getElementById("gtKicker");
+  if(kickerEl) kickerEl.textContent = jaartalKickerTekst();
+  html += "<div class='row' style='margin-top:6px'><button class='primary' id='btnGtVolgende'>" + fx("gtSkip") + " →</button></div>";
+  fb.innerHTML = html;
+  persist();
+  var bv = document.getElementById("btnGtVolgende");
+  if(bv) bv.onclick = function(){ jaartalVolgende(); };
+  var bc = document.getElementById("btnGtCheck"); if(bc) bc.disabled = true;
+}
+
+/* ================= KLEMTOON (28 juli) — luisteroefening, Stefans idee =================
+   Geen echte spreekoefening (die vereist een native/spraakherkenning, buiten scope), maar een gerichte
+   luisteroefening voor een echt Spaans leerprobleem: klemtoon/accent bepaalt vaak de betekenis (habló
+   "hij sprak" vs hablo "ik spreek", papá "papa" vs papa "aardappel"). Speelt het woord af (browser-TTS,
+   zelfde stem-heuristiek als Dictado — Spaanse spraaksynthese respecteert het geschreven accent voor de
+   klemtoon), speler kiest welke schrijfwijze hij hoorde. */
+var KLEMTOON = [
+  {id:"kt1",  correcto:"habló",   incorrecto:"hablo",   nl:"hij/zij sprak (verleden tijd)", en:"he/she spoke (past tense)"},
+  {id:"kt2",  correcto:"hablo",   incorrecto:"habló",   nl:"ik spreek (nu)",                en:"I speak (now)"},
+  {id:"kt3",  correcto:"estudió", incorrecto:"estudio", nl:"hij/zij studeerde",             en:"he/she studied"},
+  {id:"kt4",  correcto:"estudio", incorrecto:"estudió", nl:"ik studeer / de studie",        en:"I study / the study"},
+  {id:"kt5",  correcto:"trabajó", incorrecto:"trabajo", nl:"hij/zij werkte",                en:"he/she worked"},
+  {id:"kt6",  correcto:"trabajo", incorrecto:"trabajó", nl:"ik werk / het werk",            en:"I work / the work"},
+  {id:"kt7",  correcto:"tomó",    incorrecto:"tomo",    nl:"hij/zij nam",                   en:"he/she took"},
+  {id:"kt8",  correcto:"tomo",    incorrecto:"tomó",    nl:"ik neem",                        en:"I take"},
+  {id:"kt9",  correcto:"caminó",  incorrecto:"camino",  nl:"hij/zij liep",                   en:"he/she walked"},
+  {id:"kt10", correcto:"camino",  incorrecto:"caminó",  nl:"ik loop / het pad",              en:"I walk / the path"},
+  {id:"kt11", correcto:"papá",    incorrecto:"papa",    nl:"papa (vader)",                   en:"dad"},
+  {id:"kt12", correcto:"papa",    incorrecto:"papá",    nl:"aardappel / de paus",            en:"potato / the pope"},
+  {id:"kt13", correcto:"está",    incorrecto:"esta",    nl:"is / bevindt zich",              en:"is / is located"},
+  {id:"kt14", correcto:"esta",    incorrecto:"está",    nl:"deze (v)",                       en:"this (f)"},
+  {id:"kt15", correcto:"cómo",    incorrecto:"como",    nl:"hoe?",                            en:"how?"},
+  {id:"kt16", correcto:"como",    incorrecto:"cómo",    nl:"zoals / ik eet",                  en:"like / I eat"},
+  {id:"kt17", correcto:"qué",     incorrecto:"que",     nl:"wat?",                            en:"what?"},
+  {id:"kt18", correcto:"que",     incorrecto:"qué",     nl:"dat, die (voegwoord)",           en:"that (conjunction)"},
+  {id:"kt19", correcto:"sí",      incorrecto:"si",      nl:"ja",                              en:"yes"},
+  {id:"kt20", correcto:"si",      incorrecto:"sí",      nl:"als, indien",                     en:"if"}
+];
+var ktIdx = null;
+var ktRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
+var ktKeuzeVolgorde = null;
+var KT_RONDE_LEN = 8;
+function pickKlemtoon(){
+  var fouten = KLEMTOON.filter(function(x){ var e = S.errors["klemtoon:"+x.id]; return e && e.count > 0; });
+  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
+  var gedaan = KLEMTOON.filter(function(x){ return !!S.done[x.id]; });
+  var use = gedaan.length >= 4 ? gedaan : KLEMTOON;
+  return use[Math.floor(Math.random()*use.length)];
+}
+function klemtoonKickerTekst(){
+  return ct("Woord ","Word ") + (ktRonde.n+1) + "/" + ktRonde.lengte + (ktRonde.streak > 0 ? " · 🔥 " + ktRonde.streak : "");
+}
+function klemtoonNieuweOpgave(){
+  ktIdx = pickKlemtoon();
+  ktKeuzeVolgorde = Math.random() < 0.5 ? [ktIdx.correcto, ktIdx.incorrecto] : [ktIdx.incorrecto, ktIdx.correcto];
+}
+function klemtoonNieuweRonde(){
+  ktRonde = {n:0, lengte:KT_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
+  klemtoonNieuweOpgave();
+}
+function klemtoonVolgende(){
+  ktRonde.n++;
+  if(ktRonde.n < ktRonde.lengte) klemtoonNieuweOpgave(); else ktIdx = null;
+  renderFunKlemtoon();
+}
+function renderFunKlemtoon(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!ktRonde) klemtoonNieuweRonde();
+  if(ktRonde.n >= ktRonde.lengte){ renderKlemtoonRondeKlaar(); return; }
+  if(!ktIdx) klemtoonNieuweOpgave();
+  var k = ktIdx;
+  var html = "<h2>" + fx("ktT") + " 🔊</h2>"+
+    "<span class='kicker' id='ktKicker'>" + klemtoonKickerTekst() + "</span>"+
+    "<p class='muted'>" + fx("ktIntro") + "</p>"+
+    "<div class='row'><button class='primary' id='btnKtSpeel'>🔊 " + ct("Luister opnieuw","Listen again") + "</button></div>"+
+    "<div class='row' id='ktOpties' style='margin-top:10px; gap:8px'>"+
+      ktKeuzeVolgorde.map(function(w){ return "<button type='button' class='ghost kt-optie' data-w=\""+w+"\" style='font-size:1.15rem; flex:1'>"+w+"</button>"; }).join("")+
+    "</div>"+
+    "<div class='row' style='margin-top:10px'><button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
+    "<div id='ktFeedback'></div>";
+  el.innerHTML = html;
+  document.getElementById("btnKtSpeel").onclick = function(){ dictadoSpreekTTS(k.correcto, DIC_RATE_NORMAL); };
+  document.querySelectorAll("#ktOpties .kt-optie").forEach(function(b){
+    b.onclick = function(){
+      document.querySelectorAll("#ktOpties .kt-optie").forEach(function(x){ x.disabled = true; });
+      checkKlemtoon(b.getAttribute("data-w"));
+    };
+  });
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+  setTimeout(function(){ dictadoSpreekTTS(k.correcto, DIC_RATE_NORMAL); }, 250);
+}
+function renderKlemtoonRondeKlaar(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var perfect = ktRonde.goed === ktRonde.lengte;
+  var goedGenoeg = ktRonde.goed >= Math.ceil(ktRonde.lengte * 0.75);
+  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
+  if(bonus > 0 && !ktRonde.beloond){
+    S.tapas = (S.tapas||0) + bonus; ktRonde.beloond = true; persist();
+    if(perfect) confetti(["🔊","🔥","🎉"], 24);
+  }
+  var html = "<h2>" + fx("ktT") + " 🔊</h2>"+
+    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
+      ct("Ronde klaar: ","Round done: ") + ktRonde.goed + "/" + ktRonde.lengte +
+      (ktRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + ktRonde.besteStreak : "") +
+    "</div>"+
+    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🌮 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
+    "<div class='row'><button class='primary' id='btnKtNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+  el.innerHTML = html;
+  document.getElementById("btnKtNieuweRonde").onclick = function(){ klemtoonNieuweRonde(); renderFunKlemtoon(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+}
+function checkKlemtoon(gekozen){
+  var k = ktIdx;
+  var fb = document.getElementById("ktFeedback");
+  var goedBeantwoord = gekozen === k.correcto;
+  var html = "";
+  if(goedBeantwoord){
+    html = "<div class='feedback ok'>¡Perfecto! ✓ <b>"+k.correcto+"</b> ("+ct(k.nl,k.en)+") (+3 XP)</div>";
+    S.done[k.id] = true; addXP(3); compMark("luisteren", k.id);
+  } else {
+    html = "<div class='feedback fout'>"+ct("Nog niet. Je hoorde: ","Not yet. You heard: ")+"<b>"+k.correcto+"</b> ("+ct(k.nl,k.en)+")</div>";
+    logError(k.id, "klemtoon", "uitspraak", gekozen); addXP(1);
+  }
+  if(goedBeantwoord){
+    ktRonde.goed++; ktRonde.streak++;
+    if(ktRonde.streak > ktRonde.besteStreak) ktRonde.besteStreak = ktRonde.streak;
+  } else {
+    ktRonde.streak = 0;
+  }
+  var kickerEl = document.getElementById("ktKicker");
+  if(kickerEl) kickerEl.textContent = klemtoonKickerTekst();
+  html += "<div class='row' style='margin-top:6px'><button class='primary' id='btnKtVolgende'>" + ct("Volgende woord","Next word") + " →</button></div>";
+  fb.innerHTML = html;
+  persist();
+  var bv = document.getElementById("btnKtVolgende");
+  if(bv) bv.onclick = function(){ klemtoonVolgende(); };
 }
 
 /* ================= TOETSJES ================= */
@@ -9108,7 +9404,12 @@ var FUN_TXT = {
      cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord",
      huT:"Zinnen husselen", huS:"rondes van 8 zinnen, tik de Spaanse woorden in de juiste volgorde",
      huIntro:"Tik de woorden hieronder aan in de juiste volgorde om deze zin te bouwen.",
-     huLeeg:"Tik hieronder de woorden in de juiste volgorde", huSkip:"Volgende zin"},
+     huLeeg:"Tik hieronder de woorden in de juiste volgorde", huSkip:"Volgende zin",
+     gtT:"Jaartallen", gtS:"rondes van 8 jaartallen, typ ze voluit in het Spaans (lastiger dan je denkt!)",
+     gtIntro:"Spaans knipt jaartallen niet zoals wij: typ het hele getal voluit, bv. 2026 = \"dos mil veintiséis\".",
+     gtPlaceholder:"Typ het jaartal voluit...", gtSkip:"Volgend jaartal",
+     ktT:"Klemtoon", ktS:"rondes van 8 woordparen, luister en kies de juiste schrijfwijze (klemtoon = betekenis)",
+     ktIntro:"Luister goed: in het Spaans verandert de klemtoon vaak de betekenis (habló vs hablo). Welke hoorde je?"},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
@@ -9136,7 +9437,12 @@ var FUN_TXT = {
      cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb",
      huT:"Scramble sentences", huS:"rounds of 8 sentences, tap the Spanish words in the right order",
      huIntro:"Tap the words below in the right order to build this sentence.",
-     huLeeg:"Tap the words below in the right order", huSkip:"Next sentence"}
+     huLeeg:"Tap the words below in the right order", huSkip:"Next sentence",
+     gtT:"Years", gtS:"rounds of 8 years, type them out in full Spanish (trickier than you'd think!)",
+     gtIntro:"Spanish doesn't chunk years like we do: type the whole number out, e.g. 2026 = \"dos mil veintiséis\".",
+     gtPlaceholder:"Type the year in full...", gtSkip:"Next year",
+     ktT:"Stress", ktS:"rounds of 8 word pairs, listen and pick the right spelling (stress = meaning)",
+     ktIntro:"Listen closely: in Spanish, stress often changes the meaning (habló vs hablo). Which did you hear?"}
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
 var funView = null;
@@ -9152,6 +9458,8 @@ function renderFun(){
   if(funView === "dictado"){ renderFunDictado(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
   if(funView === "hu"){ renderFunHusselen(); return; }
+  if(funView === "jaartallen"){ renderFunJaartallen(); return; }
+  if(funView === "klemtoon"){ renderFunKlemtoon(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
@@ -9162,6 +9470,8 @@ function renderFun(){
     "<div class='lesson' id='ftDictado'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>Dictado</b><span>" + fx("dicS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftConj'><div class='lnum'>\ud83c\udfaf</div><div class='lbody'><b>Conjugador</b><span>" + fx("cjS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftHu'><div class='lnum'>\ud83e\udde9</div><div class='lbody'><b>" + fx("huT") + "</b><span>" + fx("huS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftGt'><div class='lnum'>\ud83d\udd22</div><div class='lbody'><b>" + fx("gtT") + "</b><span>" + fx("gtS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftKt'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>" + fx("ktT") + "</b><span>" + fx("ktS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
@@ -9172,6 +9482,8 @@ function renderFun(){
   document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
   document.getElementById("ftConj").onclick = function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); };
   document.getElementById("ftHu").onclick = function(){ funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); };
+  document.getElementById("ftGt").onclick = function(){ funView = "jaartallen"; jrIdx = null; jrRonde = null; navPush({t:"fun", v:"jaartallen"}); renderFun(); };
+  document.getElementById("ftKt").onclick = function(){ funView = "klemtoon"; ktIdx = null; ktRonde = null; navPush({t:"fun", v:"klemtoon"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
