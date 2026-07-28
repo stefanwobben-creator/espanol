@@ -442,7 +442,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.32";
+var APP_VERSIE = "v19.33";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2244,7 +2244,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
 function persist(){ store.save(S); scheduleSync(); }
 
@@ -2665,6 +2665,7 @@ function boot(){
   S.comp = S.comp || {};
   S.comp.luisteren = S.comp.luisteren || {};
   S.comp.schrijven = S.comp.schrijven || {};
+  S.dagStats = S.dagStats || {};
   S.lesFlow = S.lesFlow || {};
   S.lesFlowSpel = S.lesFlowSpel || {};
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
@@ -2841,7 +2842,43 @@ function logError(id, type, tag, extra){
   if(!S.errors[k]) S.errors[k] = {id:id, type:type, tag:tag, count:0, laatst:""};
   S.errors[k].count++;
   S.errors[k].laatst = extra || today();
+  trackPoging(true);
   persist();
+}
+
+/* ================= LEER-KPI: foutpercentage i.p.v. opgeteld fouten-aantal (28 juli) =================
+   Stefans terechte punt: een opgeteld fouten-aantal (het oude "fouten gelogd" cijfer) gaat alleen maar
+   omhoog, dus straft in feite meer oefenen af, ook als je juist beter wordt. S.dagStats houdt per dag
+   twee tellers bij: pogingen (elke keer dat een antwoord gecontroleerd wordt, goed of fout) en fouten
+   (via trackPoging(true), aangeroepen vanuit logError() — dus automatisch elke keer dat ergens in de app
+   een fout gelogd wordt, geen apart onderhoud nodig). trackPoging(false) wordt los toegevoegd aan elke
+   succes-tak van de check-functies. Zo kan een eerlijk foutpercentage + trend berekend worden i.p.v. een
+   altijd-stijgend totaal. Dit begint te tellen vanaf vandaag: pogingen van vóór 28 juli zijn nooit
+   bijgehouden (alleen fouten waren dat), dus met terugwerkende kracht is er geen eerlijk percentage te
+   reconstrueren — dat is eerlijker dan doen alsof, zie ook de FREQRANG-les eerder in dit project. */
+function trackPoging(fout){
+  var d = today();
+  S.dagStats = S.dagStats || {};
+  S.dagStats[d] = S.dagStats[d] || {pogingen:0, fouten:0};
+  S.dagStats[d].pogingen++;
+  if(fout) S.dagStats[d].fouten++;
+}
+function foutpercentageVenster(vanafDagenGeleden, totDagenGeleden){
+  var d = today(), pog = 0, fout = 0;
+  for(var i=vanafDagenGeleden; i<totDagenGeleden; i++){
+    var st = S.dagStats && S.dagStats[addDays(d, -i)];
+    if(st){ pog += st.pogingen; fout += st.fouten; }
+  }
+  return { pog:pog, fout:fout, pct: pog > 0 ? Math.round(fout/pog*100) : null };
+}
+function leerKpi(){
+  var recent = foutpercentageVenster(0, 7);
+  var vorige = foutpercentageVenster(7, 14);
+  var trend = null; // null = nog niet te vergelijken (te weinig data in één van beide vensters)
+  if(recent.pct !== null && vorige.pct !== null){
+    trend = recent.pct - vorige.pct; // negatief = verbeterd (minder fout), positief = verslechterd
+  }
+  return { recent:recent, vorige:vorige, trend:trend };
 }
 
 /* ================= PET-CONSTANTEN ================= */
@@ -3217,7 +3254,7 @@ function answerWord(good){
     st.box = Math.min(st.box+1, INTERVALS.length-1);
     st.due = addDays(t, INTERVALS[st.box]);
     wQueue.shift();
-    addXP(2);
+    addXP(2); trackPoging(false);
   } else {
     st.box = 0; st.due = t;
     st.f = (st.f||0) + 1;
@@ -3412,10 +3449,10 @@ function checkSentence(){
     // makkelijk (meerkeuze) telt als lichter bewijs dan zelf typen, dus minder XP
     var xpExact = modus === "makkelijk" ? 2 : 5;
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" XP)</div>";
-    S.done[s.id] = true; gehaald = true; addXP(xpExact); compMark("schrijven", s.id);
+    S.done[s.id] = true; gehaald = true; addXP(xpExact); compMark("schrijven", s.id); trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 XP)</div>";
-    S.done[s.id] = true; gehaald = true; addXP(4); compMark("schrijven", s.id);
+    S.done[s.id] = true; gehaald = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
@@ -3657,10 +3694,10 @@ function checkDictado(){
   var html = "";
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 XP)</div>";
-    S.done[s.id] = true; addXP(5); compMark("luisteren", s.id);
+    S.done[s.id] = true; addXP(5); compMark("luisteren", s.id); trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 XP)</div>";
-    S.done[s.id] = true; addXP(4); compMark("luisteren", s.id);
+    S.done[s.id] = true; addXP(4); compMark("luisteren", s.id); trackPoging(false);
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
@@ -3894,10 +3931,10 @@ function checkConjugador(){
     // makkelijk (meerkeuze) telt als lichter bewijs dan zelf typen, dus minder XP
     var xpExact = modus === "makkelijk" ? 1 : 3;
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" XP)</div>";
-    addXP(xpExact);
+    addXP(xpExact); trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen het accent: ","Almost! Just the accent: ")+"<b>"+correct+"</b> (+2 XP)</div>";
-    addXP(2);
+    addXP(2); trackPoging(false);
   } else {
     html = "<div class='feedback fout'>"+ct("Nog niet. Het antwoord is: ","Not yet. The answer is: ")+"<b>"+correct+"</b></div>";
     logError(v.inf+"-"+c.p, "conj", v.inf, given); addXP(1);
@@ -4053,7 +4090,7 @@ function checkHusselen(){
   var html = "";
   if(goedBeantwoord){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 XP)</div>";
-    S.done[s.id] = true; addXP(4); compMark("schrijven", s.id);
+    S.done[s.id] = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
   } else {
     html = "<div class='feedback fout'>"+ct("Nog niet. De juiste volgorde is: ","Not yet. The correct order is: ")+"<b>"+s.es+"</b></div>";
     logError(s.id, "husselen", s.tag, built); addXP(1);
@@ -4216,10 +4253,10 @@ function checkJaartal(){
   var html = "";
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 XP)</div>";
-    S.done[g.id] = true; addXP(4); compMark("schrijven", g.id);
+    S.done[g.id] = true; addXP(4); compMark("schrijven", g.id); trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+correct+"</b> (+3 XP)</div>";
-    S.done[g.id] = true; addXP(3); compMark("schrijven", g.id);
+    S.done[g.id] = true; addXP(3); compMark("schrijven", g.id); trackPoging(false);
   } else {
     html = "<div class='feedback fout'>"+ct("Nog niet. Voluit: ","Not yet, in full: ")+"<b>"+correct+"</b></div>";
     logError(g.id, "jaartal", "getallen", given); addXP(1);
@@ -4346,7 +4383,7 @@ function answerQuestion(idx, btn){
   var opts = el.querySelectorAll(".opt");
   opts[v.c].classList.add("correct");
   var goed = idx === v.c;
-  if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+item.oi, "quiz", st.qz.id, v.q); addXP(1); }
+  if(goed){ st.score++; addXP(2); trackPoging(false); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+item.oi, "quiz", st.qz.id, v.q); addXP(1); }
   var fb = document.getElementById("qFeedback");
   fb.innerHTML = (v.nl ? "<div class='feedback "+(goed?"ok":"bijna")+"'>"+ct("Vertaling: ","Translation: ")+vraagVert(v)+"</div>" : "")+
     "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+ct("Waarom:","Why:")+"</b> "+vraagWaarom(v)+"</div>"+
@@ -4454,7 +4491,7 @@ function answerBoekVraag(idx, btn){
   var opts = el.querySelectorAll(".opt");
   opts[v.c].classList.add("correct");
   var goed = idx === v.c;
-  if(goed){ st.score++; addXP(2); } else { btn.classList.add("wrong"); addXP(1); }
+  if(goed){ st.score++; addXP(2); trackPoging(false); } else { btn.classList.add("wrong"); addXP(1); trackPoging(true); }
   var fb = document.getElementById("boekFeedback");
   fb.innerHTML = "<div class='row'><button class='primary' id='btnBoekNext'>"+(st.i+1 < st.h.vragen.length ? ct("Volgende →","Next →") : ct("Verder →","Continue →"))+"</button></div>";
   document.getElementById("btnBoekNext").onclick = function(){ st.i++; renderBoekVraag(); };
@@ -7927,7 +7964,7 @@ function avtSrsBij(w, goed){
   if(goed){
     st.box = Math.min(st.box + 1, INTERVALS.length - 1);
     st.due = addDays(t, INTERVALS[st.box]);
-    addXP(2);
+    addXP(2); trackPoging(false);
   } else {
     st.box = 0; st.due = t; st.f = (st.f||0) + 1;
     logError(w.id, "woord", w.tag, w.es);
@@ -7964,7 +8001,7 @@ function avtAntwoord(op){
   if(g.baas){
     if(op.goed){
       avt.combo = (avt.combo||0) + 1;
-      avtSfx("goed"); g.hp--;
+      avtSfx("goed"); g.hp--; trackPoging(false);
       if(g.hp <= 0){
         var sav = avtSave();
         sav.baasDag = today();
@@ -7988,7 +8025,7 @@ function avtAntwoord(op){
       avtNieuweVraag(); renderFun();
     } else {
       avt.combo = 0;
-      avtSfx("fout");
+      avtSfx("fout"); trackPoging(true);
       var juist = g.vraag.o[g.vraag.a];
       if(avtHartKwijt()) return;
       g.feedback = {goed:false, txt:at("fout") + juist + " · " + g.vraag.u};
@@ -7999,8 +8036,8 @@ function avtAntwoord(op){
   var w = g.w;
   if(op.goed){
     avt.combo = (avt.combo||0) + 1;
-    if(g.vraagG){ addXP(2); persist(); updateBadge(); }
-    else if(g.zin){ addXP(3); persist(); updateBadge(); }
+    if(g.vraagG){ addXP(2); persist(); updateBadge(); trackPoging(false); }
+    else if(g.zin){ addXP(3); persist(); updateBadge(); trackPoging(false); }
     else { avtSrsBij(w, true); }
     avtSfx("goed");
     g.v.hp--;
@@ -8029,7 +8066,7 @@ function avtAntwoord(op){
     avtNieuweVraag(); renderFun();
   } else {
     avt.combo = 0;
-    if(g.vraagG){ addXP(1); persist(); updateBadge(); }
+    if(g.vraagG){ addXP(1); persist(); updateBadge(); trackPoging(true); }
     else if(g.zin){ logError(g.zin.id, "zin", g.zin.tag, g.zin.es); addXP(1); persist(); updateBadge(); }
     else { avtSrsBij(w, false); }
     avtSfx("fout");
@@ -9787,7 +9824,7 @@ function renderStats(){
   WORDS.forEach(function(w){ var st=S.srs[w.id]; if(st){ seen++; boxes[st.box]++; } });
   var zinnenGoed = Object.keys(S.done).length;
   var quizzesDone = Object.keys(S.quiz).length;
-  var errCount = Object.keys(S.errors).reduce(function(a,k){ return a+S.errors[k].count; },0);
+  var kpi = leerKpi();
   var boxLabels = ["nieuw/fout","1 dag","3 dagen","1 week","2 weken","1 maand"];
   var maxBox = Math.max.apply(null, boxes.concat([1]));
   var boxHtml = boxes.map(function(n,i){
@@ -9860,6 +9897,19 @@ function renderStats(){
       koersHtml += "<p class='muted'>Je herhaalt vooral (prima!), maar er kwamen geen nieuwe woorden bij de laatste twee weken. Eén nieuw lesje en de prognose verschijnt hier.</p>";
     }
   }
+  // ---- foutpercentage-tegel + trendzin (28 juli, verving het oude opgetelde "fouten gelogd") ----
+  var kpiTegelWaarde = kpi.recent.pct === null ? "–" : kpi.recent.pct + "%";
+  var kpiTekst;
+  if(kpi.recent.pct === null){
+    kpiTekst = "Nog te weinig pogingen deze week om een foutpercentage te tonen (deze meting begint te tellen vanaf 28 juli, niet met terugwerkende kracht).";
+  } else if(kpi.trend === null){
+    kpiTekst = "Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout). Nog geen trend te tonen: daarvoor moet de week ervoor ook genoeg pogingen hebben.";
+  } else {
+    var trendTekst = kpi.trend < 0 ? ("↓ "+Math.abs(kpi.trend)+" procentpunt beter dan de week ervoor")
+      : kpi.trend > 0 ? ("↑ "+kpi.trend+" procentpunt hoger dan de week ervoor")
+      : "gelijk aan de week ervoor";
+    kpiTekst = "Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout), "+trendTekst+".";
+  }
   el.innerHTML = koersHtml + "<h2 style='margin-top:16px'>Je voortgang</h2>"+
     "<div class='statgrid'>"+
     "<div class='stat'><b>🔥 "+streakNow()+"</b><span class='muted'>dagen streak</span></div>"+
@@ -9869,8 +9919,9 @@ function renderStats(){
     "<div class='stat'><b>"+seen+"/"+WORDS.length+"</b><span class='muted'>woorden gestart</span></div>"+
     "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>zinnen gehaald</span></div>"+
     "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>toetsjes gemaakt</span></div>"+
-    "<div class='stat'><b>"+errCount+"</b><span class='muted'>fouten gelogd</span></div>"+
+    "<div class='stat'><b>"+kpiTegelWaarde+"</b><span class='muted'>fout (laatste 7 dagen)</span></div>"+
     "</div>"+
+    "<p class='muted' style='margin-top:6px'>"+kpiTekst+"</p>"+
     "<h2 style='margin-top:16px'>Woorden per herhaalinterval</h2>"+boxHtml+
     leechHtml+
     "<p class='muted' style='margin-top:8px'>Hoe verder naar onder, hoe beter een woord in je geheugen zit. Batch: "+BATCH+"</p>";
