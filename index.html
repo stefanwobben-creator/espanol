@@ -235,7 +235,7 @@
 
   <!-- PROFIELKEUZE -->
   <section id="tab-profiel" class="hidden">
-    <div class="card">
+    <div class="card" id="profCard">
       <h2 id="profKiesKop">Wie gaat er oefenen?</h2>
       <div id="profileList"></div>
       <h2 id="profNieuwKop" style="margin-top:18px">Nieuw profiel</h2>
@@ -249,12 +249,15 @@
       </div>
       <p class="muted" style="margin:10px 0 4px" id="lblTaal">Moedertaal / mother tongue:</p>
       <div class="row" id="langRow"></div>
+      <p class="muted" style="margin:12px 0 4px"><a href="#" id="lnkMeerOpties">⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook later)</a></p>
+      <div id="meerOpties" class="hidden">
       <p class="muted" style="margin:10px 0 4px" id="lblDoel">Dagdoel:</p>
       <div class="row" id="doelRow"></div>
       <p class="muted" style="margin:10px 0 4px" id="lblMailUitleg">Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.</p>
       <input type="email" id="newProfMail" placeholder="E-mail (optioneel)" autocomplete="email">
       <p class="muted" style="margin:10px 0 4px" id="lblGroepUitleg"></p>
       <input type="text" id="newProfGroep" placeholder="Groepscode (alleen als je die kreeg)" autocomplete="off">
+      </div>
       <div class="row">
         <button class="primary" id="btnNewProf">Start</button>
         <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
@@ -467,7 +470,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.46";
+var APP_VERSIE = "v19.47";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2450,6 +2453,113 @@ var SIGNUP_TXT = {
      herstelKnop:"Fortschritt suchen", badge:"Profil wählen",
      doel:"Tagesziel (jederzeit änderbar):", d10:"Entspannt · 10 XP", d30:"Normal · 30 XP", d60:"Ehrgeizig · 60 XP"}
 };
+SIGNUP_TXT.nl.meer = "⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook later)";
+SIGNUP_TXT.en.meer = "⚙️ More options: daily goal, e-mail, group code (you can also do this later)";
+SIGNUP_TXT.fr.meer = "⚙️ Plus d'options : objectif quotidien, e-mail, code de groupe (possible plus tard aussi)";
+SIGNUP_TXT.de.meer = "⚙️ Mehr Optionen: Tagesziel, E-Mail, Gruppencode (geht auch später)";
+
+/* ===== LEER-EERST-PROEVERIJ (29 juli, onboarding-onderzoek) =====
+   Duolingo's best gevalideerde onboarding-ingreep: eerst iets leren, dán pas registreren (+20% DAU).
+   Nieuwe bezoekers zonder profiel krijgen 3 woordjes VÓÓR het formulier; de verdiende XP en de
+   SRS-start van die woorden verhuizen bij "Bewaar mijn woorden" mee naar het nieuwe profiel
+   (verzilverd in selectProfile). De rondleiding slaat de oefenstappen daarna over (S.proefTour).
+   Ervaren bezoekers (sync-code) kunnen de proeverij overslaan via de link onderaan. */
+var PROEF_WOORDEN = [
+  {id:"b1", es:"hola",    c:0, opts:{nl:["hallo","tot ziens"], en:["hello","goodbye"], fr:["bonjour","au revoir"], de:["hallo","tschüss"]}},
+  {id:"b3", es:"gracias", c:1, opts:{nl:["alsjeblieft","dank je wel"], en:["please","thank you"], fr:["s'il te plaît","merci"], de:["bitte","danke"]}},
+  {id:"b2", es:"adiós",   c:0, opts:{nl:["tot ziens","goedemorgen"], en:["goodbye","good morning"], fr:["au revoir","bonjour"], de:["tschüss","guten Morgen"]}}
+];
+var PROEF_TXT = {
+ nl:{kop:"Leer nu je eerste woordje Spaans", sub:"Geen account, geen gedoe. Gewoon proberen:", vraag:"Wat betekent dit?",
+     goed:"¡Muy bien! +2 XP", fout:"Het was: ", foutXp:". Fouten zijn goud: +1 XP!",
+     klaarKop:"Dat zijn je eerste 3 Spaanse woorden! 🎉", klaarSub:"In een halve minuut. Zo licht voelt de rest ook. Zal ik ze voor je bewaren?",
+     bewaar:"Bewaar mijn woorden →", heb:"Ik heb al een profiel of sync-code"},
+ en:{kop:"Learn your first Spanish word right now", sub:"No account, no fuss. Just try:", vraag:"What does this mean?",
+     goed:"¡Muy bien! +2 XP", fout:"It was: ", foutXp:". Mistakes are gold: +1 XP!",
+     klaarKop:"Those are your first 3 Spanish words! 🎉", klaarSub:"In half a minute. The rest feels just as light. Shall I save them for you?",
+     bewaar:"Save my words →", heb:"I already have a profile or sync code"},
+ fr:{kop:"Apprends ton premier mot d'espagnol", sub:"Pas de compte, pas de tracas. Essaie :", vraag:"Qu'est-ce que ça veut dire ?",
+     goed:"¡Muy bien! +2 XP", fout:"C'était : ", foutXp:". Les erreurs sont de l'or : +1 XP !",
+     klaarKop:"Voilà tes 3 premiers mots d'espagnol ! 🎉", klaarSub:"En trente secondes. Le reste est aussi léger. Je te les garde ?",
+     bewaar:"Garde mes mots →", heb:"J'ai déjà un profil ou un code de synchro"},
+ de:{kop:"Lern jetzt dein erstes spanisches Wort", sub:"Kein Konto, kein Aufwand. Einfach ausprobieren:", vraag:"Was bedeutet das?",
+     goed:"¡Muy bien! +2 XP", fout:"Es war: ", foutXp:". Fehler sind Gold: +1 XP!",
+     klaarKop:"Das sind deine ersten 3 spanischen Wörter! 🎉", klaarSub:"In einer halben Minute. So leicht fühlt sich der Rest auch an. Soll ich sie dir aufheben?",
+     bewaar:"Meine Wörter speichern →", heb:"Ich habe schon ein Profil oder einen Sync-Code"}
+};
+function proefTaal(){
+  try{
+    var bl = ((typeof navigator !== "undefined" && navigator.language) || "nl").slice(0, 2).toLowerCase();
+    return PROEF_TXT[bl] ? bl : "en";
+  }catch(e){ return "en"; }
+}
+var proefStand = null, proefMem = null;
+function proefData(){
+  try{ var raw = localStorage.getItem("espanol-proef-v1"); if(raw) return JSON.parse(raw); }catch(e){}
+  return proefMem;
+}
+function proefBewaar(d){ proefMem = d; try{ localStorage.setItem("espanol-proef-v1", JSON.stringify(d)); }catch(e){} }
+function proefWis(){ proefMem = null; try{ localStorage.removeItem("espanol-proef-v1"); }catch(e){} }
+function renderProef(){
+  var card = document.getElementById("profCard");
+  if(!card) return;
+  var box = document.getElementById("proefBox");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "proefBox"; box.className = "card";
+    card.parentNode.insertBefore(box, card);
+  }
+  card.classList.add("hidden");
+  box.classList.remove("hidden");
+  var L = proefTaal(), d = PROEF_TXT[L];
+  if(!proefStand) proefStand = {i:0, xp:0, res:{}};
+  var i = proefStand.i;
+  if(i >= PROEF_WOORDEN.length){
+    box.innerHTML = "<div style='text-align:center'><div style='width:130px; margin:0 auto'>"+petSVG()+"</div>"+
+      "<h2 style='margin:8px 0 4px'>"+d.klaarKop+"</h2>"+
+      "<p class='muted'>+"+proefStand.xp+" XP · "+d.klaarSub+"</p>"+
+      "<div class='row center'><button class='primary' id='btnProefDoor'>"+d.bewaar+"</button></div></div>";
+    var bd = document.getElementById("btnProefDoor");
+    if(bd) bd.onclick = function(){
+      proefBewaar({klaar:true, xp:proefStand.xp, res:proefStand.res});
+      box.classList.add("hidden");
+      card.classList.remove("hidden");
+      var nn = document.getElementById("newProfName");
+      if(nn) nn.focus();
+    };
+    return;
+  }
+  var w = PROEF_WOORDEN[i];
+  var opts = w.opts[L] || w.opts.en;
+  box.innerHTML = "<div style='text-align:center'><div style='width:100px; margin:0 auto'>"+petSVG()+"</div></div>"+
+    "<span class='kicker'>¡Vamos! · "+(i+1)+"/"+PROEF_WOORDEN.length+"</span>"+
+    (i===0 ? "<h2 style='margin:6px 0 2px'>"+d.kop+"</h2><p class='muted' style='margin:0 0 8px'>"+d.sub+"</p>" : "")+
+    "<p style='font-size:1.7rem; margin:8px 0 2px; text-align:center'><b class='es'>"+w.es+"</b></p>"+
+    "<p class='muted' style='margin:0 0 10px; text-align:center'>"+d.vraag+"</p>"+
+    opts.map(function(o, oi){ return "<button class='opt' data-proef='"+oi+"' style='margin:4px 0'>"+o+"</button>"; }).join("")+
+    "<p class='muted' style='margin-top:14px; text-align:center'><a href='#' id='lnkProefSkip'>"+d.heb+"</a></p>";
+  box.querySelectorAll("button[data-proef]").forEach(function(b){
+    b.onclick = function(){
+      box.querySelectorAll("button[data-proef]").forEach(function(x){ x.disabled = true; });
+      var goed = (+b.getAttribute("data-proef")) === w.c;
+      proefStand.xp += goed ? 2 : 1;
+      proefStand.res[w.id] = goed;
+      confetti(goed ? ["🎉","⭐️"] : ["💛"], goed ? 14 : 8);
+      toast(goed ? d.goed : d.fout + opts[w.c] + d.foutXp);
+      proefStand.i++;
+      setTimeout(renderProef, 850);
+    };
+  });
+  var sk = document.getElementById("lnkProefSkip");
+  if(sk) sk.onclick = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    proefBewaar({overgeslagen:true});
+    box.classList.add("hidden");
+    card.classList.remove("hidden");
+    return false;
+  };
+}
+
 function renderDoelRow(){
   var row = document.getElementById("doelRow");
   if(!row) return;
@@ -2476,6 +2586,7 @@ function applySignupLang(){
   });
   zet("lblTaal", d.taal);
   zet("lblDoel", d.doel);
+  zet("lnkMeerOpties", d.meer || SIGNUP_TXT.nl.meer);
   renderDoelRow();
   zet("lblMailUitleg", d.mailUitleg);
   ph("newProfMail", d.mailPh);
@@ -2541,6 +2652,23 @@ function renderProfileScreen(){
   });
   renderLangRow();
   applySignupLang();
+  var lm = document.getElementById("lnkMeerOpties");
+  if(lm) lm.onclick = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    var mo = document.getElementById("meerOpties");
+    if(mo) mo.classList.toggle("hidden");
+    return false;
+  };
+  // leer-eerst: gloednieuwe bezoekers (geen enkel profiel op dit apparaat) proeven eerst 3 woordjes
+  var pd = proefData();
+  if(!profiles.list.length && !(pd && (pd.klaar || pd.overgeslagen))){
+    renderProef();
+  } else {
+    var pb = document.getElementById("proefBox");
+    if(pb) pb.classList.add("hidden");
+    var pc = document.getElementById("profCard");
+    if(pc) pc.classList.remove("hidden");
+  }
   document.getElementById("btnPlacement").onclick = startPlacement;
   var lh = document.getElementById("lnkHerstel");
   if(lh) lh.onclick = function(e){
@@ -2735,6 +2863,23 @@ function boot(){
   S.modusKeuze = S.modusKeuze || {};
   S.gramwiz = S.gramwiz || {};
   S.rincon = S.rincon || {};
+  // startdatum voor het dag-2-welkom (alleen voor echt verse profielen, niet met terugwerkende kracht)
+  if(!S.gestart && !(S.txp > 0)) S.gestart = today();
+  // proeverij verzilveren: XP + SRS-start van de 3 proefwoordjes verhuizen mee naar dit profiel
+  var pd0 = proefData();
+  if(pd0 && pd0.klaar && !S.proefVerzilverd){
+    S.proefVerzilverd = true;
+    S.proefTour = true; // rondleiding zonder de al-gedane oefenstappen
+    S.txp = (S.txp||0) + (pd0.xp||0);
+    S.xp = S.xp || {};
+    S.xp[today()] = (S.xp[today()]||0) + (pd0.xp||0);
+    var res0 = pd0.res || {};
+    PROEF_WOORDEN.forEach(function(w){
+      if(res0[w.id] === undefined) return;
+      if(!S.srs[w.id]) S.srs[w.id] = {box: res0[w.id]?1:0, due: res0[w.id]?addDays(today(),1):today(), n:1, f: res0[w.id]?0:1};
+    });
+    proefWis();
+  }
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
   document.getElementById("userName").textContent = p.name;
@@ -2910,6 +3055,14 @@ function logError(id, type, tag, extra){
   S.errors[k].count++;
   S.errors[k].laatst = extra || today();
   trackPoging(true);
+  // allereerste fout van dit profiel = hét kwetsbare moment; growth-mindset-boodschap
+  // (onderzoek 29 juli: dit soort coach-copy gaf bij Duolingo +7,2% dag-14-retentie)
+  if(!S.eersteFoutGehad){
+    var totaal = 0;
+    for(var ek in S.errors){ totaal += S.errors[ek].count; if(totaal > 1) break; }
+    if(totaal === 1) toast(ct("Je eerste fout: mooi zo, nú gaat je brein echt aan het werk. Dit komt vanzelf terug tot het zit.","Your first mistake — great, this is when your brain really gets to work. It'll come back until it sticks."));
+    S.eersteFoutGehad = true;
+  }
   persist();
 }
 
@@ -4782,6 +4935,8 @@ function lesFlowKlaarBonus(){
 function lesFlowKlaar(){
   var t = today();
   var nieuw = !S.lesFlow[t];
+  var eersteOoit = !S.lesFlowEerste;
+  if(eersteOoit) S.lesFlowEerste = t;
   S.lesFlow[t] = true;
   var bonus = lesFlowKlaarBonus();
   S.tapas = (S.tapas||0) + bonus;
@@ -4796,6 +4951,7 @@ function lesFlowKlaar(){
   el.innerHTML = "<div class='card celebrate'><span class='kicker'>"+ct("Les afgerond","Session complete")+" 🎉</span>"+
     "<p class='big' style='margin:6px 0'>"+ct("¡Muy bien! Chispa is blij met je.","¡Muy bien! Chispa is happy with you.")+"</p>"+
     "<p class='muted'>+"+bonus+" 🌮 "+ct("tapas voor Chispa","tapas for Chispa")+(nieuw ? "" : " · "+ct("(je had vandaag al een les afgerond — telt gewoon nog een keer mee voor Chispa, maar niet dubbel voor de week)","(you'd already finished a session today — still counts for Chispa, just not twice for the week)"))+"</p>"+
+    (eersteOoit ? "<p style='margin:8px 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
     "<div class='row'><button class='primary' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button>"+
     "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>";
   document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
@@ -4815,7 +4971,9 @@ function ritmeCard(){
   WORDS.forEach(function(w){ var st = S.srs[w.id]; if(st && st.due <= t) over++; });
   var qOver = quizDueCount();
   function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
+  var dag2 = S.gestart === addDays(t, -1);
   return "<div class='card"+(gedaanVandaag?" celebrate":"")+"'>"+
+    (dag2 ? "<p style='margin:0 0 6px'>🌅 <b>"+ct("Dag 2!","Day 2!")+"</b> "+ct("Je woordjes van gisteren staan klaar om terug te komen — precies op tijd, zo blijven ze plakken.","Yesterday's words are ready to come back — right on time, that's how they stick.")+"</p>" : "")+
     "<span class='kicker'>"+(gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : ct("Start je les","Start your session"))+"</span>"+
     "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+(gedaanVandaag ? ct("¡Muy bien! Chispa is trots op je.","¡Muy bien! Chispa is proud of you.") : ct("Woordjes, een toetsje en één keer oefenen. Klaar in een paar minuten.","Words, a quiz and one practice round. Done in a few minutes."))+"</p>"+
     "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>"+
@@ -9422,7 +9580,7 @@ var TOUR = [
   {titel:"Samen leren 👤",
    txt:"Tik op je <b>naam</b> bovenaan voor je voortgang, je geheime sync-code en <b>Groepen</b>: start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
   {titel:"Ik groei met je mee ✨",
-   txt:"Je hebt net je eerste XP verdiend, en van XP groei ík: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Iedere dag een beetje</b>: dáármee maak je echte stappen. ¡Vamos!"}
+   txt:"Je hebt net je eerste XP verdiend, en van XP groei ík: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Tot morgen?</b> Dan bewaar ik je woordjes van vandaag en staan er nieuwe voor je klaar: vijf minuutjes, zelfde plek. ¿Trato hecho? (afgesproken?) ¡Vamos!"}
 ];
 var TOUR_EN = [
   {titel:"¡Hola! I'm Chispa 🐾",
@@ -9437,9 +9595,14 @@ var TOUR_EN = [
   {titel:"Learn together 👤",
    txt:"Tap your <b>name</b> at the top for your progress, your secret sync code and <b>Groups</b>: start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
   {titel:"I grow with you ✨",
-   txt:"You just earned your first XP, and XP is what makes me grow: from egg to estrella, in 12 forms. Go at your own pace — missing a day is fine. <b>A little bit every day</b>: that's how you make real progress. ¡Vamos!"}
+   txt:"You just earned your first XP, and XP is what makes me grow: from egg to estrella, in 12 forms. Go at your own pace — missing a day is fine. <b>See you tomorrow?</b> I'll keep today's words safe and have new ones ready: five minutes, same place. ¿Trato hecho? (deal?) ¡Vamos!"}
 ];
-function tourLijst(){ return profLang() === "nl" ? TOUR : TOUR_EN; }
+function tourLijst(){
+  var lijst = profLang() === "nl" ? TOUR : TOUR_EN;
+  // na de proeverij zijn de 3 oefenwoordjes al gedaan: welkom + oefenstappen overslaan
+  if(S.proefTour) lijst = lijst.slice(1).filter(function(st){ return !st.oefen; });
+  return lijst;
+}
 function showTour(stap){
   var wrap = document.getElementById("tourWrap");
   if(!wrap){
