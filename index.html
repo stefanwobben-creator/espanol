@@ -406,6 +406,11 @@
     </div>
   </section>
 
+  <!-- HOE DIT WERKT: uitleg waarom dagelijkse korte lesjes + spaced repetition werken (via footer) -->
+  <section id="tab-hoewerkt" class="hidden">
+    <div class="card" id="hoewerktCard"></div>
+  </section>
+
   <!-- SPEELTUIN -->
   <section id="tab-speeltuin" class="hidden">
     <div class="card" id="funCard"></div>
@@ -445,13 +450,13 @@
   </section>
 
   <footer id="appFooter" class="appfooter hidden">
-    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkSteun">💛 Steun de app</a> · <span id="footVer"></span>
+    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkHoewerkt">🧠 Hoe dit werkt</a> · <a href="#" id="lnkSteun">💛 Steun de app</a> · <span id="footVer"></span>
   </footer>
 </div>
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.38";
+var APP_VERSIE = "v19.39";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10441,6 +10446,7 @@ var TABS = [
   {id:"chispa", label:"Chispa", nav:false},
   {id:"perfil", label:"Profiel", nav:false},
   {id:"steun", label:"Steun", nav:false},
+  {id:"hoewerkt", label:"Hoe dit werkt", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Grammatica"}
@@ -10448,6 +10454,23 @@ var TABS = [
 
 function navPush(state){
   try{ if(window.history && history.pushState) history.pushState(state, ""); }catch(e){}
+}
+
+// "Hoe dit werkt" (29 juli): Stefans idee na de familie/onboarding-ronde - mensen snappen niet
+// waarom ze elke dag een lesje met woordjes/zinnetjes doen, en hoe dat via spaced repetition
+// terugkomt. Bewust géén tip-systeem of e-mail (Stefan: "dat is te veel"), wel een laagdrempelig
+// schermpje via de footer (naast Rondleiding/Steun) dat het uitlegt en vergelijkt met Duolingo/
+// Babbel/Pimsleur. Vervolgstap (nog niet gebouwd): dit ook ervaarbaar maken, niet alleen leesbaar,
+// bijv. een label bij een woord/toetsje dat daadwerkelijk terugkomt via spaced repetition.
+function renderHoeWerkt(){
+  var el = document.getElementById("hoewerktCard");
+  if(!el) return;
+  el.innerHTML =
+    "<h2>"+ct("Hoe dit werkt","How this works")+" 🧠</h2>"+
+    "<p class='muted'>"+ct("Waarom een kort lesje per dag beter werkt dan wat dan ook.","Why one short lesson a day beats anything else.")+"</p>"+
+    "<p><b>"+ct("Spaced repetition, in gewone taal:","Spaced repetition, in plain terms:")+"</b> "+ct("een woord dat je net leert, ben je binnen een paar dagen voor een groot deel weer kwijt, tenzij je het precies op tijd herhaalt. Deze app onthoudt van élk woord, élke zin en élk toetsje wanneer jij het waarschijnlijk bijna vergeten bent, en laat het dan terugkomen. Niet te vroeg (verspilde moeite), niet te laat (opnieuw beginnen).","a word you just learned is mostly gone again within a few days, unless you review it at exactly the right moment. This app tracks, for every word, every sentence and every quiz, when you're likely about to forget it, and brings it back right then. Not too early (wasted effort), not too late (starting over).")+"</p>"+
+    "<p><b>"+ct("Waarom dat beter is dan Duolingo, Babbel of Pimsleur:","Why that beats Duolingo, Babbel or Pimsleur:")+"</b> "+ct("Duolingo is vooral gebouwd om je elke dag terug te laten komen (streaks, badges), niet om bij te houden wát jij persoonlijk aan het vergeten bent. Babbel heeft prima lesmateriaal, maar herhaalt niet adaptief op jouw fouten. Pimsleur traint alleen luisteren, niet actief typen of schrijven. Deze app doet alle drie tegelijk: echt lesmateriaal (uit een bestaande cursus), spaced repetition op alles wat je doet, en je typt je antwoorden in plaats van ze aan te tikken.","Duolingo is mostly built to get you back every day (streaks, badges), not to track what you personally are forgetting. Babbel has solid lesson material, but doesn't adapt its repetition to your mistakes. Pimsleur only trains listening, not active typing or writing. This app does all three at once: real lesson material (from an actual course), spaced repetition on everything you do, and you type your answers instead of tapping them.")+"</p>"+
+    "<p><b>"+ct("Fouten maken kost hier geen punten, het levert ze juist op.","Making mistakes doesn't cost points here, it earns them.")+"</b> "+ct("Elke fout die je maakt, wordt (meestal 's nachts) verwerkt tot een nieuwe oefening die precies dát nog een keer drilt. Dus die woordjes en zinnetjes die steeds terugkomen? Dat is het systeem dat werkt zoals het hoort. Blijf er even bij, ook als een lesje saai voelt: net dan komt iets terug op het beste moment om het te onthouden.","Every mistake you make gets turned (usually overnight) into a new exercise that drills exactly that again. So those words and sentences that keep coming back? That's the system doing exactly what it's supposed to. Stick with it, even when a lesson feels dull: that's often the exact moment something comes back at the best time to remember it.")+"</p>";
 }
 
 function show(tabId, skipPush){
@@ -10488,6 +10511,7 @@ function show(tabId, skipPush){
       if(pag) pag.classList.toggle("hidden", k.toLowerCase() !== sl);
     });
   }
+  if(tabId==="hoewerkt"){ renderHoeWerkt(); }
 }
 
 (function init(){
@@ -10497,6 +10521,8 @@ function show(tabId, skipPush){
   if(lt0) lt0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
   var ls0 = document.getElementById("lnkSteun");
   if(ls0) ls0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("steun"); return false; };
+  var lh0 = document.getElementById("lnkHoewerkt");
+  if(lh0) lh0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("hoewerkt"); return false; };
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
