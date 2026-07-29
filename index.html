@@ -37,6 +37,8 @@
                border-radius:10px; font-size:.95rem; font-weight:600; cursor:pointer;}
   button.good{background:var(--green); color:#fff; border:none; padding:12px 20px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;}
   button.bad{background:var(--red-soft); color:var(--red); border:1.5px solid var(--red); padding:12px 20px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;}
+  button.ghost:disabled{opacity:.5; cursor:default;}
+  button.primary:disabled, button.bad:disabled{cursor:default;}
   .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
   .row.center{justify-content:center;}
   input[type=text], input[type=email], textarea{width:100%; font-size:1.05rem; padding:12px; border:1.5px solid var(--border);
@@ -465,7 +467,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.45";
+var APP_VERSIE = "v19.46";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3959,6 +3961,17 @@ var CONJ_RONDE_LEN = 10;
 var conjIdx = null; // {verb, p, t} - t = de tijd van deze opgave ("presente" / "indefinido" / "perfecto")
 var conjRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
 var cjModusOverride = null; // (historisch) per-item override; sinds 29 juli wint S.modusKeuze.conj als die gezet is
+// v19.46: staat van de huidige opgave, zodat een re-render je eigen antwoord kan terugtonen.
+// Zonder deze cache schudde cjMeerkeuzeOpties() bij elke re-render een nieuwe set door elkaar,
+// dus je kon na je klik niet zien wat je zelf had aangevinkt. Wordt op null gezet bij elke
+// nieuwe opgave (conjugadorVolgende, conjugadorNieuweRonde, tijd wisselen).
+var cjMk = null; // {key, opties, gekozen, beantwoord, fb, getypt}
+function cjMkKey(v, p, t){ return v.inf + "-" + p + "-" + (t || "presente"); }
+function cjMkStaat(v, p, t){
+  var k = cjMkKey(v, p, t);
+  if(!cjMk || cjMk.key !== k) cjMk = {key:k, opties:null, gekozen:null, beantwoord:false, fb:"", getypt:""};
+  return cjMk;
+}
 // Tijdkeuze (29 juli, v19.44). Blijft staan in S.conjTiempo, dus over sessies en apparaten heen.
 // "mix" trekt per opgave opnieuw uit alle drie de tijden: dat is precies de moeilijkheid die Stefan
 // noemde (niet elke vorm los kennen, maar ze uit elkaar houden als ze door elkaar komen).
@@ -4041,6 +4054,7 @@ function wireConjTiempoKiezer(){
       // alleen de huidige opgave wordt opnieuw getrokken in de nieuwe tijd
       conjIdx = pickConjugacion();
       cjModusOverride = null;
+      cjMk = null;
       renderFunConjugador();
     };
   });
@@ -4049,6 +4063,7 @@ function conjugadorNieuweRonde(){
   conjRonde = {n:0, lengte:CONJ_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
   conjIdx = pickConjugacion();
   cjModusOverride = null;
+  cjMk = null;
 }
 function conjugadorKickerTekst(){
   return ct("Werkwoord ","Verb ") + (conjRonde.n+1) + "/" + conjRonde.lengte + (conjRonde.streak > 0 ? " · 🔥 " + conjRonde.streak : "");
@@ -4057,6 +4072,7 @@ function conjugadorVolgende(){
   conjRonde.n++;
   conjIdx = conjRonde.n < conjRonde.lengte ? pickConjugacion() : null;
   cjModusOverride = null;
+  cjMk = null;
   renderFunConjugador();
 }
 function renderFunConjugador(){
@@ -4088,22 +4104,39 @@ function renderConjugadorBody(){
   var el = document.getElementById("cjBody");
   if(!el) return;
   var html = moeilijkModusHtml("cjModus", modus);
+  var mk = cjMkStaat(v, c.p, t);
+  var goedeVorm = conjVorm(v, c.p, t);
+  // na het antwoord wordt de skip-knop de duidelijke doorgaan-knop
+  var skipKlasse = mk.beantwoord ? "primary" : "ghost";
+  var skipLabel = fx("cjSkip") + (mk.beantwoord ? " \u2192" : "");
   if(modus === "makkelijk"){
-    var opties = cjMeerkeuzeOpties(v, c.p, t);
+    if(!mk.opties) mk.opties = cjMeerkeuzeOpties(v, c.p, t);
     html += "<div style='display:flex; flex-direction:column; gap:8px' id='cjOpties'>"+
-      opties.map(function(o){ return "<button type='button' class='ghost cjOptie' data-v=\""+o.replace(/"/g,"&quot;")+"\" style='text-align:left'>"+o+"</button>"; }).join("")+
+      mk.opties.map(function(o){
+        // v19.46: het antwoord wordt in de optie zelf gemarkeerd (juist = groenblauw met \u2713,
+        // jouw foute keuze = rood met \u2717), zodat je ziet wat je aanvinkte en wat het had moeten zijn
+        var klasse = "ghost", staart = "";
+        if(mk.beantwoord){
+          if(o === goedeVorm){ klasse = "primary"; staart = " \u2713"; }
+          else if(o === mk.gekozen){ klasse = "bad"; staart = " \u2717"; }
+        }
+        return "<button type='button' class='"+klasse+" cjOptie' data-v=\""+o.replace(/"/g,"&quot;")+"\" "+(mk.beantwoord?"disabled ":"")+"style='text-align:left'>"+o+staart+"</button>";
+      }).join("")+
       "</div>"+
-      "<input type='hidden' id='cjInput' value=''>"+
-      "<div class='row'><button class='ghost' id='btnCjSkip'>" + fx("cjSkip") + "</button>"+
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
-      "<div id='cjFeedback'></div>";
+      "<input type='hidden' id='cjInput' value=\""+(mk.gekozen||"").replace(/"/g,"&quot;")+"\">"+
+      // feedback staat direct onder de opties, niet onder de knoppenrij: anders viel die op
+      // telefoon onder de fold en leek er niets te gebeuren
+      "<div id='cjFeedback'>"+(mk.fb||"")+"</div>"+
+      "<div class='row'><button class='"+skipKlasse+"' id='btnCjSkip'>" + skipLabel + "</button>"+
+      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
   } else {
-    html += "<input type='text' id='cjInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("cjPlaceholder")+"'>"+
-      accentToetsenHtml("cjAccent")+
-      "<div class='row'><button class='primary' id='btnCjCheck'>" + ct("Controleer","Check") + "</button>"+
-      "<button class='ghost' id='btnCjSkip'>" + fx("cjSkip") + "</button>"+
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
-      "<div id='cjFeedback'></div>";
+    html += "<input type='text' id='cjInput' autocomplete='off' autocapitalize='off' "+(mk.beantwoord?"disabled ":"")+"placeholder='"+fx("cjPlaceholder")+"' value=\""+(mk.getypt||"").replace(/"/g,"&quot;")+"\">"+
+      (mk.beantwoord ? "" : accentToetsenHtml("cjAccent"))+
+      "<div id='cjFeedback'>"+(mk.fb||"")+"</div>"+
+      "<div class='row'>"+
+      (mk.beantwoord ? "" : "<button class='primary' id='btnCjCheck'>" + ct("Controleer","Check") + "</button>")+
+      "<button class='"+skipKlasse+"' id='btnCjSkip'>" + skipLabel + "</button>"+
+      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
   }
   el.innerHTML = html;
   wireMoeilijkToggle("cjModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.conj = m; cjModusOverride = m; persist(); renderConjugadorBody(); });
@@ -4112,17 +4145,22 @@ function renderConjugadorBody(){
   if(modus === "makkelijk"){
     document.querySelectorAll("#cjOpties .cjOptie").forEach(function(b){
       b.onclick = function(){
-        document.querySelectorAll("#cjOpties .cjOptie").forEach(function(x){ x.disabled = true; });
-        document.getElementById("cjInput").value = b.getAttribute("data-v");
+        if(mk.beantwoord) return;
+        mk.gekozen = b.getAttribute("data-v");
+        var hidden = document.getElementById("cjInput");
+        if(hidden) hidden.value = mk.gekozen;
         checkConjugador();
       };
     });
   } else {
-    wireAccentToetsen("cjAccent", "cjInput");
     var inp = document.getElementById("cjInput");
-    inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkConjugador(); });
-    document.getElementById("btnCjCheck").onclick = checkConjugador;
-    inp.focus();
+    if(!mk.beantwoord){
+      wireAccentToetsen("cjAccent", "cjInput");
+      inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkConjugador(); });
+      var btnChk = document.getElementById("btnCjCheck");
+      if(btnChk) btnChk.onclick = checkConjugador;
+      inp.focus();
+    }
   }
 }
 function renderConjugadorRondeKlaar(){
@@ -4158,9 +4196,13 @@ function renderConjugadorRondeKlaar(){
 function checkConjugador(){
   var c = conjIdx, v = c.verb, t = c.t || "presente";
   var modus = cjHuidigeModus(v, c.p, t);
+  var mk = cjMkStaat(v, c.p, t);
+  if(mk.beantwoord) return; // \u00e9\u00e9n poging per opgave (voorheen kon je met Enter dubbel XP pakken)
   var inpEl = document.getElementById("cjInput");
-  var given = norm((inpEl && inpEl.value) || "");
+  var ruw = (modus === "makkelijk" && mk.gekozen) ? mk.gekozen : ((inpEl && inpEl.value) || "");
+  var given = norm(ruw);
   if(!given) return;
+  mk.getypt = ruw;
   var fb = document.getElementById("cjFeedback");
   var correct = conjVorm(v, c.p, t);
   var exact = norm(correct) === given;
@@ -4191,8 +4233,12 @@ function checkConjugador(){
   }
   var kickerEl = document.getElementById("cjKicker");
   if(kickerEl) kickerEl.textContent = conjugadorKickerTekst();
-  fb.innerHTML = html;
+  mk.fb = html;
+  mk.beantwoord = true;
+  if(fb) fb.innerHTML = html;
   persist();
+  // opnieuw renderen zodat de gekozen optie gemarkeerd staat en de doorgaan-knop opvalt
+  if(document.getElementById("cjBody")) renderConjugadorBody();
 }
 
 /* ================= ZINNEN HUSSELEN (woordvolgorde-scramble met eigen SENTENCES) ================= */
