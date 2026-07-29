@@ -456,7 +456,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.40";
+var APP_VERSIE = "v19.41";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4424,7 +4424,13 @@ function renderQuestion(){
   var html = (inFlowQuiz ? lesFlowBannerHtml() : "")+
     "<span class='kicker'>"+quizTitel(qz)+ct(" · vraag "," · question ")+(st.i+1)+"/"+qz.vragen.length+"</span>"+
     "<div class='progressbar'><div style='width:"+Math.round(100*st.i/qz.vragen.length)+"%'></div></div>"+
-    "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>";
+    "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>"+
+    // 29 juli-fix: Stefans terechte punt (screenshot "enfrente" vs "al lado") - zonder de vertaling
+    // vooraf zijn twee opties vaak allebei grammaticaal geldig Spaans (bv. "naast" én "tegenover" zijn
+    // beide een plausibele plek voor een park). De vertaling stond al in de data (v.nl/v.ne) maar werd
+    // pas ná het antwoord getoond, als uitleg - te laat om de vraag te kunnen beantwoorden zonder gokken.
+    // Nu vooraf getoond, bij alle 113 vragen die een vertaling hebben (niet alleen deze twee).
+    (v.nl ? "<p class='muted'>"+ct("Vertaling: ","Translation: ")+vraagVert(v)+"</p>" : "");
   v.opts.forEach(function(o,idx){
     html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>";
   });
@@ -4445,7 +4451,9 @@ function answerQuestion(idx, btn){
   var goed = idx === v.c;
   if(goed){ st.score++; addXP(2); trackPoging(false); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+item.oi, "quiz", st.qz.id, v.q); addXP(1); }
   var fb = document.getElementById("qFeedback");
-  fb.innerHTML = (v.nl ? "<div class='feedback "+(goed?"ok":"bijna")+"'>"+ct("Vertaling: ","Translation: ")+vraagVert(v)+"</div>" : "")+
+  // vertaling staat sinds 29 juli al vóór het antwoorden bij de vraag (zie renderQuestion) - hier dus
+  // niet meer herhalen, alleen nog de uitleg waarom het antwoord goed/fout is
+  fb.innerHTML =
     "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+ct("Waarom:","Why:")+"</b> "+vraagWaarom(v)+"</div>"+
     "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.qz.vragen.length ? ct("Volgende →","Next →") : ct("Uitslag →","Result →"))+"</button></div>";
   document.getElementById("btnNextQ").onclick = function(){ st.i++; renderQuestion(); };
