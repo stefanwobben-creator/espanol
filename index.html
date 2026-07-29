@@ -112,6 +112,14 @@
   .amigo svg{width:48px; height:44px;}
   .amigo small{display:block; font-size:.62rem; color:var(--muted); max-width:64px;}
   .amigo.locked{opacity:.45; filter:grayscale(1);}
+  /* Chispa 2.0 (29 juli): grotere vriendjes, dans-animatie en kamer-decor */
+  .amigo svg{width:66px; height:60px; transition:transform .15s ease;}
+  .amigo:not(.locked):hover svg{transform:scale(1.12) rotate(-3deg);}
+  .amigo small{font-size:.68rem; max-width:84px;}
+  .amigobounce{animation:petb .5s ease;}
+  .petdance{animation:petd 2.6s ease-in-out infinite;}
+  @keyframes petd{0%,100%{transform:rotate(0) scale(1)} 15%{transform:rotate(-6deg) scale(1.05)} 30%{transform:rotate(5deg) scale(1.07)} 45%{transform:rotate(-5deg) scale(1.04)} 60%{transform:rotate(6deg) scale(1.08)} 80%{transform:rotate(-3deg) scale(1.02)}}
+  .decoritem{position:absolute; font-size:1.9rem; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(0,0,0,.14)); z-index:1;}
   .petname{font-size:1.3rem; font-weight:800; margin:4px 0 0;}
   .petmood{color:var(--muted); font-size:.9rem; margin-bottom:8px;}
   .tapabadge{font-weight:800; font-size:1rem; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:6px 14px;}
@@ -442,7 +450,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.35";
+var APP_VERSIE = "v19.36";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2261,7 +2269,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
 function persist(){ store.save(S); scheduleSync(); }
 
@@ -2685,6 +2693,8 @@ function boot(){
   S.dagStats = S.dagStats || {};
   S.lesFlow = S.lesFlow || {};
   S.lesFlowSpel = S.lesFlowSpel || {};
+  S.modusKeuze = S.modusKeuze || {};
+  S.rincon = S.rincon || {};
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
   document.getElementById("userName").textContent = p.name;
@@ -3103,8 +3113,12 @@ function lessonProgress(l){
   var w = l.words.filter(wordSeen).length;
   var s = l.sents.filter(function(id){ return !!S.done[id]; }).length;
   var q = l.quizzes.filter(function(id){ return quizPct(id) >= 0.8; }).length;
+  // Eenmaal voltooid = voltooid (st.done is leidend): de nachttaak voegt oefenzinnen toe aan bestaande
+  // lessen, en zonder deze voorrang zou elke toevoeging voltooide lessen met terugwerkende kracht
+  // "heropenen" en alle vervolg-lessen weer op slot zetten (bug gemeld 29 juli). De tellingen blijven
+  // gewoon zichtbaar zolang de les nog niet af is; nieuwe zinnen draaien via de oefenpool mee.
   return {spiek:!!st.spiek, w:w, wt:l.words.length, s:s, stt:l.sents.length, q:q, qt:l.quizzes.length,
-    done: !!st.spiek && w===l.words.length && s===l.sents.length && q===l.quizzes.length};
+    done: !!st.done || (!!st.spiek && w===l.words.length && s===l.sents.length && q===l.quizzes.length)};
 }
 function lessonUnlocked(i){
   var ls = tLessons();
@@ -3208,14 +3222,35 @@ function renderWord(){
   if(!wQueue.length){ buildQueue(); }
   if(!wQueue.length){
     if(lesFlow && lesFlow.stap === "woorden"){ lesFlowVolgende(); return; }
+    // Woorden die alléén door de dagcap (max 15 nieuw/dag) buiten de wachtrij vallen: expliciet aanbieden.
+    // Stefans feedback 29 juli: de laatste paar leswoorden niet kunnen doen blokkeert het afronden van een
+    // les — met een bewuste klik mag de cap dus opzij (de cap blijft de stille default, dit is opt-in).
+    var capRest = (function(){
+      var allow = {}; allowedWordIds().forEach(function(id){ allow[id] = true; });
+      return WORDS.filter(function(w){
+        if(S.srs[w.id]) return false;
+        if(scopeLesson) return scopeLesson.words.indexOf(w.id) >= 0;
+        return !!allow[w.id];
+      });
+    })();
+    var capKnop = capRest.length ? "<button class='primary' id='btnCapRest'>➕ "+
+      ct("Nog "+capRest.length+" nieuwe "+(capRest.length===1?"woord":"woorden")+" tóch doen",
+         "Do "+capRest.length+" more new word"+(capRest.length===1?"":"s")+" anyway")+"</button>" : "";
     el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · woordjes":"Woordjes")+"</span>"+
       "<p class='big'>Alles gedaan ✓</p>"+
-      "<p class='muted'>Je hebt "+wSessionDone+" kaartje(s) gedaan. "+
-      (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug." : "Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les.")+"</p>"+
-      "<div class='row'>"+
-      (scopeLesson ? "<button class='primary' id='btnRepeatAll'>Toch alles nog eens doen</button>"+
+      "<p class='muted'>"+"Je hebt "+wSessionDone+" kaartje(s) gedaan. "+
+      (capRest.length ? ct("Er "+(capRest.length===1?"wacht nog 1 nieuw woord":"wachten nog "+capRest.length+" nieuwe woorden")+" achter je dagmaximum van "+MAX_NEW_PER_DAY+" — morgen komen ze vanzelf, of doe ze nu.",
+                           capRest.length===1?"1 new word is waiting behind your daily max of "+MAX_NEW_PER_DAY+" — it'll come tomorrow, or do it now.":capRest.length+" new words are waiting behind your daily max of "+MAX_NEW_PER_DAY+" — they'll come tomorrow, or do them now.")
+        : (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug." : "Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les."))+"</p>"+
+      "<div class='row'>"+capKnop+
+      (scopeLesson ? "<button class='"+(capRest.length?"ghost":"primary")+"' id='btnRepeatAll'>Toch alles nog eens doen</button>"+
                      "<button class='ghost' id='btnBackLes'>Terug naar de les →</button>" : "")+
       "</div>";
+    var bcap = document.getElementById("btnCapRest");
+    if(bcap) bcap.onclick = function(){
+      wQueue = geschud(capRest);
+      renderWord();
+    };
     var bb = document.getElementById("btnBackLes");
     if(bb) bb.onclick = function(){ show("lessen"); if(curLesson) openLesson(curLesson); };
     var br2 = document.getElementById("btnRepeatAll");
@@ -3311,8 +3346,10 @@ function wireAccentToetsen(rowId, inputId){
 
 /* ================= MOEILIJKHEIDSTOGGLE (makkelijk=meerkeuze / moeilijk=typen, adaptief per item) ================= */
 // Adaptief: elk item krijgt een berekende default-modus (makkelijk bij nog-niet-gehaald/net-fout,
-// moeilijk als het al goed zit). De toggle overschrijft dat alleen voor het HUIDIGE item — bij het
-// volgende item wordt weer opnieuw adaptief bepaald, tenzij de gebruiker daar ook weer expliciet kiest.
+// moeilijk als het al goed zit) — maar ALLEEN zolang de gebruiker nooit zelf gekozen heeft.
+// Sinds 29 juli (Stefans feedback "waarom wisselt dit vanzelf?"): een expliciete klik op de toggle
+// wordt opgeslagen in S.modusKeuze (per oefenvorm) en blijft daarna gewoon staan, over items,
+// sessies en apparaten heen. Wie terug wil naar adaptief kiest gewoon opnieuw wanneer het uitkomt.
 function moeilijkModusHtml(rowId, modus){
   return "<div class='row' id='"+rowId+"' style='gap:6px; margin:2px 0 10px'>"+
     "<button type='button' class='"+(modus==="makkelijk"?"primary":"ghost")+" modus-toets' data-m='makkelijk' style='padding:6px 13px; font-size:0.85rem'>🟢 "+ct("Makkelijk","Easy")+"</button>"+
@@ -3344,14 +3381,14 @@ function stripAcc(s){
 }
 
 var sIdx = null;
-var sModusOverride = null; // null = adaptief; anders "makkelijk"/"moeilijk", geldt alleen voor het huidige item
+var sModusOverride = null; // (historisch) per-item override; sinds 29 juli wint S.modusKeuze.zin als die gezet is
 function sAdaptiefModus(s){
   if(!S.done[s.id]) return "makkelijk";
   var fout = S.errors["zin:"+s.id];
   if(fout && fout.count > 0) return "makkelijk";
   return "moeilijk";
 }
-function sHuidigeModus(s){ return sModusOverride || sAdaptiefModus(s); }
+function sHuidigeModus(s){ return (S.modusKeuze && S.modusKeuze.zin) || sModusOverride || sAdaptiefModus(s); }
 function sMeerkeuzeOpties(s){
   var pool = SENTENCES.filter(function(x){ return x.id !== s.id && x.lvl === s.lvl; });
   if(pool.length < 3) pool = SENTENCES.filter(function(x){ return x.id !== s.id; });
@@ -3434,7 +3471,7 @@ function renderSentenceBody(){
       "<div id='sFeedback'></div>";
   }
   el.innerHTML = html;
-  wireMoeilijkToggle("sModus", function(m){ sModusOverride = m; renderSentenceBody(); });
+  wireMoeilijkToggle("sModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = m; sModusOverride = m; persist(); renderSentenceBody(); });
   if(modus === "makkelijk"){
     document.querySelectorAll("#sOpties .sOptie").forEach(function(b){
       b.onclick = function(){
@@ -3800,12 +3837,12 @@ var CONJ_PRONOMBRES = ["yo","tú","él / ella / usted","nosotros / nosotras","vo
 var CONJ_RONDE_LEN = 10;
 var conjIdx = null; // {verb, p}
 var conjRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
-var cjModusOverride = null; // null = adaptief; anders "makkelijk"/"moeilijk", geldt alleen voor het huidige item
+var cjModusOverride = null; // (historisch) per-item override; sinds 29 juli wint S.modusKeuze.conj als die gezet is
 function cjAdaptiefModus(v, p){
   var fout = S.errors["conj:"+v.inf+"-"+p];
   return (fout && fout.count > 0) ? "makkelijk" : "moeilijk";
 }
-function cjHuidigeModus(v, p){ return cjModusOverride || cjAdaptiefModus(v, p); }
+function cjHuidigeModus(v, p){ return (S.modusKeuze && S.modusKeuze.conj) || cjModusOverride || cjAdaptiefModus(v, p); }
 function cjMeerkeuzeOpties(v, p){
   var correct = v.presente[p];
   var andereVormen = v.presente.filter(function(vorm, i){ return i !== p && vorm !== correct; });
@@ -3883,7 +3920,7 @@ function renderConjugadorBody(){
       "<div id='cjFeedback'></div>";
   }
   el.innerHTML = html;
-  wireMoeilijkToggle("cjModus", function(m){ cjModusOverride = m; renderConjugadorBody(); });
+  wireMoeilijkToggle("cjModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.conj = m; cjModusOverride = m; persist(); renderConjugadorBody(); });
   document.getElementById("btnCjSkip").onclick = function(){ conjugadorVolgende(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
   if(modus === "makkelijk"){
@@ -5000,6 +5037,107 @@ function chispaRandomSay(){
   var f = FRASES[Math.floor(Math.random()*FRASES.length)];
   chispaSay(f);
 }
+/* ===== Chispa's kamer (29 juli, Stefans wens: interactiever, groeiend, verrassend) =====
+   Decor koop je met tapas (eindelijk een tweede bestemming naast voeren), sommige stukken
+   ontgrendelen pas bij een hoger niveau — zo blijft er ook voor gevorderde spelers iets
+   nieuws te halen. Client-only: S.rincon = {itemId:true}. */
+var RINCON = [
+  {id:"planta",    e:"🪴", naam:"Planta",              hint:"een beetje groen",              prijs:3,  pos:"left:3%; top:30%;"},
+  {id:"poster",    e:"🖼️", naam:"Póster de Alicante",  hint:"thuisgevoel aan de muur",       prijs:4,  pos:"left:7%; top:4%;"},
+  {id:"sombrilla", e:"⛱️", naam:"Sombrilla",           hint:"schaduw als een echte Spanjaard", prijs:4, pos:"right:4%; top:26%;"},
+  {id:"castillo",  e:"🏰", naam:"Castillo de arena",   hint:"zandkasteel in het aquarium",   prijs:5,  pos:"left:16%; top:33%;"},
+  {id:"guitarra2", e:"🎸", naam:"Guitarra española",   hint:"voor de serenades",             prijs:5,  pos:"right:13%; top:32%;"},
+  {id:"radio",     e:"📻", naam:"Radio",               hint:"bachata op verzoek",            prijs:6,  pos:"left:3%; top:16%;"},
+  {id:"discobol",  e:"🪩", naam:"Bola de discoteca",   hint:"voor de feestjes",              prijs:7,  pos:"right:9%; top:2%;"},
+  {id:"librero",   e:"📚", naam:"Estantería",          hint:"Chispa's eigen boekenkast",     prijs:7,  pos:"right:2%; top:14%;", min:6000},
+  {id:"farolillo", e:"🏮", naam:"Farolillos de feria", hint:"lampionnen als op de feria",    prijs:8,  pos:"left:45%; top:0;",      min:10000},
+  {id:"fuente",    e:"⛲", naam:"Fuente",              hint:"een echte binnenfontein",       prijs:10, pos:"left:30%; top:34%;",  min:15000}
+];
+function rinconDecorHtml(){
+  var html = "";
+  RINCON.forEach(function(it){
+    if(S.rincon && S.rincon[it.id]) html += "<span class='decoritem' style='"+it.pos+"'>"+it.e+"</span>";
+  });
+  return html;
+}
+/* Serenade: één doorloop van de Andalusische cadens uit de Aventura-audio-engine, los van funView.
+   Respecteert een expliciete klik ook als Aventura op stil staat (de knop ís de toestemming). */
+var serenadeBezig = false;
+function chispaSerenade(){
+  if(serenadeBezig) return;
+  var ac = avtCtx();
+  var box = document.getElementById("petBox");
+  if(box){ box.classList.add("petdance"); }
+  document.querySelectorAll(".amigo:not(.locked)").forEach(function(a){
+    a.classList.remove("amigobounce"); void(a.offsetWidth||0); a.classList.add("amigobounce");
+  });
+  chispaSay({es:"¡Dale! Una serenata para ti.", nl:"Kom maar op! Een serenade voor jou."});
+  var duurMs = 5600;
+  if(ac){
+    serenadeBezig = true;
+    var stil = S.avtStil; S.avtStil = false;
+    var acht = 0.17, t0 = ac.currentTime + 0.08;
+    AVT_CADENS.forEach(function(bar, b){
+      var tb = t0 + b * 8 * acht;
+      [0,3,6].forEach(function(i){
+        avtPluk(bar.bas, tb + i*acht, acht*2.8, 0.11);
+        avtPluk(bar.bas*2, tb + i*acht, acht*1.6, 0.045);
+        avtPalmas(tb + i*acht, i === 0 ? 0.10 : 0.055);
+      });
+      if(b === 3){
+        AVT_FALSETA.forEach(function(f, i){ avtPluk(f, tb + i*acht*0.5, acht*1.1, 0.055); });
+        avtPluk(329.63, tb + 4*acht, acht*3.6, 0.075);
+      } else {
+        bar.mel.forEach(function(f, i){ if(f) avtPluk(f, tb + i*acht, acht*1.9, 0.06); });
+      }
+    });
+    setTimeout(function(){ S.avtStil = stil; serenadeBezig = false; }, duurMs);
+  }
+  setTimeout(function(){
+    var box2 = document.getElementById("petBox");
+    if(box2) box2.classList.remove("petdance");
+    document.querySelectorAll(".amigo").forEach(function(a){ a.classList.remove("amigobounce"); });
+  }, duurMs);
+}
+/* Dagcadeautje: één keer per dag, variabele beloning — de verrassing die Stefan miste. */
+function chispaCadeau(){
+  var t = today();
+  if(S.chispaCadeau === t){ chispaSay({es:"Mañana hay más, ¿eh?", nl:"Morgen weer, hè?"}); return; }
+  S.chispaCadeau = t;
+  var r = Math.random();
+  if(r < 0.5){
+    S.tapas = (S.tapas||0) + 1;
+    confetti(["🎁","🌮"], 12);
+    chispaSay({es:"¡Mira! Encontré una tapa para ti.", nl:"Kijk! Ik heb een tapa voor je gevonden."});
+  } else if(r < 0.8){
+    S.tapas = (S.tapas||0) + 2;
+    confetti(["🎁","🌮","⭐️"], 16);
+    chispaSay({es:"¡Dos tapas! Hoy es tu día.", nl:"Twee tapas! Vandaag is jouw dag."});
+  } else if(r < 0.95){
+    var f = FRASES[Math.floor(Math.random()*FRASES.length)];
+    confetti(["🎶"], 10);
+    chispaSay({es:"Mi regalo es una frase: "+f.es, nl:f.nl});
+  } else {
+    S.tapas = (S.tapas||0) + 5;
+    confetti(["🎉","🌮","🥳","⭐️"], 30);
+    chispaSay({es:"¡¡JACKPOT!! ¡Cinco tapas!", nl:"JACKPOT! Vijf tapas!"});
+  }
+  persist();
+  renderPet();
+}
+/* Aai-teller: elke 7e aai doet Chispa iets bijzonders. */
+var chispaAaiTeller = 0;
+function chispaAai(){
+  chispaAaiTeller++;
+  if(chispaAaiTeller % 7 === 0){
+    var box = document.getElementById("petBox");
+    if(box){ box.classList.add("petdance"); setTimeout(function(){ box.classList.remove("petdance"); }, 2700); }
+    confetti(["✨","💛"], 14);
+    chispaSay({es:"Jajaja, ¡me haces cosquillas!", nl:"Haha, je kietelt me!"});
+  } else {
+    chispaRandomSay();
+  }
+}
 function renderPet(){
   var el = document.getElementById("petCard");
   var lvl = petLevel(S.txp||0);
@@ -5017,7 +5155,9 @@ function renderPet(){
       amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>🔒 bij "+a.min.toLocaleString("nl-NL")+" XP</small></button>";
     }
   });
+  var cadeauGehad = S.chispaCadeau === today();
   el.innerHTML = "<div class='petstage'>"+
+    rinconDecorHtml()+
     "<span class='daydeco'>"+deco.e+"</span>"+
     "<div id='petBubble' class='petbubble hidden'></div>"+
     "<div id='petBox' title='Klik op Chispa!'>"+petSVG()+"</div>"+
@@ -5028,6 +5168,8 @@ function renderPet(){
     "<span class='tapabadge'>🌮 "+(S.tapas||0)+" tapas</span>"+
     "<div class='row center'>"+
     "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">Geef een tapa 🌮</button>"+
+    "<button class='ghost' id='btnSerenade'>🎶 Serenade</button>"+
+    "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">🎁 "+(cadeauGehad?"Morgen weer":"Dagcadeautje")+"</button>"+
     "</div>"+
     (next?"<p class='muted' style='margin-top:10px'>Nog "+Math.max(0,next.min-(S.txp||0)).toLocaleString("nl-NL")+" XP tot de volgende vorm: <b>"+next.naam+"</b> ("+next.hint+")</p>"
          :"<p class='muted' style='margin-top:10px'>Chispa is een echte estrella: het hoogste niveau. ⭐ Maar tapas blijven welkom.</p>")+
@@ -5035,9 +5177,13 @@ function renderPet(){
     "</div>";
   var b = document.getElementById("btnFeed");
   if(b) b.onclick = feedPet;
+  var bs = document.getElementById("btnSerenade");
+  if(bs) bs.onclick = chispaSerenade;
+  var bc = document.getElementById("btnCadeau");
+  if(bc && !cadeauGehad) bc.onclick = chispaCadeau;
   var box = document.getElementById("petBox");
   if(box){
-    box.onclick = chispaRandomSay;
+    box.onclick = chispaAai;
     box.onmouseenter = function(){
       var now = new Date().getTime();
       if(!window.chispaHover || now - window.chispaHover > 8000){ window.chispaHover = now; chispaSay(fraseVanDaag()); }
@@ -5047,7 +5193,10 @@ function renderPet(){
     ab.onclick = function(){
       var id = ab.getAttribute("data-amigo");
       var a = AMIGOS.filter(function(x){ return x.id === id; })[0];
-      if(a){ chispaSay(a.frase); }
+      if(a){
+        ab.classList.remove("amigobounce"); void(ab.offsetWidth||0); ab.classList.add("amigobounce");
+        chispaSay(a.frase);
+      }
       else { toast("Dit vriendje komt erbij als Chispa verder groeit. ¡Sigue estudiando!"); }
     };
   });
@@ -5080,11 +5229,40 @@ function renderShop(){
     }
     html += "</div>";
   });
+  html += "<h2 style='margin-top:18px'>Chispa's kamer</h2><p class='muted'>Richt de kamer in met je tapas. Sommige stukken komen pas vrij als Chispa verder groeit — er blijft altijd iets te sparen.</p>";
+  var xpNu = S.txp || 0;
+  RINCON.forEach(function(it){
+    var owned = !!(S.rincon && S.rincon[it.id]);
+    var locked = it.min && xpNu < it.min;
+    html += "<div class='shopitem'><div class='si-name'>"+it.e+" "+it.naam+"<small>"+it.hint+"</small></div>";
+    if(owned){
+      html += "<span class='muted'>✓ staat in de kamer</span>";
+    } else if(locked){
+      html += "<span class='muted'>🔒 bij "+it.min.toLocaleString("nl-NL")+" XP</span>";
+    } else {
+      var kan = (S.tapas||0) >= it.prijs;
+      html += "<button class='"+(kan?"primary":"ghost")+"' data-rincon='"+it.id+"' "+(kan?"":"disabled style='opacity:.5'")+">🌮 "+it.prijs+"</button>";
+    }
+    html += "</div>";
+  });
   el.innerHTML = html;
   el.querySelectorAll("button[data-wear]").forEach(function(b){
     b.onclick = function(){
       var id = b.getAttribute("data-wear");
       S.wear[id] = !S.wear[id]; persist();
+      renderPet(); renderShop();
+    };
+  });
+  el.querySelectorAll("button[data-rincon]").forEach(function(b){
+    b.onclick = function(){
+      var it = RINCON.filter(function(x){ return x.id === b.getAttribute("data-rincon"); })[0];
+      if(!it || (S.tapas||0) < it.prijs) return;
+      S.tapas -= it.prijs;
+      S.rincon = S.rincon || {};
+      S.rincon[it.id] = true;
+      persist();
+      confetti([it.e,"🌮","✨"], 16);
+      toast(it.naam+" staat in Chispa's kamer! "+it.e);
       renderPet(); renderShop();
     };
   });
@@ -6514,13 +6692,23 @@ function dicModal(){
     wrap.id = "dicWrap"; wrap.className = "dicwrap";
     wrap.innerHTML = "<div class='dicpanel'><div class='dictop'>"+
       "<span class='kicker'>Woordenboek</span><button class='ghost' id='btnDicDicht'>✕ Sluiten</button></div>"+
-      "<div id='dicCard'></div></div>";
+      "<div id='dicContext'></div><div id='dicCard'></div></div>";
     document.body.appendChild(wrap);
     wrap.onclick = function(e){ if(e && e.target === wrap) dicSluit(); };
     var bx = document.getElementById("btnDicDicht");
     if(bx) bx.onclick = dicSluit;
   }
   wrap.classList.remove("hidden");
+  // de popup ligt over het hele scherm — pin de zin waar je mee bezig bent bovenin het paneel,
+  // zodat je niet hoeft te onthouden wat je aan het vertalen was (Stefans feedback 29 juli)
+  var ctxEl = document.getElementById("dicContext");
+  if(ctxEl){
+    var sc = document.getElementById("sCard");
+    var vertaalActief = sc && sc.offsetParent !== null && sIdx;
+    ctxEl.innerHTML = vertaalActief
+      ? "<p class='dicrijtje' style='margin:6px 0 10px'>✍️ "+ct("Jouw zin: ","Your sentence: ")+"<b>"+zinPrompt(sIdx)+"</b></p>"
+      : "";
+  }
   renderDic();
   var zoek = document.getElementById("dicZoek");
   if(zoek){ zoek.focus(); if(zoek.select) zoek.select(); }
@@ -6567,6 +6755,142 @@ function dicGroups(lijst){
   });
   return groups;
 }
+/* ===== Vervoegings-zoeker (29 juli, Stefans wens: "comiste" intypen en bij comer uitkomen) =====
+   Geen volledige morfologische analyse, wel de 95%-gevallen: regelmatige uitgangen van presente,
+   indefinido, imperfecto, futuro, condicional, gerundio en participio worden teruggerekend naar
+   kandidaat-infinitieven, met stam-varianten voor spellingwissels (c/z, qu/c, gu/g) en klinkerwissels
+   (ie→e, ue→o, i→e). Kandidaten tellen alleen mee als de infinitief echt bekend is (leswoorden,
+   Conjugador-werkwoorden of frequentielijst). Suppletieve vormen (fue, era, voy...) via een vaste map. */
+var VORM_TABEL = [
+  {u:"ábamos",inf:["ar"],t:"imperfecto",p:"nosotros"}, {u:"aríamos",inf:["ar","er","ir"],t:"condicional",p:"nosotros"},
+  {u:"íamos",inf:["er","ir"],t:"imperfecto",p:"nosotros"}, {u:"aremos",inf:["ar"],t:"futuro",p:"nosotros"},
+  {u:"eremos",inf:["er"],t:"futuro",p:"nosotros"}, {u:"iremos",inf:["ir"],t:"futuro",p:"nosotros"},
+  {u:"asteis",inf:["ar"],t:"indefinido",p:"vosotros"}, {u:"isteis",inf:["er","ir"],t:"indefinido",p:"vosotros"},
+  {u:"ieron",inf:["er","ir"],t:"indefinido",p:"ellos/ellas"}, {u:"iendo",inf:["er","ir"],t:"gerundio",p:null},
+  {u:"aron",inf:["ar"],t:"indefinido",p:"ellos/ellas"}, {u:"ando",inf:["ar"],t:"gerundio",p:null},
+  {u:"aste",inf:["ar"],t:"indefinido",p:"tú"}, {u:"iste",inf:["er","ir"],t:"indefinido",p:"tú"},
+  {u:"amos",inf:["ar"],t:"presente",p:"nosotros"}, {u:"emos",inf:["er"],t:"presente",p:"nosotros"},
+  {u:"imos",inf:["ir"],t:"presente / indefinido",p:"nosotros"},
+  {u:"abas",inf:["ar"],t:"imperfecto",p:"tú"}, {u:"aban",inf:["ar"],t:"imperfecto",p:"ellos/ellas"},
+  {u:"aba",inf:["ar"],t:"imperfecto",p:"yo / él/ella"},
+  {u:"ías",inf:["er","ir"],t:"imperfecto",p:"tú"}, {u:"ían",inf:["er","ir"],t:"imperfecto",p:"ellos/ellas"},
+  {u:"ía",inf:["er","ir"],t:"imperfecto",p:"yo / él/ella"},
+  {u:"áis",inf:["ar"],t:"presente",p:"vosotros"}, {u:"éis",inf:["er"],t:"presente",p:"vosotros"},
+  {u:"ís",inf:["ir"],t:"presente",p:"vosotros"},
+  {u:"ado",inf:["ar"],t:"participio",p:null}, {u:"ido",inf:["er","ir"],t:"participio",p:null},
+  {u:"aré",inf:["ar"],t:"futuro",p:"yo"}, {u:"eré",inf:["er"],t:"futuro",p:"yo"}, {u:"iré",inf:["ir"],t:"futuro",p:"yo"},
+  {u:"ará",inf:["ar"],t:"futuro",p:"él/ella"}, {u:"erá",inf:["er"],t:"futuro",p:"él/ella"}, {u:"irá",inf:["ir"],t:"futuro",p:"él/ella"},
+  {u:"aría",inf:["ar","er","ir"],t:"condicional",p:"yo / él/ella"},
+  {u:"as",inf:["ar"],t:"presente",p:"tú"}, {u:"an",inf:["ar"],t:"presente",p:"ellos/ellas"},
+  {u:"es",inf:["er","ir"],t:"presente",p:"tú"}, {u:"en",inf:["er","ir"],t:"presente",p:"ellos/ellas"},
+  {u:"é",inf:["ar"],t:"indefinido",p:"yo"}, {u:"ó",inf:["ar"],t:"indefinido",p:"él/ella"},
+  {u:"í",inf:["er","ir"],t:"indefinido",p:"yo"}, {u:"ió",inf:["er","ir"],t:"indefinido",p:"él/ella"},
+  {u:"o",inf:["ar","er","ir"],t:"presente",p:"yo"},
+  {u:"a",inf:["ar"],t:"presente",p:"él/ella"}, {u:"e",inf:["er","ir"],t:"presente",p:"él/ella"}
+];
+var VORM_SUPPLETIEF = {
+  fui:["ser / ir","indefinido","yo"], fuiste:["ser / ir","indefinido","tú"], fue:["ser / ir","indefinido","él/ella"],
+  fuimos:["ser / ir","indefinido","nosotros"], fuisteis:["ser / ir","indefinido","vosotros"], fueron:["ser / ir","indefinido","ellos/ellas"],
+  soy:["ser","presente","yo"], eres:["ser","presente","tú"], es:["ser","presente","él/ella"], somos:["ser","presente","nosotros"], sois:["ser","presente","vosotros"], son:["ser","presente","ellos/ellas"],
+  era:["ser","imperfecto","yo / él/ella"], eras:["ser","imperfecto","tú"], éramos:["ser","imperfecto","nosotros"], eran:["ser","imperfecto","ellos/ellas"],
+  voy:["ir","presente","yo"], vas:["ir","presente","tú"], va:["ir","presente","él/ella"], vamos:["ir","presente","nosotros"], vais:["ir","presente","vosotros"], van:["ir","presente","ellos/ellas"],
+  iba:["ir","imperfecto","yo / él/ella"], ibas:["ir","imperfecto","tú"], íbamos:["ir","imperfecto","nosotros"], iban:["ir","imperfecto","ellos/ellas"],
+  he:["haber","presente","yo"], has:["haber","presente","tú"], ha:["haber","presente","él/ella"], hemos:["haber","presente","nosotros"], han:["haber","presente","ellos/ellas"], hay:["haber (er is/zijn)","presente",null], hubo:["haber","indefinido","él/ella"],
+  visto:["ver","participio",null], hecho:["hacer","participio",null], dicho:["decir","participio",null], puesto:["poner","participio",null],
+  vuelto:["volver","participio",null], escrito:["escribir","participio",null], abierto:["abrir","participio",null], muerto:["morir","participio",null], roto:["romper","participio",null],
+  di:["dar","indefinido","yo"], dio:["dar","indefinido","él/ella"], vi:["ver","indefinido","yo"], vio:["ver","indefinido","él/ella"]
+};
+var VORM_ONREG_STAM = {estuv:"estar", tuv:"tener", hic:"hacer", hiz:"hacer", dij:"decir", pud:"poder", pus:"poner",
+  quis:"querer", vin:"venir", sup:"saber", anduv:"andar", traj:"traer", hub:"haber", cup:"caber"};
+var bekendeInfCache = null;
+function bekendeInfSet(){
+  if(bekendeInfCache) return bekendeInfCache;
+  var set = {};
+  function addTekst(tekst){
+    tekst.toLowerCase().split("/").forEach(function(d){
+      d.trim().split(" ").forEach(function(tok){
+        tok = tok.replace(/[^a-zñáéíóúü]/g, "");
+        if(tok.length > 3 && /(ar|er|ir)(se)?$/.test(tok)) set[tok.replace(/se$/, "")] = true;
+      });
+    });
+  }
+  WORDS.forEach(function(w){ addTekst(w.es); });
+  if(typeof B_WORDS !== "undefined") B_WORDS.forEach(function(w){ addTekst(w.es); });
+  if(typeof VERBOS !== "undefined") VERBOS.forEach(function(v){ set[v.inf] = true; });
+  if(typeof FREQ !== "undefined") FREQ.forEach(function(f){
+    var tok = f[0]; if(tok.length > 3 && /(ar|er|ir)(se)?$/.test(tok)) set[tok.replace(/se$/, "")] = true;
+  });
+  bekendeInfCache = set;
+  return set;
+}
+function stamVarianten(stam){
+  var out = [stam], m;
+  if(/c$/.test(stam)) out.push(stam.replace(/c$/, "z"));   // empec- → empez(ar)
+  if(/qu$/.test(stam)) out.push(stam.replace(/qu$/, "c")); // busqu- → busc(ar)
+  if(/gu$/.test(stam)) out.push(stam.replace(/gu$/, "g")); // pagu- → pag(ar)
+  if((m = stam.match(/^(.*)ie([^aeiouáéíóú]+)$/))) out.push(m[1]+"e"+m[2]); // quier- → quer(er)
+  if((m = stam.match(/^(.*)ue([^aeiouáéíóú]+)$/))) out.push(m[1]+"o"+m[2]); // pued- → pod(er)
+  var li = stam.lastIndexOf("i");
+  if(li > 0) out.push(stam.slice(0, li)+"e"+stam.slice(li+1)); // pid- → ped(ir), consigu- → consegu(ir)
+  return out;
+}
+function infGloss(inf){
+  var eersteInf = inf.split(" ")[0];
+  var hit = WORDS.filter(function(w){
+    var kern = w.es.toLowerCase().split("/")[0].trim().split(" ")[0];
+    return kern === eersteInf || kern === eersteInf+"se";
+  })[0];
+  if(hit) return wTrans(hit);
+  if(typeof VERBOS !== "undefined"){
+    var v = VERBOS.filter(function(x){ return x.inf === eersteInf; })[0];
+    if(v) return v.nl;
+  }
+  if(typeof FREQ !== "undefined"){
+    for(var i = 0; i < FREQ.length; i++){ if(FREQ[i][0] === eersteInf) return freqGloss(FREQ[i][0], FREQ[i][1]); }
+  }
+  return "";
+}
+function vormAnalyse(qRaw){
+  var q = qRaw.toLowerCase().trim().replace(/[^a-zñáéíóúü]/g, "");
+  if(q.length < 2) return [];
+  var hits = [], gezien = {};
+  function push(inf, tijd, persoon){
+    var key = inf+"|"+tijd;
+    if(gezien[key]) return;
+    gezien[key] = true;
+    hits.push({inf: inf, tijd: tijd, persoon: persoon, gloss: infGloss(inf)});
+  }
+  if(VORM_SUPPLETIEF[q]){
+    var sup = VORM_SUPPLETIEF[q];
+    push(sup[0], sup[1], sup[2]);
+  }
+  var set = bekendeInfSet();
+  VORM_TABEL.forEach(function(row){
+    if(q.length <= row.u.length || q.slice(-row.u.length) !== row.u) return;
+    var stam = q.slice(0, -row.u.length);
+    if(stam.length < 2) return;
+    stamVarianten(stam).forEach(function(sv){
+      row.inf.forEach(function(uitg){
+        var inf = sv + uitg;
+        if(set[inf]) push(inf, row.t, row.p);
+      });
+    });
+    // onregelmatige indefinido-stammen (tuve, dijiste, pudo...): uitgangen zonder klemtoonteken
+    if(row.t === "indefinido" && VORM_ONREG_STAM[stam]) push(VORM_ONREG_STAM[stam], "indefinido", row.p);
+  });
+  // onregelmatige indefinido: yo/él-vormen zonder accent (tuve/tuvo, dije/dijo, pude/pudo)
+  var m2 = q.match(/^(.+)(e|o)$/);
+  if(m2 && VORM_ONREG_STAM[m2[1]]) push(VORM_ONREG_STAM[m2[1]], "indefinido", m2[2] === "e" ? "yo" : "él/ella");
+  return hits.slice(0, 4);
+}
+function songWoordenLijst(){
+  var out = [];
+  if(typeof SONGS === "undefined") return out;
+  SONGS.forEach(function(song){
+    (song.oogst || []).forEach(function(o){ out.push({es: o.es, nl: o.nl, u: o.u, song: song}); });
+  });
+  return out;
+}
 function renderDic(){
   var el = document.getElementById("dicCard");
   if(!el) return;
@@ -6584,8 +6908,21 @@ function renderDic(){
   var html = "<h2>"+ct("Jouw woordenboek","Your dictionary")+" 📖</h2>"+
     "<p class='muted'>"+ct("Alle "+alleGroepen.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. ","All "+alleGroepen.length+" lesson words in alphabetical order; you've seen <b>"+geleerd+"</b> so far. ")+
     "⚪ "+ct("nog niet gehad","not seen yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+". "+ct("Tik op een woord voor meer.","Tap a word for more.")+
-    (freqN ? ct(" De zoekbalk kent daarnaast de <b>"+freqN.toLocaleString("nl-NL")+"</b> meestgebruikte Spaanse woorden."," The search bar also knows the <b>"+freqN.toLocaleString("en-GB")+"</b> most frequent Spanish words (top 1,000 with English glosses).") : "")+"</p>"+
-    "<input type='text' id='dicZoek' placeholder='"+ct("Zoek in het Spaans of Nederlands...","Search in Spanish or your language...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+    (freqN ? ct(" De zoekbalk kent daarnaast de <b>"+freqN.toLocaleString("nl-NL")+"</b> meestgebruikte Spaanse woorden en herkent vervoegingen (probeer maar: <i>comiste</i>)."," The search bar also knows the <b>"+freqN.toLocaleString("en-GB")+"</b> most frequent Spanish words and recognises conjugated forms (try it: <i>comiste</i>).") : "")+"</p>"+
+    "<input type='text' id='dicZoek' placeholder='"+ct("Zoek een woord of vervoeging...","Search a word or conjugated form...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+  // vervoegings-herkenning: "comiste" → comer (indefinido, tú)
+  if(q && q.length >= 3){
+    var vormen = vormAnalyse(dicZoek);
+    if(vormen.length){
+      html += "<div class='dicrijtje' style='margin:10px 0'>";
+      vormen.forEach(function(v){
+        html += "<p style='margin:4px 0'><b class='es'>"+dicZoek.toLowerCase().trim()+"</b> → "+
+          v.tijd+(v.persoon ? ", "+v.persoon : "")+ct(" van "," of ")+"<b class='es'>"+v.inf+"</b>"+
+          (v.gloss ? " <span class='muted'>("+v.gloss+")</span>" : "")+"</p>";
+      });
+      html += "</div>";
+    }
+  }
   var letter = "";
   groepen.forEach(function(g){
     var w0 = g.items[0];
@@ -6662,7 +6999,25 @@ function renderDic(){
       if(freqHits.length === 50) html += "<p class='muted'>"+ct("Meer dan 50 treffers, typ wat preciezer.","More than 50 hits; type a bit more precisely.")+"</p>";
     }
   }
-  if(q && !lijst.length && !freqHits.length){
+  // woorden uit de liedjes (Música): groeit mee met elk liedverzoek — Stefans wens 29 juli dat het
+  // woordenboek zich blijft aanvullen buiten de vaste leswoordenschat om
+  var songWs = songWoordenLijst();
+  var songHits = q ? songWs.filter(function(o){
+    return stripAcc(o.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(o.nl.toLowerCase()).indexOf(q) !== -1;
+  }) : songWs;
+  if(songHits.length){
+    html += "<p style='margin:16px 0 4px'><b>🎵 "+ct("Uit je liedjes","From your songs")+"</b> <span class='muted'>· "+songHits.length+ct(" uitdrukkingen"," expressions")+"</span></p>";
+    var vorigeSong = null;
+    songHits.forEach(function(o){
+      if(!q && o.song !== vorigeSong){
+        vorigeSong = o.song;
+        html += "<p class='dicletter'>"+o.song.titel+" · "+o.song.artiest+"</p>";
+      }
+      html += "<div class='dicrow'><div class='dichead' style='cursor:default'><span><b class='es'>"+o.es+"</b> <span class='muted'>· "+o.nl+"</span></span></div>"+
+        (q && o.song ? "<div class='dicbody' style='padding-top:0'><p class='muted' style='margin:2px 0'>🎵 "+o.song.titel+" · "+o.song.artiest+"</p></div>" : "")+"</div>";
+    });
+  }
+  if(q && !lijst.length && !freqHits.length && !songHits.length && !(q.length >= 3 && vormAnalyse(dicZoek).length)){
     html += "<p class='muted'>"+ct("Niets gevonden voor","Nothing found for")+" \""+dicZoek+"\".</p>";
   }
   el.innerHTML = html;
