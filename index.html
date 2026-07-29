@@ -456,7 +456,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.42";
+var APP_VERSIE = "v19.43";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6769,14 +6769,25 @@ function songWoordenLijst(){
   });
   return out;
 }
+// Chispa-boek-woorden (tag "boek-N") blijven op slot in het woordenboek tot dat hoofdstuk ontgrendeld is
+// (29 juli, v19.42-vervolg: Stefans bevestigde keuze "Lock ze tot je dat hoofdstuk leest" — consistent met
+// hoe het boek zelf al toegang gate via boekOntgrendeld()). Woorden zonder boek-tag zijn altijd zichtbaar.
+function dicZichtbareWoorden(){
+  return WORDS.filter(function(w){
+    if(!w.tag || w.tag.indexOf("boek-") !== 0) return true;
+    var h = BOOK.filter(function(b){ return b.id === w.tag; })[0];
+    return !h || boekOntgrendeld(h);
+  });
+}
 function renderDic(){
   var el = document.getElementById("dicCard");
   if(!el) return;
-  var alleGroepen = dicGroups(WORDS);
+  var zichtbaar = dicZichtbareWoorden();
+  var alleGroepen = dicGroups(zichtbaar);
   var geleerd = 0;
   alleGroepen.forEach(function(g){ if(g.items.some(function(it){ return S.srs[it.id]; })) geleerd++; });
   var q = stripAcc(dicZoek.toLowerCase());
-  var lijst = WORDS.filter(function(w){
+  var lijst = zichtbaar.filter(function(w){
     if(!q) return true;
     return stripAcc(w.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(w.nl.toLowerCase()).indexOf(q) !== -1 || stripAcc(wTrans(w).toLowerCase()).indexOf(q) !== -1;
   }).slice();
