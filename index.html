@@ -467,7 +467,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.46";
+var APP_VERSIE = "v19.47";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4680,7 +4680,7 @@ function closeBoek(){
 // meer weet) -> gewoon opnieuw lesFlowStart() aanroepen bouwt alles vers op. Voltooiing wordt
 // bijgehouden in S.lesFlow (datum->true, dedupliceert vanzelf bij herhaling dezelfde dag) en levert
 // een variabele tapas-bonus voor Chispa op (variable-ratio beloning, motiverender dan een vast bedrag).
-var lesFlow = null; // {stap: null|"woorden"|"toetsjes"|"produceren", quizzesTeDoen:[...ids], gekozenSpel, vertalenTeGaan}
+var lesFlow = null; // {stap: null|"woorden"|"grammatica"|"toetsjes"|"produceren", quizzesTeDoen:[...ids], gramId, gekozenSpel, vertalenTeGaan}
 var PRODUCTIE_MODI = ["dictado","conj","hu","vertalen"];
 
 function lesFlowKiesSpel(){
@@ -4697,6 +4697,7 @@ function lesFlowKiesSpel(){
 function lesFlowStapNaam(){
   if(!lesFlow) return "";
   if(lesFlow.stap === "woorden") return ct("Woordjes","Words");
+  if(lesFlow.stap === "grammatica") return ct("Grammatica","Grammar");
   if(lesFlow.stap === "toetsjes") return ct("Toetsjes","Quizzes");
   if(lesFlow.stap === "produceren") return ct("Oefenen","Practice");
   return "";
@@ -4704,13 +4705,14 @@ function lesFlowStapNaam(){
 function lesFlowStapNum(){
   if(!lesFlow) return 0;
   if(lesFlow.stap === "woorden") return 1;
-  if(lesFlow.stap === "toetsjes") return 2;
-  if(lesFlow.stap === "produceren") return 3;
+  if(lesFlow.stap === "grammatica") return 2;
+  if(lesFlow.stap === "toetsjes") return 3;
+  if(lesFlow.stap === "produceren") return 4;
   return 0;
 }
 function lesFlowBannerHtml(){
   if(!lesFlow) return "";
-  return "<div class='card' style='margin-bottom:10px'><span class='kicker'>🚦 "+ct("Start je les","Start your session")+" · "+ct("stap","step")+" "+lesFlowStapNum()+"/3 · "+lesFlowStapNaam()+"</span>"+
+  return "<div class='card' style='margin-bottom:10px'><span class='kicker'>🚦 "+ct("Start je les","Start your session")+" · "+ct("stap","step")+" "+lesFlowStapNum()+"/4 · "+lesFlowStapNaam()+"</span>"+
     "<div class='row' style='margin-top:6px'><button class='ghost' id='btnLesFlowStop' style='font-size:.8rem'>"+ct("Later verder","Continue later")+"</button></div></div>";
 }
 function lesFlowWireStopKnop(){
@@ -4727,6 +4729,33 @@ function lesFlowStart(){
   lesFlowVolgende();
 }
 
+function lesFlowGramId(){
+  // Welk grammatica-onderwerp hoort bij de les waar je nu bent? Eerst de eerste nog niet afgeronde
+  // ontgrendelde les, en binnen die les het onderwerp dat je het minst hebt gedaan. Zo komt de
+  // uitleg-stap van de dagles altijd over iets wat je nu daadwerkelijk aan het leren bent.
+  var ls = tLessons(), les = null;
+  for(var i = 0; i < ls.length; i++){
+    if(ls[i].stub || !lessonUnlocked(i)) continue;
+    les = ls[i];
+    var p = lessonProgress(ls[i]);
+    if(p && !p.done) break;
+  }
+  var kandidaten = [];
+  ((les && les.spiek) || []).forEach(function(i){
+    var o = gwOnderwerpVoorSpiek(i);
+    if(o) kandidaten.push(o);
+  });
+  if(!kandidaten.length) kandidaten = GRAMWIZ.concat(gwGenLijst());
+  if(!kandidaten.length) return null;
+  // nog niet afgerond eerst, daarna het minst herhaalde: herhalen is precies de bedoeling
+  kandidaten.sort(function(a, b){
+    var va = gwVoortgangLees(a.id), vb = gwVoortgangLees(b.id);
+    if(!!va.klaar !== !!vb.klaar) return va.klaar ? 1 : -1;
+    return (va.rondes || 0) - (vb.rondes || 0);
+  });
+  return kandidaten[0].id;
+}
+
 function lesFlowVolgende(){
   if(!lesFlow) return;
   if(lesFlow.stap === null){
@@ -4735,6 +4764,19 @@ function lesFlowVolgende(){
     if(wQueue.length){ show("woorden"); return; }
   }
   if(lesFlow.stap === "woorden"){
+    // v19.47 (Stefan: "en ik de daglessen terug laten komen"): na de woordjes een uitleg-stap over
+    // het grammatica-onderwerp van je huidige les, in dezelfde opgeknipte vorm als de wizards.
+    lesFlow.stap = "grammatica";
+    var gid = lesFlowGramId();
+    if(gid){
+      lesFlow.gramId = gid;
+      show("spiekbrief");
+      gwStart(gid);
+      return;
+    }
+  }
+  if(lesFlow.stap === "grammatica"){
+    gwSess = null; // anders blijft de wizard het Grammatica-tabblad overnemen
     lesFlow.stap = "toetsjes";
     var due = quizDueList();
     if(due.length){
@@ -4956,11 +4998,20 @@ function renderLessonSpiek(l){
     "<p class='big' style='margin:4px 0'>"+l.titel+"</p></div>";
   (l.spiek||[]).forEach(function(ci){
     var c = lessonCheat(l)[ci];
-    if(c) html += "<details open><summary>"+spiekTitel(c)+"</summary><div class='inner'>"+spiekHtml(c)+"</div></details>";
+    if(!c) return;
+    // v19.47: vanaf de lesspiekbrief direct de opgeknipte versie in (alleen bij lessen van je eigen
+    // track: bij opfris-lessen komt de spiekbrief uit het andere cheatsheet en klopt de index niet)
+    var wo = l.review ? null : gwOnderwerpVoorSpiek(ci);
+    html += "<details open><summary>"+spiekTitel(c)+"</summary><div class='inner'>"+spiekHtml(c)+
+      (wo ? "<div class='row'><button class='ghost' data-gwstart='"+wo.id+"' style='margin-top:8px'>\ud83e\udde0 "+ct("Stap voor stap met vragen \u2192","Step by step with questions \u2192")+"</button></div>" : "")+
+      "</div></details>";
   });
   html += "<div class='card'><div class='row'><button class='primary' id='btnSpiekTerug'>Terug naar de les →</button></div></div>";
   el.innerHTML = html;
   document.getElementById("btnSpiekTerug").onclick = function(){ renderLessonView(); };
+  el.querySelectorAll("button[data-gwstart]").forEach(function(b){
+    b.onclick = function(){ var id = b.getAttribute("data-gwstart"); show("spiekbrief"); gwStart(id); };
+  });
 }
 
 /* ================= CHISPA (tamagotchi) ================= */
@@ -9418,7 +9469,7 @@ var TOUR = [
    txt:"Zo simpel is het! Elke dag krijg je maximaal <b>15 nieuwe woordjes</b> (expres: kleine porties blijven plakken) en komt alles terug precies wanneer je het bijna vergeten bent: dat heet <b>spaced repetition</b>, en het is waarom dit beter werkt dan Duolingo, Babbel of Pimsleur. Bij elke les lees je eerst kort de grammatica. En <b>fouten zijn goud</b>: daar leer je het meest van, dus ook een fout antwoord levert XP op. (Meer hierover onderaan bij 💛.)"},
   {titel:"Nog eentje dan 😄", oefen:{id:"b2", es:"adiós", opts:["tot ziens","goedemorgen"], c:0}},
   {titel:"Alles binnen handbereik 🧭",
-   txt:"Onder <b>Grammatica</b> vind je de spiekbrieven, de ronde 📖-knop rechtsonder is je woordenboek (opent als popup, altijd bij de hand), en in de <b>Speeltuin</b> leer je spelenderwijs verder met muziek, memory en meer."},
+   txt:"Onder <b>Grammatica</b> staat elk onderwerp opgeknipt in stappen met vragen erbij (plus alle spiekbrieven en toetsjes), de ronde 📖-knop rechtsonder is je woordenboek (opent als popup, altijd bij de hand), en in de <b>Speeltuin</b> leer je spelenderwijs verder met muziek, memory en meer."},
   {titel:"Samen leren 👤",
    txt:"Tik op je <b>naam</b> bovenaan voor je voortgang, je geheime sync-code en <b>Groepen</b>: start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
   {titel:"Ik groei met je mee ✨",
@@ -9433,7 +9484,7 @@ var TOUR_EN = [
    txt:"That's all there is to it! Each day you get at most <b>15 new words</b> (on purpose: small portions stick) and everything comes back exactly when you're about to forget it: that's called <b>spaced repetition</b>, and it's why this works better than Duolingo, Babbel or Pimsleur. Every lesson starts with a short grammar note. And <b>mistakes are gold</b>: they're where you learn the most, so even a wrong answer earns XP. (More on this at the bottom under 💛.)"},
   {titel:"One more 😄", oefen:{id:"b2", es:"adiós", opts:["goodbye","good morning"], c:0}},
   {titel:"Everything within reach 🧭",
-   txt:"Under <b>Grammar</b> you'll find the cheat sheets, the round 📖 button bottom right is your dictionary (opens as a popup, always at hand), and in the <b>Playground</b> you keep learning through music, memory and more."},
+   txt:"Under <b>Grammar</b> every topic is cut into steps with questions (plus all the cheat sheets and quizzes), the round 📖 button bottom right is your dictionary (opens as a popup, always at hand), and in the <b>Playground</b> you keep learning through music, memory and more."},
   {titel:"Learn together 👤",
    txt:"Tap your <b>name</b> at the top for your progress, your secret sync code and <b>Groups</b>: start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
   {titel:"I grow with you ✨",
@@ -10283,7 +10334,7 @@ function renderFunDuel(){
    (dat zou lessen retroactief on-voltooid maken, zie de v19.21-beslissing). Het staat los bovenaan
    de Grammatica-tab, naast de spiekbrieven. */
 var GRAMWIZ = [
- {id:"perfindef", icon:"\u23f3", drill:"indefinido",
+ {id:"perfindef", icon:"\u23f3", drill:"indefinido", spiek:{a2:[0,5,27]},
   titel:"Perfecto vs. indefinido", titelEn:"Perfect vs. preterite",
   pitch:"Wanneer zeg je he hablado en wanneer habl\u00e9? Plus alle vormen, inclusief de onregelmatige.",
   pitchEn:"When do you say he hablado and when habl\u00e9? Plus all the forms, irregulars included.",
@@ -10661,7 +10712,7 @@ var GRAMWIZ = [
       wEn:"T\u00fa with the mark is the pronoun. Tu without it is your: tu amigo."}
     ]}
   ]},
- {id:"serestar", icon:"\u2696\ufe0f", drill:null,
+ {id:"serestar", icon:"\u2696\ufe0f", drill:null, spiek:{a2:[1,24], a0:[2]},
   titel:"Ser vs. estar", titelEn:"Ser vs. estar",
   pitch:"Twee werkwoorden voor \u00e9\u00e9n Nederlands \"zijn\". Vergeet \"permanent vs. tijdelijk\", dat klopt niet.",
   pitchEn:"Two verbs for one English \"to be\". Forget \"permanent vs. temporary\", it doesn't hold up.",
@@ -11570,9 +11621,196 @@ var GRAMWIZ = [
   ]}
 ];
 
+/* ================= ELK ONDERWERP OPGEKNIPT (v19.47) =================
+   Stefan, na de eerste vijf handgeschreven wizards: "de lessen zijn opgeknipt zijn echt goed, veel
+   beter zo" en meteen daarna: pas dat met terugwerkende kracht toe op alle lessen. Dat kan zonder
+   ~900 nieuwe vragen te schrijven, omdat de bouwstenen er al liggen:
+     - elke spiekbrief bestaat al uit losse alinea's/tabellen  -> dat worden de uitlegstappen
+     - elk onderwerp heeft al 1-2 gekoppelde toetsjes (8-18 vragen, via quizzenBijSpiek) -> die
+       vragen worden over de stappen verdeeld
+   De vijf handgeschreven wizards blijven voorrang houden: die gaan dieper dan wat je uit een
+   spiekbrief kunt genereren. Generatie is lui + gecachet, want de Grammatica-tab rendert de hele
+   lijst in een keer. */
+var gwGenCache = {};
+
+function gwTrackKey(){ var p = activeProfile(); return (p && p.track === "beginner") ? "a0" : "a2"; }
+function gwSpiekId(i){ return "spiek-" + gwTrackKey() + "-" + i; }
+
+function gwBlokken(html){
+  // de spiekbriefteksten bestaan op het hoogste niveau alleen uit <p>- en <table>-blokken (gecheckt
+  // over alle 52 onderwerpen), maar de lijstvormen staan er voor de zekerheid bij
+  return String(html || "").match(/<(p|table|ul|ol|h3|h4)\b[^>]*>[\s\S]*?<\/\1>/g) || [];
+}
+
+function gwVerdeel(n, k){
+  // n dingen zo eerlijk mogelijk over k groepen, waarbij de LAATSTE groepen de extra's krijgen:
+  // de eerste alinea is bijna altijd de introductie en verdient een eigen stap.
+  var groepen = [], basis = Math.floor(n / k), rest = n % k, pos = 0;
+  for(var i = 0; i < k; i++){
+    var aantal = basis + (i >= k - rest ? 1 : 0);
+    groepen.push([pos, pos + aantal]);
+    pos += aantal;
+  }
+  return groepen;
+}
+
+function gwKopNet(plat, en, i){
+  // knip een leesbare kop uit platte tekst: liever afkappen op een echt zinseinde of komma dan
+  // midden in een zin met een "..." erachter, want zo'n halve zin leest als een fout.
+  var t = String(plat || "").replace(/\s+/g, " ").trim();
+  if(!t) return (en ? "Step " : "Stap ") + (i + 1);
+  var kap = function(s){
+    s = s.replace(/^[\s:,.;\u2013\u2014]+/, "").replace(/[\s:,.;]+$/, "");
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+  };
+  var zin = /^[^.:!?]{4,}?(?=[.:!?])/.exec(t);
+  if(zin && zin[0].split(" ").length <= 9) return kap(zin[0]);
+  var kom = /^[^,]{4,}?(?=,)/.exec(t);
+  if(kom && kom[0].split(" ").length <= 9) return kap(kom[0]);
+  var w = t.split(" ");
+  if(w.length <= 9) return kap(t);
+  return kap(w.slice(0, 7).join(" ")) + "\u2026";
+}
+
+function gwKopUit(blok, i, en){
+  // een korte kop voor de stap, uit het blok zelf gehaald: een tabel is "het rijtje", een alinea die
+  // met <b>Iets:</b> begint levert die vetgedrukte aanhef, en anders de eerste (hele) zinsnede.
+  var b = String(blok || "");
+  if(/^<table/.test(b)) return en ? "The table" : "Het rijtje";
+  var plat = b.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  var vet = /<b>([^<]{2,60})<\/b>/.exec(b);
+  if(vet && b.indexOf(vet[0]) < 14){
+    var v = vet[1].replace(/[:.\s]+$/, "");
+    // "Stap 1" of "Step 2" zegt niets in een wizard die zelf al nummert: pak dan wat erna komt
+    if(!/^(stap|step|deel|part)\s*\d+$/i.test(v)) return v;
+    var na = b.slice(b.indexOf(vet[0]) + vet[0].length).replace(/<[^>]*>/g, " ");
+    return gwKopNet(na, en, i);
+  }
+  return gwKopNet(plat, en, i);
+}
+
+function gwVraagUitQuiz(v){
+  // een toetsvraag ({q, nl, ne, opts, c, u, ue}) omzetten naar de wizard-vorm ({v, vEn, o, g, w, wEn}).
+  // De vertaling staat sinds v19.44 al vooraf bij de vraag (anders zijn twee opties vaak allebei
+  // geldig Spaans), dus die zetten we hier ook meteen onder de vraag.
+  function hint(t){ return "<span class='muted' style='display:block; font-size:.85rem; font-weight:400; margin-top:4px'>" + t + "</span>"; }
+  return {v: v.q + (v.nl ? hint(v.nl) : ""), vEn: v.q + (v.ne ? hint(v.ne) : ""),
+          o: v.opts, g: v.c, w: v.u, wEn: v.ue};
+}
+
+var GW_ICONEN = [
+  [/uitspraak|klemtoon|accent|letters|pronunc/i, "\ud83d\udd0a"],
+  [/getal|nummer|hoeveelh|hoe laat|hora|number|quantit/i, "\ud83d\udd22"],
+  [/restaurant|recept|eten|bestell|order|food/i, "\ud83c\udf74"],
+  [/huis|buurt|casa|house|neighbour|neighbor/i, "\ud83c\udfe1"],
+  [/imperfecto|indefinido|perfecto|tijd|tense|verhaal|anekdote|story/i, "\u23f3"],
+  [/ser|estar|zijn/i, "\u2696\ufe0f"],
+  [/gustar|doler|mening|parecer|opinion|pijn|pain/i, "\u2764\ufe0f"],
+  [/beleefd|usted|advies|polite|advice|favor/i, "\ud83e\udd1d"],
+  [/plan|toekomst|future|ir a/i, "\ud83d\uddd3\ufe0f"],
+  [/beschrijv|vergelijk|kleur|describ|compar|colour|color/i, "\ud83c\udfa8"]
+];
+function gwSpiekIcon(c){
+  var t = String(c.titel || "") + " " + String(c.titelEn || "");
+  for(var i = 0; i < GW_ICONEN.length; i++){ if(GW_ICONEN[i][0].test(t)) return GW_ICONEN[i][1]; }
+  return "\ud83d\udccc";
+}
+
+function gwVanSpiek(idx){
+  var id = gwSpiekId(idx);
+  var cache = gwGenCache[id];
+  if(cache && cache.lang === profLang()) return cache.o;
+  var c = CHEATSHEET[idx];
+  if(!c) return null;
+  var blokken = gwBlokken(c.html);
+  var blokkenEn = gwBlokken(c.htmlEn || c.html);
+  var zelfdeVorm = blokkenEn.length === blokken.length;
+  var toetsjes = quizzenBijSpiek(idx);
+  var vragen = [];
+  toetsjes.forEach(function(qz){
+    (qz.vragen || []).forEach(function(v){ if(v && v.opts) vragen.push(gwVraagUitQuiz(v)); });
+  });
+  // zonder uitleg of zonder vragen valt er niets op te knippen: dat onderwerp blijft gewoon een
+  // spiekbrief in de naslaglijst
+  if(!blokken.length || !vragen.length) return null;
+  var k = Math.min(blokken.length, 4, vragen.length);
+  var bGroep = gwVerdeel(blokken.length, k);
+  var vGroep = gwVerdeel(vragen.length, k);
+  var stappen = bGroep.map(function(g, i){
+    var eigen = blokken.slice(g[0], g[1]).join("");
+    return {
+      kop: gwKopUit(blokken[g[0]], i, false),
+      kopEn: gwKopUit((zelfdeVorm ? blokkenEn : blokken)[g[0]], i, true),
+      uitleg: eigen,
+      uitlegEn: zelfdeVorm ? blokkenEn.slice(g[0], g[1]).join("") : eigen,
+      diepKop: "De hele spiekbrief erbij",
+      diepKopEn: "The whole cheat sheet",
+      diep: c.html,
+      diepEn: c.htmlEn || c.html,
+      vragen: vragen.slice(vGroep[i][0], vGroep[i][1])
+    };
+  });
+  // twee tabellen in hetzelfde onderwerp leveren twee keer "Het rijtje" op: nummer die dan
+  var gezien = {};
+  stappen.forEach(function(s){
+    ["kop", "kopEn"].forEach(function(k){
+      var basis = s[k];
+      gezien[k + "|" + basis] = (gezien[k + "|" + basis] || 0) + 1;
+      var n = gezien[k + "|" + basis];
+      if(n > 1) s[k] = basis + " (" + n + ")";
+    });
+  });
+  var o = {id: id, gen: true, spiekIdx: idx, drill: null,
+    toetsId: toetsjes.length ? toetsjes[0].id : null,
+    icon: gwSpiekIcon(c),
+    titel: c.titel, titelEn: c.titelEn || c.titel,
+    pitch: stappen.length + " stappen \u00b7 " + vragen.length + " vragen",
+    pitchEn: stappen.length + " steps \u00b7 " + vragen.length + " questions",
+    stappen: stappen};
+  gwGenCache[id] = {lang: profLang(), o: o};
+  return o;
+}
+
+function gwGenLijst(){
+  // alle automatisch opgeknipte onderwerpen van het actieve track, behalve die al door een
+  // handgeschreven wizard worden afgedekt
+  var tk = gwTrackKey(), bezet = {};
+  GRAMWIZ.forEach(function(o){
+    var lijst = o.spiek && o.spiek[tk];
+    if(lijst) lijst.forEach(function(i){ bezet[i] = true; });
+  });
+  var out = [];
+  CHEATSHEET.forEach(function(c, i){
+    if(bezet[i]) return;
+    var o = gwVanSpiek(i);
+    if(o) out.push(o);
+  });
+  return out;
+}
+
+function gwOnderwerpVoorSpiek(i){
+  // het beste onderwerp bij een spiekbrief-index: de handgeschreven wizard als die er is
+  var tk = gwTrackKey();
+  var hand = GRAMWIZ.filter(function(o){ return o.spiek && o.spiek[tk] && o.spiek[tk].indexOf(i) !== -1; })[0];
+  return hand || gwVanSpiek(i);
+}
+
+function gwVoortgangLees(id){
+  // alleen lezen: gwVoortgang() zou voor elk van de ~50 onderwerpen een regel in S aanmaken zodra de
+  // lijst een keer rendert, en dat hoeft niet in je opslag/sync te belanden
+  return (S.gramwiz && S.gramwiz[id]) || {stap: 0, klaar: false, rondes: 0};
+}
+
 var gwSess = null; // {id, stap, fase:"uitleg"|"toets"|"stapklaar"|"klaar", vraag, goed, fout, gekozen}
 
-function gwOnderwerp(id){ return GRAMWIZ.filter(function(o){ return o.id === id; })[0] || null; }
+function gwOnderwerp(id){
+  // handgeschreven wizards eerst, daarna de automatisch opgeknipte spiekbrief-onderwerpen
+  var hand = GRAMWIZ.filter(function(o){ return o.id === id; })[0];
+  if(hand) return hand;
+  var m = /^spiek-(a2|a0)-(\d+)$/.exec(id || "");
+  if(m && m[1] === gwTrackKey()) return gwVanSpiek(parseInt(m[2], 10));
+  return null;
+}
 function gwTitel(o){ return ct(o.titel, o.titelEn); }
 function gwPitch(o){ return ct(o.pitch, o.pitchEn); }
 function gwVoortgang(id){
@@ -11653,18 +11891,28 @@ function gwVolgendeStap(){
 }
 
 // De onderwerpkaartjes bovenaan de Grammatica-tab
+function gwKaartHtml(o){
+  var v = gwVoortgangLees(o.id);
+  var n = o.stappen.length;
+  var status = v.klaar ? ct("afgerond", "done") + " \u2713"
+    : (v.stap > 0 ? ct("stap ", "step ") + Math.min(v.stap + 1, n) + "/" + n : ct("nog niet begonnen", "not started yet"));
+  return "<div class='lesson' data-gwstart='" + o.id + "'>" +
+    "<div class='lnum'>" + o.icon + "</div>" +
+    "<div class='lbody'><b>" + gwTitel(o) + "</b><span>" + gwPitch(o) + "</span></div>" +
+    "<div class='lstatus' style='font-size:.75rem; text-align:right'>" + status + "</div></div>";
+}
+
+// De onderwerpkaartjes bovenaan de Grammatica-tab
 function gwLijstHtml(){
-  return "<div class='card'><h2>"+ct("Onder de knie krijgen","Really nail it")+" \ud83e\udde0</h2>"+
-    "<p class='muted'>"+ct("Korte wizards: eerst de uitleg, dan meteen toetsen, en de fijne details staan eronder verstopt voor als je ze wilt. Bedoeld om te herhalen, niet om \u00e9\u00e9n keer door te klikken.","Short wizards: explanation first, then straight to questions, with the fine detail tucked away below if you want it. Made for repeating, not for clicking through once.")+"</p>"+
-    GRAMWIZ.map(function(o){
-      var v = gwVoortgang(o.id);
-      var n = o.stappen.length;
-      var status = v.klaar ? ct("afgerond","done") + " \u2713" : (v.stap > 0 ? ct("stap ","step ") + (v.stap+1) + "/" + n : ct("nog niet begonnen","not started yet"));
-      return "<div class='lesson' data-gwstart='"+o.id+"'>"+
-        "<div class='lnum'>"+o.icon+"</div>"+
-        "<div class='lbody'><b>"+gwTitel(o)+"</b><span>"+gwPitch(o)+"</span></div>"+
-        "<div class='lstatus' style='font-size:.75rem; text-align:right'>"+status+"</div></div>";
-    }).join("")+"</div>";
+  var gen = gwGenLijst();
+  return "<div class='card'><h2>" + ct("Onder de knie krijgen", "Really nail it") + " \ud83e\udde0</h2>" +
+    "<p class='muted'>" + ct("Elk onderwerp is opgeknipt in stappen: eerst een stukje uitleg, dan meteen de vragen die daarbij horen, en de hele spiekbrief zit eronder verstopt voor als je hem nodig hebt. Bedoeld om te herhalen, niet om \u00e9\u00e9n keer door te klikken.", "Every topic is cut into steps: a bit of explanation first, then the questions that go with it, with the full cheat sheet tucked away below if you need it. Made for repeating, not for clicking through once.") + "</p>" +
+    "<p style='margin:14px 0 4px'><b>" + ct("De diepe lessen", "The deep dives") + "</b> <span class='muted'>\u00b7 " + ct("meer stappen, meer valkuilen, apart geschreven", "more steps, more pitfalls, written by hand") + "</span></p>" +
+    GRAMWIZ.map(gwKaartHtml).join("") +
+    (gen.length
+      ? "<p style='margin:18px 0 4px'><b>" + ct("Alle onderwerpen", "All topics") + "</b> <span class='muted'>\u00b7 " + gen.length + " \u00b7 " + ct("uit je eigen lessen, met de bijbehorende toetsvragen", "from your own lessons, with their matching quiz questions") + "</span></p>" + gen.map(gwKaartHtml).join("")
+      : "") +
+    "</div>";
 }
 
 function gwStapNavHtml(o){
@@ -11677,11 +11925,23 @@ function gwStapNavHtml(o){
     }).join("")+"</div>";
 }
 
+function gwTerugLabel(){
+  return (lesFlow && lesFlow.stap === "grammatica")
+    ? ct("Overslaan \u2192", "Skip \u2192")
+    : ct("\u2190 Terug", "\u2190 Back");
+}
+function gwFlowKnopHtml(){
+  return (lesFlow && lesFlow.stap === "grammatica")
+    ? "<button class='primary' id='gwFlowVerder'>" + ct("Verder met je les \u2192", "On with your session \u2192") + "</button>"
+    : "";
+}
+
 function renderGramWiz(){
   var o = gwOnderwerp(gwSess.id);
   if(!o){ gwSess = null; return ""; }
   var stap = o.stappen[gwSess.stap];
-  var kop = "<div class='card'>"+
+  var inFlow = !!(lesFlow && lesFlow.stap === "grammatica");
+  var kop = (inFlow ? lesFlowBannerHtml() : "")+"<div class='card'>"+
     "<span class='kicker'>"+gwTitel(o)+" \u00b7 "+ct("stap ","step ")+(gwSess.stap+1)+"/"+o.stappen.length+"</span>"+
     "<h2>"+o.icon+" "+ct(stap.kop, stap.kopEn)+"</h2>"+
     gwStapNavHtml(o);
@@ -11693,7 +11953,7 @@ function renderGramWiz(){
       (stap.diep ? "<details class='gwdiep'><summary>\u2139\ufe0f "+ct(stap.diepKop, stap.diepKopEn)+"</summary><div class='inner'>"+ct(stap.diep, stap.diepEn)+"</div></details>" : "")+
       "<div class='row' style='margin-top:12px'>"+
         "<button class='primary' id='gwNaarToets'>"+ct("Toets me \u2192","Quiz me \u2192")+"</button>"+
-        "<button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button>"+
+        "<button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button>"+
       "</div>" + voet;
   }
 
@@ -11720,7 +11980,7 @@ function renderGramWiz(){
           (gwSess.vraag < stap.vragen.length - 1 ? ct("Volgende vraag \u2192","Next question \u2192") : ct("Stap afronden \u2192","Finish step \u2192"))+
         "</button></div>";
     } else {
-      html += "<div class='row' style='margin-top:10px'><button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button></div>";
+      html += "<div class='row' style='margin-top:10px'><button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button></div>";
     }
     return html + voet;
   }
@@ -11735,21 +11995,26 @@ function renderGramWiz(){
       "</div>"+
       (perfect ? "" : "<p class='muted'>"+ct("Klik gerust nog een keer door deze stap heen, dat is precies waar hij voor is.","Feel free to run through this step again, that's exactly what it's for.")+"</p>")+
       "<div class='row' style='margin-top:10px'>"+
-        "<button class='primary' id='gwVolgendeStap'>"+(laatste ? ct("Afronden \u2192","Wrap up \u2192") : ct("Volgende stap \u2192","Next step \u2192"))+"</button>"+
+        gwFlowKnopHtml()+
+        "<button class='"+(inFlow ? "ghost" : "primary")+"' id='gwVolgendeStap'>"+(laatste ? ct("Afronden \u2192","Wrap up \u2192") : ct("Volgende stap \u2192","Next step \u2192"))+"</button>"+
         "<button class='ghost' id='gwHerhaal'>"+ct("Deze stap opnieuw","Redo this step")+"</button>"+
-        "<button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button>"+
+        "<button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button>"+
       "</div>" + voet;
   }
 
   // fase "klaar"
-  return "<div class='card'>"+
+  return (inFlow ? lesFlowBannerHtml() : "")+"<div class='card'>"+
     "<h2>"+o.icon+" "+gwTitel(o)+" \u2713</h2>"+
     "<div class='feedback ok'>"+ct("Alle stappen doorlopen. ","All steps completed. ")+"</div>"+
     "<p class='muted'>"+ct("Het echte werk begint hier: kennis van de regel is niet hetzelfde als de vorm eruit krijgen zonder na te denken. Drill de vormen in de Speeltuin en kom hier terug zodra iets weer wiebelt.","The real work starts here: knowing the rule isn't the same as producing the form without thinking. Drill the forms in the Playground and come back whenever something wobbles.")+"</p>"+
     "<div class='row' style='margin-top:10px'>"+
-      (o.drill ? "<button class='primary' id='gwNaarDrill'>"+ct("Naar de Conjugador \u2192","To the Conjugador \u2192")+"</button>" : "")+
+      gwFlowKnopHtml()+
+      (o.drill ? "<button class='"+(inFlow ? "ghost" : "primary")+"' id='gwNaarDrill'>"+ct("Naar de Conjugador \u2192","To the Conjugador \u2192")+"</button>" : "")+
+      // het gegenereerde onderwerp komt uit een echt toetsje: dat toetsje doen levert wel een score
+      // op die meetelt voor je lesvoortgang, de wizardvragen doen dat niet
+      (!inFlow && o.toetsId ? "<button class='"+(o.drill ? "ghost" : "primary")+"' id='gwNaarToetsje'>"+ct("Doe het hele toetsje \u2192","Take the full quiz \u2192")+"</button>" : "")+
       "<button class='ghost' id='gwHerhaalAlles'>"+ct("Nog eens vanaf stap 1","Again from step 1")+"</button>"+
-      "<button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button>"+
+      "<button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button>"+
     "</div></div>";
 }
 
@@ -11759,7 +12024,16 @@ function wireGramWiz(el){
   });
   if(!gwSess) return;
   var b;
-  b = document.getElementById("gwSluit"); if(b) b.onclick = gwSluit;
+  b = document.getElementById("gwSluit"); if(b) b.onclick = (lesFlow && lesFlow.stap === "grammatica") ? lesFlowVolgende : gwSluit;
+  b = document.getElementById("gwFlowVerder"); if(b) b.onclick = lesFlowVolgende;
+  b = document.getElementById("gwNaarToetsje"); if(b) b.onclick = function(){
+    var oo = gwOnderwerp(gwSess.id);
+    var qid = oo && oo.toetsId;
+    gwSess = null; scopeLesson = null;
+    show("toetsjes");
+    if(qid) startQuiz(qid);
+  };
+  lesFlowWireStopKnop();
   b = document.getElementById("gwNaarToets"); if(b) b.onclick = gwNaarToets;
   b = document.getElementById("gwVolgende"); if(b) b.onclick = gwVolgende;
   b = document.getElementById("gwVolgendeStap"); if(b) b.onclick = gwVolgendeStap;
@@ -11801,26 +12075,50 @@ function quizzenBijSpiek(idx){
   });
   return pool.filter(function(q){ return !q.spiek && ids[q.id]; });
 }
-function renderCheat(){
-  var el = document.getElementById("cheat");
-  // Miniwizard (v19.44) staat bovenaan de Grammatica-tab. Loopt er een wizard, dan neemt die de hele
-  // tab over; anders staan de onderwerpkaartjes boven de gewone spiekbrieven.
-  if(gwSess){
-    el.innerHTML = renderGramWiz();
-    wireGramWiz(el);
-    return;
-  }
-  el.innerHTML = gwLijstHtml() + "<div class='card'><h2>"+ct("Grammatica","Grammar")+" 📝</h2>"+
-    "<p class='muted'>"+ct("De spiekbrieven van jouw lessen, per onderwerp uitklapbaar. Woorden opzoeken? Gebruik het 📖-knopje rechtsonder.","The cheat sheets from your lessons, expandable per topic. Looking up words? Use the 📖 button at the bottom right.")+"</p>"+
+function spiekNaslagHtml(){
+  // De oude spiekbrieflijst blijft bestaan als naslag (snel iets opzoeken), maar staat nu ingeklapt
+  // onder de opgeknipte onderwerpen: die zijn bedoeld om iets echt te leren, dit om het na te kijken.
+  return "<div class='card'><h2>" + ct("Naslag: de spiekbrieven", "Reference: the cheat sheets") + " \ud83d\udcdd</h2>" +
+    "<p class='muted'>" + ct("Alles op \u00e9\u00e9n rij om snel iets op te zoeken. Woorden opzoeken? Gebruik het \ud83d\udcd6-knopje rechtsonder.", "Everything in one list for quick lookups. Looking up words? Use the \ud83d\udcd6 button at the bottom right.") + "</p>" +
+    "<details id='spiekNaslag'><summary>" + ct("Open de lijst", "Open the list") + " \u00b7 " + CHEATSHEET.length + " " + ct("onderwerpen", "topics") + "</summary><div class='inner'>" +
     CHEATSHEET.map(function(c, i){
       var qs = quizzenBijSpiek(i);
       var knoppen = qs.map(function(q){
         var best = S.quiz[q.id];
         var gehaald = best !== undefined && best / q.vragen.length >= 0.8;
-        return "<button class='ghost' data-spiekquiz='"+q.id+"' style='margin-top:8px'>🧪 "+(gehaald ? ct("Toetsje nog eens: ","Quiz once more: ") : ct("Doe het toetsje: ","Take the quiz: "))+quizTitel(q)+(gehaald ? " ✓" : "")+"</button>";
+        return "<button class='ghost' data-spiekquiz='" + q.id + "' style='margin-top:8px'>\ud83e\uddea " + (gehaald ? ct("Toetsje nog eens: ", "Quiz once more: ") : ct("Doe het toetsje: ", "Take the quiz: ")) + quizTitel(q) + (gehaald ? " \u2713" : "") + "</button>";
       }).join(" ");
-      return "<details><summary>"+spiekTitel(c)+"</summary><div class='inner'>"+spiekHtml(c)+(knoppen ? "<div class='row'>"+knoppen+"</div>" : "")+"</div></details>";
-    }).join("")+"</div>";
+      return "<details><summary>" + spiekTitel(c) + "</summary><div class='inner'>" + spiekHtml(c) + (knoppen ? "<div class='row'>" + knoppen + "</div>" : "") + "</div></details>";
+    }).join("") +
+    "</div></details></div>";
+}
+
+function gwToetsSectieHtml(){
+  // v19.47: Toetsjes is geen eigen tabblad meer (Stefan: "of gewoon onderdeel maakt van grammatica").
+  // Elk onderwerp hierboven eindigt al in zijn eigen vragen; dit is de ingang naar de losse toetsjes.
+  var pool = QUIZZES || [];
+  var gehaald = pool.filter(function(q){
+    var b = S.quiz[q.id];
+    return b !== undefined && q.vragen.length && b / q.vragen.length >= 0.8;
+  }).length;
+  var due = (typeof quizDueList === "function" ? quizDueList().length : 0);
+  return "<div class='card'><h2>" + ct("Alle toetsjes", "All quizzes") + " \ud83e\uddea</h2>" +
+    "<p class='muted'>" + gehaald + "/" + pool.length + " " + ct("gehaald", "passed") +
+    (due ? " \u00b7 " + due + " " + ct("wachten op herhaling", "waiting for review") : "") + ". " +
+    ct("Deze scores tellen mee voor je lesvoortgang, de vragen in de stappen hierboven niet.", "These scores count towards your lesson progress; the questions in the steps above don't.") + "</p>" +
+    "<button class='" + (due ? "primary" : "ghost") + "' id='btnAlleToetsjes'>" + ct("Naar de toetsjes \u2192", "To the quizzes \u2192") + "</button></div>";
+}
+
+function renderCheat(){
+  var el = document.getElementById("cheat");
+  // Loopt er een wizard, dan neemt die de hele tab over; anders: de opgeknipte onderwerpen, daaronder
+  // de spiekbrieven als naslag en onderaan alle losse toetsjes.
+  if(gwSess){
+    el.innerHTML = renderGramWiz();
+    wireGramWiz(el);
+    return;
+  }
+  el.innerHTML = gwLijstHtml() + spiekNaslagHtml() + gwToetsSectieHtml();
   el.querySelectorAll("button[data-spiekquiz]").forEach(function(b){
     b.onclick = function(){
       var qid = b.getAttribute("data-spiekquiz");
@@ -11829,6 +12127,8 @@ function renderCheat(){
       startQuiz(qid);
     };
   });
+  var ba = document.getElementById("btnAlleToetsjes");
+  if(ba) ba.onclick = function(){ scopeLesson = null; show("toetsjes"); };
   wireGramWiz(el);
 }
 
@@ -12040,7 +12340,7 @@ var TABS = [
   {id:"lessen", label:"Lessen"},
   {id:"woorden", label:"Woordjes"},
   {id:"vertalen", label:"Vertalen"},
-  {id:"toetsjes", label:"Toetsjes"},
+  {id:"toetsjes", label:"Toetsjes", nav:false}, // v19.47: geen eigen tab meer, zit nu in Grammatica
   {id:"lezen", label:"Lezen"},
   {id:"chispa", label:"Chispa", nav:false},
   {id:"perfil", label:"Profiel", nav:false},
