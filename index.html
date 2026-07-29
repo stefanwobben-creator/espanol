@@ -289,6 +289,7 @@
   <!-- PROFIEL (via het 👤-icoontje): jouw gegevens, groepen, voortgang, steun -->
   <section id="tab-perfil" class="hidden">
     <div class="card" id="perfilCard"></div>
+    <div class="card" id="familieCard"></div>
     <div class="card" id="groepCard"></div>
     <div class="card" id="statsCard"></div>
     <div class="card" id="steunCard">
@@ -450,7 +451,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.37";
+var APP_VERSIE = "v19.38";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9403,7 +9404,13 @@ function closeTour(){
   var wrap = document.getElementById("tourWrap");
   if(wrap && wrap.remove) wrap.remove();
   else if(wrap) wrap.innerHTML = "";
+  var eersteKeer = !S.tour;
   if(!S.tour){ S.tour = true; persist(); }
+  // vloeiende overgang (28/29 juli, Stefans "de eerste les moet wat vloeiender"): na de allereerste
+  // rondleiding niet loslaten op een leeg Lessen-scherm, maar direct doorschieten de eerste "Start je
+  // les"-sessie in. Alleen bij deze allereerste keer, niet als iemand de rondleiding later herbekijkt
+  // (dan zou dit een lopende sessie kunnen onderbreken).
+  if(eersteKeer && typeof lesFlowStart === "function"){ lesFlowStart(); }
 }
 
 /* ================= MEMORY (PAREJAS) ================= */
@@ -9692,7 +9699,6 @@ var FUN_TXT = {
      krS:"kruiswoord uit jouw geleerde woorden, elke keer een nieuwe puzzel",
      meS:"match Spaans met jouw taal, in zo min mogelijk beurten",
      duS:"woordduel tegen elkaar, AI als scheidsrechter",
-     famT:"Familie", famS:"zie in \u00e9\u00e9n oogopslag wie van je familie het snelst leert",
      klassement:"\ud83c\udfc6 Voor klasgenoten, collega's of vrienden: tik op je <b>naam</b> bovenaan en start of open een groep met een eigen klassement.",
      terug:"\u2190 Speeltuin",
      wsIntro:"Zes van jouw geleerde woorden, verstopt in een raster. Woorden die jij lastig vindt, krijgen stiekem voorrang.",
@@ -9724,7 +9730,6 @@ var FUN_TXT = {
      krS:"a crossword from your own learned words, a new puzzle every time",
      meS:"match Spanish with your language, in as few turns as possible",
      duS:"word duel against each other, AI as referee",
-     famT:"Family", famS:"see at a glance who in your family is learning fastest",
      klassement:"\ud83c\udfc6 For classmates, coworkers or friends: tap your <b>name</b> at the top and start or open a group with its own leaderboard.",
      terug:"\u2190 Playground",
      wsIntro:"Six of your learned words, hidden in a grid. Words you struggle with secretly get priority.",
@@ -9767,9 +9772,7 @@ function renderFun(){
   if(funView === "jaartallen"){ renderFunJaartallen(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
-  if(funView === "familia"){ renderFamilia(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
-    "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>" + fx("famT") + "</b><span>" + fx("famS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftAvt'><div class='lnum'>\ud83d\uddfa\ufe0f</div><div class='lbody'><b>Aventura</b><span>" + fx("avS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>" + fx("muS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>" + fx("wsT") + "</b><span>" + fx("wsS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
@@ -9781,7 +9784,6 @@ function renderFun(){
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
-  document.getElementById("ftFam").onclick = function(){ funView = "familia"; navPush({t:"fun", v:"familia"}); renderFun(); };
   document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
@@ -9865,6 +9867,7 @@ function renderPerfil(){
     S.mail = m; persist(); syncUp();
     toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
   };
+  renderFamilia();
   renderGroepen();
 }
 function joinViaLink(gcode, poging){
@@ -10088,12 +10091,10 @@ function renderGroepen(){
 }
 
 function renderFamilia(){
-  var el = document.getElementById("funCard");
+  var el = document.getElementById("familieCard");
+  if(!el) return;
   el.innerHTML = "<h2>"+ct("Familie-klassement","Family leaderboard")+" \ud83c\udfc6</h2><p class='muted' id='famStatus'>"+ct("Scores ophalen...","Fetching scores...")+"</p>"+
-    "<div id='famLijst'></div>"+
-    "<div class='row'><button class='ghost' id='btnFunTerug'>\u2190 "+fx("terug")+"</button></div>";
-  var bt = document.getElementById("btnFunTerug");
-  if(bt) bt.onclick = function(){ funView = null; renderFun(); };
+    "<div id='famLijst'></div>";
   api("/api/familia").then(function(res){
     var st = document.getElementById("famStatus");
     var lijst = document.getElementById("famLijst");
