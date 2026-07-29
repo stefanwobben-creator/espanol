@@ -210,6 +210,15 @@
   .es{font-style:normal; color:var(--accent); font-weight:700;}
   h2{font-size:1.15rem; margin:4px 0 10px;}
   .kicker{font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  .gwuitleg{font-size:.97rem; line-height:1.55;}
+  .gwuitleg p{margin:0 0 10px;}
+  .gwuitleg ul{margin:0 0 10px; padding-left:20px;}
+  .gwuitleg li{margin:3px 0;}
+  .gwuitleg table{width:100%; border-collapse:collapse; margin:0 0 10px; font-size:.92rem;}
+  .gwuitleg td, .gwuitleg th{border:1px solid var(--border); padding:5px 8px; text-align:left;}
+  details.gwdiep{margin:4px 0 0; border-top:1px solid var(--border); padding-top:6px;}
+  details.gwdiep summary{cursor:pointer; font-size:.88rem; color:var(--muted); font-weight:600;}
+  details.gwdiep .inner{font-size:.92rem; line-height:1.5; padding-top:8px;}
 </style>
 </head>
 <body>
@@ -456,7 +465,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.43";
+var APP_VERSIE = "v19.44";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2297,7 +2306,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{} }; }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
 function persist(){ store.save(S); scheduleSync(); }
 
@@ -2722,6 +2731,7 @@ function boot(){
   S.lesFlow = S.lesFlow || {};
   S.lesFlowSpel = S.lesFlowSpel || {};
   S.modusKeuze = S.modusKeuze || {};
+  S.gramwiz = S.gramwiz || {};
   S.rincon = S.rincon || {};
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
@@ -3861,33 +3871,136 @@ var VERBOS = [
   {inf:"sentir", nl:"voelen", presente:["siento","sientes","siente","sentimos","sentís","sienten"]},
   {inf:"preferir", nl:"liever hebben, verkiezen", presente:["prefiero","prefieres","prefiere","preferimos","preferís","prefieren"]}
 ];
+/* Verleden tijden bij VERBOS (29 juli, v19.44). Bewust een APARTE tabel op infinitief in plaats van
+   extra velden in VERBOS zelf: VERBOS staat vol accenten en werd al door de presente-Conjugador gebruikt,
+   en zo blijft die array ongemoeid. i = pretérito indefinido (yo/tú/él/nosotros/vosotros/ellos),
+   part = participio (voor het pretérito perfecto: haber + participio).
+   Aanleiding: Stefans wens om perfecto en indefinido echt onder de knie te krijgen, waarbij naast "wanneer
+   pas je wat toe" (zie de grammatica-wizard) vooral het MEMORISEREN van de vormen oefening nodig had:
+   he/han + -ado/-ido, en de -é/-ó-uitgangen met hun accenten. */
+var HABER_PRES = ["he","has","ha","hemos","hab\u00e9is","han"];
+var VERBOS_PASADO = {
+  hablar:    {i:["habl\u00e9","hablaste","habl\u00f3","hablamos","hablasteis","hablaron"], part:"hablado"},
+  trabajar:  {i:["trabaj\u00e9","trabajaste","trabaj\u00f3","trabajamos","trabajasteis","trabajaron"], part:"trabajado"},
+  estudiar:  {i:["estudi\u00e9","estudiaste","estudi\u00f3","estudiamos","estudiasteis","estudiaron"], part:"estudiado"},
+  comprar:   {i:["compr\u00e9","compraste","compr\u00f3","compramos","comprasteis","compraron"], part:"comprado"},
+  comer:     {i:["com\u00ed","comiste","comi\u00f3","comimos","comisteis","comieron"], part:"comido"},
+  aprender:  {i:["aprend\u00ed","aprendiste","aprendi\u00f3","aprendimos","aprendisteis","aprendieron"], part:"aprendido"},
+  leer:      {i:["le\u00ed","le\u00edste","ley\u00f3","le\u00edmos","le\u00edsteis","leyeron"], part:"le\u00eddo"},
+  beber:     {i:["beb\u00ed","bebiste","bebi\u00f3","bebimos","bebisteis","bebieron"], part:"bebido"},
+  vivir:     {i:["viv\u00ed","viviste","vivi\u00f3","vivimos","vivisteis","vivieron"], part:"vivido"},
+  escribir:  {i:["escrib\u00ed","escribiste","escribi\u00f3","escribimos","escribisteis","escribieron"], part:"escrito"},
+  abrir:     {i:["abr\u00ed","abriste","abri\u00f3","abrimos","abristeis","abrieron"], part:"abierto"},
+  ser:       {i:["fui","fuiste","fue","fuimos","fuisteis","fueron"], part:"sido"},
+  estar:     {i:["estuve","estuviste","estuvo","estuvimos","estuvisteis","estuvieron"], part:"estado"},
+  tener:     {i:["tuve","tuviste","tuvo","tuvimos","tuvisteis","tuvieron"], part:"tenido"},
+  ir:        {i:["fui","fuiste","fue","fuimos","fuisteis","fueron"], part:"ido"},
+  hacer:     {i:["hice","hiciste","hizo","hicimos","hicisteis","hicieron"], part:"hecho"},
+  poder:     {i:["pude","pudiste","pudo","pudimos","pudisteis","pudieron"], part:"podido"},
+  querer:    {i:["quise","quisiste","quiso","quisimos","quisisteis","quisieron"], part:"querido"},
+  decir:     {i:["dije","dijiste","dijo","dijimos","dijisteis","dijeron"], part:"dicho"},
+  saber:     {i:["supe","supiste","supo","supimos","supisteis","supieron"], part:"sabido"},
+  poner:     {i:["puse","pusiste","puso","pusimos","pusisteis","pusieron"], part:"puesto"},
+  salir:     {i:["sal\u00ed","saliste","sali\u00f3","salimos","salisteis","salieron"], part:"salido"},
+  venir:     {i:["vine","viniste","vino","vinimos","vinisteis","vinieron"], part:"venido"},
+  dar:       {i:["di","diste","dio","dimos","disteis","dieron"], part:"dado"},
+  ver:       {i:["vi","viste","vio","vimos","visteis","vieron"], part:"visto"},
+  jugar:     {i:["jugu\u00e9","jugaste","jug\u00f3","jugamos","jugasteis","jugaron"], part:"jugado"},
+  pedir:     {i:["ped\u00ed","pediste","pidi\u00f3","pedimos","pedisteis","pidieron"], part:"pedido"},
+  dormir:    {i:["dorm\u00ed","dormiste","durmi\u00f3","dormimos","dormisteis","durmieron"], part:"dormido"},
+  empezar:   {i:["empec\u00e9","empezaste","empez\u00f3","empezamos","empezasteis","empezaron"], part:"empezado"},
+  volver:    {i:["volv\u00ed","volviste","volvi\u00f3","volvimos","volvisteis","volvieron"], part:"vuelto"},
+  pensar:    {i:["pens\u00e9","pensaste","pens\u00f3","pensamos","pensasteis","pensaron"], part:"pensado"},
+  sentir:    {i:["sent\u00ed","sentiste","sinti\u00f3","sentimos","sentisteis","sintieron"], part:"sentido"},
+  preferir:  {i:["prefer\u00ed","preferiste","prefiri\u00f3","preferimos","preferisteis","prefirieron"], part:"preferido"}
+};
 var CONJ_PRONOMBRES = ["yo","tú","él / ella / usted","nosotros / nosotras","vosotros / vosotras","ellos / ellas / ustedes"];
 var CONJ_RONDE_LEN = 10;
-var conjIdx = null; // {verb, p}
+var conjIdx = null; // {verb, p, t} - t = de tijd van deze opgave ("presente" / "indefinido" / "perfecto")
 var conjRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
 var cjModusOverride = null; // (historisch) per-item override; sinds 29 juli wint S.modusKeuze.conj als die gezet is
-function cjAdaptiefModus(v, p){
-  var fout = S.errors["conj:"+v.inf+"-"+p];
+// Tijdkeuze (29 juli, v19.44). Blijft staan in S.conjTiempo, dus over sessies en apparaten heen.
+// "mix" trekt per opgave opnieuw uit alle drie de tijden: dat is precies de moeilijkheid die Stefan
+// noemde (niet elke vorm los kennen, maar ze uit elkaar houden als ze door elkaar komen).
+var CONJ_TIEMPOS = ["presente","indefinido","perfecto","mix"];
+function conjTiempoKeuze(){ return (S.conjTiempo && CONJ_TIEMPOS.indexOf(S.conjTiempo) !== -1) ? S.conjTiempo : "presente"; }
+function conjTiempoActief(){
+  var k = conjTiempoKeuze();
+  if(k !== "mix") return k;
+  var opts = ["presente","indefinido","perfecto"];
+  return opts[Math.floor(Math.random()*opts.length)];
+}
+function conjVorm(v, p, t){
+  var d = VERBOS_PASADO[v.inf];
+  if(t === "indefinido" && d) return d.i[p];
+  if(t === "perfecto" && d) return HABER_PRES[p] + " " + d.part;
+  return v.presente[p];
+}
+function conjAlleVormen(v, t){
+  var uit = [];
+  for(var i=0; i<6; i++) uit.push(conjVorm(v, i, t));
+  return uit;
+}
+// presente houdt de oude sleutel (zonder tijd), zodat foutenlogs van v\u00f3\u00f3r v19.44 blijven werken
+function conjErrKey(v, p, t){ return (t && t !== "presente") ? v.inf+"-"+p+"-"+t : v.inf+"-"+p; }
+function conjTiempoLabel(t){
+  if(t === "indefinido") return "pret\u00e9rito indefinido";
+  if(t === "perfecto") return "pret\u00e9rito perfecto";
+  return "presente";
+}
+function cjAdaptiefModus(v, p, t){
+  var fout = S.errors["conj:"+conjErrKey(v, p, t)];
   return (fout && fout.count > 0) ? "makkelijk" : "moeilijk";
 }
-function cjHuidigeModus(v, p){ return (S.modusKeuze && S.modusKeuze.conj) || cjModusOverride || cjAdaptiefModus(v, p); }
-function cjMeerkeuzeOpties(v, p){
-  var correct = v.presente[p];
-  var andereVormen = v.presente.filter(function(vorm, i){ return i !== p && vorm !== correct; });
+function cjHuidigeModus(v, p, t){ return (S.modusKeuze && S.modusKeuze.conj) || cjModusOverride || cjAdaptiefModus(v, p, t); }
+function cjMeerkeuzeOpties(v, p, t){
+  var vormen = conjAlleVormen(v, t);
+  var correct = vormen[p];
+  var andereVormen = vormen.filter(function(vorm, i){ return i !== p && vorm !== correct; });
   var afleiders = geschud(andereVormen).slice(0, 3);
   return geschud([correct].concat(afleiders));
 }
+function conjVerbPool(t){
+  if(t === "presente") return VERBOS;
+  var pool = VERBOS.filter(function(v){ return !!VERBOS_PASADO[v.inf]; });
+  return pool.length ? pool : VERBOS;
+}
 function pickConjugacion(){
+  var t = conjTiempoActief();
+  var pool = conjVerbPool(t);
   var fouten = [];
-  VERBOS.forEach(function(v){
+  pool.forEach(function(v){
     for(var p=0; p<6; p++){
-      var e = S.errors["conj:"+v.inf+"-"+p];
-      if(e && e.count > 0) fouten.push({verb:v, p:p});
+      var e = S.errors["conj:"+conjErrKey(v, p, t)];
+      if(e && e.count > 0) fouten.push({verb:v, p:p, t:t});
     }
   });
   if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
-  var verb = VERBOS[Math.floor(Math.random()*VERBOS.length)];
-  return {verb:verb, p:Math.floor(Math.random()*6)};
+  var verb = pool[Math.floor(Math.random()*pool.length)];
+  return {verb:verb, p:Math.floor(Math.random()*6), t:t};
+}
+function conjTiempoKiezerHtml(){
+  var k = conjTiempoKeuze();
+  var opts = [["presente","presente"],["indefinido","indefinido"],["perfecto","perfecto"],["mix","mix \ud83c\udfb2"]];
+  return "<div class='row' id='cjTiempo' style='gap:6px; margin:2px 0 8px; flex-wrap:wrap'>"+
+    opts.map(function(o){
+      return "<button type='button' class='"+(k===o[0]?"primary":"ghost")+" cj-tiempo' data-t='"+o[0]+"' style='padding:6px 12px; font-size:0.82rem; min-width:0'>"+o[1]+"</button>";
+    }).join("")+"</div>";
+}
+function wireConjTiempoKiezer(){
+  var row = document.getElementById("cjTiempo");
+  if(!row) return;
+  row.querySelectorAll(".cj-tiempo").forEach(function(b){
+    b.onclick = function(){
+      S.conjTiempo = b.getAttribute("data-t");
+      persist();
+      // ronde-teller blijft staan (halverwege een ronde je voortgang kwijtraken is nergens goed voor),
+      // alleen de huidige opgave wordt opnieuw getrokken in de nieuwe tijd
+      conjIdx = pickConjugacion();
+      cjModusOverride = null;
+      renderFunConjugador();
+    };
+  });
 }
 function conjugadorNieuweRonde(){
   conjRonde = {n:0, lengte:CONJ_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
@@ -3909,29 +4022,31 @@ function renderFunConjugador(){
   if(!conjRonde) conjugadorNieuweRonde();
   if(conjRonde.n >= conjRonde.lengte){ renderConjugadorRondeKlaar(); return; }
   if(!conjIdx) conjIdx = pickConjugacion();
-  var c = conjIdx, v = c.verb;
+  var c = conjIdx, v = c.verb, tR = c.t || "presente";
   var inFlowCjR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "conj");
   var html = (inFlowCjR ? lesFlowBannerHtml() : "")+"<h2>Conjugador 🎯</h2>"+
     "<span class='kicker' id='cjKicker'>" + conjugadorKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("cjIntro") + "</p>"+
+    conjTiempoKiezerHtml()+
     "<div class='card' style='text-align:center; margin:10px 0'>"+
       "<p class='muted' style='margin:0 0 2px'>"+v.inf+" <span style='font-weight:400'>("+v.nl+")</span></p>"+
       "<p class='big' style='margin:4px 0'>"+CONJ_PRONOMBRES[c.p]+"</p>"+
-      "<p class='muted' style='margin:0'>"+ct("presente","present tense")+"</p>"+
+      "<p class='muted' style='margin:0'><b>"+conjTiempoLabel(tR)+"</b></p>"+
     "</div>"+
     "<div id='cjBody'></div>";
   el.innerHTML = html;
   lesFlowWireStopKnop();
+  wireConjTiempoKiezer();
   renderConjugadorBody();
 }
 function renderConjugadorBody(){
-  var c = conjIdx, v = c.verb;
-  var modus = cjHuidigeModus(v, c.p);
+  var c = conjIdx, v = c.verb, t = c.t || "presente";
+  var modus = cjHuidigeModus(v, c.p, t);
   var el = document.getElementById("cjBody");
   if(!el) return;
   var html = moeilijkModusHtml("cjModus", modus);
   if(modus === "makkelijk"){
-    var opties = cjMeerkeuzeOpties(v, c.p);
+    var opties = cjMeerkeuzeOpties(v, c.p, t);
     html += "<div style='display:flex; flex-direction:column; gap:8px' id='cjOpties'>"+
       opties.map(function(o){ return "<button type='button' class='ghost cjOptie' data-v=\""+o.replace(/"/g,"&quot;")+"\" style='text-align:left'>"+o+"</button>"; }).join("")+
       "</div>"+
@@ -3998,13 +4113,13 @@ function renderConjugadorRondeKlaar(){
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
 }
 function checkConjugador(){
-  var c = conjIdx, v = c.verb;
-  var modus = cjHuidigeModus(v, c.p);
+  var c = conjIdx, v = c.verb, t = c.t || "presente";
+  var modus = cjHuidigeModus(v, c.p, t);
   var inpEl = document.getElementById("cjInput");
   var given = norm((inpEl && inpEl.value) || "");
   if(!given) return;
   var fb = document.getElementById("cjFeedback");
-  var correct = v.presente[c.p];
+  var correct = conjVorm(v, c.p, t);
   var exact = norm(correct) === given;
   var loose = !exact && stripAcc(norm(correct)) === stripAcc(given);
   var goedBeantwoord = exact || loose;
@@ -4019,7 +4134,7 @@ function checkConjugador(){
     addXP(2); trackPoging(false);
   } else {
     html = "<div class='feedback fout'>"+ct("Nog niet. Het antwoord is: ","Not yet. The answer is: ")+"<b>"+correct+"</b></div>";
-    logError(v.inf+"-"+c.p, "conj", v.inf, given); addXP(1);
+    logError(conjErrKey(v, c.p, t), "conj", v.inf, given); addXP(1);
   }
   if(goedBeantwoord){
     conjRonde.goed++; conjRonde.streak++;
@@ -9602,8 +9717,8 @@ var FUN_TXT = {
      dicNormal:"Luister normal", dicLento:"Luister lento",
      dicPlaceholder:"Typ wat je hoort...", dicSkip:"Volgende zin",
      dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari.",
-     cjS:"rondes van 10 vervoegingen, bouw een streak op, presente van 32 werkwoorden",
-     cjIntro:"Typ de juiste vervoeging (presente) voor dit werkwoord en deze persoon.",
+     cjS:"rondes van 10 vervoegingen: presente, indefinido, perfecto of alles door elkaar",
+     cjIntro:"Typ de juiste vervoeging voor dit werkwoord, deze persoon en deze tijd. Kies zelf welke tijd je drilt:",
      cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord",
      huT:"Zinnen husselen", huS:"rondes van 8 zinnen, tik de Spaanse woorden in de juiste volgorde",
      huIntro:"Tik de woorden hieronder aan in de juiste volgorde om deze zin te bouwen.",
@@ -9630,8 +9745,8 @@ var FUN_TXT = {
      dicNormal:"Listen normal", dicLento:"Listen lento",
      dicPlaceholder:"Type what you hear...", dicSkip:"Next sentence",
      dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari.",
-     cjS:"rounds of 10 conjugations, build a streak, present tense of 32 verbs",
-     cjIntro:"Type the correct conjugation (present tense) for this verb and this person.",
+     cjS:"rounds of 10 conjugations: present, preterite, perfect or all mixed",
+     cjIntro:"Type the correct conjugation for this verb, this person and this tense. Pick which tense to drill:",
      cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb",
      huT:"Scramble sentences", huS:"rounds of 8 sentences, tap the Spanish words in the right order",
      huIntro:"Tap the words below in the right order to build this sentence.",
@@ -10064,6 +10179,611 @@ function renderFunDuel(){
     a.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); duelOpen(a.getAttribute("data-duel")); };
   });
 }
+/* ================= GRAMMATICA-WIZARD (29 juli, v19.44) =================
+   Stefans wens, letterlijk: "een soort miniwizard die het uitlegt, dan toetst en onder i de info
+   verstopt", omdat een spiekbrief alleen w\u00e9l naslag is maar geen manier om iets \u00e9cht onder de knie te
+   krijgen. Bewust gebouwd als HERBRUIKBARE component: alles hieronder is datagestuurd vanuit GRAMWIZ,
+   dus een nieuw onderwerp toevoegen = \u00e9\u00e9n object erbij, geen nieuwe rendercode.
+
+   Vorm per stap: korte uitleg -> optioneel "meer detail" achter een uitklap (de i-knop uit Stefans
+   omschrijving) -> een paar meerkeuzevragen met een uitleg-bij-het-antwoord. Fout gaan is hier
+   goedkoop en informatief: je krijgt altijd te zien WAAROM, en de fout gaat via logError() ook het
+   normale foutensysteem in, zodat hij later in de app terugkomt.
+
+   Bewuste keuze: dit vervangt geen lesstof en voegt niets toe aan bestaande lessen of toetsjes
+   (dat zou lessen retroactief on-voltooid maken, zie de v19.21-beslissing). Het staat los bovenaan
+   de Grammatica-tab, naast de spiekbrieven. */
+var GRAMWIZ = [
+ {id:"perfindef", icon:"\u23f3", drill:"indefinido",
+  titel:"Perfecto vs. indefinido", titelEn:"Perfect vs. preterite",
+  pitch:"Wanneer zeg je he hablado en wanneer habl\u00e9? Plus alle vormen, inclusief de onregelmatige.",
+  pitchEn:"When do you say he hablado and when habl\u00e9? Plus all the forms, irregulars included.",
+  stappen:[
+   {kop:"Het gaat niet om hoe lang geleden",
+    kopEn:"It's not about how long ago",
+    uitleg:"<p>Bijna iedereen leert dit als \u201cperfecto = kort geleden, indefinido = lang geleden\u201d. Dat is niet de regel, en daarom blijft het schuiven.</p>"+
+      "<p>De echte vraag is: <b>is het tijdvak waarin het gebeurde al dicht?</b></p>"+
+      "<p>Zit het in een vak dat <b>nu nog loopt</b> (vandaag, deze week, dit jaar, mijn leven tot nu toe)? Dan <b>pret\u00e9rito perfecto</b>: <i>he hablado</i>.<br>"+
+      "Zit het in een vak dat <b>af is</b> (gisteren, vorige week, in 2019, drie jaar geleden)? Dan <b>pret\u00e9rito indefinido</b>: <i>habl\u00e9</i>.</p>"+
+      "<p>Daarom kan hetzelfde moment allebei zijn:<br><i>Esta ma\u00f1ana he tomado caf\u00e9.</i> (gezegd om 11 uur \u2013 de ochtend loopt nog)<br><i>Esta ma\u00f1ana tom\u00e9 caf\u00e9.</i> (gezegd \u2019s avonds \u2013 de ochtend is voorbij)</p>",
+    uitlegEn:"<p>Almost everyone learns this as \u201cperfect = recent, preterite = long ago\u201d. That's not the rule, which is why it keeps sliding around.</p>"+
+      "<p>The real question is: <b>is the time frame it happened in already closed?</b></p>"+
+      "<p>In a frame that is <b>still running</b> (today, this week, this year, my life so far)? Then <b>pret\u00e9rito perfecto</b>: <i>he hablado</i>.<br>"+
+      "In a frame that is <b>finished</b> (yesterday, last week, in 2019, three years ago)? Then <b>pret\u00e9rito indefinido</b>: <i>habl\u00e9</i>.</p>"+
+      "<p>So the same moment can be either:<br><i>Esta ma\u00f1ana he tomado caf\u00e9.</i> (said at 11am \u2013 the morning is still on)<br><i>Esta ma\u00f1ana tom\u00e9 caf\u00e9.</i> (said in the evening \u2013 the morning is over)</p>",
+    diepKop:"Waarom je in Latijns-Amerika iets anders hoort",
+    diepKopEn:"Why Latin America sounds different",
+    diep:"<p>In grote delen van Latijns-Amerika (en ook in Galici\u00eb en op de Canarische Eilanden) wordt bijna altijd het indefinido gebruikt, ook voor vandaag: <i>Hoy com\u00ed paella.</i> Dat is niet fout, het is een andere norm.</p>"+
+      "<p>De vakregel hierboven is de standaard van Spanje en van Aula 2, dus die leer je actief. De Latijns-Amerikaanse variant hoef je alleen te herkennen, niet te produceren.</p>",
+    diepEn:"<p>In large parts of Latin America (and in Galicia and the Canary Islands) the preterite is used for almost everything, today included: <i>Hoy com\u00ed paella.</i> That's not wrong, it's a different norm.</p>"+
+      "<p>The frame rule above is the standard in Spain and in Aula 2, so that's the one to produce actively. The Latin American variant you only need to recognise.</p>",
+    vragen:[
+     {v:"Wat bepaalt de keuze tussen perfecto en indefinido?", vEn:"What decides between perfect and preterite?",
+      o:["Hoe lang geleden het was","Of het tijdvak waarin het gebeurde al dicht is","Of de handeling zelf klaar is","Of je het zelf hebt meegemaakt"],
+      oEn:["How long ago it was","Whether the time frame it happened in is closed","Whether the action itself is finished","Whether you experienced it yourself"],
+      g:1,
+      w:"Het gaat om het VAK, niet om de afstand. Iets van twaalf uur geleden kan perfecto zijn (vandaag) en iets van drie uur geleden indefinido (anoche).",
+      wEn:"It's about the FRAME, not the distance. Something twelve hours ago can be perfect (today) and something three hours ago preterite (anoche)."},
+     {v:"Het is nu dinsdagmiddag. \u201cVanochtend heb ik koffie gedronken.\u201d", vEn:"It's Tuesday afternoon. \u201cThis morning I had coffee.\u201d",
+      o:["Esta ma\u00f1ana he tomado caf\u00e9.","Esta ma\u00f1ana tom\u00e9 caf\u00e9."], g:0,
+      w:"De dag loopt nog, dus het vak staat open: perfecto.",
+      wEn:"The day is still running, so the frame is open: perfect."},
+     {v:"Zelfde dinsdagmiddag, maar nu over maandag.", vEn:"Same Tuesday afternoon, but now about Monday.",
+      o:["Ayer he tomado caf\u00e9.","Ayer tom\u00e9 caf\u00e9."], g:1,
+      w:"Ayer is per definitie een dicht vak: indefinido. \u201cAyer he...\u201d is altijd fout.",
+      wEn:"Ayer is by definition a closed frame: preterite. \u201cAyer he...\u201d is always wrong."},
+     {v:"Este a\u00f1o ___ (viajar, yo) a M\u00e9xico.", vEn:"Este a\u00f1o ___ (viajar, yo) a M\u00e9xico.",
+      o:["he viajado","viaj\u00e9"], g:0,
+      w:"Este a\u00f1o loopt nog, dus perfecto. Vergelijk: El a\u00f1o pasado viaj\u00e9 a M\u00e9xico.",
+      wEn:"Este a\u00f1o is still running, so perfect. Compare: El a\u00f1o pasado viaj\u00e9 a M\u00e9xico."}
+    ]},
+
+   {kop:"De signaalwoorden",
+    kopEn:"The signal words",
+    uitleg:"<p>De vakvraag uit stap 1 is de baas, maar in de praktijk verklapt het tijdsbepalingswoord het meestal meteen.</p>"+
+      "<p><b>Perfecto</b> (open vak): hoy, esta ma\u00f1ana / tarde / semana, este mes, este a\u00f1o, estos d\u00edas, \u00faltimamente, ya, todav\u00eda no, a\u00fan no, nunca, siempre, alguna vez, hace un rato.</p>"+
+      "<p><b>Indefinido</b> (dicht vak): ayer, anoche, anteayer, la semana pasada, el mes pasado, el a\u00f1o pasado, en 2019, el otro d\u00eda, hace dos a\u00f1os, aquel d\u00eda, entonces, de repente.</p>"+
+      "<p>Snelle truc: zie je <b>este / esta</b> of iets dat naar nu wijst, dan perfecto. Zie je <b>pasado / pasada</b>, een jaartal of <b>hace + tijd</b>, dan indefinido.</p>",
+    uitlegEn:"<p>The frame question from step 1 is in charge, but in practice the time expression usually gives it away instantly.</p>"+
+      "<p><b>Perfect</b> (open frame): hoy, esta ma\u00f1ana / tarde / semana, este mes, este a\u00f1o, estos d\u00edas, \u00faltimamente, ya, todav\u00eda no, a\u00fan no, nunca, siempre, alguna vez, hace un rato.</p>"+
+      "<p><b>Preterite</b> (closed frame): ayer, anoche, anteayer, la semana pasada, el mes pasado, el a\u00f1o pasado, en 2019, el otro d\u00eda, hace dos a\u00f1os, aquel d\u00eda, entonces, de repente.</p>"+
+      "<p>Quick trick: <b>este / esta</b> or anything pointing at now means perfect. <b>pasado / pasada</b>, a year, or <b>hace + time</b> means preterite.</p>",
+    diepKop:"Waarom ya en todav\u00eda no in dit rijtje staan",
+    diepKopEn:"Why ya and todav\u00eda no belong here",
+    diep:"<p><i>Ya</i> en <i>todav\u00eda no</i> kijken naar het nu: is het op dit moment al wel of nog niet gebeurd? <i>\u00bfYa has comido? \u2013 Todav\u00eda no he comido.</i></p>"+
+      "<p>Maar ze zijn geen wet. Vertel je een verhaal dat helemaal in een dicht vak speelt, dan gaan ze gewoon mee: <i>Cuando llegu\u00e9, ya no estaba.</i> Signaalwoorden zijn hulpmiddelen; als ze botsen met de vakvraag, wint de vakvraag.</p>",
+    diepEn:"<p><i>Ya</i> and <i>todav\u00eda no</i> look at the present: has it happened by now or not? <i>\u00bfYa has comido? \u2013 Todav\u00eda no he comido.</i></p>"+
+      "<p>But they're not law. Inside a story that sits entirely in a closed frame they come along: <i>Cuando llegu\u00e9, ya no estaba.</i> Signal words are helpers; when they clash with the frame question, the frame question wins.</p>",
+    vragen:[
+     {v:"Welk rijtje hoort bij het pret\u00e9rito perfecto?", vEn:"Which row belongs to the present perfect?",
+      o:["ayer, anoche, el a\u00f1o pasado","hoy, esta semana, todav\u00eda no","de repente, entonces, aquel d\u00eda"], g:1,
+      w:"Alle drie wijzen naar een vak dat nu nog loopt.",
+      wEn:"All three point at a frame that is still running."},
+     {v:"___ he estado en Sevilla. (nog nooit)", vEn:"___ he estado en Sevilla. (never yet)",
+      o:["Nunca","Anoche","El a\u00f1o pasado"], g:0,
+      w:"Nunca = in mijn leven tot nu toe, en dat vak staat open zolang je leeft.",
+      wEn:"Nunca = in my life so far, and that frame stays open as long as you live."},
+     {v:"El verano pasado ___ a C\u00e1diz.", vEn:"El verano pasado ___ a C\u00e1diz.",
+      o:["hemos ido","fuimos"], g:1,
+      w:"Pasado = dicht vak, dus indefinido. Van ir/ser: fui, fuiste, fue, fuimos, fuisteis, fueron.",
+      wEn:"Pasado = closed frame, so preterite. From ir/ser: fui, fuiste, fue, fuimos, fuisteis, fueron."},
+     {v:"\u00bf___ has comido?", vEn:"\u00bf___ has comido?",
+      o:["Ya","Ayer"], g:0,
+      w:"Has comido is perfecto, dus er kan geen ayer bij. Met ayer zou het \u00bfComiste ayer? zijn.",
+      wEn:"Has comido is perfect, so ayer can't join it. With ayer it would be \u00bfComiste ayer?"}
+    ]},
+
+   {kop:"De vormen: haber + participio",
+    kopEn:"The forms: haber + participio",
+    uitleg:"<p>Het perfecto is altijd twee woorden: <b>haber</b> (vervoegd) + <b>participio</b> (onveranderlijk).</p>"+
+      "<p><b>he \u00b7 has \u00b7 ha \u00b7 hemos \u00b7 hab\u00e9is \u00b7 han</b></p>"+
+      "<p>Participio: <b>-ar \u2192 -ado</b> (hablar \u2192 hablado), <b>-er / -ir \u2192 -ido</b> (comer \u2192 comido, vivir \u2192 vivido).</p>"+
+      "<p>Twee dingen gaan structureel mis:</p>"+
+      "<p>1. Haber en participio blijven <b>aan elkaar vast</b>. Er komt niets tussen. Niet <i>he no comido</i> of <i>he lo visto</i>, maar <b>No he comido</b> en <b>Lo he visto</b>.<br>"+
+      "2. Het participio <b>verandert nooit mee</b> met geslacht of getal. <b>Ellas han llegado</b>, niet <i>llegadas</i>.</p>"+
+      "<p>De onregelmatige participios die je echt nodig hebt: hacer \u2192 <b>hecho</b>, decir \u2192 <b>dicho</b>, ver \u2192 <b>visto</b>, escribir \u2192 <b>escrito</b>, poner \u2192 <b>puesto</b>, volver \u2192 <b>vuelto</b>, abrir \u2192 <b>abierto</b>, romper \u2192 <b>roto</b>, morir \u2192 <b>muerto</b>.</p>",
+    uitlegEn:"<p>The perfect is always two words: <b>haber</b> (conjugated) + <b>participio</b> (invariable).</p>"+
+      "<p><b>he \u00b7 has \u00b7 ha \u00b7 hemos \u00b7 hab\u00e9is \u00b7 han</b></p>"+
+      "<p>Participio: <b>-ar \u2192 -ado</b> (hablar \u2192 hablado), <b>-er / -ir \u2192 -ido</b> (comer \u2192 comido, vivir \u2192 vivido).</p>"+
+      "<p>Two things go wrong structurally:</p>"+
+      "<p>1. Haber and participio stay <b>glued together</b>. Nothing goes between them. Not <i>he no comido</i> or <i>he lo visto</i>, but <b>No he comido</b> and <b>Lo he visto</b>.<br>"+
+      "2. The participio <b>never agrees</b> in gender or number. <b>Ellas han llegado</b>, not <i>llegadas</i>.</p>"+
+      "<p>The irregular participios you actually need: hacer \u2192 <b>hecho</b>, decir \u2192 <b>dicho</b>, ver \u2192 <b>visto</b>, escribir \u2192 <b>escrito</b>, poner \u2192 <b>puesto</b>, volver \u2192 <b>vuelto</b>, abrir \u2192 <b>abierto</b>, romper \u2192 <b>roto</b>, morir \u2192 <b>muerto</b>.</p>",
+    diepKop:"haber is niet tener",
+    diepKopEn:"haber is not tener",
+    diep:"<p>In het Nederlands is \u201chebben\u201d allebei, in het Spaans niet. <b>Haber</b> bestaat vrijwel alleen als hulpwerkwoord, <b>tener</b> is bezit.</p>"+
+      "<p><i>He tenido suerte.</i> = Ik heb geluk gehad. (haber + participio van tener)<br><i>Tengo suerte.</i> = Ik heb geluk.</p>"+
+      "<p><i>Tengo comido</i> bestaat niet. Als je twijfelt: hoort er in het Nederlands een voltooid deelwoord achter, dan is het haber.</p>",
+    diepEn:"<p>English \u201chave\u201d covers both; Spanish splits them. <b>Haber</b> exists almost only as an auxiliary, <b>tener</b> is possession.</p>"+
+      "<p><i>He tenido suerte.</i> = I have been lucky. (haber + participio of tener)<br><i>Tengo suerte.</i> = I am lucky.</p>"+
+      "<p><i>Tengo comido</i> does not exist. Rule of thumb: if a past participle follows, it's haber.</p>",
+    vragen:[
+     {v:"Nosotros ___ la pel\u00edcula. (ver)", vEn:"Nosotros ___ la pel\u00edcula. (ver)",
+      o:["hemos visto","hemos vido","tenemos visto"], g:0,
+      w:"Ver heeft een onregelmatig participio: visto. En het hulpwerkwoord is haber, nooit tener.",
+      wEn:"Ver has an irregular participio: visto. And the auxiliary is haber, never tener."},
+     {v:"Welk participio hoort bij escribir?", vEn:"Which participio belongs to escribir?",
+      o:["escribido","escrito","escripto"], g:1,
+      w:"Escrito. Uit hetzelfde onregelmatige rijtje als hecho, dicho, visto, puesto, vuelto, abierto.",
+      wEn:"Escrito. Same irregular set as hecho, dicho, visto, puesto, vuelto, abierto."},
+     {v:"Ellas han ___ tarde. (llegar)", vEn:"Ellas han ___ tarde. (llegar)",
+      o:["llegado","llegadas","llegados"], g:0,
+      w:"Het participio in het perfecto verandert nooit mee. Alleen als bijvoeglijk naamwoord wel: Est\u00e1n cansadas.",
+      wEn:"The participio in the perfect never agrees. As an adjective it does: Est\u00e1n cansadas."},
+     {v:"Hoe zeg je \u201cIk heb het niet gezien\u201d?", vEn:"How do you say \u201cI haven't seen it\u201d?",
+      o:["No lo he visto.","He no lo visto.","He lo no visto."], g:0,
+      w:"Ontkenning en lijdend voorwerp gaan allebei v\u00f3\u00f3r haber. Tussen haber en participio komt nooit iets.",
+      wEn:"Negation and object pronoun both go before haber. Nothing ever comes between haber and the participio."}
+    ]},
+
+   {kop:"De vormen: -\u00e9 en -\u00f3",
+    kopEn:"The forms: -\u00e9 and -\u00f3",
+    uitleg:"<p><b>Regelmatig -ar:</b> -\u00e9, -aste, -\u00f3, -amos, -asteis, -aron<br><i>habl\u00e9, hablaste, habl\u00f3, hablamos, hablasteis, hablaron</i></p>"+
+      "<p><b>Regelmatig -er / -ir:</b> -\u00ed, -iste, -i\u00f3, -imos, -isteis, -ieron<br><i>com\u00ed, comiste, comi\u00f3, comimos, comisteis, comieron</i></p>"+
+      "<p>Onthoud vooral dit: <b>alleen yo en \u00e9l/ella krijgen een accent</b>. De rest niet. Dat accent is geen versiering, het is het verschil met de tegenwoordige tijd: <i>hablo</i> = ik praat, <i>habl\u00f3</i> = hij praatte.</p>"+
+      "<p>Let op de val: bij -ar en -ir is <b>nosotros identiek aan de presente</b>. <i>Hablamos</i> is \u201cwe praten\u201d \u00e9n \u201cwe praatten\u201d, <i>vivimos</i> allebei. Het signaalwoord in de zin beslist welke het is.</p>",
+    uitlegEn:"<p><b>Regular -ar:</b> -\u00e9, -aste, -\u00f3, -amos, -asteis, -aron<br><i>habl\u00e9, hablaste, habl\u00f3, hablamos, hablasteis, hablaron</i></p>"+
+      "<p><b>Regular -er / -ir:</b> -\u00ed, -iste, -i\u00f3, -imos, -isteis, -ieron<br><i>com\u00ed, comiste, comi\u00f3, comimos, comisteis, comieron</i></p>"+
+      "<p>The thing to remember: <b>only yo and \u00e9l/ella take an accent</b>. Nothing else does. That accent isn't decoration, it's the whole difference with the present: <i>hablo</i> = I speak, <i>habl\u00f3</i> = he spoke.</p>"+
+      "<p>Watch the trap: for -ar and -ir verbs <b>nosotros is identical to the present</b>. <i>Hablamos</i> is both \u201cwe speak\u201d and \u201cwe spoke\u201d, same for <i>vivimos</i>. The time expression decides which one it is.</p>",
+    diepKop:"De onregelmatige groep: eigen stam, nooit een accent",
+    diepKopEn:"The irregular set: own stem, never an accent",
+    diep:"<p>Een handvol hoogfrequente werkwoorden heeft een eigen stam \u00e9n eigen uitgangen: <b>-e, -iste, -o, -imos, -isteis, -ieron</b>. Deze groep krijgt <b>nooit</b> een accent, en dat is meteen het herkenningspunt.</p>"+
+      "<p>estar \u2192 <b>estuv-</b> \u00b7 tener \u2192 <b>tuv-</b> \u00b7 poder \u2192 <b>pud-</b> \u00b7 poner \u2192 <b>pus-</b> \u00b7 saber \u2192 <b>sup-</b> \u00b7 querer \u2192 <b>quis-</b> \u00b7 venir \u2192 <b>vin-</b> \u00b7 hacer \u2192 <b>hic-</b> (maar \u00e9l: <b>hizo</b>) \u00b7 decir \u2192 <b>dij-</b> \u00b7 traer \u2192 <b>traj-</b></p>"+
+      "<p>Bij stammen op -j valt de i weg in de derde persoon meervoud: <i>dijeron</i>, <i>trajeron</i>, niet dijieron.</p>"+
+      "<p>En het meest gebruikte rijtje van allemaal: <b>ser en ir zijn in het indefinido identiek</b> \u2013 fui, fuiste, fue, fuimos, fuisteis, fueron. De context maakt het altijd duidelijk.</p>",
+    diepEn:"<p>A handful of high-frequency verbs have their own stem and their own endings: <b>-e, -iste, -o, -imos, -isteis, -ieron</b>. This set <b>never</b> takes an accent, which is exactly how you spot it.</p>"+
+      "<p>estar \u2192 <b>estuv-</b> \u00b7 tener \u2192 <b>tuv-</b> \u00b7 poder \u2192 <b>pud-</b> \u00b7 poner \u2192 <b>pus-</b> \u00b7 saber \u2192 <b>sup-</b> \u00b7 querer \u2192 <b>quis-</b> \u00b7 venir \u2192 <b>vin-</b> \u00b7 hacer \u2192 <b>hic-</b> (but \u00e9l: <b>hizo</b>) \u00b7 decir \u2192 <b>dij-</b> \u00b7 traer \u2192 <b>traj-</b></p>"+
+      "<p>With stems ending in -j the i drops in the third person plural: <i>dijeron</i>, <i>trajeron</i>, not dijieron.</p>"+
+      "<p>And the most-used set of all: <b>ser and ir are identical in the preterite</b> \u2013 fui, fuiste, fue, fuimos, fuisteis, fueron. Context always sorts it out.</p>",
+    vragen:[
+     {v:"Ayer yo ___ con Mar\u00eda. (hablar)", vEn:"Ayer yo ___ con Mar\u00eda. (hablar)",
+      o:["habl\u00e9","hablo","habl\u00f3"], g:0,
+      w:"Yo krijgt -\u00e9. Hablo is de presente en habl\u00f3 is \u00e9l/ella: \u00e9\u00e9n accentstreepje verderop is het een andere persoon \u00e9n een andere tijd.",
+      wEn:"Yo takes -\u00e9. Hablo is the present and habl\u00f3 is \u00e9l/ella: one accent mark over is a different person and a different tense."},
+     {v:"\u00c9l ___ paella. (comer)", vEn:"\u00c9l ___ paella. (comer)",
+      o:["comi\u00f3","com\u00ed","comio"], g:0,
+      w:"-er/-ir krijgt -i\u00f3 bij \u00e9l/ella, m\u00e9t accent. Com\u00ed is yo.",
+      wEn:"-er/-ir takes -i\u00f3 for \u00e9l/ella, with the accent. Com\u00ed is yo."},
+     {v:"Nosotros ___ mucho el a\u00f1o pasado. (trabajar)", vEn:"Nosotros ___ mucho el a\u00f1o pasado. (trabajar)",
+      o:["trabajamos","trabaj\u00e1mos","trabajaron"], g:0,
+      w:"Nosotros krijgt nooit een accent, en is bij -ar-werkwoorden gelijk aan de presente. \u201cEl a\u00f1o pasado\u201d maakt duidelijk dat het verleden is.",
+      wEn:"Nosotros never takes an accent, and for -ar verbs it's identical to the present. \u201cEl a\u00f1o pasado\u201d makes clear it's the past."},
+     {v:"Ella ___ aqu\u00ed toda la tarde. (estar)", vEn:"Ella ___ aqu\u00ed toda la tarde. (estar)",
+      o:["estuvo","estuvi\u00f3","est\u00f3"], g:0,
+      w:"Onregelmatige stam estuv- plus de uitgang -o, zonder accent. Precies het kenmerk van die groep.",
+      wEn:"Irregular stem estuv- plus the ending -o, no accent. Exactly what marks that set."},
+     {v:"Ayer yo ___ al cine. (ir)", vEn:"Ayer yo ___ al cine. (ir)",
+      o:["fui","fue","iba"], g:0,
+      w:"Ir en ser delen hetzelfde rijtje: fui (yo), fue (\u00e9l). Iba is imperfecto, dus een gewoonte of decor.",
+      wEn:"Ir and ser share one set: fui (yo), fue (\u00e9l). Iba is imperfect, so a habit or backdrop."}
+    ]},
+
+   {kop:"De vijf valkuilen",
+    kopEn:"The five traps",
+    uitleg:"<p>1. <b>Perfecto is geen \u201ckort geleden\u201d.</b> Hoy is perfecto, ook al is het twaalf uur terug. Anoche is indefinido, ook al is het drie uur terug.</p>"+
+      "<p>2. <b>hablamos, vivimos, escribimos</b> zijn presente \u00e9n indefinido. Het signaalwoord beslist.</p>"+
+      "<p>3. <b>Het participio verandert nooit mee.</b> Han llegado, niet han llegadas.</p>"+
+      "<p>4. <b>Onregelmatige indefinido-stammen krijgen geen accent.</b> Tuve, niet tuv\u00e9. Pude, niet pud\u00e9.</p>"+
+      "<p>5. <b>In een verhaal wissel je met het imperfecto</b>, niet met het perfecto. Indefinido voor wat er gebeurde, imperfecto voor hoe het was.</p>",
+    uitlegEn:"<p>1. <b>Perfect is not \u201crecent\u201d.</b> Hoy is perfect even if it was twelve hours ago. Anoche is preterite even if it was three hours ago.</p>"+
+      "<p>2. <b>hablamos, vivimos, escribimos</b> are present and preterite. The time expression decides.</p>"+
+      "<p>3. <b>The participio never agrees.</b> Han llegado, not han llegadas.</p>"+
+      "<p>4. <b>Irregular preterite stems take no accent.</b> Tuve, not tuv\u00e9. Pude, not pud\u00e9.</p>"+
+      "<p>5. <b>Inside a story you alternate with the imperfect</b>, not the perfect. Preterite for what happened, imperfect for how things were.</p>",
+    diepKop:"Het imperfecto ernaast gelegd",
+    diepKopEn:"The imperfect alongside",
+    diep:"<p><i>Cuando <b>era</b> peque\u00f1o (decor), <b>iba</b> a la playa todos los veranos (gewoonte). Un d\u00eda <b>vi</b> un delf\u00edn (gebeurtenis).</i></p>"+
+      "<p>Vuistregel: kun je er in het Nederlands \u201cwas aan het\u201d of \u201caltijd\u201d bij denken, dan imperfecto. Kun je vragen \u201cen toen?\u201d, dan indefinido.</p>"+
+      "<p>Het perfecto komt in zo\u2019n verhaal bijna niet voor, want een verhaal speelt zich per definitie af in een vak dat dicht is. Zie ook les a2-10, waar precies deze drie tijden in \u00e9\u00e9n anekdote samenkomen.</p>",
+    diepEn:"<p><i>Cuando <b>era</b> peque\u00f1o (backdrop), <b>iba</b> a la playa todos los veranos (habit). Un d\u00eda <b>vi</b> un delf\u00edn (event).</i></p>"+
+      "<p>Rule of thumb: if \u201cwas -ing\u201d or \u201cused to\u201d fits, use the imperfect. If \u201cand then?\u201d fits, use the preterite.</p>"+
+      "<p>The perfect barely appears in such a story, because a story by definition sits in a closed frame. See also lesson a2-10, where exactly these three tenses meet in one anecdote.</p>",
+    vragen:[
+     {v:"Het is 23:00 uur. Je vertelt over vanmiddag.", vEn:"It's 11pm. You're talking about this afternoon.",
+      o:["Esta tarde he visto a Juan.","Esta tarde vi a Juan."], g:0,
+      w:"De dag loopt nog tot middernacht, dus het vak staat open: perfecto. Morgen zeg je Ayer vi a Juan.",
+      wEn:"The day runs until midnight, so the frame is open: perfect. Tomorrow you'd say Ayer vi a Juan."},
+     {v:"Welke zin is fout?", vEn:"Which sentence is wrong?",
+      o:["Han llegado tarde.","Han llegadas tarde.","Ha llegado tarde."], g:1,
+      w:"Het participio na haber verandert nooit mee, ook niet bij een vrouwelijk meervoud.",
+      wEn:"The participio after haber never agrees, not even with a feminine plural."},
+     {v:"Ayer yo ___ que salir pronto. (tener)", vEn:"Ayer yo ___ que salir pronto. (tener)",
+      o:["tuve","tuv\u00e9","ten\u00ed"], g:0,
+      w:"Tener zit in de onregelmatige groep: stam tuv-, uitgang -e, geen accent.",
+      wEn:"Tener is in the irregular set: stem tuv-, ending -e, no accent."},
+     {v:"Cuando era ni\u00f1o, ___ al parque cada d\u00eda.", vEn:"Cuando era ni\u00f1o, ___ al parque cada d\u00eda.",
+      o:["fui","iba","he ido"], g:1,
+      w:"Een gewoonte in het verleden is imperfecto. Fui zou \u00e9\u00e9n losse keer zijn, en he ido kan hier helemaal niet: het vak is dicht.",
+      wEn:"A habit in the past is imperfect. Fui would be one single time, and he ido can't work here at all: the frame is closed."}
+    ]}
+  ]},
+
+ {id:"klemtoon", icon:"\ud83c\udfaf", drill:null,
+  titel:"Klemtoon en accenten", titelEn:"Stress and accents",
+  pitch:"Twee regels bepalen alles, en het streepje corrigeert de uitzondering.",
+  pitchEn:"Two rules decide everything, and the accent mark corrects the exception.",
+  stappen:[
+   {kop:"Twee regels, meer is het niet",
+    kopEn:"Two rules, that's all",
+    uitleg:"<p>Spaans is hierin bijna volledig voorspelbaar, anders dan Nederlands of Engels. Zonder accentstreepje gelden er twee regels.</p>"+
+      "<p><b>1. Eindigt het woord op een klinker, op -n of op -s</b> \u2192 klemtoon op de <b>op \u00e9\u00e9n na laatste</b> lettergreep.<br>"+
+      "<i>ca-sa</i> \u2192 <b>CA</b>-sa \u00b7 <i>ha-blan</i> \u2192 <b>HA</b>-blan \u00b7 <i>li-bros</i> \u2192 <b>LI</b>-bros</p>"+
+      "<p><b>2. Eindigt het op een andere medeklinker</b> \u2192 klemtoon op de <b>laatste</b> lettergreep.<br>"+
+      "<i>ha-blar</i> \u2192 ha-<b>BLAR</b> \u00b7 <i>ciu-dad</i> \u2192 ciu-<b>DAD</b> \u00b7 <i>fe-liz</i> \u2192 fe-<b>LIZ</b> \u00b7 <i>es-pa-\u00f1ol</i> \u2192 es-pa-<b>\u00d1OL</b></p>"+
+      "<p>En dan de enige uitzondering: <b>staat er een accentstreepje, dan wint dat altijd</b>. <i>ca-<b>F\u00c9</b></i>, <i><b>\u00c1R</b>-bol</i>, <i><b>M\u00da</b>-si-ca</i>.</p>"+
+      "<p>Dat is meteen de sleutel: <b>het streepje staat er precies d\u00e1n als het woord zich niet aan regel 1 of 2 houdt</b>. Het is geen versiering, het is een correctie.</p>",
+    uitlegEn:"<p>Spanish is almost fully predictable here, unlike English. Without an accent mark, two rules apply.</p>"+
+      "<p><b>1. Word ends in a vowel, -n or -s</b> \u2192 stress on the <b>second-to-last</b> syllable.<br>"+
+      "<i>ca-sa</i> \u2192 <b>CA</b>-sa \u00b7 <i>ha-blan</i> \u2192 <b>HA</b>-blan \u00b7 <i>li-bros</i> \u2192 <b>LI</b>-bros</p>"+
+      "<p><b>2. Word ends in any other consonant</b> \u2192 stress on the <b>last</b> syllable.<br>"+
+      "<i>ha-blar</i> \u2192 ha-<b>BLAR</b> \u00b7 <i>ciu-dad</i> \u2192 ciu-<b>DAD</b> \u00b7 <i>fe-liz</i> \u2192 fe-<b>LIZ</b> \u00b7 <i>es-pa-\u00f1ol</i> \u2192 es-pa-<b>\u00d1OL</b></p>"+
+      "<p>And the only exception: <b>if there's an accent mark, it always wins</b>. <i>ca-<b>F\u00c9</b></i>, <i><b>\u00c1R</b>-bol</i>, <i><b>M\u00da</b>-si-ca</i>.</p>"+
+      "<p>Which is the key: <b>the mark is there precisely when the word breaks rule 1 or 2</b>. It's not decoration, it's a correction.</p>",
+    diepKop:"Waarom \u00e1rbol wel een streepje heeft en hablan niet",
+    diepKopEn:"Why \u00e1rbol takes a mark and hablan doesn't",
+    diep:"<p><i>Arbol</i> eindigt op -l, dus regel 2 zou ar-<b>BOL</b> voorschrijven. Maar je zegt <b>\u00c1R</b>-bol. Afwijking \u2192 streepje.</p>"+
+      "<p><i>Hablan</i> eindigt op -n, dus regel 1 geeft al <b>HA</b>-blan, precies waar de klemtoon ligt. Geen afwijking \u2192 geen streepje.</p>"+
+      "<p>Vergelijk <i>hablar\u00e1n</i>: eindigt ook op -n, maar de klemtoon ligt achteraan. Dat is een afwijking, dus daar staat het streepje w\u00e9l.</p>",
+    diepEn:"<p><i>Arbol</i> ends in -l, so rule 2 would demand ar-<b>BOL</b>. But you say <b>\u00c1R</b>-bol. Deviation \u2192 mark.</p>"+
+      "<p><i>Hablan</i> ends in -n, so rule 1 already gives <b>HA</b>-blan, exactly where the stress sits. No deviation \u2192 no mark.</p>"+
+      "<p>Compare <i>hablar\u00e1n</i>: also ends in -n, but the stress is at the end. That's a deviation, so the mark appears.</p>",
+    vragen:[
+     {v:"Waar ligt de klemtoon in ventana?", vEn:"Where does the stress fall in ventana?",
+      o:["VEN-ta-na","ven-TA-na","ven-ta-NA"], g:1,
+      w:"Eindigt op een klinker \u2192 regel 1 \u2192 op \u00e9\u00e9n na laatste lettergreep. Geen streepje nodig.",
+      wEn:"Ends in a vowel \u2192 rule 1 \u2192 second-to-last syllable. No mark needed."},
+     {v:"En in hospital?", vEn:"And in hospital?",
+      o:["HOS-pi-tal","hos-PI-tal","hos-pi-TAL"], g:2,
+      w:"Eindigt op -l, dus een andere medeklinker \u2192 regel 2 \u2192 laatste lettergreep.",
+      wEn:"Ends in -l, so another consonant \u2192 rule 2 \u2192 last syllable."},
+     {v:"Waarom heeft l\u00e1piz een accentstreepje?", vEn:"Why does l\u00e1piz have an accent mark?",
+      o:["Omdat het een zelfstandig naamwoord is","Omdat het op -z eindigt maar de klemtoon vooraan ligt","Omdat het meervoud anders raar wordt"], g:1,
+      w:"Regel 2 zou la-PIZ zeggen. Je zegt L\u00c1-piz, dus afwijking, dus streepje.",
+      wEn:"Rule 2 would say la-PIZ. You say L\u00c1-piz, so it deviates, so it takes a mark."},
+     {v:"Joven eindigt op -n. Hoe spreek je het uit?", vEn:"Joven ends in -n. How do you say it?",
+      o:["JO-ven","jo-VEN"], g:0,
+      w:"Regel 1: op -n \u2192 op \u00e9\u00e9n na laatste. Het meervoud j\u00f3venes krijgt w\u00e9l een streepje, want daar zou de klemtoon anders verschuiven.",
+      wEn:"Rule 1: ends in -n \u2192 second-to-last. The plural j\u00f3venes does take a mark, because otherwise the stress would shift."}
+    ]},
+
+   {kop:"Het streepje verandert de betekenis",
+    kopEn:"The mark changes the meaning",
+    uitleg:"<p>In het Spaans is klemtoon geen nuance maar informatie. Dezelfde letters, andere persoon, andere tijd:</p>"+
+      "<p><b>HA</b>-blo = ik praat (nu) \u00b7 ha-<b>BL\u00d3</b> = hij praatte (indefinido)<br>"+
+      "<b>TRA</b>-ba-jo = ik werk \u00b7 tra-ba-<b>J\u00d3</b> = hij werkte</p>"+
+      "<p>Het mooiste voorbeeld is een drieluik:<br><i><b>T\u00c9R</b>-mi-no</i> = de term \u00b7 <i>ter-<b>MI</b>-no</i> = ik eindig \u00b7 <i>ter-mi-<b>N\u00d3</b></i> = hij eindigde</p>"+
+      "<p>En buiten de werkwoorden: <i>papa</i> (aardappel, paus) tegenover <i>pap\u00e1</i> (papa).</p>"+
+      "<p>Daarom zijn die accenten uit het indefinido geen detail: laat je ze weg, dan zeg je letterlijk de tegenwoordige tijd.</p>",
+    uitlegEn:"<p>In Spanish stress isn't nuance, it's information. Same letters, different person, different tense:</p>"+
+      "<p><b>HA</b>-blo = I speak (now) \u00b7 ha-<b>BL\u00d3</b> = he spoke (preterite)<br>"+
+      "<b>TRA</b>-ba-jo = I work \u00b7 tra-ba-<b>J\u00d3</b> = he worked</p>"+
+      "<p>The best example is a set of three:<br><i><b>T\u00c9R</b>-mi-no</i> = the term \u00b7 <i>ter-<b>MI</b>-no</i> = I finish \u00b7 <i>ter-mi-<b>N\u00d3</b></i> = he finished</p>"+
+      "<p>And outside verbs: <i>papa</i> (potato, pope) versus <i>pap\u00e1</i> (dad).</p>"+
+      "<p>So those preterite accents aren't a detail: drop them and you're literally saying the present tense.</p>",
+    diepKop:"Waarom alleen yo en \u00e9l een streepje krijgen",
+    diepKopEn:"Why only yo and \u00e9l take a mark",
+    diep:"<p>Precies omdat dat de twee vormen zijn die met iets anders botsen. <i>habl\u00f3</i> botst met <i>hablo</i>, <i>habl\u00e9</i> botst met <i>hable</i> (subjuntivo).</p>"+
+      "<p>De rest botst nergens mee: <i>hablaste</i>, <i>hablamos</i>, <i>hablasteis</i>, <i>hablaron</i> bestaan maar in \u00e9\u00e9n tijd (op hablamos na, en d\u00e1\u00e1r helpt geen streepje, want de klemtoon ligt in beide gevallen gelijk).</p>"+
+      "<p>Dat is dus geen willekeurige regel om te stampen: het systeem plaatst het streepje alleen waar het nodig is.</p>",
+    diepEn:"<p>Precisely because those are the two forms that collide with something else. <i>habl\u00f3</i> collides with <i>hablo</i>, <i>habl\u00e9</i> collides with <i>hable</i> (subjunctive).</p>"+
+      "<p>The rest collides with nothing: <i>hablaste</i>, <i>hablamos</i>, <i>hablasteis</i>, <i>hablaron</i> exist in one tense only (except hablamos, and there a mark wouldn't help: the stress is identical either way).</p>"+
+      "<p>So it isn't an arbitrary rule to memorise: the system places the mark only where it's needed.</p>",
+    vragen:[
+     {v:"Ayer \u00e9l ___ mucho. (trabajar)", vEn:"Ayer \u00e9l ___ mucho. (trabajar)",
+      o:["trabajo","trabaj\u00f3","trab\u00e1jo"], g:1,
+      w:"Zonder streepje staat er \u201cik werk\u201d. Met streepje op de laatste lettergreep: hij werkte.",
+      wEn:"Without the mark it says \u201cI work\u201d. With the mark on the last syllable: he worked."},
+     {v:"Wat betekent hablo?", vEn:"What does hablo mean?",
+      o:["ik praat","hij praatte"], g:0,
+      w:"HA-blo, klemtoon vooraan, presente, eerste persoon.",
+      wEn:"HA-blo, stress up front, present tense, first person."},
+     {v:"Wat betekent habl\u00f3?", vEn:"What does habl\u00f3 mean?",
+      o:["ik praat","hij praatte"], g:1,
+      w:"ha-BL\u00d3, klemtoon achteraan, indefinido, derde persoon.",
+      wEn:"ha-BL\u00d3, stress at the end, preterite, third person."},
+     {v:"Waarom heeft hablaron geen streepje?", vEn:"Why does hablaron have no mark?",
+      o:["Omdat meervoud nooit een streepje krijgt","Omdat het op -n eindigt en de klemtoon al op de op \u00e9\u00e9n na laatste lettergreep ligt","Omdat het onregelmatig is"], g:1,
+      w:"Regel 1 doet het werk al: ha-BLA-ron. Geen afwijking, dus geen streepje.",
+      wEn:"Rule 1 already does the work: ha-BLA-ron. No deviation, so no mark."}
+    ]},
+
+   {kop:"Accenten in de tijden die je nu leert",
+    kopEn:"Accents in the tenses you're learning",
+    uitleg:"<p><b>Presente:</b> geen streepjes bij regelmatige werkwoorden \u2013 hablo, hablas, habla, hablamos, hablan. Alleen <b>vosotros</b> krijgt er \u00e9\u00e9n: <i>habl\u00e1is, com\u00e9is, viv\u00eds</i>.</p>"+
+      "<p><b>Indefinido regelmatig:</b> streepje bij <b>yo</b> en <b>\u00e9l/ella</b>. <i>habl\u00e9, habl\u00f3 \u00b7 com\u00ed, comi\u00f3 \u00b7 viv\u00ed, vivi\u00f3</i>.</p>"+
+      "<p><b>Indefinido onregelmatig:</b> <b>nooit</b> een streepje. <i>estuve, tuve, pude, puse, supe, quise, vine, hice, dije, fui</i>. Dat is meteen je controle: staat er een streepje op zo\u2019n vorm, dan klopt hij niet.</p>"+
+      "<p><b>Participio:</b> -ado en -ido zonder streepje \u2013 hablado, comido. Behalve direct na een klinker: <i>le\u00eddo, o\u00eddo, tra\u00eddo, cre\u00eddo</i>.</p>",
+    uitlegEn:"<p><b>Present:</b> no marks on regular verbs \u2013 hablo, hablas, habla, hablamos, hablan. Only <b>vosotros</b> takes one: <i>habl\u00e1is, com\u00e9is, viv\u00eds</i>.</p>"+
+      "<p><b>Regular preterite:</b> mark on <b>yo</b> and <b>\u00e9l/ella</b>. <i>habl\u00e9, habl\u00f3 \u00b7 com\u00ed, comi\u00f3 \u00b7 viv\u00ed, vivi\u00f3</i>.</p>"+
+      "<p><b>Irregular preterite:</b> <b>never</b> a mark. <i>estuve, tuve, pude, puse, supe, quise, vine, hice, dije, fui</i>. That's your check: a mark on one of those means it's wrong.</p>"+
+      "<p><b>Participio:</b> -ado and -ido without a mark \u2013 hablado, comido. Except straight after a vowel: <i>le\u00eddo, o\u00eddo, tra\u00eddo, cre\u00eddo</i>.</p>",
+    diepKop:"Waarom le\u00eddo w\u00e9l een streepje heeft",
+    diepKopEn:"Why le\u00eddo takes a mark",
+    diep:"<p>In <i>le-i-do</i> zouden de e en de i zonder streepje samensmelten tot \u00e9\u00e9n lettergreep (een tweeklank): LEI-do, twee lettergrepen.</p>"+
+      "<p>Het streepje breekt dat open: le-\u00cd-do, drie lettergrepen, klemtoon op de i. Dat is de enige taak van het streepje daar.</p>"+
+      "<p>Dezelfde reden zit achter <i>d\u00eda</i>, <i>pa\u00eds</i>, <i>r\u00edo</i>, <i>Ra\u00fal</i> en <i>o\u00edr</i>. Het gaat er telkens om dat een zwakke klinker (i of u) t\u00f3ch zijn eigen lettergreep krijgt.</p>",
+    diepEn:"<p>In <i>le-i-do</i> the e and i would fuse into one syllable without the mark (a diphthong): LEI-do, two syllables.</p>"+
+      "<p>The mark breaks that open: le-\u00cd-do, three syllables, stress on the i. That's its only job there.</p>"+
+      "<p>The same reason sits behind <i>d\u00eda</i>, <i>pa\u00eds</i>, <i>r\u00edo</i>, <i>Ra\u00fal</i> and <i>o\u00edr</i>. Each time it's about a weak vowel (i or u) getting its own syllable anyway.</p>",
+    vragen:[
+     {v:"Welke zin is goed?", vEn:"Which sentence is right?",
+      o:["Ayer tuv\u00e9 que trabajar.","Ayer tuve que trabajar."], g:1,
+      w:"Tener zit in de onregelmatige groep, en die krijgt nooit een streepje.",
+      wEn:"Tener is in the irregular set, and that set never takes a mark."},
+     {v:"He ___ el libro. (leer)", vEn:"He ___ el libro. (leer)",
+      o:["leido","le\u00eddo","l\u00e9ido"], g:1,
+      w:"Het streepje op de i houdt de klinkers uit elkaar: le-\u00cd-do.",
+      wEn:"The mark on the i keeps the vowels apart: le-\u00cd-do."},
+     {v:"Welke vorm van hablar in het indefinido krijgt GEEN streepje?", vEn:"Which preterite form of hablar takes NO mark?",
+      o:["yo","\u00e9l","nosotros"], g:2,
+      w:"Alleen yo (habl\u00e9) en \u00e9l (habl\u00f3) krijgen er \u00e9\u00e9n. Nosotros is hablamos, precies gelijk aan de presente.",
+      wEn:"Only yo (habl\u00e9) and \u00e9l (habl\u00f3) take one. Nosotros is hablamos, identical to the present."},
+     {v:"Vosotros ___ paella. (comer, presente)", vEn:"Vosotros ___ paella. (comer, present)",
+      o:["comeis","com\u00e9is"], g:1,
+      w:"Vosotros is in de presente de enige vorm met een streepje: habl\u00e1is, com\u00e9is, viv\u00eds.",
+      wEn:"Vosotros is the only present-tense form with a mark: habl\u00e1is, com\u00e9is, viv\u00eds."}
+    ]},
+
+   {kop:"De streepjes die niets met klemtoon te maken hebben",
+    kopEn:"The marks that aren't about stress",
+    uitleg:"<p>Een handvol woordjes krijgt een streepje puur om ze uit elkaar te houden. De klemtoon is in beide gevallen precies gelijk; alleen de spelling verschilt.</p>"+
+      "<p><b>qu\u00e9 / que</b> \u2013 \u00bfQu\u00e9 quieres? tegenover S\u00e9 que vienes<br>"+
+      "<b>c\u00f3mo / como</b> \u2013 \u00bfC\u00f3mo est\u00e1s? tegenover Como pan<br>"+
+      "<b>d\u00f3nde / donde \u00b7 cu\u00e1ndo / cuando \u00b7 qui\u00e9n / quien</b> \u2013 het vraagwoord krijgt het streepje<br>"+
+      "<b>t\u00fa / tu</b> \u2013 jij tegenover jouw<br>"+
+      "<b>\u00e9l / el</b> \u2013 hij tegenover de<br>"+
+      "<b>s\u00ed / si</b> \u2013 ja tegenover als<br>"+
+      "<b>m\u00e1s / mas</b> \u2013 meer tegenover maar (die laatste kom je bijna alleen in boeken tegen)</p>"+
+      "<p>Vuistregel: zit er een vraag of een uitroep in, dan het streepje.</p>",
+    uitlegEn:"<p>A handful of little words take a mark purely to tell them apart. The stress is identical either way; only the spelling differs.</p>"+
+      "<p><b>qu\u00e9 / que</b> \u2013 \u00bfQu\u00e9 quieres? versus S\u00e9 que vienes<br>"+
+      "<b>c\u00f3mo / como</b> \u2013 \u00bfC\u00f3mo est\u00e1s? versus Como pan<br>"+
+      "<b>d\u00f3nde / donde \u00b7 cu\u00e1ndo / cuando \u00b7 qui\u00e9n / quien</b> \u2013 the question word takes the mark<br>"+
+      "<b>t\u00fa / tu</b> \u2013 you versus your<br>"+
+      "<b>\u00e9l / el</b> \u2013 he versus the<br>"+
+      "<b>s\u00ed / si</b> \u2013 yes versus if<br>"+
+      "<b>m\u00e1s / mas</b> \u2013 more versus but (that last one is nearly literary-only)</p>"+
+      "<p>Rule of thumb: if there's a question or an exclamation in it, use the mark.</p>",
+    diepKop:"De indirecte vraag, waar het meestal misgaat",
+    diepKopEn:"The indirect question, where it usually goes wrong",
+    diep:"<p>Er staat geen vraagteken, dus het voelt niet als een vraag. Toch zit er een vraag in, en dus komt het streepje er:</p>"+
+      "<p><i>No s\u00e9 <b>d\u00f3nde</b> est\u00e1.</i> \u00b7 <i>Me pregunt\u00f3 <b>cu\u00e1ndo</b> llegaba.</i> \u00b7 <i>No s\u00e9 <b>qu\u00e9</b> hacer.</i></p>"+
+      "<p>Vergelijk met een gewone bijzin zonder vraag: <i>El pueblo <b>donde</b> vivo</i> \u00b7 <i>Lo hago <b>como</b> t\u00fa.</i> Geen vraag, geen streepje.</p>",
+    diepEn:"<p>There's no question mark, so it doesn't feel like a question. Yet a question is embedded in it, so the mark appears:</p>"+
+      "<p><i>No s\u00e9 <b>d\u00f3nde</b> est\u00e1.</i> \u00b7 <i>Me pregunt\u00f3 <b>cu\u00e1ndo</b> llegaba.</i> \u00b7 <i>No s\u00e9 <b>qu\u00e9</b> hacer.</i></p>"+
+      "<p>Compare a plain relative clause with no question: <i>El pueblo <b>donde</b> vivo</i> \u00b7 <i>Lo hago <b>como</b> t\u00fa.</i> No question, no mark.</p>",
+    vragen:[
+     {v:"\u00bf___ quieres comer?", vEn:"\u00bf___ quieres comer?",
+      o:["Que","Qu\u00e9"], g:1,
+      w:"Directe vraag, dus streepje.",
+      wEn:"Direct question, so the mark."},
+     {v:"S\u00e9 ___ vienes ma\u00f1ana.", vEn:"S\u00e9 ___ vienes ma\u00f1ana.",
+      o:["que","qu\u00e9"], g:0,
+      w:"Hier is que gewoon \u201cdat\u201d, geen vraag, dus geen streepje.",
+      wEn:"Here que is simply \u201cthat\u201d, no question, so no mark."},
+     {v:"No s\u00e9 ___ est\u00e1.", vEn:"No s\u00e9 ___ est\u00e1.",
+      o:["donde","d\u00f3nde"], g:1,
+      w:"Indirecte vraag: er staat geen vraagteken, maar er zit wel een vraag in.",
+      wEn:"Indirect question: no question mark, but there's a question inside."},
+     {v:"___ eres mi amigo. (jij)", vEn:"___ eres mi amigo. (you)",
+      o:["Tu","T\u00fa"], g:1,
+      w:"T\u00fa met streepje is het persoonlijk voornaamwoord. Tu zonder streepje is jouw: tu amigo.",
+      wEn:"T\u00fa with the mark is the pronoun. Tu without it is your: tu amigo."}
+    ]}
+  ]}
+];
+
+var gwSess = null; // {id, stap, fase:"uitleg"|"toets"|"stapklaar"|"klaar", vraag, goed, fout, gekozen}
+
+function gwOnderwerp(id){ return GRAMWIZ.filter(function(o){ return o.id === id; })[0] || null; }
+function gwTitel(o){ return ct(o.titel, o.titelEn); }
+function gwPitch(o){ return ct(o.pitch, o.pitchEn); }
+function gwVoortgang(id){
+  S.gramwiz = S.gramwiz || {};
+  if(!S.gramwiz[id]) S.gramwiz[id] = {stap:0, klaar:false, rondes:0};
+  return S.gramwiz[id];
+}
+function gwVraagTekst(q){ return ct(q.v, q.vEn || q.v); }
+function gwOpties(q){ return (profLang() === "nl" || !q.oEn) ? q.o : q.oEn; }
+function gwWaarom(q){ return ct(q.w, q.wEn || q.w); }
+
+function gwStart(id, stap){
+  var o = gwOnderwerp(id);
+  if(!o) return;
+  var v = gwVoortgang(id);
+  var s = typeof stap === "number" ? stap : Math.min(v.stap, o.stappen.length - 1);
+  gwSess = {id:id, stap:s, fase:"uitleg", vraag:0, goed:0, fout:0, gekozen:null};
+  navPush({t:"gramwiz", id:id});
+  renderCheat();
+}
+function gwSluit(){
+  gwSess = null;
+  renderCheat();
+}
+function gwNaarToets(){
+  gwSess.fase = "toets"; gwSess.vraag = 0; gwSess.gekozen = null;
+  renderCheat();
+}
+function gwKies(i){
+  var o = gwOnderwerp(gwSess.id);
+  var stap = o.stappen[gwSess.stap];
+  var q = stap.vragen[gwSess.vraag];
+  if(gwSess.gekozen !== null) return; // al beantwoord
+  gwSess.gekozen = i;
+  if(i === q.g){
+    gwSess.goed++;
+    addXP(2);
+    trackPoging(false);
+  } else {
+    gwSess.fout++;
+    // gaat het normale foutensysteem in, zodat de nachttaak er net als bij elke andere fout
+    // iets mee kan doen; trackPoging(true) zit al in logError()
+    logError(gwSess.id + "-" + gwSess.stap + "-" + gwSess.vraag, "gramwiz", gwSess.id, gwOpties(q)[i]);
+  }
+  persist();
+  renderCheat();
+}
+function gwVolgende(){
+  var o = gwOnderwerp(gwSess.id);
+  var stap = o.stappen[gwSess.stap];
+  if(gwSess.vraag < stap.vragen.length - 1){
+    gwSess.vraag++; gwSess.gekozen = null;
+    renderCheat();
+    return;
+  }
+  // stap afgerond: voortgang alleen vooruit zetten, nooit terug (herhalen mag altijd)
+  var v = gwVoortgang(gwSess.id);
+  if(gwSess.stap + 1 > v.stap) v.stap = Math.min(gwSess.stap + 1, o.stappen.length);
+  if(v.stap >= o.stappen.length && !v.klaar){
+    v.klaar = true;
+    S.tapas = (S.tapas||0) + 3;
+    confetti(["\ud83c\udf93","\u2728","\ud83c\udf89"], 22);
+  }
+  v.rondes = (v.rondes||0) + 1;
+  persist();
+  gwSess.fase = "stapklaar";
+  renderCheat();
+}
+function gwVolgendeStap(){
+  var o = gwOnderwerp(gwSess.id);
+  if(gwSess.stap + 1 < o.stappen.length){
+    gwSess.stap++; gwSess.fase = "uitleg"; gwSess.vraag = 0; gwSess.goed = 0; gwSess.fout = 0; gwSess.gekozen = null;
+    renderCheat();
+  } else {
+    gwSess.fase = "klaar";
+    renderCheat();
+  }
+}
+
+// De onderwerpkaartjes bovenaan de Grammatica-tab
+function gwLijstHtml(){
+  return "<div class='card'><h2>"+ct("Onder de knie krijgen","Really nail it")+" \ud83e\udde0</h2>"+
+    "<p class='muted'>"+ct("Korte wizards: eerst de uitleg, dan meteen toetsen, en de fijne details staan eronder verstopt voor als je ze wilt. Bedoeld om te herhalen, niet om \u00e9\u00e9n keer door te klikken.","Short wizards: explanation first, then straight to questions, with the fine detail tucked away below if you want it. Made for repeating, not for clicking through once.")+"</p>"+
+    GRAMWIZ.map(function(o){
+      var v = gwVoortgang(o.id);
+      var n = o.stappen.length;
+      var status = v.klaar ? ct("afgerond","done") + " \u2713" : (v.stap > 0 ? ct("stap ","step ") + (v.stap+1) + "/" + n : ct("nog niet begonnen","not started yet"));
+      return "<div class='lesson' data-gwstart='"+o.id+"'>"+
+        "<div class='lnum'>"+o.icon+"</div>"+
+        "<div class='lbody'><b>"+gwTitel(o)+"</b><span>"+gwPitch(o)+"</span></div>"+
+        "<div class='lstatus' style='font-size:.75rem; text-align:right'>"+status+"</div></div>";
+    }).join("")+"</div>";
+}
+
+function gwStapNavHtml(o){
+  var v = gwVoortgang(o.id);
+  return "<div class='row' style='gap:5px; flex-wrap:wrap; margin:0 0 10px'>"+
+    o.stappen.map(function(s, i){
+      var bereikt = i <= v.stap;
+      return "<button type='button' class='"+(i===gwSess.stap?"primary":"ghost")+" gw-stapknop' data-gwstap='"+i+"' "+
+        (bereikt ? "" : "disabled ")+"style='padding:5px 10px; font-size:0.8rem; min-width:0'>"+(i+1)+"</button>";
+    }).join("")+"</div>";
+}
+
+function renderGramWiz(){
+  var o = gwOnderwerp(gwSess.id);
+  if(!o){ gwSess = null; return ""; }
+  var stap = o.stappen[gwSess.stap];
+  var kop = "<div class='card'>"+
+    "<span class='kicker'>"+gwTitel(o)+" \u00b7 "+ct("stap ","step ")+(gwSess.stap+1)+"/"+o.stappen.length+"</span>"+
+    "<h2>"+o.icon+" "+ct(stap.kop, stap.kopEn)+"</h2>"+
+    gwStapNavHtml(o);
+  var voet = "</div>";
+
+  if(gwSess.fase === "uitleg"){
+    return kop +
+      "<div class='gwuitleg'>"+ct(stap.uitleg, stap.uitlegEn)+"</div>"+
+      (stap.diep ? "<details class='gwdiep'><summary>\u2139\ufe0f "+ct(stap.diepKop, stap.diepKopEn)+"</summary><div class='inner'>"+ct(stap.diep, stap.diepEn)+"</div></details>" : "")+
+      "<div class='row' style='margin-top:12px'>"+
+        "<button class='primary' id='gwNaarToets'>"+ct("Toets me \u2192","Quiz me \u2192")+"</button>"+
+        "<button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button>"+
+      "</div>" + voet;
+  }
+
+  if(gwSess.fase === "toets"){
+    var q = stap.vragen[gwSess.vraag];
+    var opties = gwOpties(q);
+    var beantwoord = gwSess.gekozen !== null;
+    var html = kop +
+      "<span class='kicker'>"+ct("Vraag ","Question ")+(gwSess.vraag+1)+"/"+stap.vragen.length+"</span>"+
+      "<p class='big' style='margin:6px 0 12px'>"+gwVraagTekst(q)+"</p>"+
+      "<div style='display:flex; flex-direction:column; gap:8px' id='gwOpties'>"+
+      opties.map(function(t, i){
+        var klasse = "ghost";
+        if(beantwoord && i === q.g) klasse = "primary";
+        return "<button type='button' class='"+klasse+" gw-optie' data-gwo='"+i+"' "+(beantwoord?"disabled ":"")+"style='text-align:left'>"+t+"</button>";
+      }).join("")+"</div>";
+    if(beantwoord){
+      var goed = gwSess.gekozen === q.g;
+      html += "<div class='feedback "+(goed?"ok":"fout")+"' style='margin-top:10px'>"+
+        (goed ? "\u00a1Correcto! \u2713 (+2 XP)" : ct("Nog niet. Het juiste antwoord staat gemarkeerd.","Not yet. The right answer is highlighted."))+
+        "</div>"+
+        "<p class='muted' style='margin-top:6px'>"+gwWaarom(q)+"</p>"+
+        "<div class='row' style='margin-top:10px'><button class='primary' id='gwVolgende'>"+
+          (gwSess.vraag < stap.vragen.length - 1 ? ct("Volgende vraag \u2192","Next question \u2192") : ct("Stap afronden \u2192","Finish step \u2192"))+
+        "</button></div>";
+    } else {
+      html += "<div class='row' style='margin-top:10px'><button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button></div>";
+    }
+    return html + voet;
+  }
+
+  if(gwSess.fase === "stapklaar"){
+    var totaal = stap.vragen.length;
+    var perfect = gwSess.goed === totaal;
+    var laatste = gwSess.stap + 1 >= o.stappen.length;
+    return kop +
+      "<div class='feedback "+(perfect ? "ok" : gwSess.goed >= Math.ceil(totaal*0.6) ? "bijna" : "fout")+"'>"+
+        ct("Stap klaar: ","Step done: ")+gwSess.goed+"/"+totaal+
+      "</div>"+
+      (perfect ? "" : "<p class='muted'>"+ct("Klik gerust nog een keer door deze stap heen, dat is precies waar hij voor is.","Feel free to run through this step again, that's exactly what it's for.")+"</p>")+
+      "<div class='row' style='margin-top:10px'>"+
+        "<button class='primary' id='gwVolgendeStap'>"+(laatste ? ct("Afronden \u2192","Wrap up \u2192") : ct("Volgende stap \u2192","Next step \u2192"))+"</button>"+
+        "<button class='ghost' id='gwHerhaal'>"+ct("Deze stap opnieuw","Redo this step")+"</button>"+
+        "<button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button>"+
+      "</div>" + voet;
+  }
+
+  // fase "klaar"
+  return "<div class='card'>"+
+    "<h2>"+o.icon+" "+gwTitel(o)+" \u2713</h2>"+
+    "<div class='feedback ok'>"+ct("Alle stappen doorlopen. ","All steps completed. ")+"</div>"+
+    "<p class='muted'>"+ct("Het echte werk begint hier: kennis van de regel is niet hetzelfde als de vorm eruit krijgen zonder na te denken. Drill de vormen in de Speeltuin en kom hier terug zodra iets weer wiebelt.","The real work starts here: knowing the rule isn't the same as producing the form without thinking. Drill the forms in the Playground and come back whenever something wobbles.")+"</p>"+
+    "<div class='row' style='margin-top:10px'>"+
+      (o.drill ? "<button class='primary' id='gwNaarDrill'>"+ct("Naar de Conjugador \u2192","To the Conjugador \u2192")+"</button>" : "")+
+      "<button class='ghost' id='gwHerhaalAlles'>"+ct("Nog eens vanaf stap 1","Again from step 1")+"</button>"+
+      "<button class='ghost' id='gwSluit'>"+ct("\u2190 Terug","\u2190 Back")+"</button>"+
+    "</div></div>";
+}
+
+function wireGramWiz(el){
+  el.querySelectorAll("[data-gwstart]").forEach(function(d){
+    d.onclick = function(){ gwStart(d.getAttribute("data-gwstart")); };
+  });
+  if(!gwSess) return;
+  var b;
+  b = document.getElementById("gwSluit"); if(b) b.onclick = gwSluit;
+  b = document.getElementById("gwNaarToets"); if(b) b.onclick = gwNaarToets;
+  b = document.getElementById("gwVolgende"); if(b) b.onclick = gwVolgende;
+  b = document.getElementById("gwVolgendeStap"); if(b) b.onclick = gwVolgendeStap;
+  b = document.getElementById("gwHerhaal"); if(b) b.onclick = function(){ gwStart(gwSess.id, gwSess.stap); };
+  b = document.getElementById("gwHerhaalAlles"); if(b) b.onclick = function(){ gwStart(gwSess.id, 0); };
+  b = document.getElementById("gwNaarDrill"); if(b) b.onclick = function(){
+    var o = gwOnderwerp(gwSess.id);
+    S.conjTiempo = (o && o.drill) || "presente"; persist();
+    gwSess = null;
+    funView = "conj"; conjIdx = null; conjRonde = null;
+    show("speeltuin");
+  };
+  el.querySelectorAll(".gw-optie").forEach(function(x){
+    x.onclick = function(){ gwKies(parseInt(x.getAttribute("data-gwo"), 10)); };
+  });
+  el.querySelectorAll(".gw-stapknop").forEach(function(x){
+    x.onclick = function(){ if(!x.disabled) gwStart(gwSess.id, parseInt(x.getAttribute("data-gwstap"), 10)); };
+  });
+}
+
 /* ================= SPIEKBRIEF ================= */
 function quizzenBijSpiek(idx){
   // welke toetsjes horen bij dit spiekbrief-onderwerp?
@@ -10087,7 +10807,14 @@ function quizzenBijSpiek(idx){
 }
 function renderCheat(){
   var el = document.getElementById("cheat");
-  el.innerHTML = "<div class='card'><h2>"+ct("Grammatica","Grammar")+" 📝</h2>"+
+  // Miniwizard (v19.44) staat bovenaan de Grammatica-tab. Loopt er een wizard, dan neemt die de hele
+  // tab over; anders staan de onderwerpkaartjes boven de gewone spiekbrieven.
+  if(gwSess){
+    el.innerHTML = renderGramWiz();
+    wireGramWiz(el);
+    return;
+  }
+  el.innerHTML = gwLijstHtml() + "<div class='card'><h2>"+ct("Grammatica","Grammar")+" 📝</h2>"+
     "<p class='muted'>"+ct("De spiekbrieven van jouw lessen, per onderwerp uitklapbaar. Woorden opzoeken? Gebruik het 📖-knopje rechtsonder.","The cheat sheets from your lessons, expandable per topic. Looking up words? Use the 📖 button at the bottom right.")+"</p>"+
     CHEATSHEET.map(function(c, i){
       var qs = quizzenBijSpiek(i);
@@ -10106,6 +10833,7 @@ function renderCheat(){
       startQuiz(qid);
     };
   });
+  wireGramWiz(el);
 }
 
 /* ================= VOORTGANG ================= */
@@ -10425,11 +11153,19 @@ function show(tabId, skipPush){
     window.addEventListener("popstate", function(e){
       var st = e.state;
       if(!activeProfile()) return;
-      if(!st){ show("lessen", true); return; }
+      if(!st){ gwSess = null; show("lessen", true); return; }
       if(st.t === "tab"){
         if(st.id === "speeltuin"){ funView = null; duelCur = null; }
+        if(st.id !== "spiekbrief"){ gwSess = null; }
         scopeLesson = null;
         show(st.id, true);
+      } else if(st.t === "gramwiz"){
+        var gwo = gwOnderwerp(st.id);
+        if(gwo){
+          var gwv = gwVoortgang(st.id);
+          gwSess = {id:st.id, stap:Math.min(gwv.stap, gwo.stappen.length - 1), fase:"uitleg", vraag:0, goed:0, fout:0, gekozen:null};
+        }
+        show("spiekbrief", true);
       } else if(st.t === "les"){
         show("lessen", true);
         var l = findLesson(st.id);
