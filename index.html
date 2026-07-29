@@ -465,7 +465,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.44";
+var APP_VERSIE = "v19.45";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3914,6 +3914,46 @@ var VERBOS_PASADO = {
   sentir:    {i:["sent\u00ed","sentiste","sinti\u00f3","sentimos","sentisteis","sintieron"], part:"sentido"},
   preferir:  {i:["prefer\u00ed","preferiste","prefiri\u00f3","preferimos","preferisteis","prefirieron"], part:"preferido"}
 };
+/* presente de subjuntivo, aparte tabel op infinitief (zelfde keuze als VERBOS_PASADO:
+   VERBOS zelf staat vol accenten en werd al door de presente-Conjugador gebruikt).
+   Truc achter de vormen: yo-vorm van de presente, -o eraf, omgekeerde uitgangen erop.
+   Uitzonderingen die daar niet uit volgen: ser, ir, haber, saber, estar, dar. */
+var VERBOS_SUBJ = {
+  hablar: ["hable", "hables", "hable", "hablemos", "habl\u00e9is", "hablen"],
+  trabajar: ["trabaje", "trabajes", "trabaje", "trabajemos", "trabaj\u00e9is", "trabajen"],
+  estudiar: ["estudie", "estudies", "estudie", "estudiemos", "estudi\u00e9is", "estudien"],
+  comprar: ["compre", "compres", "compre", "compremos", "compr\u00e9is", "compren"],
+  comer: ["coma", "comas", "coma", "comamos", "com\u00e1is", "coman"],
+  aprender: ["aprenda", "aprendas", "aprenda", "aprendamos", "aprend\u00e1is", "aprendan"],
+  leer: ["lea", "leas", "lea", "leamos", "le\u00e1is", "lean"],
+  beber: ["beba", "bebas", "beba", "bebamos", "beb\u00e1is", "beban"],
+  vivir: ["viva", "vivas", "viva", "vivamos", "viv\u00e1is", "vivan"],
+  escribir: ["escriba", "escribas", "escriba", "escribamos", "escrib\u00e1is", "escriban"],
+  abrir: ["abra", "abras", "abra", "abramos", "abr\u00e1is", "abran"],
+  ser: ["sea", "seas", "sea", "seamos", "se\u00e1is", "sean"],
+  estar: ["est\u00e9", "est\u00e9s", "est\u00e9", "estemos", "est\u00e9is", "est\u00e9n"],
+  tener: ["tenga", "tengas", "tenga", "tengamos", "teng\u00e1is", "tengan"],
+  ir: ["vaya", "vayas", "vaya", "vayamos", "vay\u00e1is", "vayan"],
+  hacer: ["haga", "hagas", "haga", "hagamos", "hag\u00e1is", "hagan"],
+  poder: ["pueda", "puedas", "pueda", "podamos", "pod\u00e1is", "puedan"],
+  querer: ["quiera", "quieras", "quiera", "queramos", "quer\u00e1is", "quieran"],
+  decir: ["diga", "digas", "diga", "digamos", "dig\u00e1is", "digan"],
+  saber: ["sepa", "sepas", "sepa", "sepamos", "sep\u00e1is", "sepan"],
+  poner: ["ponga", "pongas", "ponga", "pongamos", "pong\u00e1is", "pongan"],
+  salir: ["salga", "salgas", "salga", "salgamos", "salg\u00e1is", "salgan"],
+  venir: ["venga", "vengas", "venga", "vengamos", "veng\u00e1is", "vengan"],
+  dar: ["d\u00e9", "des", "d\u00e9", "demos", "deis", "den"],
+  ver: ["vea", "veas", "vea", "veamos", "ve\u00e1is", "vean"],
+  jugar: ["juegue", "juegues", "juegue", "juguemos", "jugu\u00e9is", "jueguen"],
+  pedir: ["pida", "pidas", "pida", "pidamos", "pid\u00e1is", "pidan"],
+  dormir: ["duerma", "duermas", "duerma", "durmamos", "durm\u00e1is", "duerman"],
+  empezar: ["empiece", "empieces", "empiece", "empecemos", "empec\u00e9is", "empiecen"],
+  volver: ["vuelva", "vuelvas", "vuelva", "volvamos", "volv\u00e1is", "vuelvan"],
+  pensar: ["piense", "pienses", "piense", "pensemos", "pens\u00e9is", "piensen"],
+  sentir: ["sienta", "sientas", "sienta", "sintamos", "sint\u00e1is", "sientan"],
+  preferir: ["prefiera", "prefieras", "prefiera", "prefiramos", "prefir\u00e1is", "prefieran"]
+};
+
 var CONJ_PRONOMBRES = ["yo","tú","él / ella / usted","nosotros / nosotras","vosotros / vosotras","ellos / ellas / ustedes"];
 var CONJ_RONDE_LEN = 10;
 var conjIdx = null; // {verb, p, t} - t = de tijd van deze opgave ("presente" / "indefinido" / "perfecto")
@@ -3922,15 +3962,16 @@ var cjModusOverride = null; // (historisch) per-item override; sinds 29 juli win
 // Tijdkeuze (29 juli, v19.44). Blijft staan in S.conjTiempo, dus over sessies en apparaten heen.
 // "mix" trekt per opgave opnieuw uit alle drie de tijden: dat is precies de moeilijkheid die Stefan
 // noemde (niet elke vorm los kennen, maar ze uit elkaar houden als ze door elkaar komen).
-var CONJ_TIEMPOS = ["presente","indefinido","perfecto","mix"];
+var CONJ_TIEMPOS = ["presente","indefinido","perfecto","subjuntivo","mix"];
 function conjTiempoKeuze(){ return (S.conjTiempo && CONJ_TIEMPOS.indexOf(S.conjTiempo) !== -1) ? S.conjTiempo : "presente"; }
 function conjTiempoActief(){
   var k = conjTiempoKeuze();
   if(k !== "mix") return k;
-  var opts = ["presente","indefinido","perfecto"];
+  var opts = ["presente","indefinido","perfecto","subjuntivo"];
   return opts[Math.floor(Math.random()*opts.length)];
 }
 function conjVorm(v, p, t){
+  if(t === "subjuntivo"){ var sv = VERBOS_SUBJ[v.inf]; if(sv) return sv[p]; return v.presente[p]; }
   var d = VERBOS_PASADO[v.inf];
   if(t === "indefinido" && d) return d.i[p];
   if(t === "perfecto" && d) return HABER_PRES[p] + " " + d.part;
@@ -3944,6 +3985,7 @@ function conjAlleVormen(v, t){
 // presente houdt de oude sleutel (zonder tijd), zodat foutenlogs van v\u00f3\u00f3r v19.44 blijven werken
 function conjErrKey(v, p, t){ return (t && t !== "presente") ? v.inf+"-"+p+"-"+t : v.inf+"-"+p; }
 function conjTiempoLabel(t){
+  if(t === "subjuntivo") return "presente de subjuntivo";
   if(t === "indefinido") return "pret\u00e9rito indefinido";
   if(t === "perfecto") return "pret\u00e9rito perfecto";
   return "presente";
@@ -3962,7 +4004,8 @@ function cjMeerkeuzeOpties(v, p, t){
 }
 function conjVerbPool(t){
   if(t === "presente") return VERBOS;
-  var pool = VERBOS.filter(function(v){ return !!VERBOS_PASADO[v.inf]; });
+  var tabel = (t === "subjuntivo") ? VERBOS_SUBJ : VERBOS_PASADO;
+  var pool = VERBOS.filter(function(v){ return !!tabel[v.inf]; });
   return pool.length ? pool : VERBOS;
 }
 function pickConjugacion(){
@@ -3981,7 +4024,7 @@ function pickConjugacion(){
 }
 function conjTiempoKiezerHtml(){
   var k = conjTiempoKeuze();
-  var opts = [["presente","presente"],["indefinido","indefinido"],["perfecto","perfecto"],["mix","mix \ud83c\udfb2"]];
+  var opts = [["presente","presente"],["indefinido","indefinido"],["perfecto","perfecto"],["subjuntivo","subjuntivo"],["mix","mix \ud83c\udfb2"]];
   return "<div class='row' id='cjTiempo' style='gap:6px; margin:2px 0 8px; flex-wrap:wrap'>"+
     opts.map(function(o){
       return "<button type='button' class='"+(k===o[0]?"primary":"ghost")+" cj-tiempo' data-t='"+o[0]+"' style='padding:6px 12px; font-size:0.82rem; min-width:0'>"+o[1]+"</button>";
@@ -10570,6 +10613,913 @@ var GRAMWIZ = [
       o:["Tu","T\u00fa"], g:1,
       w:"T\u00fa met streepje is het persoonlijk voornaamwoord. Tu zonder streepje is jouw: tu amigo.",
       wEn:"T\u00fa with the mark is the pronoun. Tu without it is your: tu amigo."}
+    ]}
+  ]},
+ {id:"serestar", icon:"\u2696\ufe0f", drill:null,
+  titel:"Ser vs. estar", titelEn:"Ser vs. estar",
+  pitch:"Twee werkwoorden voor \u00e9\u00e9n Nederlands \"zijn\". Vergeet \"permanent vs. tijdelijk\", dat klopt niet.",
+  pitchEn:"Two verbs for one English \"to be\". Forget \"permanent vs. temporary\", it doesn't hold up.",
+  stappen:[
+   {kop:"Wat het echt is: categorie vs. toestand",
+    kopEn:"What it really is: category vs. state",
+    uitleg:"<p>Bijna elk leerboek zegt: <b>ser</b> is permanent, <b>estar</b> is tijdelijk. Dat is een halve waarheid die je uiteindelijk in de weg gaat zitten. Twee tegenvoorbeelden die het meteen omver duwen: <i>est\u00e1 muerto</i> (hij is dood) is behoorlijk permanent en toch estar. En <i>es joven</i> (hij is jong) is per definitie tijdelijk en toch ser.</p>"+
+     "<p>De regel die w\u00e9l werkt: <b>ser plaatst iets in een categorie</b>, <b>estar beschrijft de toestand waarin het zich bevindt</b>. Ser antwoordt op \"wat/wie is dit?\", estar op \"hoe/waar is dit nu?\"</p>"+
+     "<p><i>Soy holand\u00e9s</i>: ik val in de categorie Nederlanders. <i>Estoy cansado</i>: mijn toestand is moe. <i>La sopa es salada</i>: het is zoute soep, dat is het soort soep. <i>La sopa est\u00e1 salada</i>: deze soep is te zout geworden, dat is de toestand van dit bord.</p>"+
+     "<p>Kleine truc voor het gevoel: bij ser hoor je een definitie, bij estar hoor je een momentopname.</p>",
+    uitlegEn:"<p>Almost every textbook says: <b>ser</b> is permanent, <b>estar</b> is temporary. That's a half-truth that eventually gets in your way. Two counterexamples that knock it over immediately: <i>est\u00e1 muerto</i> (he is dead) is pretty permanent and still estar. And <i>es joven</i> (he is young) is temporary by definition and still ser.</p>"+
+     "<p>The rule that does work: <b>ser puts something in a category</b>, <b>estar describes the state it is in</b>. Ser answers \"what/who is this?\", estar answers \"how/where is it right now?\"</p>"+
+     "<p><i>Soy holand\u00e9s</i>: I belong to the category Dutch people. <i>Estoy cansado</i>: my state is tired. <i>La sopa es salada</i>: it's salty soup, that's the kind of soup. <i>La sopa est\u00e1 salada</i>: this soup came out too salty, that's the state of this bowl.</p>"+
+     "<p>Small trick for the feel: with ser you hear a definition, with estar you hear a snapshot.</p>",
+    diepKop:"Waarom \"permanent vs. tijdelijk\" zo hardnekkig is",
+    diepKopEn:"Why \"permanent vs. temporary\" is so sticky",
+    diep:"<p>De vuistregel werkt in misschien tachtig procent van de gevallen, en dat is precies het probleem: hij werkt lang genoeg om je te laten denken dat je het snapt, en faalt dan bij de gevallen waar het uitmaakt.</p>"+
+     "<p>Waar hij faalt: <i>est\u00e1 muerto</i>, <i>est\u00e1 roto</i> (kapot), <i>es joven</i>, <i>es rico</i> (rijk, categorie) tegenover <i>est\u00e1 rico</i> (lekker, toestand van dit gerecht). Ook <i>ser soltero</i> (ongetrouwd zijn) is ser, hoewel dat hopelijk verandert.</p>"+
+     "<p>Duidelijker frame: estar hoort bij dingen die je kunt tegenkomen als resultaat, gevolg of positie. Ser hoort bij het label dat je iets geeft als je uitlegt wat het is. Bij <i>est\u00e1 muerto</i> is dood het resultaat van sterven, niet de categorie waarin iemand valt.</p>",
+    diepEn:"<p>The rule of thumb works in maybe eighty percent of cases, and that's exactly the problem: it works long enough to make you think you've got it, then fails on the cases where it matters.</p>"+
+     "<p>Where it fails: <i>est\u00e1 muerto</i>, <i>est\u00e1 roto</i> (broken), <i>es joven</i>, <i>es rico</i> (rich, category) versus <i>est\u00e1 rico</i> (delicious, state of this dish). Also <i>ser soltero</i> (to be single) takes ser, though hopefully that changes.</p>"+
+     "<p>Clearer frame: estar goes with things you can encounter as a result, consequence or position. Ser goes with the label you give something when explaining what it is. In <i>est\u00e1 muerto</i>, dead is the result of dying, not the category a person falls into.</p>",
+    vragen:[
+     {v:"Welke regel houdt in de praktijk stand?", vEn:"Which rule actually holds up?",
+      o:["Ser = permanent, estar = tijdelijk","Ser = categorie, estar = toestand","Ser = mensen, estar = dingen","Ser = tegenwoordige tijd, estar = verleden"],
+      oEn:["Ser = permanent, estar = temporary","Ser = category, estar = state","Ser = people, estar = things","Ser = present, estar = past"],
+      g:1,
+      w:"Categorie vs. toestand. \"Permanent vs. tijdelijk\" sneuvelt op est\u00e1 muerto en es joven.",
+      wEn:"Category vs. state. \"Permanent vs. temporary\" dies on est\u00e1 muerto and es joven."},
+     {v:"\"Hij is dood.\"", vEn:"\"He is dead.\"",
+      o:["Es muerto.","Est\u00e1 muerto."], g:1,
+      w:"Dood is het resultaat van sterven, dus een toestand: estar. Permanent, maar toch estar.",
+      wEn:"Dead is the result of dying, so a state: estar. Permanent, yet estar."},
+     {v:"\"Zij is jong.\"", vEn:"\"She is young.\"",
+      o:["Es joven.","Est\u00e1 joven."], g:0,
+      w:"Leeftijdscategorie: ser. Tijdelijk, maar toch ser. (Est\u00e1 joven bestaat wel: ze ziet er jong uit.)",
+      wEn:"Age category: ser. Temporary, yet ser. (Est\u00e1 joven does exist: she looks young.)"},
+     {v:"Je hebt de soep gekookt en er te veel zout in gedaan. \"De soep is te zout.\"", vEn:"You cooked the soup and put in too much salt. \"The soup is too salty.\"",
+      o:["La sopa es muy salada.","La sopa est\u00e1 muy salada."], g:1,
+      w:"Deze specifieke pan is zo geworden: toestand, estar. Met ser zeg je dat het per definitie zoute soep is.",
+      wEn:"This specific pot turned out that way: state, estar. With ser you'd say it's salty soup by definition."},
+     {v:"Wat vraag je met estar?", vEn:"What are you asking with estar?",
+      o:["Wat of wie is dit?","Hoe of waar is dit nu?","Van wie is dit?","Hoe lang duurt dit?"],
+      oEn:["What or who is this?","How or where is it right now?","Whose is this?","How long does it last?"],
+      g:1,
+      w:"Estar geeft een momentopname: toestand of positie.",
+      wEn:"Estar gives a snapshot: state or position."}
+    ]},
+   {kop:"De vaste vakjes",
+    kopEn:"The fixed boxes",
+    uitleg:"<p>Naast het gevoel zijn er vakjes die altijd hetzelfde werkwoord pakken. Die kun je gewoon uit je hoofd leren, dan hoef je er nooit meer over na te denken.</p>"+
+     "<p><b>Altijd ser:</b><br>"+
+     "identiteit en naam: <i>Soy Stefan.</i><br>"+
+     "beroep: <i>Es profesora.</i><br>"+
+     "nationaliteit en herkomst: <i>Somos de Holanda.</i><br>"+
+     "materiaal: <i>La mesa es de madera.</i><br>"+
+     "bezit: <i>El libro es de Ana.</i><br>"+
+     "tijd, dag en datum: <i>Son las tres. Hoy es martes.</i><br>"+
+     "vaste prijs: <i>\u00bfCu\u00e1nto es? Son diez euros.</i><br>"+
+     "relaties: <i>Es mi hermano.</i></p>"+
+     "<p><b>Altijd estar:</b><br>"+
+     "plaats van iets of iemand: <i>Madrid est\u00e1 en Espa\u00f1a. Estoy en casa.</i><br>"+
+     "humeur en gevoel: <i>Est\u00e1 triste.</i><br>"+
+     "tijdelijke lichamelijke toestand: <i>Estoy enfermo.</i><br>"+
+     "estar + gerundio: <i>Estoy comiendo.</i><br>"+
+     "resultaat van een handeling: <i>La puerta est\u00e1 abierta.</i><br>"+
+     "burgerlijke staat in de praktijk: <i>Est\u00e1 casado.</i> (ook <i>es casado</i> hoor je, maar estar is gangbaarder)</p>"+
+     "<p>Let op die laatste ser-groep: prijs. <i>Son diez euros</i> is de prijs, <i>est\u00e1 a diez euros</i> is de prijs van vandaag op de markt.</p>",
+    uitlegEn:"<p>Beyond the feel there are boxes that always take the same verb. You can simply memorise those, then you never have to think about them again.</p>"+
+     "<p><b>Always ser:</b><br>"+
+     "identity and name: <i>Soy Stefan.</i><br>"+
+     "profession: <i>Es profesora.</i><br>"+
+     "nationality and origin: <i>Somos de Holanda.</i><br>"+
+     "material: <i>La mesa es de madera.</i><br>"+
+     "possession: <i>El libro es de Ana.</i><br>"+
+     "time, day and date: <i>Son las tres. Hoy es martes.</i><br>"+
+     "fixed price: <i>\u00bfCu\u00e1nto es? Son diez euros.</i><br>"+
+     "relationships: <i>Es mi hermano.</i></p>"+
+     "<p><b>Always estar:</b><br>"+
+     "location of a thing or person: <i>Madrid est\u00e1 en Espa\u00f1a. Estoy en casa.</i><br>"+
+     "mood and feeling: <i>Est\u00e1 triste.</i><br>"+
+     "temporary physical state: <i>Estoy enfermo.</i><br>"+
+     "estar + gerund: <i>Estoy comiendo.</i><br>"+
+     "result of an action: <i>La puerta est\u00e1 abierta.</i><br>"+
+     "marital status in practice: <i>Est\u00e1 casado.</i> (you also hear <i>es casado</i>, but estar is more common)</p>"+
+     "<p>Watch that last ser group: price. <i>Son diez euros</i> is the price, <i>est\u00e1 a diez euros</i> is today's market price.</p>",
+    diepKop:"De uitzondering die iedereen fout doet: evenementen",
+    diepKopEn:"The exception everyone gets wrong: events",
+    diep:"<p>Plaats is estar. Behalve als het om een <b>gebeurtenis</b> gaat, dan is het ser.</p>"+
+     "<p><i>Madrid est\u00e1 en Espa\u00f1a.</i> Een stad staat ergens: estar.<br>"+
+     "<i>El concierto es en el parque.</i> Een concert is een gebeurtenis: ser.<br>"+
+     "<i>La reuni\u00f3n es en mi oficina.</i> Ook een gebeurtenis: ser.</p>"+
+     "<p>Logica erachter: een gebeurtenis staat niet ergens, hij <i>vindt plaats</i>. Ser gedraagt zich hier als \"vindt plaats\", niet als \"bevindt zich\". Vergelijk: <i>La fiesta es en mi casa</i> (het feest is bij mij) tegenover <i>La comida est\u00e1 en mi casa</i> (het eten staat bij mij).</p>"+
+     "<p>Test: kun je \"vindt plaats\" invullen? Dan ser. Kun je \"ligt/staat\" invullen? Dan estar.</p>",
+    diepEn:"<p>Location is estar. Except when it's an <b>event</b>, then it's ser.</p>"+
+     "<p><i>Madrid est\u00e1 en Espa\u00f1a.</i> A city sits somewhere: estar.<br>"+
+     "<i>El concierto es en el parque.</i> A concert is an event: ser.<br>"+
+     "<i>La reuni\u00f3n es en mi oficina.</i> Also an event: ser.</p>"+
+     "<p>The logic: an event doesn't sit somewhere, it <i>takes place</i>. Ser behaves like \"takes place\" here, not like \"is located\". Compare: <i>La fiesta es en mi casa</i> (the party is at my place) versus <i>La comida est\u00e1 en mi casa</i> (the food is at my place).</p>"+
+     "<p>Test: can you substitute \"takes place\"? Then ser. Can you substitute \"is located\"? Then estar.</p>",
+    vragen:[
+     {v:"\"Ik ben lerares.\"", vEn:"\"I am a teacher.\"",
+      o:["Soy profesora.","Estoy profesora."], g:0,
+      w:"Beroep is een categorie: altijd ser. Estoy profesora bestaat niet.",
+      wEn:"Profession is a category: always ser. Estoy profesora does not exist."},
+     {v:"\"Ik ben thuis.\"", vEn:"\"I am at home.\"",
+      o:["Soy en casa.","Estoy en casa."], g:1,
+      w:"Plaats is estar. Soy en casa is een van de klassiekste beginnersfouten.",
+      wEn:"Location is estar. Soy en casa is one of the classic beginner mistakes."},
+     {v:"\"De tafel is van hout.\"", vEn:"\"The table is made of wood.\"",
+      o:["La mesa es de madera.","La mesa est\u00e1 de madera."], g:0,
+      w:"Materiaal is ser: waar iets van gemaakt is, hoort bij wat het is.",
+      wEn:"Material takes ser: what something is made of belongs to what it is."},
+     {v:"\"Het is drie uur.\"", vEn:"\"It's three o'clock.\"",
+      o:["Est\u00e1n las tres.","Son las tres."], g:1,
+      w:"Tijd, dag en datum: altijd ser. Son las tres, hoy es martes.",
+      wEn:"Time, day and date: always ser. Son las tres, hoy es martes."},
+     {v:"\"Het concert is in het park.\"", vEn:"\"The concert is in the park.\"",
+      o:["El concierto est\u00e1 en el parque.","El concierto es en el parque."], g:1,
+      w:"Een gebeurtenis vindt plaats, dus ser. Vergelijk Madrid est\u00e1 en Espa\u00f1a.",
+      wEn:"An event takes place, so ser. Compare Madrid est\u00e1 en Espa\u00f1a."},
+     {v:"\"Het boek is van Ana.\"", vEn:"\"The book is Ana's.\"",
+      o:["El libro es de Ana.","El libro est\u00e1 de Ana."], g:0,
+      w:"Bezit is ser. Est\u00e1 de Ana betekent niets.",
+      wEn:"Possession takes ser. Est\u00e1 de Ana means nothing."},
+     {v:"\"De deur staat open.\"", vEn:"\"The door is open.\"",
+      o:["La puerta es abierta.","La puerta est\u00e1 abierta."], g:1,
+      w:"Resultaat van openen: estar. Es abierta zou betekenen dat de deur van nature open is.",
+      wEn:"Result of opening: estar. Es abierta would mean the door is open by nature."},
+     {v:"\"De vergadering is in mijn kantoor.\"", vEn:"\"The meeting is in my office.\"",
+      o:["La reuni\u00f3n es en mi oficina.","La reuni\u00f3n est\u00e1 en mi oficina."], g:0,
+      w:"Gebeurtenis: ser. Test met \"vindt plaats\", dat past hier.",
+      wEn:"Event: ser. Test with \"takes place\", it fits here."}
+    ]},
+   {kop:"Bijvoeglijke naamwoorden die van betekenis veranderen",
+    kopEn:"Adjectives that change meaning",
+    uitleg:"<p>Bij een groep bijvoeglijke naamwoorden verandert de <b>betekenis</b> als je van werkwoord wisselt. Hier is een verkeerde keuze niet lelijk Spaans, het is iets anders zeggen.</p>"+
+     "<p><i>listo</i>: <b>es listo</b> = slim &nbsp;|&nbsp; <b>est\u00e1 listo</b> = klaar<br>"+
+     "<i>aburrido</i>: <b>es aburrido</b> = saai &nbsp;|&nbsp; <b>est\u00e1 aburrido</b> = verveelt zich<br>"+
+     "<i>bueno</i>: <b>es bueno</b> = goed van aard &nbsp;|&nbsp; <b>est\u00e1 bueno</b> = lekker (of aantrekkelijk)<br>"+
+     "<i>malo</i>: <b>es malo</b> = slecht, gemeen &nbsp;|&nbsp; <b>est\u00e1 malo</b> = ziek (of bedorven)<br>"+
+     "<i>rico</i>: <b>es rico</b> = rijk &nbsp;|&nbsp; <b>est\u00e1 rico</b> = lekker<br>"+
+     "<i>verde</i>: <b>es verde</b> = groen van kleur &nbsp;|&nbsp; <b>est\u00e1 verde</b> = onrijp<br>"+
+     "<i>vivo</i>: <b>es vivo</b> = pienter &nbsp;|&nbsp; <b>est\u00e1 vivo</b> = leeft<br>"+
+     "<i>guapa</i>: <b>es guapa</b> = ze is mooi &nbsp;|&nbsp; <b>est\u00e1 guapa</b> = ze ziet er vandaag mooi uit<br>"+
+     "<i>callado</i>: <b>es callado</b> = zwijgzaam type &nbsp;|&nbsp; <b>est\u00e1 callado</b> = zegt nu niets</p>"+
+     "<p>Het patroon zit erin: ser geeft het karakter, estar geeft de situatie. <i>Es listo</i> is een eigenschap, <i>est\u00e1 listo</i> is een status van dit moment.</p>",
+    uitlegEn:"<p>With a group of adjectives the <b>meaning</b> changes when you switch verbs. Here a wrong choice isn't ugly Spanish, it's saying something else.</p>"+
+     "<p><i>listo</i>: <b>es listo</b> = clever &nbsp;|&nbsp; <b>est\u00e1 listo</b> = ready<br>"+
+     "<i>aburrido</i>: <b>es aburrido</b> = boring &nbsp;|&nbsp; <b>est\u00e1 aburrido</b> = bored<br>"+
+     "<i>bueno</i>: <b>es bueno</b> = good-natured &nbsp;|&nbsp; <b>est\u00e1 bueno</b> = tasty (or attractive)<br>"+
+     "<i>malo</i>: <b>es malo</b> = bad, mean &nbsp;|&nbsp; <b>est\u00e1 malo</b> = ill (or gone off)<br>"+
+     "<i>rico</i>: <b>es rico</b> = rich &nbsp;|&nbsp; <b>est\u00e1 rico</b> = delicious<br>"+
+     "<i>verde</i>: <b>es verde</b> = green in colour &nbsp;|&nbsp; <b>est\u00e1 verde</b> = unripe<br>"+
+     "<i>vivo</i>: <b>es vivo</b> = sharp-witted &nbsp;|&nbsp; <b>est\u00e1 vivo</b> = alive<br>"+
+     "<i>guapa</i>: <b>es guapa</b> = she is beautiful &nbsp;|&nbsp; <b>est\u00e1 guapa</b> = she looks great today<br>"+
+     "<i>callado</i>: <b>es callado</b> = a quiet type &nbsp;|&nbsp; <b>est\u00e1 callado</b> = isn't speaking right now</p>"+
+     "<p>The pattern is there: ser gives the character, estar gives the situation. <i>Es listo</i> is a trait, <i>est\u00e1 listo</i> is a status right now.</p>",
+    diepKop:"Waarom dit erger is dan een gewone fout",
+    diepKopEn:"Why this is worse than an ordinary mistake",
+    diep:"<p>Bij <i>soy en casa</i> hoort iedereen dat je een fout maakt en begrijpt wat je bedoelt. Bij deze groep hoort niemand een fout, want je zin is correct Spaans, alleen niet wat je wilde zeggen.</p>"+
+     "<p>Praktische ongelukjes: tegen iemands vader zeggen <i>tu hija est\u00e1 muy buena</i> in plaats van <i>es muy buena</i>. Of tegen je gastheer <i>la comida es rica</i> zeggen als je dit gerecht bedoelt (dat klinkt als een algemene uitspraak over de keuken van dat land) waar <i>est\u00e1 rica</i> het compliment is dat je bedoelt.</p>"+
+     "<p>Trainingsadvies: leer deze woorden altijd in paren, nooit los. Niet \"listo = klaar\", maar \"es listo slim, est\u00e1 listo klaar\". Zonder het paar sla je de helft op en trekt je hoofd bij de andere helft de verkeerde conclusie.</p>",
+    diepEn:"<p>With <i>soy en casa</i> everyone hears the mistake and still gets your meaning. With this group nobody hears a mistake, because your sentence is correct Spanish, just not what you meant.</p>"+
+     "<p>Practical accidents: telling someone's father <i>tu hija est\u00e1 muy buena</i> instead of <i>es muy buena</i>. Or telling your host <i>la comida es rica</i> when you mean this dish (that sounds like a general claim about that country's cuisine) where <i>est\u00e1 rica</i> is the compliment you intended.</p>"+
+     "<p>Training advice: always learn these words in pairs, never alone. Not \"listo = ready\", but \"es listo clever, est\u00e1 listo ready\". Without the pair you store half and your brain draws the wrong conclusion about the other half.</p>",
+    vragen:[
+     {v:"\"Ben je klaar? We gaan!\"", vEn:"\"Are you ready? Let's go!\"",
+      o:["\u00bfEres listo?","\u00bfEst\u00e1s listo?"], g:1,
+      w:"Est\u00e1s listo = ben je klaar. Eres listo zou betekenen: ben je slim?",
+      wEn:"Est\u00e1s listo = are you ready. Eres listo would mean: are you clever?"},
+     {v:"Wat betekent \"Est\u00e1 aburrido\"?", vEn:"What does \"Est\u00e1 aburrido\" mean?",
+      o:["Hij is een saaie man","Hij verveelt zich","Hij is moe","Hij is boos"],
+      oEn:["He is a boring man","He is bored","He is tired","He is angry"],
+      g:1,
+      w:"Estar = toestand, dus verveelt zich. Es aburrido = saai type.",
+      wEn:"Estar = state, so bored. Es aburrido = a boring person."},
+     {v:"Je eet bij iemand thuis en het gerecht is heerlijk.", vEn:"You're eating at someone's home and the dish is delicious.",
+      o:["\u00a1Es muy rico!","\u00a1Est\u00e1 muy rico!"], g:1,
+      w:"Est\u00e1 rico = lekker. Es rico = rijk, of een algemene uitspraak over dat soort eten.",
+      wEn:"Est\u00e1 rico = delicious. Es rico = rich, or a general claim about that kind of food."},
+     {v:"Wat betekent \"El pl\u00e1tano est\u00e1 verde\"?", vEn:"What does \"El pl\u00e1tano est\u00e1 verde\" mean?",
+      o:["De banaan heeft een groene kleur","De banaan is nog niet rijp","De banaan is biologisch","De banaan is rot"],
+      oEn:["The banana is green in colour","The banana isn't ripe yet","The banana is organic","The banana is rotten"],
+      g:1,
+      w:"Est\u00e1 verde = onrijp. Es verde zou over de kleur gaan.",
+      wEn:"Est\u00e1 verde = unripe. Es verde would be about the colour."},
+     {v:"\"Mijn zoon is ziek.\"", vEn:"\"My son is ill.\"",
+      o:["Mi hijo es malo.","Mi hijo est\u00e1 malo."], g:1,
+      w:"Est\u00e1 malo = ziek. Es malo = hij is stout of gemeen. Groot verschil.",
+      wEn:"Est\u00e1 malo = ill. Es malo = he's naughty or mean. Big difference."},
+     {v:"Je wil zeggen dat je vriendin er vandaag prachtig uitziet.", vEn:"You want to say your girlfriend looks gorgeous today.",
+      o:["\u00a1Eres muy guapa!","\u00a1Est\u00e1s muy guapa!"], g:1,
+      w:"Est\u00e1s guapa gaat over vandaag. Eres guapa is een uitspraak over hoe ze altijd is (ook prima, maar iets anders).",
+      wEn:"Est\u00e1s guapa is about today. Eres guapa is a claim about how she always is (also fine, but different)."}
+    ]},
+   {kop:"Estar + gerundio en de Nederlandse valkuilen",
+    kopEn:"Estar + gerund and the Dutch pitfalls",
+    uitleg:"<p><b>estar + gerundio</b> is de vorm voor iets dat op dit moment aan de gang is. Ser komt hier nooit voor.</p>"+
+     "<p><i>Estoy comiendo.</i> Ik ben aan het eten.<br>"+
+     "<i>\u00bfQu\u00e9 est\u00e1s haciendo?</i> Wat ben je aan het doen?<br>"+
+     "<i>Estaban durmiendo.</i> Ze lagen te slapen.</p>"+
+     "<p>Gerundio maak je zo: -ar wordt <b>-ando</b> (hablar \u2192 hablando), -er en -ir worden <b>-iendo</b> (comer \u2192 comiendo, vivir \u2192 viviendo).</p>"+
+     "<p><b>De drie fouten die Nederlanders het vaakst maken:</b></p>"+
+     "<p>1. <i>Soy en casa</i> in plaats van <i>estoy en casa</i>. Plaats is altijd estar.<br>"+
+     "2. <i>Estoy profesor</i> in plaats van <i>soy profesor</i>. Beroep is altijd ser.<br>"+
+     "3. <i>La puerta es abierta</i> in plaats van <i>est\u00e1 abierta</i>. Resultaat van een handeling is estar.</p>"+
+     "<p>Bijkomend: het Nederlandse \"ik ben aan het\" wordt vaak vergeten. Spaans kan ook gewoon de presente gebruiken (<i>como</i> = ik eet / ik ben aan het eten), maar met estar + gerundio maak je expliciet dat het nu gebeurt.</p>",
+    uitlegEn:"<p><b>estar + gerund</b> is the form for something happening right now. Ser never appears here.</p>"+
+     "<p><i>Estoy comiendo.</i> I am eating.<br>"+
+     "<i>\u00bfQu\u00e9 est\u00e1s haciendo?</i> What are you doing?<br>"+
+     "<i>Estaban durmiendo.</i> They were sleeping.</p>"+
+     "<p>You form the gerund like this: -ar becomes <b>-ando</b> (hablar \u2192 hablando), -er and -ir become <b>-iendo</b> (comer \u2192 comiendo, vivir \u2192 viviendo).</p>"+
+     "<p><b>The three mistakes learners make most:</b></p>"+
+     "<p>1. <i>Soy en casa</i> instead of <i>estoy en casa</i>. Location is always estar.<br>"+
+     "2. <i>Estoy profesor</i> instead of <i>soy profesor</i>. Profession is always ser.<br>"+
+     "3. <i>La puerta es abierta</i> instead of <i>est\u00e1 abierta</i>. Result of an action is estar.</p>"+
+     "<p>On top of that: Spanish can also just use the present (<i>como</i> = I eat / I am eating), but with estar + gerund you make explicit that it's happening now.</p>",
+    diepKop:"Hay of est\u00e1: nog een tweeling",
+    diepKopEn:"Hay or est\u00e1: another twin pair",
+    diep:"<p>Als je het over plaats hebt, duikt er naast estar nog een woord op: <b>hay</b> (er is / er zijn). Het verschil zit in bekendheid.</p>"+
+     "<p><b>hay</b> introduceert iets nieuws of onbepaalds: <i>Hay un banco en la esquina.</i> Er is een bank op de hoek. Ook: <i>Hay tres sillas.</i> Er staan drie stoelen.</p>"+
+     "<p><b>est\u00e1</b> zegt waar iets bekends zich bevindt: <i>El banco est\u00e1 en la esquina.</i> De bank staat op de hoek.</p>"+
+     "<p>Vuistregel: staat er een lidwoord als un/una, een getal of niets voor het zelfstandig naamwoord, dan hay. Staat er el/la/mi/este voor, dan estar. Dus nooit <i>hay el banco</i> en nooit <i>est\u00e1 un banco</i> als je bedoelt dat er \u00e9\u00e9n is.</p>"+
+     "<p>En hay is onveranderlijk: ook bij meervoud blijft het hay, niet han.</p>",
+    diepEn:"<p>When talking about location, another word shows up next to estar: <b>hay</b> (there is / there are). The difference is about definiteness.</p>"+
+     "<p><b>hay</b> introduces something new or indefinite: <i>Hay un banco en la esquina.</i> There's a bank on the corner. Also: <i>Hay tres sillas.</i> There are three chairs.</p>"+
+     "<p><b>est\u00e1</b> says where something already known is located: <i>El banco est\u00e1 en la esquina.</i> The bank is on the corner.</p>"+
+     "<p>Rule of thumb: if the noun has un/una, a number, or nothing in front, use hay. If it has el/la/mi/este, use estar. So never <i>hay el banco</i>, and never <i>est\u00e1 un banco</i> when you mean there is one.</p>"+
+     "<p>And hay never changes: even with plurals it stays hay, not han.</p>",
+    vragen:[
+     {v:"\"Ik ben aan het werken.\"", vEn:"\"I am working.\"",
+      o:["Soy trabajando.","Estoy trabajando."], g:1,
+      w:"Gerundio gaat altijd met estar. Ser + gerundio bestaat niet.",
+      wEn:"The gerund always goes with estar. Ser + gerund does not exist."},
+     {v:"Wat is de gerundio van comer?", vEn:"What is the gerund of comer?",
+      o:["comando","comiendo","comendo","comado"],
+      g:1,
+      w:"-er en -ir krijgen -iendo: comiendo, viviendo. Alleen -ar krijgt -ando.",
+      wEn:"-er and -ir take -iendo: comiendo, viviendo. Only -ar takes -ando."},
+     {v:"\"Er is een bank op de hoek.\"", vEn:"\"There's a bank on the corner.\"",
+      o:["Est\u00e1 un banco en la esquina.","Hay un banco en la esquina."], g:1,
+      w:"Onbepaald (un banco) dus hay. Met el banco zou het est\u00e1 zijn.",
+      wEn:"Indefinite (un banco) so hay. With el banco it would be est\u00e1."},
+     {v:"\"Mijn hotel is naast het station.\"", vEn:"\"My hotel is next to the station.\"",
+      o:["Hay mi hotel al lado de la estaci\u00f3n.","Mi hotel est\u00e1 al lado de la estaci\u00f3n."], g:1,
+      w:"Mi hotel is bepaald, dus estar. Hay mi hotel kan niet.",
+      wEn:"Mi hotel is definite, so estar. Hay mi hotel is impossible."},
+     {v:"Welke van deze zinnen is fout?", vEn:"Which of these sentences is wrong?",
+      o:["Estoy cansado.","Soy holand\u00e9s.","Estoy profesor.","Est\u00e1 en el parque."],
+      oEn:["Estoy cansado.","Soy holand\u00e9s.","Estoy profesor.","Est\u00e1 en el parque."],
+      g:2,
+      w:"Beroep is ser: soy profesor. De andere drie zijn correct.",
+      wEn:"Profession takes ser: soy profesor. The other three are correct."}
+    ]}
+  ]},
+ {id:"porpara", icon:"\ud83d\udd00", drill:null,
+  titel:"Por vs. para", titelEn:"Por vs. para",
+  pitch:"Para kijkt vooruit, por kijkt terug. Met dat ene beeld valt tachtig procent op zijn plek.",
+  pitchEn:"Para looks forward, por looks back. That single image sorts out eighty percent of it.",
+  stappen:[
+   {kop:"Het beeld: vooruit of terug",
+    kopEn:"The image: forward or back",
+    uitleg:"<p>Lijstjes met tien gebruiken van por en negen van para leren werkt niet, want in het moment heb je geen tijd om een lijst af te lopen. Je hebt \u00e9\u00e9n beeld nodig.</p>"+
+     "<p><b>para kijkt vooruit.</b> Naar een doel, een bestemming, een deadline, een ontvanger. De pijl wijst naar voren: waar gaat dit naartoe, waarvoor is dit?</p>"+
+     "<p><b>por kijkt terug of eromheen.</b> Naar een oorzaak, een ruil, een route, een duur, een middel. De pijl wijst achteruit of eromheen: waardoor komt dit, waarvoor in ruil, waarlangs?</p>"+
+     "<p><i>Estudio para aprender.</i> Ik studeer om te leren: doel, vooruit.<br>"+
+     "<i>Estudio por mi futuro.</i> Ik studeer vanwege mijn toekomst: motief, achterliggend.<br>"+
+     "<i>Salgo para Madrid.</i> Ik vertrek naar Madrid: bestemming.<br>"+
+     "<i>Paso por Madrid.</i> Ik kom langs Madrid: route.</p>"+
+     "<p>Als je in twijfel bent: vraag jezelf af of je \"om te\" of \"bestemd voor\" kunt invullen (para), of eerder \"vanwege\", \"door\", \"in ruil voor\", \"langs\" (por).</p>",
+    uitlegEn:"<p>Learning lists of ten uses of por and nine of para doesn't work, because in the moment you have no time to run down a list. You need one image.</p>"+
+     "<p><b>para looks forward.</b> To a goal, a destination, a deadline, a recipient. The arrow points ahead: where is this going, what is this for?</p>"+
+     "<p><b>por looks back or around.</b> To a cause, an exchange, a route, a duration, a means. The arrow points behind or around: what caused this, in exchange for what, along where?</p>"+
+     "<p><i>Estudio para aprender.</i> I study in order to learn: goal, forward.<br>"+
+     "<i>Estudio por mi futuro.</i> I study because of my future: motive, behind it.<br>"+
+     "<i>Salgo para Madrid.</i> I'm leaving for Madrid: destination.<br>"+
+     "<i>Paso por Madrid.</i> I'm passing through Madrid: route.</p>"+
+     "<p>When in doubt: ask whether you can substitute \"in order to\" or \"intended for\" (para), or rather \"because of\", \"by\", \"in exchange for\", \"along\" (por).</p>",
+    diepKop:"Twee paren die het verschil pijnlijk duidelijk maken",
+    diepKopEn:"Two pairs that make the difference painfully clear",
+    diep:"<p><b>Lo hago por ti</b> tegenover <b>Lo hago para ti</b>.<br>"+
+     "Por ti: ik doe het vanwege jou, uit liefde voor jou, in jouw plaats. Het motief zit bij jou.<br>"+
+     "Para ti: ik doe het voor jou, jij bent de ontvanger. Het resultaat komt bij jou terecht.<br>"+
+     "Dus <i>cocino para ti</i> is ik kook voor jou (jij eet het) en <i>cocino por ti</i> is ik kook in jouw plaats (het was jouw taak).</p>"+
+     "<p><b>Trabajo por mi padre</b> tegenover <b>Trabajo para mi padre</b>.<br>"+
+     "Por mi padre: ik werk in plaats van mijn vader, hij is ziek en ik neem zijn dienst over. Of: vanwege hem.<br>"+
+     "Para mi padre: ik werk bij mijn vader in dienst, hij is mijn werkgever.</p>"+
+     "<p>Dat verschil tussen \"in plaats van\" (por) en \"in dienst van / bestemd voor\" (para) is de scherpste testcase. Als je die twee paren echt aanvoelt, doe je de rest ook goed.</p>",
+    diepEn:"<p><b>Lo hago por ti</b> versus <b>Lo hago para ti</b>.<br>"+
+     "Por ti: I'm doing it because of you, out of love for you, in your place. The motive is with you.<br>"+
+     "Para ti: I'm doing it for you, you're the recipient. The result lands with you.<br>"+
+     "So <i>cocino para ti</i> is I'm cooking for you (you eat it) and <i>cocino por ti</i> is I'm cooking in your place (it was your job).</p>"+
+     "<p><b>Trabajo por mi padre</b> versus <b>Trabajo para mi padre</b>.<br>"+
+     "Por mi padre: I'm working instead of my father, he's ill and I'm covering his shift. Or: because of him.<br>"+
+     "Para mi padre: I work for my father as his employee.</p>"+
+     "<p>That difference between \"instead of\" (por) and \"in the service of / intended for\" (para) is the sharpest test case. If you truly feel those two pairs, you'll get the rest right too.</p>",
+    vragen:[
+     {v:"Welk beeld hoort bij para?", vEn:"Which image goes with para?",
+      o:["Terug naar de oorzaak","Vooruit naar het doel","Rondom in de tijd","Langs een route"],
+      oEn:["Back to the cause","Forward to the goal","Around in time","Along a route"],
+      g:1,
+      w:"Para kijkt vooruit: doel, bestemming, deadline, ontvanger.",
+      wEn:"Para looks forward: goal, destination, deadline, recipient."},
+     {v:"\"Ik studeer om te leren.\"", vEn:"\"I study in order to learn.\"",
+      o:["Estudio por aprender.","Estudio para aprender."], g:1,
+      w:"\"Om te\" is doel, dus para. Por aprender zou betekenen: omdat ik geleerd heb.",
+      wEn:"\"In order to\" is a goal, so para. Por aprender would mean: because I learned."},
+     {v:"\"Ik ga naar Madrid\" (bestemming).", vEn:"\"I'm leaving for Madrid\" (destination).",
+      o:["Salgo por Madrid.","Salgo para Madrid."], g:1,
+      w:"Bestemming is para. Por Madrid zou betekenen: via Madrid.",
+      wEn:"Destination is para. Por Madrid would mean: through Madrid."},
+     {v:"Je kookt en je vriendin eet het op. \"Ik kook voor jou.\"", vEn:"You cook and your girlfriend eats it. \"I'm cooking for you.\"",
+      o:["Cocino por ti.","Cocino para ti."], g:1,
+      w:"Zij is de ontvanger: para. Cocino por ti = ik kook in jouw plaats.",
+      wEn:"She's the recipient: para. Cocino por ti = I'm cooking in your place."},
+     {v:"Wat betekent \"Trabajo para mi padre\"?", vEn:"What does \"Trabajo para mi padre\" mean?",
+      o:["Ik werk in plaats van mijn vader","Ik werk bij mijn vader in dienst","Ik werk vanwege mijn vader","Ik werk samen met mijn vader"],
+      oEn:["I work instead of my father","I work for my father as his employee","I work because of my father","I work together with my father"],
+      g:1,
+      w:"Para = in dienst van. Trabajo por mi padre = ik neem zijn plaats in.",
+      wEn:"Para = in the service of. Trabajo por mi padre = I'm covering for him."}
+    ]},
+   {kop:"De vakjes van para",
+    kopEn:"The boxes of para",
+    uitleg:"<p>Vijf vakjes, allemaal met de pijl vooruit.</p>"+
+     "<p><b>1. Doel of bedoeling</b> (para + infinitief = om te)<br>"+
+     "<i>Estudio para aprobar el examen.</i> Ik studeer om het examen te halen.</p>"+
+     "<p><b>2. Bestemming</b><br>"+
+     "<i>Este tren va para Sevilla.</i> Deze trein gaat naar Sevilla.</p>"+
+     "<p><b>3. Deadline of moment in de toekomst</b><br>"+
+     "<i>Lo necesito para el lunes.</i> Ik heb het maandag nodig.<br>"+
+     "<i>Es un regalo para Navidad.</i></p>"+
+     "<p><b>4. Ontvanger of geadresseerde</b><br>"+
+     "<i>Este caf\u00e9 es para ti.</i> Deze koffie is voor jou.</p>"+
+     "<p><b>5. Mening of gezichtspunt</b><br>"+
+     "<i>Para m\u00ed, es demasiado caro.</i> Voor mij is het te duur.<br>"+
+     "<i>Para un principiante, hablas muy bien.</i> Voor een beginner spreek je erg goed. (vergelijking met een verwachting)</p>"+
+     "<p>Dat vijfde vakje is verrassend nuttig in gesprek: <i>para m\u00ed</i> aan het begin van een zin is de gewone manier om \"volgens mij\" te zeggen.</p>",
+    uitlegEn:"<p>Five boxes, all with the arrow pointing forward.</p>"+
+     "<p><b>1. Purpose or intention</b> (para + infinitive = in order to)<br>"+
+     "<i>Estudio para aprobar el examen.</i> I study to pass the exam.</p>"+
+     "<p><b>2. Destination</b><br>"+
+     "<i>Este tren va para Sevilla.</i> This train goes to Sevilla.</p>"+
+     "<p><b>3. Deadline or future point</b><br>"+
+     "<i>Lo necesito para el lunes.</i> I need it by Monday.<br>"+
+     "<i>Es un regalo para Navidad.</i></p>"+
+     "<p><b>4. Recipient or addressee</b><br>"+
+     "<i>Este caf\u00e9 es para ti.</i> This coffee is for you.</p>"+
+     "<p><b>5. Opinion or point of view</b><br>"+
+     "<i>Para m\u00ed, es demasiado caro.</i> For me, it's too expensive.<br>"+
+     "<i>Para un principiante, hablas muy bien.</i> For a beginner, you speak very well. (comparison against an expectation)</p>"+
+     "<p>That fifth box is surprisingly useful in conversation: <i>para m\u00ed</i> at the start of a sentence is the normal way to say \"in my opinion\".</p>",
+    diepKop:"Para + infinitief is bijna altijd goed",
+    diepKopEn:"Para + infinitive is almost always right",
+    diep:"<p>Er is \u00e9\u00e9n patroon dat je gratis krijgt: als je in het Nederlands \"om te\" kunt zeggen, is het in het Spaans <b>para + infinitief</b>. Zonder uitzondering waar je op dit niveau tegenaan loopt.</p>"+
+     "<p><i>Vengo para ayudarte.</i> Ik kom om je te helpen.<br>"+
+     "<i>Uso el m\u00f3vil para practicar espa\u00f1ol.</i> Ik gebruik mijn telefoon om Spaans te oefenen.</p>"+
+     "<p>Waar het misgaat: leerders zetten er <i>por</i> of <i>a</i> voor omdat het Engels \"to\" gebruikt. <i>Vengo a ayudarte</i> kan trouwens ook, na werkwoorden van beweging (ir, venir, salir) is <i>a + infinitief</i> gangbaar en zelfs natuurlijker. Maar para is nooit fout in die positie.</p>"+
+     "<p>Nog een verschil om te bewaren voor stap 3: <b>por + infinitief</b> betekent niet \"om te\" maar \"omdat\". <i>Lo hice por ayudarte</i> is ik deed het omdat ik je wilde helpen, wat weer een subtiel andere lading heeft dan <i>para ayudarte</i>.</p>",
+    diepEn:"<p>There's one pattern you get for free: whenever English says \"in order to\", Spanish says <b>para + infinitive</b>. Without exceptions you'll hit at this level.</p>"+
+     "<p><i>Vengo para ayudarte.</i> I'm coming to help you.<br>"+
+     "<i>Uso el m\u00f3vil para practicar espa\u00f1ol.</i> I use my phone to practise Spanish.</p>"+
+     "<p>Where it goes wrong: learners put <i>por</i> or <i>a</i> there because English uses \"to\". Incidentally <i>Vengo a ayudarte</i> also works, after verbs of motion (ir, venir, salir) <i>a + infinitive</i> is common and even more natural. But para is never wrong in that slot.</p>"+
+     "<p>One more difference to save for step 3: <b>por + infinitive</b> doesn't mean \"in order to\" but \"because\". <i>Lo hice por ayudarte</i> is I did it because I wanted to help you, which carries a subtly different weight than <i>para ayudarte</i>.</p>",
+    vragen:[
+     {v:"\"Ik heb het maandag nodig.\"", vEn:"\"I need it by Monday.\"",
+      o:["Lo necesito por el lunes.","Lo necesito para el lunes."], g:1,
+      w:"Deadline in de toekomst: para. Por el lunes zou over maandag als periode gaan.",
+      wEn:"Future deadline: para. Por el lunes would be about Monday as a period."},
+     {v:"\"Volgens mij is het te duur.\"", vEn:"\"In my opinion it's too expensive.\"",
+      o:["Por m\u00ed, es demasiado caro.","Para m\u00ed, es demasiado caro."], g:1,
+      w:"Mening en gezichtspunt: para m\u00ed. (Por m\u00ed bestaat wel: wat mij betreft, maakt mij niet uit.)",
+      wEn:"Opinion and viewpoint: para m\u00ed. (Por m\u00ed does exist: as far as I'm concerned, fine by me.)"},
+     {v:"\"Voor een beginner spreek je erg goed.\"", vEn:"\"For a beginner you speak very well.\"",
+      o:["Por un principiante, hablas muy bien.","Para un principiante, hablas muy bien."], g:1,
+      w:"Vergelijking met een verwachting: para. Dit vakje wordt vaak vergeten.",
+      wEn:"Comparison against an expectation: para. This box is often forgotten."},
+     {v:"\"Ik kom om je te helpen.\"", vEn:"\"I'm coming to help you.\"",
+      o:["Vengo por ayudarte.","Vengo para ayudarte."], g:1,
+      w:"\"Om te\" is altijd para + infinitief. (Na venir mag ook: vengo a ayudarte.)",
+      wEn:"\"In order to\" is always para + infinitive. (After venir you may also say: vengo a ayudarte.)"},
+     {v:"\"Deze koffie is voor jou.\"", vEn:"\"This coffee is for you.\"",
+      o:["Este caf\u00e9 es por ti.","Este caf\u00e9 es para ti."], g:1,
+      w:"Ontvanger: para. Es por ti zou betekenen dat de koffie er dankzij jou is.",
+      wEn:"Recipient: para. Es por ti would mean the coffee exists thanks to you."}
+    ]},
+   {kop:"De vakjes van por",
+    kopEn:"The boxes of por",
+    uitleg:"<p>Zeven vakjes, allemaal met de pijl terug of eromheen. Por heeft meer vakjes dan para, dat is de reden dat mensen por moeilijker vinden.</p>"+
+     "<p><b>1. Oorzaak of motief</b> (vanwege, door)<br>"+
+     "<i>Lo hice por amor.</i> Ik deed het uit liefde.<br>"+
+     "<i>Cerrado por vacaciones.</i> Gesloten wegens vakantie.</p>"+
+     "<p><b>2. Ruil of prijs</b><br>"+
+     "<i>Lo compr\u00e9 por veinte euros.</i> Ik kocht het voor twintig euro.<br>"+
+     "<i>Gracias por todo.</i></p>"+
+     "<p><b>3. Route of doorheen</b><br>"+
+     "<i>Pasamos por el centro.</i> We gingen door het centrum.<br>"+
+     "<i>Camino por la playa.</i> Ik loop over het strand.</p>"+
+     "<p><b>4. Duur en vage tijd</b><br>"+
+     "<i>Estudi\u00e9 por dos horas.</i> Ik studeerde twee uur.<br>"+
+     "<i>por la ma\u00f1ana</i> 's ochtends, <i>por la noche</i> 's nachts.</p>"+
+     "<p><b>5. Middel of manier</b><br>"+
+     "<i>Te llamo por tel\u00e9fono.</i> Ik bel je op.<br>"+
+     "<i>Lo mand\u00e9 por correo.</i></p>"+
+     "<p><b>6. In plaats van, namens</b><br>"+
+     "<i>Firmo por \u00e9l.</i> Ik teken namens hem.</p>"+
+     "<p><b>7. Per (verdeling)</b><br>"+
+     "<i>tres veces por semana</i> drie keer per week, <i>cien kil\u00f3metros por hora</i>.</p>",
+    uitlegEn:"<p>Seven boxes, all with the arrow pointing back or around. Por has more boxes than para, which is why people find por harder.</p>"+
+     "<p><b>1. Cause or motive</b> (because of, due to)<br>"+
+     "<i>Lo hice por amor.</i> I did it out of love.<br>"+
+     "<i>Cerrado por vacaciones.</i> Closed for holidays.</p>"+
+     "<p><b>2. Exchange or price</b><br>"+
+     "<i>Lo compr\u00e9 por veinte euros.</i> I bought it for twenty euros.<br>"+
+     "<i>Gracias por todo.</i></p>"+
+     "<p><b>3. Route or through</b><br>"+
+     "<i>Pasamos por el centro.</i> We went through the centre.<br>"+
+     "<i>Camino por la playa.</i> I walk along the beach.</p>"+
+     "<p><b>4. Duration and vague time</b><br>"+
+     "<i>Estudi\u00e9 por dos horas.</i> I studied for two hours.<br>"+
+     "<i>por la ma\u00f1ana</i> in the morning, <i>por la noche</i> at night.</p>"+
+     "<p><b>5. Means or manner</b><br>"+
+     "<i>Te llamo por tel\u00e9fono.</i> I'll call you on the phone.<br>"+
+     "<i>Lo mand\u00e9 por correo.</i></p>"+
+     "<p><b>6. Instead of, on behalf of</b><br>"+
+     "<i>Firmo por \u00e9l.</i> I'm signing on his behalf.</p>"+
+     "<p><b>7. Per (distribution)</b><br>"+
+     "<i>tres veces por semana</i> three times a week, <i>cien kil\u00f3metros por hora</i>.</p>",
+    diepKop:"Por la ma\u00f1ana, en la ma\u00f1ana, en de kwestie por/para + infinitief",
+    diepKopEn:"Por la ma\u00f1ana, en la ma\u00f1ana, and the por/para + infinitive question",
+    diep:"<p><b>Tijdsaanduidingen.</b> In Spanje zeg je <i>por la ma\u00f1ana</i>, <i>por la tarde</i>, <i>por la noche</i>. In grote delen van Latijns-Amerika hoor je <i>en la ma\u00f1ana</i>. Beide zijn correct; als je Europees Spaans leert, hou por aan.</p>"+
+     "<p>Let op: bij een <b>klok</b>tijd gebruik je <i>de</i>: <i>a las ocho de la ma\u00f1ana</i>, niet <i>por la ma\u00f1ana</i>. Dus por/en als het over het dagdeel gaat, de als er een uur bij staat.</p>"+
+     "<p><b>Por of para voor een infinitief.</b> Dit is de fijnste onderscheiding van het hele onderwerp:<br>"+
+     "<i>Estoy aqu\u00ed para estudiar.</i> Ik ben hier om te studeren (doel).<br>"+
+     "<i>Me multaron por conducir r\u00e1pido.</i> Ik kreeg een boete omdat ik te hard reed (oorzaak).</p>"+
+     "<p>Test: kun je \"omdat ik\" zeggen? Dan por. Kun je \"om te\" zeggen? Dan para. In het Nederlands zijn dat verschillende woorden, dus je hebt hier eigenlijk een gratis vertaaltest.</p>"+
+     "<p>Nog een: <i>por + infinitief</i> kan ook \"nog te doen\" betekenen: <i>La casa est\u00e1 por terminar</i> (het huis moet nog af). Zeldzamer, maar je komt het tegen.</p>",
+    diepEn:"<p><b>Time expressions.</b> In Spain you say <i>por la ma\u00f1ana</i>, <i>por la tarde</i>, <i>por la noche</i>. Across much of Latin America you hear <i>en la ma\u00f1ana</i>. Both are correct; if you're learning European Spanish, stick with por.</p>"+
+     "<p>Note: with a <b>clock</b> time you use <i>de</i>: <i>a las ocho de la ma\u00f1ana</i>, not <i>por la ma\u00f1ana</i>. So por/en for the part of the day, de when an hour is attached.</p>"+
+     "<p><b>Por or para before an infinitive.</b> This is the finest distinction in the whole topic:<br>"+
+     "<i>Estoy aqu\u00ed para estudiar.</i> I'm here in order to study (purpose).<br>"+
+     "<i>Me multaron por conducir r\u00e1pido.</i> I got fined for driving fast (cause).</p>"+
+     "<p>Test: can you say \"because I\"? Then por. Can you say \"in order to\"? Then para. English marks these differently too, so you basically get a free translation test.</p>"+
+     "<p>One more: <i>por + infinitive</i> can also mean \"yet to be done\": <i>La casa est\u00e1 por terminar</i> (the house isn't finished yet). Rarer, but you'll meet it.</p>",
+    vragen:[
+     {v:"\"Ik heb het voor twintig euro gekocht.\"", vEn:"\"I bought it for twenty euros.\"",
+      o:["Lo compr\u00e9 para veinte euros.","Lo compr\u00e9 por veinte euros."], g:1,
+      w:"Ruil en prijs: por. Je geeft geld in ruil voor het ding.",
+      wEn:"Exchange and price: por. You give money in exchange for the thing."},
+     {v:"\"We gingen door het centrum.\"", vEn:"\"We went through the centre.\"",
+      o:["Pasamos por el centro.","Pasamos para el centro."], g:0,
+      w:"Route erdoor of erlangs: por.",
+      wEn:"Route through or along: por."},
+     {v:"\"Drie keer per week.\"", vEn:"\"Three times a week.\"",
+      o:["tres veces para semana","tres veces por semana"], g:1,
+      w:"Per in de zin van verdeling: por. Ook kil\u00f3metros por hora.",
+      wEn:"Per in the distributive sense: por. Also kil\u00f3metros por hora."},
+     {v:"\"Gesloten wegens vakantie.\"", vEn:"\"Closed for holidays.\"",
+      o:["Cerrado por vacaciones.","Cerrado para vacaciones."], g:0,
+      w:"Oorzaak: por. Dit staat op half Spanje in augustus op de deur.",
+      wEn:"Cause: por. Half of Spain has this on the door in August."},
+     {v:"\"Ik kreeg een boete omdat ik te hard reed.\"", vEn:"\"I got fined for driving too fast.\"",
+      o:["Me multaron para conducir r\u00e1pido.","Me multaron por conducir r\u00e1pido."], g:1,
+      w:"\"Omdat\" is oorzaak: por + infinitief. Met para zou het het doel van de boete zijn.",
+      wEn:"\"Because\" is cause: por + infinitive. With para it would be the purpose of the fine."},
+     {v:"\"Ik bel je op.\"", vEn:"\"I'll give you a call.\"",
+      o:["Te llamo para tel\u00e9fono.","Te llamo por tel\u00e9fono."], g:1,
+      w:"Middel of kanaal: por. Ook por correo, por internet.",
+      wEn:"Means or channel: por. Also por correo, por internet."},
+     {v:"\"'s Ochtends werk ik.\" (Spanje)", vEn:"\"In the morning I work.\" (Spain)",
+      o:["Para la ma\u00f1ana trabajo.","Por la ma\u00f1ana trabajo."], g:1,
+      w:"Dagdeel: por la ma\u00f1ana. Bij een kloktijd wordt het de: a las ocho de la ma\u00f1ana.",
+      wEn:"Part of the day: por la ma\u00f1ana. With a clock time it becomes de: a las ocho de la ma\u00f1ana."}
+    ]},
+   {kop:"Vaste uitdrukkingen en de porqu\u00e9-familie",
+    kopEn:"Fixed expressions and the porqu\u00e9 family",
+    uitleg:"<p>Een flink deel van por en para in het echte leven zit in vaste uitdrukkingen. Die hoef je niet te beredeneren, alleen te kennen.</p>"+
+     "<p><b>Met por:</b><br>"+
+     "<i>por favor</i> alsjeblieft &nbsp;|&nbsp; <i>por supuesto</i> natuurlijk &nbsp;|&nbsp; <i>por eso</i> daarom &nbsp;|&nbsp; <i>por fin</i> eindelijk &nbsp;|&nbsp; <i>por ejemplo</i> bijvoorbeeld &nbsp;|&nbsp; <i>por lo menos</i> tenminste &nbsp;|&nbsp; <i>por cierto</i> trouwens &nbsp;|&nbsp; <i>por si acaso</i> voor het geval dat &nbsp;|&nbsp; <i>por ahora</i> voorlopig &nbsp;|&nbsp; <i>por suerte</i> gelukkig &nbsp;|&nbsp; <i>por desgracia</i> helaas &nbsp;|&nbsp; <i>por lo visto</i> naar het schijnt</p>"+
+     "<p><b>Met para:</b><br>"+
+     "<i>para siempre</i> voor altijd &nbsp;|&nbsp; <i>para nada</i> helemaal niet &nbsp;|&nbsp; <i>para colmo</i> en tot overmaat van ramp &nbsp;|&nbsp; <i>para variar</i> voor de verandering &nbsp;|&nbsp; <i>no es para tanto</i> het is niet zo erg</p>"+
+     "<p><b>Twee vragen die vaak verwisseld worden:</b><br>"+
+     "<i>\u00bfPor qu\u00e9?</i> Waarom? (vraagt naar de oorzaak, kijkt terug)<br>"+
+     "<i>\u00bfPara qu\u00e9?</i> Waarvoor? Met welk doel? (kijkt vooruit)</p>"+
+     "<p><i>\u00bfPor qu\u00e9 estudias espa\u00f1ol?</i> Waarom leer je Spaans? (wat bracht je ertoe)<br>"+
+     "<i>\u00bfPara qu\u00e9 estudias espa\u00f1ol?</i> Waarvoor leer je Spaans? (wat wil je ermee)</p>"+
+     "<p>Merk op dat het beeld uit stap 1 hier weer precies werkt: por terug naar de oorzaak, para vooruit naar het doel.</p>",
+    uitlegEn:"<p>A big share of por and para in real life sits in fixed expressions. You don't need to reason those out, only know them.</p>"+
+     "<p><b>With por:</b><br>"+
+     "<i>por favor</i> please &nbsp;|&nbsp; <i>por supuesto</i> of course &nbsp;|&nbsp; <i>por eso</i> that's why &nbsp;|&nbsp; <i>por fin</i> at last &nbsp;|&nbsp; <i>por ejemplo</i> for example &nbsp;|&nbsp; <i>por lo menos</i> at least &nbsp;|&nbsp; <i>por cierto</i> by the way &nbsp;|&nbsp; <i>por si acaso</i> just in case &nbsp;|&nbsp; <i>por ahora</i> for now &nbsp;|&nbsp; <i>por suerte</i> luckily &nbsp;|&nbsp; <i>por desgracia</i> unfortunately &nbsp;|&nbsp; <i>por lo visto</i> apparently</p>"+
+     "<p><b>With para:</b><br>"+
+     "<i>para siempre</i> forever &nbsp;|&nbsp; <i>para nada</i> not at all &nbsp;|&nbsp; <i>para colmo</i> to top it all off &nbsp;|&nbsp; <i>para variar</i> for a change &nbsp;|&nbsp; <i>no es para tanto</i> it's not that bad</p>"+
+     "<p><b>Two questions that get mixed up:</b><br>"+
+     "<i>\u00bfPor qu\u00e9?</i> Why? (asks for the cause, looks back)<br>"+
+     "<i>\u00bfPara qu\u00e9?</i> What for? To what end? (looks forward)</p>"+
+     "<p><i>\u00bfPor qu\u00e9 estudias espa\u00f1ol?</i> Why are you learning Spanish? (what led you to it)<br>"+
+     "<i>\u00bfPara qu\u00e9 estudias espa\u00f1ol?</i> What are you learning Spanish for? (what do you want with it)</p>"+
+     "<p>Notice the image from step 1 works exactly here again: por back to the cause, para forward to the goal.</p>",
+    diepKop:"Por qu\u00e9, porque, el porqu\u00e9, por que: vier vormen",
+    diepKopEn:"Por qu\u00e9, porque, el porqu\u00e9, por que: four forms",
+    diep:"<p>Deze vier worden zelfs door moedertaalsprekers verkeerd geschreven. Ze klinken bijna hetzelfde en betekenen iets anders.</p>"+
+     "<p><b>1. \u00bfpor qu\u00e9?</b> (twee woorden, accent) = waarom, in een vraag.<br>"+
+     "<i>\u00bfPor qu\u00e9 no vienes?</i></p>"+
+     "<p><b>2. porque</b> (\u00e9\u00e9n woord, geen accent) = omdat, in een antwoord.<br>"+
+     "<i>No vengo porque estoy cansado.</i></p>"+
+     "<p><b>3. el porqu\u00e9</b> (\u00e9\u00e9n woord, wel accent, met lidwoord) = de reden, als zelfstandig naamwoord.<br>"+
+     "<i>No entiendo el porqu\u00e9 de su decisi\u00f3n.</i> Ik begrijp de reden van zijn besluit niet.</p>"+
+     "<p><b>4. por que</b> (twee woorden, geen accent) = zeldzaam, na werkwoorden die vast por bij zich hebben, plus een que-bijzin.<br>"+
+     "<i>Luchamos por que se respeten los derechos.</i> Wij strijden ervoor dat de rechten ge\u00eberbiedigd worden.</p>"+
+     "<p>Praktisch: 1 en 2 heb je dagelijks nodig, 3 af en toe, 4 kun je een tijd negeren. De schrijffout die het meest voorkomt is <i>porqu\u00e9</i> in een vraag zetten. Onthoud: vraag = twee woorden met streepje.</p>",
+    diepEn:"<p>Even native speakers write these four wrong. They sound almost identical and mean different things.</p>"+
+     "<p><b>1. \u00bfpor qu\u00e9?</b> (two words, accent) = why, in a question.<br>"+
+     "<i>\u00bfPor qu\u00e9 no vienes?</i></p>"+
+     "<p><b>2. porque</b> (one word, no accent) = because, in an answer.<br>"+
+     "<i>No vengo porque estoy cansado.</i></p>"+
+     "<p><b>3. el porqu\u00e9</b> (one word, with accent, with article) = the reason, as a noun.<br>"+
+     "<i>No entiendo el porqu\u00e9 de su decisi\u00f3n.</i> I don't understand the reason for his decision.</p>"+
+     "<p><b>4. por que</b> (two words, no accent) = rare, after verbs that carry por, plus a que-clause.<br>"+
+     "<i>Luchamos por que se respeten los derechos.</i> We fight for the rights to be respected.</p>"+
+     "<p>Practically: you need 1 and 2 daily, 3 occasionally, 4 you can ignore for a while. The most common spelling error is writing <i>porqu\u00e9</i> in a question. Remember: question = two words with the accent.</p>",
+    vragen:[
+     {v:"\"Waarom kom je niet?\"", vEn:"\"Why aren't you coming?\"",
+      o:["\u00bfPorqu\u00e9 no vienes?","\u00bfPor qu\u00e9 no vienes?"], g:1,
+      w:"Vraag = twee woorden met accent: por qu\u00e9. Porqu\u00e9 als \u00e9\u00e9n woord is het zelfstandig naamwoord.",
+      wEn:"Question = two words with the accent: por qu\u00e9. Porqu\u00e9 as one word is the noun."},
+     {v:"\"Omdat ik moe ben.\"", vEn:"\"Because I'm tired.\"",
+      o:["Por qu\u00e9 estoy cansado.","Porque estoy cansado."], g:1,
+      w:"Antwoord = \u00e9\u00e9n woord zonder accent: porque.",
+      wEn:"Answer = one word without accent: porque."},
+     {v:"Je wil weten wat iemand met zijn Spaans van plan is.", vEn:"You want to know what someone plans to do with their Spanish.",
+      o:["\u00bfPor qu\u00e9 estudias espa\u00f1ol?","\u00bfPara qu\u00e9 estudias espa\u00f1ol?"], g:1,
+      w:"Para qu\u00e9 vraagt naar het doel. Por qu\u00e9 vraagt naar de oorzaak.",
+      wEn:"Para qu\u00e9 asks about the goal. Por qu\u00e9 asks about the cause."},
+     {v:"\"Eindelijk!\"", vEn:"\"At last!\"",
+      o:["\u00a1Para fin!","\u00a1Por fin!"], g:1,
+      w:"Vaste uitdrukking met por: por fin.",
+      wEn:"Fixed expression with por: por fin."},
+     {v:"\"Helemaal niet.\"", vEn:"\"Not at all.\"",
+      o:["Por nada.","Para nada."], g:1,
+      w:"Para nada = helemaal niet. Por nada bestaat ook: graag gedaan, of voor niks.",
+      wEn:"Para nada = not at all. Por nada also exists: you're welcome, or for nothing."},
+     {v:"\"Voor het geval dat.\"", vEn:"\"Just in case.\"",
+      o:["para si acaso","por si acaso"], g:1,
+      w:"Por si acaso. Handig woordje om in je actieve vocabulaire te hebben.",
+      wEn:"Por si acaso. A handy phrase to have active."}
+    ]}
+  ]},
+ {id:"subjuntivo", icon:"\ud83c\udf19", drill:"subjuntivo",
+  titel:"De subjuntivo (presente)", titelEn:"The subjunctive (present)",
+  pitch:"Geen tijd maar een modus. Quiero que vengas: waarom die -as, en wanneer heb je hem nodig?",
+  pitchEn:"Not a tense but a mood. Quiero que vengas: why that -as, and when do you need it?",
+  stappen:[
+   {kop:"Wat de subjuntivo eigenlijk doet",
+    kopEn:"What the subjunctive actually does",
+    uitleg:"<p>Eerst het misverstand opruimen: de subjuntivo is <b>geen tijd</b>. Presente, indefinido en perfecto zijn tijden, die zeggen wanneer iets gebeurde. De subjuntivo is een <b>modus</b>: die zegt hoe je je verhoudt tot wat je zegt.</p>"+
+     "<p>De <b>indicativo</b> (de gewone vorm die je al kent) beweert iets. \"Zo is het.\"<br>"+
+     "De <b>subjuntivo</b> beweert juist niet. Het is de vorm voor wat je wil, vreest, betwijfelt, hoopt, of wat nog niet zeker is.</p>"+
+     "<p><i>S\u00e9 que viene.</i> Ik weet dat hij komt. Ik beweer het: indicativo.<br>"+
+     "<i>Quiero que venga.</i> Ik wil dat hij komt. Ik beweer niet dat hij komt, ik wil het: subjuntivo.<br>"+
+     "<i>Dudo que venga.</i> Ik betwijfel of hij komt: subjuntivo.</p>"+
+     "<p>Belangrijk praktisch punt: de subjuntivo staat bijna altijd in een <b>bijzin na que</b>. Als je hem nodig hebt, zie je meestal deze vorm: <i>[hoofdzin met een wil, gevoel of twijfel] + que + [subjuntivo]</i>. Dat is je alarmbel.</p>"+
+     "<p>En nog iets bevrijdends: in het Nederlands bestaat de subjuntivo praktisch niet meer (\"leve de koning\" en \"het zij zo\" zijn fossielen). Je kunt hem dus niet vanuit het Nederlands aanvoelen, je moet hem op de Spaanse trigger leren herkennen. Dat is niet moeilijker, alleen anders.</p>",
+    uitlegEn:"<p>First, clearing up the misconception: the subjunctive is <b>not a tense</b>. Present, preterite and perfect are tenses, they say when something happened. The subjunctive is a <b>mood</b>: it says how you relate to what you're saying.</p>"+
+     "<p>The <b>indicative</b> (the ordinary form you already know) asserts something. \"This is how it is.\"<br>"+
+     "The <b>subjunctive</b> declines to assert. It's the form for what you want, fear, doubt, hope, or what isn't certain yet.</p>"+
+     "<p><i>S\u00e9 que viene.</i> I know he's coming. I assert it: indicative.<br>"+
+     "<i>Quiero que venga.</i> I want him to come. I'm not asserting he comes, I want it: subjunctive.<br>"+
+     "<i>Dudo que venga.</i> I doubt he's coming: subjunctive.</p>"+
+     "<p>Important practical point: the subjunctive almost always sits in a <b>subordinate clause after que</b>. When you need it, you usually see this shape: <i>[main clause with a wish, emotion or doubt] + que + [subjunctive]</i>. That's your alarm bell.</p>"+
+     "<p>And something freeing: English barely has a subjunctive left (\"if I were you\", \"I insist that he go\" are the leftovers). So you can't feel it from English, you have to learn to spot the Spanish trigger. That's not harder, just different.</p>",
+    diepKop:"Waarom een taal dit nodig heeft",
+    diepKopEn:"Why a language needs this",
+    diep:"<p>Het lijkt overbodige moeite tot je ziet wat je ermee kunt. De modus is een gratis extra laag informatie in elke zin.</p>"+
+     "<p><i>Busco una casa que tiene jard\u00edn.</i> Ik zoek een huis dat een tuin heeft, en dat huis bestaat, ik weet welk huis ik zoek.<br>"+
+     "<i>Busco una casa que tenga jard\u00edn.</i> Ik zoek een huis met tuin, maakt niet uit welk, misschien bestaat het niet eens.</p>"+
+     "<p>Twee zinnen die in het Nederlands identiek zijn, en in het Spaans een compleet ander verhaal vertellen. Zonder de subjuntivo zou je erbij moeten zeggen \"maar ik weet nog niet welk\".</p>"+
+     "<p>Nog een: <i>Cuando llegas, te llamo</i> zou vreemd zijn, want een aankomst in de toekomst is niet zeker. Daarom <i>Cuando llegues, te llamo</i>: als je aankomt, bel ik je. En <i>Cuando llego a casa, me ducho</i> (indicativo) is een gewoonte, dat gebeurt elke dag echt.</p>"+
+     "<p>Kortom: de subjuntivo maakt het verschil tussen feit en niet-feit hoorbaar. Zodra je dat ziet, gaat het van willekeurige regels naar iets dat logisch is.</p>",
+    diepEn:"<p>It looks like pointless effort until you see what you can do with it. Mood is a free extra layer of information in every sentence.</p>"+
+     "<p><i>Busco una casa que tiene jard\u00edn.</i> I'm looking for a house that has a garden, and that house exists, I know which one I mean.<br>"+
+     "<i>Busco una casa que tenga jard\u00edn.</i> I'm looking for a house with a garden, any one, maybe it doesn't even exist.</p>"+
+     "<p>Two sentences that are identical in English and tell a completely different story in Spanish. Without the subjunctive you'd have to add \"but I don't know which one yet\".</p>"+
+     "<p>Another: <i>Cuando llegas, te llamo</i> would be odd, because a future arrival isn't certain. Hence <i>Cuando llegues, te llamo</i>: when you arrive, I'll call you. And <i>Cuando llego a casa, me ducho</i> (indicative) is a habit, that really happens every day.</p>"+
+     "<p>In short: the subjunctive makes the difference between fact and non-fact audible. Once you see that, it goes from arbitrary rules to something logical.</p>",
+    vragen:[
+     {v:"Wat is de subjuntivo?", vEn:"What is the subjunctive?",
+      o:["Een tijd, zoals de indefinido","Een modus: hoe je je verhoudt tot wat je zegt","Een vorm die alleen in geschreven Spaans voorkomt","Een verouderde vorm die je kunt overslaan"],
+      oEn:["A tense, like the preterite","A mood: how you relate to what you're saying","A form that only appears in written Spanish","An outdated form you can skip"],
+      g:1,
+      w:"Modus, niet tijd. Tijden zeggen wanneer, de modus zegt of je iets beweert of niet.",
+      wEn:"Mood, not tense. Tenses say when, mood says whether you're asserting or not."},
+     {v:"In welke van deze twee beweer je dat hij komt?", vEn:"In which of these two are you asserting that he's coming?",
+      o:["S\u00e9 que viene.","Quiero que venga."], g:0,
+      w:"S\u00e9 que viene beweert een feit: indicativo. Quiero que venga is een wens.",
+      wEn:"S\u00e9 que viene asserts a fact: indicative. Quiero que venga is a wish."},
+     {v:"Waar staat de subjuntivo meestal?", vEn:"Where does the subjunctive usually sit?",
+      o:["Aan het begin van de zin","In een bijzin na que","Alleen in vragen","Achter een voorzetsel"],
+      oEn:["At the start of the sentence","In a subordinate clause after que","Only in questions","After a preposition"],
+      g:1,
+      w:"Bijna altijd na que. Dat maakt de vorm makkelijk te herkennen: let op wat er v\u00f3\u00f3r que staat.",
+      wEn:"Almost always after que. That makes it easy to spot: watch what comes before que."},
+     {v:"Wat betekent \"Busco una casa que tenga jard\u00edn\"?", vEn:"What does \"Busco una casa que tenga jard\u00edn\" mean?",
+      o:["Ik zoek een bepaald huis dat een tuin heeft","Ik zoek een willekeurig huis met tuin, misschien bestaat het niet"],
+      oEn:["I'm looking for a particular house that has a garden","I'm looking for any house with a garden, it may not exist"],
+      g:1,
+      w:"Subjuntivo = onbepaald of onzeker. Met tiene zou je een bekend huis bedoelen.",
+      wEn:"Subjunctive = indefinite or uncertain. With tiene you'd mean a known house."}
+    ]},
+   {kop:"De vormen: \u00e9\u00e9n trucje, dan de uitzonderingen",
+    kopEn:"The forms: one trick, then the exceptions",
+    uitleg:"<p>Goed nieuws: de vormen zijn regelmatiger dan de indefinido. Er is \u00e9\u00e9n trucje dat bijna alles dekt.</p>"+
+     "<p><b>Stap 1:</b> neem de <b>yo-vorm van de presente</b>.<br>"+
+     "<b>Stap 2:</b> haal de -o eraf.<br>"+
+     "<b>Stap 3:</b> plak de <i>omgekeerde</i> uitgangen erop.</p>"+
+     "<p><b>-ar werkwoorden</b> krijgen e-uitgangen: <b>-e, -es, -e, -emos, -\u00e9is, -en</b><br>"+
+     "hablar \u2192 hablo \u2192 habl- \u2192 hable, hables, hable, hablemos, habl\u00e9is, hablen</p>"+
+     "<p><b>-er en -ir werkwoorden</b> krijgen a-uitgangen: <b>-a, -as, -a, -amos, -\u00e1is, -an</b><br>"+
+     "comer \u2192 como \u2192 com- \u2192 coma, comas, coma, comamos, com\u00e1is, coman<br>"+
+     "vivir \u2192 vivo \u2192 viv- \u2192 viva, vivas, viva, vivamos, viv\u00e1is, vivan</p>"+
+     "<p>Onthoud het als <b>omruilen</b>: -ar krijgt de e van -er, en -er/-ir krijgen de a van -ar.</p>"+
+     "<p><b>Waarom de yo-vorm?</b> Omdat je daarmee alle onregelmatigheid gratis meeneemt:<br>"+
+     "tener \u2192 ten<b>go</b> \u2192 tenga, tengas, tenga, tengamos, teng\u00e1is, tengan<br>"+
+     "hacer \u2192 ha<b>go</b> \u2192 haga, hagas, haga...<br>"+
+     "decir \u2192 di<b>go</b> \u2192 diga, digas, diga...<br>"+
+     "salir \u2192 sal<b>go</b> \u2192 salga &nbsp;|&nbsp; poner \u2192 pon<b>go</b> \u2192 ponga &nbsp;|&nbsp; venir \u2192 ven<b>go</b> \u2192 venga<br>"+
+     "conocer \u2192 cono<b>zco</b> \u2192 conozca &nbsp;|&nbsp; ver \u2192 veo \u2192 vea</p>"+
+     "<p>Dat is de reden dat je nooit een aparte lijst met g-vormen hoeft te leren: je kende ze al uit de presente.</p>",
+    uitlegEn:"<p>Good news: the forms are more regular than the preterite. There's one trick that covers almost everything.</p>"+
+     "<p><b>Step 1:</b> take the <b>yo form of the present</b>.<br>"+
+     "<b>Step 2:</b> drop the -o.<br>"+
+     "<b>Step 3:</b> add the <i>opposite</i> endings.</p>"+
+     "<p><b>-ar verbs</b> take e-endings: <b>-e, -es, -e, -emos, -\u00e9is, -en</b><br>"+
+     "hablar \u2192 hablo \u2192 habl- \u2192 hable, hables, hable, hablemos, habl\u00e9is, hablen</p>"+
+     "<p><b>-er and -ir verbs</b> take a-endings: <b>-a, -as, -a, -amos, -\u00e1is, -an</b><br>"+
+     "comer \u2192 como \u2192 com- \u2192 coma, comas, coma, comamos, com\u00e1is, coman<br>"+
+     "vivir \u2192 vivo \u2192 viv- \u2192 viva, vivas, viva, vivamos, viv\u00e1is, vivan</p>"+
+     "<p>Remember it as a <b>swap</b>: -ar takes the e of -er, and -er/-ir take the a of -ar.</p>"+
+     "<p><b>Why the yo form?</b> Because it carries all the irregularity along for free:<br>"+
+     "tener \u2192 ten<b>go</b> \u2192 tenga, tengas, tenga, tengamos, teng\u00e1is, tengan<br>"+
+     "hacer \u2192 ha<b>go</b> \u2192 haga, hagas, haga...<br>"+
+     "decir \u2192 di<b>go</b> \u2192 diga, digas, diga...<br>"+
+     "salir \u2192 sal<b>go</b> \u2192 salga &nbsp;|&nbsp; poner \u2192 pon<b>go</b> \u2192 ponga &nbsp;|&nbsp; venir \u2192 ven<b>go</b> \u2192 venga<br>"+
+     "conocer \u2192 cono<b>zco</b> \u2192 conozca &nbsp;|&nbsp; ver \u2192 veo \u2192 vea</p>"+
+     "<p>That's why you never need a separate list of g-forms: you already knew them from the present.</p>",
+    diepKop:"De echte onregelmatige en de klankveranderaars",
+    diepKopEn:"The true irregulars and the stem-changers",
+    diep:"<p><b>Zes echte uitzonderingen.</b> Deze hebben geen yo-vorm op -o, dus het trucje werkt niet. Leer ze uit je hoofd, het zijn er maar zes en je gebruikt ze dagelijks:</p>"+
+     "<p>ser \u2192 <b>sea</b>, seas, sea, seamos, se\u00e1is, sean<br>"+
+     "ir \u2192 <b>vaya</b>, vayas, vaya, vayamos, vay\u00e1is, vayan<br>"+
+     "haber \u2192 <b>haya</b>, hayas, haya, hayamos, hay\u00e1is, hayan<br>"+
+     "saber \u2192 <b>sepa</b>, sepas, sepa, sepamos, sep\u00e1is, sepan<br>"+
+     "estar \u2192 <b>est\u00e9</b>, est\u00e9s, est\u00e9, estemos, est\u00e9is, est\u00e9n (let op de accenten)<br>"+
+     "dar \u2192 <b>d\u00e9</b>, des, d\u00e9, demos, deis, den</p>"+
+     "<p><b>Klankveranderaars (e\u2192ie, o\u2192ue, e\u2192i).</b> Die houden hun verandering, behalve bij nosotros en vosotros, precies zoals in de presente:<br>"+
+     "querer \u2192 quiera, quieras, quiera, <b>queramos</b>, <b>quer\u00e1is</b>, quieran<br>"+
+     "poder \u2192 pueda, puedas, pueda, <b>podamos</b>, pod\u00e1is, puedan<br>"+
+     "pensar \u2192 piense... <b>pensemos</b> &nbsp;|&nbsp; volver \u2192 vuelva... <b>volvamos</b></p>"+
+     "<p><b>-ir klankveranderaars</b> zijn iets speciaals: die veranderen \u00f3\u00f3k bij nosotros en vosotros, maar dan naar de zwakke klank:<br>"+
+     "dormir \u2192 duerma, duermas, duerma, <b>durmamos</b>, <b>durm\u00e1is</b>, duerman<br>"+
+     "pedir \u2192 pida, pidas, pida, <b>pidamos</b>, pid\u00e1is, pidan<br>"+
+     "sentir \u2192 sienta... <b>sintamos</b> &nbsp;|&nbsp; preferir \u2192 prefiera... <b>prefiramos</b></p>"+
+     "<p><b>Spellingaanpassingen</b> zodat de klank hetzelfde blijft:<br>"+
+     "jugar \u2192 jue<b>gu</b>e, juguemos (u erbij, anders klinkt de g als een j)<br>"+
+     "empezar \u2192 empie<b>c</b>e, empecemos (z wordt c voor een e)<br>"+
+     "buscar \u2192 bus<b>qu</b>e &nbsp;|&nbsp; pagar \u2192 pa<b>gu</b>e &nbsp;|&nbsp; llegar \u2192 lle<b>gu</b>e</p>",
+    diepEn:"<p><b>Six true exceptions.</b> These have no yo form ending in -o, so the trick doesn't work. Memorise them, there are only six and you use them daily:</p>"+
+     "<p>ser \u2192 <b>sea</b>, seas, sea, seamos, se\u00e1is, sean<br>"+
+     "ir \u2192 <b>vaya</b>, vayas, vaya, vayamos, vay\u00e1is, vayan<br>"+
+     "haber \u2192 <b>haya</b>, hayas, haya, hayamos, hay\u00e1is, hayan<br>"+
+     "saber \u2192 <b>sepa</b>, sepas, sepa, sepamos, sep\u00e1is, sepan<br>"+
+     "estar \u2192 <b>est\u00e9</b>, est\u00e9s, est\u00e9, estemos, est\u00e9is, est\u00e9n (mind the accents)<br>"+
+     "dar \u2192 <b>d\u00e9</b>, des, d\u00e9, demos, deis, den</p>"+
+     "<p><b>Stem-changers (e\u2192ie, o\u2192ue, e\u2192i).</b> They keep the change except in nosotros and vosotros, exactly like in the present:<br>"+
+     "querer \u2192 quiera, quieras, quiera, <b>queramos</b>, <b>quer\u00e1is</b>, quieran<br>"+
+     "poder \u2192 pueda, puedas, pueda, <b>podamos</b>, pod\u00e1is, puedan<br>"+
+     "pensar \u2192 piense... <b>pensemos</b> &nbsp;|&nbsp; volver \u2192 vuelva... <b>volvamos</b></p>"+
+     "<p><b>-ir stem-changers</b> are special: they change in nosotros and vosotros too, but to the weak vowel:<br>"+
+     "dormir \u2192 duerma, duermas, duerma, <b>durmamos</b>, <b>durm\u00e1is</b>, duerman<br>"+
+     "pedir \u2192 pida, pidas, pida, <b>pidamos</b>, pid\u00e1is, pidan<br>"+
+     "sentir \u2192 sienta... <b>sintamos</b> &nbsp;|&nbsp; preferir \u2192 prefiera... <b>prefiramos</b></p>"+
+     "<p><b>Spelling adjustments</b> to keep the sound the same:<br>"+
+     "jugar \u2192 jue<b>gu</b>e, juguemos (add the u, otherwise the g sounds like a j)<br>"+
+     "empezar \u2192 empie<b>c</b>e, empecemos (z becomes c before an e)<br>"+
+     "buscar \u2192 bus<b>qu</b>e &nbsp;|&nbsp; pagar \u2192 pa<b>gu</b>e &nbsp;|&nbsp; llegar \u2192 lle<b>gu</b>e</p>",
+    vragen:[
+     {v:"Wat is de subjuntivo van hablar bij yo?", vEn:"What's the subjunctive of hablar for yo?",
+      o:["hablo","hable","habla","habl\u00e9"], g:1,
+      w:"-ar krijgt e-uitgangen: hable. Let op: habl\u00e9 met accent is de indefinido.",
+      wEn:"-ar takes e-endings: hable. Careful: habl\u00e9 with the accent is the preterite."},
+     {v:"Wat is de subjuntivo van comer bij t\u00fa?", vEn:"What's the subjunctive of comer for t\u00fa?",
+      o:["comes","comas","coman","comieras"], g:1,
+      w:"-er krijgt a-uitgangen: comas. Omruilen: -ar pakt e, -er/-ir pakken a.",
+      wEn:"-er takes a-endings: comas. Swap: -ar takes e, -er/-ir take a."},
+     {v:"Waarom is de subjuntivo van tener \"tenga\" en niet \"tena\"?", vEn:"Why is the subjunctive of tener \"tenga\" and not \"tena\"?",
+      o:["Omdat tener onregelmatig is en je het los moet leren","Omdat je van de yo-vorm tengo uitgaat","Omdat de g altijd voor een a komt","Omdat het een -ir werkwoord is"],
+      oEn:["Because tener is irregular and must be learned separately","Because you start from the yo form tengo","Because g always comes before a","Because it's an -ir verb"],
+      g:1,
+      w:"Yo-vorm tengo, -o eraf, uitgang erop. Zo krijg je hago, digo, salgo, pongo gratis mee.",
+      wEn:"Yo form tengo, drop the -o, add the ending. That gets you hago, digo, salgo, pongo for free."},
+     {v:"Wat is de subjuntivo van ir bij nosotros?", vEn:"What's the subjunctive of ir for nosotros?",
+      o:["vamos","vayamos","iremos","\u00edbamos"], g:1,
+      w:"Ir is een van de zes echte uitzonderingen: vaya, vayas, vaya, vayamos, vay\u00e1is, vayan.",
+      wEn:"Ir is one of the six true exceptions: vaya, vayas, vaya, vayamos, vay\u00e1is, vayan."},
+     {v:"Wat is de subjuntivo van ser bij \u00e9l?", vEn:"What's the subjunctive of ser for \u00e9l?",
+      o:["es","sea","ser\u00eda","fue"], g:1,
+      w:"Sea. Onthoud de zes: sea, vaya, haya, sepa, est\u00e9, d\u00e9.",
+      wEn:"Sea. Remember the six: sea, vaya, haya, sepa, est\u00e9, d\u00e9."},
+     {v:"Wat is de subjuntivo van querer bij nosotros?", vEn:"What's the subjunctive of querer for nosotros?",
+      o:["quieramos","queramos","queremos","quisi\u00e9ramos"], g:1,
+      w:"Klankveranderaars laten de verandering vallen bij nosotros en vosotros: queramos, niet quieramos.",
+      wEn:"Stem-changers drop the change in nosotros and vosotros: queramos, not quieramos."},
+     {v:"Wat is de subjuntivo van dormir bij nosotros?", vEn:"What's the subjunctive of dormir for nosotros?",
+      o:["duermamos","dormamos","durmamos","dormimos"], g:2,
+      w:"-ir klankveranderaars gaan naar de zwakke klank: durmamos. Ook pidamos, sintamos.",
+      wEn:"-ir stem-changers go to the weak vowel: durmamos. Also pidamos, sintamos."},
+     {v:"Wat is de subjuntivo van estar bij yo?", vEn:"What's the subjunctive of estar for yo?",
+      o:["estoy","este","est\u00e9","estea"], g:2,
+      w:"Est\u00e9, met accent. Estar is onregelmatig: est\u00e9, est\u00e9s, est\u00e9, estemos, est\u00e9is, est\u00e9n.",
+      wEn:"Est\u00e9, with the accent. Estar is irregular: est\u00e9, est\u00e9s, est\u00e9, estemos, est\u00e9is, est\u00e9n."}
+    ]},
+   {kop:"De triggers: wanneer moet het",
+    kopEn:"The triggers: when you need it",
+    uitleg:"<p>De vormen kennen is de helft. Nu de vraag wanneer. Er zijn vijf groepen hoofdzinnen die de subjuntivo afdwingen, plus \u00e9\u00e9n scharnierregel.</p>"+
+     "<p><b>1. Wens en wil</b><br>"+
+     "querer que, desear que, esperar que, preferir que, ojal\u00e1<br>"+
+     "<i>Quiero que vengas.</i> Ik wil dat je komt.<br>"+
+     "<i>Espero que est\u00e9s bien.</i> Ik hoop dat het goed met je is.</p>"+
+     "<p><b>2. Gevoel en waardering</b><br>"+
+     "me alegra que, me gusta que, siento que (het spijt me), me molesta que, temo que<br>"+
+     "<i>Me alegro de que est\u00e9s aqu\u00ed.</i> Ik ben blij dat je hier bent.</p>"+
+     "<p><b>3. Invloed, advies en verbod</b><br>"+
+     "pedir que, decir que (in de zin van opdragen), aconsejar que, recomendar que, prohibir que<br>"+
+     "<i>Te pido que me escuches.</i> Ik vraag je naar me te luisteren.</p>"+
+     "<p><b>4. Twijfel en ontkenning</b><br>"+
+     "dudar que, no creer que, no pensar que, es posible que, quiz\u00e1s, tal vez<br>"+
+     "<i>No creo que sea verdad.</i> Ik denk niet dat het waar is.</p>"+
+     "<p><b>5. Onpersoonlijke uitdrukkingen met es + bijvoeglijk naamwoord</b><br>"+
+     "es importante que, es necesario que, es mejor que, es raro que, es una l\u00e1stima que<br>"+
+     "<i>Es importante que practiques.</i> Het is belangrijk dat je oefent.</p>"+
+     "<p><b>De scharnierregel.</b> Bij groep 1, 2 en 3 geldt: hetzelfde onderwerp in beide delen? Dan geen que en gewoon een infinitief. Ander onderwerp? Dan que + subjuntivo.</p>"+
+     "<p><i>Quiero salir.</i> Ik wil weggaan. (ik wil, ik ga)<br>"+
+     "<i>Quiero que salgas.</i> Ik wil dat jij weggaat. (ik wil, jij gaat)<br>"+
+     "<i>Espero llegar a tiempo</i> tegenover <i>Espero que llegues a tiempo</i>.</p>"+
+     "<p>Dat is de meestgemaakte fout: <i>quiero que salir</i> of <i>quiero t\u00fa sales</i>. Onthoud: twee onderwerpen = que + subjuntivo, \u00e9\u00e9n onderwerp = infinitief.</p>",
+    uitlegEn:"<p>Knowing the forms is half of it. Now the question of when. There are five groups of main clauses that force the subjunctive, plus one hinge rule.</p>"+
+     "<p><b>1. Wish and will</b><br>"+
+     "querer que, desear que, esperar que, preferir que, ojal\u00e1<br>"+
+     "<i>Quiero que vengas.</i> I want you to come.<br>"+
+     "<i>Espero que est\u00e9s bien.</i> I hope you're well.</p>"+
+     "<p><b>2. Emotion and evaluation</b><br>"+
+     "me alegra que, me gusta que, siento que (I'm sorry), me molesta que, temo que<br>"+
+     "<i>Me alegro de que est\u00e9s aqu\u00ed.</i> I'm glad you're here.</p>"+
+     "<p><b>3. Influence, advice and prohibition</b><br>"+
+     "pedir que, decir que (in the sense of telling someone to), aconsejar que, recomendar que, prohibir que<br>"+
+     "<i>Te pido que me escuches.</i> I'm asking you to listen to me.</p>"+
+     "<p><b>4. Doubt and denial</b><br>"+
+     "dudar que, no creer que, no pensar que, es posible que, quiz\u00e1s, tal vez<br>"+
+     "<i>No creo que sea verdad.</i> I don't think it's true.</p>"+
+     "<p><b>5. Impersonal expressions with es + adjective</b><br>"+
+     "es importante que, es necesario que, es mejor que, es raro que, es una l\u00e1stima que<br>"+
+     "<i>Es importante que practiques.</i> It's important that you practise.</p>"+
+     "<p><b>The hinge rule.</b> For groups 1, 2 and 3: same subject in both parts? Then no que and just an infinitive. Different subject? Then que + subjunctive.</p>"+
+     "<p><i>Quiero salir.</i> I want to leave. (I want, I go)<br>"+
+     "<i>Quiero que salgas.</i> I want you to leave. (I want, you go)<br>"+
+     "<i>Espero llegar a tiempo</i> versus <i>Espero que llegues a tiempo</i>.</p>"+
+     "<p>That's the most common mistake: <i>quiero que salir</i> or <i>quiero t\u00fa sales</i>. Remember: two subjects = que + subjunctive, one subject = infinitive.</p>",
+    diepKop:"Creo que es, no creo que sea, en de rest van de spiegelparen",
+    diepKopEn:"Creo que es, no creo que sea, and the other mirror pairs",
+    diep:"<p>Een aantal werkwoorden flipt van modus als je ze ontkent. Dat komt omdat de bevestigende vorm iets beweert en de ontkennende vorm juist niet.</p>"+
+     "<p><i>Creo que es verdad.</i> Ik denk dat het waar is. Indicativo: ik beweer het.<br>"+
+     "<i>No creo que sea verdad.</i> Ik denk niet dat het waar is. Subjuntivo: ik neem afstand.</p>"+
+     "<p>Zelfde patroon bij:<br>"+
+     "pensar: <i>pienso que viene</i> / <i>no pienso que venga</i><br>"+
+     "parecer: <i>me parece que est\u00e1 bien</i> / <i>no me parece que est\u00e9 bien</i><br>"+
+     "ser evidente: <i>es evidente que sabe</i> / <i>no es evidente que sepa</i><br>"+
+     "estar seguro: <i>estoy seguro de que viene</i> / <i>no estoy seguro de que venga</i></p>"+
+     "<p>En de omgekeerde richting: <b>dudar</b> pakt subjuntivo als het bevestigend is (<i>dudo que venga</i>) en indicativo als je het ontkent (<i>no dudo que viene</i>).</p>"+
+     "<p><b>Let op de valstrik met decir en esperar.</b> Die kunnen beide kanten op, afhankelijk van de bedoeling:<br>"+
+     "<i>Dice que viene.</i> Hij zegt dat hij komt (mededeling, indicativo).<br>"+
+     "<i>Dice que vengas.</i> Hij zegt dat je moet komen (opdracht, subjuntivo).<br>"+
+     "E\u00e9n woord verschil, een compleet andere zin. Dit is precies waarom de modus geen decoratie is.</p>",
+    diepEn:"<p>Several verbs flip mood when you negate them. That's because the affirmative asserts something and the negative declines to.</p>"+
+     "<p><i>Creo que es verdad.</i> I think it's true. Indicative: I'm asserting.<br>"+
+     "<i>No creo que sea verdad.</i> I don't think it's true. Subjunctive: I'm stepping back.</p>"+
+     "<p>Same pattern with:<br>"+
+     "pensar: <i>pienso que viene</i> / <i>no pienso que venga</i><br>"+
+     "parecer: <i>me parece que est\u00e1 bien</i> / <i>no me parece que est\u00e9 bien</i><br>"+
+     "ser evidente: <i>es evidente que sabe</i> / <i>no es evidente que sepa</i><br>"+
+     "estar seguro: <i>estoy seguro de que viene</i> / <i>no estoy seguro de que venga</i></p>"+
+     "<p>And the other direction: <b>dudar</b> takes the subjunctive when affirmative (<i>dudo que venga</i>) and the indicative when negated (<i>no dudo que viene</i>).</p>"+
+     "<p><b>Watch the trap with decir and esperar.</b> They can go either way depending on intent:<br>"+
+     "<i>Dice que viene.</i> He says he's coming (a report, indicative).<br>"+
+     "<i>Dice que vengas.</i> He says you should come (an order, subjunctive).<br>"+
+     "One word of difference, a completely different sentence. This is exactly why mood isn't decoration.</p>",
+    vragen:[
+     {v:"\"Ik wil dat je komt.\"", vEn:"\"I want you to come.\"",
+      o:["Quiero que vienes.","Quiero que vengas."], g:1,
+      w:"Wil + ander onderwerp = que + subjuntivo. Vienes is indicativo.",
+      wEn:"Will + different subject = que + subjunctive. Vienes is indicative."},
+     {v:"\"Ik wil weggaan.\" (ik wil, ik ga)", vEn:"\"I want to leave.\" (I want, I go)",
+      o:["Quiero que salga.","Quiero salir."], g:1,
+      w:"Hetzelfde onderwerp = infinitief, geen que. Quiero que salga zou over iemand anders gaan.",
+      wEn:"Same subject = infinitive, no que. Quiero que salga would be about someone else."},
+     {v:"\"Ik hoop dat het goed met je is.\"", vEn:"\"I hope you're well.\"",
+      o:["Espero que est\u00e1s bien.","Espero que est\u00e9s bien."], g:1,
+      w:"Esperar que + subjuntivo. Dit is een van de nuttigste zinnen om vast in je hoofd te hebben.",
+      wEn:"Esperar que + subjunctive. One of the most useful phrases to have memorised."},
+     {v:"\"Ik denk niet dat het waar is.\"", vEn:"\"I don't think it's true.\"",
+      o:["No creo que es verdad.","No creo que sea verdad."], g:1,
+      w:"Ontkende creer = subjuntivo. Bevestigend blijft indicativo: creo que es verdad.",
+      wEn:"Negated creer = subjunctive. Affirmative stays indicative: creo que es verdad."},
+     {v:"\"Ik denk dat hij komt.\"", vEn:"\"I think he's coming.\"",
+      o:["Creo que viene.","Creo que venga."], g:0,
+      w:"Bevestigend creer beweert iets: indicativo. Alleen bij ontkenning flipt het.",
+      wEn:"Affirmative creer asserts something: indicative. It only flips under negation."},
+     {v:"\"Het is belangrijk dat je oefent.\"", vEn:"\"It's important that you practise.\"",
+      o:["Es importante que practicas.","Es importante que practiques."], g:1,
+      w:"Onpersoonlijke uitdrukking es + bijvoeglijk naamwoord + que: subjuntivo.",
+      wEn:"Impersonal expression es + adjective + que: subjunctive."},
+     {v:"Wat betekent \"Dice que vengas\"?", vEn:"What does \"Dice que vengas\" mean?",
+      o:["Hij zegt dat hij komt","Hij zegt dat je moet komen","Hij vraagt of je komt","Hij twijfelt of je komt"],
+      oEn:["He says he's coming","He says you should come","He asks whether you're coming","He doubts you're coming"],
+      g:1,
+      w:"Subjuntivo maakt van decir een opdracht. Dice que viene is een mededeling.",
+      wEn:"The subjunctive turns decir into an order. Dice que viene is a report."},
+     {v:"\"Ik ben blij dat je hier bent.\"", vEn:"\"I'm glad you're here.\"",
+      o:["Me alegro de que est\u00e1s aqu\u00ed.","Me alegro de que est\u00e9s aqu\u00ed."], g:1,
+      w:"Gevoel + que = subjuntivo, ook als het feit vaststaat. Gevoel beweert niet, het waardeert.",
+      wEn:"Emotion + que = subjunctive, even when the fact is certain. Emotion doesn't assert, it evaluates."}
+    ]},
+   {kop:"Vaste voegwoorden en de gratis winst",
+    kopEn:"Fixed conjunctions and the free win",
+    uitleg:"<p><b>Voegwoorden die ALTIJD subjuntivo pakken.</b> Geen nadenken, geen uitzonderingen:</p>"+
+     "<p><i>para que</i> zodat &nbsp;|&nbsp; <i>antes de que</i> voordat &nbsp;|&nbsp; <i>a menos que</i> tenzij &nbsp;|&nbsp; <i>sin que</i> zonder dat &nbsp;|&nbsp; <i>con tal de que</i> mits &nbsp;|&nbsp; <i>en caso de que</i> in het geval dat &nbsp;|&nbsp; <i>ojal\u00e1 (que)</i> hopelijk</p>"+
+     "<p><i>Te lo digo para que lo sepas.</i> Ik zeg het je zodat je het weet.<br>"+
+     "<i>Ojal\u00e1 haga buen tiempo.</i> Hopelijk is het mooi weer.<br>"+
+     "<i>Salgo antes de que llueva.</i> Ik ga weg voordat het regent.</p>"+
+     "<p><b>Voegwoorden die splitsen op al-gebeurd-of-niet.</b> Bij cuando, aunque, en cuanto, hasta que, mientras, despu\u00e9s de que: gaat het over iets dat al gebeurt of gewoonte is, dan indicativo. Gaat het over de toekomst of iets onzekers, dan subjuntivo.</p>"+
+     "<p><i>Cuando llego a casa, me ducho.</i> Gewoonte, dus indicativo.<br>"+
+     "<i>Cuando llegues a casa, ll\u00e1mame.</i> Nog niet gebeurd, dus subjuntivo.<br>"+
+     "<i>Aunque es caro, lo compro.</i> Ik weet dat het duur is.<br>"+
+     "<i>Aunque sea caro, lo compro.</i> Ook al zou het duur zijn.</p>"+
+     "<p><b>De gratis winst.</b> Je kent de subjuntivo al langer dan je denkt. Twee dingen die je waarschijnlijk al gebruikt zijn in werkelijkheid subjuntivo-vormen:</p>"+
+     "<p>1. De <b>ontkennende gebiedende wijs</b>: <i>no hables</i> (praat niet), <i>no vengas</i>, <i>no lo hagas</i>. Dat is exact de subjuntivo.<br>"+
+     "2. De <b>usted-gebiedende wijs</b>: <i>hable</i> (spreekt u), <i>venga</i>, <i>si\u00e9ntese</i>, <i>perdone</i>, <i>diga</i>. Ook subjuntivo.</p>"+
+     "<p>Elke keer dat je in een winkel <i>diga</i> hoort of <i>no te preocupes</i> zegt, gebruik je hem al. Je hoeft dus geen nieuwe klank te leren, alleen een nieuw gebruik.</p>",
+    uitlegEn:"<p><b>Conjunctions that ALWAYS take the subjunctive.</b> No thinking, no exceptions:</p>"+
+     "<p><i>para que</i> so that &nbsp;|&nbsp; <i>antes de que</i> before &nbsp;|&nbsp; <i>a menos que</i> unless &nbsp;|&nbsp; <i>sin que</i> without &nbsp;|&nbsp; <i>con tal de que</i> provided that &nbsp;|&nbsp; <i>en caso de que</i> in case &nbsp;|&nbsp; <i>ojal\u00e1 (que)</i> hopefully</p>"+
+     "<p><i>Te lo digo para que lo sepas.</i> I'm telling you so you know.<br>"+
+     "<i>Ojal\u00e1 haga buen tiempo.</i> Hopefully the weather will be nice.<br>"+
+     "<i>Salgo antes de que llueva.</i> I'm leaving before it rains.</p>"+
+     "<p><b>Conjunctions that split on already-happened-or-not.</b> With cuando, aunque, en cuanto, hasta que, mientras, despu\u00e9s de que: if it's about something already happening or habitual, indicative. If it's about the future or something uncertain, subjunctive.</p>"+
+     "<p><i>Cuando llego a casa, me ducho.</i> Habit, so indicative.<br>"+
+     "<i>Cuando llegues a casa, ll\u00e1mame.</i> Hasn't happened yet, so subjunctive.<br>"+
+     "<i>Aunque es caro, lo compro.</i> I know it's expensive.<br>"+
+     "<i>Aunque sea caro, lo compro.</i> Even if it were expensive.</p>"+
+     "<p><b>The free win.</b> You've known the subjunctive longer than you think. Two things you probably already use are in fact subjunctive forms:</p>"+
+     "<p>1. The <b>negative imperative</b>: <i>no hables</i> (don't speak), <i>no vengas</i>, <i>no lo hagas</i>. That is exactly the subjunctive.<br>"+
+     "2. The <b>usted imperative</b>: <i>hable</i> (speak, formal), <i>venga</i>, <i>si\u00e9ntese</i>, <i>perdone</i>, <i>diga</i>. Also subjunctive.</p>"+
+     "<p>Every time you hear <i>diga</i> in a shop or say <i>no te preocupes</i>, you're already using it. So you don't need to learn a new sound, only a new use.</p>",
+    diepKop:"En de subjuntivo van het verleden? Die bewaar je even",
+    diepKopEn:"And the past subjunctive? Save that for later",
+    diep:"<p>Er is ook een <b>imperfecto de subjuntivo</b>: hablara/hablase, tuviera/tuviese, fuera/fuese. Twee vormen die volledig uitwisselbaar zijn, de -ra-vorm is in spreektaal gangbaarder.</p>"+
+     "<p>Die heb je nodig voor twee dingen. Ten eerste dezelfde triggers, maar in het verleden: <i>Quer\u00eda que vinieras</i> (ik wilde dat je kwam). Ten tweede de onwerkelijke als-dan: <i>Si tuviera dinero, viajar\u00eda</i> (als ik geld had, zou ik reizen).</p>"+
+     "<p>Dat laatste patroon is streng: <b>si + imperfecto de subjuntivo, dan + condicional</b>. Nooit <i>si tendr\u00eda</i>, dat is een fout die veel leerders maken en die zelfs sommige moedertaalsprekers in bepaalde regio's maken.</p>"+
+     "<p><b>Maar:</b> dit is B1-materiaal en de app heeft nog geen B1-spoor. Bewust buiten scope gehouden: als je nu al aan hablara begint terwijl hable nog niet automatisch is, ga je twee dingen halfslachtig kennen in plaats van \u00e9\u00e9n ding goed.</p>"+
+     "<p>Dus: eerst deze wizard doorlopen tot de vormen van de presente eruit rollen zonder nadenken, en pas dan het verleden erbij. Het is nu vooral handig om te weten dat het bestaat, zodat je niet in de war raakt als je <i>si fuera t\u00fa</i> hoort.</p>",
+    diepEn:"<p>There's also an <b>imperfect subjunctive</b>: hablara/hablase, tuviera/tuviese, fuera/fuese. Two fully interchangeable forms; the -ra form is more common in speech.</p>"+
+     "<p>You need it for two things. First, the same triggers but in the past: <i>Quer\u00eda que vinieras</i> (I wanted you to come). Second, the unreal if-then: <i>Si tuviera dinero, viajar\u00eda</i> (if I had money, I'd travel).</p>"+
+     "<p>That last pattern is strict: <b>si + imperfect subjunctive, then + conditional</b>. Never <i>si tendr\u00eda</i>, a mistake many learners make and even some native speakers in certain regions.</p>"+
+     "<p><b>But:</b> this is B1 material and the app has no B1 track yet. Deliberately kept out of scope: if you start on hablara while hable isn't automatic yet, you'll half-know two things instead of knowing one well.</p>"+
+     "<p>So: first work through this wizard until the present forms come out without thinking, then add the past. For now it's mainly useful to know it exists, so you're not confused when you hear <i>si fuera t\u00fa</i>.</p>",
+    vragen:[
+     {v:"\"Ik zeg het je zodat je het weet.\"", vEn:"\"I'm telling you so you know.\"",
+      o:["Te lo digo para que lo sabes.","Te lo digo para que lo sepas."], g:1,
+      w:"Para que pakt altijd subjuntivo. Sepas komt van sepa (saber is onregelmatig).",
+      wEn:"Para que always takes the subjunctive. Sepas comes from sepa (saber is irregular)."},
+     {v:"\"Hopelijk is het mooi weer.\"", vEn:"\"Hopefully the weather is nice.\"",
+      o:["Ojal\u00e1 hace buen tiempo.","Ojal\u00e1 haga buen tiempo."], g:1,
+      w:"Ojal\u00e1 pakt altijd subjuntivo. Het komt trouwens uit het Arabisch: in sh\u0101' All\u0101h.",
+      wEn:"Ojal\u00e1 always takes the subjunctive. It comes from Arabic, incidentally: in sh\u0101' All\u0101h."},
+     {v:"\"Bel me als je thuis komt.\" (nog niet gebeurd)", vEn:"\"Call me when you get home.\" (hasn't happened yet)",
+      o:["Cuando llegas a casa, ll\u00e1mame.","Cuando llegues a casa, ll\u00e1mame."], g:1,
+      w:"Toekomst na cuando: subjuntivo. Bij een gewoonte zou het indicativo zijn.",
+      wEn:"Future after cuando: subjunctive. For a habit it would be indicative."},
+     {v:"\"Als ik thuiskom, ga ik onder de douche.\" (elke dag)", vEn:"\"When I get home, I take a shower.\" (every day)",
+      o:["Cuando llego a casa, me ducho.","Cuando llegue a casa, me ducho."], g:0,
+      w:"Gewoonte die echt gebeurt: indicativo. Cuando splitst op al-gebeurd-of-niet.",
+      wEn:"Habit that really happens: indicative. Cuando splits on already-happened-or-not."},
+     {v:"Welke vorm is in werkelijkheid al een subjuntivo?", vEn:"Which form is in fact already a subjunctive?",
+      o:["habla (spreek, t\u00fa)","no hables (spreek niet)","hablas (jij spreekt)","habl\u00e9 (ik sprak)"],
+      oEn:["habla (speak, t\u00fa)","no hables (don't speak)","hablas (you speak)","habl\u00e9 (I spoke)"],
+      g:1,
+      w:"De ontkennende gebiedende wijs is de subjuntivo. Ook de usted-vorm: hable, venga, diga.",
+      wEn:"The negative imperative is the subjunctive. So is the usted form: hable, venga, diga."},
+     {v:"\"Maak je geen zorgen.\"", vEn:"\"Don't worry.\"",
+      o:["No te preocupas.","No te preocupes."], g:1,
+      w:"Ontkennend gebod = subjuntivo: no te preocupes. Je gebruikte hem dus al.",
+      wEn:"Negative command = subjunctive: no te preocupes. So you were already using it."},
+     {v:"\"Ik ga weg voordat het regent.\"", vEn:"\"I'm leaving before it rains.\"",
+      o:["Salgo antes de que llueve.","Salgo antes de que llueva."], g:1,
+      w:"Antes de que pakt altijd subjuntivo, want het is per definitie nog niet gebeurd.",
+      wEn:"Antes de que always takes the subjunctive, since by definition it hasn't happened yet."}
     ]}
   ]}
 ];
