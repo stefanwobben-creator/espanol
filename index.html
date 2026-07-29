@@ -450,7 +450,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.36";
+var APP_VERSIE = "v19.37";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9692,7 +9692,8 @@ var FUN_TXT = {
      krS:"kruiswoord uit jouw geleerde woorden, elke keer een nieuwe puzzel",
      meS:"match Spaans met jouw taal, in zo min mogelijk beurten",
      duS:"woordduel tegen elkaar, AI als scheidsrechter",
-     klassement:"\ud83c\udfc6 Klassementen zitten bij je groepen (familie, klasgenoten...): tik op je <b>naam</b> bovenaan en start of open een groep.",
+     famT:"Familie", famS:"zie in \u00e9\u00e9n oogopslag wie van je familie het snelst leert",
+     klassement:"\ud83c\udfc6 Voor klasgenoten, collega's of vrienden: tik op je <b>naam</b> bovenaan en start of open een groep met een eigen klassement.",
      terug:"\u2190 Speeltuin",
      wsIntro:"Zes van jouw geleerde woorden, verstopt in een raster. Woorden die jij lastig vindt, krijgen stiekem voorrang.",
      wsNieuw:"Nieuwe woordenzoeker", wsZoek:"Tik de eerste en laatste letter van een woord. Zoek:",
@@ -9723,7 +9724,8 @@ var FUN_TXT = {
      krS:"a crossword from your own learned words, a new puzzle every time",
      meS:"match Spanish with your language, in as few turns as possible",
      duS:"word duel against each other, AI as referee",
-     klassement:"\ud83c\udfc6 Leaderboards live with your groups (family, classmates...): tap your <b>name</b> at the top and start or open a group.",
+     famT:"Family", famS:"see at a glance who in your family is learning fastest",
+     klassement:"\ud83c\udfc6 For classmates, coworkers or friends: tap your <b>name</b> at the top and start or open a group with its own leaderboard.",
      terug:"\u2190 Playground",
      wsIntro:"Six of your learned words, hidden in a grid. Words you struggle with secretly get priority.",
      wsNieuw:"New word search", wsZoek:"Tap the first and last letter of a word. Find:",
@@ -9765,7 +9767,9 @@ function renderFun(){
   if(funView === "jaartallen"){ renderFunJaartallen(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
+  if(funView === "familia"){ renderFamilia(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
+    "<div class='lesson' id='ftFam'><div class='lnum'>\ud83c\udfc6</div><div class='lbody'><b>" + fx("famT") + "</b><span>" + fx("famS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftAvt'><div class='lnum'>\ud83d\uddfa\ufe0f</div><div class='lbody'><b>Aventura</b><span>" + fx("avS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>" + fx("muS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>" + fx("wsT") + "</b><span>" + fx("wsS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
@@ -9777,6 +9781,7 @@ function renderFun(){
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
+  document.getElementById("ftFam").onclick = function(){ funView = "familia"; navPush({t:"fun", v:"familia"}); renderFun(); };
   document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
@@ -10084,22 +10089,24 @@ function renderGroepen(){
 
 function renderFamilia(){
   var el = document.getElementById("funCard");
-  el.innerHTML = "<h2>Familie-klassement \ud83c\udfc6</h2><p class='muted' id='famStatus'>Scores ophalen...</p>"+
+  el.innerHTML = "<h2>"+ct("Familie-klassement","Family leaderboard")+" \ud83c\udfc6</h2><p class='muted' id='famStatus'>"+ct("Scores ophalen...","Fetching scores...")+"</p>"+
     "<div id='famLijst'></div>"+
-    "<div class='row'><button class='ghost' id='btnFunTerug'>\u2190 Speeltuin</button></div>";
+    "<div class='row'><button class='ghost' id='btnFunTerug'>\u2190 "+fx("terug")+"</button></div>";
   var bt = document.getElementById("btnFunTerug");
   if(bt) bt.onclick = function(){ funView = null; renderFun(); };
   api("/api/familia").then(function(res){
     var st = document.getElementById("famStatus");
     var lijst = document.getElementById("famLijst");
     if(!lijst) return;
-    if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
-    if(st) st.textContent = "Iedereen ziet alleen elkaars scores, nooit elkaars oefeningen of fouten.";
+    if(!res || !res.ok || !res.spelers){ if(st) st.textContent = ct("Server even niet bereikbaar, probeer zo opnieuw.","Server not reachable right now, try again in a bit."); return; }
+    if(!res.spelers.length){ if(st) st.textContent = ct("Nog niemand van de familie hier gezien. Zodra iemand start, verschijnt die hier.","No family members seen here yet. As soon as someone starts, they'll show up here."); return; }
+    if(st) st.textContent = ct("Iedereen ziet alleen elkaars scores, nooit elkaars oefeningen of fouten.","Everyone only sees each other's scores, never each other's exercises or mistakes.");
     var medailles = ["\ud83e\udd47","\ud83e\udd48","\ud83e\udd49"];
     lijst.innerHTML = res.spelers.map(function(sp, i){
       var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
+      var lesTxt = sp.lessen+" "+(profLang()==="nl" ? ("les"+(sp.lessen===1?"":"sen")) : ("session"+(sp.lessen===1?"":"s")));
       return "<div class='duelrow'><span>"+(medailles[i]||"\u00b7")+" <b>"+sp.naam+"</b> <span class='muted'>\u00b7 "+lvl+"</span></span>"+
-        "<span><b>"+sp.txp+" XP</b> \u00b7 \ud83d\udd25 "+sp.streak+" \u00b7 "+sp.lessen+" les"+(sp.lessen===1?"":"sen")+"</span></div>";
+        "<span><b>"+sp.txp+" XP</b> \u00b7 \ud83d\udd25 "+sp.streak+" \u00b7 "+lesTxt+"</span></div>";
     }).join("");
   });
 }
