@@ -318,8 +318,13 @@
     </div>
   </section>
 
-  <!-- STEUN: het verhaal achter de app + doneren -->
+  <!-- STEUN: hoe dit werkt (spaced repetition) + het verhaal achter de app + doneren, gecombineerd
+       op Stefans verzoek (29 juli): "hoe werkt het" en "doneren" horen bij elkaar - wie snapt waarom
+       de app zo goed werkt, is ook eerder geneigd hem te steunen. #hoewerktCard is taalonafhankelijk
+       (ct() nl/en, zelfde conventie als de rest van de app) en staat daarom vóór de 4 taalspecifieke
+       steun-kaarten die elk hun eigen volledige vertaling hebben. -->
   <section id="tab-steun" class="hidden">
+    <div class="card" id="hoewerktCard"></div>
     <div id="steunEN" class="hidden">
       <div class="card">
         <span class="kicker">The story behind ¡Vamos!</span>
@@ -406,11 +411,6 @@
     </div>
   </section>
 
-  <!-- HOE DIT WERKT: uitleg waarom dagelijkse korte lesjes + spaced repetition werken (via footer) -->
-  <section id="tab-hoewerkt" class="hidden">
-    <div class="card" id="hoewerktCard"></div>
-  </section>
-
   <!-- SPEELTUIN -->
   <section id="tab-speeltuin" class="hidden">
     <div class="card" id="funCard"></div>
@@ -450,13 +450,13 @@
   </section>
 
   <footer id="appFooter" class="appfooter hidden">
-    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkHoewerkt">🧠 Hoe dit werkt</a> · <a href="#" id="lnkSteun">💛 Steun de app</a> · <span id="footVer"></span>
+    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkSteun">💛 Hoe dit werkt &amp; steun de app</a> · <span id="footVer"></span>
   </footer>
 </div>
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.39";
+var APP_VERSIE = "v19.40";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9328,7 +9328,7 @@ var TOUR = [
   {titel:"Je eerste woordje 🎉", oefen:{id:"b1", es:"hola", opts:["hallo","tot ziens"], c:0}},
   {titel:"En nummer twee ✨", oefen:{id:"b3", es:"gracias", opts:["alsjeblieft","dank je wel"], c:1}},
   {titel:"Zo werkt het 🧠",
-   txt:"Zo simpel is het! Elke dag krijg je maximaal <b>15 nieuwe woordjes</b> (expres: kleine porties blijven plakken) en komt alles terug precies wanneer je het bijna vergeten bent. Bij elke les lees je eerst kort de grammatica. En <b>fouten zijn goud</b>: daar leer je het meest van, dus ook een fout antwoord levert XP op."},
+   txt:"Zo simpel is het! Elke dag krijg je maximaal <b>15 nieuwe woordjes</b> (expres: kleine porties blijven plakken) en komt alles terug precies wanneer je het bijna vergeten bent: dat heet <b>spaced repetition</b>, en het is waarom dit beter werkt dan Duolingo, Babbel of Pimsleur. Bij elke les lees je eerst kort de grammatica. En <b>fouten zijn goud</b>: daar leer je het meest van, dus ook een fout antwoord levert XP op. (Meer hierover onderaan bij 💛.)"},
   {titel:"Nog eentje dan 😄", oefen:{id:"b2", es:"adiós", opts:["tot ziens","goedemorgen"], c:0}},
   {titel:"Alles binnen handbereik 🧭",
    txt:"Onder <b>Grammatica</b> vind je de spiekbrieven, de ronde 📖-knop rechtsonder is je woordenboek (opent als popup, altijd bij de hand), en in de <b>Speeltuin</b> leer je spelenderwijs verder met muziek, memory en meer."},
@@ -9343,7 +9343,7 @@ var TOUR_EN = [
   {titel:"Your first word 🎉", oefen:{id:"b1", es:"hola", opts:["hello","goodbye"], c:0}},
   {titel:"And number two ✨", oefen:{id:"b3", es:"gracias", opts:["please","thank you"], c:1}},
   {titel:"How it works 🧠",
-   txt:"That's all there is to it! Each day you get at most <b>15 new words</b> (on purpose: small portions stick) and everything comes back exactly when you're about to forget it. Every lesson starts with a short grammar note. And <b>mistakes are gold</b>: they're where you learn the most, so even a wrong answer earns XP."},
+   txt:"That's all there is to it! Each day you get at most <b>15 new words</b> (on purpose: small portions stick) and everything comes back exactly when you're about to forget it: that's called <b>spaced repetition</b>, and it's why this works better than Duolingo, Babbel or Pimsleur. Every lesson starts with a short grammar note. And <b>mistakes are gold</b>: they're where you learn the most, so even a wrong answer earns XP. (More on this at the bottom under 💛.)"},
   {titel:"One more 😄", oefen:{id:"b2", es:"adiós", opts:["goodbye","good morning"], c:0}},
   {titel:"Everything within reach 🧭",
    txt:"Under <b>Grammar</b> you'll find the cheat sheets, the round 📖 button bottom right is your dictionary (opens as a popup, always at hand), and in the <b>Playground</b> you keep learning through music, memory and more."},
@@ -10446,7 +10446,6 @@ var TABS = [
   {id:"chispa", label:"Chispa", nav:false},
   {id:"perfil", label:"Profiel", nav:false},
   {id:"steun", label:"Steun", nav:false},
-  {id:"hoewerkt", label:"Hoe dit werkt", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Grammatica"}
@@ -10456,12 +10455,15 @@ function navPush(state){
   try{ if(window.history && history.pushState) history.pushState(state, ""); }catch(e){}
 }
 
-// "Hoe dit werkt" (29 juli): Stefans idee na de familie/onboarding-ronde - mensen snappen niet
-// waarom ze elke dag een lesje met woordjes/zinnetjes doen, en hoe dat via spaced repetition
-// terugkomt. Bewust géén tip-systeem of e-mail (Stefan: "dat is te veel"), wel een laagdrempelig
-// schermpje via de footer (naast Rondleiding/Steun) dat het uitlegt en vergelijkt met Duolingo/
-// Babbel/Pimsleur. Vervolgstap (nog niet gebouwd): dit ook ervaarbaar maken, niet alleen leesbaar,
-// bijv. een label bij een woord/toetsje dat daadwerkelijk terugkomt via spaced repetition.
+// "Hoe dit werkt" (29 juli, v19.39; samengevoegd met Steun in v19.40): Stefans idee na de familie/
+// onboarding-ronde - mensen snappen niet waarom ze elke dag een lesje met woordjes/zinnetjes doen,
+// en hoe dat via spaced repetition terugkomt. Bewust géén tip-systeem of e-mail (Stefan: "dat is te
+// veel"). Stond eerst als eigen footer-pagina (v19.39), op Stefans verzoek samengevoegd met de
+// Steun-pagina (v19.40): wie snapt waarom de app zo goed werkt, is eerder geneigd hem te steunen.
+// Rendert in #hoewerktCard, dat nu bovenaan tab-steun staat (taalonafhankelijk via ct(), vóór de 4
+// taalspecifieke steun-kaarten). Vervolgstap (nog niet gebouwd): dit ook ervaarbaar maken, niet
+// alleen leesbaar, bijv. een label bij een woord/toetsje dat daadwerkelijk terugkomt via spaced
+// repetition.
 function renderHoeWerkt(){
   var el = document.getElementById("hoewerktCard");
   if(!el) return;
@@ -10504,6 +10506,7 @@ function show(tabId, skipPush){
   if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
   if(tabId==="steun"){
+    renderHoeWerkt();
     var sl = profLang();
     if(sl !== "nl" && sl !== "fr" && sl !== "de") sl = "en";
     ["NL","EN","FR","DE"].forEach(function(k){
@@ -10511,7 +10514,6 @@ function show(tabId, skipPush){
       if(pag) pag.classList.toggle("hidden", k.toLowerCase() !== sl);
     });
   }
-  if(tabId==="hoewerkt"){ renderHoeWerkt(); }
 }
 
 (function init(){
@@ -10521,8 +10523,6 @@ function show(tabId, skipPush){
   if(lt0) lt0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
   var ls0 = document.getElementById("lnkSteun");
   if(ls0) ls0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("steun"); return false; };
-  var lh0 = document.getElementById("lnkHoewerkt");
-  if(lh0) lh0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("hoewerkt"); return false; };
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
