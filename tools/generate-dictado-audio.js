@@ -7,9 +7,12 @@
  *
  * GEBRUIK (vanaf de repo-root)
  *     export ELEVENLABS_API_KEY="PLAK-HIER-JE-SLEUTEL"
- *     export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"   # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
  *     node tools/generate-dictado-audio.js --droog
  *     node tools/generate-dictado-audio.js
+ *
+ * Meer is niet nodig: welke stem dictado heeft, staat vast in audio/stemmen.json. Zijn er zinnen
+ * bijgekomen, dan krijgen die vanzelf diezelfde stem. Van stem wisselen kan wel, maar moet je
+ * expliciet zeggen; zie ELEVENLABS_VOICE_DICTADO en --nieuwe-stem in tools/generate-audio.js.
  *
  * Opties en overslaan-logica: zie de uitleg bovenin tools/generate-audio.js. Kort: het manifest
  * audio/stemmen.json bepaalt wat er opnieuw moet, niet het enkele bestaan van een mp3.

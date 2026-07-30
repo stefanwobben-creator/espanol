@@ -86,7 +86,7 @@ function schrijfManifest(man){
 // ---------------------------------------------------------------- opdrachtregel
 
 function leesOpties(argv){
-  const o = { alles: false, droog: false, adopteer: false, max: Infinity };
+  const o = { alles: false, droog: false, adopteer: false, nieuweStem: false, max: Infinity };
   const args = argv.slice(2);
   for(let i = 0; i < args.length; i++){
     const a = args[i];
@@ -98,8 +98,9 @@ function leesOpties(argv){
     if(a === "--alles" || a === "--force") o.alles = true;
     else if(a === "--droog" || a === "--dry-run") o.droog = true;
     else if(a === "--adopteer") o.adopteer = true;
+    else if(a === "--nieuwe-stem") o.nieuweStem = true;
     else if(a.indexOf("--max=") === 0) o.max = parseInt(a.slice(6), 10) || Infinity;
-    else throw new Error("Onbekende optie: " + a + "  (geldig: --alles, --adopteer, --droog, --max=N)");
+    else throw new Error("Onbekende optie: " + a + "  (geldig: --alles, --adopteer, --droog, --nieuwe-stem, --max=N)");
   }
   return o;
 }
@@ -127,27 +128,76 @@ function stemVoor(groep, cfg){
   return (cfg.stemmen && cfg.stemmen[groep]) || cfg.voice || "";
 }
 
+/*
+ * De stem die deze groep al heeft, zoals vastgelegd in audio/stemmen.json.
+ *
+ * Dit is het antwoord op een vraag die pas over een half jaar opkomt: voeg je dan drie nieuwe
+ * dictado-zinnen toe, hoe weet je script dan nog met welke stem de andere 201 zijn ingesproken?
+ * Uit een omgevingsvariabele niet: die leeft één terminalvenster lang. Dus staat de gekozen stem
+ * in het manifest, in de repo, naast de mp3's waar hij bij hoort. Een voice-id is geen geheim,
+ * dus dat mag daar gewoon staan.
+ */
+function vastgelegdeStem(groep, man){
+  const m = man || leesManifest();
+  return (m.standaard && m.standaard[groep]) || "";
+}
+
 function leesConfig(opties, groepen){
   const basis = process.env.ELEVENLABS_VOICE_ID || "";
+  const man = leesManifest();
+  const lijst = groepen || ["dictado", "boek"];
   const c = {
     key: process.env.ELEVENLABS_API_KEY || "",
     voice: basis,
-    stemmen: {
-      dictado: process.env[GROEP_ENV.dictado] || basis,
-      boek: process.env[GROEP_ENV.boek] || basis
-    },
+    stemmen: {},
+    vast: {},
+    uitOmgeving: {},
     model: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2"
   };
+
+  ["dictado", "boek"].forEach(function(g){
+    const uitEnv = process.env[GROEP_ENV[g]] || basis || "";
+    const vast = vastgelegdeStem(g, man);
+    c.vast[g] = vast;
+    c.uitOmgeving[g] = !!uitEnv;
+    /* Volgorde: wat jij nu instelt wint, anders wat er al ligt. Zo kun je nog steeds bewust van
+       stem wisselen, maar hoef je voor "er zijn zinnen bijgekomen" niets te weten of te zetten. */
+    c.stemmen[g] = uitEnv || vast;
+  });
+
+  /* Zet je een andere stem dan wat er ligt, dan is dat geen kleine afwijking: dan wordt de hele
+     groep opnieuw ingesproken, want anders klinkt de app door elkaar. Dat kost geld en dat wil je
+     niet per ongeluk. Vandaar dat het expliciet moet. */
+  const botsing = lijst.filter(function(g){
+    return c.vast[g] && c.uitOmgeving[g] && c.stemmen[g] !== c.vast[g];
+  });
+  if(botsing.length && !opties.nieuweStem){
+    botsing.forEach(function(g){
+      console.error("De stem voor '" + g + "' ligt vast op " + c.vast[g] + " (audio/stemmen.json),");
+      console.error("maar " + GROEP_ENV[g] + " staat nu op " + c.stemmen[g] + ".");
+    });
+    console.error("");
+    console.error("Alles wat er al staat zou dan opnieuw worden ingesproken, want half-om-half");
+    console.error("klinkt slordig. Twee wegen:");
+    console.error("  wilde je alleen nieuwe zinnen erbij? Haal de instelling weg en draai opnieuw:");
+    botsing.forEach(function(g){ console.error("    unset " + GROEP_ENV[g]); });
+    console.error("  wil je echt van stem wisselen? Draai dan met --nieuwe-stem erachter.");
+    console.error("    (kijk eerst met --droog wat dat aan tekens kost)");
+    process.exit(1);
+  }
+
   if(opties.droog) return c; // droogdraaien mag zonder sleutel: dan bel je de API niet
   if(!c.key){
     console.error("Zet eerst ELEVENLABS_API_KEY (zie de uitleg bovenin het script).");
     process.exit(1);
   }
-  (groepen || ["dictado", "boek"]).forEach(function(g){
+  lijst.forEach(function(g){
     if(stemVoor(g, c)) return;
-    console.error("Geen stem voor '" + g + "'. Zet " + GROEP_ENV[g] + " (aparte stem per groep) of");
-    console.error("ELEVENLABS_VOICE_ID (dezelfde stem voor alles). Kies je stem in");
+    console.error("Geen stem voor '" + g + "'. Er ligt er ook nog geen vast in audio/stemmen.json.");
+    console.error("Zet " + GROEP_ENV[g] + " (aparte stem per groep) of ELEVENLABS_VOICE_ID");
+    console.error("(dezelfde stem voor alles). Kies je stem in");
     console.error("https://elevenlabs.io/app/voice-library en kopieer de voice-id.");
+    console.error("Daarna hoef je dat nooit meer te doen: de eerste run legt hem vast.");
     process.exit(1);
   });
   return c;
@@ -270,6 +320,19 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   const stem = stemVoor(groep, cfg);
   const instelling = GROEP_STEMINSTELLING[groep];
 
+  /* De stem vastleggen naast de bestanden waar hij bij hoort. Vanaf nu weet een volgende run,
+     op een andere dag en in een andere terminal, vanzelf welke stem deze groep heeft. */
+  if(!opties.droog && stem){
+    if(!man.standaard) man.standaard = {};
+    if(man.standaard[groep] !== stem){
+      const oud = man.standaard[groep];
+      man.standaard[groep] = stem;
+      schrijfManifest(man);
+      console.log(oud ? "  (stem voor " + groep + " gewijzigd: " + oud + " -> " + stem + ")"
+                      : "  (stem voor " + groep + " vastgelegd in audio/stemmen.json: " + stem + ")");
+    }
+  }
+
   // eerst inventariseren, zodat we kunnen vertellen wat er gaat gebeuren vóór we quota opmaken
   const plan = items.map(function(it){
     const outPad = path.join(outDir, it.id + ".mp3");
@@ -321,7 +384,11 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   todo.forEach(function(p){ perReden[p.reden] = (perReden[p.reden] || 0) + 1; });
 
   console.log("");
-  console.log("== " + groep + " ==  (stem " + (stem || "?") + ")");
+  const herkomst = !stem ? "geen stem ingesteld"
+                 : (cfg.uitOmgeving && cfg.uitOmgeving[groep]) ? "uit " + GROEP_ENV[groep]
+                 : (cfg.vast && cfg.vast[groep] === stem) ? "vastgelegd in audio/stemmen.json"
+                 : "";
+  console.log("== " + groep + " ==  (stem " + (stem || "?") + (herkomst ? ", " + herkomst : "") + ")");
   console.log("  gevonden: " + items.length + " · al goed: " + (items.length - alles.length) + " · in te spreken: " + todo.length);
   if(geadopteerd) console.log("    (" + geadopteerd + " bestaande mp3's overgenomen op jouw woord, niet opnieuw ingesproken)");
   Object.keys(perReden).forEach(function(r){ console.log("    - " + r + ": " + perReden[r]); });

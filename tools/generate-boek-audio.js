@@ -8,9 +8,11 @@
  *
  * GEBRUIK (vanaf de repo-root)
  *     export ELEVENLABS_API_KEY="PLAK-HIER-JE-SLEUTEL"
- *     export ELEVENLABS_VOICE_BOEK="PLAK-HIER-DE-VOICE-ID"      # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
  *     node tools/generate-boek-audio.js --droog
  *     node tools/generate-boek-audio.js --max=4
+ *
+ * Meer is niet nodig: welke verteller het boek heeft, staat vast in audio/stemmen.json. Komt er een
+ * hoofdstuk bij, dan krijgt dat vanzelf dezelfde verteller als de rest.
  *
  * Het boek is met ~17.000 tekens veruit de grootste post; --max=N is hier je vriend als je op de
  * gratis laag zit. De app valt automatisch terug op browser-TTS zolang een hoofdstuk nog ontbreekt

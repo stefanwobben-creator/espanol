@@ -7,32 +7,43 @@
  * En verder niets: de losse woordjes houden bewust hun browser-stem, dat is een oefening in
  * herkennen, geen luisterervaring.
  *
- * ÉÉN OF TWEE STEMMEN?
+ * DE STEM LIGT VAST, JE HOEFT HEM NIET TE KENNEN
  * Dictado en het boek doen iets anders. Dictado is een oefening: je moet er woord voor woord in
- * kunnen meeschrijven, dus wil je een neutrale, rustige voorlezer. Het boek is een verhaal dat
- * je wil blijven horen, dus daar mag een warmere verteller staan. Je kunt het dus twee kanten op:
+ * kunnen meeschrijven, dus daar staat een neutrale, rustige voorlezer. Het boek is een verhaal dat
+ * je wil blijven horen, dus daar staat een warmere verteller. Welke twee dat zijn, staat in
+ * audio/stemmen.json onder "standaard", en dat bestand zit in de repo.
  *
- *   Dezelfde stem voor alles:      export ELEVENLABS_VOICE_ID="PLAK-HIER-DE-VOICE-ID"
- *   Een stem per groep:            export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"
- *                                  export ELEVENLABS_VOICE_BOEK="PLAK-HIER-DE-VOICE-ID"
+ * Dat is met opzet zo. Voeg je over een half jaar drie dictado-zinnen toe, dan hoef je niets op te
+ * zoeken en niets in te stellen: het script leest de stem van die groep uit het manifest en spreekt
+ * de nieuwe zinnen in met precies dezelfde stem als de rest. Een omgevingsvariabele kan dat niet
+ * borgen, want die leeft één terminalvenster lang.
  *
- * Het manifest onthoudt de stem PER GROEP, dus die twee bijten elkaar niet: dit script kan in
- * één run twee stemmen gebruiken en een volgende run ziet allebei als "al goed". Zet je alleen
- * ELEVENLABS_VOICE_ID, dan krijgen beide groepen die ene stem.
+ * WEL VAN STEM WISSELEN
+ * Kan gewoon, maar het is nooit iets kleins: bij een nieuwe stem wordt de hele groep opnieuw
+ * ingesproken, anders klinkt de app door elkaar. Daarom moet je het hardop zeggen:
+ *
+ *   export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"
+ *   node tools/generate-audio.js --droog --nieuwe-stem
+ *   node tools/generate-audio.js --nieuwe-stem
+ *
+ * Zonder --nieuwe-stem stopt het script en legt het uit wat er aan de hand is. Na afloop staat de
+ * nieuwe stem in het manifest en is dat weer de vaste. ELEVENLABS_VOICE_ID werkt hetzelfde, maar
+ * dan voor beide groepen tegelijk.
  *
  * GEBRUIK
  *   1. Haal je API-key op bij https://elevenlabs.io (Profile -> API Keys).
- *   2. Kies je stem(men) in https://elevenlabs.io/app/voice-library (Castiliaans past het best bij
- *      de rest van de app) en kopieer de voice-id's.
- *   3. Vanaf de repo-root:
+ *   2. Vanaf de repo-root:
  *
  *        export ELEVENLABS_API_KEY="PLAK-HIER-JE-SLEUTEL"
- *        export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"
- *        export ELEVENLABS_VOICE_BOEK="PLAK-HIER-DE-VOICE-ID"
- *        node tools/generate-audio.js --droog     # eerst kijken wat er gaat gebeuren
- *        node tools/generate-audio.js             # en dan echt
+ *        node tools/generate-audio.js --droog
+ *        node tools/generate-audio.js
  *
- *   4. Luister een paar bestanden na, en commit audio/ samen met audio/stemmen.json.
+ *   3. Luister een paar bestanden na, en commit audio/ samen met audio/stemmen.json.
+ *
+ * Staat er nog niets vast (een lege repo, of een groep die nog nooit is ingesproken), dan vraagt
+ * het script eenmalig om een voice-id via ELEVENLABS_VOICE_DICTADO of ELEVENLABS_VOICE_BOEK. Kies
+ * die in https://elevenlabs.io/app/voice-library; Castiliaans past het best bij de rest van de app.
+ * De eerste geslaagde run legt hem vast en daarna hoef je er niet meer aan te denken.
  *
  * OPTIES
  *   --droog     laat alleen zien wat er zou gebeuren en wat het aan tekens kost. Werkt zonder key.
@@ -40,6 +51,9 @@
  *               Handig om je quota over meerdere dagen te spreiden; de volgende run pakt gewoon op
  *               waar deze ophield. Samen met --droog zie je vooraf precies wat die N gaat kosten.
  *   --alles     spreek alles opnieuw in, ook wat volgens het manifest al klopt.
+ *   --nieuwe-stem  sta toe dat de vastgelegde stem van een groep wordt vervangen. Zonder deze vlag
+ *               weigert het script een andere stem dan wat er in audio/stemmen.json staat, zodat
+ *               een oude of half geplakte voice-id in je terminal je hele set niet overhoop haalt.
  *   --adopteer  neem bestaande mp3's zonder manifest-regel over als "deze zijn al met deze stem
  *               gemaakt", zonder ze opnieuw in te spreken. Kost nul tekens. Gebruik dit ALLEEN als
  *               je zeker weet dat die oude bestanden met precies deze ELEVENLABS_VOICE_ID zijn
