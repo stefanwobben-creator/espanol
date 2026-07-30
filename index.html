@@ -618,7 +618,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.58";
+var APP_VERSIE = "v19.59";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14690,6 +14690,20 @@ function show(tabId, skipPush){
   // tekens uit te lezen, bij elke start én elke tien minuten daarna. Dat is 2,7 MB per uur voor een
   // app die stilstaat, en op mobiel data die je gewoon opeet. versie.txt (7 bytes) stond er al
   // naast, maar werd niet gebruikt. Nu wel.
+  // v19.59: de vergelijking stond op "anders dan", en dat is een val. Vergeet ik bij een push
+  // versie.txt bij te werken, dan is versie.txt LAGER dan de app die je al draait, en roept de balk
+  // op om te verversen naar een oudere versie. Verversen helpt dan niet, dus hij komt bij elke start
+  // terug en gaat nooit meer weg. Alleen omhoog is een echte update; gelijk of lager is een fout van
+  // mij en dat hoort de gebruiker niet te merken.
+  function versieNieuwer(a, b){
+    var x = String(a).replace(/^v/, "").split("."), y = String(b).replace(/^v/, "").split(".");
+    for(var i = 0; i < Math.max(x.length, y.length); i++){
+      var p = parseInt(x[i], 10) || 0, q = parseInt(y[i], 10) || 0;
+      if(p !== q) return p > q;
+    }
+    return false;
+  }
+  window.versieNieuwer = versieNieuwer; // zodat de testsuite hier direct op kan
   function checkVersie(){
     try{
       var basis = window.location.pathname.replace(/[^/]*$/, "");
@@ -14697,7 +14711,7 @@ function show(tabId, skipPush){
         .then(function(r){ return r.ok ? r.text() : ""; })
         .then(function(t){
           var m = String(t).trim().match(/^(v[0-9][0-9.]*)$/);
-          if(m && m[1] !== APP_VERSIE && !document.getElementById("updateBar")){
+          if(m && versieNieuwer(m[1], APP_VERSIE) && !document.getElementById("updateBar")){
             var el = document.createElement("div");
             el.id = "updateBar"; el.className = "toast show";
             el.style.pointerEvents = "auto"; el.style.cursor = "pointer";
@@ -14708,6 +14722,7 @@ function show(tabId, skipPush){
         }).catch(function(){});
     }catch(e){}
   }
+  window.checkVersie = checkVersie; // zodat de testsuite het balkgedrag kan naspelen
   checkVersie();
   if(typeof setInterval === "function"){ setInterval(checkVersie, 10 * 60 * 1000); }
   // v19.51: Chispa beweegt af en toe spontaan, maar alleen als je op zijn tabblad kijkt
