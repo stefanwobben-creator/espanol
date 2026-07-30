@@ -1,0 +1,82 @@
+{
+  "boek": {
+    "boek-1": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "2588e0e521d7a108",
+      "tekens": 1543
+    },
+    "boek-2": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "aae7130d337f30ef",
+      "tekens": 1550
+    },
+    "boek-3": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "24c2ad8d53eb7fdf",
+      "tekens": 1503
+    },
+    "boek-4": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "905ef8dd2710eab2",
+      "tekens": 1106
+    },
+    "boek-5": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "8e4782416f35d4b7",
+      "tekens": 1074
+    },
+    "boek-6": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "d4aede1d15d0568c",
+      "tekens": 1272
+    },
+    "boek-7": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "e0784a277747cb96",
+      "tekens": 1235
+    },
+    "boek-8": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "f9972ebd6c96450a",
+      "tekens": 1033
+    },
+    "boek-9": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "026982fa265b26be",
+      "tekens": 1302
+    },
+    "boek-10": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "ed8efcf169c38028",
+      "tekens": 1402
+    },
+    "boek-11": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "396c9ecf3c3e982b",
+      "tekens": 1304
+    },
+    "boek-12": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "c888d80407acbcac",
+      "tekens": 1659
+    },
+    "boek-13": {
+      "voice": "imFXYz8XIletRKLZZQaA",
+      "model": "eleven_multilingual_v2",
+      "hash": "c4ec7d9a1c63cf38",
+      "tekens": 796
+    }
+  }
+}
