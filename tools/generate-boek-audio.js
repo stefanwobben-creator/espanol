@@ -27,7 +27,10 @@ async function main(){
   const opties = lib.leesOpties(process.argv);
   const cfg = lib.leesConfig(opties, ["boek"]);
   const hoofdstukken = lib.leesHoofdstukken();
-  if(!opties.droog) console.log("Stem: " + lib.stemVoor("boek", cfg) + " · model: " + cfg.model);
+  if(!opties.droog){
+    await lib.controleerSleutel(cfg);
+    console.log("Stem: " + lib.stemVoor("boek", cfg) + " · model: " + cfg.model);
+  }
   const r = await lib.verwerk("boek", hoofdstukken, opties, cfg, 400);
   lib.slotwoord([r], cfg, opties);
 }

@@ -167,9 +167,42 @@ async function spreekUit(cfg, tekst, stem, instelling){
   });
   if(!res.ok){
     const body = await res.text().catch(function(){ return ""; });
-    throw new Error("HTTP " + res.status + ": " + body.slice(0, 200));
+    const e = new Error("HTTP " + res.status + ": " + body.slice(0, 200));
+    /* 401/403 gaat over de sleutel, niet over deze zin. Doorploeteren levert dan alleen maar
+       201 keer dezelfde foutmelding op, dus die markeren we als fataal. */
+    if(res.status === 401 || res.status === 403) e.fataal = true;
+    throw e;
   }
   return Buffer.from(await res.arrayBuffer());
+}
+
+/*
+ * Even aankloppen voordat we tekens gaan uitgeven. Dit endpoint kost geen credits en zegt in één
+ * keer of de sleutel deugt. Zonder deze check merk je een verkeerde sleutel pas bij het eerste
+ * bestand, met een HTTP 401 tussen de voortgangsregels waar je makkelijk overheen leest.
+ */
+async function controleerSleutel(cfg){
+  let res;
+  try{
+    res = await fetch("https://api.elevenlabs.io/v1/user", { headers: { "xi-api-key": cfg.key } });
+  }catch(e){
+    console.error("Kan api.elevenlabs.io niet bereiken: " + e.message);
+    process.exit(1);
+  }
+  if(res.ok) return;
+  if(res.status === 401 || res.status === 403){
+    console.error("");
+    console.error("ElevenLabs weigert je sleutel (HTTP " + res.status + "). Er is nog niets ingesproken.");
+    console.error("Controleer, zonder je sleutel te tonen:");
+    console.error("  echo \"lengte ${#ELEVENLABS_API_KEY} · begint met ${ELEVENLABS_API_KEY:0:3}\"");
+    console.error("Drie dingen die dit meestal zijn:");
+    console.error("  1. de sleutel staat nog als voorbeeld ingesteld (sk_... letterlijk overgenomen);");
+    console.error("  2. er is een spatie, aanhalingsteken of # meegekopieerd;");
+    console.error("  3. de sleutel heeft geen rechten voor Text to Speech (elevenlabs.io -> API Keys).");
+    process.exit(1);
+  }
+  console.error("ElevenLabs antwoordt onverwacht (HTTP " + res.status + "). Later nog eens proberen.");
+  process.exit(1);
 }
 
 /*
@@ -263,6 +296,11 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     }catch(e){
       mislukt++;
       console.error("  ✗ " + p.it.id + " - " + e.message);
+      if(e.fataal){
+        console.error("  (dit is een sleutelfout, niet iets aan deze zin: gestopt zodat je niet");
+        console.error("   dezelfde melding " + (todo.length - nieuw - mislukt) + " keer hoeft te lezen)");
+        break;
+      }
     }
     await new Promise(function(r){ setTimeout(r, pauzeMs); });
   }
@@ -295,4 +333,4 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, verwerk, slotwoord, stemVoor, MANIFEST_PAD };
+module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, controleerSleutel, verwerk, slotwoord, stemVoor, MANIFEST_PAD };

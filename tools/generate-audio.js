@@ -71,6 +71,7 @@ async function main(){
   const hoofdstukken = lib.leesHoofdstukken();
 
   if(!opties.droog){
+    await lib.controleerSleutel(cfg);
     const zelfde = lib.stemVoor("dictado", cfg) === lib.stemVoor("boek", cfg);
     console.log(zelfde ? "Eén stem voor dictado én het voorleesboek."
                       : "Twee stemmen: een voorlezer voor dictado, een verteller voor het boek.");

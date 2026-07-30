@@ -23,7 +23,10 @@ async function main(){
   const opties = lib.leesOpties(process.argv);
   const cfg = lib.leesConfig(opties, ["dictado"]);
   const zinnen = lib.leesZinnen();
-  if(!opties.droog) console.log("Stem: " + lib.stemVoor("dictado", cfg) + " · model: " + cfg.model);
+  if(!opties.droog){
+    await lib.controleerSleutel(cfg);
+    console.log("Stem: " + lib.stemVoor("dictado", cfg) + " · model: " + cfg.model);
+  }
   const r = await lib.verwerk("dictado", zinnen, opties, cfg, 250);
   lib.slotwoord([r], cfg, opties);
 }
