@@ -160,6 +160,81 @@
   .jergatel{font-size:.74rem; color:var(--muted); margin:8px 0 0;}
   .jergawaar{font-size:.68rem; font-weight:800; border-radius:999px; padding:2px 8px;
              background:var(--green-soft); color:var(--green); margin-left:6px; white-space:nowrap;}
+  /* v19.51: Chispa echt animeren - ronddraaien, dansen, gitaar spelen.
+     De bewegingen zitten op de wrapper #petBox, de props in een eigen laag erboven. */
+  #petBox{will-change:transform;}
+  .chvive{animation:chvive 3.6s ease-in-out infinite;}
+  @keyframes chvive{0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-5px) scale(1.02)}}
+  .chprops{position:absolute; left:0; right:0; top:0; bottom:0; pointer-events:none; z-index:4; overflow:hidden;}
+  .chprop{position:absolute; font-size:2.1rem; filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));}
+  .chguit{left:11%; top:44%; animation:chstrum .42s ease-in-out infinite;}
+  @keyframes chstrum{0%,100%{transform:rotate(-14deg) translateY(0)} 50%{transform:rotate(-5deg) translateY(-6px)}}
+  .chmar{right:10%; top:38%; animation:chshake .17s linear infinite;}
+  .chmar2{left:7%; top:32%; animation:chshake .17s linear infinite reverse;}
+  @keyframes chshake{0%{transform:rotate(-18deg)} 50%{transform:rotate(20deg)} 100%{transform:rotate(-18deg)}}
+  .chnota{position:absolute; font-size:1.5rem;
+          animation:chnotaop 2s ease-out forwards; pointer-events:none;}
+  @keyframes chnotaop{0%{transform:translateY(0) rotate(-8deg); opacity:0} 18%{opacity:1}
+                      100%{transform:translateY(-82px) rotate(18deg); opacity:0}}
+  .chvloer{position:absolute; left:50%; top:58%; width:230px; height:60px; margin-left:-115px; border-radius:50%;
+           background:radial-gradient(ellipse at center, #ffd54d44 0%, #e85a8a22 55%, transparent 74%);
+           animation:chvloerpuls 1.05s ease-in-out infinite;}
+  @keyframes chvloerpuls{0%,100%{transform:scale(.88); opacity:.5} 50%{transform:scale(1.1); opacity:1}}
+  /* de bewegingen zelf; !important zodat ze de rustanimatie en petbounce altijd verslaan */
+  .chgiro{animation:chgiro 1.3s ease-in-out !important;}
+  @keyframes chgiro{0%{transform:perspective(700px) rotateY(0) scale(1)}
+                    50%{transform:perspective(700px) rotateY(180deg) scale(1.07)}
+                    100%{transform:perspective(700px) rotateY(360deg) scale(1)}}
+  .chsalto{animation:chsalto .62s ease-in-out 2 !important;}
+  @keyframes chsalto{0%,100%{transform:translateY(0) scale(1)} 30%{transform:translateY(-34px) scale(1.05) rotate(-6deg)}
+                     62%{transform:translateY(0) scaleY(.9) scaleX(1.08)}}
+  .chsalsa{animation:chsalsa .62s ease-in-out infinite !important;}
+  @keyframes chsalsa{0%,100%{transform:translateX(0) rotate(0)} 25%{transform:translateX(-13px) translateY(-5px) rotate(-9deg)}
+                     50%{transform:translateX(0) scaleY(.96)} 75%{transform:translateX(13px) translateY(-5px) rotate(9deg)}}
+  .chflamenco{animation:chflamenco 1.5s ease-in-out infinite !important;}
+  @keyframes chflamenco{0%{transform:rotate(0) scaleY(1)} 20%{transform:rotate(-9deg) scaleY(1.07) translateY(-7px)}
+                        40%{transform:rotate(0) scaleY(.94)} 55%{transform:rotate(9deg) scaleY(1.07) translateY(-7px)}
+                        70%{transform:rotate(0) scaleY(.9) translateY(4px)} 85%{transform:rotate(-4deg) scaleY(1.02)}
+                        100%{transform:rotate(0) scaleY(1)}}
+  .chcumbia{animation:chcumbia 1.35s linear infinite !important;}
+  @keyframes chcumbia{0%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-12px,-7px) rotate(-6deg)}
+                      50%{transform:translate(0,-12px) rotate(0)} 75%{transform:translate(12px,-7px) rotate(6deg)}
+                      100%{transform:translate(0,0) rotate(0)}}
+  .chmerengue{animation:chmerengue .34s ease-in-out infinite !important;}
+  @keyframes chmerengue{0%,100%{transform:translateX(-7px) rotate(-4deg)} 50%{transform:translateX(7px) rotate(4deg)}}
+  .chbachata{animation:chbachata 1.7s ease-in-out infinite !important;}
+  @keyframes chbachata{0%,100%{transform:translateX(0) rotate(0)} 20%{transform:translateX(-11px) rotate(-5deg)}
+                       40%{transform:translateX(0) rotate(0)} 60%{transform:translateX(11px) rotate(5deg)}
+                       80%{transform:translateY(-10px) scaleY(1.06)}}
+  .chtango{animation:chtango 2.1s ease-in-out infinite !important;}
+  @keyframes chtango{0%,42%{transform:translateX(0) rotate(0)} 55%{transform:translateX(-21px) rotate(-15deg) scaleX(1.04)}
+                     70%{transform:translateX(-21px) rotate(-15deg)} 82%{transform:translateX(15px) rotate(12deg)}
+                     100%{transform:translateX(0) rotate(0)}}
+  .chdembow{animation:chdembow .5s ease-in-out infinite !important;}
+  @keyframes chdembow{0%{transform:translateY(0) scaleY(1)} 16%{transform:translateY(-14px) rotate(-5deg)}
+                      32%{transform:translateY(0) scaleY(.92)} 48%{transform:translateY(-9px) rotate(4deg)}
+                      64%{transform:translateY(0) scaleY(.96)} 100%{transform:translateY(0) scaleY(1)}}
+  .chjarabe{animation:chjarabe .56s ease-in-out infinite !important;}
+  @keyframes chjarabe{0%,100%{transform:translateY(0) rotate(-4deg)}
+                      25%{transform:translate(-7px,-17px) rotate(-10deg)} 50%{transform:translateY(0) rotate(4deg)}
+                      75%{transform:translate(7px,-17px) rotate(10deg)}}
+  .chguitarra{animation:chguitarra .46s ease-in-out infinite !important;}
+  @keyframes chguitarra{0%,100%{transform:rotate(-7deg) translateY(0)} 50%{transform:rotate(-12deg) translateY(-6px) scaleY(1.03)}}
+  /* el baile del dia: kiesrij met echte dansen, altijd in het Spaans */
+  .bailehoy{font-size:.86rem; text-align:center; margin:10px 0 0;}
+  .bailehoy .es{font-weight:800;}
+  .bailerij{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 2px;}
+  .bailechip{font-size:.74rem; font-weight:700; border:1.5px solid var(--border); background:var(--card); color:var(--muted);
+             border-radius:999px; padding:5px 10px; cursor:pointer; transition:transform .12s ease;}
+  .bailechip .es{font-weight:800; color:var(--ink);}
+  .bailechip:hover{transform:scale(1.07) rotate(-2deg); border-color:var(--accent);}
+  .bailechip.hoy{border-color:var(--amber); background:var(--amber-soft);}
+  .bailechip.gehad .es{color:var(--green);}
+  /* mini-Chispa leeft ook mee, en draait rond als je hem aantikt */
+  .jergachispa svg, .lfchispa svg{animation:chbob 2.9s ease-in-out infinite;}
+  @keyframes chbob{0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-3px) rotate(-4deg)}}
+  .jergachispa:hover svg, .lfchispa:hover svg{animation:none; transform:scale(1.12) rotate(-4deg);}
+  .chminigiro svg{animation:chgiro .9s ease-in-out !important;}
   @keyframes petb{0%{transform:scale(1)} 40%{transform:scale(1.12) rotate(-3deg)} 100%{transform:scale(1)}}
   .shopitem{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed var(--border);}
   .shopitem .si-name{font-weight:700;}
@@ -241,15 +316,28 @@
   .tile{width:40px; height:44px; border-radius:8px; background:var(--amber-soft); border:1.5px solid var(--amber);
         display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:1.15rem; color:var(--ink);}
   .tile small{font-size:.6rem; font-weight:600; color:var(--muted);}
-  /* v19.49: krabbels in de familie, uitsluitend in het Spaans */
-  .krabrij{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 10px 22px;}
-  .krabbelknop{font-size:.78rem; font-weight:700; padding:4px 9px; border-radius:999px;
-               border:1.5px solid var(--border); background:var(--card); color:var(--ink); cursor:pointer;}
-  .krabbelknop:hover{border-color:var(--accent); transform:translateY(-1px);}
-  .krabbelknop.gekozen{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+  /* v19.51: krabbels compacter (Stefan: "de krabbels is leuk maar de interface wat rommlig").
+     Een familielid = een .famrij; het emoji-palet zit achter een knop i.p.v. altijd open te staan. */
+  .famrij{padding:0 0 8px; border-bottom:1px dashed var(--border);}
+  .famrij .duelrow{border-bottom:none; padding:8px 0 0;}
+  .krabchips{display:flex; flex-wrap:wrap; gap:6px; margin:5px 0 0 22px;}
+  .krabchip{display:inline-flex; align-items:center; gap:5px; font-size:.74rem; font-weight:700;
+            background:var(--green-soft); color:var(--green); border-radius:999px; padding:3px 10px;}
+  .krabchip .van{font-weight:400; opacity:.8;}
+  .krabtoggle{font-size:.74rem; font-weight:700; margin:6px 0 0 22px; padding:3px 11px; border-radius:999px;
+              border:1.5px dashed var(--border); background:none; color:var(--muted); cursor:pointer;}
+  .krabtoggle:hover{border-color:var(--accent); color:var(--accent);}
+  .krabtoggle.dicht{border-style:solid; color:var(--accent); border-color:var(--accent);}
+  .krabpal{display:flex; flex-wrap:wrap; gap:6px; margin:7px 0 0 22px;}
+  .krabbelknop{width:34px; height:34px; padding:0; font-size:1.05rem; line-height:1; border-radius:50%;
+               border:1.5px solid var(--border); background:var(--card); cursor:pointer;
+               display:inline-flex; align-items:center; justify-content:center; transition:transform .12s ease;}
+  .krabbelknop:hover{border-color:var(--accent); transform:scale(1.16) rotate(-7deg);}
+  .krabbelknop.gekozen{border-color:var(--green); background:var(--green-soft);}
+  .krabverstuurd{display:block; font-size:.76rem; font-weight:700; color:var(--green); margin:7px 0 0 22px;}
+  .krabverstuurd .es{font-weight:800;}
   .krabgehad{display:block; font-size:.8rem; margin:0 0 8px 22px;}
   .krabgehad .es{font-weight:700;}
-  .krabtoggle{font-size:.76rem;}
   .duelrow{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border); font-size:.92rem;}
   .hidden{display:none !important;}
   .es{font-style:normal; color:var(--accent); font-weight:700;}
@@ -515,7 +603,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.50";
+var APP_VERSIE = "v19.51";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3737,7 +3825,7 @@ function jergaRender(elId){
   var w = el.querySelector(".jergaWat");
   if(w) w.onclick = jergaOpenen;
   var z = el.querySelector(".jergaZeg");
-  if(z) z.onclick = function(){ if(jergaAl()) jergaHoor(); else jergaOpenen(); };
+  if(z) z.onclick = function(){ chispaMiniSpin(z); if(jergaAl()) jergaHoor(); else jergaOpenen(); };
   var hr = el.querySelector(".jergaHoor");
   if(hr) hr.onclick = jergaHoor;
 }
@@ -5233,7 +5321,7 @@ function chispaMiniSvg(){
 function lesFlowChispaKlik(){
   var f = lesFlowChispaFrase();
   var b = document.getElementById("btnLesFlowChispa");
-  if(b){ b.classList.remove("petbounce"); void(b.offsetWidth||0); b.classList.add("petbounce"); }
+  if(b) chispaMiniSpin(b);
   toast("💬 " + f.es + " · " + ct(f.nl, f.en || f.nl));
 }
 function lesFlowWireStopKnop(){
@@ -5831,44 +5919,246 @@ function rinconDecorHtml(){
   });
   return html;
 }
+/* v19.51 - de animatiemotor van Chispa.
+   Elke beweging is een CSS-klasse op de wrapper #petBox; chispaMove() zet hem erop, haalt hem er weer af
+   en markeert #petBox met .chbezig zodat niets anders er dwars door heen rendert. */
+var CHISPA_MOVES = ["chgiro","chsalto","chsalsa","chflamenco","chcumbia","chmerengue","chbachata","chtango","chdembow","chjarabe","chguitarra"];
+var chispaMoveTimer = null;
+var chispaFiestaBezig = false;
+var chispaLevenTeller = 0;
+
+/* Acht echte dansen: het feestje leert ook dansvocabulaire (el baile del día). */
+var BAILES = [
+  {id:"salsa",     klas:"chsalsa",    e:"💃", es:"la salsa",          nl:"de salsa",       land:"Cuba",
+   zeg:"¡Vamos a bailar salsa!",              zegnl:"Kom, we dansen salsa!",            zegen:"Let's dance salsa!"},
+  {id:"flamenco",  klas:"chflamenco", e:"🌹", es:"el flamenco",       nl:"de flamenco",    land:"España",
+   zeg:"¡Olé! Un poco de flamenco.",     zegnl:"Olé! Even wat flamenco.",     zegen:"Olé! A bit of flamenco."},
+  {id:"cumbia",    klas:"chcumbia",   e:"🪘", es:"la cumbia",         nl:"de cumbia",      land:"Colombia",
+   zeg:"La cumbia se baila así.",             zegnl:"Zo dans je cumbia.",               zegen:"This is how you dance cumbia."},
+  {id:"merengue",  klas:"chmerengue", e:"🎺", es:"el merengue",       nl:"de merengue",    land:"República Dominicana",
+   zeg:"¡Rápido, rápido! Es merengue.", zegnl:"Snel, snel! Dit is merengue.", zegen:"Fast, fast! This is merengue."},
+  {id:"bachata",   klas:"chbachata",  e:"💗", es:"la bachata",        nl:"de bachata",     land:"República Dominicana",
+   zeg:"Bachata: uno, dos, tres... ¡y cadera!", zegnl:"Bachata: een, twee, drie... en heup!", zegen:"Bachata: one, two, three... and hip!"},
+  {id:"tango",     klas:"chtango",    e:"🖤", es:"el tango",          nl:"de tango",       land:"Argentina",
+   zeg:"El tango es una pasión, ¿sabes?", zegnl:"Tango is een passie, weet je.",   zegen:"Tango is a passion, you know."},
+  {id:"reggaeton", klas:"chdembow",   e:"🔥", es:"el reggaetón", nl:"de reggaeton",   land:"Puerto Rico",
+   zeg:"¡Dale! Un poco de perreo.",           zegnl:"Kom op! Een beetje perreo.",       zegen:"Come on! A bit of perreo."},
+  {id:"jarabe",    klas:"chjarabe",   e:"👒", es:"el jarabe tapatío", nl:"de Mexicaanse hoedendans", land:"México",
+   zeg:"¡Ay ay ay! El jarabe tapatío.",  zegnl:"Ay ay ay! De jarabe tapatío.", zegen:"Ay ay ay! The jarabe tapatío."}
+];
+function bailePorDia(){ return BAILES[dayHash("baile") % BAILES.length]; }
+function baileState(){
+  if(!S.bailes) S.bailes = [];
+  return S.bailes;
+}
+function chispaBox(){ return document.getElementById("petBox"); }
+function chispaPropLaag(){ return document.getElementById("chispaProps"); }
+function chispaZichtbaar(){
+  var s = document.getElementById("tab-chispa");
+  if(!s || !s.classList || !s.classList.contains) return false;
+  if(s.classList.contains("hidden")) return false;
+  return !!chispaBox();
+}
+function chispaBeweegt(){
+  var b = chispaBox();
+  return !!(b && b.classList && b.classList.contains && b.classList.contains("chbezig"));
+}
+function chispaMove(klas, ms, klaar){
+  var box = chispaBox();
+  if(!box || !box.classList){ if(klaar) klaar(); return false; }
+  CHISPA_MOVES.forEach(function(k){ box.classList.remove(k); });
+  box.classList.remove("petbounce");
+  void(box.offsetWidth || 0);
+  box.classList.add("chbezig");
+  box.classList.add(klas);
+  if(chispaMoveTimer) clearTimeout(chispaMoveTimer);
+  chispaMoveTimer = setTimeout(function(){
+    var b2 = chispaBox();
+    if(b2 && b2.classList){ b2.classList.remove(klas); b2.classList.remove("chbezig"); }
+    if(klaar) klaar();
+  }, ms || 2400);
+  return true;
+}
+function chispaStop(){
+  if(chispaMoveTimer){ clearTimeout(chispaMoveTimer); chispaMoveTimer = null; }
+  var box = chispaBox();
+  if(box && box.classList){
+    CHISPA_MOVES.forEach(function(k){ box.classList.remove(k); });
+    box.classList.remove("chbezig");
+  }
+  chispaVloer(false);
+}
+function chispaProp(klas, emoji, ms){
+  var laag = chispaPropLaag();
+  if(!laag || !laag.appendChild || !document.createElement) return null;
+  var el = document.createElement("span");
+  el.className = "chprop " + klas;
+  el.textContent = emoji;
+  laag.appendChild(el);
+  setTimeout(function(){ if(el.parentNode && el.parentNode.removeChild) el.parentNode.removeChild(el); }, ms || 3000);
+  return el;
+}
+function chispaNotas(n){
+  var noten = ["🎵","🎶","🎼"];
+  for(var i = 0; i < (n || 5); i++){
+    (function(k){
+      setTimeout(function(){
+        var laag = chispaPropLaag();
+        if(!laag || !laag.appendChild || !document.createElement) return;
+        var el = document.createElement("span");
+        el.className = "chnota";
+        el.textContent = noten[k % noten.length];
+        if(el.style){ el.style.left = (16 + (k * 17) % 62) + "%"; el.style.top = "46%"; }
+        laag.appendChild(el);
+        setTimeout(function(){ if(el.parentNode && el.parentNode.removeChild) el.parentNode.removeChild(el); }, 2100);
+      }, k * 240);
+    })(i);
+  }
+}
+function chispaVloer(aan){
+  var laag = chispaPropLaag();
+  if(!laag || !laag.querySelector) return;
+  var oud = laag.querySelector(".chvloer");
+  if(aan && !oud && laag.appendChild && document.createElement){
+    var d = document.createElement("div");
+    d.className = "chvloer";
+    laag.appendChild(d);
+  }
+  if(!aan && oud && oud.parentNode && oud.parentNode.removeChild) oud.parentNode.removeChild(oud);
+}
+/* Nooit midden in een beweging herrenderen: dat bouwt de DOM opnieuw op en dan stopt de dans. */
+function chispaHerrenderStraks(ms, pogingen){
+  var p = pogingen || 0;
+  setTimeout(function(){
+    if((chispaFiestaBezig || chispaBeweegt()) && p < 8){ chispaHerrenderStraks(1200, p + 1); return; }
+    if(chispaZichtbaar()) renderPet();
+  }, ms || 600);
+}
+function chispaBaila(baile, stilBeeld){
+  var b = baile || bailePorDia();
+  if(chispaSlaapt()){
+    chispaSay({es:"Zzz... mañana bailamos, ¿vale?", nl:"Zzz... morgen dansen we, goed?"});
+    return false;
+  }
+  var lijst = baileState();
+  var nieuw = lijst.indexOf(b.id) < 0;
+  if(nieuw){ lijst.push(b.id); persist(); }
+  if(!stilBeeld) chispaSay({es:b.zeg, nl:ct(b.zegnl, b.zegen) + " (" + b.land + ")"});
+  chispaVloer(true);
+  chispaNotas(6);
+  if(b.id === "flamenco" || b.id === "jarabe") chispaProp("chguit", "🎸", 4600);
+  if(b.id === "cumbia" || b.id === "merengue"){ chispaProp("chmar", "🪇", 4600); chispaProp("chmar2", "🪇", 4600); }
+  chispaMove(b.klas, 4400, function(){ chispaVloer(false); });
+  chispaZorgTik();
+  if(chispaWensDoe("musica")) chispaHerrenderStraks(4800);
+  else if(nieuw) chispaHerrenderStraks(4800);
+  return true;
+}
+/* Het dagelijkse feestje: een korte choreografie van vier bewegingen met de serenade eronder. */
+function chispaFiesta(){
+  if(chispaFiestaBezig) return false;
+  if(chispaSlaapt()){
+    chispaSay({es:"Ahora duermo... ¡pero mañana fiesta!", nl:"Nu slaap ik... maar morgen feest!"});
+    return false;
+  }
+  chispaFiestaBezig = true;
+  var b = bailePorDia();
+  var lijst = baileState();
+  if(lijst.indexOf(b.id) < 0) lijst.push(b.id);
+  S.chispaFiestaDag = today();
+  S.chispaBaileDag = today();
+  persist();
+  confetti(["🎉","💃","🎶","✨"], 20);
+  chispaSay({es:"¡Que empiece la fiesta! Bailamos " + b.es + ".", nl:"Laat het feest beginnen! We dansen " + b.nl + "."});
+  chispaVloer(true);
+  chispaNotas(12);
+  chispaZorgTik();
+  chispaWensDoe("musica");
+  chispaSerenadeAudio();
+  var stappen = [
+    {k:"chgiro",     ms:1350, prop:null},
+    {k:b.klas,       ms:2600, prop:null},
+    {k:"chguitarra", ms:2000, prop:"🎸"},
+    {k:"chsalto",    ms:1300, prop:null}
+  ];
+  var i = 0;
+  function volgende(){
+    if(i >= stappen.length){
+      chispaVloer(false);
+      chispaFiestaBezig = false;
+      confetti(["🎊","💛","🫒"], 14);
+      chispaSay({es:"¡Qué fiesta! Gracias por bailar conmigo.", nl:"Wat een feest! Bedankt voor het dansen."});
+      chispaHerrenderStraks(1600);
+      return;
+    }
+    var st = stappen[i++];
+    if(st.prop) chispaProp("chguit", st.prop, st.ms + 300);
+    chispaMove(st.k, st.ms, volgende);
+  }
+  volgende();
+  return true;
+}
+/* Chispa staat niet stil te wachten: af en toe een spontane beweging, maar alleen als je kijkt. */
+function chispaLevenTik(){
+  if(chispaFiestaBezig) return false;
+  if(!chispaZichtbaar()) return false;
+  if(chispaSlaapt()) return false;
+  if(chispaBeweegt()) return false;
+  chispaLevenTeller++;
+  var licht = ["chgiro","chsalto","chcumbia","chmerengue","chguitarra"];
+  var k = licht[chispaLevenTeller % licht.length];
+  if(k === "chguitarra"){ chispaProp("chguit", "🎸", 2400); chispaNotas(3); }
+  chispaMove(k, k === "chgiro" ? 1350 : (k === "chsalto" ? 1300 : 2100));
+  return true;
+}
+function chispaMiniSpin(el){
+  if(!el || !el.classList) return;
+  el.classList.remove("chminigiro");
+  void(el.offsetWidth || 0);
+  el.classList.add("chminigiro");
+  setTimeout(function(){ if(el.classList) el.classList.remove("chminigiro"); }, 950);
+}
 /* Serenade: één doorloop van de Andalusische cadens uit de Aventura-audio-engine, los van funView.
    Respecteert een expliciete klik ook als Aventura op stil staat (de knop ís de toestemming). */
 var serenadeBezig = false;
-function chispaSerenade(){
-  if(serenadeBezig) return;
+function chispaSerenadeAudio(){
+  if(serenadeBezig) return 0;
   var ac = avtCtx();
-  var box = document.getElementById("petBox");
-  if(box){ box.classList.add("petdance"); }
+  if(!ac) return 0;
+  var duurMs = 5600;
+  serenadeBezig = true;
+  var stil = S.avtStil; S.avtStil = false;
+  var acht = 0.17, t0 = ac.currentTime + 0.08;
+  AVT_CADENS.forEach(function(bar, b){
+    var tb = t0 + b * 8 * acht;
+    [0,3,6].forEach(function(i){
+      avtPluk(bar.bas, tb + i*acht, acht*2.8, 0.11);
+      avtPluk(bar.bas*2, tb + i*acht, acht*1.6, 0.045);
+      avtPalmas(tb + i*acht, i === 0 ? 0.10 : 0.055);
+    });
+    if(b === 3){
+      AVT_FALSETA.forEach(function(f, i){ avtPluk(f, tb + i*acht*0.5, acht*1.1, 0.055); });
+      avtPluk(329.63, tb + 4*acht, acht*3.6, 0.075);
+    } else {
+      bar.mel.forEach(function(f, i){ if(f) avtPluk(f, tb + i*acht, acht*1.9, 0.06); });
+    }
+  });
+  setTimeout(function(){ S.avtStil = stil; serenadeBezig = false; }, duurMs);
+  return duurMs;
+}
+function chispaSerenade(){
+  var duurMs = 5600;
   document.querySelectorAll(".amigo:not(.locked)").forEach(function(a){
     a.classList.remove("amigobounce"); void(a.offsetWidth||0); a.classList.add("amigobounce");
   });
   chispaSay({es:"¡Dale! Una serenata para ti.", nl:"Kom maar op! Een serenade voor jou."});
+  chispaProp("chguit", "🎸", duurMs);
+  chispaNotas(9);
+  chispaMove("chguitarra", duurMs);
   chispaZorgTik();
-  if(chispaWensDoe("musica")) renderPet();
-  var duurMs = 5600;
-  if(ac){
-    serenadeBezig = true;
-    var stil = S.avtStil; S.avtStil = false;
-    var acht = 0.17, t0 = ac.currentTime + 0.08;
-    AVT_CADENS.forEach(function(bar, b){
-      var tb = t0 + b * 8 * acht;
-      [0,3,6].forEach(function(i){
-        avtPluk(bar.bas, tb + i*acht, acht*2.8, 0.11);
-        avtPluk(bar.bas*2, tb + i*acht, acht*1.6, 0.045);
-        avtPalmas(tb + i*acht, i === 0 ? 0.10 : 0.055);
-      });
-      if(b === 3){
-        AVT_FALSETA.forEach(function(f, i){ avtPluk(f, tb + i*acht*0.5, acht*1.1, 0.055); });
-        avtPluk(329.63, tb + 4*acht, acht*3.6, 0.075);
-      } else {
-        bar.mel.forEach(function(f, i){ if(f) avtPluk(f, tb + i*acht, acht*1.9, 0.06); });
-      }
-    });
-    setTimeout(function(){ S.avtStil = stil; serenadeBezig = false; }, duurMs);
-  }
+  chispaSerenadeAudio();
+  if(chispaWensDoe("musica")) chispaHerrenderStraks(duurMs + 400);
   setTimeout(function(){
-    var box2 = document.getElementById("petBox");
-    if(box2) box2.classList.remove("petdance");
     document.querySelectorAll(".amigo").forEach(function(a){ a.classList.remove("amigobounce"); });
   }, duurMs);
 }
@@ -5905,16 +6195,19 @@ var chispaAaiTeller = 0;
 function chispaAai(){
   chispaAaiTeller++;
   chispaZorgTik();
-  if(chispaWensDoe("mimos")) renderPet();
+  if(chispaWensDoe("mimos")) chispaHerrenderStraks(600);
   if(chispaSlaapt() && chispaAaiTeller === 1){
     chispaSay({es:"Mmm... ¿ya es la mañana?", nl:"Mmm... is het al ochtend?"});
     return;
   }
   if(chispaAaiTeller % 7 === 0){
-    var box = document.getElementById("petBox");
-    if(box){ box.classList.add("petdance"); setTimeout(function(){ box.classList.remove("petdance"); }, 2700); }
     confetti(["✨","💛"], 14);
-    chispaSay({es:"Jajaja, ¡me haces cosquillas!", nl:"Haha, je kietelt me!"});
+    chispaSay({es:"Jajaja, ¡me haces cosquillas! ¡Bailamos!", nl:"Haha, je kietelt me! We dansen!"});
+    chispaBaila(bailePorDia(), true);
+  } else if(chispaAaiTeller % 3 === 0){
+    var licht = ["chgiro","chsalto","chmerengue"];
+    chispaRandomSay();
+    chispaMove(licht[(chispaAaiTeller / 3) % licht.length], 1400);
   } else {
     chispaRandomSay();
   }
@@ -5945,13 +6238,22 @@ function renderPet(){
   var wensOk = chispaWensVervuld();
   var reeks = chispaZorgReeks();
   var slaapt = chispaSlaapt();
+  // v19.51: de dans van de dag + welke dansen je al gezien hebt
+  var bd = bailePorDia();
+  var bekend = baileState();
+  var bailHtml = "";
+  BAILES.forEach(function(b){
+    bailHtml += "<button class='bailechip"+(b.id===bd.id?" hoy":"")+(bekend.indexOf(b.id)>=0?" gehad":"")+"' data-baile='"+b.id+"' title='"+b.land+"'>"+
+      b.e+" <span class='es'>"+b.es+"</span></button>";
+  });
   var stageKlas = "petstage" + (reeks >= 3 ? " zorgglow" : "") + (slaapt ? " petslaap" : "");
   el.innerHTML = "<div class='"+stageKlas+"'>"+
     rinconDecorHtml()+
+    "<div id='chispaProps' class='chprops'></div>"+
     "<span class='daydeco'>"+deco.e+"</span>"+
     (slaapt ? "<span class='zzz'>💤</span>" : "")+
     "<div id='petBubble' class='petbubble hidden'></div>"+
-    "<div id='petBox' title='Klik op Chispa!'>"+petSVG()+"</div>"+
+    "<div id='petBox' class='chvive' title='Klik op Chispa!'>"+petSVG()+"</div>"+
     "<div class='amigorow'>"+amHtml+"</div>"+
     "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>· "+PET_LEVELS[lvl].naam+"</span></p>"+
     "<p class='petmood'>"+petMoodText()+"</p>"+
@@ -5960,10 +6262,14 @@ function renderPet(){
     "<p class='wensrij"+(wensOk?" vervuld":"")+"' id='wensRij'>"+wens.e+" <span class='es'>"+wens.es+"</span>"+
       (wensOk ? " ✓" : " <span class='muted' style='font-weight:400'>· "+ct(wens.nl, wens.en)+"</span>")+"</p>"+
     (reeks > 0 ? "<span class='zorgreeks' id='zorgReeks'>🔥 "+reeks+" "+ct(reeks===1?"dag goed gezorgd":"dagen goed gezorgd", reeks===1?"day of good care":"days of good care")+"</span>" : "")+
+    "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del día</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>· "+bd.land+"</span></p>"+
+    "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
+    "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen · tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances · tap one")+"</p>"+
     "<p class='muted' style='font-size:.82rem; margin:8px 0 8px; text-align:center'>"+deco.txt+"</p>"+
     "<span class='tapabadge'>🫒 "+(S.tapas||0)+" tapas</span>"+
     "<div class='row center'>"+
     "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?"Stil een tapa neerzetten 🫒":"Geef een tapa 🫒")+"</button>"+
+    "<button class='ghost' id='btnFiesta'>🎉 ¡Fiesta!</button>"+
     "<button class='ghost' id='btnSerenade'>🎶 Serenade</button>"+
     "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">🎁 "+(cadeauGehad?"Morgen weer":"Dagcadeautje")+"</button>"+
     "</div>"+
@@ -5973,6 +6279,8 @@ function renderPet(){
     "</div>";
   var b = document.getElementById("btnFeed");
   if(b) b.onclick = feedPet;
+  var bfi = document.getElementById("btnFiesta");
+  if(bfi) bfi.onclick = function(){ chispaFiesta(); };
   var bs = document.getElementById("btnSerenade");
   if(bs) bs.onclick = chispaSerenade;
   var bc = document.getElementById("btnCadeau");
@@ -5996,6 +6304,19 @@ function renderPet(){
       else { toast("Dit vriendje komt erbij als Chispa verder groeit. ¡Sigue estudiando!"); }
     };
   });
+  el.querySelectorAll("button.bailechip").forEach(function(bb){
+    bb.onclick = function(){
+      var id = bb.getAttribute("data-baile");
+      var bl = BAILES.filter(function(x){ return x.id === id; })[0];
+      if(bl) chispaBaila(bl);
+    };
+  });
+  // v19.51: één keer per dag geeft Chispa ongevraagd een voorstelling weg
+  if(S.chispaBaileDag !== today() && !slaapt && !chispaFiestaBezig){
+    S.chispaBaileDag = today();
+    persist();
+    setTimeout(function(){ if(chispaZichtbaar() && !chispaBeweegt()) chispaBaila(bailePorDia()); }, 900);
+  }
 }
 function feedPet(){
   if((S.tapas||0) < 1){ toast("Je hebt nog geen tapas. Oefenen = tapas verdienen!"); return; }
@@ -10914,6 +11235,8 @@ var KRABBELS = [
   {k:"campeon",  e:"\ud83c\udfc6", es:"\u00a1Campe\u00f3n!"},
   {k:"abrazo",   e:"\ud83e\udd17", es:"\u00a1Un abrazo!"}
 ];
+var krabOpen = "";   // v19.51: bij welk familielid staat het krabbel-palet open (leeg = allemaal dicht)
+var famCache = null; // laatste /api/familia-antwoord, zodat het palet open/dicht kan zonder nieuwe fetch
 function krabbelVind(k){
   for(var i=0;i<KRABBELS.length;i++){ if(KRABBELS[i].k === k) return KRABBELS[i]; }
   return null;
@@ -10932,8 +11255,9 @@ function krabbelStuur(naar, k){
   if(!kr) return;
   var mij = krabbelIkBen();
   krabbelLokaal()[naar] = k;
+  krabOpen = "";  // v19.51: palet klapt dicht zodra je gekozen hebt, anders blijft het rommelig staan
   persist();
-  renderFamiliaKrabbels();
+  famLijstRender();
   // Spaans-only, ook in de bevestiging: dit is het enige plekje in de app dat niet vertaalt.
   toast(kr.e + " " + kr.es + " \u2192 " + naar);
   api("/api/krabbel", "POST", {van: mij, naar: naar, sleutel: k}).then(function(res){
@@ -10947,24 +11271,59 @@ function krabbelStuur(naar, k){
 function krabbelRijHtml(naam){
   var mij = krabbelIkBen();
   if(!naam || naam.toLowerCase() === mij) return "";
-  var gekozen = krabbelLokaal()[naam.toLowerCase()] || "";
-  var knoppen = KRABBELS.map(function(kr){
-    return "<button class='krabbelknop"+(gekozen === kr.k ? " gekozen" : "")+"' data-krab='"+kr.k+"' data-naar='"+naam.toLowerCase()+"' title='"+kr.es+"'>"+kr.e+" "+kr.es+"</button>";
-  }).join("");
-  return "<div class='krabrij'>"+knoppen+"</div>";
+  var sleutel = naam.toLowerCase();
+  var gekozen = krabbelLokaal()[sleutel] || "";
+  var open = krabOpen === sleutel;
+  // Spaans-only, ook hier: de knoptekst wordt niet vertaald (afspraak uit v19.49).
+  var h = "<button class='krabtoggle"+(open ? " dicht" : "")+"' data-krabtoggle='"+sleutel+"'>"+
+    (open ? "\u2715 Cerrar" : "\u270f\ufe0f Dejar un saludo")+"</button>";
+  if(open){
+    h += "<div class='krabpal'>"+KRABBELS.map(function(kr){
+      return "<button class='krabbelknop"+(gekozen === kr.k ? " gekozen" : "")+"' data-krab='"+kr.k+
+        "' data-naar='"+sleutel+"' title='"+kr.es+"' aria-label='"+kr.es+"'>"+kr.e+"</button>";
+    }).join("")+"</div>";
+  }
+  if(gekozen){
+    var kg = krabbelVind(gekozen);
+    if(kg) h += "<span class='krabverstuurd'>"+kg.e+" <span class='es'>"+kg.es+"</span></span>";
+  }
+  return h;
 }
 function krabbelOntvangenHtml(naam, krabbels){
   if(!krabbels || !krabbels.length) return "";
   var mijn = krabbels.filter(function(x){ return String(x.naar||"").toLowerCase() === String(naam||"").toLowerCase(); });
   if(!mijn.length) return "";
-  var tekst = mijn.map(function(x){
+  var chips = mijn.map(function(x){
     var kr = krabbelVind(x.sleutel);
     if(!kr) return "";
-    return kr.e+" <span class='es'>"+kr.es+"</span> <span class='muted'>\u00b7 "+x.van+"</span>";
-  }).filter(Boolean).join(" &nbsp; ");
-  return tekst ? "<span class='krabgehad'>"+tekst+"</span>" : "";
+    // titel = de hele Spaanse zin, chip zelf blijft kort: emoji + afzender
+    return "<span class='krabchip' title='"+kr.es+"'>"+kr.e+" <span class='es'>"+kr.es+"</span>"+
+      "<span class='van'>\u00b7 "+x.van+"</span></span>";
+  }).filter(Boolean).join("");
+  return chips ? "<div class='krabchips'>"+chips+"</div>" : "";
+}
+function famLijstRender(){
+  var res = famCache;
+  var lijst = document.getElementById("famLijst");
+  if(!lijst || !res || !res.spelers) return;
+  var medailles = ["\ud83e\udd47","\ud83e\udd48","\ud83e\udd49"];
+  lijst.innerHTML = res.spelers.map(function(sp, i){
+    var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
+    var lesTxt = sp.lessen+" "+(profLang()==="nl" ? ("les"+(sp.lessen===1?"":"sen")) : ("session"+(sp.lessen===1?"":"s")));
+    return "<div class='famrij'>"+
+      "<div class='duelrow'><span>"+(medailles[i]||"\u00b7")+" <b>"+sp.naam+"</b> <span class='muted'>\u00b7 "+lvl+"</span></span>"+
+      "<span><b>"+sp.txp+" "+xpw()+"</b> \u00b7 \ud83d\udd25 "+sp.streak+" \u00b7 "+lesTxt+"</span></div>"+
+      krabbelOntvangenHtml(sp.naam, res.krabbels)+
+      krabbelRijHtml(sp.naam)+
+      "</div>";
+  }).join("");
+  renderFamiliaKrabbels();
 }
 function renderFamiliaKrabbels(){
+  document.querySelectorAll("button.krabtoggle").forEach(function(t){
+    var naar = t.getAttribute("data-krabtoggle");
+    t.onclick = function(){ krabOpen = (krabOpen === naar) ? "" : naar; famLijstRender(); };
+  });
   document.querySelectorAll("button.krabbelknop").forEach(function(b){
     var naar = b.getAttribute("data-naar");
     var k = b.getAttribute("data-krab");
@@ -10979,21 +11338,12 @@ function renderFamilia(){
     "<div id='famLijst'></div><p class='muted' id='krabStatus' style='font-size:.78rem'></p>";
   api("/api/familia").then(function(res){
     var st = document.getElementById("famStatus");
-    var lijst = document.getElementById("famLijst");
-    if(!lijst) return;
+    if(!document.getElementById("famLijst")) return;
     if(!res || !res.ok || !res.spelers){ if(st) st.textContent = ct("Server even niet bereikbaar, probeer zo opnieuw.","Server not reachable right now, try again in a bit."); return; }
     if(!res.spelers.length){ if(st) st.textContent = ct("Nog niemand van de familie hier gezien. Zodra iemand start, verschijnt die hier.","No family members seen here yet. As soon as someone starts, they'll show up here."); return; }
     if(st) st.textContent = ct("Iedereen ziet alleen elkaars scores, nooit elkaars oefeningen of fouten. Een krabbel achterlaten kan alleen in het Spaans.","Everyone only sees each other's scores, never each other's exercises or mistakes. Krabbels can only be left in Spanish.");
-    var medailles = ["\ud83e\udd47","\ud83e\udd48","\ud83e\udd49"];
-    lijst.innerHTML = res.spelers.map(function(sp, i){
-      var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
-      var lesTxt = sp.lessen+" "+(profLang()==="nl" ? ("les"+(sp.lessen===1?"":"sen")) : ("session"+(sp.lessen===1?"":"s")));
-      return "<div class='duelrow'><span>"+(medailles[i]||"\u00b7")+" <b>"+sp.naam+"</b> <span class='muted'>\u00b7 "+lvl+"</span></span>"+
-        "<span><b>"+sp.txp+" "+xpw()+"</b> \u00b7 \ud83d\udd25 "+sp.streak+" \u00b7 "+lesTxt+"</span></div>"+
-        krabbelOntvangenHtml(sp.naam, res.krabbels)+
-        krabbelRijHtml(sp.naam);
-    }).join("");
-    renderFamiliaKrabbels();
+    famCache = res;
+    famLijstRender();
   });
 }
 
@@ -13199,6 +13549,8 @@ function show(tabId, skipPush){
   }
   checkVersie();
   if(typeof setInterval === "function"){ setInterval(checkVersie, 10 * 60 * 1000); }
+  // v19.51: Chispa beweegt af en toe spontaan, maar alleen als je op zijn tabblad kijkt
+  if(typeof setInterval === "function"){ setInterval(chispaLevenTik, 17 * 1000); }
   if(window.addEventListener){
     window.addEventListener("popstate", function(e){
       var st = e.state;

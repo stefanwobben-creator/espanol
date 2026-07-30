@@ -294,7 +294,7 @@ const KRABBEL_TEKST = {
   abrazo: "¡Un abrazo!",
 };
 function familiaNamen() {
-  return String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona")
+  return String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona,martina")
     .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 }
 app.post("/api/krabbel", async (req, res) => {
@@ -314,11 +314,11 @@ app.post("/api/krabbel", async (req, res) => {
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
-// GET /api/familia — scorebord van ALLEEN de familie (FAMILIA_NAMEN env, default stefan/elise/ilona).
+// GET /api/familia — scorebord van ALLEEN de familie (FAMILIA_NAMEN env, default stefan/elise/ilona/martina).
 // Vroeger toonde dit alle profielen; sinds de app openbaar deelbaar is, is dat expres dichtgezet.
 app.get("/api/familia", async (_req, res) => {
   try {
-    const namen = String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona")
+    const namen = String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona,martina")
       .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
     const r = await pool.query(
       "SELECT name, track, state, updated_at FROM profiles WHERE lower(name) = ANY($1) ORDER BY updated_at DESC",
