@@ -26,6 +26,12 @@
  *   --max=N     stop na N ingesproken bestanden. Handig om je quota over meerdere dagen te spreiden;
  *               de volgende run pakt gewoon op waar deze ophield.
  *   --alles     spreek alles opnieuw in, ook wat volgens het manifest al klopt.
+ *   --adopteer  neem bestaande mp3's zonder manifest-regel over als "deze zijn al met deze stem
+ *               gemaakt", zonder ze opnieuw in te spreken. Kost nul tekens. Gebruik dit ALLEEN als
+ *               je zeker weet dat die oude bestanden met precies deze ELEVENLABS_VOICE_ID zijn
+ *               ingesproken én dat de bijbehorende tekst sindsdien niet is gewijzigd: het script
+ *               kan geen van beide controleren en gelooft je op je woord. Luister eerst een paar
+ *               oude bestanden terug naast een vers ingesproken bestand.
  *
  * WANNEER WORDT IETS OPNIEUW INGESPROKEN?
  * Het manifest audio/stemmen.json onthoudt per bestand welke stem, welk model en welke tekst erin

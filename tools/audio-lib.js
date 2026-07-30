@@ -86,12 +86,13 @@ function schrijfManifest(man){
 // ---------------------------------------------------------------- opdrachtregel
 
 function leesOpties(argv){
-  const o = { alles: false, droog: false, max: Infinity };
+  const o = { alles: false, droog: false, adopteer: false, max: Infinity };
   argv.slice(2).forEach(function(a){
     if(a === "--alles" || a === "--force") o.alles = true;
     else if(a === "--droog" || a === "--dry-run") o.droog = true;
+    else if(a === "--adopteer") o.adopteer = true;
     else if(a.indexOf("--max=") === 0) o.max = parseInt(a.slice(6), 10) || Infinity;
-    else throw new Error("Onbekende optie: " + a + "  (geldig: --alles, --droog, --max=N)");
+    else throw new Error("Onbekende optie: " + a + "  (geldig: --alles, --adopteer, --droog, --max=N)");
   });
   return o;
 }
@@ -162,6 +163,26 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     return { it: it, outPad: outPad, hash: h, reden: reden };
   });
 
+  /* --adopteer: er stonden al 91 mp3's van vóór dit manifest. Die zijn ooit met ElevenLabs gemaakt,
+     alleen weet het manifest niet met welke stem, dus staan ze als "onbekende stem" op de lijst.
+     Weet jíj zeker dat ze met de stem uit ELEVENLABS_VOICE_ID zijn ingesproken, dan neem je ze
+     hiermee over in het manifest zonder ze opnieuw in te spreken: nul tekens, nul kosten.
+     Let op wat je hiermee bevestigt. Je zegt twee dingen tegelijk: (a) het is deze stem, en (b) de
+     tekst in index.html is sindsdien niet gewijzigd. Dat tweede kan het script niet controleren,
+     want er is geen oude hash om mee te vergelijken. Klopt het niet, dan hoor je bij die zin iets
+     anders dan er staat, en het manifest zegt dat alles in orde is. Alleen gebruiken als je een
+     paar bestanden hebt teruggeluisterd. Twijfel je: gewoon opnieuw inspreken, dan weet je het. */
+  let geadopteerd = 0;
+  if(opties.adopteer && !opties.alles){
+    plan.forEach(function(p){
+      if(p.reden !== "onbekende stem") return;
+      man[groep][p.it.id] = { voice: cfg.voice, model: cfg.model, hash: p.hash, tekens: p.it.tekst.length, overgenomen: true };
+      p.reden = "";
+      geadopteerd++;
+    });
+    if(geadopteerd && !opties.droog) schrijfManifest(man);
+  }
+
   const todo = plan.filter(function(p){ return p.reden; });
   const tekens = todo.reduce(function(n, p){ return n + p.it.tekst.length; }, 0);
   const perReden = {};
@@ -170,13 +191,14 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   console.log("");
   console.log("== " + groep + " ==");
   console.log("  gevonden: " + items.length + " · al goed: " + (items.length - todo.length) + " · in te spreken: " + todo.length);
+  if(geadopteerd) console.log("    (" + geadopteerd + " bestaande mp3's overgenomen op jouw woord, niet opnieuw ingesproken)");
   Object.keys(perReden).forEach(function(r){ console.log("    - " + r + ": " + perReden[r]); });
   console.log("  tekens die dit kost: " + tekens.toLocaleString("nl-NL"));
 
   if(opties.droog){
     todo.slice(0, 8).forEach(function(p){ console.log("    · zou doen: " + p.it.id + " (" + p.reden + ")"); });
     if(todo.length > 8) console.log("    · ... en nog " + (todo.length - 8));
-    return { nieuw: 0, over: items.length - todo.length, mislukt: 0, tekens: tekens, gepland: todo.length };
+    return { nieuw: 0, over: items.length - todo.length, mislukt: 0, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
   }
 
   let nieuw = 0, mislukt = 0;
@@ -196,21 +218,24 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     }
     await new Promise(function(r){ setTimeout(r, pauzeMs); });
   }
-  return { nieuw: nieuw, over: items.length - todo.length, mislukt: mislukt, tekens: tekens, gepland: todo.length };
+  return { nieuw: nieuw, over: items.length - todo.length, mislukt: mislukt, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
 }
 
 function slotwoord(delen, cfg, opties){
   const nieuw = delen.reduce(function(n, d){ return n + d.nieuw; }, 0);
   const over = delen.reduce(function(n, d){ return n + d.over; }, 0);
   const mislukt = delen.reduce(function(n, d){ return n + d.mislukt; }, 0);
+  const overgenomen = delen.reduce(function(n, d){ return n + (d.geadopteerd || 0); }, 0);
   console.log("");
   if(opties.droog){
     const gepland = delen.reduce(function(n, d){ return n + d.gepland; }, 0);
     const tekens = delen.reduce(function(n, d){ return n + d.tekens; }, 0);
     console.log("Droogdraai: " + gepland + " bestanden zouden worden ingesproken, " + tekens.toLocaleString("nl-NL") + " tekens in totaal.");
+    if(overgenomen) console.log("Daarnaast zouden " + overgenomen + " bestaande mp3's worden overgenomen zonder ze in te spreken (--adopteer).");
     console.log("Draai zonder --droog om het echt te doen.");
     return;
   }
+  if(overgenomen) console.log(overgenomen + " bestaande mp3's overgenomen in het manifest (--adopteer), zonder tekens te verbruiken.");
   console.log("Klaar: " + nieuw + " ingesproken, " + over + " al goed, " + mislukt + " mislukt.");
   console.log("Stem: " + cfg.voice + " · model: " + cfg.model);
   console.log("Vergeet niet audio/ én audio/stemmen.json mee te committen.");
