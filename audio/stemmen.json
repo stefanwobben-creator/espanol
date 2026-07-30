@@ -78,5 +78,1213 @@
       "hash": "c4ec7d9a1c63cf38",
       "tekens": 796
     }
+  },
+  "dictado": {
+    "s1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "50890a8395d8bad9",
+      "tekens": 15
+    },
+    "s2": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "98d8dae71d1ea2a6",
+      "tekens": 11
+    },
+    "s3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5c0616421520e271",
+      "tekens": 38
+    },
+    "s4": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "abce7c63f13a4417",
+      "tekens": 30
+    },
+    "s5": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "60286e5c321bd589",
+      "tekens": 31
+    },
+    "s6": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6b1d7ca506b0d66a",
+      "tekens": 26
+    },
+    "s7": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2556b0eafb8fcbfe",
+      "tekens": 35
+    },
+    "s8": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "fe3627c7fde241e3",
+      "tekens": 20
+    },
+    "s9": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "83c15bb6f859ad5a",
+      "tekens": 50
+    },
+    "s10": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b8912d1032634e4c",
+      "tekens": 21
+    },
+    "s11": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "15d9b513c67a056c",
+      "tekens": 26
+    },
+    "s12": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4e955c903f6a1000",
+      "tekens": 25
+    },
+    "s13": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "aeb2543d93834575",
+      "tekens": 14
+    },
+    "s14": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6d55466bf6e9f086",
+      "tekens": 23
+    },
+    "s15": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f08cc45d69540d73",
+      "tekens": 26
+    },
+    "s16": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7f8db9c02e8981ff",
+      "tekens": 29
+    },
+    "s17": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "e3d6a96602327563",
+      "tekens": 32
+    },
+    "s18": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "1a5fb298eb98e445",
+      "tekens": 41
+    },
+    "s19": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "86cffde77c4f0719",
+      "tekens": 24
+    },
+    "s20": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9f7556a213ed18ed",
+      "tekens": 23
+    },
+    "s21": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5007a8c3f050f740",
+      "tekens": 31
+    },
+    "s22": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "e696717501063ab9",
+      "tekens": 57
+    },
+    "s23": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "67629568cfa4d092",
+      "tekens": 47
+    },
+    "s24": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d12d7260664c0b3f",
+      "tekens": 47
+    },
+    "s25": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "205a75190075f16a",
+      "tekens": 35
+    },
+    "s26": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "442b2ec7da1375dd",
+      "tekens": 38
+    },
+    "s27": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ab24247d7cc924fd",
+      "tekens": 24
+    },
+    "s28": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b63a04fd2e006aae",
+      "tekens": 35
+    },
+    "s29": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9c1b112e71851282",
+      "tekens": 35
+    },
+    "s30": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "85de0ca9b08105bd",
+      "tekens": 37
+    },
+    "s31": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "422ae5bde9261ff4",
+      "tekens": 40
+    },
+    "s32": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4a7b8b116d600345",
+      "tekens": 32
+    },
+    "s33": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0a4ca68412dedb46",
+      "tekens": 42
+    },
+    "s34": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "60d4debc7dc6c3c3",
+      "tekens": 22
+    },
+    "s35": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "aebdc8f9a2708481",
+      "tekens": 26
+    },
+    "s36": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "964e0a687ea25c0e",
+      "tekens": 22
+    },
+    "s37": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "c5de5140cc6031f5",
+      "tekens": 35
+    },
+    "s38": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "420d0dffcb8958c7",
+      "tekens": 35
+    },
+    "s39": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "781abe9131dec6e5",
+      "tekens": 36
+    },
+    "s40": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "30d7b6f6331c9712",
+      "tekens": 21
+    },
+    "s41": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "e38a182869af072f",
+      "tekens": 39
+    },
+    "s42": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "58f071191eeed268",
+      "tekens": 39
+    },
+    "s43": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a0ecb043974c85c5",
+      "tekens": 50
+    },
+    "s44": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d003e40cfa74a3d7",
+      "tekens": 46
+    },
+    "s45": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "62e1ff9507f09046",
+      "tekens": 21
+    },
+    "s46": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "248d70a8b6d3a7c2",
+      "tekens": 28
+    },
+    "s47": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2f9fd9a38681fa9f",
+      "tekens": 32
+    },
+    "s48": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "333f6cf3e9ee37fd",
+      "tekens": 33
+    },
+    "s49": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "8410be99adfe469e",
+      "tekens": 24
+    },
+    "s50": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5888630936286cfb",
+      "tekens": 24
+    },
+    "s51": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "27af610beaa273e9",
+      "tekens": 36
+    },
+    "s52": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5acdf0433612cff0",
+      "tekens": 26
+    },
+    "s53": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "688e63420b48eedd",
+      "tekens": 39
+    },
+    "s54": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "823716a5936a498c",
+      "tekens": 33
+    },
+    "s55": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "1499f7b3f22af2a9",
+      "tekens": 28
+    },
+    "s56": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4673c0137236a021",
+      "tekens": 36
+    },
+    "s57": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5c956ccffd9f3396",
+      "tekens": 49
+    },
+    "s58": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "3cd158d11e19a34a",
+      "tekens": 44
+    },
+    "s59": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4c3cd3a8a0329b7e",
+      "tekens": 51
+    },
+    "s60": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ad666abba0d3f867",
+      "tekens": 48
+    },
+    "s61": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6543da65b804c665",
+      "tekens": 32
+    },
+    "s62": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "951ae8d242c20ad4",
+      "tekens": 38
+    },
+    "s63": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "dacc1d0adf046451",
+      "tekens": 49
+    },
+    "s64": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2c5f4e4823afa154",
+      "tekens": 49
+    },
+    "s65": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "611bec4ac7f57085",
+      "tekens": 46
+    },
+    "s66": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2aa2d19d99a1906a",
+      "tekens": 43
+    },
+    "s67": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "69f9f84b17272feb",
+      "tekens": 39
+    },
+    "s68": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "c74c3293bb086958",
+      "tekens": 50
+    },
+    "s69": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "537c04c4ede7bbc9",
+      "tekens": 26
+    },
+    "s70": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cc802eb462e5b74f",
+      "tekens": 23
+    },
+    "s71": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "fa6560acb6b865c9",
+      "tekens": 42
+    },
+    "s72": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9f93f0b775069fca",
+      "tekens": 29
+    },
+    "s73": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "26b5a8fb927ea541",
+      "tekens": 24
+    },
+    "s74": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7cb05d75cf7a222e",
+      "tekens": 38
+    },
+    "s75": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5d6a0c92703722f9",
+      "tekens": 36
+    },
+    "s76": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cf7ecafea86bedce",
+      "tekens": 58
+    },
+    "s77": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "607b2edf1cb3839c",
+      "tekens": 19
+    },
+    "s78": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d9b58a308344abff",
+      "tekens": 43
+    },
+    "s79": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "de46bbd0031eccff",
+      "tekens": 34
+    },
+    "s80": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ded057244a36ffe2",
+      "tekens": 27
+    },
+    "s81": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "aebfd9292fb794ef",
+      "tekens": 35
+    },
+    "s82": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "337e92ed5fe9d20e",
+      "tekens": 33
+    },
+    "s83": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cbf4f744f45fabf6",
+      "tekens": 37
+    },
+    "s84": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "74f873e0ecdf5be7",
+      "tekens": 34
+    },
+    "s85": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f2b782634b6c8d4b",
+      "tekens": 46
+    },
+    "s86": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "933036b60a044f53",
+      "tekens": 39
+    },
+    "s87": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "041533da596cd514",
+      "tekens": 40
+    },
+    "s88": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "428c3ef886e33b97",
+      "tekens": 51
+    },
+    "s89": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d3b3bbaba7c34b40",
+      "tekens": 52
+    },
+    "s90": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ec9a6d30aa0da991",
+      "tekens": 30
+    },
+    "s91": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "489db930a397cec2",
+      "tekens": 31
+    },
+    "s92": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f6d1da393e3fb41d",
+      "tekens": 51
+    },
+    "s93": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "40c108c8cd155c11",
+      "tekens": 39
+    },
+    "s94": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "67a91b0d7b20f23c",
+      "tekens": 39
+    },
+    "s95": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "294c00daba668770",
+      "tekens": 36
+    },
+    "s96": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4cd4407da0d34ad0",
+      "tekens": 42
+    },
+    "s97": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5e1cae6887588d85",
+      "tekens": 36
+    },
+    "s98": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ea5fc076f3d6015a",
+      "tekens": 42
+    },
+    "s99": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0a4ca68412dedb46",
+      "tekens": 42
+    },
+    "s100": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "300e0061d55828d0",
+      "tekens": 48
+    },
+    "s101": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "47ac35ad86becd07",
+      "tekens": 38
+    },
+    "s102": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7009c0af7a48d314",
+      "tekens": 40
+    },
+    "s103": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "84c63a4dcc126bf5",
+      "tekens": 34
+    },
+    "s104": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b0dc90b1ef137146",
+      "tekens": 64
+    },
+    "s105": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a45cab9d5dce05e2",
+      "tekens": 35
+    },
+    "s106": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "96aabb704c1fcd14",
+      "tekens": 40
+    },
+    "s107": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cfe78db00a7e3f3a",
+      "tekens": 44
+    },
+    "s108": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ff9262179b50e074",
+      "tekens": 51
+    },
+    "s109": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "90d62a619bedf661",
+      "tekens": 35
+    },
+    "s110": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "31fb95b4bfa3bbf6",
+      "tekens": 57
+    },
+    "s111": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2ed23bd9fccf1d00",
+      "tekens": 65
+    },
+    "s112": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a91678b879909cff",
+      "tekens": 42
+    },
+    "s113": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "af3fa0be5104d8f9",
+      "tekens": 66
+    },
+    "s114": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d1cd13311ab796f7",
+      "tekens": 77
+    },
+    "s115": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4057b03ba809da82",
+      "tekens": 48
+    },
+    "s116": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "96a9209c5fbe5c1f",
+      "tekens": 62
+    },
+    "s117": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d61fff51940dce72",
+      "tekens": 52
+    },
+    "s118": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2f9659b2e751ea60",
+      "tekens": 42
+    },
+    "s119": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d5c8d9d09088381c",
+      "tekens": 40
+    },
+    "s120": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a29f97681b0ae28f",
+      "tekens": 56
+    },
+    "s121": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "84e7507da05c7ae4",
+      "tekens": 41
+    },
+    "s122": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cefbc5082ef70c25",
+      "tekens": 57
+    },
+    "s123": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "3a08b4e1b6d60b44",
+      "tekens": 43
+    },
+    "s124": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "750e6682620c75fa",
+      "tekens": 42
+    },
+    "s125": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "66e529fe8b39c1dd",
+      "tekens": 48
+    },
+    "s126": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "10874c5edf2bf799",
+      "tekens": 44
+    },
+    "s127": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4a39a74485fead21",
+      "tekens": 68
+    },
+    "s128": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b8d17dbb966fd748",
+      "tekens": 39
+    },
+    "s129": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0d321bd0c7b99a46",
+      "tekens": 53
+    },
+    "s130": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "bed42210b7389cbb",
+      "tekens": 44
+    },
+    "s131": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "128c57b59503da67",
+      "tekens": 51
+    },
+    "s132": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "3536740b55d5f7de",
+      "tekens": 51
+    },
+    "bs1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "14b508dae93e4ed4",
+      "tekens": 19
+    },
+    "bs2": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ab00c4f5843f54fd",
+      "tekens": 16
+    },
+    "bs3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a58e0714ced2046c",
+      "tekens": 25
+    },
+    "bs4": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0f5d32a640577645",
+      "tekens": 17
+    },
+    "bs5": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "894f7ce28d158cd0",
+      "tekens": 15
+    },
+    "bs6": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9680fb2217149c34",
+      "tekens": 19
+    },
+    "bs7": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2d4e7e5d6375f3b9",
+      "tekens": 25
+    },
+    "bs8": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "60ca26b848095b7b",
+      "tekens": 20
+    },
+    "bs9": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "24b58524475c8699",
+      "tekens": 22
+    },
+    "bs10": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cf2639c4469dfcea",
+      "tekens": 15
+    },
+    "bs11": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "31f29aabed03d1f6",
+      "tekens": 17
+    },
+    "bs12": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "618b7295a61f55dc",
+      "tekens": 22
+    },
+    "bs13": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "1b63a54f2f3bbd7b",
+      "tekens": 18
+    },
+    "bs14": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a888b754fa788af3",
+      "tekens": 14
+    },
+    "bs15": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "64b1ac97b4f32c90",
+      "tekens": 30
+    },
+    "bs16": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f82376e0e113320b",
+      "tekens": 12
+    },
+    "bs17": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f9d4d5f2908036a0",
+      "tekens": 16
+    },
+    "bs18": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7363228342314923",
+      "tekens": 14
+    },
+    "bs19": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cba436af8e688666",
+      "tekens": 13
+    },
+    "bs20": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d0b2556b91dd9652",
+      "tekens": 28
+    },
+    "bs21": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "bfd48a796f5f1bc4",
+      "tekens": 21
+    },
+    "bs22": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b2b3b67928b409c4",
+      "tekens": 36
+    },
+    "bs23": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "04dfcc4aae1021c0",
+      "tekens": 38
+    },
+    "bs24": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a9aedeeeeaa88798",
+      "tekens": 28
+    },
+    "bs25": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "28daef2a7d2869f7",
+      "tekens": 27
+    },
+    "bs26": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ff3de3cc6fa83b64",
+      "tekens": 25
+    },
+    "bs27": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4ae193e3b7ee7b7c",
+      "tekens": 37
+    },
+    "bs28": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9e374550fcb51938",
+      "tekens": 27
+    },
+    "bs29": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "adffb0cfb763b7bc",
+      "tekens": 36
+    },
+    "bs30": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "936710b422979b42",
+      "tekens": 22
+    },
+    "bs31": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0bb7956cd1dc127b",
+      "tekens": 36
+    },
+    "bs32": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6f16b386eaf89869",
+      "tekens": 24
+    },
+    "bs33": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "dd8761d78a883f63",
+      "tekens": 31
+    },
+    "bs34": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "8bfcfe6b2ad614d8",
+      "tekens": 43
+    },
+    "bs35": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "47981e79b1c49c58",
+      "tekens": 18
+    },
+    "bs36": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "fe98fc2e4049cb13",
+      "tekens": 25
+    },
+    "bs37": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a708a3dd56e79cd0",
+      "tekens": 20
+    },
+    "bs38": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f014fe0e7ea65dda",
+      "tekens": 32
+    },
+    "bs39": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "28bf082da1696ffe",
+      "tekens": 27
+    },
+    "bs40": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9935bb3b152475d6",
+      "tekens": 20
+    },
+    "bs41": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "8fe56b8c9f6a8b87",
+      "tekens": 30
+    },
+    "bs42": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6b0e4a1849bbfdea",
+      "tekens": 23
+    },
+    "bs43": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "a8d754b875fcb2ce",
+      "tekens": 27
+    },
+    "bs44": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b5b139a2baaf9c89",
+      "tekens": 28
+    },
+    "bs45": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "13b2411392452b54",
+      "tekens": 23
+    },
+    "bs46": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9bd197410a336090",
+      "tekens": 31
+    },
+    "bs47": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d2b0850546ef4cff",
+      "tekens": 25
+    },
+    "bs48": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0691561b552f604c",
+      "tekens": 37
+    },
+    "bs49": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "78e4ef2ae319fa01",
+      "tekens": 26
+    },
+    "bs50": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "188f389f6dbbef6f",
+      "tekens": 19
+    },
+    "bs51": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "51513c8bf1772bbd",
+      "tekens": 23
+    },
+    "bs52": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9e276a9688b0dad0",
+      "tekens": 30
+    },
+    "bs53": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "c436d50dc0a19093",
+      "tekens": 14
+    },
+    "bs54": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d653324318337955",
+      "tekens": 25
+    },
+    "bs55": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "8be046e92aa9d952",
+      "tekens": 29
+    },
+    "bs56": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "369bd8564a4ae701",
+      "tekens": 27
+    },
+    "bs57": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "49035f1c7e2983e2",
+      "tekens": 38
+    },
+    "bs58": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "85eec3ed9de95e93",
+      "tekens": 35
+    },
+    "bs59": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "38739d2fcd136496",
+      "tekens": 42
+    },
+    "bs60": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d50e9d0d315931b1",
+      "tekens": 26
+    },
+    "bs61": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d3706f02e82693a6",
+      "tekens": 34
+    },
+    "bs62": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "107b8cb2b19c2aa9",
+      "tekens": 31
+    },
+    "bs63": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "533f205a0aa71336",
+      "tekens": 18
+    },
+    "bs64": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "fab7d6d5f8b29f35",
+      "tekens": 40
+    },
+    "bs65": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5df0ea4a3aecf072",
+      "tekens": 16
+    },
+    "bs66": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "26c2ed0eb98aeed9",
+      "tekens": 33
+    },
+    "bs67": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0f65402f30d9b2f2",
+      "tekens": 19
+    },
+    "bs68": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "59edcafa0cf0e353",
+      "tekens": 33
+    },
+    "bs69": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "41517ca572611aeb",
+      "tekens": 30
+    }
   }
 }
