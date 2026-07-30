@@ -603,7 +603,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.53";
+var APP_VERSIE = "v19.54";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6843,41 +6843,6 @@ function verbPopup(term){
 // woord kunnen klikken voor meer info." Bij een werkwoord is dat het rijtje (verbPopup), bij de rest
 // een korte uitleg met een voorbeeldzin. Zelfde popup-schil en dezelfde S.vcache, dus tweede keer
 // openen kost niets.
-function woordPopup(term, gloss){
-  var bestaand = document.getElementById("vpop");
-  if(bestaand) bestaand.remove();
-  var pop = document.createElement("div");
-  pop.className = "vpop"; pop.id = "vpop";
-  pop.innerHTML = "<h3>" + term + "</h3><p class='muted' id='vpopBody'>\ud83e\udd16 " + ct("Uitleg ophalen...", "Fetching an explanation...") + "</p>" +
-    "<div class='row'><button class='ghost' id='vpopClose'>" + ct("Sluiten", "Close") + "</button></div>";
-  document.body.appendChild(pop);
-  document.getElementById("vpopClose").onclick = function(){ pop.remove(); };
-  S.vcache = S.vcache || {};
-  var sleutel = "w:" + term;
-  if(S.vcache[sleutel]){
-    var b1 = document.getElementById("vpopBody");
-    if(b1) b1.innerHTML = S.vcache[sleutel];
-    return;
-  }
-  var taal = profLang() === "nl" ? "Nederlands" : "Engels";
-  api("/api/ai/uitleg", "POST", {
-    vraag: "Leg het Spaanse woord \"" + term + "\"" + (gloss ? " (betekenis: " + gloss + ")" : "") + " kort uit in het " + taal +
-      ": in \u00e9\u00e9n zin wat het betekent en wanneer je het gebruikt, dan bij een zelfstandig naamwoord het lidwoord (el/la) en het meervoud, " +
-      "en tot slot \u00e9\u00e9n korte voorbeeldzin in het Spaans met de vertaling erachter. Maximaal vier korte regels, met \u00b7 tussen de onderdelen.",
-    context: ""
-  }).then(function(res){
-    var b2 = document.getElementById("vpopBody");
-    if(!b2) return;
-    if(res && res.ok){
-      var txt = res.uitleg.replace(/\n/g, "<br>");
-      b2.innerHTML = txt;
-      S.vcache[sleutel] = txt; persist();
-    } else {
-      b2.textContent = ct("De uitleg-AI is even niet bereikbaar. Probeer het straks nog eens.", "The explanation AI is unreachable right now. Try again later.");
-    }
-  });
-}
-
 /* ================= WOORDENZOEKER ================= */
 function gameVoorrang(pool){
   function score(id){
@@ -7560,9 +7525,9 @@ var FREQ_EN = {
 
 
 
-// Tot en met deze index is FREQ echt op woordfrequentie geordend (de oude top-2866). Alles daarna is
-// de thematische uitbreiding van v19.52: nuttige woorden, maar zonder betekenisvol frequentienummer.
-// Daarom laten we bij die woorden het #rangnummer weg in plaats van een verzonnen rang te suggereren.
+// Tot en met deze index is FREQ echt op woordfrequentie geordend (de oude top-2866); alles daarna is de
+// thematische uitbreiding van v19.52. De gebruiker ziet dat nummer sinds v19.54 nergens meer (het was
+// ruis, zie batchlog), maar de grens blijft de plek waar de sortering van FREQ van betekenis verandert.
 var FREQ_RANGLIMIET = 2866;
 // Zoeken over 4.219 woorden bij elke toetsaanslag: de genormaliseerde vormen één keer voorbereiden
 // in plaats van per keystroke opnieuw stripAcc() over de hele lijst te halen.
@@ -7630,17 +7595,28 @@ function freqVerwant(es, maxN){
   }
   return uit;
 }
-// Een voorbeeldzin uit de app zelf, niet een verzonnen zin: hetzelfde stam-trucje als dicVoorbeeld().
+// Een voorbeeldzin uit de app zelf, niet een verzonnen zin. Eerst de hele uitdrukking, dan de stam van
+// het laatste inhoudswoord, en altijd met een woordgrens ervoor: zonder die grens vond "media hora" de
+// zin "Estoy comiendo ahora" (want "ahora" bevat "hora"), en dan staat er een voorbeeld dat het woord
+// niet eens bevat. Geen treffer betekent geen voorbeeldregel.
 function freqZinVoorbeeld(es){
-  var delen = es.toLowerCase().split(" ").filter(function(t){ return !DIC_LIDW[t]; });
-  var zoek = stripAcc(delen[delen.length - 1] || "").replace(/[^a-z]/g, "");
-  if(zoek.length < 4) return null;
-  var stam = zoek.slice(0, Math.max(4, zoek.length - 2));
-  return SENTENCES.filter(function(s){ return stripAcc(s.es.toLowerCase()).indexOf(stam) !== -1; })[0] || null;
+  var heel = stripAcc(es.toLowerCase()).replace(/[^a-z ]/g, "").trim();
+  var delen = heel.split(" ").filter(function(t){ return t && !DIC_LIDW[t]; });
+  var kern = delen[delen.length - 1] || "";
+  var kandidaten = [];
+  if(delen.length > 1) kandidaten.push(delen.join(" "));
+  if(kern.length >= 4) kandidaten.push(kern.slice(0, Math.max(4, kern.length - 2)));
+  for(var i = 0; i < kandidaten.length; i++){
+    var re = new RegExp("(^|[^a-z])" + kandidaten[i]);
+    var hit = SENTENCES.filter(function(s){ return re.test(stripAcc(s.es.toLowerCase())); })[0];
+    if(hit) return hit;
+  }
+  return null;
 }
-// De uitklap onder een zoektreffer. Stefan: "je wilt ook op een woord kunnen klikken voor meer info."
-// Het frequentienummer verhuist hiernaartoe: in de rij was het ruis die uitleg nodig had, hier is het
-// een zinnetje dat zichzelf uitlegt.
+// De uitklap onder een zoektreffer. Stefan, 30 juli: "waar is hasta ahora met luister en ai
+// functionaliteit dat moet niet, die moet net zo zijn als de andere resultaten in het woordenboek."
+// Dus exact dezelfde opbouw als de uitklap van een leswoord: vetgedrukte betekenis, de andere taal
+// erachter, een voorbeeldzin. Geen knoppenbalk, en geen frequentienummer: dat was ruis.
 function freqDetailHtml(h){
   var uit = "<div class='dicbody'>";
   var en = (typeof FREQ_EN !== "undefined" && FREQ_EN[h.es]) || "";
@@ -7648,10 +7624,6 @@ function freqDetailHtml(h){
   if(profLang() === "nl" && en && en !== h.nl) uit += " <span class='muted'>\u00b7 en: " + en + "</span>";
   if(profLang() !== "nl" && h.ruw && h.ruw !== h.nl) uit += " <span class='muted'>\u00b7 nl: " + h.ruw + "</span>";
   uit += "</p>";
-  uit += "<div class='row' style='margin:4px 0'><button class='ghost' data-zeg=\"" + h.es.replace(/"/g, "&quot;") + "\">\ud83d\udd0a " + ct("Hoor het", "Hear it") + "</button>";
-  if(h.es.indexOf(" ") === -1 && /(ar|er|ir)$/.test(h.es)) uit += "<button class='ghost' data-rijtjes=\"" + h.es + "\">\ud83d\udccb " + ct("Rijtjes", "Conjugation") + "</button>";
-  else uit += "<button class='ghost' data-uitleg=\"" + h.es.replace(/"/g, "&quot;") + "\" data-gloss=\"" + h.nl.replace(/"/g, "&quot;") + "\">\ud83e\udd16 " + ct("Meer uitleg", "More detail") + "</button>";
-  uit += "</div>";
   var zin = freqZinVoorbeeld(h.es);
   if(zin) uit += "<p>" + ct("Voorbeeld: ", "Example: ") + "<span class='es'>" + zin.es + "</span><br><span class='muted'>" + zinPrompt(zin) + "</span></p>";
   var verw = freqVerwant(h.es, 5);
@@ -7661,7 +7633,6 @@ function freqDetailHtml(h){
       uit += "<p style='margin:2px 0'><span class='es'>" + v.es + "</span> <span class='muted'>\u00b7 " + v.nl + "</span></p>";
     });
   }
-  if(h.rang) uit += "<p class='muted'>" + ct("Dit is een van de 2.866 meestgebruikte Spaanse woorden (plek " + h.rang + ").", "One of the 2,866 most-used Spanish words (rank " + h.rang + ").") + "</p>";
   uit += "</div>";
   return uit;
 }
@@ -8396,9 +8367,18 @@ function renderDic(){
     }
     var dicKey = g.es.replace(/"/g, "&quot;");
     var open = dicOpen === g.es;
+    // Stefan, 30 juli: "achter ahora en ahora misma staat nu wel het bolletje maar niet direct de
+    // vertaling, dat wil je juist wel zien." Dus: woord · vertaling links, status en pijl rechts, precies
+    // dezelfde vorm als de zoektreffers en de liedregels eronder.
+    var glossen = [];
+    g.items.forEach(function(it){
+      var gl = wTrans(it);
+      if(gl && glossen.indexOf(gl) === -1) glossen.push(gl);
+    });
+    var kort = glossen.length ? glossen[0] + (glossen.length > 1 ? " …" : "") : "";
     html += "<div class='dicrow' data-dic=\""+dicKey+"\">"+
-      "<div class='dichead'><span><b class='es'>"+g.es+"</b> <span class='dicstip'>"+stip+"</span></span>"+
-      "<span class='muted' style='font-size:.78rem'>"+(open ? "▾" : "▸")+"</span></div>";
+      "<div class='dichead'><span><b class='es'>"+g.es+"</b>"+(kort ? " <span class='muted'>· "+kort+"</span>" : "")+"</span>"+
+      "<span class='muted' style='font-size:.78rem'><span class='dicstip'>"+stip+"</span> "+(open ? "▾" : "▸")+"</span></div>";
     if(open){
       html += "<div class='dicbody'>";
       // dezelfde vertaling+thema maar 2x (bv. boekwoordenschat in zowel A2- als A0-woordpool): 1x tonen.
@@ -8451,10 +8431,11 @@ function renderDic(){
     uitkomst.treffers.forEach(function(r){
       var fw = FREQ[r[1]];
       if(alGezien[stripAcc(fw[0].toLowerCase())]) return;
-      freqHits.push({rang: r[1] < FREQ_RANGLIMIET ? r[1] + 1 : 0, es: fw[0], nl: freqGloss(fw[0], fw[1]), ruw: fw[1]});
+      freqHits.push({es: fw[0], nl: freqGloss(fw[0], fw[1]), ruw: fw[1]});
     });
     if(freqHits.length){
-      html += "<p style='margin:16px 0 4px'><b>"+ct("Meer Spaanse woorden","More Spanish words")+"</b> <span class='muted'>· "+ct("tik voor uitleg, een voorbeeld en het geluid","tap for details, an example and the sound")+"</span></p>";
+      // Stefan, 30 juli: "waarom staat er uberhaupt meer spaanse woorden boven? die hele zin kan toch weg?"
+      // Klopt: de gebruiker zocht een woord en krijgt woorden. Geen kop, geen tussenlaag, één lijst.
       freqHits.forEach(function(h){
         var fkey = "freq:"+h.es;
         var fopen = dicOpen === fkey;
@@ -8498,24 +8479,6 @@ function renderDic(){
       if(id === null) return;   // liedrijen hebben geen sleutel; die mogen niet stil iets anders dichtklappen
       dicOpen = dicOpen === id ? null : id;
       renderDic();
-    };
-  });
-  el.querySelectorAll("button[data-zeg]").forEach(function(b){
-    b.onclick = function(ev){
-      if(ev && ev.stopPropagation) ev.stopPropagation();
-      if(typeof dictadoSpreekTTS === "function") dictadoSpreekTTS(b.getAttribute("data-zeg"), 0.9);
-    };
-  });
-  el.querySelectorAll("button[data-rijtjes]").forEach(function(b){
-    b.onclick = function(ev){
-      if(ev && ev.stopPropagation) ev.stopPropagation();
-      verbPopup(b.getAttribute("data-rijtjes"));
-    };
-  });
-  el.querySelectorAll("button[data-uitleg]").forEach(function(b){
-    b.onclick = function(ev){
-      if(ev && ev.stopPropagation) ev.stopPropagation();
-      woordPopup(b.getAttribute("data-uitleg"), b.getAttribute("data-gloss"));
     };
   });
   el.querySelectorAll("button[data-vormen]").forEach(function(b){
