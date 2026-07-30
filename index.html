@@ -146,6 +146,22 @@
   .zzz{position:absolute; top:20px; left:50%; margin-left:34px; font-size:1.5rem; z-index:2;
        animation:zzzfloat 3s ease-in-out infinite; pointer-events:none;}
   @keyframes zzzfloat{0%{transform:translateY(0); opacity:.15} 45%{transform:translateY(-12px); opacity:1} 100%{transform:translateY(-24px); opacity:0}}
+  /* v19.55: jargon-uitleg. Grammaticawoorden als infinitief of gerundio krijgen een stippellijn en
+     leggen zichzelf uit bij tikken (touch) of hover (muis). Een term die de app wel gebruikt maar
+     waar nog geen uitleg bij staat, krijgt een grijze lijn en zegt dat ook, zodat de lijst kan
+     groeien op wat er echt in de app staat in plaats van stilletjes niets te doen. */
+  .jrg{border-bottom:1px dotted var(--accent); cursor:help; position:relative; font-weight:inherit;}
+  .jrg.leeg{border-bottom:1px dotted var(--muted);}
+  .jrg .jrgpop{display:none; position:absolute; left:0; top:1.6em; z-index:70;
+               width:min(272px,72vw); background:var(--card); color:var(--ink);
+               border:1px solid var(--border); border-radius:12px; padding:9px 11px;
+               font-size:.8rem; font-weight:400; font-style:normal; line-height:1.4;
+               text-align:left; white-space:normal; box-shadow:0 10px 26px rgba(0,0,0,.18);}
+  .jrg .jrgpop b{display:block; font-size:.78rem; color:var(--accent); margin-bottom:3px;}
+  .jrg .jrgvb{display:block; margin-top:5px; font-style:italic; color:var(--muted);}
+  .jrg .jrgleeg{color:var(--muted); font-style:italic;}
+  .jrg.open .jrgpop{display:block;}
+  @media (hover:hover){ .jrg:hover .jrgpop{display:block;} }
   /* v19.50: la jerga del día - Chispa introduceert een stukje spreektaal bij de woordjes/zinnetjes */
   .jergarij{display:flex; align-items:flex-start; gap:10px;}
   .jergachispa{flex:0 0 auto; width:40px; height:42px; background:none; border:none; padding:0; cursor:pointer;}
@@ -570,13 +586,11 @@
   <!-- WOORDJES -->
   <section id="tab-woorden" class="hidden">
     <div class="card" id="wCard"></div>
-    <div id="jergaWoorden"></div>
   </section>
 
   <!-- VERTALEN -->
   <section id="tab-vertalen" class="hidden">
     <div class="card" id="sCard"></div>
-    <div id="jergaVertalen"></div>
   </section>
 
   <!-- TOETSJES -->
@@ -603,7 +617,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.54";
+var APP_VERSIE = "v19.55";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3594,13 +3608,143 @@ function updateBadge(){
   document.getElementById("dueBadge").textContent = n>0 ? (n+" "+tt("teDoen")) : tt("allesGedaan").toLowerCase();
 }
 
-/* ===== LA JERGA DEL DÍA (v19.50) =====
+/* ===== JARGON-UITLEG (v19.55) =====
+   Stefan, 30 juli: "bouw het als een herbruikbaar component gevoed door een term->definitie-map,
+   niet hardcoded per term". Dus: een lijst met termen die de app gebruikt (JARGON_TERMEN), een map
+   met uitleg (JARGON), en een scanner die na het renderen van een grammatica-oppervlak de tekst
+   langsloopt en elke term omzet in een aanklikbaar element. Nieuwe term uitleggen = een regel in de
+   map, nergens anders iets aanpassen.
+   Twee keuzes die het waard zijn om te onthouden:
+   - Tikken werkt, niet alleen hover. Op een telefoon bestaat hover niet, en dit is een telefoon-app.
+   - Een term uit JARGON_TERMEN zonder uitleg wordt zichtbaar gemarkeerd als "nog geen uitleg". Dan
+     zie je in de app zelf welk woord nog een definitie mist, in plaats van dat er stil niets gebeurt.
+   De uitleg zelf is in gewone taal: geen jargon binnen de uitleg van jargon, en waar het kan een
+   Spaans voorbeeld. */
+var JARGON = {
+  "infinitief": { nl:"de onvervoegde grondvorm van een werkwoord, in het Spaans op -ar/-er/-ir",
+                  en:"the unconjugated base form of a verb, ending in -ar/-er/-ir in Spanish",
+                  vb:"hablar (spreken)", vben:"hablar (to speak)" },
+  "gerundio": { nl:"de -ndo-vorm, zoals ons 'aan het ...'",
+                en:"the -ndo form, like the English '-ing'",
+                vb:"hablando (aan het spreken)", vben:"hablando (speaking)" },
+  "participio": { nl:"het voltooid deelwoord, de -ado/-ido-vorm",
+                  en:"the past participle, the -ado/-ido form",
+                  vb:"hablado (gesproken)", vben:"hablado (spoken)" },
+  "indicativo": { nl:"de gewone vorm voor feiten",
+                  en:"the plain form you use for facts",
+                  vb:"hablas (je spreekt)", vben:"hablas (you speak)" },
+  "subjuntivo": { nl:"de vorm voor wensen, twijfel of emotie, iets wat niet zeker is",
+                  en:"the form for wishes, doubt or emotion, something that is not certain",
+                  vb:"que hables", vben:"que hables" },
+  "imperativo": { nl:"de gebiedende vorm, een bevel of verzoek",
+                  en:"the command form, an order or request",
+                  vb:"¡habla! (spreek!)", vben:"¡habla! (speak!)" },
+  "pretérito indefinido": { nl:"verleden tijd voor een afgeronde actie",
+                  en:"past tense for a finished action",
+                  vb:"hablé (ik sprak)", vben:"hablé (I spoke)" },
+  "pretérito imperfecto": { nl:"verleden tijd voor gewoontes of beschrijvingen",
+                  en:"past tense for habits or descriptions",
+                  vb:"hablaba (ik sprak / was aan het spreken)", vben:"hablaba (I used to speak / was speaking)" },
+  "reflexief werkwoord": { nl:"de handeling keert terug op het onderwerp, met 'zich'",
+                  en:"the action turns back on the subject, with 'oneself'",
+                  vb:"levantarse (zich opstaan)", vben:"levantarse (to get oneself up)" }
+};
+/* Termen die de app wel gebruikt maar waar nog geen uitleg bij staat. Ze krijgen een grijze
+   stippellijn en zeggen dat zelf, zodat de lijst groeit op wat er echt in de app staat. */
+var JARGON_ZONDER = ["pretérito perfecto", "condicional"];
+function jargonTermen(){
+  var t = [], k;
+  for(k in JARGON){ if(Object.prototype.hasOwnProperty.call(JARGON, k)) t.push(k); }
+  return t.concat(JARGON_ZONDER);
+}
+function jargonDef(term){
+  return JARGON[String(term).toLowerCase()] || null;
+}
+// Eén regex voor alle termen, langste eerst zodat "pretérito imperfecto" wint van een kortere match.
+// Geen /g-vlag: die deelt lastIndex tussen aanroepen en slaat dan willekeurig treffers over.
+function jargonRegex(){
+  if(jargonRegex._re) return jargonRegex._re;
+  var termen = jargonTermen().sort(function(a, b){ return b.length - a.length; });
+  var esc = termen.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); });
+  var letter = "A-Za-záéíóúüñÁÉÍÓÚÜÑ";
+  jargonRegex._re = new RegExp("(^|[^" + letter + "])(" + esc.join("|") + ")(?![" + letter + "])", "i");
+  return jargonRegex._re;
+}
+function jargonHtml(term){
+  var d = jargonDef(term);
+  var kop = "<span class='jrgpop'><b>" + term + "</b>";
+  if(!d){
+    return "<span class='jrg leeg' data-jrg='" + String(term).toLowerCase() + "' tabindex='0'>" + term +
+      kop + "<span class='jrgleeg'>" + ct("Nog geen uitleg bij deze term.", "No explanation for this term yet.") +
+      "</span></span></span>";
+  }
+  var vb = d.vb ? "<span class='jrgvb'>" + ct("Voorbeeld: ", "Example: ") + ct(d.vb, d.vben || d.vb) + "</span>" : "";
+  return "<span class='jrg' data-jrg='" + String(term).toLowerCase() + "' tabindex='0'>" + term +
+    kop + ct(d.nl, d.en) + vb + "</span></span>";
+}
+// Tikken opent, nog eens tikken sluit, en een tik ergens anders sluit alles. In de capture-fase, want
+// deze termen staan vaak in kaarten die zelf al een klik-handler hebben; die mag niet meevuren.
+function jargonWire(){
+  // draait ook in de node-testharnas, waar document maar half bestaat: dan gewoon niets doen
+  if(jargonWire._klaar || typeof document === "undefined" || !document.addEventListener) return;
+  jargonWire._klaar = true;
+  document.addEventListener("click", function(e){
+    var n = e.target, hit = null;
+    while(n && n !== document.body){
+      if(n.classList && n.classList.contains("jrg")){ hit = n; break; }
+      n = n.parentNode;
+    }
+    var open = document.querySelectorAll(".jrg.open");
+    for(var i = 0; i < open.length; i++){ if(open[i] !== hit) open[i].classList.remove("open"); }
+    if(hit){ e.preventDefault(); e.stopPropagation(); hit.classList.toggle("open"); }
+  }, true);
+}
+function jargonSplits(node){
+  var re = jargonRegex();
+  var rest = node.nodeValue, m;
+  var frag = document.createDocumentFragment();
+  var hulp = document.createElement("span");
+  while((m = re.exec(rest))){
+    var voor = rest.slice(0, m.index + m[1].length);
+    if(voor) frag.appendChild(document.createTextNode(voor));
+    hulp.innerHTML = jargonHtml(m[2]);
+    frag.appendChild(hulp.firstChild);
+    rest = rest.slice(m.index + m[1].length + m[2].length);
+  }
+  if(rest) frag.appendChild(document.createTextNode(rest));
+  if(node.parentNode) node.parentNode.replaceChild(frag, node);
+}
+/* Roep dit aan na het renderen van een grammatica-oppervlak. Loopt alleen tekstnodes langs, slaat
+   knoppen, invoervelden en al gemarkeerde termen over (anders legt de uitleg zichzelf uit). */
+function jargonScan(el){
+  if(!el || typeof document === "undefined") return;
+  jargonWire();
+  var re = jargonRegex();
+  var negeer = { SCRIPT:1, STYLE:1, BUTTON:1, INPUT:1, TEXTAREA:1, SELECT:1, OPTION:1, SVG:1 };
+  var stapel = [el], treffers = [], n, i, k;
+  while(stapel.length){
+    n = stapel.pop();
+    if(!n || !n.childNodes) continue;
+    for(i = 0; i < n.childNodes.length; i++){
+      k = n.childNodes[i];
+      if(k.nodeType === 3){ if(re.test(k.nodeValue)) treffers.push(k); }
+      else if(k.nodeType === 1 && !negeer[k.nodeName] && !(k.classList && k.classList.contains("jrg"))){ stapel.push(k); }
+    }
+  }
+  treffers.forEach(jargonSplits);
+}
+/* ===== LA JERGA DEL DÍA (v19.50, herzien v19.55) =====
    Stefan: "misschien leuk om bij de woordjes of zinnetjes chispa ook een spaanse slang zin te
-   laten introduceren." Eén uitdrukking per dag, gebracht door Chispa, met de betekenis achter
-   één klik - dat kleine raadmoment is precies waarom spreektaal blijft hangen. Nog niet geziene
+   laten introduceren." Eén uitdrukking per dag, gebracht door Chispa. Nog niet geziene
    uitdrukkingen gaan voor (S.jerga.gezien), dus herhaling komt pas als je ze alle 32 gehad hebt.
    'waar' blijft in het Spaans staan: jerga is streekgebonden en dat mag je zien.
-   Bewust géén taco's als beloning - taco's verdien je met leren, niet met klikken. */
+   Bewust géén taco's als beloning - taco's verdien je met leren, niet met klikken.
+
+   v19.55 (Stefan, 30 juli): de kaart stond bij de woordjes en het vertalen, en op Chispa's eigen
+   pagina zei ze daarnaast nóg een frase van de dag uit een tweede lijst. Twee elementen die
+   hetzelfde deden. Nu is het er één, op haar pagina: wat Chispa vandaag zegt ÍS de straattaal van
+   vandaag. En het is flavor: de betekenis staat er meteen bij, want de "Wat betekent dat?"-knop
+   maakte een keuzemoment van iets waar niets te kiezen valt. */
 var JERGA = [
   {id:"vale", es:"Vale, vale.", waar:"España",
    lit:"het geldt", lite:"it is valid",
@@ -3788,58 +3932,43 @@ function jergaVandaag(){
   persist();
   return j;
 }
-function jergaAl(){ return jergaState().open === today(); }
-function jergaOpenen(){
+// Gezien = getoond. Vroeger telde alleen een klik op "Wat betekent dat?"; die knop bestaat niet meer,
+// dus streept de rotatie af zodra je de uitdrukking op Chispa's pagina onder ogen hebt gehad.
+function jergaGezien(){
   var st = jergaState();
   var j = jergaVandaag();
-  st.open = today();
-  if(st.gezien.indexOf(j.id) < 0) st.gezien.push(j.id);
-  persist();
-  jergaRenderAlles();
-  jergaHoor();
+  if(st.gezien.indexOf(j.id) < 0){ st.gezien.push(j.id); persist(); }
   return j;
 }
 function jergaHoor(){
   var j = jergaVandaag();
   if(typeof dictadoSpreekTTS === "function") dictadoSpreekTTS(j.es, 0.9);
 }
+// Alles staat er meteen op: uitdrukking, letterlijk, betekenis, voorbeeld. Geen tussenstap, geen knop.
+// Tik je op Chispa zelf, dan zegt ze hem hardop; dat is spel, geen keuze.
 function jergaHtml(){
   var j = jergaVandaag();
   var st = jergaState();
-  var h = "<div class='card'><div class='jergarij'>"+
+  return "<div class='card'><div class='jergarij'>"+
     "<button class='jergachispa jergaZeg' title='Chispa'>"+chispaMiniSvg()+"</button>"+
     "<div class='jergamid'>"+
       "<span class='kicker'>\uD83D\uDCAC "+ct("Chispa's straattaal van vandaag","Chispa's street Spanish today")+
         "<span class='jergawaar'>"+j.waar+"</span></span>"+
-      "<p class='jergaes'>"+j.es+"</p>";
-  if(jergaAl()){
-    h += "<p class='jergalit'>"+ct("letterlijk: ","literally: ")+ct(j.lit, j.lite)+"</p>"+
+      "<p class='jergaes'>"+j.es+"</p>"+
+      "<p class='jergalit'>"+ct("letterlijk: ","literally: ")+ct(j.lit, j.lite)+"</p>"+
       "<p class='jergabet'>"+ct(j.nl, j.en)+"</p>"+
       "<p class='jergavb'>"+j.vb+"<span class='nl'>"+ct(j.vbnl, j.vben)+"</span></p>"+
-      "<div class='row' style='margin-top:8px'><button class='ghost jergaHoor' style='font-size:.8rem'>\uD83D\uDD0A "+
-        ct("Nog eens horen","Hear it again")+"</button></div>"+
       "<p class='jergatel'>"+ct("Je kent er "+st.gezien.length+" van de "+JERGA.length+".",
-                                "You know "+st.gezien.length+" of "+JERGA.length+".")+"</p>";
-  } else {
-    h += "<div class='row' style='margin-top:8px'><button class='primary jergaWat' style='font-size:.84rem'>"+
-      ct("Wat betekent dat?","What does that mean?")+"</button></div>";
-  }
-  return h + "</div></div></div>";
+                                "You know "+st.gezien.length+" of "+JERGA.length+".")+"</p>"+
+    "</div></div></div>";
 }
 function jergaRender(elId){
   var el = document.getElementById(elId);
   if(!el) return;
+  jergaGezien();
   el.innerHTML = jergaHtml();
-  var w = el.querySelector(".jergaWat");
-  if(w) w.onclick = jergaOpenen;
   var z = el.querySelector(".jergaZeg");
-  if(z) z.onclick = function(){ chispaMiniSpin(z); if(jergaAl()) jergaHoor(); else jergaOpenen(); };
-  var hr = el.querySelector(".jergaHoor");
-  if(hr) hr.onclick = jergaHoor;
-}
-function jergaRenderAlles(){
-  jergaRender("jergaWoorden");
-  jergaRender("jergaVertalen");
+  if(z) z.onclick = function(){ chispaMiniSpin(z); jergaHoor(); };
 }
 function renderWord(){
   var el = document.getElementById("wCard");
@@ -3898,7 +4027,7 @@ function renderWord(){
     "<p class='muted'>"+(S.dir==="es-nl"?tt("watBetekent"):tt("hoeZegJe"))+"</p>"+
     "<div class='row'><button class='primary' id='btnShow'>"+tt("toonAntwoord")+"</button>"+
     "<button class='ghost' id='btnDir'>↔ "+(S.dir==="es-nl"?"ES → "+kort:kort+" → ES")+"</button></div>";
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   document.getElementById("btnShow").onclick = showWord;
   document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
 }
@@ -3916,7 +4045,7 @@ function showWord(){
     "<span class='tag'>"+wCur.tag+"</span>"+
     "<div class='row'><button class='good' id='btnGood'>"+tt("wistIk")+"</button>"+
     "<button class='bad' id='btnBad'>"+tt("wistNiet")+"</button></div>";
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   document.getElementById("btnGood").onclick = function(){ answerWord(true); };
   document.getElementById("btnBad").onclick = function(){ answerWord(false); };
 }
@@ -4071,7 +4200,7 @@ function renderSentence(fresh){
     "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+(6-lesFlow.vertalenTeGaan)+"/5" : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
     "<p class='big'>"+zinPrompt(s)+"</p>"+
     "<div id='sBody'></div>";
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   renderSentenceBody();
 }
 
@@ -4308,7 +4437,7 @@ function renderFunDictado(){
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='dFeedback'></div>";
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   wireAccentToetsen("dAccent", "dInput");
   var inp = document.getElementById("dInput");
   inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
@@ -4342,7 +4471,7 @@ function renderDictadoRondeKlaar(){
       : "<div class='row'><button class='primary' id='btnDicNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
         "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   if(inFlowDic){
     document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
     return;
@@ -4678,7 +4807,7 @@ function renderFunConjugador(){
     "</div>"+
     "<div id='cjBody'></div>";
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   wireConjTiempoKiezer();
   renderConjugadorBody();
 }
@@ -4746,6 +4875,7 @@ function renderConjugadorBody(){
       inp.focus();
     }
   }
+  jargonScan(el);
 }
 function renderConjugadorRondeKlaar(){
   var el = document.getElementById("funCard");
@@ -4769,7 +4899,7 @@ function renderConjugadorRondeKlaar(){
       : "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
         "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   if(inFlowCj){
     document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
     return;
@@ -4895,7 +5025,7 @@ function renderFunHusselen(){
     "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
     "<div id='huFeedback'></div>";
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   el.querySelectorAll(".hu-tile").forEach(function(b){
     b.onclick = function(){
       if(b.getAttribute("data-mode") === "bank"){
@@ -4943,7 +5073,7 @@ function renderHusselenRondeKlaar(){
       : "<div class='row'><button class='primary' id='btnHuNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
         "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   if(inFlowHu){
     document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
     return;
@@ -5058,7 +5188,7 @@ function renderQuestion(){
         "<span class='kicker'>"+quizTitel(qz)+"</span>"+
         "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
         "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>";
-      lesFlowWireStopKnop();
+      lesFlowWireBanner();
       document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
       return;
     }
@@ -5088,10 +5218,11 @@ function renderQuestion(){
   });
   html += "<div id='qFeedback'></div>";
   el.innerHTML = html;
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   el.querySelectorAll(".opt").forEach(function(b){
     b.onclick = function(){ answerQuestion(+b.getAttribute("data-i"), b); };
   });
+  jargonScan(el);
 }
 
 function answerQuestion(idx, btn){
@@ -5305,7 +5436,7 @@ function lesFlowBannerHtml(){
         "<p class='lfsay'><span class='es'>"+f.es+"</span><span class='nl'>"+ct(f.nl, f.en || f.nl)+"</span></p>"+
       "</div>"+
     "</div>"+
-    "<div class='row' style='margin-top:6px'><button class='ghost' id='btnLesFlowStop' style='font-size:.8rem'>"+ct("Later verder","Continue later")+"</button></div></div>";
+  "</div>";
 }
 /* v19.49 (Stefan: "zou chispa ook in de interface terug komen komen bijv na de onboarding bij je
    eerste les?"). Chispa zat opgesloten in haar eigen tabje. Nu loopt ze mee door de hele dagles:
@@ -5332,15 +5463,13 @@ function lesFlowChispaKlik(){
   if(b) chispaMiniSpin(b);
   toast("💬 " + f.es + " · " + ct(f.nl, f.en || f.nl));
 }
-function lesFlowWireStopKnop(){
-  var bs = document.getElementById("btnLesFlowStop");
-  if(bs) bs.onclick = lesFlowStop;
+/* Stefan, 30 juli: "Het is een speelse instructie, geen actie of keuzemoment." De banner van stap 1
+   had een 'Later verder'-knop, en die maakte van een aanmoediging een beslissing die je elke stap
+   opnieuw moest nemen. Weg dus, inclusief lesFlowStop(): weglopen doe je met de navigatie, niet met
+   een knop in Chispa's tekstballon. Chispa zelf blijft aanklikbaar, dat is spel en geen keuze. */
+function lesFlowWireBanner(){
   var bc = document.getElementById("btnLesFlowChispa");
   if(bc) bc.onclick = lesFlowChispaKlik;
-}
-function lesFlowStop(){
-  lesFlow = null;
-  show("lessen");
 }
 
 function lesFlowStart(){
@@ -5645,6 +5774,7 @@ function renderLessonView(){
   if(b) b.onclick = function(){ scopeLesson = l; show("toetsjes"); };
   b = document.getElementById("btnLesSpiek");
   if(b) b.onclick = function(){ renderLessonSpiek(l); };
+  jargonScan(el);
 }
 
 function renderLessonSpiek(l){
@@ -5667,6 +5797,7 @@ function renderLessonSpiek(l){
   el.querySelectorAll("button[data-gwstart]").forEach(function(b){
     b.onclick = function(){ var id = b.getAttribute("data-gwstart"); show("spiekbrief"); gwStart(id); };
   });
+  jargonScan(el);
 }
 
 /* ================= CHISPA (tamagotchi) ================= */
@@ -5889,7 +6020,10 @@ function petMoodText(){
   if(k==="ok") return "Chispa heeft wel weer trek in een tapa...";
   return "Chispa rammelt van de honger, al "+dagenSinds(S.fed)+" dagen niets gehad. ¡Una tapa, por favor!";
 }
-function fraseVanDaag(){ return FRASES[dayHash("frase") % FRASES.length]; }
+/* v19.55: wat Chispa zegt is voortaan de straattaal van vandaag, zodat haar tekstballon en de kaart
+   op haar pagina hetzelfde zeggen. FRASES blijft bestaan voor haar losse praatjes (chispaRandomSay,
+   het dagcadeautje); alleen "de frase van vandaag" komt nu uit JERGA. */
+function fraseVanDaag(){ var j = jergaVandaag(); return { es: j.es, nl: ct(j.nl, j.en), e: "\uD83D\uDCAC" }; }
 function chispaSay(f){
   var bub = document.getElementById("petBubble");
   if(!bub) return;
@@ -6226,7 +6360,6 @@ function renderPet(){
   var next = lvl < PET_LEVELS.length-1 ? PET_LEVELS[lvl+1] : null;
   var fiesta = fiestaVandaag();
   var deco = fiesta ? {e:fiesta.e, txt:fiesta.naam+"! "+fiesta.txt} : DAYDECO[dayHash("deco") % DAYDECO.length];
-  var fr = fraseVanDaag();
   // vriendjes-rij
   var amHtml = "";
   AMIGOS.forEach(function(a){
@@ -6283,8 +6416,12 @@ function renderPet(){
     "</div>"+
     (next?"<p class='muted' style='margin-top:10px'>Nog "+Math.max(0,next.min-(S.txp||0)).toLocaleString("nl-NL")+" "+xpw()+" tot de volgende vorm: <b>"+next.naam+"</b> ("+next.hint+")</p>"
          :"<p class='muted' style='margin-top:10px'>Chispa is een echte estrella: het hoogste niveau. ⭐ Maar tapas blijven welkom.</p>")+
-    "<p class='muted' style='font-size:.82rem; margin-top:6px; text-align:center'>Frase van de dag: <span class='es'>"+fr.es+"</span><br>"+fr.nl+"</p>"+
-    "</div>";
+    "</div>"+
+    /* v19.55: hier stond "Frase van de dag" uit een tweede lijst. Die lijst overlapte grotendeels met
+       JERGA, dus zei Chispa op haar eigen pagina twee keer iets van vandaag. Nu is het er nog een: de
+       straattaal van vandaag, verhuisd van de woordjes- en vertaalpagina naar hier. */
+    "<div id='jergaChispa'></div>";
+  jergaRender("jergaChispa");
   var b = document.getElementById("btnFeed");
   if(b) b.onclick = feedPet;
   var bfi = document.getElementById("btnFiesta");
@@ -13442,7 +13579,7 @@ function wireGramWiz(el){
     show("toetsjes");
     if(qid) startQuiz(qid);
   };
-  lesFlowWireStopKnop();
+  lesFlowWireBanner();
   b = document.getElementById("gwNaarToets"); if(b) b.onclick = gwNaarToets;
   b = document.getElementById("gwVolgende"); if(b) b.onclick = gwVolgende;
   b = document.getElementById("gwVolgendeStap"); if(b) b.onclick = gwVolgendeStap;
@@ -13527,6 +13664,7 @@ function renderCheat(){
   if(gwSess){
     el.innerHTML = renderGramWiz();
     wireGramWiz(el);
+    jargonScan(el);
     return;
   }
   el.innerHTML = gwLijstHtml() + spiekNaslagHtml() + gwToetsSectieHtml();
@@ -13541,6 +13679,7 @@ function renderCheat(){
   var ba = document.getElementById("btnAlleToetsjes");
   if(ba) ba.onclick = function(){ scopeLesson = null; show("toetsjes"); };
   wireGramWiz(el);
+  jargonScan(el);
 }
 
 /* ================= VOORTGANG ================= */
@@ -13799,8 +13938,8 @@ function show(tabId, skipPush){
     b.classList.toggle("active", b.getAttribute("data-tab")===tabId);
   });
   if(tabId==="lessen"){ renderLessons(); }
-  if(tabId==="woorden"){ buildQueue(); renderWord(); jergaRender("jergaWoorden"); }
-  if(tabId==="vertalen"){ renderSentence(true); jergaRender("jergaVertalen"); }
+  if(tabId==="woorden"){ buildQueue(); renderWord(); }
+  if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
   if(tabId==="chispa"){ renderPet(); renderShop(); }
