@@ -603,7 +603,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.52";
+var APP_VERSIE = "v19.53";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6839,6 +6839,45 @@ function verbPopup(term){
   });
 }
 
+// Zusje van verbPopup() voor gewone woorden uit de zoekstaart. Stefan, 30 juli: "je wilt ook op een
+// woord kunnen klikken voor meer info." Bij een werkwoord is dat het rijtje (verbPopup), bij de rest
+// een korte uitleg met een voorbeeldzin. Zelfde popup-schil en dezelfde S.vcache, dus tweede keer
+// openen kost niets.
+function woordPopup(term, gloss){
+  var bestaand = document.getElementById("vpop");
+  if(bestaand) bestaand.remove();
+  var pop = document.createElement("div");
+  pop.className = "vpop"; pop.id = "vpop";
+  pop.innerHTML = "<h3>" + term + "</h3><p class='muted' id='vpopBody'>\ud83e\udd16 " + ct("Uitleg ophalen...", "Fetching an explanation...") + "</p>" +
+    "<div class='row'><button class='ghost' id='vpopClose'>" + ct("Sluiten", "Close") + "</button></div>";
+  document.body.appendChild(pop);
+  document.getElementById("vpopClose").onclick = function(){ pop.remove(); };
+  S.vcache = S.vcache || {};
+  var sleutel = "w:" + term;
+  if(S.vcache[sleutel]){
+    var b1 = document.getElementById("vpopBody");
+    if(b1) b1.innerHTML = S.vcache[sleutel];
+    return;
+  }
+  var taal = profLang() === "nl" ? "Nederlands" : "Engels";
+  api("/api/ai/uitleg", "POST", {
+    vraag: "Leg het Spaanse woord \"" + term + "\"" + (gloss ? " (betekenis: " + gloss + ")" : "") + " kort uit in het " + taal +
+      ": in \u00e9\u00e9n zin wat het betekent en wanneer je het gebruikt, dan bij een zelfstandig naamwoord het lidwoord (el/la) en het meervoud, " +
+      "en tot slot \u00e9\u00e9n korte voorbeeldzin in het Spaans met de vertaling erachter. Maximaal vier korte regels, met \u00b7 tussen de onderdelen.",
+    context: ""
+  }).then(function(res){
+    var b2 = document.getElementById("vpopBody");
+    if(!b2) return;
+    if(res && res.ok){
+      var txt = res.uitleg.replace(/\n/g, "<br>");
+      b2.innerHTML = txt;
+      S.vcache[sleutel] = txt; persist();
+    } else {
+      b2.textContent = ct("De uitleg-AI is even niet bereikbaar. Probeer het straks nog eens.", "The explanation AI is unreachable right now. Try again later.");
+    }
+  });
+}
+
 /* ================= WOORDENZOEKER ================= */
 function gameVoorrang(pool){
   function score(id){
@@ -7557,6 +7596,75 @@ function freqZoekResultaten(q, enProfiel, maxN){
   return {totaal: raak.length, treffers: raak.slice(0, maxN)};
 }
 
+// Stefan, 30 juli: "dat het uit het grote woordenboek boeit niet, dat weet de gebruiker niet" en
+// "de ahora met #30 erachter is dubbel en kan weg". Een woord dat hierboven al als leswoord (of als
+// liedwoord) staat, hoort dus niet nog een keer in de zoekstaart. De sleutels staan er genormaliseerd
+// in EN zonder lidwoord, want een leswoord heet "el coche" terwijl de zoeklijst alleen "coche" kent.
+var DIC_LIDW = {el:1, la:1, los:1, las:1, un:1, una:1};
+function dicGezienSet(groepen, songHits){
+  var set = {};
+  function voegToe(tekst){
+    if(!tekst) return;
+    tekst.toLowerCase().split("/").forEach(function(d){
+      d = d.trim();
+      if(!d) return;
+      set[stripAcc(d)] = true;
+      var delen = d.split(" ");
+      if(delen.length > 1 && DIC_LIDW[delen[0]]) set[stripAcc(delen.slice(1).join(" "))] = true;
+    });
+  }
+  (groepen || []).forEach(function(g){ voegToe(g.es); });
+  (songHits || []).forEach(function(o){ voegToe(o.es); });
+  return set;
+}
+// Andere uitdrukkingen met hetzelfde woord erin: ahora -> ahora mismo, hasta ahora, por ahora.
+// Precies het stukje context dat een losse zoektreffer eerst niet had.
+function freqVerwant(es, maxN){
+  var kern = stripAcc(es.toLowerCase());
+  var uit = [];
+  for(var i = 0; i < FREQ.length && uit.length < maxN; i++){
+    var kand = FREQ[i][0];
+    if(kand === es) continue;
+    var toks = stripAcc(kand.toLowerCase()).split(" ");
+    if(toks.length > 1 && toks.indexOf(kern) !== -1) uit.push({es: kand, nl: freqGloss(kand, FREQ[i][1])});
+  }
+  return uit;
+}
+// Een voorbeeldzin uit de app zelf, niet een verzonnen zin: hetzelfde stam-trucje als dicVoorbeeld().
+function freqZinVoorbeeld(es){
+  var delen = es.toLowerCase().split(" ").filter(function(t){ return !DIC_LIDW[t]; });
+  var zoek = stripAcc(delen[delen.length - 1] || "").replace(/[^a-z]/g, "");
+  if(zoek.length < 4) return null;
+  var stam = zoek.slice(0, Math.max(4, zoek.length - 2));
+  return SENTENCES.filter(function(s){ return stripAcc(s.es.toLowerCase()).indexOf(stam) !== -1; })[0] || null;
+}
+// De uitklap onder een zoektreffer. Stefan: "je wilt ook op een woord kunnen klikken voor meer info."
+// Het frequentienummer verhuist hiernaartoe: in de rij was het ruis die uitleg nodig had, hier is het
+// een zinnetje dat zichzelf uitlegt.
+function freqDetailHtml(h){
+  var uit = "<div class='dicbody'>";
+  var en = (typeof FREQ_EN !== "undefined" && FREQ_EN[h.es]) || "";
+  uit += "<p><b>" + h.nl + "</b>";
+  if(profLang() === "nl" && en && en !== h.nl) uit += " <span class='muted'>\u00b7 en: " + en + "</span>";
+  if(profLang() !== "nl" && h.ruw && h.ruw !== h.nl) uit += " <span class='muted'>\u00b7 nl: " + h.ruw + "</span>";
+  uit += "</p>";
+  uit += "<div class='row' style='margin:4px 0'><button class='ghost' data-zeg=\"" + h.es.replace(/"/g, "&quot;") + "\">\ud83d\udd0a " + ct("Hoor het", "Hear it") + "</button>";
+  if(h.es.indexOf(" ") === -1 && /(ar|er|ir)$/.test(h.es)) uit += "<button class='ghost' data-rijtjes=\"" + h.es + "\">\ud83d\udccb " + ct("Rijtjes", "Conjugation") + "</button>";
+  else uit += "<button class='ghost' data-uitleg=\"" + h.es.replace(/"/g, "&quot;") + "\" data-gloss=\"" + h.nl.replace(/"/g, "&quot;") + "\">\ud83e\udd16 " + ct("Meer uitleg", "More detail") + "</button>";
+  uit += "</div>";
+  var zin = freqZinVoorbeeld(h.es);
+  if(zin) uit += "<p>" + ct("Voorbeeld: ", "Example: ") + "<span class='es'>" + zin.es + "</span><br><span class='muted'>" + zinPrompt(zin) + "</span></p>";
+  var verw = freqVerwant(h.es, 5);
+  if(verw.length){
+    uit += "<p class='muted' style='margin:6px 0 2px'>" + ct("Zo kom je het ook tegen:", "You will also meet it like this:") + "</p>";
+    verw.forEach(function(v){
+      uit += "<p style='margin:2px 0'><span class='es'>" + v.es + "</span> <span class='muted'>\u00b7 " + v.nl + "</span></p>";
+    });
+  }
+  if(h.rang) uit += "<p class='muted'>" + ct("Dit is een van de 2.866 meestgebruikte Spaanse woorden (plek " + h.rang + ").", "One of the 2,866 most-used Spanish words (rank " + h.rang + ").") + "</p>";
+  uit += "</div>";
+  return uit;
+}
 var DICINFO = {
  w1:{v:"Me siento inseguro cuando hablo español.|Ik voel me onzeker als ik Spaans praat.",r:"bn: inseguro/insegura · mv: inseguros/inseguras"},
  w2:{v:"La inseguridad desaparece con la práctica.|De onzekerheid verdwijnt met oefening.",r:"zn (v) · mv: las inseguridades"},
@@ -8255,7 +8363,7 @@ function renderDic(){
   var html = "<h2>"+ct("Jouw woordenboek","Your dictionary")+" 📖</h2>"+
     "<p class='muted'>"+ct("Alle "+alleGroepen.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. ","All "+alleGroepen.length+" lesson words in alphabetical order; you've seen <b>"+geleerd+"</b> so far. ")+
     "⚪ "+ct("nog niet gehad","not seen yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+". "+ct("Tik op een woord voor meer.","Tap a word for more.")+
-    (freqN ? ct(" De zoekbalk kent daarnaast <b>"+freqN.toLocaleString("nl-NL")+"</b> Spaanse woorden (de frequentietop plus thematische woordenschat: eten, huis, lichaam, reizen, werk, natuur) en herkent vervoegingen (probeer maar: <i>comiste</i>)."," The search bar also knows <b>"+freqN.toLocaleString("en-GB")+"</b> Spanish words (the frequency top plus themed vocabulary: food, home, body, travel, work, nature) and recognises conjugated forms (try it: <i>comiste</i>).") : "")+"</p>"+
+    (freqN ? ct(" Zoek je iets wat nog in geen les zit? De zoekbalk kent <b>"+freqN.toLocaleString("nl-NL")+"</b> Spaanse woorden erbij (eten, huis, lichaam, reizen, werk, natuur) en herkent vervoegingen (probeer maar: <i>comiste</i>)."," Looking for something no lesson covers yet? The search bar knows <b>"+freqN.toLocaleString("en-GB")+"</b> extra Spanish words (food, home, body, travel, work, nature) and recognises conjugated forms (try it: <i>comiste</i>).") : "")+"</p>"+
     "<input type='text' id='dicZoek' placeholder='"+ct("Zoek een woord of vervoeging...","Search a word or conjugated form...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
   // vervoegings-herkenning: "comiste" → comer (indefinido, tú)
   if(q && q.length >= 3){
@@ -8326,31 +8434,37 @@ function renderDic(){
     }
     html += "</div>";
   });
-  // top-5000 frequentiewoorden: alleen bij zoeken (2+ tekens)
-  var freqHits = [];
-  var freqMeer = false;
-  if(q && q.length >= 2 && typeof FREQ !== "undefined"){
-    var uitkomst = freqZoekResultaten(q, profLang() !== "nl", 50);
-    freqMeer = uitkomst.totaal > 50;
-    uitkomst.treffers.forEach(function(r){
-      var fw = FREQ[r[1]];
-      freqHits.push({rang: r[1] < FREQ_RANGLIMIET ? r[1] + 1 : 0, es: fw[0], nl: freqGloss(fw[0], fw[1])});
-    });
-    if(freqHits.length){
-      html += "<p style='margin:16px 0 4px'><b>"+ct("Uit het grote woordenboek","From the big dictionary")+"</b> <span class='muted'>· "+ct("beste treffers eerst; het nummer is de frequentierang","best matches first; the number is the frequency rank")+"</span></p>";
-      freqHits.forEach(function(h){
-        html += "<div class='dicrow'><div class='dichead' style='cursor:default'><span><b class='es'>"+h.es+"</b> <span class='muted'>· "+h.nl+"</span></span>"+
-          "<span class='muted' style='font-size:.75rem'>"+(h.rang ? "#"+h.rang : "")+"</span></div></div>";
-      });
-      if(freqMeer) html += "<p class='muted'>"+ct("Meer dan 50 treffers, typ wat preciezer.","More than 50 hits; type a bit more precisely.")+"</p>";
-    }
-  }
   // woorden uit de liedjes (Música): groeit mee met elk liedverzoek — Stefans wens 29 juli dat het
-  // woordenboek zich blijft aanvullen buiten de vaste leswoordenschat om
+  // woordenboek zich blijft aanvullen buiten de vaste leswoordenschat om. Staat hier al boven het
+  // zoekblok omdat de dedup hieronder moet weten wat er verder al op het scherm komt.
   var songWs = songWoordenLijst();
   var songHits = q ? songWs.filter(function(o){
     return stripAcc(o.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(o.nl.toLowerCase()).indexOf(q) !== -1;
   }) : songWs;
+  // de extra zoekwoorden: alleen bij zoeken (2+ tekens), en nooit een woord dat hierboven al staat
+  var freqHits = [];
+  var freqMeer = false;
+  if(q && q.length >= 2 && typeof FREQ !== "undefined"){
+    var alGezien = dicGezienSet(groepen, songHits);
+    var uitkomst = freqZoekResultaten(q, profLang() !== "nl", 50);
+    freqMeer = uitkomst.totaal > 50;
+    uitkomst.treffers.forEach(function(r){
+      var fw = FREQ[r[1]];
+      if(alGezien[stripAcc(fw[0].toLowerCase())]) return;
+      freqHits.push({rang: r[1] < FREQ_RANGLIMIET ? r[1] + 1 : 0, es: fw[0], nl: freqGloss(fw[0], fw[1]), ruw: fw[1]});
+    });
+    if(freqHits.length){
+      html += "<p style='margin:16px 0 4px'><b>"+ct("Meer Spaanse woorden","More Spanish words")+"</b> <span class='muted'>· "+ct("tik voor uitleg, een voorbeeld en het geluid","tap for details, an example and the sound")+"</span></p>";
+      freqHits.forEach(function(h){
+        var fkey = "freq:"+h.es;
+        var fopen = dicOpen === fkey;
+        html += "<div class='dicrow' data-dic=\""+fkey.replace(/"/g, "&quot;")+"\"><div class='dichead'><span><b class='es'>"+h.es+"</b> <span class='muted'>· "+h.nl+"</span></span>"+
+          "<span class='muted' style='font-size:.78rem'>"+(fopen ? "▾" : "▸")+"</span></div>"+
+          (fopen ? freqDetailHtml(h) : "")+"</div>";
+      });
+      if(freqMeer) html += "<p class='muted'>"+ct("Meer dan 50 treffers, typ wat preciezer.","More than 50 hits; type a bit more precisely.")+"</p>";
+    }
+  }
   if(songHits.length){
     html += "<p style='margin:16px 0 4px'><b>🎵 "+ct("Uit je liedjes","From your songs")+"</b> <span class='muted'>· "+songHits.length+ct(" uitdrukkingen"," expressions")+"</span></p>";
     var vorigeSong = null;
@@ -8381,8 +8495,27 @@ function renderDic(){
     var hd = r.querySelector ? r.querySelector(".dichead") : null;
     if(hd) hd.onclick = function(){
       var id = r.getAttribute("data-dic");
+      if(id === null) return;   // liedrijen hebben geen sleutel; die mogen niet stil iets anders dichtklappen
       dicOpen = dicOpen === id ? null : id;
       renderDic();
+    };
+  });
+  el.querySelectorAll("button[data-zeg]").forEach(function(b){
+    b.onclick = function(ev){
+      if(ev && ev.stopPropagation) ev.stopPropagation();
+      if(typeof dictadoSpreekTTS === "function") dictadoSpreekTTS(b.getAttribute("data-zeg"), 0.9);
+    };
+  });
+  el.querySelectorAll("button[data-rijtjes]").forEach(function(b){
+    b.onclick = function(ev){
+      if(ev && ev.stopPropagation) ev.stopPropagation();
+      verbPopup(b.getAttribute("data-rijtjes"));
+    };
+  });
+  el.querySelectorAll("button[data-uitleg]").forEach(function(b){
+    b.onclick = function(ev){
+      if(ev && ev.stopPropagation) ev.stopPropagation();
+      woordPopup(b.getAttribute("data-uitleg"), b.getAttribute("data-gloss"));
     };
   });
   el.querySelectorAll("button[data-vormen]").forEach(function(b){
