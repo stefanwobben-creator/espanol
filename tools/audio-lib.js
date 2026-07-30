@@ -171,6 +171,13 @@ async function spreekUit(cfg, tekst, stem, instelling){
     /* 401/403 gaat over de sleutel, niet over deze zin. Doorploeteren levert dan alleen maar
        201 keer dezelfde foutmelding op, dus die markeren we als fataal. */
     if(res.status === 401 || res.status === 403) e.fataal = true;
+    /* En hetzelfde geldt voor een voice-id die niet bestaat: dat is een instelling, geen zin.
+       ElevenLabs antwoordt daarop met 400 en "invalid_uid". Zonder deze regel loopt de run
+       vrolijk door alle 201 zinnen heen met exact dezelfde melding. */
+    if(res.status === 400 && /invalid_uid|invalid ID has been received/i.test(body)){
+      e.fataal = true;
+      e.stemFout = true;
+    }
     throw e;
   }
   return Buffer.from(await res.arrayBuffer());
@@ -179,56 +186,73 @@ async function spreekUit(cfg, tekst, stem, instelling){
 /*
  * Even aankloppen voordat we tekens gaan uitgeven.
  *
- * Twee stappen, en de tweede is belangrijk. /v1/user kost geen credits, maar ElevenLabs-sleutels
- * zijn tegenwoordig gescoped: een sleutel die alleen Text to Speech mag doen, krijgt op /v1/user
- * óók een 401. Zouden we daarop afgaan, dan blokkeerden we een sleutel die het prima doet. Dus als
- * /v1/user weigert, spreken we één woord in als proef. Dat kost vier tekens en geeft uitsluitsel:
- * lukt het, dan gaan we gewoon door; lukt het niet, dan is de sleutel echt stuk en tonen we de
- * foutmelding van de TTS-aanroep zelf, niet die van een endpoint waar het niet om ging.
+ * Wat we hier controleren is niet "is de sleutel goed", maar "gaat de aanroep die deze run
+ * honderden keren doet, überhaupt lukken". Dat is meer dan de sleutel alleen: een voice-id die
+ * niet bestaat geeft precies dezelfde stroom fouten, en die kwam ook echt voor (een voorbeeldregel
+ * met "..." erin blijft in zsh gewoon staan als waarde, zonder één waarschuwing).
+ *
+ * Daarom spreken we per groep die deze run gebruikt één woord in, met díé stem. Vier tekens per
+ * stem, dus hooguit acht voor de hele controle. Een gescoopte sleutel die alleen Text to Speech
+ * mag, komt hier gewoon doorheen: we vragen niets aan /v1/user, want dat is een ander recht.
  */
-async function controleerSleutel(cfg){
-  let res;
-  try{
-    res = await fetch("https://api.elevenlabs.io/v1/user", { headers: { "xi-api-key": cfg.key } });
-  }catch(e){
-    console.error("Kan api.elevenlabs.io niet bereiken: " + e.message);
-    process.exit(1);
+async function controleerVooraf(cfg, groepen){
+  const paren = [];
+  (groepen || ["dictado", "boek"]).forEach(function(g){
+    const s = stemVoor(g, cfg);
+    if(!s) return;
+    // twee groepen met dezelfde stem hoeven maar één proef
+    if(paren.some(function(p){ return p.stem === s; })) return;
+    paren.push({ groep: g, stem: s });
+  });
+
+  for(const p of paren){
+    try{
+      await spreekUit(cfg, "Hola", p.stem, null);
+    }catch(e){
+      meldProefFout(p, e);
+      process.exit(1);
+    }
   }
-  if(res.ok) return;
-  if(res.status !== 401 && res.status !== 403){
-    console.error("ElevenLabs antwoordt onverwacht (HTTP " + res.status + "). Later nog eens proberen.");
-    process.exit(1);
+  console.log("(Proefaanroep gelukt: sleutel en " + (paren.length === 1 ? "stem doen" : "stemmen doen") + " het.)");
+}
+
+function meldProefFout(p, e){
+  console.error("");
+  console.error("De proefaanroep werd geweigerd. Er is nog niets ingesproken en niets afgeschreven.");
+  console.error("Antwoord: " + e.message);
+  console.error("");
+
+  if(e.stemFout){
+    /* Dit is de duidelijkste fout van allemaal: de sleutel werkt, maar de voice-id bestaat niet.
+       Bijna altijd is er een voorbeeldwaarde blijven staan of is er een stukje van de id
+       weggevallen bij het plakken. */
+    console.error("Je sleutel werkt, maar de stem voor '" + p.groep + "' bestaat niet bij ElevenLabs.");
+    console.error("Kijk wat er nu echt in staat (dit is geen geheim, dus dit mag je gerust zien):");
+    console.error("  echo \"[$" + GROEP_ENV[p.groep] + "]\"");
+    console.error("Daar hoort een id van een stuk of twintig letters en cijfers te staan, zoals");
+    console.error("imFXYz8XIletRKLZZQaA. Staat er iets als [...] of [] of een halve id, dan is dat het:");
+    console.error("haal de id op via https://elevenlabs.io/app/voice-library (knop Copy voice ID),");
+    console.error("zet hem opnieuw met export " + GROEP_ENV[p.groep] + "=... en probeer het nog eens.");
+    return;
   }
 
-  const proefStem = stemVoor("boek", cfg) || stemVoor("dictado", cfg);
-  try{
-    await spreekUit(cfg, "Hola", proefStem, null);
-    console.log("(Je sleutel mag geen accountgegevens lezen, maar spreken lukt. We gaan door.)");
-    return;
-  }catch(e){
-    console.error("");
-    console.error("De proefaanroep werd geweigerd. Er is nog niets ingesproken.");
-    console.error("Antwoord: " + e.message);
-    console.error("");
-    /* Let op de formulering: een 401/403 hoeft niet van ElevenLabs zelf te komen. Een proxy of
-       bedrijfsfirewall ertussen geeft dezelfde codes terug, en dan is er niets mis met de sleutel.
-       Daarom staat het antwoord hierboven, en presenteren we de sleutel-oorzaken als het meest
-       waarschijnlijke geval in plaats van als vaststaand feit. */
-    if(/unauthorized|api[ _-]?key|authentication/i.test(e.message)){
-      console.error("Dat is een sleutelfout. Controleer eerst dit, het toont je sleutel niet:");
-    }else{
-      console.error("Staat daar niets over een key of unauthorized in, dan zit er iets tussen jouw");
-      console.error("computer en api.elevenlabs.io (proxy, firewall, VPN) en is je sleutel prima.");
-      console.error("Anders: controleer dit, het toont je sleutel niet:");
-    }
-    console.error("  echo \"lengte ${#ELEVENLABS_API_KEY} · begint met ${ELEVENLABS_API_KEY:0:3}\"");
-    console.error("Een echte sleutel is ongeveer vijftig tekens lang en begint met sk_.");
-    console.error("Drie dingen die dit meestal zijn:");
-    console.error("  1. de sleutel staat nog als voorbeeld ingesteld (sk_... letterlijk overgenomen);");
-    console.error("  2. er is een spatie, aanhalingsteken of # meegekopieerd;");
-    console.error("  3. de sleutel heeft geen rechten voor Text to Speech (elevenlabs.io -> API Keys).");
-    process.exit(1);
+  /* Let op de formulering: een 401/403 hoeft niet van ElevenLabs zelf te komen. Een proxy of
+     bedrijfsfirewall ertussen geeft dezelfde codes terug, en dan is er niets mis met de sleutel.
+     Daarom staat het antwoord hierboven, en presenteren we de sleutel-oorzaken als het meest
+     waarschijnlijke geval in plaats van als vaststaand feit. */
+  if(/unauthorized|api[ _-]?key|authentication/i.test(e.message)){
+    console.error("Dat is een sleutelfout. Controleer eerst dit, het toont je sleutel niet:");
+  }else{
+    console.error("Staat daar niets over een key of unauthorized in, dan zit er iets tussen jouw");
+    console.error("computer en api.elevenlabs.io (proxy, firewall, VPN) en is je sleutel prima.");
+    console.error("Anders: controleer dit, het toont je sleutel niet:");
   }
+  console.error("  echo \"lengte ${#ELEVENLABS_API_KEY} · begint met ${ELEVENLABS_API_KEY:0:3}\"");
+  console.error("Een echte sleutel is ongeveer vijftig tekens lang en begint met sk_.");
+  console.error("Drie dingen die dit meestal zijn:");
+  console.error("  1. de sleutel staat nog als voorbeeld ingesteld (sk_... letterlijk overgenomen);");
+  console.error("  2. er is een spatie, aanhalingsteken of # meegekopieerd;");
+  console.error("  3. de sleutel heeft geen rechten voor Text to Speech (elevenlabs.io -> API Keys).");
 }
 
 /*
@@ -310,7 +334,8 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     return { groep: groep, stem: stem, nieuw: 0, over: items.length - alles.length, mislukt: 0, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
   }
 
-  let nieuw = 0, mislukt = 0;
+  let nieuw = 0, mislukt = 0, achterElkaar = 0;
+  const OPGEVEN_NA = 5;
   for(const p of todo){
     try{
       const buf = await spreekUit(cfg, p.it.tekst, stem, instelling);
@@ -318,13 +343,24 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
       man[groep][p.it.id] = { voice: stem, model: cfg.model, hash: p.hash, tekens: p.it.tekst.length };
       schrijfManifest(man); // na elk bestand: een afgebroken run verliest hoogstens één zin
       nieuw++;
+      achterElkaar = 0;
       console.log("  ✓ " + p.it.id + " (" + p.reden + ") " + String(p.it.label || "").slice(0, 46));
     }catch(e){
       mislukt++;
+      achterElkaar++;
       console.error("  ✗ " + p.it.id + " - " + e.message);
+      const rest = todo.length - nieuw - mislukt;
       if(e.fataal){
-        console.error("  (dit is een sleutelfout, niet iets aan deze zin: gestopt zodat je niet");
-        console.error("   dezelfde melding " + (todo.length - nieuw - mislukt) + " keer hoeft te lezen)");
+        console.error("  (dit gaat over je instellingen, niet over deze zin: gestopt zodat je niet");
+        console.error("   dezelfde melding " + rest + " keer hoeft te lezen)");
+        break;
+      }
+      /* Vangnet voor alles wat we níét van tevoren als fataal herkennen. Gaat het vijf keer op rij
+         mis, dan is er iets structureels aan de hand en heeft doorgaan geen zin: dan kost het
+         alleen tijd en levert het een scherm vol identieke regels op. */
+      if(achterElkaar >= OPGEVEN_NA){
+        console.error("  (" + OPGEVEN_NA + " keer op rij mis, dus gestopt. De " + rest + " die overblijven");
+        console.error("   pak je gewoon op in een volgende run: wat wél lukte staat al in het manifest)");
         break;
       }
     }
@@ -359,4 +395,4 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, controleerSleutel, verwerk, slotwoord, stemVoor, MANIFEST_PAD };
+module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, controleerVooraf, verwerk, slotwoord, stemVoor, MANIFEST_PAD };

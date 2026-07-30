@@ -6,8 +6,8 @@
  * bijwerken, bijvoorbeeld om je quota over meerdere maanden te spreiden.
  *
  * GEBRUIK (vanaf de repo-root)
- *     export ELEVENLABS_API_KEY="sk_..."
- *     export ELEVENLABS_VOICE_DICTADO="..."   # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
+ *     export ELEVENLABS_API_KEY="PLAK-HIER-JE-SLEUTEL"
+ *     export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"   # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
  *     node tools/generate-dictado-audio.js --droog
  *     node tools/generate-dictado-audio.js
  *
@@ -24,7 +24,7 @@ async function main(){
   const cfg = lib.leesConfig(opties, ["dictado"]);
   const zinnen = lib.leesZinnen();
   if(!opties.droog){
-    await lib.controleerSleutel(cfg);
+    await lib.controleerVooraf(cfg, ["dictado"]);
     console.log("Stem: " + lib.stemVoor("dictado", cfg) + " · model: " + cfg.model);
   }
   const r = await lib.verwerk("dictado", zinnen, opties, cfg, 250);

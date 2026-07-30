@@ -7,8 +7,8 @@
  * hoofdstuk is bijgekomen of om je quota te spreiden.
  *
  * GEBRUIK (vanaf de repo-root)
- *     export ELEVENLABS_API_KEY="sk_..."
- *     export ELEVENLABS_VOICE_BOEK="..."      # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
+ *     export ELEVENLABS_API_KEY="PLAK-HIER-JE-SLEUTEL"
+ *     export ELEVENLABS_VOICE_BOEK="PLAK-HIER-DE-VOICE-ID"      # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
  *     node tools/generate-boek-audio.js --droog
  *     node tools/generate-boek-audio.js --max=4
  *
@@ -28,7 +28,7 @@ async function main(){
   const cfg = lib.leesConfig(opties, ["boek"]);
   const hoofdstukken = lib.leesHoofdstukken();
   if(!opties.droog){
-    await lib.controleerSleutel(cfg);
+    await lib.controleerVooraf(cfg, ["boek"]);
     console.log("Stem: " + lib.stemVoor("boek", cfg) + " · model: " + cfg.model);
   }
   const r = await lib.verwerk("boek", hoofdstukken, opties, cfg, 400);

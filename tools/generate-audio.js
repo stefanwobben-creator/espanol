@@ -12,9 +12,9 @@
  * kunnen meeschrijven, dus wil je een neutrale, rustige voorlezer. Het boek is een verhaal dat
  * je wil blijven horen, dus daar mag een warmere verteller staan. Je kunt het dus twee kanten op:
  *
- *   Dezelfde stem voor alles:      export ELEVENLABS_VOICE_ID="..."
- *   Een stem per groep:            export ELEVENLABS_VOICE_DICTADO="..."
- *                                  export ELEVENLABS_VOICE_BOEK="..."
+ *   Dezelfde stem voor alles:      export ELEVENLABS_VOICE_ID="PLAK-HIER-DE-VOICE-ID"
+ *   Een stem per groep:            export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"
+ *                                  export ELEVENLABS_VOICE_BOEK="PLAK-HIER-DE-VOICE-ID"
  *
  * Het manifest onthoudt de stem PER GROEP, dus die twee bijten elkaar niet: dit script kan in
  * één run twee stemmen gebruiken en een volgende run ziet allebei als "al goed". Zet je alleen
@@ -26,9 +26,9 @@
  *      de rest van de app) en kopieer de voice-id's.
  *   3. Vanaf de repo-root:
  *
- *        export ELEVENLABS_API_KEY="sk_..."
- *        export ELEVENLABS_VOICE_DICTADO="..."
- *        export ELEVENLABS_VOICE_BOEK="..."
+ *        export ELEVENLABS_API_KEY="PLAK-HIER-JE-SLEUTEL"
+ *        export ELEVENLABS_VOICE_DICTADO="PLAK-HIER-DE-VOICE-ID"
+ *        export ELEVENLABS_VOICE_BOEK="PLAK-HIER-DE-VOICE-ID"
  *        node tools/generate-audio.js --droog     # eerst kijken wat er gaat gebeuren
  *        node tools/generate-audio.js             # en dan echt
  *
@@ -71,7 +71,7 @@ async function main(){
   const hoofdstukken = lib.leesHoofdstukken();
 
   if(!opties.droog){
-    await lib.controleerSleutel(cfg);
+    await lib.controleerVooraf(cfg, ["dictado", "boek"]);
     const zelfde = lib.stemVoor("dictado", cfg) === lib.stemVoor("boek", cfg);
     console.log(zelfde ? "Eén stem voor dictado én het voorleesboek."
                       : "Twee stemmen: een voorlezer voor dictado, een verteller voor het boek.");
