@@ -385,6 +385,7 @@
     <div class="card" id="profCard">
       <h2 id="profKiesKop">Wie gaat er oefenen?</h2>
       <div id="profileList"></div>
+      <p id="uitnodigBanner" class="hidden" style="margin:14px 0 0; padding:10px 12px; border-radius:var(--radius); background:var(--accent-soft)"></p>
       <h2 id="profNieuwKop" style="margin-top:18px">Nieuw profiel</h2>
       <input type="text" id="newProfName" placeholder="Naam / Name" autocomplete="off">
       <p class="muted" style="margin:10px 0 4px" id="lblNiveau">Niveau:</p>
@@ -617,7 +618,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.56";
+var APP_VERSIE = "v19.57";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2499,6 +2500,7 @@ function normaliseerState(s){
   s.zorg = s.zorg || {};   // v19.49: Tamagotchi-zorg (honger komt uit S.fed, reeks + dagwens hier)
   s.jerga = s.jerga || {}; // v19.50: jerga del día (gezien-lijst + de uitdrukking van vandaag)
   if(!s.jerga.gezien) s.jerga.gezien = [];
+  s.samen = s.samen || {}; // v19.57: uitnodigen (gedeeld-datum, laatste tik, of er al iemand naast je zit)
   return s;
 }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
@@ -2640,6 +2642,16 @@ var SIGNUP_TXT = {
      herstelKnop:"Fortschritt suchen", badge:"Profil wählen",
      doel:"Tagesziel (jederzeit änderbar):", d10:"Entspannt · 10 Tacos", d30:"Normal · 30 Tacos", d60:"Ehrgeizig · 60 Tacos"}
 };
+// v19.57: de begroeting voor wie via een uitnodigingslink binnenkomt, in alle vier de talen van
+// het aanmeldscherm. Meedoen gaat vanzelf zodra het profiel bestaat; hier staat alleen waaróm.
+SIGNUP_TXT.nl.uitnodigGroep = "🎉 Je bent uitgenodigd! Maak hieronder je profiel, dan zit je meteen bij je vriend in de groep. Jullie zien elkaars streak en dagdoel, nooit elkaars fouten.";
+SIGNUP_TXT.en.uitnodigGroep = "🎉 You've been invited! Create your profile below and you'll be in your friend's group right away. You'll see each other's streak and daily goal, never each other's mistakes.";
+SIGNUP_TXT.fr.uitnodigGroep = "🎉 Tu es invité ! Crée ton profil ci-dessous et tu rejoins directement le groupe de ton ami. Vous voyez vos séries et objectifs, jamais vos erreurs.";
+SIGNUP_TXT.de.uitnodigGroep = "🎉 Du bist eingeladen! Leg unten dein Profil an, dann bist du sofort in der Gruppe deines Freundes. Ihr seht Streak und Tagesziel, nie die Fehler des anderen.";
+SIGNUP_TXT.nl.uitnodigDuel = "⚔️ Je bent uitgedaagd voor een Palabra Duel! Maak hieronder je profiel, dan staat het duel meteen klaar.";
+SIGNUP_TXT.en.uitnodigDuel = "⚔️ You've been challenged to a Palabra Duel! Create your profile below and the duel is ready for you.";
+SIGNUP_TXT.fr.uitnodigDuel = "⚔️ Tu es défié pour un Palabra Duel ! Crée ton profil ci-dessous et le duel t'attend.";
+SIGNUP_TXT.de.uitnodigDuel = "⚔️ Du wurdest zu einem Palabra Duel herausgefordert! Leg unten dein Profil an, dann steht das Duell bereit.";
 SIGNUP_TXT.nl.meer = "⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook later)";
 SIGNUP_TXT.en.meer = "⚙️ More options: daily goal, e-mail, group code (you can also do this later)";
 SIGNUP_TXT.fr.meer = "⚙️ Plus d'options : objectif quotidien, e-mail, code de groupe (possible plus tard aussi)";
@@ -2764,6 +2776,17 @@ function applySignupLang(){
   function zet(id, txt, isHtml){ var e = document.getElementById(id); if(e){ if(isHtml) e.innerHTML = txt; else e.textContent = txt; } }
   function ph(id, txt){ var e = document.getElementById(id); if(e) e.placeholder = txt; }
   zet("profNieuwKop", profiles.list.length ? d.nieuw : d.welkom);
+  // v19.57: wie via een uitnodigingslink binnenkomt, moet dat meteen zien. Anders lijkt dit een
+  // willekeurig aanmeldscherm en is de hele reden dat hij tikte onderweg verdwenen.
+  var ub = document.getElementById("uitnodigBanner");
+  if(ub){
+    if(pendingGroep || pendingDuel){
+      ub.textContent = pendingDuel
+        ? (d.uitnodigDuel || SIGNUP_TXT.nl.uitnodigDuel)
+        : (d.uitnodigGroep || SIGNUP_TXT.nl.uitnodigGroep);
+      ub.classList.remove("hidden");
+    } else ub.classList.add("hidden");
+  }
   zet("profKiesKop", d.kies);
   ph("newProfName", d.naamPh);
   zet("lblNiveau", d.niveau);
@@ -3067,6 +3090,13 @@ function boot(){
     var pg = pendingGroep; pendingGroep = null;
     var alBinnen = (S.groepen||[]).some(function(x){ return x.gcode === pg; });
     if(!alBinnen) setTimeout(function(){ joinViaLink(pg); }, 2500);
+  }
+  if(pendingDuel){
+    // v19.57: via een duel-link binnengekomen. Even wachten tot de sync-code bestaat, dan meedoen
+    // en het duel openen; de Speeltuin komt vanzelf in beeld via renderDuel().
+    var pd = pendingDuel; pendingDuel = null;
+    S.samen = S.samen || {}; if(!S.samen.gezien) S.samen.gezien = today();
+    setTimeout(function(){ show("speeltuin"); duelJoin(pd); }, 2500);
   }
   if(!S.tour) showTour(0);
   else setTimeout(checkWeekWinnaar, 4000);
@@ -5626,9 +5656,13 @@ function lesFlowKlaar(){
     "<p class='muted'>+"+bonus+" 🫒 "+ct("tapas voor Chispa","tapas for Chispa")+(nieuw ? "" : " · "+ct("(je had vandaag al een les afgerond — telt gewoon nog een keer mee voor Chispa, maar niet dubbel voor de week)","(you'd already finished a session today — still counts for Chispa, just not twice for the week)"))+"</p>"+
     (eersteOoit ? "<p style='margin:8px 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
     "<div class='row'><button class='primary' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button>"+
-    "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>";
+    "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>"+
+    // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
+    // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
+    (uitnodigMoment(2) ? uitnodigKaart(false) : "");
   document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
   document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
+  bindUitnodig("na-les");
 }
 
 /* ================= LESSEN: WEERGAVE ================= */
@@ -5665,6 +5699,9 @@ function renderLessons(){
   listEl.classList.remove("hidden");
   var ls = tLessons();
   var html = ritmeCard();
+  // v19.57: de uitnodiging staat direct onder de dagkaart, dus meteen in beeld. Hij verdwijnt
+  // zodra je gedeeld hebt of zodra er iemand naast je zit; blijven vragen is zeuren.
+  if(uitnodigMoment(2)) html += uitnodigKaart(true);
   ls.forEach(function(l, i){
     var unlocked = lessonUnlocked(i) && !l.stub;
     var p = l.stub ? null : lessonProgress(l);
@@ -5707,6 +5744,7 @@ function renderLessons(){
   listEl.innerHTML = html;
   var bsf = document.getElementById("btnStartLesFlow");
   if(bsf) bsf.onclick = function(){ lesFlowStart(); };
+  bindUitnodig("lessen");
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
     if(lid){ el2.onclick = function(){
@@ -11180,7 +11218,15 @@ function renderDuel(){
   var beideKlaar = klaar && tegen && duelMijnRonde({rounds:d.rounds, moves:d.moves, players:d.players}) === -1 &&
     (function(){ for(var r=0;r<d.rounds;r++){ if(!(d.moves[r] && d.moves[r][tegen])) return false; } return true; })();
   var html = "<h2>Palabra Duel ⚔️</h2>"+
-    "<p class='muted'>Duel-code: <b>"+d.id+"</b>"+(tegen ? " · jij vs. "+tegen : " · deel de code, dan kan iemand meedoen")+"</p>";
+    "<p class='muted'>Duel-code: <b>"+d.id+"</b>"+(tegen ? " · jij vs. "+tegen : "")+"</p>"+
+    // v19.57: een duel-code overtikken is een drempel die niemand hoeft te nemen. Zonder
+    // tegenstander staat hier nu een deelknop die een ?duel=-link verstuurt; die link laat de app
+    // aan de andere kant automatisch meedoen (zie de pendingDuel-afhandeling in boot()).
+    (tegen ? "" : "<div class='row'><button class='primary' id='btnDuelDeel'>"+
+      (profLang()==="nl" ? "Daag iemand uit 🔗" : "Challenge someone 🔗")+"</button></div>"+
+      "<p class='muted' style='margin:4px 0 0'>"+(profLang()==="nl"
+        ? "Eén tik en je tegenstander zit erin, zonder code over te typen."
+        : "One tap and your opponent is in, no code to type over.")+"</p>");
   // scorebord
   html += "<div class='duelrow'><span><b>"+ik+"</b></span><b>"+duelTotaal(d, ik)+" punten</b></div>";
   if(tegen) html += "<div class='duelrow'><span><b>"+tegen+"</b></span><b>"+duelTotaal(d, tegen)+" punten</b></div>";
@@ -11232,6 +11278,8 @@ function renderDuel(){
       if(inp) inp.value += d.letters[ronde][+li];
     };
   });
+  var deelBtn = document.getElementById("btnDuelDeel");
+  if(deelBtn) deelBtn.onclick = function(){ duelDeel(d); };
   var wisBtn = document.getElementById("btnDuelWis");
   if(wisBtn) wisBtn.onclick = function(){
     gebruikt = {};
@@ -11303,7 +11351,7 @@ var FUN_TXT = {
      krS:"kruiswoord uit jouw geleerde woorden, elke keer een nieuwe puzzel",
      meS:"match Spaans met jouw taal, in zo min mogelijk beurten",
      duS:"woordduel tegen elkaar, AI als scheidsrechter",
-     klassement:"\ud83c\udfc6 Voor klasgenoten, collega's of vrienden: tik op je <b>naam</b> bovenaan en start of open een groep met een eigen klassement.",
+     klassement:"\ud83c\udfc6 Jullie zien elkaars streak en dagdoel in een eigen klassement, nooit elkaars fouten. Tik hierboven op <b>Nodig een vriend uit</b>: je vriend krijgt een link, tikt erop en zit meteen naast je.",
      terug:"\u2190 Speeltuin",
      wsIntro:"Zes van jouw geleerde woorden, verstopt in een raster. Woorden die jij lastig vindt, krijgen stiekem voorrang.",
      wsNieuw:"Nieuwe woordenzoeker", wsZoek:"Tik de eerste en laatste letter van een woord. Zoek:",
@@ -11331,7 +11379,7 @@ var FUN_TXT = {
      krS:"a crossword from your own learned words, a new puzzle every time",
      meS:"match Spanish with your language, in as few turns as possible",
      duS:"word duel against each other, AI as referee",
-     klassement:"\ud83c\udfc6 For classmates, coworkers or friends: tap your <b>name</b> at the top and start or open a group with its own leaderboard.",
+     klassement:"\ud83c\udfc6 You see each other's streak and daily goal in your own leaderboard, never each other's mistakes. Tap <b>Invite a friend</b> above: your friend gets a link, taps it and is sitting next to you right away.",
      terug:"\u2190 Playground",
      wsIntro:"Six of your learned words, hidden in a grid. Words you struggle with secretly get priority.",
      wsNieuw:"New word search", wsZoek:"Tap the first and last letter of a word. Find:",
@@ -11380,7 +11428,12 @@ function renderFun(){
     "<div class='lesson' id='ftHu'><div class='lnum'>\ud83e\udde9</div><div class='lbody'><b>" + fx("huT") + "</b><span>" + fx("huS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<p class='muted' style='font-size:.85rem; margin-top:10px'>" + fx("klassement") + "</p>";
+    // v19.57: dit was een zin die je vertelde dat je ergens anders op iets moest tikken. Nu staat
+    // de knop er gewoon, en de zin legt alleen nog uit wat je deelt.
+    "<div class='row' style='margin-top:12px'><button class='ghost' id='btnUitnodig'>"+
+      (profLang()==="nl" ? "Nodig een vriend uit 🔗" : "Invite a friend 🔗")+"</button></div>"+
+    "<p class='muted' style='font-size:.85rem; margin-top:6px'>" + fx("klassement") + "</p>";
+  bindUitnodig("speeltuin");
   document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
   document.getElementById("ftMusica").onclick = function(){ show("musica"); };
   document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
@@ -11470,6 +11523,8 @@ function joinViaLink(gcode, poging){
   api("/api/groep/join", "POST", {gcode:gcode, code:mijnSyncCode()}).then(function(res){
     if(res && res.ok && res.groep){
       groepBewaar(res.groep);
+      // v19.57: je bent via andermans link binnengekomen, dus je bent niet alleen begonnen
+      S.samen = S.samen || {}; if(!S.samen.gezien){ S.samen.gezien = today(); persist(); }
       confetti(["👥","🎉"], 16);
       toast("Je doet mee met de groep '"+res.groep.naam+"'! 🎉 (zie Profiel 👤)");
     } else if((poging||0) < 2){
@@ -11481,13 +11536,14 @@ function joinViaLink(gcode, poging){
   });
 }
 var pendingGroep = null;
+var pendingDuel = null; // v19.57: een duel-uitnodiging is nu ook een link, niet alleen een code
 try{
   if(typeof location !== "undefined" && location.search){
     var gm = location.search.match(/[?&]groep=([a-z0-9]+)/i);
-    if(gm){
-      pendingGroep = gm[1].toLowerCase();
-      if(window.history && history.replaceState) history.replaceState(null, "", location.pathname);
-    }
+    if(gm) pendingGroep = gm[1].toLowerCase();
+    var dm = location.search.match(/[?&]duel=([a-z0-9]+)/i);
+    if(dm) pendingDuel = dm[1].toLowerCase();
+    if((gm || dm) && window.history && history.replaceState) history.replaceState(null, "", location.pathname);
   }
 }catch(e){}
 
@@ -11504,6 +11560,126 @@ function groepBewaar(g){
   }
 }
 function groepLink(g){ return "https://vamos.stefanwobben.nl/?groep=" + g.gcode; }
+
+/* ================= SAMEN LEREN: UITNODIGEN (v19.57) =================
+   Stefan, 30 juli: "qua marktintroductie denk ik dat het 'nodig een vriend uit, samen leren is
+   leuker en effectiever' veel prominenter in de flow mag."
+   Het kón al, maar het waren vier stappen en de eerste was onvindbaar: profiel openen (dat geen
+   tabblad heeft, je moet op je eigen naam in de kop tikken), groep starten, een naam verzinnen,
+   dan pas een link kopiëren. Hieronder staat precies dezelfde functionaliteit als één tik: is er
+   nog geen groep, dan maken we er stilletjes een met jouw naam erin, en daarna gaat het
+   deelvenster van de telefoon open (navigator.share, met de bestaande klembord-route eronder voor
+   desktop). Verzenden doet de gebruiker zelf, in zijn eigen app; wij openen alleen het venster. */
+var uitnodigBezig = false;
+function samenGroep(){ return (S.groepen || [])[0] || null; }
+function samenAlleen(){
+  // "alleen" = er is nog niemand naast je opgedoken. We tellen geen leden op de server bij elke
+  // render (dat zou een verzoek per render zijn); zodra er ooit een tweede naam in een klassement
+  // stond, of je zelf bent meegedaan met andermans groep, staat S.samen.gezien en houdt het op.
+  return !(S.samen && S.samen.gezien);
+}
+function samenSessies(){ var n = 0, k; for(k in (S.lesFlow || {})){ if(S.lesFlow[k]) n++; } return n; }
+function uitnodigZin(g){
+  var naam = (activeProfile() || {}).name || "Iemand";
+  return profLang() === "nl"
+    ? naam + " leert Spaans met ¡Vamos! en vraagt of je meedoet. Vijf minuten per dag, en samen houd je het langer vol."
+    : naam + " is learning Spanish with ¡Vamos! and asks you to join. Five minutes a day, and together you keep it up longer.";
+}
+function deelIets(tekst, url, gelukt){
+  // Drie routes, in volgorde van hoe fijn ze zijn. Annuleert de gebruiker het deelvenster, dan
+  // gebeurt er niets: geen toast, geen beloning, geen tweede poging.
+  var vol = tekst + " " + url;
+  if(navigator.share){
+    try{
+      navigator.share({title:"¡Vamos!", text:tekst, url:url})
+        .then(function(){ if(gelukt) gelukt("deelvenster"); })
+        .catch(function(){});
+      return;
+    }catch(e){}
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(vol).then(function(){
+      toast(profLang()==="nl" ? "Uitnodiging gekopieerd! Plak hem in WhatsApp of mail. 🔗" : "Invite copied! Paste it into WhatsApp or e-mail. 🔗");
+      if(gelukt) gelukt("klembord");
+    }, function(){
+      if(window.prompt){ window.prompt(profLang()==="nl"?"Kopieer deze uitnodiging:":"Copy this invite:", vol); if(gelukt) gelukt("prompt"); }
+    });
+    return;
+  }
+  if(window.prompt){ window.prompt(profLang()==="nl"?"Kopieer deze uitnodiging:":"Copy this invite:", vol); if(gelukt) gelukt("prompt"); }
+}
+function uitnodigDeel(g, bron){
+  deelIets(uitnodigZin(g), groepLink(g), function(hoe){
+    S.samen = S.samen || {};
+    if(!S.samen.gedeeld){
+      S.samen.gedeeld = today();
+      S.tapas = (S.tapas||0) + 3;
+      confetti(["👥","🎉","🫒"], 18);
+      toast(profLang()==="nl" ? "+3 🫒 voor Chispa. Zodra je vriend meedoet, zie je hem in het klassement."
+                              : "+3 🫒 for Chispa. As soon as your friend joins, you'll see them in the leaderboard.");
+    }
+    persist(); syncUp();
+    logServer("uitnodiging", {bron:bron||"", hoe:hoe});
+  });
+}
+function uitnodigNu(bron){
+  if(uitnodigBezig) return;
+  S.samen = S.samen || {};
+  S.samen.laatsteTik = today();
+  persist();
+  var g = samenGroep();
+  if(g){ uitnodigDeel(g, bron); return; }
+  // nog geen groep: er stilletjes een maken, zodat "nodig iemand uit" één tik blijft
+  uitnodigBezig = true;
+  var naam = (activeProfile() || {}).name || "Vamos";
+  var gnaam = profLang()==="nl" ? "Spaans met "+naam : "Spanish with "+naam;
+  api("/api/groep/nieuw", "POST", {naam:gnaam, code:mijnSyncCode()}).then(function(res){
+    uitnodigBezig = false;
+    if(!res || !res.ok || !res.groep){
+      toast(profLang()==="nl" ? "De server is even niet bereikbaar. Probeer het zo nog eens." : "The server is unreachable right now. Try again in a moment.");
+      return;
+    }
+    groepBewaar(res.groep);
+    uitnodigDeel(res.groep, bron);
+  });
+}
+function uitnodigMoment(minSessies){
+  // Wanneer mag de uitnodiging in beeld? Niet op dag één (dan gaat het over Spaans, niet over
+  // vrienden), niet meer als je al gedeeld hebt, en niet meer als er iemand naast je zit.
+  if(!S.samen) return false;
+  if(!samenAlleen()) return false;
+  if(S.samen.gedeeld) return false;
+  return samenSessies() >= (minSessies || 2);
+}
+function uitnodigKaart(compact){
+  var nl = profLang() === "nl";
+  var g = samenGroep();
+  var wacht = !!g; // groep bestaat al, maar er is nog niemand bij komen zitten
+  var knop = nl ? (wacht ? "Stuur de uitnodiging nog eens 🔗" : "Nodig een vriend uit 🔗")
+                : (wacht ? "Send the invite again 🔗" : "Invite a friend 🔗");
+  var zin = wacht
+    ? (nl ? "Je uitnodiging staat klaar, maar er heeft nog niemand op getikt. Eén tik en je stuurt hem opnieuw."
+          : "Your invite is ready, but nobody has tapped it yet. One tap sends it again.")
+    : (nl ? "Beginnen is makkelijk, volhouden niet. Met iemand erbij is dat een stuk minder zwaar: jullie zien elkaars streak en dagdoel, nooit elkaars fouten."
+          : "Starting is easy, keeping it up isn't. With someone alongside you it gets a lot lighter: you see each other's streak and daily goal, never each other's mistakes.");
+  return "<div class='card' id='uitnodigKaart' style='margin-top:4px'>"+
+    "<span class='kicker'>"+(nl ? "Samen leren 👥" : "Learn together 👥")+"</span>"+
+    (compact ? "" : "<p class='big' style='margin:6px 0; font-size:1.1rem'>"+(nl ? "Dit is leuker met z'n tweeën." : "This is more fun with two.")+"</p>")+
+    "<p class='muted' style='margin:6px 0'>"+zin+"</p>"+
+    "<div class='row'><button class='primary' id='btnUitnodig'>"+knop+"</button></div></div>";
+}
+function bindUitnodig(bron){
+  var b = document.getElementById("btnUitnodig");
+  if(b) b.onclick = function(){ uitnodigNu(bron); };
+}
+function duelLink(d){ return "https://vamos.stefanwobben.nl/?duel=" + d.id; }
+function duelDeel(d){
+  var naam = (activeProfile() || {}).name || "Iemand";
+  var tekst = profLang()==="nl"
+    ? naam + " daagt je uit voor een Palabra Duel: wie maakt het beste Spaanse woord?"
+    : naam + " challenges you to a Palabra Duel: who makes the best Spanish word?";
+  deelIets(tekst, duelLink(d), function(hoe){ logServer("uitnodiging", {bron:"duel", hoe:hoe}); });
+}
 function weekIdNu(){
   var t = today();
   var p = t.split("-");
@@ -11595,12 +11771,9 @@ function renderGroepen(){
       "<button class='ghost' id='btnGrTerug'>"+gt("terug")+"</button></div>";
     document.getElementById("btnGrTerug").onclick = function(){ groepCur = null; renderGroepen(); };
     var bk2 = document.getElementById("btnGrKopieer");
-    if(bk2) bk2.onclick = function(){
-      var tekst = "Doe je mee met onze Spaans-groep '"+groepCur.naam+"'? "+groepLink(groepCur);
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(tekst).then(function(){ toast("Link gekopieerd! Plak hem in WhatsApp of mail. 🔗"); });
-      } else if(window.prompt){ window.prompt("Kopieer deze link:", tekst); }
-    };
+    // v19.57: dit was klembord-of-prompt; nu gaat op de telefoon eerst het echte deelvenster open,
+    // zodat de link in één tik in WhatsApp belandt in plaats van in een plakbuffer.
+    if(bk2) bk2.onclick = function(){ uitnodigDeel(groepCur, "groepdetail"); };
     document.getElementById("btnGrVerlaat").onclick = function(){
       if(!window.confirm || window.confirm("Weet je zeker dat je '"+groepCur.naam+"' wilt verlaten?")){
         api("/api/groep/weg", "POST", {gcode:groepCur.gcode, code:mijnSyncCode()}).then(function(){
@@ -11614,6 +11787,9 @@ function renderGroepen(){
       if(!lijst) return;
       if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
       if(st) st.textContent = res.spelers.length + " " + (res.spelers.length===1?gt("deelnemer"):gt("deelnemers")) + " · " + gt("privacy");
+      // v19.57: zodra je hier ooit een tweede naam ziet, ben je niet meer alleen en stopt de app
+      // met vragen of je iemand wil uitnodigen.
+      if(res.spelers.length > 1 && S.samen && !S.samen.gezien){ S.samen.gezien = today(); persist(); }
       var medailles = ["🥇","🥈","🥉"];
       var vorigeWin = res.vorigeWeek ? res.vorigeWeek.winnaar : null;
       var kopje = "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl"
@@ -11635,7 +11811,11 @@ function renderGroepen(){
   }
   var mijn = S.groepen || [];
   var html = "<h2>"+gt("kop")+"</h2>"+
-    "<p class='muted'>"+gt("intro")+"</p>";
+    "<p class='muted'>"+gt("intro")+"</p>"+
+    // v19.57: de snelle route staat bovenaan. Wie een klas begint scrollt door naar "Nieuwe groep";
+    // wie gewoon één vriend wil, is hier klaar.
+    "<div class='row'><button class='primary' id='btnUitnodig'>"+
+    (profLang()==="nl" ? "Nodig een vriend uit 🔗" : "Invite a friend 🔗")+"</button></div>";
   if(mijn.length){
     html += "<p style='margin:10px 0 4px'><b>"+gt("mijn")+"</b></p>";
     mijn.forEach(function(g){
@@ -11649,6 +11829,7 @@ function renderGroepen(){
     "<input type='text' id='grCode' autocomplete='off' placeholder=\""+gt("codePh")+"\">"+
     "<div class='row'><button class='ghost' id='btnGrJoin'>"+gt("meedoenKnop")+"</button></div>";
   el.innerHTML = html;
+  bindUitnodig("groepen");
   el.querySelectorAll("[data-groep]").forEach(function(d){
     d.onclick = function(){
       var g = mijn.filter(function(x){ return x.gcode === d.getAttribute("data-groep"); })[0];
