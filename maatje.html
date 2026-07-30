@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¡Vamos! · meekijken</title>
+<!--
+  DE MAATJE-PAGINA (v19.58)
+
+  Waarom dit een eigen bestandje is en geen scherm in de app:
+  een maatje is iemand die MEEKIJKT en zelf geen Spaans leert. Zijn moeder, zijn partner, een
+  collega. Zet je die in de app, dan krijgt hij een profielformulier, een niveaukeuze en een
+  dagdoel voor zijn neus terwijl hij alleen maar even wilde zien hoe het gaat. Dat is de snelste
+  manier om te zorgen dat hij niet nog een keer kijkt. Deze pagina heeft geen account, geen
+  opslag, geen navigatie en geen knop die iets verandert: hij haalt vijf getallen op en tekent ze.
+
+  Waarom dit werkt (voor zover iets hier werkt): in de STEP UP-trial (Patel e.a., JAMA Internal
+  Medicine 2019, n=602) werden competitie, samenwerking en "support" naast elkaar gelegd bij het
+  volhouden van dagelijkse stappen. Support was precies dit: één zelfgekozen persoon die wekelijks
+  een kort rapportje kreeg en zelf nergens aan meedeed. Alle drie de vormen hielpen tijdens de
+  looptijd; alleen support hield ná afloop nog stand.
+
+  Twee dingen die deze pagina bewust NIET doet:
+  - Voornemens tonen. Harkin e.a. (Psychological Bulletin 2016, 138 studies, d=0,40) vinden het
+    effect voor het bijhouden van GEDANE voortgang. Gollwitzer (2009) geeft het zwakkere maar
+    consistente signaal dat aangekondigde voornemens juist averechts kunnen werken. Dus wel "4 van
+    de 7 dagen gehaald", nooit "wil er 5 halen".
+  - Iets terugsturen. Geen duimpje, geen berichtje, geen "por een aanmoediging". Zodra het maatje
+    iets moet doen, is het geen support meer maar een tweede taak, en dan haakt hij af. De
+    aanmoediging komt maar op één plek vandaan: het echte gesprek dat de leerling toch al had.
+
+  De link (mcode) is een eigen token en NOOIT de sync-code van de leerling. Met een sync-code geeft
+  GET /api/state/:code de hele state weg (voortgang, e-mail, alles). Zie server/index.js.
+-->
+<style>
+  :root{
+    --bg:#faf6ef; --card:#ffffff; --ink:#2d2a26; --muted:#8a8378;
+    --accent:#d4552b; --accent-soft:#fbe8df; --green:#2e7d4f; --green-soft:#e3f2e8;
+    --amber:#b7791f; --amber-soft:#fdf3e0; --border:#e8e1d4; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg); color:var(--ink); line-height:1.55; padding-bottom:40px;}
+  .wrap{max-width:520px; margin:0 auto; padding:16px;}
+  header{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:8px 0 14px;}
+  header h1{font-size:1.35rem; margin:0; letter-spacing:-0.02em;}
+  header h1 span{color:var(--accent);}
+  .badge{background:var(--accent-soft); color:var(--accent); font-weight:600; font-size:.78rem;
+         padding:4px 10px; border-radius:999px; white-space:nowrap;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+        padding:18px; margin-bottom:14px;}
+  .muted{color:var(--muted); font-size:.88rem;}
+  .big{font-size:1.4rem; font-weight:700; margin:10px 0;}
+  .kicker{display:inline-block; font-size:.72rem; font-weight:700; text-transform:uppercase;
+          letter-spacing:.04em; color:var(--muted);}
+  .uitleg{background:var(--bg); border:1px dashed var(--border); border-radius:10px; padding:12px 14px;
+          margin-top:10px; font-size:.92rem;}
+  .statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
+  .stat{background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .stat b{display:block; font-size:1.35rem; line-height:1.2;}
+  .stat span{font-size:.8rem; color:var(--muted);}
+  .week{display:flex; gap:6px; justify-content:space-between; margin:14px 0 4px;}
+  .dag{flex:1; text-align:center;}
+  .bol{width:100%; aspect-ratio:1; max-width:38px; margin:0 auto; border-radius:50%;
+       border:2px solid var(--border); background:var(--card); display:flex; align-items:center;
+       justify-content:center; font-size:.9rem; color:var(--muted);}
+  .bol.vol{background:var(--green-soft); border-color:var(--green); color:var(--green); font-weight:700;}
+  .bol.iets{background:var(--amber-soft); border-color:var(--amber); color:var(--amber);}
+  .dag small{display:block; font-size:.7rem; color:var(--muted); margin-top:4px;}
+  .pet{width:110px; margin:0 auto; display:block;}
+  a{color:var(--accent);}
+  .voet{text-align:center; font-size:.85rem; color:var(--muted); margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>¡<span>Vamos</span>!</h1>
+    <span class="badge" id="badge">meekijken</span>
+  </header>
+  <div id="inhoud">
+    <div class="card"><p class="muted" id="laden">Even ophalen…</p></div>
+  </div>
+</div>
+<script>
+var API = "https://espanol-qbm8.onrender.com";
+// De taal van het maatje is onbekend (hij heeft hier geen profiel en dat houden we zo). Nederlands
+// tenzij de browser duidelijk iets anders zegt.
+var NL = (navigator.language || "nl").toLowerCase().indexOf("nl") === 0;
+function t(nl, en){ return NL ? nl : en; }
+function esc(s){ return String(s == null ? "" : s).replace(/[<>&"]/g, function(c){
+  return ({"<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;"})[c]; }); }
+
+// Chispa in rust: dezelfde axolotl als in de app, maar statisch en zonder accessoires. Hij staat
+// hier omdat een pagina met alleen getallen op een rapportcijfer lijkt, en dit geen rapport is.
+function chispa(){
+  return "<svg class='pet' viewBox='0 0 200 180'>"+
+    "<ellipse cx='100' cy='166' rx='50' ry='11' fill='#00000010'/>"+
+    "<g stroke='#f0a0c0' stroke-width='6' stroke-linecap='round'>"+
+    "<path d='M56 78 q-14 -4 -20 4'/><path d='M56 96 q-14 2 -20 10'/>"+
+    "<path d='M144 78 q14 -4 20 4'/><path d='M144 96 q14 2 20 10'/></g>"+
+    "<circle cx='26' cy='82' r='4' fill='#f6bcd6'/><circle cx='26' cy='106' r='4' fill='#f6bcd6'/>"+
+    "<circle cx='174' cy='82' r='4' fill='#f6bcd6'/><circle cx='174' cy='106' r='4' fill='#f6bcd6'/>"+
+    "<circle cx='100' cy='104' r='62' fill='#ffe3ee' stroke='#f5b8ce' stroke-width='3'/>"+
+    "<ellipse cx='82' cy='165' rx='7' ry='6' fill='#f5b8ce'/><ellipse cx='118' cy='165' rx='7' ry='6' fill='#f5b8ce'/>"+
+    "<circle cx='78' cy='96' r='10' fill='#2d2a26'/><circle cx='122' cy='96' r='10' fill='#2d2a26'/>"+
+    "<circle cx='81' cy='93' r='3.4' fill='#fff'/><circle cx='125' cy='93' r='3.4' fill='#fff'/>"+
+    "<ellipse cx='70' cy='112' rx='8' ry='5' fill='#f7b7cd'/><ellipse cx='130' cy='112' rx='8' ry='5' fill='#f7b7cd'/>"+
+    "<path d='M88 108 Q100 118 112 108' stroke='#2d2a26' stroke-width='3' fill='none' stroke-linecap='round'/>"+
+    "</svg>";
+}
+
+function toonFout(tekst){
+  document.getElementById("inhoud").innerHTML =
+    "<div class='card'><span class='kicker'>"+t("Meekijken","Following along")+"</span>"+
+    "<p class='big' style='font-size:1.1rem'>"+esc(tekst)+"</p>"+
+    "<p class='muted'>"+t("Vraag degene die je uitnodigde om een nieuwe link.",
+                          "Ask the person who invited you for a new link.")+"</p></div>";
+}
+
+function weekRij(w){
+  var namen = NL ? ["ma","di","wo","do","vr","za","zo"] : ["mon","tue","wed","thu","fri","sat","sun"];
+  var d = (w && w.dagelijks) || [];
+  var uit = "<div class='week'>";
+  for(var i = 0; i < 7; i++){
+    var v = d[i];
+    var cls = v === true ? "bol vol" : (v ? "bol iets" : "bol");
+    var teken = v === true ? "✓" : (v ? "·" : "");
+    uit += "<div class='dag'><div class='"+cls+"'>"+teken+"</div><small>"+namen[i]+"</small></div>";
+  }
+  return uit + "</div>";
+}
+
+// Vergelijken met vorige week, maar zonder oordeel: geen "helaas", geen pijl omlaag in het rood.
+// Een maatje dat de app namens de app teleurgesteld ziet doen, gaat de leerling niet aanmoedigen.
+function vergelijk(nu, vorig){
+  if(!vorig || (!vorig.dagen && !vorig.lessen)) return "";
+  if(nu.dagen > vorig.dagen) return t("Meer dagen dan vorige week ("+vorig.dagen+"). Zeg er iets van.",
+                                      "More days than last week ("+vorig.dagen+"). Say something about it.");
+  if(nu.dagen === vorig.dagen) return t("Net zoveel dagen als vorige week ("+vorig.dagen+"). Volhouden is het hele punt.",
+                                        "Same number of days as last week ("+vorig.dagen+"). Keeping it up is the whole point.");
+  return t("Wat minder dan vorige week ("+vorig.dagen+"). Een drukke week overkomt iedereen.",
+           "A bit less than last week ("+vorig.dagen+"). Everyone has a busy week.");
+}
+
+function toon(d){
+  var naam = esc(d.leerling || t("Iemand","Someone"));
+  var w = d.week || {dagen:0, lessen:0, dagelijks:[]};
+  document.getElementById("badge").textContent = t("meekijken","following along");
+  document.getElementById("inhoud").innerHTML =
+    "<div class='card'>"+
+      "<span class='kicker'>"+t("De week van","This week for")+" "+naam+"</span>"+
+      chispa()+
+      "<p class='big' style='text-align:center; margin:6px 0'>"+w.dagen+"/7 "+
+        t("dagen doel gehaald","days on goal")+"</p>"+
+      weekRij(w)+
+      "<p class='muted' style='text-align:center; margin:10px 0 0'>"+esc(vergelijk(w, d.vorige))+"</p>"+
+      "<div class='statgrid'>"+
+        "<div class='stat'><b>🔥 "+(d.streak || 0)+"</b><span>"+t("dagen op rij","day streak")+"</span></div>"+
+        "<div class='stat'><b>"+(w.lessen || 0)+"</b><span>"+t("lessen deze week","sessions this week")+"</span></div>"+
+        "<div class='stat'><b>"+(d.woorden || 0)+"</b><span>"+t("woorden geleerd","words learned")+"</span></div>"+
+        "<div class='stat'><b>"+(d.vorige ? d.vorige.dagen : 0)+"/7</b><span>"+t("vorige week","last week")+"</span></div>"+
+      "</div>"+
+      "<div class='uitleg'>"+t(
+        "Je hoeft hier niets te doen. Deze pagina blijft werken, dus je kunt hem bewaren en er af en toe even naar kijken. Het helpt het meest als je er gewoon iets over zegt als je "+naam+" spreekt.",
+        "There's nothing for you to do here. This page keeps working, so you can bookmark it and check in now and then. It helps most if you simply mention it next time you speak to "+naam+".")+"</div>"+
+      "<p class='muted' style='margin:10px 0 0'>"+t(
+        "Je ziet alleen deze cijfers: geen fouten, geen antwoorden, geen persoonlijke gegevens.",
+        "You only see these numbers: no mistakes, no answers, no personal details.")+"</p>"+
+    "</div>"+
+    "<p class='voet'>"+t("Zelf ook eens kijken? ","Curious yourself? ")+
+      "<a href='https://vamos.stefanwobben.nl/'>¡Vamos!</a></p>";
+}
+
+(function(){
+  var m = (location.search.match(/[?&]m=([a-z0-9]+)/i) || [])[1];
+  if(!m){ toonFout(t("Deze link is niet compleet.","This link is incomplete.")); return; }
+  fetch(API + "/api/maatje/" + encodeURIComponent(m.toLowerCase()))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){ toonFout((d && d.error) || t("Deze link bestaat niet (meer).","This link doesn't exist (anymore).")); return; }
+      toon(d);
+    })
+    .catch(function(){
+      // Render slaapt na inactiviteit; de eerste aanvraag kan daardoor lang duren of falen.
+      toonFout(t("De server reageert even niet. Probeer het over een minuutje nog eens.",
+                 "The server isn't responding. Try again in a minute."));
+    });
+})();
+</script>
+</body>
+</html>

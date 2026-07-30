@@ -618,7 +618,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.57";
+var APP_VERSIE = "v19.58";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2467,7 +2467,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
@@ -2501,6 +2501,8 @@ function normaliseerState(s){
   s.jerga = s.jerga || {}; // v19.50: jerga del día (gezien-lijst + de uitdrukking van vandaag)
   if(!s.jerga.gezien) s.jerga.gezien = [];
   s.samen = s.samen || {}; // v19.57: uitnodigen (gedeeld-datum, laatste tik, of er al iemand naast je zit)
+  s.ritme = s.ritme || {}; // v19.58: wanneer & waar (implementatie-intentie), puur voor jezelf
+  s.maatje = s.maatje || {}; // v19.58: de ene persoon die meekijkt en zelf niet leert
   return s;
 }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
@@ -2652,6 +2654,39 @@ SIGNUP_TXT.nl.uitnodigDuel = "⚔️ Je bent uitgedaagd voor een Palabra Duel! M
 SIGNUP_TXT.en.uitnodigDuel = "⚔️ You've been challenged to a Palabra Duel! Create your profile below and the duel is ready for you.";
 SIGNUP_TXT.fr.uitnodigDuel = "⚔️ Tu es défié pour un Palabra Duel ! Crée ton profil ci-dessous et le duel t'attend.";
 SIGNUP_TXT.de.uitnodigDuel = "⚔️ Du wurdest zu einem Palabra Duel herausgefordert! Leg unten dein Profil an, dann steht das Duell bereit.";
+/* v19.58 — DE LANDING VOOR WIE UITGENODIGD IS.
+   De banner hierboven blijft bestaan voor het randgeval (iemand die al profielen op dit apparaat
+   heeft), maar wie écht nieuw binnenkomt via een link krijgt nu eerst een eigen scherm met de naam
+   van de uitnodiger erin. Reden: in v19.57 kwam de genodigde aan op een willekeurig aanmeldformulier
+   met een strookje erboven. De hele reden dat hij tikte (er vroeg iemand hém iets) was daarmee
+   onderweg verdwenen.
+   De tien tapas staan hier met opzet aan DEZE kant. Jung, Bapna, Gupta & Sen (JMIS 2021, twee
+   gerandomiseerde veldexperimenten) vinden dat beloningen naar de uitgenodigde, of 50/50 gedeeld,
+   meer conversies opleveren dan alles naar de uitnodiger; het mechanisme is dat mensen dan
+   selectiever uitnodigen. Met een handvol gebruikers is één goede uitnodiging meer waard dan tien
+   afgevuurde. */
+var LANDING_TXT = {
+ nl:{kicker:"Je bent uitgenodigd 👋", persoon:"{n} leert Spaans en vroeg jou erbij.",
+     groep:"Je bent uitgenodigd voor {n}.", anoniem:"Iemand leert Spaans en vroeg jou erbij.",
+     sub:"Vijf minuten per dag. Geen account, geen betaling, geen advertenties. Chispa legt de rest wel uit.",
+     cadeau:"🫒 <b>Cadeautje:</b> 10 tapas voor je eigen Chispa, klaargezet zodra je begint.",
+     start:"Beginnen →", alleen:"Liever eerst alleen rondkijken"},
+ en:{kicker:"You've been invited 👋", persoon:"{n} is learning Spanish and asked you to join.",
+     groep:"You've been invited to {n}.", anoniem:"Someone is learning Spanish and asked you to join.",
+     sub:"Five minutes a day. No account, no payment, no ads. Chispa explains the rest.",
+     cadeau:"🫒 <b>A gift:</b> 10 tapas for your own Chispa, waiting the moment you start.",
+     start:"Let's go →", alleen:"I'd rather look around on my own first"},
+ fr:{kicker:"Tu es invité 👋", persoon:"{n} apprend l'espagnol et t'invite à le rejoindre.",
+     groep:"Tu es invité à rejoindre {n}.", anoniem:"Quelqu'un apprend l'espagnol et t'invite.",
+     sub:"Cinq minutes par jour. Pas de compte, pas de paiement, pas de publicité. Chispa explique le reste.",
+     cadeau:"🫒 <b>Cadeau :</b> 10 tapas pour ton propre Chispa, prêtes dès que tu commences.",
+     start:"C'est parti →", alleen:"Je préfère d'abord regarder seul"},
+ de:{kicker:"Du bist eingeladen 👋", persoon:"{n} lernt Spanisch und fragt, ob du mitmachst.",
+     groep:"Du bist eingeladen zu {n}.", anoniem:"Jemand lernt Spanisch und fragt, ob du mitmachst.",
+     sub:"Fünf Minuten am Tag. Kein Konto, keine Zahlung, keine Werbung. Chispa erklärt den Rest.",
+     cadeau:"🫒 <b>Geschenk:</b> 10 Tapas für dein eigenes Chispa, bereit sobald du anfängst.",
+     start:"Los geht's →", alleen:"Ich schaue mich lieber erst allein um"}
+};
 SIGNUP_TXT.nl.meer = "⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook later)";
 SIGNUP_TXT.en.meer = "⚙️ More options: daily goal, e-mail, group code (you can also do this later)";
 SIGNUP_TXT.fr.meer = "⚙️ Plus d'options : objectif quotidien, e-mail, code de groupe (possible plus tard aussi)";
@@ -2827,6 +2862,61 @@ function renderLangRow(){
     b.onclick = function(){ newLang = b.getAttribute("data-lang"); renderLangRow(); applySignupLang(); };
   });
 }
+/* v19.58: de landing voor wie via een uitnodigingslink binnenkomt. Zie LANDING_TXT hierboven voor
+   het waarom. Twee dingen zijn hier bewust zo:
+   - De kaart tekent zich meteen, ook zonder de naam. De server is een gratis Render-dyno die kan
+     slapen; drie seconden een leeg scherm staren is erger dan één seconde "Iemand".
+   - "Liever eerst alleen rondkijken" gooit pendingGroep weg. Iemand die niet in de groep wil, hoort
+     niet stiekem toch toegevoegd te worden in boot(). */
+function uitnodigerUit(res){
+  var naam = (res && res.groep && res.groep.naam) || "";
+  var m = naam.match(/^(?:Spaans met|Spanish with|Espagnol avec|Spanisch mit)\s+(.+)$/i);
+  if(m) return {soort:"persoon", naam:m[1]};
+  if(naam) return {soort:"groep", naam:naam};
+  return {soort:"anoniem", naam:""};
+}
+function renderLanding(gcode, klaar){
+  var card = document.getElementById("profCard");
+  if(!card){ klaar(); return; }
+  var box = document.getElementById("landingBox");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "landingBox"; box.className = "card";
+    card.parentNode.insertBefore(box, card);
+  }
+  card.classList.add("hidden");
+  var pb0 = document.getElementById("proefBox");
+  if(pb0) pb0.classList.add("hidden");
+  box.classList.remove("hidden");
+  function teken(wie){
+    if(box.classList.contains("hidden")) return; // al doorgeklikt, niet terugtoveren
+    var d = LANDING_TXT[newLang] || LANDING_TXT.nl;
+    var kop = wie.soort === "persoon" ? d.persoon.replace("{n}", "<b>"+wie.naam+"</b>")
+            : wie.soort === "groep"   ? d.groep.replace("{n}", "<b>"+wie.naam+"</b>")
+            : d.anoniem;
+    box.innerHTML = "<span class='kicker'>"+d.kicker+"</span>"+
+      "<div style='width:120px; margin:6px auto 0'>"+petSVG()+"</div>"+
+      "<p class='big' style='margin:8px 0; font-size:1.2rem'>"+kop+"</p>"+
+      "<p class='muted' style='margin:6px 0'>"+d.sub+"</p>"+
+      "<div class='uitleg' style='margin-top:10px'>"+d.cadeau+"</div>"+
+      "<div class='row'><button class='primary' id='btnLandingStart'>"+d.start+"</button></div>"+
+      "<div class='row'><button class='ghost' id='btnLandingAlleen'>"+d.alleen+"</button></div>";
+    document.getElementById("btnLandingStart").onclick = function(){
+      box.classList.add("hidden"); klaar();
+    };
+    document.getElementById("btnLandingAlleen").onclick = function(){
+      pendingGroep = null;
+      box.classList.add("hidden");
+      applySignupLang(); // haalt de uitnodigingsbanner in het formulier ook weg
+      klaar();
+    };
+  }
+  teken({soort:"anoniem", naam:""});
+  api("/api/groep/"+gcode).then(function(res){
+    if(res && res.ok && res.groep) teken(uitnodigerUit(res));
+  });
+}
+
 function renderProfileScreen(){
   try{
     var bl = ((typeof navigator !== "undefined" && navigator.language) || "nl").slice(0, 2).toLowerCase();
@@ -2870,15 +2960,22 @@ function renderProfileScreen(){
     return false;
   };
   // leer-eerst: gloednieuwe bezoekers (geen enkel profiel op dit apparaat) proeven eerst 3 woordjes
-  var pd = proefData();
-  if(!profiles.list.length && !(pd && (pd.klaar || pd.overgeslagen))){
-    renderProef();
-  } else {
-    var pb = document.getElementById("proefBox");
-    if(pb) pb.classList.add("hidden");
-    var pc = document.getElementById("profCard");
-    if(pc) pc.classList.remove("hidden");
+  function normaalBegin(){
+    var pd = proefData();
+    if(!profiles.list.length && !(pd && (pd.klaar || pd.overgeslagen))){
+      renderProef();
+    } else {
+      var pb = document.getElementById("proefBox");
+      if(pb) pb.classList.add("hidden");
+      var pc = document.getElementById("profCard");
+      if(pc) pc.classList.remove("hidden");
+    }
   }
+  // v19.58: via een uitnodigingslink binnen? Dan eerst een landing die zegt wie je uitnodigde, en
+  // pas daarna de proeverij of het formulier. Alleen voor echt nieuwe bezoekers; wie hier al een
+  // profiel heeft staan, ziet gewoon de bestaande banner in het formulier.
+  if(pendingGroep && !profiles.list.length) renderLanding(pendingGroep, normaalBegin);
+  else normaalBegin();
   document.getElementById("btnPlacement").onclick = startPlacement;
   var lh = document.getElementById("lnkHerstel");
   if(lh) lh.onclick = function(e){
@@ -3098,6 +3195,9 @@ function boot(){
     S.samen = S.samen || {}; if(!S.samen.gezien) S.samen.gezien = today();
     setTimeout(function(){ show("speeltuin"); duelJoin(pd); }, 2500);
   }
+  // v19.58: is er iemand op je uitnodiging binnengekomen? Dat hoor je nu bij het opstarten, en niet
+  // pas als je toevallig het klassement opent. Eén verzoek per dag, en alleen als er iets te horen valt.
+  setTimeout(samenCheck, 6000);
   if(!S.tour) showTour(0);
   else setTimeout(checkWeekWinnaar, 4000);
 }
@@ -5659,16 +5759,115 @@ function lesFlowKlaar(){
     "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>"+
     // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
     // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
-    (uitnodigMoment(2) ? uitnodigKaart(false) : "");
+    // v19.58: hoogstens ÉÉN vraag onder de felicitatie, gekozen door samenKaartNu().
+    samenKaartNu(false);
   document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
   document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
-  bindUitnodig("na-les");
+  // op dit scherm niet opnieuw renderen na het vastzetten: dan zou de felicitatie verdwijnen
+  bindSamen("na-les", function(){ var k = document.getElementById("momentKaart"); if(k) k.classList.add("hidden"); });
 }
 
 /* ================= LESSEN: WEERGAVE ================= */
 // Vervangt de oude losse-chips-dashboard-focus: "Start je les" is nu de primaire call-to-action.
 // De losse voortgangschips blijven staan, maar als compacte subregel onder de knop (voor wie het
 // precieze detail wil zien), niet meer als het hoofdelement van het scherm.
+/* ================= WANNEER & WAAR (v19.58) =================
+   Dit is het enige onderdeel van deze ronde met écht sterk bewijs eronder, en het is niet sociaal.
+   Implementatie-intenties (als-dan-plannen: "als ik 's ochtends koffie zet, dan doe ik mijn les")
+   zijn meta-geanalyseerd over 94 studies door Gollwitzer & Sheeran (2006), effectgrootte rond
+   d=0,65. Strengere replicaties vinden kleinere effecten, dus lees het als "hier zit echt iets" en
+   niet als een exact getal. Kosten: één schermpje. Geen server, geen tweede gebruiker, geen faalmodus.
+
+   Waarom het toch bij "samen leren" hoort: het plan dat je hier vastzet is voor JOU. Er komt geen
+   deelknop bij. Harkin e.a. (Psychological Bulletin 2016, 138 studies, d=0,40) vinden dat het
+   bijhouden van voortgang doelbereiking verhoogt, sterker bij publieke rapportage, en dat gaat
+   nadrukkelijk over gedane dingen. Het zwakkere signaal uit Gollwitzer (2009) over publiek gemaakte
+   voornemens wijst dezelfde kant op: rapporteer wat je gedaan hebt, kondig niets aan. Je maatje
+   (hieronder) krijgt dus je dagen te zien, nooit je plan. */
+var MOMENTEN = [
+  {id:"koffie",   e:"☕", nl:"Bij mijn koffie 's ochtends", en:"With my morning coffee",
+   knl:"bij je koffie", ken:"with your coffee"},
+  {id:"onderweg", e:"🚊", nl:"Onderweg, in de trein of de bus", en:"On the way, on the train or bus",
+   knl:"onderweg", ken:"on the way"},
+  {id:"stil",     e:"🌙", nl:"'s Avonds, als het stil is", en:"In the evening, when it's quiet",
+   knl:"'s avonds", ken:"in the evening"},
+  {id:"anders",   e:"✍️", nl:"Iets anders…", en:"Something else…", knl:"", ken:""}
+];
+// staat de kaart open omdat de gebruiker zélf op "wijzigen" tikte? Dan is "nu even niet" gewoon
+// annuleren en telt het niet als een keer overslaan.
+var momentOpen = false;
+function momentVind(id){ for(var i=0;i<MOMENTEN.length;i++){ if(MOMENTEN[i].id===id) return MOMENTEN[i]; } return null; }
+function momentTekst(){
+  var r = S.ritme || {};
+  if(!r.wanneer) return "";
+  if(r.wanneer === "anders") return r.tekst || ct("op je eigen moment", "at your own moment");
+  var m = momentVind(r.wanneer);
+  return m ? (m.e + " " + ct(m.knl, m.ken)) : "";
+}
+function momentMoment(){
+  // Na je eerste afgeronde les. Niet eerder: op dat moment weet je pas wat "een les" is en kun je
+  // hem ergens neerzetten. Sla je hem over, dan komt hij één week later nog één keer terug.
+  if(!S.ritme) return false;
+  if(S.ritme.wanneer) return false;
+  if(S.ritme.niet && dagenSinds(S.ritme.niet) < 7) return false;
+  if((S.ritme.overgeslagen || 0) >= 2) return false;
+  return samenSessies() >= 1;
+}
+function momentKaart(){
+  var r = S.ritme || {};
+  return "<div class='card' id='momentKaart' style='margin-top:4px'>"+
+    "<span class='kicker'>"+ct("Eén vraag 📌","One question 📌")+"</span>"+
+    "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+ct("Wanneer doe je hem morgen?","When will you do it tomorrow?")+"</p>"+
+    "<p class='muted' style='margin:6px 0'>"+ct("Vijf minuten die al ergens staan, sla je minder snel over dan vijf minuten \"ergens vandaag\".","Five minutes that already have a place get skipped less often than five minutes \"sometime today\".")+"</p>"+
+    MOMENTEN.map(function(m){
+      return "<button class='ghost trackpick momentpick"+(r.wanneer===m.id?" active":"")+"' data-moment='"+m.id+"' style='display:block; width:100%; text-align:left; margin:4px 0'>"+
+        m.e+" "+ct(m.nl, m.en)+"</button>";
+    }).join("")+
+    "<input type='text' id='momentAnders' class='hidden' autocomplete='off' placeholder='"+ct("Bijvoorbeeld: na het avondeten","For example: after dinner")+"'>"+
+    "<div class='row'><button class='primary' id='btnMomentVast'>"+ct("Zet 'm vast","Lock it in")+"</button>"+
+    "<button class='ghost' id='btnMomentNiet'>"+ct("Nu even niet","Not now")+"</button></div></div>";
+}
+function bindMoment(opnieuw){
+  var kaart = document.getElementById("momentKaart");
+  if(!kaart) return;
+  var keuze = (S.ritme && S.ritme.wanneer) || null;
+  var inp = document.getElementById("momentAnders");
+  if(inp && keuze === "anders"){ inp.classList.remove("hidden"); inp.value = (S.ritme.tekst || ""); }
+  kaart.querySelectorAll(".momentpick").forEach(function(b){
+    b.onclick = function(){
+      keuze = b.getAttribute("data-moment");
+      kaart.querySelectorAll(".momentpick").forEach(function(x){ x.classList.toggle("active", x === b); });
+      if(inp) inp.classList.toggle("hidden", keuze !== "anders");
+      if(inp && keuze === "anders") inp.focus();
+    };
+  });
+  document.getElementById("btnMomentVast").onclick = function(){
+    if(!keuze){ toast(ct("Kies er eerst één.","Pick one first.")); return; }
+    momentOpen = false;
+    S.ritme = S.ritme || {};
+    S.ritme.wanneer = keuze;
+    S.ritme.tekst = (keuze === "anders" && inp) ? (inp.value || "").trim().slice(0, 60) : "";
+    S.ritme.sinds = today();
+    persist(); syncUp();
+    confetti(["📌","✨"], 12);
+    toast(ct("Vastgezet: "+momentTekst()+". Staat vanaf nu bovenaan je lessen.",
+             "Locked in: "+momentTekst()+". It'll sit at the top of your lessons from now on."));
+    if(opnieuw) opnieuw(); else renderLessons();
+  };
+  document.getElementById("btnMomentNiet").onclick = function(){
+    S.ritme = S.ritme || {};
+    if(momentOpen){ // zelf opengeklikt om te wijzigen: dit is annuleren, geen weigering
+      momentOpen = false;
+      if(opnieuw) opnieuw(); else renderLessons();
+      return;
+    }
+    S.ritme.niet = today();
+    S.ritme.overgeslagen = (S.ritme.overgeslagen || 0) + 1;
+    persist();
+    kaart.classList.add("hidden");
+  };
+}
+
 function ritmeCard(){
   var t = today();
   var gedaanVandaag = !!S.lesFlow[t];
@@ -5684,6 +5883,13 @@ function ritmeCard(){
     "<span class='kicker'>"+(gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : ct("Start je les","Start your session"))+"</span>"+
     "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+(gedaanVandaag ? ct("¡Muy bien! Chispa is trots op je.","¡Muy bien! Chispa is proud of you.") : ct("Woordjes, een toetsje en één keer oefenen. Klaar in een paar minuten.","Words, a quiz and one practice round. Done in a few minutes."))+"</p>"+
     "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>"+
+    // v19.58: je eigen afspraak, elke dag terug te zien op de plek waar je hem uitvoert. Een
+    // implementatie-intentie werkt doordat het moment de handeling oproept, dus moet het moment
+    // in beeld staan en niet weggestopt in instellingen.
+    ((S.ritme && S.ritme.wanneer)
+      ? "<p class='muted' style='margin:8px 0 0'>📌 "+ct("Jouw moment: ","Your moment: ")+"<b>"+momentTekst()+"</b> · "+
+        "<span id='momentRegel' style='text-decoration:underline; cursor:pointer'>"+ct("wijzigen","change")+"</span></p>"
+      : "")+
     "<div class='ritme' style='margin-top:10px'>"+
     chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
     chip(over === 0, over === 0 ? ct("herhalingen bij","reviews done") : over+ct(" herhalingen open"," reviews open"))+
@@ -5701,7 +5907,8 @@ function renderLessons(){
   var html = ritmeCard();
   // v19.57: de uitnodiging staat direct onder de dagkaart, dus meteen in beeld. Hij verdwijnt
   // zodra je gedeeld hebt of zodra er iemand naast je zit; blijven vragen is zeuren.
-  if(uitnodigMoment(2)) html += uitnodigKaart(true);
+  // v19.58: ook hier hoogstens één vraag tegelijk; samenKaartNu() bepaalt welke.
+  html += samenKaartNu(true);
   ls.forEach(function(l, i){
     var unlocked = lessonUnlocked(i) && !l.stub;
     var p = l.stub ? null : lessonProgress(l);
@@ -5744,7 +5951,9 @@ function renderLessons(){
   listEl.innerHTML = html;
   var bsf = document.getElementById("btnStartLesFlow");
   if(bsf) bsf.onclick = function(){ lesFlowStart(); };
-  bindUitnodig("lessen");
+  bindSamen("lessen", function(){ renderLessons(); });
+  var mReg = document.getElementById("momentRegel");
+  if(mReg) mReg.onclick = function(){ momentOpen = true; renderLessons(); };
   listEl.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
     if(lid){ el2.onclick = function(){
@@ -11524,9 +11733,17 @@ function joinViaLink(gcode, poging){
     if(res && res.ok && res.groep){
       groepBewaar(res.groep);
       // v19.57: je bent via andermans link binnengekomen, dus je bent niet alleen begonnen
-      S.samen = S.samen || {}; if(!S.samen.gezien){ S.samen.gezien = today(); persist(); }
-      confetti(["👥","🎉"], 16);
-      toast("Je doet mee met de groep '"+res.groep.naam+"'! 🎉 (zie Profiel 👤)");
+      S.samen = S.samen || {}; if(!S.samen.gezien) S.samen.gezien = today();
+      // v19.58: het cadeautje dat op de landing beloofd is. Eén keer per profiel, ooit.
+      var cadeau = 0;
+      if(!S.samen.cadeau){ S.samen.cadeau = today(); cadeau = 10; S.tapas = (S.tapas||0) + 10; }
+      persist(); syncUp();
+      confetti(["👥","🎉","🫒"], 18);
+      toast(cadeau
+        ? ct("Je doet mee met '"+res.groep.naam+"'! 🎉 +10 🫒 voor jouw Chispa.",
+             "You've joined '"+res.groep.naam+"'! 🎉 +10 🫒 for your Chispa.")
+        : ct("Je doet mee met de groep '"+res.groep.naam+"'! 🎉 (zie Profiel 👤)",
+             "You've joined the group '"+res.groep.naam+"'! 🎉 (see Profile 👤)"));
     } else if((poging||0) < 2){
       // sync-code bestaat mogelijk nog niet op de server; even wachten en opnieuw
       setTimeout(function(){ joinViaLink(gcode, (poging||0)+1); }, 5000);
@@ -11543,6 +11760,11 @@ try{
     if(gm) pendingGroep = gm[1].toLowerCase();
     var dm = location.search.match(/[?&]duel=([a-z0-9]+)/i);
     if(dm) pendingDuel = dm[1].toLowerCase();
+    // v19.58: de maatje-link is een eigen paginaatje (maatje.html), want een maatje hoort de app
+    // niet te krijgen. Landt hij toch hier (oude link, verkeerd geplakt), dan sturen we hem door
+    // in plaats van hem een profielformulier voor te schotelen dat hij niet nodig heeft.
+    var mm = location.search.match(/[?&]maatje=([a-z0-9]+)/i);
+    if(mm){ location.replace("maatje.html?m=" + mm[1].toLowerCase()); }
     if((gm || dm) && window.history && history.replaceState) history.replaceState(null, "", location.pathname);
   }
 }catch(e){}
@@ -11608,18 +11830,60 @@ function deelIets(tekst, url, gelukt){
   }
   if(window.prompt){ window.prompt(profLang()==="nl"?"Kopieer deze uitnodiging:":"Copy this invite:", vol); if(gelukt) gelukt("prompt"); }
 }
+/* v19.58 — DE BELONING STAAT NU AAN DE ANDERE KANT.
+   In v19.57 kreeg je 3 🫒 zodra het deelvenster openging. Je werd dus betaald voor het vrágen, niet
+   voor het aankomen, en dat is precies de prikkel die je niet wil: hij beloont afvuren. Jung, Bapna,
+   Gupta & Sen (JMIS 2021) vinden in twee gerandomiseerde veldexperimenten dat een genereuze
+   verdeling (naar de uitgenodigde, of 50/50) méér conversies oplevert, omdat mensen dan
+   selectiever uitnodigen. Nu dus: 10 🫒 voor wie binnenkomt (zie joinViaLink) en 5 🫒 voor jou op
+   het moment dat er echt iemand naast je komt zitten (zie samenAangekomen). Delen zelf levert
+   niets op, alleen een bevestiging dat het weg is. */
 function uitnodigDeel(g, bron){
   deelIets(uitnodigZin(g), groepLink(g), function(hoe){
     S.samen = S.samen || {};
-    if(!S.samen.gedeeld){
-      S.samen.gedeeld = today();
-      S.tapas = (S.tapas||0) + 3;
-      confetti(["👥","🎉","🫒"], 18);
-      toast(profLang()==="nl" ? "+3 🫒 voor Chispa. Zodra je vriend meedoet, zie je hem in het klassement."
-                              : "+3 🫒 for Chispa. As soon as your friend joins, you'll see them in the leaderboard.");
-    }
+    S.samen.gedeeld = today();
+    S.samen.tikken = (S.samen.tikken || 0) + 1;
     persist(); syncUp();
+    toast(profLang()==="nl" ? "Uitnodiging de deur uit. Zodra iemand begint, hoor je het hier. 👥"
+                            : "Invite sent. As soon as someone starts, you'll hear about it here. 👥");
     logServer("uitnodiging", {bron:bron||"", hoe:hoe});
+  });
+}
+/* Er is iemand aangekomen. Dit is het enige moment waarop de uitnodiger tapas krijgt, en het enige
+   moment waarop de app spontaan over samen leren begint. Twee bronnen roepen dit aan: het
+   klassement in Profiel (als je daar toch kijkt) en samenCheck() bij het opstarten (want anders
+   hoor je het pas als je toevallig langsloopt). */
+function samenAangekomen(spelers){
+  if(!spelers || spelers.length < 2) return;
+  S.samen = S.samen || {};
+  var mijn = (activeProfile() || {}).name || "";
+  var ander = null, i;
+  for(i = 0; i < spelers.length; i++){ if(spelers[i].naam !== mijn){ ander = spelers[i]; break; } }
+  var naam = (ander && ander.naam) || ct("Iemand", "Someone");
+  var eerst = !S.samen.gezien;
+  if(!S.samen.gezien) S.samen.gezien = today();
+  if(!S.samen.beloond && (S.samen.tikken || S.samen.gedeeld)){
+    S.samen.beloond = today();
+    S.tapas = (S.tapas||0) + 5;
+    confetti(["👥","🎉","🫒"], 22);
+    toast(ct(naam + " is begonnen! 🎉 +5 🫒 voor Chispa, want er zit nu iemand naast je.",
+             naam + " has started! 🎉 +5 🫒 for Chispa — you're not learning alone anymore."));
+    persist(); syncUp();
+  } else if(eerst){ persist(); }
+}
+/* Eén keer per dag, en alleen als je ooit hebt uitgenodigd en er nog niemand is opgedoken: kijken
+   of dat inmiddels wél zo is. Zonder dit hangt de hele omgedraaide beloning ervan af of je
+   toevallig het klassement opent, en dat doet bijna niemand. */
+function samenCheck(){
+  if(!S.samen) return;
+  if(S.samen.beloond) return;
+  if(!(S.samen.tikken || S.samen.gedeeld)) return;
+  if(S.samen.checkDag === today()) return;
+  var g = samenGroep();
+  if(!g) return;
+  S.samen.checkDag = today(); persist();
+  api("/api/groep/"+g.gcode).then(function(res){
+    if(res && res.ok && res.spelers) samenAangekomen(res.spelers);
   });
 }
 function uitnodigNu(bron){
@@ -11643,23 +11907,40 @@ function uitnodigNu(bron){
     uitnodigDeel(res.groep, bron);
   });
 }
+/* v19.58 — HOE VAAK MAG DE APP HIEROVER BEGINNEN? HOOGSTENS TWEE KEER.
+   In het formele model van referral-programma's (Sadler e.a.) staat een expliciete kostenpost per
+   uitnodiging: het ongemak van je vrienden lastigvallen. Dat budget is klein en het vult niet aan.
+   Vandaar de harde grens van twee.
+   Wat v19.57 hier fout deed: één keer delen zette S.samen.gedeeld en daarmee verdween de kaart voor
+   altijd, ook als er nooit iemand kwam. De "je uitnodiging staat klaar"-tekst hieronder was
+   daardoor onbereikbaar voor precies de mensen voor wie hij bedoeld was; hij verscheen alleen bij
+   wie het deelvenster wegklikte (dan blijft gedeeld leeg terwijl de groep al bestaat). Nu komt de
+   kaart na twee weken één keer terug, en daarna nooit meer.
+   Wat ik hier NIET kan onderbouwen: dat "na twee sessies" het juiste moment is. Daar bestaat geen
+   onafhankelijk bewijs voor, alleen blogs van bedrijven die referral-software verkopen. Het is een
+   redelijke gok en niet meer dan dat. */
+var UITNODIG_MAX = 2;
+var UITNODIG_RUST = 14; // dagen stilte tussen twee uitnodigingen
+function uitnodigTikken(){
+  if(!S.samen) return 0;
+  // oude profielen (v19.57) hebben wel een gedeeld-datum maar geen teller
+  return S.samen.tikken || (S.samen.gedeeld ? 1 : 0);
+}
 function uitnodigMoment(minSessies){
-  // Wanneer mag de uitnodiging in beeld? Niet op dag één (dan gaat het over Spaans, niet over
-  // vrienden), niet meer als je al gedeeld hebt, en niet meer als er iemand naast je zit.
   if(!S.samen) return false;
-  if(!samenAlleen()) return false;
-  if(S.samen.gedeeld) return false;
+  if(!samenAlleen()) return false;                                  // er zit al iemand naast je
+  if(uitnodigTikken() >= UITNODIG_MAX) return false;                // op is op
+  if(S.samen.gedeeld && dagenSinds(S.samen.gedeeld) < UITNODIG_RUST) return false;
   return samenSessies() >= (minSessies || 2);
 }
 function uitnodigKaart(compact){
   var nl = profLang() === "nl";
-  var g = samenGroep();
-  var wacht = !!g; // groep bestaat al, maar er is nog niemand bij komen zitten
-  var knop = nl ? (wacht ? "Stuur de uitnodiging nog eens 🔗" : "Nodig een vriend uit 🔗")
-                : (wacht ? "Send the invite again 🔗" : "Invite a friend 🔗");
+  var wacht = uitnodigTikken() > 0; // je hebt al eens gedeeld, er is nog niemand gekomen
+  var knop = nl ? (wacht ? "Vraag nog iemand 🔗" : "Nodig een vriend uit 🔗")
+                : (wacht ? "Ask someone else 🔗" : "Invite a friend 🔗");
   var zin = wacht
-    ? (nl ? "Je uitnodiging staat klaar, maar er heeft nog niemand op getikt. Eén tik en je stuurt hem opnieuw."
-          : "Your invite is ready, but nobody has tapped it yet. One tap sends it again.")
+    ? (nl ? "Je vorige uitnodiging is blijven liggen; dat zegt niets over jou. Je hebt er nog één, en daarna houd ik erover op."
+          : "Your last invite went nowhere; that says nothing about you. You've got one left, and after that I'll stop asking.")
     : (nl ? "Beginnen is makkelijk, volhouden niet. Met iemand erbij is dat een stuk minder zwaar: jullie zien elkaars streak en dagdoel, nooit elkaars fouten."
           : "Starting is easy, keeping it up isn't. With someone alongside you it gets a lot lighter: you see each other's streak and daily goal, never each other's mistakes.");
   return "<div class='card' id='uitnodigKaart' style='margin-top:4px'>"+
@@ -11671,6 +11952,188 @@ function uitnodigKaart(compact){
 function bindUitnodig(bron){
   var b = document.getElementById("btnUitnodig");
   if(b) b.onclick = function(){ uitnodigNu(bron); };
+}
+
+/* ================= EEN MAATJE (v19.58) =================
+   Dit is het best onderbouwde sociale onderdeel van de app, en het is niet het onderdeel waar je
+   aan denkt bij "samen leren". In de STEP UP-trial (Patel e.a., JAMA Internal Medicine 2019, n=602)
+   werden drie sociale vormen naast elkaar getest bij het volhouden van dagelijkse stappen:
+   competitie, samenwerking, en "support" (één zelfgekozen persoon die wekelijks een kort rapportje
+   kreeg en zelf nergens aan meedeed). Alle drie hielpen tijdens de looptijd; alleen de support-arm
+   hield ná afloop nog stand. De vorm die het minst op een spel lijkt, blijkt het meest te blijven.
+
+   Waarom dat voor déze app extra telt: het is de enige sociale mechaniek die geen tweede gebruiker
+   nodig heeft. Een klassement met één naam erin is geen klassement. Je moeder is er wel.
+
+   Drie ontwerpregels, alle drie afdwingbaar gemaakt en niet alleen opgeschreven:
+   1. Het maatje krijgt een eigen token (mcode), nooit je sync-code. Met een sync-code geeft
+      GET /api/state/:code je hele state weg. Zie de tabelopmerking in server/index.js.
+   2. Het maatje krijgt een eigen pagina (maatje.html), niet de app met een vlaggetje. Hij hoeft
+      niets te installeren, niets aan te maken en kan nergens per ongeluk in terechtkomen.
+   3. Alleen gedane dingen, nooit voornemens. Harkin e.a. (Psychological Bulletin 2016, 138 studies,
+      d=0,40) vinden het effect voor het bijhouden van GEDANE voortgang; Gollwitzer (2009) geeft het
+      zwakkere maar consistente signaal dat aangekondigde voornemens juist averechts kunnen werken.
+      Dus wel "4 van de 7 dagen gehaald", nooit "wil 5 dagen per week". Daarom staat je 📌-moment
+      hierboven ook nadrukkelijk niet in dit bericht.
+   Wat ik NIET kan onderbouwen: dat vier sessies het juiste moment is om dit te vragen, en dat
+   zondag de juiste dag is. Dat zijn gokken. */
+var maatjeStap = 0; // 0 = de vraag, 1 = naam invullen + laten zien wat hij te zien krijgt
+function maatjeLink(mcode){ return "https://vamos.stefanwobben.nl/maatje.html?m=" + mcode; }
+function maatjeAan(){ return !!(S.maatje && S.maatje.mcode); }
+function maatjeMoment(){
+  if(!S.maatje) return false;
+  if(maatjeAan()) return false;
+  if(uitnodigMoment(2)) return false; // de uitnodiging gaat voor zolang die nog leeft
+  if(S.maatje.niet && dagenSinds(S.maatje.niet) < 21) return false;
+  if((S.maatje.overgeslagen || 0) >= 2) return false;
+  return samenSessies() >= 4;
+}
+function maatjeStuurMoment(){
+  if(!maatjeAan()) return false;
+  var dag = new Date().getDay(); // 0 = zondag, 1 = maandag
+  if(dag !== 0 && dag !== 1) return false;
+  if(S.maatje.stilWeek === weekIdNu()) return false;
+  if(S.maatje.gestuurd && S.maatje.gestuurd >= weekIdNu()) return false;
+  return true;
+}
+/* Laten zien in plaats van beloven. Dit is letterlijk wat /api/maatje/:mcode teruggeeft, met jouw
+   cijfers van deze week erin, zodat je vóór het delen ziet hoe weinig het is. */
+function maatjeVoorbeeld(){
+  var ma = weekIdNu(), dagen = 0, lessen = 0, i, d;
+  for(i = 0; i < 7; i++){
+    d = addDays(ma, i);
+    if((S.xp[d] || 0) >= dagdoel()) dagen++;
+    if(S.lesFlow[d]) lessen++;
+  }
+  return "<div class='uitleg' style='margin-top:8px'><b>"+ct("Dit ziet hij, en verder niets:","This is all they see:")+"</b><br>"+
+    "🔥 "+streakNow()+" · <b>"+dagen+"/7</b> "+ct("dagen doel gehaald","days goal hit")+" · "+lessen+" "+ct("lessen","sessions")+" · "+
+    Object.keys(S.srs || {}).length+" "+ct("woorden geleerd","words learned")+
+    "<br><span class='muted'>"+ct("Geen fouten, geen zinnen, geen doelen die je jezelf stelt. Eén pagina met vijf getallen, en hij kan er verder niets mee.",
+                                  "No mistakes, no sentences, no goals you set yourself. One page with five numbers, and that's all they can do with it.")+"</span></div>";
+}
+function maatjeKaart(){
+  var nl = profLang() === "nl";
+  if(maatjeStap === 0){
+    return "<div class='card' id='maatjeKaart' style='margin-top:4px'>"+
+      "<span class='kicker'>"+(nl ? "Iemand die meekijkt 👀" : "Someone who follows along 👀")+"</span>"+
+      "<p class='big' style='margin:6px 0; font-size:1.1rem'>"+(nl ? "Wie vindt het leuk dát je dit doet?" : "Who'd be glad you're doing this?")+"</p>"+
+      "<p class='muted' style='margin:6px 0'>"+(nl
+        ? "Je moeder, je partner, een collega. Iemand die zelf geen Spaans leert, maar wel jouw week te zien krijgt: hoeveel dagen je je doel haalde. Meer niet, en hij hoeft niets te doen."
+        : "Your mum, your partner, a colleague. Someone who isn't learning Spanish, but does get to see your week: how many days you hit your goal. Nothing more, and they don't have to do a thing.")+"</p>"+
+      "<div class='row'><button class='primary' id='btnMaatjeJa'>"+(nl ? "Iemand vragen" : "Ask someone")+"</button>"+
+      "<button class='ghost' id='btnMaatjeNiet'>"+(nl ? "Nu even niet" : "Not now")+"</button></div></div>";
+  }
+  return "<div class='card' id='maatjeKaart' style='margin-top:4px'>"+
+    "<span class='kicker'>"+(nl ? "Iemand die meekijkt 👀" : "Someone who follows along 👀")+"</span>"+
+    "<p style='margin:6px 0'>"+(nl ? "Hoe noem je hem of haar?" : "What do you call them?")+"</p>"+
+    "<input type='text' id='maatjeNaam' autocomplete='off' placeholder=\""+(nl ? "Bijvoorbeeld: mama" : "For example: mum")+"\">"+
+    maatjeVoorbeeld()+
+    "<div class='row'><button class='primary' id='btnMaatjeStuur'>"+(nl ? "Stuur de link 🔗" : "Send the link 🔗")+"</button>"+
+    "<button class='ghost' id='btnMaatjeTerug'>"+(nl ? "Terug" : "Back")+"</button></div></div>";
+}
+function maatjeStuurKaart(){
+  var nl = profLang() === "nl";
+  var naam = (S.maatje && S.maatje.naam) || (nl ? "je maatje" : "your buddy");
+  return "<div class='card' id='maatjeKaart' style='margin-top:4px'>"+
+    "<span class='kicker'>"+(nl ? "Weekbericht 👀" : "Weekly update 👀")+"</span>"+
+    "<p class='muted' style='margin:6px 0'>"+(nl
+      ? "De week zit erop. Stuur " + naam + " je link even, dan ziet " + naam + " hoe je week eruitzag."
+      : "The week's done. Send " + naam + " your link, so " + naam + " can see how your week went.")+"</p>"+
+    maatjeVoorbeeld()+
+    "<div class='row'><button class='primary' id='btnMaatjeWeek'>"+(nl ? "Stuur je week 🔗" : "Send your week 🔗")+"</button>"+
+    "<button class='ghost' id='btnMaatjeStil'>"+(nl ? "Deze week niet" : "Not this week")+"</button></div></div>";
+}
+function maatjeZin(){
+  var mijn = (activeProfile() || {}).name || "Iemand";
+  return profLang() === "nl"
+    ? mijn + " leert Spaans en vroeg of jij wil meekijken. Je hoeft niets te doen en niets te installeren: op deze pagina zie je hoe de week ging."
+    : mijn + " is learning Spanish and asked you to follow along. Nothing to do, nothing to install: this page shows you how the week went.";
+}
+function maatjeDeel(bron){
+  if(!maatjeAan()) return;
+  deelIets(maatjeZin(), maatjeLink(S.maatje.mcode), function(hoe){
+    S.maatje.gestuurd = today();
+    persist(); syncUp();
+    toast(profLang() === "nl" ? "De link is weg. Dezelfde link blijft werken, dus hij kan hem bewaren. 👀"
+                              : "Link sent. The same link keeps working, so they can bookmark it. 👀");
+    logServer("maatje", {bron:bron||"", hoe:hoe});
+  });
+}
+// de kaart heeft twee stappen, en op het les-eindscherm mag ik het scherm niet opnieuw opbouwen
+// (dan verdwijnt de felicitatie). Dus tekent hij zichzelf ter plekke opnieuw.
+function maatjeHerteken(bron){
+  var k = document.getElementById("maatjeKaart");
+  if(!k || !k.parentNode) return;
+  var tmp = document.createElement("div");
+  tmp.innerHTML = maatjeKaart();
+  k.parentNode.replaceChild(tmp.firstChild, k);
+  bindMaatje(bron);
+}
+// let op: hier staat GEEN "geen kaart? dan klaar"-afkapping. De knoppen hieronder staan namelijk
+// niet alleen op de kaart maar ook los in Groepen; alleen het wegklikken heeft de kaart nodig.
+function bindMaatje(bron){
+  var k = document.getElementById("maatjeKaart");
+  var bj = document.getElementById("btnMaatjeJa");
+  if(bj) bj.onclick = function(){ maatjeStap = 1; maatjeHerteken(bron); };
+  var bt = document.getElementById("btnMaatjeTerug");
+  if(bt) bt.onclick = function(){ maatjeStap = 0; maatjeHerteken(bron); };
+  var bn = document.getElementById("btnMaatjeNiet");
+  if(bn) bn.onclick = function(){
+    S.maatje = S.maatje || {};
+    S.maatje.niet = today();
+    S.maatje.overgeslagen = (S.maatje.overgeslagen || 0) + 1;
+    persist();
+    if(k) k.classList.add("hidden");
+  };
+  var bw = document.getElementById("btnMaatjeWeek");
+  if(bw) bw.onclick = function(){ maatjeDeel(bron || "week"); };
+  var bst = document.getElementById("btnMaatjeStil");
+  if(bst) bst.onclick = function(){
+    S.maatje = S.maatje || {};
+    S.maatje.stilWeek = weekIdNu();
+    persist();
+    if(k) k.classList.add("hidden");
+  };
+  var bs = document.getElementById("btnMaatjeStuur");
+  if(bs) bs.onclick = function(){
+    var inp = document.getElementById("maatjeNaam");
+    var naam = ((inp && inp.value) || "").trim().slice(0, 40);
+    var code = mijnSyncCode();
+    if(!code){ toast(ct("Oefen eerst even, dan kan dit.","Do a bit of practice first, then this works.")); return; }
+    bs.disabled = true;
+    api("/api/maatje/nieuw", "POST", {code:code, naam:naam}).then(function(res){
+      bs.disabled = false;
+      if(!res || !res.ok || !res.maatje){
+        toast(res && res.error ? res.error : ct("Server even niet bereikbaar. Probeer het zo nog eens.","Server unreachable right now. Try again in a moment."));
+        return;
+      }
+      S.maatje = S.maatje || {};
+      S.maatje.mcode = res.maatje.mcode;
+      S.maatje.naam = naam;
+      S.maatje.sinds = today();
+      persist(); syncUp();
+      maatjeStap = 0;
+      maatjeDeel(bron);
+      // in Groepen staat er een vaste regel omheen die nu moet omslaan naar "stuur je week";
+      // op de andere schermen is de kaart klaar en mag hij gewoon weg
+      if(document.getElementById("maatjeSlot")) renderGroepen();
+      else { var kk = document.getElementById("maatjeKaart"); if(kk) kk.classList.add("hidden"); }
+    });
+  };
+}
+/* Hoogstens ÉÉN vraag tegelijk, in deze volgorde. Twee kaarten onder elkaar veranderen een
+   beloningsscherm in een takenlijst, en dan wordt alles weggeklikt in plaats van één ding gelezen. */
+function samenKaartNu(compact){
+  if(momentOpen || momentMoment()) return momentKaart();
+  if(maatjeStuurMoment()) return maatjeStuurKaart();
+  if(uitnodigMoment(2)) return uitnodigKaart(compact);
+  if(maatjeStap || maatjeMoment()) return maatjeKaart();
+  return "";
+}
+function bindSamen(bron, opnieuw){
+  bindMoment(opnieuw);
+  bindUitnodig(bron);
+  bindMaatje(bron);
 }
 function duelLink(d){ return "https://vamos.stefanwobben.nl/?duel=" + d.id; }
 function duelDeel(d){
@@ -11788,8 +12251,8 @@ function renderGroepen(){
       if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
       if(st) st.textContent = res.spelers.length + " " + (res.spelers.length===1?gt("deelnemer"):gt("deelnemers")) + " · " + gt("privacy");
       // v19.57: zodra je hier ooit een tweede naam ziet, ben je niet meer alleen en stopt de app
-      // met vragen of je iemand wil uitnodigen.
-      if(res.spelers.length > 1 && S.samen && !S.samen.gezien){ S.samen.gezien = today(); persist(); }
+      // met vragen of je iemand wil uitnodigen. v19.58: en dán pas komen de tapas.
+      samenAangekomen(res.spelers);
       var medailles = ["🥇","🥈","🥉"];
       var vorigeWin = res.vorigeWeek ? res.vorigeWeek.winnaar : null;
       var kopje = "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl"
@@ -11816,6 +12279,23 @@ function renderGroepen(){
     // wie gewoon één vriend wil, is hier klaar.
     "<div class='row'><button class='primary' id='btnUitnodig'>"+
     (profLang()==="nl" ? "Nodig een vriend uit 🔗" : "Invite a friend 🔗")+"</button></div>";
+  // v19.58: de maatje-regel. Hier is hij altijd te vinden, ook als de kaart bij de lessen allang
+  // is weggeklikt; dit is de enige plek waar je hem ook weer kunt loskoppelen.
+  html += "<p style='margin:14px 0 4px'><b>"+(profLang()==="nl" ? "Iemand die meekijkt 👀" : "Someone who follows along 👀")+"</b></p>";
+  if(maatjeAan()){
+    var mn = S.maatje.naam || (profLang()==="nl" ? "je maatje" : "your buddy");
+    html += "<p class='muted' style='margin:0 0 6px'>"+(profLang()==="nl"
+        ? "<b>"+mn+"</b> kan je week zien: streak, dagen doel gehaald, lessen en aantal woorden. Niets anders, en de link geeft geen toegang tot je profiel."
+        : "<b>"+mn+"</b> can see your week: streak, days on goal, sessions and word count. Nothing else, and the link gives no access to your profile.")+"</p>"+
+      "<div class='row'><button class='primary' id='btnMaatjeWeek'>"+(profLang()==="nl" ? "Stuur je week 🔗" : "Send your week 🔗")+"</button>"+
+      "<button class='ghost' id='btnMaatjeWeg'>"+(profLang()==="nl" ? "Loskoppelen" : "Disconnect")+"</button></div>";
+  } else {
+    html += "<p class='muted' style='margin:0 0 6px'>"+(profLang()==="nl"
+        ? "Eén iemand die zelf geen Spaans leert, maar wel ziet hoe je week ging. In onderzoek naar volhouden was juist dit de vorm die ná afloop nog stand hield."
+        : "One person who isn't learning Spanish, but does see how your week went. In research on sticking with things, this was the form that still held up afterwards.")+"</p>"+
+      "<div class='row'><button class='ghost' id='btnMaatjeVraag'>"+(profLang()==="nl" ? "Iemand vragen 👀" : "Ask someone 👀")+"</button></div>";
+  }
+  html += "<div id='maatjeSlot'></div>";
   if(mijn.length){
     html += "<p style='margin:10px 0 4px'><b>"+gt("mijn")+"</b></p>";
     mijn.forEach(function(g){
@@ -11830,6 +12310,32 @@ function renderGroepen(){
     "<div class='row'><button class='ghost' id='btnGrJoin'>"+gt("meedoenKnop")+"</button></div>";
   el.innerHTML = html;
   bindUitnodig("groepen");
+  bindMaatje("groepen");
+  var bmv = document.getElementById("btnMaatjeVraag");
+  if(bmv) bmv.onclick = function(){
+    var slot = document.getElementById("maatjeSlot");
+    if(!slot) return;
+    maatjeStap = 1; // hier heb je er zelf om gevraagd, dus meteen het naamveld
+    slot.innerHTML = maatjeKaart();
+    bindMaatje("groepen");
+    var bt2 = document.getElementById("btnMaatjeTerug");
+    if(bt2) bt2.onclick = function(){ maatjeStap = 0; renderGroepen(); };
+    var inp2 = document.getElementById("maatjeNaam");
+    if(inp2) inp2.focus();
+  };
+  var bmw = document.getElementById("btnMaatjeWeg");
+  if(bmw) bmw.onclick = function(){
+    var vraag = profLang()==="nl"
+      ? "De link van "+(S.maatje.naam || "je maatje")+" werkt daarna niet meer. Doorgaan?"
+      : "The link for "+(S.maatje.naam || "your buddy")+" will stop working. Continue?";
+    if(window.confirm && !window.confirm(vraag)) return;
+    api("/api/maatje/weg", "POST", {code:mijnSyncCode()}).then(function(){
+      S.maatje = {};
+      persist(); syncUp();
+      toast(ct("Losgekoppeld. De oude link werkt niet meer.","Disconnected. The old link no longer works."));
+      renderGroepen();
+    });
+  };
   el.querySelectorAll("[data-groep]").forEach(function(d){
     d.onclick = function(){
       var g = mijn.filter(function(x){ return x.gcode === d.getAttribute("data-groep"); })[0];

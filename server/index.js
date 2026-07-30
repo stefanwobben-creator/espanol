@@ -69,6 +69,17 @@ async function init() {
       created_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (van, naar, dag)
     );
+    /* v19.58 — een maatje is iemand die MEEKIJKT en zelf niet leert. Bewust een eigen token en
+       geen hergebruik van de sync-code: met een sync-code geeft GET /api/state/:code de hele
+       state weg (voortgang, e-mail, alles), en dat is precies wat je je moeder niet stuurt.
+       Deze mcode opent alleen GET /api/maatje/:mcode, en dat geeft vijf getallen terug. */
+    CREATE TABLE IF NOT EXISTS maatjes (
+      mcode      text PRIMARY KEY,
+      pcode      text NOT NULL,
+      naam       text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS maatjes_pcode ON maatjes (pcode);
     CREATE TABLE IF NOT EXISTS duels (
       id         text PRIMARY KEY,
       rounds     int NOT NULL DEFAULT 5,
@@ -465,6 +476,83 @@ app.get("/api/groep/:gcode", async (req, res) => {
       (b.vorigeDagen - a.vorigeDagen) || (b.vorigeXp / (b.doel * 7) - a.vorigeXp / (a.doel * 7)))[0];
     if (top && top.vorigeXp > 0) vorigeWeek = { winnaar: top.naam, xp: top.vorigeXp, dagen: top.vorigeDagen, week: vorigeWeekDagen[0] };
     ok(res, { groep: g.rows[0], spelers, vorigeWeek, week: dezeWeek[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* ================= MAATJE (v19.58) =================
+   Eén iemand die meekijkt en zelf niet meeleert. Rust op de STEP UP-trial (Patel e.a., JAMA
+   Internal Medicine 2019, n=602): van de drie sociale vormen daar was juist de "support"-arm,
+   één aangewezen persoon die wekelijks een rapportje kreeg en zelf nergens aan meedeed, de enige
+   die ná afloop nog stand hield. En het is de enige sociale mechaniek die geen tweede gebruiker
+   van deze app nodig heeft, wat met een handvol gebruikers nogal uitmaakt.
+
+   Twee ontwerpregels zitten hier in de code, niet in de tekst:
+   1. Een eigen token (mcode), niet de sync-code. Zie de opmerking bij de tabel.
+   2. Dit eindpunt geeft alleen GEDANE DINGEN terug, geen voornemens. Harkin e.a. (Psychological
+      Bulletin 2016, meta-analyse van 138 studies) vindt d=0,40 voor het bijhouden van voortgang,
+      sterker bij publieke rapportage; het zwakkere maar consistente signaal uit Gollwitzer (2009)
+      wijst dezelfde kant op voor het aankondigen van plannen: doe dat niet. Dus wel "4 van de 7
+      dagen gehaald", nooit "wil 5 dagen per week". */
+
+// POST /api/maatje/nieuw {code, naam} — koppel (of vervang) het maatje van dit profiel
+app.post("/api/maatje/nieuw", async (req, res) => {
+  const { code, naam } = req.body || {};
+  if (!code) return bad(res, 400, "code verplicht");
+  const schoon = String(naam || "").trim().slice(0, 40);
+  try {
+    const p = await pool.query("SELECT code FROM profiles WHERE code=$1", [String(code)]);
+    if (!p.rows.length) return bad(res, 404, "profiel onbekend, oefen eerst even zodat je sync-code bestaat");
+    // hoogstens één maatje per profiel: een nieuwe koppeling maakt de oude link meteen dood
+    await pool.query("DELETE FROM maatjes WHERE pcode=$1", [String(code)]);
+    const mcode = "m" + Math.random().toString(36).slice(2, 9);
+    await pool.query("INSERT INTO maatjes (mcode, pcode, naam) VALUES ($1,$2,$3)", [mcode, String(code), schoon]);
+    ok(res, { maatje: { mcode, naam: schoon } });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/maatje/weg {code} — maatje loskoppelen; de link werkt daarna niet meer
+app.post("/api/maatje/weg", async (req, res) => {
+  const { code } = req.body || {};
+  if (!code) return bad(res, 400, "code verplicht");
+  try {
+    await pool.query("DELETE FROM maatjes WHERE pcode=$1", [String(code)]);
+    ok(res, {});
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/maatje/:mcode — het weekbericht. Bewust smal: naam, en vijf getallen. Geen state.
+app.get("/api/maatje/:mcode", async (req, res) => {
+  try {
+    const m = await pool.query("SELECT mcode, pcode, naam FROM maatjes WHERE mcode=$1",
+      [String(req.params.mcode).toLowerCase().trim()]);
+    if (!m.rows.length) return bad(res, 404, "deze link bestaat niet (meer)");
+    const r = await pool.query("SELECT name, state FROM profiles WHERE code=$1", [m.rows[0].pcode]);
+    if (!r.rows.length) return bad(res, 404, "profiel niet gevonden");
+    const st = r.rows[0].state || {};
+    const xp = st.xp || {};
+    const lf = st.lesFlow || {};
+    const doel = st.doel || 30;
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const sd = st.streak || {};
+    function week(offset) {
+      const dates = weekDates(offset);
+      return {
+        start: dates[0],
+        dagen: dates.reduce((s, d) => s + ((xp[d] || 0) >= doel ? 1 : 0), 0),
+        lessen: dates.reduce((s, d) => s + (lf[d] ? 1 : 0), 0),
+        // per dag: false = niets gedaan, true = dagdoel gehaald, "iets" = wel geoefend, doel niet gehaald
+        dagelijks: dates.map((d) => ((xp[d] || 0) >= doel ? true : ((xp[d] || 0) > 0 ? "iets" : false)))
+      };
+    }
+    ok(res, {
+      leerling: r.rows[0].name,
+      maatje: m.rows[0].naam,
+      streak: (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0,
+      woorden: Object.keys(st.srs || {}).length,
+      week: week(0),
+      vorige: week(-1)
+    });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
