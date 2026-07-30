@@ -1,21 +1,34 @@
 /*
- * ÉÉN STEM VOOR ALLES WAT WORDT VOORGELEZEN.
+ * VASTE STEMMEN VOOR ALLES WAT WORDT VOORGELEZEN.
  *
- * Dit is het script dat je normaal draait. Het spreekt met dezelfde ElevenLabs-stem:
+ * Dit is het script dat je normaal draait. Het spreekt met vaste ElevenLabs-stemmen:
  *   - alle dictado-/vertaalzinnen  -> audio/dictado/<id>.mp3
  *   - alle hoofdstukken van het Chispa-boek -> audio/boek/<hoofdstuk-id>.mp3
  * En verder niets: de losse woordjes houden bewust hun browser-stem, dat is een oefening in
  * herkennen, geen luisterervaring.
  *
+ * ÉÉN OF TWEE STEMMEN?
+ * Dictado en het boek doen iets anders. Dictado is een oefening: je moet er woord voor woord in
+ * kunnen meeschrijven, dus wil je een neutrale, rustige voorlezer. Het boek is een verhaal dat
+ * je wil blijven horen, dus daar mag een warmere verteller staan. Je kunt het dus twee kanten op:
+ *
+ *   Dezelfde stem voor alles:      export ELEVENLABS_VOICE_ID="..."
+ *   Een stem per groep:            export ELEVENLABS_VOICE_DICTADO="..."
+ *                                  export ELEVENLABS_VOICE_BOEK="..."
+ *
+ * Het manifest onthoudt de stem PER GROEP, dus die twee bijten elkaar niet: dit script kan in
+ * één run twee stemmen gebruiken en een volgende run ziet allebei als "al goed". Zet je alleen
+ * ELEVENLABS_VOICE_ID, dan krijgen beide groepen die ene stem.
+ *
  * GEBRUIK
  *   1. Haal je API-key op bij https://elevenlabs.io (Profile -> API Keys).
- *   2. Kies ÉÉN Spaanse stem in https://elevenlabs.io/app/voice-library (Castiliaans past het
- *      best bij de rest van de app) en kopieer de voice-id. Die ene stem gebruik je voor allebei:
- *      dat is precies het punt van dit script.
+ *   2. Kies je stem(men) in https://elevenlabs.io/app/voice-library (Castiliaans past het best bij
+ *      de rest van de app) en kopieer de voice-id's.
  *   3. Vanaf de repo-root:
  *
  *        export ELEVENLABS_API_KEY="sk_..."
- *        export ELEVENLABS_VOICE_ID="..."
+ *        export ELEVENLABS_VOICE_DICTADO="..."
+ *        export ELEVENLABS_VOICE_BOEK="..."
  *        node tools/generate-audio.js --droog     # eerst kijken wat er gaat gebeuren
  *        node tools/generate-audio.js             # en dan echt
  *
@@ -52,12 +65,18 @@ const lib = require("./audio-lib");
 
 async function main(){
   const opties = lib.leesOpties(process.argv);
-  const cfg = lib.leesConfig(opties);
+  const cfg = lib.leesConfig(opties, ["dictado", "boek"]);
   const zinnen = lib.leesZinnen();
   const hoofdstukken = lib.leesHoofdstukken();
 
-  console.log("Eén stem voor dictado én het voorleesboek.");
-  if(!opties.droog) console.log("Stem: " + cfg.voice + " · model: " + cfg.model);
+  if(!opties.droog){
+    const zelfde = lib.stemVoor("dictado", cfg) === lib.stemVoor("boek", cfg);
+    console.log(zelfde ? "Eén stem voor dictado én het voorleesboek."
+                      : "Twee stemmen: een voorlezer voor dictado, een verteller voor het boek.");
+    console.log("  dictado: " + lib.stemVoor("dictado", cfg));
+    console.log("  boek   : " + lib.stemVoor("boek", cfg));
+    console.log("  model  : " + cfg.model);
+  }
 
   const a = await lib.verwerk("dictado", zinnen, opties, cfg, 250);
   const b = await lib.verwerk("boek", hoofdstukken, opties, cfg, 400);

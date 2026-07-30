@@ -7,7 +7,7 @@
  *
  * GEBRUIK (vanaf de repo-root)
  *     export ELEVENLABS_API_KEY="sk_..."
- *     export ELEVENLABS_VOICE_ID="..."
+ *     export ELEVENLABS_VOICE_DICTADO="..."   # of ELEVENLABS_VOICE_ID voor dezelfde stem overal
  *     node tools/generate-dictado-audio.js --droog
  *     node tools/generate-dictado-audio.js
  *
@@ -21,9 +21,9 @@ const lib = require("./audio-lib");
 
 async function main(){
   const opties = lib.leesOpties(process.argv);
-  const cfg = lib.leesConfig(opties);
+  const cfg = lib.leesConfig(opties, ["dictado"]);
   const zinnen = lib.leesZinnen();
-  if(!opties.droog) console.log("Stem: " + cfg.voice + " · model: " + cfg.model);
+  if(!opties.droog) console.log("Stem: " + lib.stemVoor("dictado", cfg) + " · model: " + cfg.model);
   const r = await lib.verwerk("dictado", zinnen, opties, cfg, 250);
   lib.slotwoord([r], cfg, opties);
 }

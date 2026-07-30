@@ -97,10 +97,38 @@ function leesOpties(argv){
   return o;
 }
 
-function leesConfig(opties){
+/* Twee stemmen, één per groep (30 juli 2026; tooling, dus geen APP_VERSIE-bump).
+   Stefan: "leuk om twee verschillende dingen te doen." Dictado en het voorleesboek doen ook echt
+   iets anders: dictado is een oefening waarin je woord voor woord moet kunnen volgen, het boek is
+   een verhaal dat je wil blijven horen. Daarom onthoudt het manifest de stem per groep en kun je ze
+   los zetten. Zet je alleen ELEVENLABS_VOICE_ID, dan krijgen beide groepen die ene stem: het oude
+   gedrag blijft dus gewoon werken.
+
+   Dit moest per groep, niet per run. Anders zou het gecombineerde generate-audio.js bij elke
+   volgende run de ene groep als "andere stem" zien en 'm opnieuw inspreken, en dan betaal je elke
+   keer voor het heen en weer wisselen. */
+const GROEP_ENV = { dictado: "ELEVENLABS_VOICE_DICTADO", boek: "ELEVENLABS_VOICE_BOEK" };
+
+// De oefening wil voorspelbaar en rustig zijn, het verhaal mag leven. Dit zijn geen kosten, alleen
+// instellingen die met de tekst meegaan.
+const GROEP_STEMINSTELLING = {
+  dictado: { stability: 0.65, similarity_boost: 0.8 },
+  boek:    { stability: 0.4,  similarity_boost: 0.75 }
+};
+
+function stemVoor(groep, cfg){
+  return (cfg.stemmen && cfg.stemmen[groep]) || cfg.voice || "";
+}
+
+function leesConfig(opties, groepen){
+  const basis = process.env.ELEVENLABS_VOICE_ID || "";
   const c = {
     key: process.env.ELEVENLABS_API_KEY || "",
-    voice: process.env.ELEVENLABS_VOICE_ID || "",
+    voice: basis,
+    stemmen: {
+      dictado: process.env[GROEP_ENV.dictado] || basis,
+      boek: process.env[GROEP_ENV.boek] || basis
+    },
     model: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2"
   };
   if(opties.droog) return c; // droogdraaien mag zonder sleutel: dan bel je de API niet
@@ -108,23 +136,26 @@ function leesConfig(opties){
     console.error("Zet eerst ELEVENLABS_API_KEY (zie de uitleg bovenin het script).");
     process.exit(1);
   }
-  if(!c.voice){
-    console.error("Zet eerst ELEVENLABS_VOICE_ID: kies één stem in https://elevenlabs.io/app/voice-library en kopieer de voice-id.");
+  (groepen || ["dictado", "boek"]).forEach(function(g){
+    if(stemVoor(g, c)) return;
+    console.error("Geen stem voor '" + g + "'. Zet " + GROEP_ENV[g] + " (aparte stem per groep) of");
+    console.error("ELEVENLABS_VOICE_ID (dezelfde stem voor alles). Kies je stem in");
+    console.error("https://elevenlabs.io/app/voice-library en kopieer de voice-id.");
     process.exit(1);
-  }
+  });
   return c;
 }
 
 // ---------------------------------------------------------------- de eigenlijke run
 
-async function spreekUit(cfg, tekst){
-  const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + cfg.voice, {
+async function spreekUit(cfg, tekst, stem, instelling){
+  const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + stem, {
     method: "POST",
     headers: { "xi-api-key": cfg.key, "Content-Type": "application/json", "Accept": "audio/mpeg" },
     body: JSON.stringify({
       text: tekst,
       model_id: cfg.model,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      voice_settings: instelling || { stability: 0.5, similarity_boost: 0.75 }
     })
   });
   if(!res.ok){
@@ -146,6 +177,8 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   fs.mkdirSync(outDir, { recursive: true });
   const man = leesManifest();
   if(!man[groep]) man[groep] = {};
+  const stem = stemVoor(groep, cfg);
+  const instelling = GROEP_STEMINSTELLING[groep];
 
   // eerst inventariseren, zodat we kunnen vertellen wat er gaat gebeuren vóór we quota opmaken
   const plan = items.map(function(it){
@@ -157,7 +190,7 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     if(opties.alles) reden = "alles";
     else if(!bestaat) reden = "ontbreekt";
     else if(!eerder) reden = "onbekende stem";          // mp3 van vóór het manifest
-    else if(eerder.voice !== cfg.voice) reden = "andere stem";
+    else if(eerder.voice !== stem) reden = "andere stem";
     else if(eerder.model !== cfg.model) reden = "ander model";
     else if(eerder.hash !== h) reden = "tekst gewijzigd";
     return { it: it, outPad: outPad, hash: h, reden: reden };
@@ -176,7 +209,7 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   if(opties.adopteer && !opties.alles){
     plan.forEach(function(p){
       if(p.reden !== "onbekende stem") return;
-      man[groep][p.it.id] = { voice: cfg.voice, model: cfg.model, hash: p.hash, tekens: p.it.tekst.length, overgenomen: true };
+      man[groep][p.it.id] = { voice: stem, model: cfg.model, hash: p.hash, tekens: p.it.tekst.length, overgenomen: true };
       p.reden = "";
       geadopteerd++;
     });
@@ -189,7 +222,7 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   todo.forEach(function(p){ perReden[p.reden] = (perReden[p.reden] || 0) + 1; });
 
   console.log("");
-  console.log("== " + groep + " ==");
+  console.log("== " + groep + " ==  (stem " + (stem || "?") + ")");
   console.log("  gevonden: " + items.length + " · al goed: " + (items.length - todo.length) + " · in te spreken: " + todo.length);
   if(geadopteerd) console.log("    (" + geadopteerd + " bestaande mp3's overgenomen op jouw woord, niet opnieuw ingesproken)");
   Object.keys(perReden).forEach(function(r){ console.log("    - " + r + ": " + perReden[r]); });
@@ -198,7 +231,7 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
   if(opties.droog){
     todo.slice(0, 8).forEach(function(p){ console.log("    · zou doen: " + p.it.id + " (" + p.reden + ")"); });
     if(todo.length > 8) console.log("    · ... en nog " + (todo.length - 8));
-    return { nieuw: 0, over: items.length - todo.length, mislukt: 0, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
+    return { groep: groep, stem: stem, nieuw: 0, over: items.length - todo.length, mislukt: 0, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
   }
 
   let nieuw = 0, mislukt = 0;
@@ -206,9 +239,9 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     if(!p.reden) continue;
     if(nieuw >= opties.max){ console.log("  (--max bereikt, de rest blijft staan voor een volgende ronde)"); break; }
     try{
-      const buf = await spreekUit(cfg, p.it.tekst);
+      const buf = await spreekUit(cfg, p.it.tekst, stem, instelling);
       fs.writeFileSync(p.outPad, buf);
-      man[groep][p.it.id] = { voice: cfg.voice, model: cfg.model, hash: p.hash, tekens: p.it.tekst.length };
+      man[groep][p.it.id] = { voice: stem, model: cfg.model, hash: p.hash, tekens: p.it.tekst.length };
       schrijfManifest(man); // na elk bestand: een afgebroken run verliest hoogstens één zin
       nieuw++;
       console.log("  ✓ " + p.it.id + " (" + p.reden + ") " + String(p.it.label || "").slice(0, 46));
@@ -218,7 +251,7 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     }
     await new Promise(function(r){ setTimeout(r, pauzeMs); });
   }
-  return { nieuw: nieuw, over: items.length - todo.length, mislukt: mislukt, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
+  return { groep: groep, stem: stem, nieuw: nieuw, over: items.length - todo.length, mislukt: mislukt, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
 }
 
 function slotwoord(delen, cfg, opties){
@@ -237,7 +270,8 @@ function slotwoord(delen, cfg, opties){
   }
   if(overgenomen) console.log(overgenomen + " bestaande mp3's overgenomen in het manifest (--adopteer), zonder tekens te verbruiken.");
   console.log("Klaar: " + nieuw + " ingesproken, " + over + " al goed, " + mislukt + " mislukt.");
-  console.log("Stem: " + cfg.voice + " · model: " + cfg.model);
+  delen.forEach(function(d){ console.log("Stem voor " + d.groep + ": " + d.stem); });
+  console.log("Model: " + cfg.model);
   console.log("Vergeet niet audio/ én audio/stemmen.json mee te committen.");
   if(mislukt > 0){
     console.log("Draai gerust nog eens (bijv. na een quota-reset): alleen wat nog niet klopt wordt opnieuw geprobeerd.");
@@ -245,4 +279,4 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, verwerk, slotwoord, MANIFEST_PAD };
+module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, verwerk, slotwoord, stemVoor, MANIFEST_PAD };
