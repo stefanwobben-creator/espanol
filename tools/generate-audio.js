@@ -36,8 +36,9 @@
  *
  * OPTIES
  *   --droog     laat alleen zien wat er zou gebeuren en wat het aan tekens kost. Werkt zonder key.
- *   --max=N     stop na N ingesproken bestanden. Handig om je quota over meerdere dagen te spreiden;
- *               de volgende run pakt gewoon op waar deze ophield.
+ *   --max=N     stop na N ingesproken bestanden, geteld over de hele run (dus niet N per groep).
+ *               Handig om je quota over meerdere dagen te spreiden; de volgende run pakt gewoon op
+ *               waar deze ophield. Samen met --droog zie je vooraf precies wat die N gaat kosten.
  *   --alles     spreek alles opnieuw in, ook wat volgens het manifest al klopt.
  *   --adopteer  neem bestaande mp3's zonder manifest-regel over als "deze zijn al met deze stem
  *               gemaakt", zonder ze opnieuw in te spreken. Kost nul tekens. Gebruik dit ALLEEN als

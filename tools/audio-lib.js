@@ -87,13 +87,20 @@ function schrijfManifest(man){
 
 function leesOpties(argv){
   const o = { alles: false, droog: false, adopteer: false, max: Infinity };
-  argv.slice(2).forEach(function(a){
+  const args = argv.slice(2);
+  for(let i = 0; i < args.length; i++){
+    const a = args[i];
+    /* Een losse # en alles erachter negeren we. Zsh, de standaard-shell op macOS, ziet # op de
+       opdrachtregel NIET als commentaar. Wie een voorbeeldregel met uitleg erachter plakt, kreeg
+       hier dus een foutmelding over een "onbekende optie #", terwijl het toelichting was en geen
+       opdracht. Beter de uitleg wegslikken dan de hele run afbreken. */
+    if(a.charAt(0) === "#") break;
     if(a === "--alles" || a === "--force") o.alles = true;
     else if(a === "--droog" || a === "--dry-run") o.droog = true;
     else if(a === "--adopteer") o.adopteer = true;
     else if(a.indexOf("--max=") === 0) o.max = parseInt(a.slice(6), 10) || Infinity;
     else throw new Error("Onbekende optie: " + a + "  (geldig: --alles, --adopteer, --droog, --max=N)");
-  });
+  }
   return o;
 }
 
@@ -216,28 +223,36 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     if(geadopteerd && !opties.droog) schrijfManifest(man);
   }
 
-  const todo = plan.filter(function(p){ return p.reden; });
+  /* --max is een budget voor de hele run, niet per groep. Anders doet één "--max=20" er stiekem
+     veertig: twintig dictado plus twintig boek. Daarom houden we op opties bij hoeveel er al
+     gepland/ingesproken is en heeft de tweede groep nog maar over wat de eerste liet liggen. */
+  if(typeof opties.gedaan !== "number") opties.gedaan = 0;
+  const ruimte = Math.max(0, opties.max - opties.gedaan);
+
+  const alles = plan.filter(function(p){ return p.reden; });
+  const todo = alles.slice(0, ruimte);
+  const uitgesteld = alles.length - todo.length;
   const tekens = todo.reduce(function(n, p){ return n + p.it.tekst.length; }, 0);
+  opties.gedaan += todo.length;
   const perReden = {};
   todo.forEach(function(p){ perReden[p.reden] = (perReden[p.reden] || 0) + 1; });
 
   console.log("");
   console.log("== " + groep + " ==  (stem " + (stem || "?") + ")");
-  console.log("  gevonden: " + items.length + " · al goed: " + (items.length - todo.length) + " · in te spreken: " + todo.length);
+  console.log("  gevonden: " + items.length + " · al goed: " + (items.length - alles.length) + " · in te spreken: " + todo.length);
   if(geadopteerd) console.log("    (" + geadopteerd + " bestaande mp3's overgenomen op jouw woord, niet opnieuw ingesproken)");
   Object.keys(perReden).forEach(function(r){ console.log("    - " + r + ": " + perReden[r]); });
+  if(uitgesteld) console.log("    - blijft staan door --max=" + opties.max + ": " + uitgesteld);
   console.log("  tekens die dit kost: " + tekens.toLocaleString("nl-NL"));
 
   if(opties.droog){
     todo.slice(0, 8).forEach(function(p){ console.log("    · zou doen: " + p.it.id + " (" + p.reden + ")"); });
     if(todo.length > 8) console.log("    · ... en nog " + (todo.length - 8));
-    return { groep: groep, stem: stem, nieuw: 0, over: items.length - todo.length, mislukt: 0, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
+    return { groep: groep, stem: stem, nieuw: 0, over: items.length - alles.length, mislukt: 0, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
   }
 
   let nieuw = 0, mislukt = 0;
-  for(const p of plan){
-    if(!p.reden) continue;
-    if(nieuw >= opties.max){ console.log("  (--max bereikt, de rest blijft staan voor een volgende ronde)"); break; }
+  for(const p of todo){
     try{
       const buf = await spreekUit(cfg, p.it.tekst, stem, instelling);
       fs.writeFileSync(p.outPad, buf);
@@ -251,7 +266,8 @@ async function verwerk(groep, items, opties, cfg, pauzeMs){
     }
     await new Promise(function(r){ setTimeout(r, pauzeMs); });
   }
-  return { groep: groep, stem: stem, nieuw: nieuw, over: items.length - todo.length, mislukt: mislukt, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
+  if(uitgesteld) console.log("  (--max bereikt, " + uitgesteld + " blijven staan voor een volgende ronde)");
+  return { groep: groep, stem: stem, nieuw: nieuw, over: items.length - alles.length, mislukt: mislukt, tekens: tekens, gepland: todo.length, geadopteerd: geadopteerd };
 }
 
 function slotwoord(delen, cfg, opties){
@@ -263,7 +279,7 @@ function slotwoord(delen, cfg, opties){
   if(opties.droog){
     const gepland = delen.reduce(function(n, d){ return n + d.gepland; }, 0);
     const tekens = delen.reduce(function(n, d){ return n + d.tekens; }, 0);
-    console.log("Droogdraai: " + gepland + " bestanden zouden worden ingesproken, " + tekens.toLocaleString("nl-NL") + " tekens in totaal.");
+    console.log("Droogdraai: " + gepland + (gepland === 1 ? " bestand zou" : " bestanden zouden") + " worden ingesproken, " + tekens.toLocaleString("nl-NL") + " tekens in totaal.");
     if(overgenomen) console.log("Daarnaast zouden " + overgenomen + " bestaande mp3's worden overgenomen zonder ze in te spreken (--adopteer).");
     console.log("Draai zonder --droog om het echt te doen.");
     return;
