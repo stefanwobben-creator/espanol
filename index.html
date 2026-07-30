@@ -146,6 +146,20 @@
   .zzz{position:absolute; top:20px; left:50%; margin-left:34px; font-size:1.5rem; z-index:2;
        animation:zzzfloat 3s ease-in-out infinite; pointer-events:none;}
   @keyframes zzzfloat{0%{transform:translateY(0); opacity:.15} 45%{transform:translateY(-12px); opacity:1} 100%{transform:translateY(-24px); opacity:0}}
+  /* v19.50: la jerga del día - Chispa introduceert een stukje spreektaal bij de woordjes/zinnetjes */
+  .jergarij{display:flex; align-items:flex-start; gap:10px;}
+  .jergachispa{flex:0 0 auto; width:40px; height:42px; background:none; border:none; padding:0; cursor:pointer;}
+  .jergachispa svg{width:40px; height:42px; transition:transform .15s ease;}
+  .jergachispa:hover svg{transform:scale(1.12) rotate(-4deg);}
+  .jergamid{flex:1 1 auto; min-width:0;}
+  .jergaes{font-weight:800; font-size:1.02rem; margin:3px 0 0;}
+  .jergalit{color:var(--muted); font-size:.78rem; margin:4px 0 0;}
+  .jergabet{margin:6px 0 0; font-size:.9rem;}
+  .jergavb{margin:8px 0 0; font-size:.86rem; font-style:italic;}
+  .jergavb .nl{display:block; font-style:normal; color:var(--muted); font-size:.78rem;}
+  .jergatel{font-size:.74rem; color:var(--muted); margin:8px 0 0;}
+  .jergawaar{font-size:.68rem; font-weight:800; border-radius:999px; padding:2px 8px;
+             background:var(--green-soft); color:var(--green); margin-left:6px; white-space:nowrap;}
   @keyframes petb{0%{transform:scale(1)} 40%{transform:scale(1.12) rotate(-3deg)} 100%{transform:scale(1)}}
   .shopitem{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed var(--border);}
   .shopitem .si-name{font-weight:700;}
@@ -468,11 +482,13 @@
   <!-- WOORDJES -->
   <section id="tab-woorden" class="hidden">
     <div class="card" id="wCard"></div>
+    <div id="jergaWoorden"></div>
   </section>
 
   <!-- VERTALEN -->
   <section id="tab-vertalen" class="hidden">
     <div class="card" id="sCard"></div>
+    <div id="jergaVertalen"></div>
   </section>
 
   <!-- TOETSJES -->
@@ -499,7 +515,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.49";
+var APP_VERSIE = "v19.50";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2894,6 +2910,8 @@ function boot(){
   S.gramwiz = S.gramwiz || {};
   S.rincon = S.rincon || {};
   S.zorg = S.zorg || {}; // v19.49: Tamagotchi-zorg (honger komt uit S.fed, reeks + dagwens hier)
+  S.jerga = S.jerga || {}; // v19.50: jerga del día (gezien-lijst + de uitdrukking van vandaag)
+  if(!S.jerga.gezien) S.jerga.gezien = [];
   // startdatum voor het dag-2-welkom (alleen voor echt verse profielen, niet met terugwerkende kracht)
   if(!S.gestart && !(S.txp > 0)) S.gestart = today();
   // proeverij verzilveren: XP + SRS-start van de 3 proefwoordjes verhuizen mee naar dit profiel
@@ -3480,6 +3498,253 @@ function updateBadge(){
   document.getElementById("dueBadge").textContent = n>0 ? (n+" "+tt("teDoen")) : tt("allesGedaan").toLowerCase();
 }
 
+/* ===== LA JERGA DEL DÍA (v19.50) =====
+   Stefan: "misschien leuk om bij de woordjes of zinnetjes chispa ook een spaanse slang zin te
+   laten introduceren." Eén uitdrukking per dag, gebracht door Chispa, met de betekenis achter
+   één klik - dat kleine raadmoment is precies waarom spreektaal blijft hangen. Nog niet geziene
+   uitdrukkingen gaan voor (S.jerga.gezien), dus herhaling komt pas als je ze alle 32 gehad hebt.
+   'waar' blijft in het Spaans staan: jerga is streekgebonden en dat mag je zien.
+   Bewust géén taco's als beloning - taco's verdien je met leren, niet met klikken. */
+var JERGA = [
+  {id:"vale", es:"Vale, vale.", waar:"España",
+   lit:"het geldt", lite:"it is valid",
+   nl:"Gewoon 'oké'. Het meest gezegde woord van Spanje; twee keer achter elkaar betekent 'ja ja, is goed'.",
+   en:"Simply 'okay'. Spain's most-used word; said twice it means 'yeah yeah, fine'.",
+   vb:"—Te llamo luego. —Vale.", vbnl:"'Ik bel je straks.' 'Oké.'", vben:"'I'll call you later.' 'Okay.'"},
+  {id:"guay", es:"¡Qué guay!", waar:"España",
+   lit:"wat cool", lite:"how cool",
+   nl:"Zo zeg je in Spanje 'wat gaaf'. Werkt voor een plan, een shirt, een liedje, alles.",
+   en:"Spain's everyday 'how cool'. Works for a plan, a shirt, a song, anything.",
+   vb:"—¿Vamos a la playa? —¡Qué guay!", vbnl:"'Gaan we naar het strand?' 'Wat leuk!'", vben:"'Shall we go to the beach?' 'Cool!'"},
+  {id:"molar", es:"Me mola mucho.", waar:"España",
+   lit:"'molar' is de straatversie van 'gustar'", lite:"'molar' is street-slang for 'gustar'",
+   nl:"Ik vind het echt top. Jonger en losser dan 'me gusta'.",
+   en:"I really dig it. Younger and looser than 'me gusta'.",
+   vb:"Me mola tu chaqueta.", vbnl:"Ik vind je jas echt top.", vben:"I really like your jacket."},
+  {id:"tio", es:"¡Tío, escucha!", waar:"España",
+   lit:"oom, luister", lite:"uncle, listen",
+   nl:"'Tío' en 'tía' zijn 'man' en 'meid' tussen vrienden. Niet gebruiken bij je baas.",
+   en:"'Tío' and 'tía' are 'dude' and 'girl' between friends. Don't use them with your boss.",
+   vb:"Tía, no te lo vas a creer.", vbnl:"Meid, je gaat het niet geloven.", vben:"Girl, you won't believe this."},
+  {id:"flipar", es:"Estoy flipando.", waar:"España",
+   lit:"ik ben aan het flippen", lite:"I'm flipping",
+   nl:"Je bent compleet verbaasd, positief of negatief. 'Me flipa' betekent juist: ik vind het geweldig.",
+   en:"You're blown away, good or bad. 'Me flipa' means: I love it.",
+   vb:"Flipé cuando vi el precio.", vbnl:"Ik viel om toen ik de prijs zag.", vben:"I freaked out when I saw the price."},
+  {id:"curro", es:"Mañana tengo curro.", waar:"España",
+   lit:"morgen heb ik werk", lite:"tomorrow I have work",
+   nl:"'Curro' is werk, 'currar' is werken. De spreektaalversie van 'trabajo'.",
+   en:"'Curro' is work, 'currar' is to work. The colloquial version of 'trabajo'.",
+   vb:"Salgo del curro a las seis.", vbnl:"Ik ben om zes uur klaar met werk.", vben:"I get off work at six."},
+  {id:"polvo", es:"Estoy hecho polvo.", waar:"En todas partes",
+   lit:"ik ben tot stof gemaakt", lite:"I've been turned to dust",
+   nl:"Volledig bekaf. Na een lange dag of een zware wandeling.",
+   en:"Completely wiped out. After a long day or a hard hike.",
+   vb:"Después del partido estaba hecha polvo.", vbnl:"Na de wedstrijd was ik gesloopt.", vben:"After the match I was wrecked."},
+  {id:"nopasa", es:"No pasa nada.", waar:"En todas partes",
+   lit:"er gebeurt niets", lite:"nothing happens",
+   nl:"'Geen probleem, laat maar zitten.' Het standaardantwoord op elk excuus.",
+   en:"'No problem, forget it.' The default answer to any apology.",
+   vb:"—Perdón, llego tarde. —No pasa nada.", vbnl:"'Sorry dat ik laat ben.' 'Geeft niks.'", vben:"'Sorry I'm late.' 'No worries.'"},
+  {id:"cable", es:"¿Me echas un cable?", waar:"España",
+   lit:"gooi je me een kabel?", lite:"will you throw me a cable?",
+   nl:"Zo vraag je om een handje hulp, zonder groot gebaar.",
+   en:"How you ask for a hand, casually.",
+   vb:"Échame un cable con las maletas.", vbnl:"Help me even met de koffers.", vben:"Give me a hand with the suitcases."},
+  {id:"pancomido", es:"Es pan comido.", waar:"En todas partes",
+   lit:"het is gegeten brood", lite:"it's eaten bread",
+   nl:"Een makkie, een eitje.",
+   en:"A piece of cake.",
+   vb:"El examen fue pan comido.", vbnl:"Het examen was een makkie.", vben:"The exam was a piece of cake."},
+  {id:"ojo", es:"Cuesta un ojo de la cara.", waar:"En todas partes",
+   lit:"het kost een oog uit je gezicht", lite:"it costs an eye out of your face",
+   nl:"Het is hondsduur.",
+   en:"It costs an arm and a leg.",
+   vb:"Ese coche cuesta un ojo de la cara.", vbnl:"Die auto is niet te betalen.", vben:"That car costs a fortune."},
+  {id:"frito", es:"Me quedé frito.", waar:"España",
+   lit:"ik bleef gefrituurd", lite:"I stayed fried",
+   nl:"Je viel als een blok in slaap.",
+   en:"You konked out cold.",
+   vb:"Puse la peli y me quedé frito.", vbnl:"Ik zette de film op en viel meteen in slaap.", vben:"I put the film on and fell straight asleep."},
+  {id:"pelo", es:"Me estás tomando el pelo.", waar:"En todas partes",
+   lit:"je pakt mijn haar", lite:"you're taking my hair",
+   nl:"Je neemt me in de maling.",
+   en:"You're pulling my leg.",
+   vb:"¿Gratis? Me estás tomando el pelo.", vbnl:"Gratis? Je houdt me voor de gek.", vben:"Free? You're pulling my leg."},
+  {id:"cabra", es:"Estás como una cabra.", waar:"España",
+   lit:"je bent als een geit", lite:"you're like a goat",
+   nl:"Je bent knettergek. Bijna altijd liefdevol bedoeld.",
+   en:"You're nuts. Almost always said with affection.",
+   vb:"Nadar en enero... estás como una cabra.", vbnl:"Zwemmen in januari... je bent gek.", vben:"Swimming in January... you're crazy."},
+  {id:"nubes", es:"Estás en las nubes.", waar:"En todas partes",
+   lit:"je bent in de wolken", lite:"you're in the clouds",
+   nl:"Je bent er met je hoofd niet bij, je zit te dagdromen.",
+   en:"Your head is somewhere else, you're daydreaming.",
+   vb:"Perdona, estaba en las nubes.", vbnl:"Sorry, ik was even weg.", vben:"Sorry, I was miles away."},
+  {id:"chollo", es:"¡Vaya chollo!", waar:"España",
+   lit:"wat een koopje", lite:"what a bargain",
+   nl:"Een buitenkans: iets veel te goedkoop of te mooi om waar te zijn.",
+   en:"A steal: way too cheap or too good to be true.",
+   vb:"Dos por uno, ¡qué chollo!", vbnl:"Twee voor de prijs van één, wat een koopje!", vben:"Two for one, what a steal!"},
+  {id:"lata", es:"No des la lata.", waar:"España",
+   lit:"geef niet het blikje", lite:"don't give the tin can",
+   nl:"Zeur niet, val me niet lastig.",
+   en:"Stop nagging, quit bugging me.",
+   vb:"Los niños llevan toda la tarde dando la lata.", vbnl:"De kinderen zeuren al de hele middag.", vben:"The kids have been pestering me all afternoon."},
+  {id:"maleche", es:"Hoy tiene mala leche.", waar:"España",
+   lit:"hij heeft vandaag slechte melk", lite:"he has bad milk today",
+   nl:"Hij is in een pesthumeur. Let op: 'mala leche' kan ook 'gemeen' betekenen.",
+   en:"He's in a foul mood. Careful: 'mala leche' can also mean 'nasty'.",
+   vb:"No le preguntes ahora, tiene mala leche.", vbnl:"Vraag het hem nu niet, hij is niet te genieten.", vben:"Don't ask him now, he's in a mood."},
+  {id:"botas", es:"Nos pusimos las botas.", waar:"España",
+   lit:"we trokken de laarzen aan", lite:"we put our boots on",
+   nl:"We hebben ons heerlijk volgegeten.",
+   en:"We stuffed ourselves silly.",
+   vb:"Con la paella nos pusimos las botas.", vbnl:"Bij de paella hebben we ons volgegeten.", vben:"We gorged ourselves on the paella."},
+  {id:"marcha", es:"¿Salimos de marcha?", waar:"España",
+   lit:"gaan we uit in de mars?", lite:"shall we go out on the march?",
+   nl:"Gaan we stappen? 'La marcha' is het nachtleven.",
+   en:"Shall we go out? 'La marcha' is the nightlife.",
+   vb:"Los sábados salimos de marcha.", vbnl:"Op zaterdag gaan we stappen.", vben:"On Saturdays we go out."},
+  {id:"quedar", es:"¿Quedamos el viernes?", waar:"España",
+   lit:"blijven we vrijdag?", lite:"shall we stay on Friday?",
+   nl:"'Quedar' is afspreken. Dé manier om in Spanje iets af te spreken.",
+   en:"'Quedar' means to meet up. The standard way to make plans in Spain.",
+   vb:"Quedamos a las ocho en la plaza.", vbnl:"We spreken om acht uur af op het plein.", vben:"Let's meet at eight in the square."},
+  {id:"liado", es:"Estoy muy liado.", waar:"España",
+   lit:"ik ben erg verstrikt", lite:"I'm all tangled up",
+   nl:"Ik heb het razend druk. 'Me he liado' betekent: ik ben in de knoop geraakt of uitgelopen.",
+   en:"I'm slammed. 'Me he liado' means: I got tangled up or ran late.",
+   vb:"Esta semana estoy liadísimo.", vbnl:"Deze week heb ik het loeidruk.", vben:"This week I'm swamped."},
+  {id:"menosmal", es:"¡Menos mal!", waar:"En todas partes",
+   lit:"minder slecht", lite:"less bad",
+   nl:"'Gelukkig maar!' Wat je zegt als het net goed gaat.",
+   en:"'Thank goodness!' What you say when it just works out.",
+   vb:"Menos mal que trajiste paraguas.", vbnl:"Gelukkig had je een paraplu meegenomen.", vben:"Good thing you brought an umbrella."},
+  {id:"pillar", es:"¿Lo pillas?", waar:"España",
+   lit:"pak je het?", lite:"do you catch it?",
+   nl:"Snap je het? 'Pillar' is zowel snappen als pakken.",
+   en:"Do you get it? 'Pillar' means both to get and to catch.",
+   vb:"No pillo el chiste.", vbnl:"Ik snap de mop niet.", vben:"I don't get the joke."},
+  {id:"crack", es:"¡Eres un crack!", waar:"España",
+   lit:"je bent een crack", lite:"you're a crack",
+   nl:"Je bent een kanjer, een baas. Groot compliment.",
+   en:"You're a star, an ace. Big compliment.",
+   vb:"Aprobaste todo, ¡eres un crack!", vbnl:"Je bent voor alles geslaagd, kanjer!", vben:"You passed everything, you're a star!"},
+  {id:"guasa", es:"Estoy de guasa.", waar:"España",
+   lit:"ik ben van de grap", lite:"I'm on the joke",
+   nl:"Ik maak maar een geintje.",
+   en:"I'm just kidding.",
+   vb:"Tranquilo, estaba de guasa.", vbnl:"Rustig, ik maakte een grapje.", vben:"Relax, I was just joking."},
+  {id:"cana", es:"Este bar es la caña.", waar:"España",
+   lit:"deze bar is het rietje", lite:"this bar is the reed",
+   nl:"Dit is top. Let op: 'una caña' is óók een klein biertje van de tap.",
+   en:"This is great. Careful: 'una caña' is also a small draught beer.",
+   vb:"El concierto fue la caña.", vbnl:"Het concert was geweldig.", vben:"The concert was awesome."},
+  {id:"mogollon", es:"Había mogollón de gente.", waar:"España",
+   lit:"er was een hoop mensen", lite:"there was a heap of people",
+   nl:"'Mogollón' is heel veel. Rauwer en spreektaliger dan 'mucho'.",
+   en:"'Mogollón' means loads. Rougher and more colloquial than 'mucho'.",
+   vb:"Tengo mogollón de trabajo.", vbnl:"Ik heb bergen werk.", vben:"I have loads of work."},
+  {id:"vayatela", es:"¡Vaya tela!", waar:"España",
+   lit:"wat een stof", lite:"what fabric",
+   nl:"'Wat een toestand.' Verbazing over iets dat misgaat of overdreven is.",
+   en:"'What a mess.' Surprise at something going wrong or over the top.",
+   vb:"Tres horas de cola, ¡vaya tela!", vbnl:"Drie uur in de rij, wat een toestand!", vben:"Three hours queuing, unbelievable!"},
+  {id:"buenaonda", es:"Es buena onda.", waar:"América Latina",
+   lit:"het is een goede golf", lite:"it's a good wave",
+   nl:"Hij of zij is een lekker mens, goede vibe. Latijns-Amerikaans.",
+   en:"He or she is a good soul, good vibe. Latin American.",
+   vb:"Tu prima es muy buena onda.", vbnl:"Je nichtje is echt een lieverd.", vben:"Your cousin is really cool."},
+  {id:"chevere", es:"¡Qué chévere!", waar:"América Latina",
+   lit:"wat chévere", lite:"how chévere",
+   nl:"'Wat cool' in Colombia, Venezuela en de Caraïben. De 'guay' van daar.",
+   en:"'How cool' in Colombia, Venezuela and the Caribbean. Their version of 'guay'.",
+   vb:"Tu casa es muy chévere.", vbnl:"Je huis is echt gaaf.", vben:"Your place is really cool."},
+  {id:"orale", es:"¡Órale!", waar:"México",
+   lit:"kom op, nou zeg", lite:"come on, wow",
+   nl:"Mexicaanse alleskunner: verbazing, aanmoediging of gewoon 'oké'.",
+   en:"Mexican all-rounder: surprise, encouragement, or just 'okay'.",
+   vb:"¡Órale, vámonos!", vbnl:"Kom op, we gaan!", vben:"Come on, let's go!"}
+];
+function jergaState(){
+  if(!S.jerga) S.jerga = {};
+  if(!S.jerga.gezien) S.jerga.gezien = [];
+  return S.jerga;
+}
+function jergaVind(id){
+  for(var i=0;i<JERGA.length;i++){ if(JERGA[i].id === id) return JERGA[i]; }
+  return null;
+}
+// Nog niet geziene uitdrukkingen gaan voor: je krijgt pas een herhaling als je alle 32 gehad hebt.
+// De dag-hash bepaalt welke van de resterende, zodat dezelfde dag altijd dezelfde jerga geeft.
+function jergaVandaag(){
+  var st = jergaState();
+  if(st.dag === today()){
+    var bekend = jergaVind(st.hoy);
+    if(bekend) return bekend;
+  }
+  var pool = JERGA.filter(function(j){ return st.gezien.indexOf(j.id) < 0; });
+  if(!pool.length) pool = JERGA;
+  var j = pool[dayHash("jerga") % pool.length];
+  st.dag = today();
+  st.hoy = j.id;
+  persist();
+  return j;
+}
+function jergaAl(){ return jergaState().open === today(); }
+function jergaOpenen(){
+  var st = jergaState();
+  var j = jergaVandaag();
+  st.open = today();
+  if(st.gezien.indexOf(j.id) < 0) st.gezien.push(j.id);
+  persist();
+  jergaRenderAlles();
+  jergaHoor();
+  return j;
+}
+function jergaHoor(){
+  var j = jergaVandaag();
+  if(typeof dictadoSpreekTTS === "function") dictadoSpreekTTS(j.es, 0.9);
+}
+function jergaHtml(){
+  var j = jergaVandaag();
+  var st = jergaState();
+  var h = "<div class='card'><div class='jergarij'>"+
+    "<button class='jergachispa jergaZeg' title='Chispa'>"+chispaMiniSvg()+"</button>"+
+    "<div class='jergamid'>"+
+      "<span class='kicker'>\uD83D\uDCAC "+ct("Chispa's straattaal van vandaag","Chispa's street Spanish today")+
+        "<span class='jergawaar'>"+j.waar+"</span></span>"+
+      "<p class='jergaes'>"+j.es+"</p>";
+  if(jergaAl()){
+    h += "<p class='jergalit'>"+ct("letterlijk: ","literally: ")+ct(j.lit, j.lite)+"</p>"+
+      "<p class='jergabet'>"+ct(j.nl, j.en)+"</p>"+
+      "<p class='jergavb'>"+j.vb+"<span class='nl'>"+ct(j.vbnl, j.vben)+"</span></p>"+
+      "<div class='row' style='margin-top:8px'><button class='ghost jergaHoor' style='font-size:.8rem'>\uD83D\uDD0A "+
+        ct("Nog eens horen","Hear it again")+"</button></div>"+
+      "<p class='jergatel'>"+ct("Je kent er "+st.gezien.length+" van de "+JERGA.length+".",
+                                "You know "+st.gezien.length+" of "+JERGA.length+".")+"</p>";
+  } else {
+    h += "<div class='row' style='margin-top:8px'><button class='primary jergaWat' style='font-size:.84rem'>"+
+      ct("Wat betekent dat?","What does that mean?")+"</button></div>";
+  }
+  return h + "</div></div></div>";
+}
+function jergaRender(elId){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML = jergaHtml();
+  var w = el.querySelector(".jergaWat");
+  if(w) w.onclick = jergaOpenen;
+  var z = el.querySelector(".jergaZeg");
+  if(z) z.onclick = function(){ if(jergaAl()) jergaHoor(); else jergaOpenen(); };
+  var hr = el.querySelector(".jergaHoor");
+  if(hr) hr.onclick = jergaHoor;
+}
+function jergaRenderAlles(){
+  jergaRender("jergaWoorden");
+  jergaRender("jergaVertalen");
+}
 function renderWord(){
   var el = document.getElementById("wCard");
   if(!wQueue.length){ buildQueue(); }
@@ -12875,8 +13140,8 @@ function show(tabId, skipPush){
     b.classList.toggle("active", b.getAttribute("data-tab")===tabId);
   });
   if(tabId==="lessen"){ renderLessons(); }
-  if(tabId==="woorden"){ buildQueue(); renderWord(); }
-  if(tabId==="vertalen"){ renderSentence(true); }
+  if(tabId==="woorden"){ buildQueue(); renderWord(); jergaRender("jergaWoorden"); }
+  if(tabId==="vertalen"){ renderSentence(true); jergaRender("jergaVertalen"); }
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
   if(tabId==="chispa"){ renderPet(); renderShop(); }
