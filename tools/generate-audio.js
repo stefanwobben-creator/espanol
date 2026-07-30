@@ -1,0 +1,61 @@
+/*
+ * ÉÉN STEM VOOR ALLES WAT WORDT VOORGELEZEN.
+ *
+ * Dit is het script dat je normaal draait. Het spreekt met dezelfde ElevenLabs-stem:
+ *   - alle dictado-/vertaalzinnen  -> audio/dictado/<id>.mp3
+ *   - alle hoofdstukken van het Chispa-boek -> audio/boek/<hoofdstuk-id>.mp3
+ * En verder niets: de losse woordjes houden bewust hun browser-stem, dat is een oefening in
+ * herkennen, geen luisterervaring.
+ *
+ * GEBRUIK
+ *   1. Haal je API-key op bij https://elevenlabs.io (Profile -> API Keys).
+ *   2. Kies ÉÉN Spaanse stem in https://elevenlabs.io/app/voice-library (Castiliaans past het
+ *      best bij de rest van de app) en kopieer de voice-id. Die ene stem gebruik je voor allebei:
+ *      dat is precies het punt van dit script.
+ *   3. Vanaf de repo-root:
+ *
+ *        export ELEVENLABS_API_KEY="sk_..."
+ *        export ELEVENLABS_VOICE_ID="..."
+ *        node tools/generate-audio.js --droog     # eerst kijken wat er gaat gebeuren
+ *        node tools/generate-audio.js             # en dan echt
+ *
+ *   4. Luister een paar bestanden na, en commit audio/ samen met audio/stemmen.json.
+ *
+ * OPTIES
+ *   --droog     laat alleen zien wat er zou gebeuren en wat het aan tekens kost. Werkt zonder key.
+ *   --max=N     stop na N ingesproken bestanden. Handig om je quota over meerdere dagen te spreiden;
+ *               de volgende run pakt gewoon op waar deze ophield.
+ *   --alles     spreek alles opnieuw in, ook wat volgens het manifest al klopt.
+ *
+ * WANNEER WORDT IETS OPNIEUW INGESPROKEN?
+ * Het manifest audio/stemmen.json onthoudt per bestand welke stem, welk model en welke tekst erin
+ * zit. Een bestand wordt overgeslagen als die drie nog kloppen, en anders opnieuw ingesproken.
+ * Wissel je van stem, dan wordt dus alles vernieuwd - zo blijft de app consistent klinken.
+ * De mp3's van vóór dit manifest staan er als "onbekende stem" in en worden één keer vernieuwd.
+ *
+ * KOSTEN
+ * De hele set is ongeveer 24.000 tekens (~6.900 voor de zinnen, ~17.000 voor het boek). Dat past
+ * niet in de gratis laag van ~10.000 tekens per maand. Twee routes: één maand een betaald
+ * instapplan nemen en het in één keer doen, of met --max=N over meerdere maanden spreiden. De
+ * zinnen eerst doen is het slimst: die hoor je dagelijks, het boek lees je één keer.
+ *
+ * Vereist: Node.js 18+ (voor de ingebouwde fetch).
+ */
+
+const lib = require("./audio-lib");
+
+async function main(){
+  const opties = lib.leesOpties(process.argv);
+  const cfg = lib.leesConfig(opties);
+  const zinnen = lib.leesZinnen();
+  const hoofdstukken = lib.leesHoofdstukken();
+
+  console.log("Eén stem voor dictado én het voorleesboek.");
+  if(!opties.droog) console.log("Stem: " + cfg.voice + " · model: " + cfg.model);
+
+  const a = await lib.verwerk("dictado", zinnen, opties, cfg, 250);
+  const b = await lib.verwerk("boek", hoofdstukken, opties, cfg, 400);
+  lib.slotwoord([a, b], cfg, opties);
+}
+
+main().catch(function(e){ console.error("Onverwachte fout:", e); process.exit(1); });
