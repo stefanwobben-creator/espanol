@@ -61,6 +61,14 @@ async function init() {
       joined_at  timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (gcode, pcode)
     );
+    CREATE TABLE IF NOT EXISTS krabbels (
+      van        text NOT NULL,
+      naar       text NOT NULL,
+      sleutel    text NOT NULL,
+      dag        date NOT NULL DEFAULT current_date,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (van, naar, dag)
+    );
     CREATE TABLE IF NOT EXISTS duels (
       id         text PRIMARY KEY,
       rounds     int NOT NULL DEFAULT 5,
@@ -266,6 +274,46 @@ app.get("/api/logs", async (req, res) => {
   }
 });
 
+/* ---- Krabbels: een schouderklopje bij een familielid, uitsluitend in het Spaans ----
+ * v19.49 (Stefan: "bij de familie zou je een krabbel acher kunnen latne met een hyes banaan bij
+ * een familie/teamlid, maar alleen in het spaans"). De client stuurt alleen een sleutel; de tekst
+ * staat hier. Vrije tekst kan er dus niet in, en daarmee is "alleen in het Spaans" gegarandeerd
+ * door de vorm van de API in plaats van door goed gedrag van de client.
+ * Eén krabbel per paar per dag: opnieuw sturen overschrijft, dus je kunt niet spammen.
+ */
+const KRABBEL_TEKST = {
+  hola: "¡Hola!",
+  choca: "¡Choca esos cinco!",
+  platano: "¡Un plátano para ti!",
+  crack: "¡Eres un crack!",
+  sigue: "¡Sigue así!",
+  vamos: "¡Vamos, vamos!",
+  ole: "¡Olé!",
+  taco: "¡Te invito a un taco!",
+  campeon: "¡Campeón!",
+  abrazo: "¡Un abrazo!",
+};
+function familiaNamen() {
+  return String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona")
+    .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+app.post("/api/krabbel", async (req, res) => {
+  try {
+    const van = String((req.body && req.body.van) || "").trim().toLowerCase();
+    const naar = String((req.body && req.body.naar) || "").trim().toLowerCase();
+    const sleutel = String((req.body && req.body.sleutel) || "").trim().toLowerCase();
+    if (!KRABBEL_TEKST[sleutel]) return bad(res, 400, "onbekende krabbel");
+    if (!van || !naar || van === naar) return bad(res, 400, "van/naar ongeldig");
+    const namen = familiaNamen();
+    if (namen.indexOf(van) === -1 || namen.indexOf(naar) === -1) return bad(res, 403, "alleen binnen de familie");
+    await pool.query(
+      `INSERT INTO krabbels (van, naar, sleutel, dag) VALUES ($1, $2, $3, current_date)
+       ON CONFLICT (van, naar, dag) DO UPDATE SET sleutel = EXCLUDED.sleutel, created_at = now()`,
+      [van, naar, sleutel]);
+    ok(res, { tekst: KRABBEL_TEKST[sleutel] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
 // GET /api/familia — scorebord van ALLEEN de familie (FAMILIA_NAMEN env, default stefan/elise/ilona).
 // Vroeger toonde dit alle profielen; sinds de app openbaar deelbaar is, is dat expres dichtgezet.
 app.get("/api/familia", async (_req, res) => {
@@ -293,7 +341,14 @@ app.get("/api/familia", async (_req, res) => {
       if (!perNaam[k] || s.txp > perNaam[k].txp) perNaam[k] = s;
     });
     const lijst = Object.values(perNaam).sort((a, b) => b.txp - a.txp);
-    ok(res, { spelers: lijst });
+    // krabbels van vandaag meesturen: het klassement en de schouderklopjes horen bij elkaar
+    let krabbels = [];
+    try {
+      const kr = await pool.query(
+        "SELECT van, naar, sleutel FROM krabbels WHERE dag = current_date ORDER BY created_at");
+      krabbels = kr.rows;
+    } catch (e2) { console.error(e2); }
+    ok(res, { spelers: lijst, krabbels });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
