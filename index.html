@@ -632,14 +632,22 @@
     <div id="cheat"></div>
   </section>
 
+  <!-- PRIVACY (v19.65) — Stefan, 31 juli: "wellicht moet hier ook privacy bij".
+       Dit hoort er inderdaad te staan zodra er een folder aan een muur hangt: dan zijn het niet meer
+       je eigen familieleden die de app gebruiken. De tekst is met opzet geen juridische mantel maar
+       een opsomming van wat er feitelijk gebeurt, afgeleid uit de code en niet uit een sjabloon. -->
+  <section id="tab-privacy" class="hidden">
+    <div id="privacyCard"></div>
+  </section>
+
   <footer id="appFooter" class="appfooter hidden">
-    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkSteun">💛 Hoe dit werkt &amp; steun de app</a> · <span id="footVer"></span>
+    <a href="#" id="lnkTour">❓ Rondleiding</a> · <a href="#" id="lnkSteun">💛 Hoe dit werkt &amp; steun de app</a> · <a href="#" id="lnkPrivacy">🔒 Privacy</a> · <span id="footVer"></span>
   </footer>
 </div>
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.64";
+var APP_VERSIE = "v19.65";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14628,6 +14636,7 @@ var TABS = [
   {id:"chispa", label:"Chispa", nav:false},
   {id:"perfil", label:"Profiel", nav:false},
   {id:"steun", label:"Steun", nav:false},
+  {id:"privacy", label:"Privacy", nav:false},
   {id:"musica", label:"Música", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Grammatica"}
@@ -14659,6 +14668,60 @@ function renderHoeWerkt(){
     "<p><b>"+ct("Fouten leveren hier punten op.","Mistakes earn you points here.")+"</b> "+ct("Elke fout wordt ('s nachts) verwerkt tot een oefening die precies d\u00e1t nog eens drilt. Dus komt iets steeds terug? Dan werkt het.","Every mistake gets turned (overnight) into an exercise that drills exactly that. So if something keeps coming back? That means it's working.")+"</p>";
 }
 
+/* v19.65 — privacy, geschreven vanuit de code en niet vanuit een sjabloon.
+   Een privacyverklaring die "wij hechten veel waarde aan uw privacy" opent en daarna niets concreets
+   zegt, is erger dan geen: hij wekt vertrouwen dat hij niet verdient. Dus staat hier per ding wat er
+   echt gebeurt, in de volgorde waarin het iemand raakt: wat blijft op je toestel, wat gaat naar de
+   server, wat gaat naar een taalmodel, wat zien anderen, en hoe kom je er weer vanaf.
+   Twee dingen staan er bewust in terwijl ze niet vleien: dat je sync-code de sleutel tot je hele
+   voortgang is, en dat wie je e-mailadres kent die sleutel bij de app kan opvragen. Zolang dat waar
+   is, hoort het hier te staan en niet verzwegen te worden. */
+function renderPrivacy(){
+  var el = document.getElementById("privacyCard");
+  if(!el) return;
+  function blok(kop, tekst){
+    return "<div class='card'><h2 style='font-size:1.05rem'>"+kop+"</h2>"+tekst+"</div>";
+  }
+  el.innerHTML =
+    "<div class='card'>"+
+      "<span class='kicker'>"+ct("Privacy","Privacy")+"</span>"+
+      "<p style='margin-top:10px'><b>"+ct("¡Vamos! is een hobbyproject van één persoon, geen bedrijf. Er wordt niets met je gegevens verdiend.","¡Vamos! is one person's hobby project, not a company. Nothing is earned from your data.")+"</b></p>"+
+      "<p class='muted'>"+ct("Geen advertenties, geen trackers, geen analytics van derden, geen verkoop of doorgifte aan wie dan ook. Hieronder staat per onderdeel wat er wél gebeurt.","No ads, no trackers, no third-party analytics, nothing sold or handed on to anyone. Below is what does happen, item by item.")+"</p>"+
+    "</div>"+
+
+    blok("📱 "+ct("Op je eigen toestel","On your own device"),
+      "<p>"+ct("Alles wat je doet wordt eerst gewoon in je browser bewaard: je woorden, je fouten, je punten, je tapas. Wis je je browsergegevens voor deze site, dan is die kopie weg.","Everything you do is stored in your browser first: your words, your mistakes, your points, your tapas. Clear this site's browser data and that copy is gone.")+"</p>")+
+
+    blok("☁️ "+ct("Op de server","On the server"),
+      "<p>"+ct("Tijdens het oefenen gaat er automatisch een kopie van je voortgang naar een server, gekoppeld aan een willekeurige sync-code. Dat is er zodat je op je telefoon verder kunt waar je op je laptop stopte.","While you practise, a copy of your progress automatically goes to a server, tied to a random sync code. That's there so you can carry on from your phone where you left off on your laptop.")+"</p>"+
+      "<p class='muted'>"+ct("Wat daarin zit: de naam die je zelf koos, je niveau, welke woorden je kent, welke fouten je maakte, je toetsscores en je tapas. Plus een logregel bij een afgeronde les of dagdoel, zodat te zien is waar de app hapert.","What's in it: the name you picked yourself, your level, which words you know, which mistakes you made, your quiz scores and your tapas. Plus a log line when you finish a lesson or daily goal, so it's visible where the app trips up.")+"</p>"+
+      "<p class='muted'>"+ct("De server draait bij Render, de database bij Neon.","The server runs on Render, the database on Neon.")+"</p>")+
+
+    blok("🔑 "+ct("Je sync-code is je sleutel","Your sync code is your key"),
+      "<p>"+ct("Met je sync-code kan iemand jouw hele voortgang ophalen en overnemen. Behandel hem als een wachtwoord: deel hem niet, ook niet met je maatje.","With your sync code someone can retrieve and take over your entire progress. Treat it like a password: don't share it, not even with your buddy.")+"</p>"+
+      "<p class='muted'>"+ct("Wil je iemand laten meekijken, gebruik dan een maatje-link. Die geeft vijf getallen en verder niets.","If you want to let someone follow along, use a buddy link. That gives five numbers and nothing else.")+"</p>")+
+
+    blok("✉️ "+ct("Je e-mailadres","Your email address"),
+      "<p>"+ct("Een e-mailadres invullen is optioneel en dient één doel: je sync-code terugvinden als je hem kwijt bent. Je krijgt er nooit post van.","Filling in an email address is optional and serves one purpose: finding your sync code again if you lose it. You'll never get mail from it.")+"</p>"+
+      "<p class='muted'>"+ct("Eerlijk daarover: wie jouw e-mailadres kent, kan bij de app je sync-code opvragen, en heeft daarmee toegang tot je voortgang. Vul het dus alleen in als je dat een acceptabele ruil vindt.","Honestly about that: anyone who knows your email address can ask the app for your sync code, and with it reach your progress. So only fill it in if that trade seems acceptable to you.")+"</p>")+
+
+    blok("🤖 "+ct("Wat er naar een taalmodel gaat","What goes to a language model"),
+      "<p>"+ct("Typ je een zin die de app niet zelf kan nakijken, dan gaat die zin samen met de opgave naar een taalmodel om beoordeeld te worden. Je naam en je sync-code gaan daar niet mee.","If you type a sentence the app can't check by itself, that sentence goes together with the exercise to a language model to be assessed. Your name and sync code do not go with it.")+"</p>"+
+      "<p class='muted'>"+ct("De aanbieders die daarvoor gebruikt worden zijn Google, Mistral en Anthropic. Schrijf in de vrije oefeningen dus geen dingen die je liever niet bij een derde partij ziet belanden.","The providers used for this are Google, Mistral and Anthropic. So in the free-writing exercises, don't write things you'd rather not have reach a third party.")+"</p>")+
+
+    blok("👀 "+ct("Wat anderen van je zien","What others see of you"),
+      "<p>"+ct("In een familie of groep zien de anderen je naam en je punten. Je oefeningen, je fouten en je antwoorden blijven van jou; die krijgt niemand te zien.","In a family or group the others see your name and your points. Your exercises, your mistakes and your answers stay yours; nobody gets to see those.")+"</p>"+
+      "<p class='muted'>"+ct("Een groep of familie verlaten kan altijd, en dan ben je daar meteen weg.","You can leave a group or family at any time, and then you're gone from it straight away.")+"</p>")+
+
+    blok("🧹 "+ct("Weg is weg","Gone is gone"),
+      "<p>"+ct("De kopie op je toestel wis je door de browsergegevens van deze site te wissen. Voor de kopie op de server is er nog geen knop: stuur een mailtje met je sync-code en hij wordt verwijderd.","You erase the copy on your device by clearing this site's browser data. For the copy on the server there's no button yet: send an email with your sync code and it gets deleted.")+"</p>"+
+      "<p class='muted'>"+ct("Je kunt je voortgang ook zelf exporteren naar een bestand via Profiel, en die overal naartoe meenemen.","You can also export your progress to a file yourself via Profile, and take it anywhere.")+"</p>")+
+
+    "<div class='card'><p class='muted' style='margin:0'>"+
+      ct("Vragen, of iets weg willen hebben? Stefan is te bereiken via de app, en antwoordt gewoon zelf.","Questions, or want something removed? Stefan is reachable through the app and answers himself.")+
+      " · "+APP_VERSIE+"</p></div>";
+}
+
 function show(tabId, skipPush){
   if(tabId === "diccionario"){ dicModal(); return; } // oude links/history: woordenboek is nu een popup
   if(tabId !== "speeltuin" && typeof avtStopAlles === "function") avtStopAlles();
@@ -14686,6 +14749,7 @@ function show(tabId, skipPush){
     var ss = document.getElementById("syncStatus");
     if(ss) ss.textContent = lastSync ? "Laatste sync: gelukt ✓" : "Laatste sync: wordt automatisch gedaan tijdens het oefenen";
   }
+  if(tabId==="privacy"){ renderPrivacy(); }
   if(tabId==="speeltuin"){ renderFun(); }
   if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
@@ -14707,6 +14771,8 @@ function show(tabId, skipPush){
   if(lt0) lt0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
   var ls0 = document.getElementById("lnkSteun");
   if(ls0) ls0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("steun"); return false; };
+  var lp0 = document.getElementById("lnkPrivacy");
+  if(lp0) lp0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); show("privacy"); return false; };
   document.getElementById("btnExportProgress").onclick = exportProgress;
   document.getElementById("btnImportProgress").onclick = importProgress;
   document.getElementById("btnSwitchProf").onclick = switchProfile;
