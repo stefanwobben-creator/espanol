@@ -491,12 +491,12 @@
     <div class="card" id="statsCard"></div>
     <div class="card" id="steunCard">
       <h2>Steun ¡Vamos! 💛</h2>
-      <p class="muted">Deze app is gratis en blijft gratis. Benieuwd waarom ik hem bouwde, en wil je misschien iets terugdoen?</p>
+      <p class="muted" id="perfSteunP">Deze app is gratis en blijft gratis. Benieuwd waarom ik hem bouwde, en wil je misschien iets terugdoen?</p>
       <div class="row"><button class="primary" id="btnNaarSteun">Lees het verhaal 💛</button></div>
     </div>
     <div class="card">
-      <h2>Profiel &amp; synchronisatie</h2>
-      <p class="muted">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
+      <h2 id="perfSyncKop">Profiel &amp; synchronisatie</h2>
+      <p class="muted" id="perfSyncP">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
       Vul daar bij het profielscherm deze sync-code in:</p>
       <p><b id="syncCode" style="font-size:1.05rem; letter-spacing:.03em">…</b></p>
       <p class="muted" id="syncStatus">Laatste sync: nog niet</p>
@@ -504,8 +504,8 @@
       <div class="row"><button class="ghost" id="btnSwitchProf">Wissel profiel</button></div>
     </div>
     <div class="card">
-      <h2>Voortgang verplaatsen (handmatig)</h2>
-      <p class="muted">Alleen nodig als de server het niet doet: exporteer hier je voortgang en importeer hem elders.</p>
+      <h2 id="perfExpKop">Voortgang verplaatsen (handmatig)</h2>
+      <p class="muted" id="perfExpP">Alleen nodig als de server het niet doet: exporteer hier je voortgang en importeer hem elders.</p>
       <div class="row">
         <button class="ghost" id="btnExportProgress">Exporteer voortgang</button>
         <button class="ghost" id="btnImportProgress">Importeer voortgang</button>
@@ -661,7 +661,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.66";
+var APP_VERSIE = "v19.67";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2605,7 +2605,7 @@ function syncUp(){
   var p = activeProfile();
   if(!p) return;
   api("/api/sync", "POST", {code: ensureCode(p), name: p.name, track: p.track, state: S})
-    .then(function(res){ if(res && res.ok){ lastSync = res.updated_at; var el = document.getElementById("syncStatus"); if(el) el.textContent = "Laatste sync: zojuist ✓"; } });
+    .then(function(res){ if(res && res.ok){ lastSync = res.updated_at; var el = document.getElementById("syncStatus"); if(el) el.textContent = ct("Laatste sync: zojuist ✓","Last sync: just now ✓"); } });
 }
 function mergeServerGroepen(res){
   // lidmaatschappen zijn de waarheid van de server: altijd bijmengen
@@ -2626,7 +2626,7 @@ function serverPull(p){
       store.save(S);
       mergeServerGroepen(res);
       updateBadge(); updateGoalUI();
-      toast("Voortgang van je andere apparaat opgehaald ✓");
+      toast(ct("Voortgang van je andere apparaat opgehaald ✓","Progress from your other device restored ✓"));
       show("lessen", true);
     } else {
       mergeServerGroepen(res);
@@ -3091,7 +3091,7 @@ function renderProfileScreen(){
       store.save(S);
       mergeServerGroepen(res);
       boot();
-      toast("Welkom terug, "+naam+"! Voortgang opgehaald ✓");
+      toast(ct("Welkom terug, ","Welcome back, ")+naam+ct("! Voortgang opgehaald ✓","! Progress restored ✓"));
     });
   };
   document.getElementById("btnNewProf").onclick = function(){
@@ -3286,7 +3286,7 @@ function addXP(n){
   S.tapaP = (S.tapaP || 0) + n;
   var earned = 0;
   while(S.tapaP >= 10){ S.tapaP -= 10; S.tapas = (S.tapas || 0) + 1; earned++; }
-  if(earned > 0){ toast("+" + earned + " tapa" + (earned>1?"s":"") + " 🫒 voor Chispa!"); }
+  if(earned > 0){ toast("+" + earned + " tapa" + (earned>1?"s":"") + ct(" 🫒 voor Chispa!"," 🫒 for Chispa!")); }
   if(was < dagdoel() && S.xp[t] >= dagdoel() && S.streak.last !== t){
     var gisteren = addDays(t, -1);
     if(S.streak.last === gisteren){
@@ -3295,7 +3295,7 @@ function addXP(n){
       // één dag gemist en siësta beschikbaar: streak loopt gewoon door
       S.siesta = t;
       S.streak.count = S.streak.count + 1;
-      toast("Siësta-dag ingezet 😴 Je streak loopt gewoon door. (1x per week)");
+      toast(ct("Siësta-dag ingezet 😴 Je streak loopt gewoon door. (1x per week)","Siesta day taken 😴 Your streak keeps running. (once a week)"));
     } else {
       S.streak.count = 1;
     }
@@ -3311,7 +3311,7 @@ function addXP(n){
   var lvlAfter = petLevel(S.txp);
   if(lvlAfter > lvlBefore){
     confetti(["🎉","✨","🌮","💃"], 30);
-    toast("¡Chispa is gegroeid! Nieuwe vorm: " + PET_LEVELS[lvlAfter].naam + " ✨");
+    toast(ct("¡Chispa is gegroeid! Nieuwe vorm: ","¡Chispa has grown! New form: ") + PET_LEVELS[lvlAfter].naam + " ✨");
   }
   persist(); updateGoalUI();
 }
@@ -3514,95 +3514,95 @@ function leerKpi(){
 
 /* ================= PET-CONSTANTEN ================= */
 var PET_LEVELS = [
-  {min:0,     naam:"huevo (ei)",    hint:"er zit iets in..."},
-  {min:150,   naam:"bebé",          hint:"net uit het ei"},
-  {min:600,   naam:"joven",         hint:"groeit als kool"},
-  {min:1500,  naam:"maestro",       hint:"verdient zijn snor"},
-  {min:3000,  naam:"profesor",      hint:"met echte afstudeerhoed"},
-  {min:6000,  naam:"poeta",         hint:"baret op, poëzie in het hart"},
-  {min:10000, naam:"bailaor",       hint:"flamenco! roos in de mond"},
-  {min:15000, naam:"chef de tapas", hint:"koksmuts verdiend"},
-  {min:21000, naam:"campeón",       hint:"gouden medaille"},
-  {min:28000, naam:"leyenda",       hint:"een gouden gloed"},
-  {min:36000, naam:"el sabio",      hint:"wijze witte baard"},
-  {min:45000, naam:"estrella",      hint:"kroon en sterren"}
+  {min:0,     naam:"huevo (ei)",    hint:"er zit iets in...", hintEn:"something's in there..."},
+  {min:150,   naam:"bebé",          hint:"net uit het ei", hintEn:"fresh out of the egg"},
+  {min:600,   naam:"joven",         hint:"groeit als kool", hintEn:"growing fast"},
+  {min:1500,  naam:"maestro",       hint:"verdient zijn snor", hintEn:"earning that moustache"},
+  {min:3000,  naam:"profesor",      hint:"met echte afstudeerhoed", hintEn:"with a real graduation cap"},
+  {min:6000,  naam:"poeta",         hint:"baret op, poëzie in het hart", hintEn:"beret on, poetry in the heart"},
+  {min:10000, naam:"bailaor",       hint:"flamenco! roos in de mond", hintEn:"flamenco! rose in the mouth"},
+  {min:15000, naam:"chef de tapas", hint:"koksmuts verdiend", hintEn:"chef's hat earned"},
+  {min:21000, naam:"campeón",       hint:"gouden medaille", hintEn:"gold medal"},
+  {min:28000, naam:"leyenda",       hint:"een gouden gloed", hintEn:"a golden glow"},
+  {min:36000, naam:"el sabio",      hint:"wijze witte baard", hintEn:"wise white beard"},
+  {min:45000, naam:"estrella",      hint:"kroon en sterren", hintEn:"crown and stars"}
 ];
 /* Vriendjes: verschijnen naast Chispa vanaf een bepaald niveau */
 var AMIGOS = [
-  {id:"pepe", naam:"Pepe el gorrión",   min:3000,  frase:{es:"¡Pío pío! ¿Estudiamos?", nl:"Piep piep! Zullen we studeren?"},
+  {id:"pepe", naam:"Pepe el gorrión",   min:3000,  frase:{es:"¡Pío pío! ¿Estudiamos?", nl:"Piep piep! Zullen we studeren?", en:"Cheep cheep! Shall we study?"},
    svg:"<svg viewBox='0 0 60 56'><ellipse cx='30' cy='50' rx='16' ry='4' fill='#00000010'/><circle cx='30' cy='30' r='16' fill='#b08968' stroke='#8a6a4b' stroke-width='2'/><circle cx='30' cy='16' r='10' fill='#b08968' stroke='#8a6a4b' stroke-width='2'/><circle cx='27' cy='14' r='2' fill='#2d2a26'/><path d='M36 16 l7 2 l-7 3 Z' fill='#e8a33d'/><path d='M18 30 q-8 4 -6 10' stroke='#8a6a4b' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M26 46 l0 5 M34 46 l0 5' stroke='#e8a33d' stroke-width='2.5' stroke-linecap='round'/></svg>"},
-  {id:"lola", naam:"Lola la lagartija", min:10000, frase:{es:"Tranquila, tranquila... al solecito.", nl:"Rustig aan... lekker in het zonnetje."},
+  {id:"lola", naam:"Lola la lagartija", min:10000, frase:{es:"Tranquila, tranquila... al solecito.", nl:"Rustig aan... lekker in het zonnetje.", en:"Easy does it... nice and sunny."},
    svg:"<svg viewBox='0 0 60 56'><ellipse cx='30' cy='50' rx='18' ry='4' fill='#00000010'/><path d='M8 40 Q18 28 34 32 Q52 36 52 26' stroke='#79b473' stroke-width='9' fill='none' stroke-linecap='round'/><circle cx='12' cy='38' r='8' fill='#79b473' stroke='#5c9457' stroke-width='2'/><circle cx='9' cy='36' r='2' fill='#2d2a26'/><path d='M20 45 l-3 6 M30 44 l0 6 M40 42 l2 6' stroke='#5c9457' stroke-width='3' stroke-linecap='round'/></svg>"},
-  {id:"torito", naam:"Torito el gato",  min:21000, frase:{es:"Miau. Cinco minutitos más de siesta...", nl:"Miauw. Nog vijf minuutjes siësta..."},
+  {id:"torito", naam:"Torito el gato",  min:21000, frase:{es:"Miau. Cinco minutitos más de siesta...", nl:"Miauw. Nog vijf minuutjes siësta...", en:"Meow. Five more minutes of siesta..."},
    svg:"<svg viewBox='0 0 60 56'><ellipse cx='30' cy='51' rx='16' ry='4' fill='#00000010'/><ellipse cx='30' cy='36' rx='15' ry='13' fill='#4a4a4a'/><circle cx='30' cy='20' r='11' fill='#4a4a4a'/><path d='M21 12 l3 -8 l5 6 Z M39 12 l-3 -8 l-5 6 Z' fill='#4a4a4a'/><circle cx='26' cy='19' r='2' fill='#ffd54d'/><circle cx='34' cy='19' r='2' fill='#ffd54d'/><path d='M27 25 q3 3 6 0' stroke='#ffd54d' stroke-width='1.6' fill='none'/><path d='M45 36 q10 -2 8 -12' stroke='#4a4a4a' stroke-width='4' fill='none' stroke-linecap='round'/></svg>"}
 ];
 /* Uitspraken van Chispa: typisch/grappig Spaans, mét vertaling */
 var FRASES = [
-  {es:"¡No pasa nada!", nl:"Geen probleem! (dé Spaanse levenshouding)"},
-  {es:"Me importa un pepino.", nl:"Het kan me een komkommer schelen."},
-  {es:"¡Estoy flipando!", nl:"Ik sta versteld! (spreektaal)"},
-  {es:"Hasta luego, cocodrilo.", nl:"Tot later, krokodil."},
-  {es:"¡Qué guay!", nl:"Wat cool!"},
-  {es:"¡Ostras!", nl:"Oesters! (= Jeetje!)"},
-  {es:"Ponte las pilas.", nl:"Stop je batterijen erin (= aan de slag!)."},
-  {es:"Estoy en las nubes.", nl:"Ik zit in de wolken (= ik zit te dagdromen)."},
-  {es:"Me quedé frito.", nl:"Ik viel als een blok in slaap (letterlijk: ik bleef gefrituurd)."},
-  {es:"¡Eres la leche!", nl:"Jij bent de melk (= jij bent geweldig)!"},
-  {es:"Esto es pan comido.", nl:"Dit is gegeten brood (= een eitje)."},
-  {es:"Estoy como una cabra.", nl:"Ik ben als een geit (= knettergek)."},
-  {es:"¡Vamos, que nos vamos!", nl:"Kom op, we gaan!"},
-  {es:"Más vale tarde que nunca.", nl:"Beter laat dan nooit."},
-  {es:"El mundo es un pañuelo.", nl:"De wereld is een zakdoek (= wat is de wereld klein)."},
-  {es:"¡Qué fuerte!", nl:"Wat heftig!"},
-  {es:"Tengo un hambre que no veo.", nl:"Ik heb zo'n honger dat ik niks meer zie."},
-  {es:"A otra cosa, mariposa.", nl:"Op naar iets anders, vlinder!"},
-  {es:"Un poquito de por favor.", nl:"Een beetje alsjeblieft, graag."},
-  {es:"¡Olé tus huesos!", nl:"Olé voor jouw botten (= goed gedaan, jij)!"},
-  {es:"Hablando del rey de Roma...", nl:"Over de koning van Rome gesproken (= als je het over de duvel hebt)."},
-  {es:"Me piro, vampiro.", nl:"Ik smeer 'm, vampier."},
-  {es:"Al mal tiempo, buena cara.", nl:"Bij slecht weer een goed gezicht (= kop op)."},
-  {es:"¡Toma ya!", nl:"Pak aan! (= Yes!)"},
-  {es:"Sin prisa, pero sin pausa.", nl:"Zonder haast, maar zonder pauze."},
-  {es:"Quien no arriesga, no gana.", nl:"Wie niet waagt, die niet wint."},
-  {es:"¡Fiesta, siesta y sombra!", nl:"Feest, siësta en schaduw!"},
-  {es:"Tengo ganas de bailar bachata.", nl:"Ik heb zin om bachata te dansen."},
-  {es:"Una tapa al día, alegría.", nl:"Eén tapa per dag: blijdschap."},
-  {es:"¡Madre mía!", nl:"Lieve hemel! (letterlijk: moeder van mij)"},
-  {es:"Poco a poco se anda lejos.", nl:"Beetje bij beetje kom je ver."},
-  {es:"¿Bailamos?", nl:"Zullen we dansen?"},
-  {es:"La práctica hace al maestro.", nl:"Oefening baart kunst."},
-  {es:"En Alicante, ¡siempre sol!", nl:"In Alicante altijd zon!"},
-  {es:"Cada maestrillo tiene su librillo.", nl:"Elk meestertje heeft zijn boekje (= ieder zijn eigen aanpak)."},
-  {es:"Aquí se habla español, ¿eh?", nl:"Hier spreken we Spaans, hè?"},
-  {es:"No hay mal que cien años dure.", nl:"Geen tegenslag duurt honderd jaar."},
-  {es:"¡Qué arte tienes!", nl:"Wat een kunst heb jij (= wat kun jij dat goed)!"},
-  {es:"Dime con quién andas y te diré quién eres.", nl:"Zeg me met wie je omgaat en ik zeg je wie je bent."},
-  {es:"Las cuentas claras y el chocolate espeso.", nl:"Heldere afspraken en dikke chocolademelk."}
+  {es:"¡No pasa nada!", nl:"Geen probleem! (dé Spaanse levenshouding)", en:"No worries! (the Spanish attitude to life)"},
+  {es:"Me importa un pepino.", nl:"Het kan me een komkommer schelen.", en:"I couldn't care a cucumber."},
+  {es:"¡Estoy flipando!", nl:"Ik sta versteld! (spreektaal)", en:"I'm blown away! (slang)"},
+  {es:"Hasta luego, cocodrilo.", nl:"Tot later, krokodil.", en:"See you later, alligator."},
+  {es:"¡Qué guay!", nl:"Wat cool!", en:"How cool!"},
+  {es:"¡Ostras!", nl:"Oesters! (= Jeetje!)", en:"Oysters! (= Blimey!)"},
+  {es:"Ponte las pilas.", nl:"Stop je batterijen erin (= aan de slag!).", en:"Put your batteries in (= get to work!)."},
+  {es:"Estoy en las nubes.", nl:"Ik zit in de wolken (= ik zit te dagdromen).", en:"I'm in the clouds (= I'm daydreaming)."},
+  {es:"Me quedé frito.", nl:"Ik viel als een blok in slaap (letterlijk: ik bleef gefrituurd).", en:"I fell straight asleep (literally: I stayed fried)."},
+  {es:"¡Eres la leche!", nl:"Jij bent de melk (= jij bent geweldig)!", en:"You're the milk (= you're the best)!"},
+  {es:"Esto es pan comido.", nl:"Dit is gegeten brood (= een eitje).", en:"This is eaten bread (= a piece of cake)."},
+  {es:"Estoy como una cabra.", nl:"Ik ben als een geit (= knettergek).", en:"I'm like a goat (= completely nuts)."},
+  {es:"¡Vamos, que nos vamos!", nl:"Kom op, we gaan!", en:"Come on, let's go!"},
+  {es:"Más vale tarde que nunca.", nl:"Beter laat dan nooit.", en:"Better late than never."},
+  {es:"El mundo es un pañuelo.", nl:"De wereld is een zakdoek (= wat is de wereld klein).", en:"The world is a handkerchief (= what a small world)."},
+  {es:"¡Qué fuerte!", nl:"Wat heftig!", en:"How intense!"},
+  {es:"Tengo un hambre que no veo.", nl:"Ik heb zo'n honger dat ik niks meer zie.", en:"I'm so hungry I can't see straight."},
+  {es:"A otra cosa, mariposa.", nl:"Op naar iets anders, vlinder!", en:"On to something else, butterfly!"},
+  {es:"Un poquito de por favor.", nl:"Een beetje alsjeblieft, graag.", en:"A little bit of please, please."},
+  {es:"¡Olé tus huesos!", nl:"Olé voor jouw botten (= goed gedaan, jij)!", en:"Olé to your bones (= nicely done, you)!"},
+  {es:"Hablando del rey de Roma...", nl:"Over de koning van Rome gesproken (= als je het over de duvel hebt).", en:"Speaking of the king of Rome (= speak of the devil)."},
+  {es:"Me piro, vampiro.", nl:"Ik smeer 'm, vampier.", en:"I'm off, vampire."},
+  {es:"Al mal tiempo, buena cara.", nl:"Bij slecht weer een goed gezicht (= kop op).", en:"Bad weather, good face (= chin up)."},
+  {es:"¡Toma ya!", nl:"Pak aan! (= Yes!)", en:"Take that! (= Yes!)"},
+  {es:"Sin prisa, pero sin pausa.", nl:"Zonder haast, maar zonder pauze.", en:"Without hurry, but without pause."},
+  {es:"Quien no arriesga, no gana.", nl:"Wie niet waagt, die niet wint.", en:"Nothing ventured, nothing gained."},
+  {es:"¡Fiesta, siesta y sombra!", nl:"Feest, siësta en schaduw!", en:"Party, siesta and shade!"},
+  {es:"Tengo ganas de bailar bachata.", nl:"Ik heb zin om bachata te dansen.", en:"I feel like dancing bachata."},
+  {es:"Una tapa al día, alegría.", nl:"Eén tapa per dag: blijdschap.", en:"One tapa a day: joy."},
+  {es:"¡Madre mía!", nl:"Lieve hemel! (letterlijk: moeder van mij)", en:"Good heavens! (literally: mother of mine)"},
+  {es:"Poco a poco se anda lejos.", nl:"Beetje bij beetje kom je ver.", en:"Little by little you go far."},
+  {es:"¿Bailamos?", nl:"Zullen we dansen?", en:"Shall we dance?"},
+  {es:"La práctica hace al maestro.", nl:"Oefening baart kunst.", en:"Practice makes perfect."},
+  {es:"En Alicante, ¡siempre sol!", nl:"In Alicante altijd zon!", en:"In Alicante, always sun!"},
+  {es:"Cada maestrillo tiene su librillo.", nl:"Elk meestertje heeft zijn boekje (= ieder zijn eigen aanpak).", en:"Every little master has his little book (= everyone has their own way)."},
+  {es:"Aquí se habla español, ¿eh?", nl:"Hier spreken we Spaans, hè?", en:"We speak Spanish here, right?"},
+  {es:"No hay mal que cien años dure.", nl:"Geen tegenslag duurt honderd jaar.", en:"No hardship lasts a hundred years."},
+  {es:"¡Qué arte tienes!", nl:"Wat een kunst heb jij (= wat kun jij dat goed)!", en:"What art you have (= you're so good at that)!"},
+  {es:"Dime con quién andas y te diré quién eres.", nl:"Zeg me met wie je omgaat en ik zeg je wie je bent.", en:"Tell me who you walk with and I'll tell you who you are."},
+  {es:"Las cuentas claras y el chocolate espeso.", nl:"Heldere afspraken en dikke chocolademelk.", en:"Clear accounts and thick hot chocolate."}
 ];
 /* Dagdecor: elke dag iets anders bij Chispa */
 var DAYDECO = [
-  {e:"🦋", txt:"Er fladdert vandaag een vlinder om Chispa heen."},
-  {e:"🎶", txt:"Chispa neuriet vandaag een bachata."},
-  {e:"🌞", txt:"Zonnetje! Chispa ligt graag in het licht."},
-  {e:"🐌", txt:"Een slak komt langzaam op bezoek. Sin prisa..."},
-  {e:"🌈", txt:"Een regenboogje boven het aquarium."},
-  {e:"🍊", txt:"Chispa heeft vandaag zin in een sinaasappel uit Valencia."},
-  {e:"⛵", txt:"Chispa droomt van een bootje op de Middellandse Zee."},
-  {e:"🫧", txt:"Bubbels! Chispa blaast belletjes."},
-  {e:"🌵", txt:"Er staat vandaag een cactusje naast het aquarium."},
-  {e:"📖", txt:"Chispa leest stiekem mee in je Spaanse boek."}
+  {e:"🦋", txt:"Er fladdert vandaag een vlinder om Chispa heen.", txtEn:"A butterfly is fluttering around Chispa today."},
+  {e:"🎶", txt:"Chispa neuriet vandaag een bachata.", txtEn:"Chispa is humming a bachata today."},
+  {e:"🌞", txt:"Zonnetje! Chispa ligt graag in het licht.", txtEn:"Sunshine! Chispa loves lying in the light."},
+  {e:"🐌", txt:"Een slak komt langzaam op bezoek. Sin prisa...", txtEn:"A snail drops by, slowly. Sin prisa..."},
+  {e:"🌈", txt:"Een regenboogje boven het aquarium.", txtEn:"A little rainbow above the tank."},
+  {e:"🍊", txt:"Chispa heeft vandaag zin in een sinaasappel uit Valencia.", txtEn:"Chispa fancies an orange from Valencia today."},
+  {e:"⛵", txt:"Chispa droomt van een bootje op de Middellandse Zee.", txtEn:"Chispa dreams of a little boat on the Mediterranean."},
+  {e:"🫧", txt:"Bubbels! Chispa blaast belletjes.", txtEn:"Bubbles! Chispa is blowing them."},
+  {e:"🌵", txt:"Er staat vandaag een cactusje naast het aquarium.", txtEn:"There's a little cactus next to the tank today."},
+  {e:"📖", txt:"Chispa leest stiekem mee in je Spaanse boek.", txtEn:"Chispa is secretly reading along in your Spanish book."}
 ];
 /* Spaanse feestdagen: tijdelijke specials */
 var FIESTAS = [
-  {van:"01-01", tot:"01-01", e:"🍇", naam:"Año Nuevo",  txt:"¡Feliz año nuevo! In Spanje eet je 12 druiven bij de 12 klokslagen."},
-  {van:"01-05", tot:"01-06", e:"👑", naam:"Los Reyes",  txt:"Día de Reyes: de Drie Koningen brengen cadeaus (belangrijker dan de Kerstman!)."},
-  {van:"03-15", tot:"03-19", e:"🔥", naam:"Las Fallas", txt:"Las Fallas in Valencia: reuzenpoppen en vuurwerk!"},
-  {van:"06-20", tot:"06-24", e:"🎆", naam:"San Juan",   txt:"Hogueras de San Juan: het grote vuurfeest van Alicante!"},
-  {van:"07-06", tot:"07-14", e:"🐂", naam:"San Fermín", txt:"San Fermín in Pamplona. Chispa rent níet voor de stieren uit."},
-  {van:"08-24", tot:"08-31", e:"🍅", naam:"La Tomatina",txt:"La Tomatina: het grootste tomatengevecht ter wereld, in Buñol."},
-  {van:"10-09", tot:"10-09", e:"🎉", naam:"9 d'Octubre",txt:"Feestdag van de regio Valencia (waar Alicante bij hoort)."},
-  {van:"12-24", tot:"12-26", e:"🎄", naam:"Navidad",    txt:"¡Feliz Navidad! Tijd voor turrón uit Alicante."},
-  {van:"12-31", tot:"12-31", e:"🍇", naam:"Nochevieja", txt:"Nochevieja: druiven klaarzetten voor middernacht!"}
+  {van:"01-01", tot:"01-01", e:"🍇", naam:"Año Nuevo",  txt:"¡Feliz año nuevo! In Spanje eet je 12 druiven bij de 12 klokslagen.", txtEn:"¡Feliz año nuevo! In Spain you eat 12 grapes on the 12 chimes."},
+  {van:"01-05", tot:"01-06", e:"👑", naam:"Los Reyes",  txt:"Día de Reyes: de Drie Koningen brengen cadeaus (belangrijker dan de Kerstman!).", txtEn:"Día de Reyes: the Three Kings bring the presents (bigger than Santa here!)."},
+  {van:"03-15", tot:"03-19", e:"🔥", naam:"Las Fallas", txt:"Las Fallas in Valencia: reuzenpoppen en vuurwerk!", txtEn:"Las Fallas in Valencia: giant puppets and fireworks!"},
+  {van:"06-20", tot:"06-24", e:"🎆", naam:"San Juan",   txt:"Hogueras de San Juan: het grote vuurfeest van Alicante!", txtEn:"Hogueras de San Juan: Alicante's great fire festival!"},
+  {van:"07-06", tot:"07-14", e:"🐂", naam:"San Fermín", txt:"San Fermín in Pamplona. Chispa rent níet voor de stieren uit.", txtEn:"San Fermín in Pamplona. Chispa does not run ahead of the bulls."},
+  {van:"08-24", tot:"08-31", e:"🍅", naam:"La Tomatina",txt:"La Tomatina: het grootste tomatengevecht ter wereld, in Buñol.", txtEn:"La Tomatina: the biggest tomato fight in the world, in Buñol."},
+  {van:"10-09", tot:"10-09", e:"🎉", naam:"9 d'Octubre",txt:"Feestdag van de regio Valencia (waar Alicante bij hoort).", txtEn:"Regional holiday of Valencia (which Alicante belongs to)."},
+  {van:"12-24", tot:"12-26", e:"🎄", naam:"Navidad",    txt:"¡Feliz Navidad! Tijd voor turrón uit Alicante.", txtEn:"¡Feliz Navidad! Time for turrón from Alicante."},
+  {van:"12-31", tot:"12-31", e:"🍇", naam:"Nochevieja", txt:"Nochevieja: druiven klaarzetten voor middernacht!", txtEn:"Nochevieja: get your grapes ready for midnight!"}
 ];
 function dayHash(extra){
   var s = today() + "|" + (extra || "");
@@ -3619,11 +3619,11 @@ function fiestaVandaag(){
 }
 function petLevel(txp){ var lv=0; for(var i=0;i<PET_LEVELS.length;i++){ if(txp>=PET_LEVELS[i].min) lv=i; } return lv; }
 var SHOP = [
-  {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", les:1, emoji:"🌺"},
-  {id:"gafas",    naam:"Gafas de sol", hint:"zonnebril",                les:2, emoji:"🕶️"},
-  {id:"bufanda",  naam:"Bufanda",      hint:"een warme sjaal",          les:3, emoji:"🧣"},
-  {id:"sombrero", naam:"Sombrero",     hint:"een echte Spaanse hoed",   les:4, emoji:"👒"},
-  {id:"guitarra", naam:"Guitarra",     hint:"voor de serenades",        les:5, emoji:"🎸"}
+  {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", hintEn:"a flower behind the ear", les:1, emoji:"🌺"},
+  {id:"gafas",    naam:"Gafas de sol", hint:"zonnebril", hintEn:"sunglasses",                les:2, emoji:"🕶️"},
+  {id:"bufanda",  naam:"Bufanda",      hint:"een warme sjaal", hintEn:"a warm scarf",          les:3, emoji:"🧣"},
+  {id:"sombrero", naam:"Sombrero",     hint:"een echte Spaanse hoed", hintEn:"a proper Spanish hat",   les:4, emoji:"👒"},
+  {id:"guitarra", naam:"Guitarra",     hint:"voor de serenades", hintEn:"for the serenades",        les:5, emoji:"🎸"}
 ];
 function doneLessonCount(){
   var n = 0;
@@ -3648,7 +3648,7 @@ function berekenCompetenties(){
   var pct = function(teller, noemer){ return noemer > 0 ? Math.min(100, Math.round(teller / noemer * 100)) : 0; };
   var boekDone = BOOK.filter(function(h){ return S.boek[h.id] && S.boek[h.id].done; }).length;
   var lezen = { pct: pct(boekDone, BOOK.length), teller: boekDone, noemer: BOOK.length,
-    bron: ["Lezen (Chispa-boek)"] };
+    bron: [ct("Lezen (Chispa-boek)","Reading (the Chispa book)")] };
   var luisterTeller = Object.keys(S.comp.luisteren || {}).length;
   var luisteren = { pct: pct(luisterTeller, SENTENCES.length), teller: luisterTeller, noemer: SENTENCES.length,
     bron: ["Dictado"] };
@@ -3662,8 +3662,9 @@ function berekenCompetenties(){
   var toetsjesPct = pct(quizTeller, QUIZZES.length);
   var schrijven = { pct: Math.round((productiePct + toetsjesPct) / 2),
     teller: productieTeller, noemer: schrijfNoemer,
-    bron: ["Vertalen", "Zinnen husselen", "Toetsjes", "Conjugador (telt mee als onderliggend bewijs, niet los gemeten)"] };
-  var spreken = { pct: null, bron: ["Nog geen spreekoefening in de app (backlog)"] };
+    bron: [ct("Vertalen","Translating"), ct("Zinnen husselen","Sentence scramble"), ct("Toetsjes","Quizzes"),
+           ct("Conjugador (telt mee als onderliggend bewijs, niet los gemeten)","Conjugador (counts as supporting evidence, not measured separately)")] };
+  var spreken = { pct: null, bron: [ct("Nog geen spreekoefening in de app (backlog)","No speaking practice in the app yet (backlog)")] };
   return { lezen: lezen, luisteren: luisteren, schrijven: schrijven, spreken: spreken };
 }
 
@@ -3764,7 +3765,7 @@ function checkLessonComplete(){
       if(nieuweQuiz) quizSpreid();
       persist();
       confetti(["🎉","🌮","⭐️","💃","✨"], 36);
-      toast("¡LECCIÓN "+l.num+" COMPLETADA! 🎉 +5 tapas"+(beloond ? " én Chispa verdient de "+beloond.naam.toLowerCase()+" "+beloond.emoji : ""));
+      toast("¡LECCIÓN "+l.num+" COMPLETADA! 🎉 +5 tapas"+(beloond ? ct(" én Chispa verdient de "," and Chispa earns the ")+beloond.naam.toLowerCase()+" "+beloond.emoji : ""));
       logServer("les-af", {les:l.id, titel:l.titel, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
     }
   }
@@ -4841,40 +4842,40 @@ function checkDictado(){
 /* ================= CONJUGADOR (sprint: vervoeg het werkwoord, presente) ================= */
 var VERBOS = [
   // regelmatige voorbeelden (-ar/-er/-ir)
-  {inf:"hablar", nl:"praten, spreken", presente:["hablo","hablas","habla","hablamos","habláis","hablan"]},
-  {inf:"trabajar", nl:"werken", presente:["trabajo","trabajas","trabaja","trabajamos","trabajáis","trabajan"]},
-  {inf:"estudiar", nl:"studeren", presente:["estudio","estudias","estudia","estudiamos","estudiáis","estudian"]},
-  {inf:"comprar", nl:"kopen", presente:["compro","compras","compra","compramos","compráis","compran"]},
-  {inf:"comer", nl:"eten", presente:["como","comes","come","comemos","coméis","comen"]},
-  {inf:"aprender", nl:"leren", presente:["aprendo","aprendes","aprende","aprendemos","aprendéis","aprenden"]},
-  {inf:"leer", nl:"lezen", presente:["leo","lees","lee","leemos","leéis","leen"]},
-  {inf:"beber", nl:"drinken", presente:["bebo","bebes","bebe","bebemos","bebéis","beben"]},
-  {inf:"vivir", nl:"wonen, leven", presente:["vivo","vives","vive","vivimos","vivís","viven"]},
-  {inf:"escribir", nl:"schrijven", presente:["escribo","escribes","escribe","escribimos","escribís","escriben"]},
-  {inf:"abrir", nl:"openen", presente:["abro","abres","abre","abrimos","abrís","abren"]},
+  {inf:"hablar", nl:"praten, spreken", en:"to talk, to speak", presente:["hablo","hablas","habla","hablamos","habláis","hablan"]},
+  {inf:"trabajar", nl:"werken", en:"to work", presente:["trabajo","trabajas","trabaja","trabajamos","trabajáis","trabajan"]},
+  {inf:"estudiar", nl:"studeren", en:"to study", presente:["estudio","estudias","estudia","estudiamos","estudiáis","estudian"]},
+  {inf:"comprar", nl:"kopen", en:"to buy", presente:["compro","compras","compra","compramos","compráis","compran"]},
+  {inf:"comer", nl:"eten", en:"to eat", presente:["como","comes","come","comemos","coméis","comen"]},
+  {inf:"aprender", nl:"leren", en:"to learn", presente:["aprendo","aprendes","aprende","aprendemos","aprendéis","aprenden"]},
+  {inf:"leer", nl:"lezen", en:"to read", presente:["leo","lees","lee","leemos","leéis","leen"]},
+  {inf:"beber", nl:"drinken", en:"to drink", presente:["bebo","bebes","bebe","bebemos","bebéis","beben"]},
+  {inf:"vivir", nl:"wonen, leven", en:"to live", presente:["vivo","vives","vive","vivimos","vivís","viven"]},
+  {inf:"escribir", nl:"schrijven", en:"to write", presente:["escribo","escribes","escribe","escribimos","escribís","escriben"]},
+  {inf:"abrir", nl:"openen", en:"to open", presente:["abro","abres","abre","abrimos","abrís","abren"]},
   // onregelmatig / klinkerwissel (hoogfrequent, sluit aan bij FREQ + bestaande zinnen)
-  {inf:"ser", nl:"zijn", presente:["soy","eres","es","somos","sois","son"]},
-  {inf:"estar", nl:"zijn, zich bevinden", presente:["estoy","estás","está","estamos","estáis","están"]},
-  {inf:"tener", nl:"hebben", presente:["tengo","tienes","tiene","tenemos","tenéis","tienen"]},
-  {inf:"ir", nl:"gaan", presente:["voy","vas","va","vamos","vais","van"]},
-  {inf:"hacer", nl:"doen, maken", presente:["hago","haces","hace","hacemos","hacéis","hacen"]},
-  {inf:"poder", nl:"kunnen", presente:["puedo","puedes","puede","podemos","podéis","pueden"]},
-  {inf:"querer", nl:"willen, houden van", presente:["quiero","quieres","quiere","queremos","queréis","quieren"]},
-  {inf:"decir", nl:"zeggen", presente:["digo","dices","dice","decimos","decís","dicen"]},
-  {inf:"saber", nl:"weten", presente:["sé","sabes","sabe","sabemos","sabéis","saben"]},
-  {inf:"poner", nl:"zetten, leggen", presente:["pongo","pones","pone","ponemos","ponéis","ponen"]},
-  {inf:"salir", nl:"weggaan, uitgaan", presente:["salgo","sales","sale","salimos","salís","salen"]},
-  {inf:"venir", nl:"komen", presente:["vengo","vienes","viene","venimos","venís","vienen"]},
-  {inf:"dar", nl:"geven", presente:["doy","das","da","damos","dais","dan"]},
-  {inf:"ver", nl:"zien", presente:["veo","ves","ve","vemos","veis","ven"]},
-  {inf:"jugar", nl:"spelen", presente:["juego","juegas","juega","jugamos","jugáis","juegan"]},
-  {inf:"pedir", nl:"vragen om, bestellen", presente:["pido","pides","pide","pedimos","pedís","piden"]},
-  {inf:"dormir", nl:"slapen", presente:["duermo","duermes","duerme","dormimos","dormís","duermen"]},
-  {inf:"empezar", nl:"beginnen", presente:["empiezo","empiezas","empieza","empezamos","empezáis","empiezan"]},
-  {inf:"volver", nl:"terugkeren, teruggaan", presente:["vuelvo","vuelves","vuelve","volvemos","volvéis","vuelven"]},
-  {inf:"pensar", nl:"denken", presente:["pienso","piensas","piensa","pensamos","pensáis","piensan"]},
-  {inf:"sentir", nl:"voelen", presente:["siento","sientes","siente","sentimos","sentís","sienten"]},
-  {inf:"preferir", nl:"liever hebben, verkiezen", presente:["prefiero","prefieres","prefiere","preferimos","preferís","prefieren"]}
+  {inf:"ser", nl:"zijn", en:"to be (who/what you are)", presente:["soy","eres","es","somos","sois","son"]},
+  {inf:"estar", nl:"zijn, zich bevinden", en:"to be (how/where you are)", presente:["estoy","estás","está","estamos","estáis","están"]},
+  {inf:"tener", nl:"hebben", en:"to have", presente:["tengo","tienes","tiene","tenemos","tenéis","tienen"]},
+  {inf:"ir", nl:"gaan", en:"to go", presente:["voy","vas","va","vamos","vais","van"]},
+  {inf:"hacer", nl:"doen, maken", en:"to do, to make", presente:["hago","haces","hace","hacemos","hacéis","hacen"]},
+  {inf:"poder", nl:"kunnen", en:"to be able to, can", presente:["puedo","puedes","puede","podemos","podéis","pueden"]},
+  {inf:"querer", nl:"willen, houden van", en:"to want, to love", presente:["quiero","quieres","quiere","queremos","queréis","quieren"]},
+  {inf:"decir", nl:"zeggen", en:"to say", presente:["digo","dices","dice","decimos","decís","dicen"]},
+  {inf:"saber", nl:"weten", en:"to know (a fact)", presente:["sé","sabes","sabe","sabemos","sabéis","saben"]},
+  {inf:"poner", nl:"zetten, leggen", en:"to put, to place", presente:["pongo","pones","pone","ponemos","ponéis","ponen"]},
+  {inf:"salir", nl:"weggaan, uitgaan", en:"to leave, to go out", presente:["salgo","sales","sale","salimos","salís","salen"]},
+  {inf:"venir", nl:"komen", en:"to come", presente:["vengo","vienes","viene","venimos","venís","vienen"]},
+  {inf:"dar", nl:"geven", en:"to give", presente:["doy","das","da","damos","dais","dan"]},
+  {inf:"ver", nl:"zien", en:"to see", presente:["veo","ves","ve","vemos","veis","ven"]},
+  {inf:"jugar", nl:"spelen", en:"to play", presente:["juego","juegas","juega","jugamos","jugáis","juegan"]},
+  {inf:"pedir", nl:"vragen om, bestellen", en:"to ask for, to order", presente:["pido","pides","pide","pedimos","pedís","piden"]},
+  {inf:"dormir", nl:"slapen", en:"to sleep", presente:["duermo","duermes","duerme","dormimos","dormís","duermen"]},
+  {inf:"empezar", nl:"beginnen", en:"to start", presente:["empiezo","empiezas","empieza","empezamos","empezáis","empiezan"]},
+  {inf:"volver", nl:"terugkeren, teruggaan", en:"to return, to go back", presente:["vuelvo","vuelves","vuelve","volvemos","volvéis","vuelven"]},
+  {inf:"pensar", nl:"denken", en:"to think", presente:["pienso","piensas","piensa","pensamos","pensáis","piensan"]},
+  {inf:"sentir", nl:"voelen", en:"to feel", presente:["siento","sientes","siente","sentimos","sentís","sienten"]},
+  {inf:"preferir", nl:"liever hebben, verkiezen", en:"to prefer", presente:["prefiero","prefieres","prefiere","preferimos","preferís","prefieren"]}
 ];
 /* Verleden tijden bij VERBOS (29 juli, v19.44). Bewust een APARTE tabel op infinitief in plaats van
    extra velden in VERBOS zelf: VERBOS staat vol accenten en werd al door de presente-Conjugador gebruikt,
@@ -4961,6 +4962,45 @@ var VERBOS_SUBJ = {
 
 var CONJ_PRONOMBRES = ["yo","tú","él / ella / usted","nosotros / nosotras","vosotros / vosotras","ellos / ellas / ustedes"];
 var CONJ_RONDE_LEN = 10;
+
+/* v19.67 — de Conjugador begint niet meer middenin.
+   Stefan, 31 juli: "de werkwoorden oefenen in alle mogelijke vormen is veel te moeilijk voor een
+   beginner". Dat klopte, en het was erger dan het klinkt: wie op A0 binnenkwam kreeg meteen
+   drieëndertig werkwoorden, zes personen (vosotros incluis) en een rij knoppen waarop de subjuntivo
+   even hard stond te lonken als het presente. Dat is niet moeilijk maar onmogelijk, en onmogelijk is
+   de kortste route naar stoppen. Fogg zou zeggen: je krijgt gedrag niet op gang door de beloning op
+   te schroeven maar door het gedrag kleiner te maken (de ability-kant van B=MAP).
+   Wat hier NIET gebeurt: er wordt niets afgesloten. Geen slotje, geen "eerst dit halen". Alle drie
+   de stappen staan als gewone knoppen naast elkaar en je mag ze op elk moment aantikken. Het enige
+   dat verandert is waar je begint, en dat hangt af van het niveau dat je zelf koos. */
+var CONJ_KERN = ["hablar","comer","vivir","ser","estar","tener","ir","hacer","querer","poder"];
+var CONJ_STAPPEN = [
+  {id:"kern", nl:"de kern", en:"the core", personen:[0,1,2],
+   uitNl:"Tien werkwoorden die je elke dag gebruikt, in het presente, voor yo, tú en él/ella.",
+   uitEn:"Ten verbs you use every day, in the present, for yo, tú and él/ella."},
+  {id:"breed", nl:"alle personen", en:"all persons", personen:[0,1,2,3,4,5],
+   uitNl:"Alle werkwoorden en alle zes de personen, nog altijd alleen in het presente.",
+   uitEn:"All verbs and all six persons, still in the present only."},
+  {id:"tijden", nl:"meer tijden", en:"more tenses", personen:[0,1,2,3,4,5],
+   uitNl:"Ook de verleden tijden en de subjuntivo. Kies hieronder welke je drilt.",
+   uitEn:"Past tenses and the subjunctive as well. Pick below which one you drill."}
+];
+function conjStapDefault(){
+  var p = null;
+  try { p = activeProfile(); } catch(e){}
+  return (p && p.track === "beginner") ? "kern" : "tijden";
+}
+function conjStapById(id){
+  for(var i=0; i<CONJ_STAPPEN.length; i++) if(CONJ_STAPPEN[i].id === id) return CONJ_STAPPEN[i];
+  return null;
+}
+function conjStap(){ return conjStapById(S.conjStap) || conjStapById(conjStapDefault()) || CONJ_STAPPEN[2]; }
+function conjPersonen(){ return conjStap().personen; }
+// het werkwoord stond tot nu toe altijd met zijn Nederlandse vertaling op de kaart, ook als de rest
+// van de app Engels was. Eén los Nederlands woordje middenin een Engels scherm is precies het soort
+// slordigheid dat een gebruiker laat twijfelen of de rest wel klopt.
+function conjGloss(v){ return ct(v.nl, v.en || v.nl); }
+
 var conjIdx = null; // {verb, p, t} - t = de tijd van deze opgave ("presente" / "indefinido" / "perfecto")
 var conjRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
 var cjModusOverride = null; // (historisch) per-item override; sinds 29 juli wint S.modusKeuze.conj als die gezet is
@@ -4979,7 +5019,12 @@ function cjMkStaat(v, p, t){
 // "mix" trekt per opgave opnieuw uit alle drie de tijden: dat is precies de moeilijkheid die Stefan
 // noemde (niet elke vorm los kennen, maar ze uit elkaar houden als ze door elkaar komen).
 var CONJ_TIEMPOS = ["presente","indefinido","perfecto","subjuntivo","mix"];
-function conjTiempoKeuze(){ return (S.conjTiempo && CONJ_TIEMPOS.indexOf(S.conjTiempo) !== -1) ? S.conjTiempo : "presente"; }
+// v19.67: op de eerste twee stappen bestaat de tijdkeuze niet. Niet omdat hij verboden is, maar omdat
+// hij er niet staat: een keuze die je nog niet kunt overzien is geen vrijheid, die is ruis.
+function conjTiempoKeuze(){
+  if(conjStap().id !== "tijden") return "presente";
+  return (S.conjTiempo && CONJ_TIEMPOS.indexOf(S.conjTiempo) !== -1) ? S.conjTiempo : "presente";
+}
 function conjTiempoActief(){
   var k = conjTiempoKeuze();
   if(k !== "mix") return k;
@@ -5019,24 +5064,57 @@ function cjMeerkeuzeOpties(v, p, t){
   return geschud([correct].concat(afleiders));
 }
 function conjVerbPool(t){
-  if(t === "presente") return VERBOS;
+  // v19.67: op stap "kern" is de bak werkwoorden tien groot in plaats van drieëndertig. Tien is
+  // genoeg om een ronde van tien te vullen zonder herhaling, en klein genoeg dat je ze na een week
+  // écht kent in plaats van ze allemaal een beetje te herkennen.
+  var basis = VERBOS;
+  if(conjStap().id === "kern"){
+    var kern = VERBOS.filter(function(v){ return CONJ_KERN.indexOf(v.inf) !== -1; });
+    if(kern.length) basis = kern;
+  }
+  if(t === "presente") return basis;
   var tabel = (t === "subjuntivo") ? VERBOS_SUBJ : VERBOS_PASADO;
-  var pool = VERBOS.filter(function(v){ return !!tabel[v.inf]; });
-  return pool.length ? pool : VERBOS;
+  var pool = basis.filter(function(v){ return !!tabel[v.inf]; });
+  return pool.length ? pool : basis;
 }
 function pickConjugacion(){
   var t = conjTiempoActief();
   var pool = conjVerbPool(t);
+  var pers = conjPersonen();
   var fouten = [];
   pool.forEach(function(v){
-    for(var p=0; p<6; p++){
+    pers.forEach(function(p){
       var e = S.errors["conj:"+conjErrKey(v, p, t)];
       if(e && e.count > 0) fouten.push({verb:v, p:p, t:t});
-    }
+    });
   });
   if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
   var verb = pool[Math.floor(Math.random()*pool.length)];
-  return {verb:verb, p:Math.floor(Math.random()*6), t:t};
+  return {verb:verb, p:pers[Math.floor(Math.random()*pers.length)], t:t};
+}
+function conjStapKiezerHtml(){
+  var nu = conjStap().id;
+  return "<div class='row' id='cjStap' style='gap:6px; margin:2px 0 6px; flex-wrap:wrap'>"+
+    CONJ_STAPPEN.map(function(s){
+      return "<button type='button' class='"+(nu===s.id?"primary":"ghost")+" cj-stap' data-s='"+s.id+"' style='padding:6px 12px; font-size:0.82rem; min-width:0'>"+ct(s.nl, s.en)+"</button>";
+    }).join("")+"</div>"+
+    "<p class='muted' id='cjStapUit' style='margin:0 0 8px; font-size:0.85rem'>"+ct(conjStap().uitNl, conjStap().uitEn)+"</p>";
+}
+function wireConjStapKiezer(){
+  var row = document.getElementById("cjStap");
+  if(!row) return;
+  row.querySelectorAll(".cj-stap").forEach(function(b){
+    b.onclick = function(){
+      S.conjStap = b.getAttribute("data-s");
+      persist();
+      // net als bij de tijdkeuze: je ronde blijft staan, alleen de huidige opgave wordt opnieuw
+      // getrokken binnen de nieuwe breedte
+      conjIdx = pickConjugacion();
+      cjModusOverride = null;
+      cjMk = null;
+      renderFunConjugador();
+    };
+  });
 }
 function conjTiempoKiezerHtml(){
   var k = conjTiempoKeuze();
@@ -5089,15 +5167,17 @@ function renderFunConjugador(){
   var html = (inFlowCjR ? lesFlowBannerHtml() : "")+"<h2>Conjugador 🎯</h2>"+
     "<span class='kicker' id='cjKicker'>" + conjugadorKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("cjIntro") + "</p>"+
-    conjTiempoKiezerHtml()+
+    conjStapKiezerHtml()+
+    (conjStap().id === "tijden" ? conjTiempoKiezerHtml() : "")+
     "<div class='card' style='text-align:center; margin:10px 0'>"+
-      "<p class='muted' style='margin:0 0 2px'>"+v.inf+" <span style='font-weight:400'>("+v.nl+")</span></p>"+
+      "<p class='muted' style='margin:0 0 2px'>"+v.inf+" <span style='font-weight:400'>("+conjGloss(v)+")</span></p>"+
       "<p class='big' style='margin:4px 0'>"+CONJ_PRONOMBRES[c.p]+"</p>"+
       "<p class='muted' style='margin:0'><b>"+conjTiempoLabel(tR)+"</b></p>"+
     "</div>"+
     "<div id='cjBody'></div>";
   el.innerHTML = html;
   lesFlowWireBanner();
+  wireConjStapKiezer();
   wireConjTiempoKiezer();
   renderConjugadorBody();
 }
@@ -6306,8 +6386,8 @@ function renderLessons(){
     } else {
       status = "🔒"; cls += " locked";
     }
-    var sub = l.doel;
-    if(l.stub){ sub += " · volgt in de wekelijkse update"; }
+    var sub = lesDoel(l);
+    if(l.stub){ sub += ct(" · volgt in de wekelijkse update", " · coming in the weekly update"); }
     else if(p && !p.done && lessonUnlocked(i)){
       var parts = [];
       if(!p.spiek) parts.push(ct("start met de spiekbrief","start with the cheat sheet"));
@@ -6328,7 +6408,7 @@ function renderLessons(){
       var cls = "lesson" + (p.done ? " done" : "");
       html += "<div class='"+cls+"' data-les='"+l.id+"'>"+
         "<div class='lnum'>A1</div>"+
-        "<div class='lbody'><b>"+l.titel+"</b><span>"+l.doel+"</span></div>"+
+        "<div class='lbody'><b>"+l.titel+"</b><span>"+lesDoel(l)+"</span></div>"+
         "<div class='lstatus'>"+(p.done?"✓":"↻")+"</div></div>";
     });
   }
@@ -6744,13 +6824,25 @@ function petMoodKey(){
   if(S.fed === t || (S.xp && S.xp[t] > 0)) return "happy";
   return "ok";
 }
+/* v19.67 — Chispa's pagina sprak Nederlands, ook tegen wie de app in het Engels zette.
+   Stefan, 31 juli: "ik zag in de Engelse tekst nog hardcoded NL teksten". Dit is de plek waar dat
+   het hardst opviel, want dit is de pagina waar je komt om even niets te hoeven. Een halve zin in de
+   verkeerde taal maakt van dat momentje weer werk. Alle vaste teksten hieronder lopen nu door ct().
+   De datatabellen (DAYDECO, FIESTAS, SHOP, RINCON, PET_LEVELS, AMIGOS, FRASES) hebben er een
+   Engels veld bij gekregen; de drie helpers hieronder zijn de enige plek die dat hoeft te weten. */
+function petHint(l){ return l ? ct(l.hint, l.hintEn || l.hint) : ""; }
+function decoTxt(d){ return d ? ct(d.txt, d.txtEn || d.txt) : ""; }
+function itemHint(it){ return it ? ct(it.hint, it.hintEn || it.hint) : ""; }
+function getal(n){ return (n||0).toLocaleString(profLang() === "nl" ? "nl-NL" : "en-GB"); }
 function petMoodText(){
   var lvl = petLevel(S.txp||0);
-  if(lvl===0) return "Er zit iets in dit ei... Verdien "+xpw()+" om het uit te laten komen! (nog "+(PET_LEVELS[1].min-(S.txp||0))+" "+xpw()+")";
-  if(chispaSlaapt()) return "Chispa slaapt zacht. ¡Buenas noches! 💤";
+  var rest = PET_LEVELS[1].min-(S.txp||0);
+  if(lvl===0) return ct("Er zit iets in dit ei... Verdien "+xpw()+" om het uit te laten komen! (nog "+rest+" "+xpw()+")",
+                        "There's something inside this egg... Earn "+xpw()+" to hatch it! ("+rest+" "+xpw()+" to go)");
+  if(chispaSlaapt()) return ct("Chispa slaapt zacht. ¡Buenas noches! 💤", "Chispa is fast asleep. ¡Buenas noches! 💤");
   var k = petMoodKey();
-  if(k==="happy") return "Chispa is dolgelukkig en vol energie. ¡Olé!";
-  return "Chispa kijkt nieuwsgierig op. ¿Qué hacemos hoy?";
+  if(k==="happy") return ct("Chispa is dolgelukkig en vol energie. ¡Olé!", "Chispa is over the moon and full of energy. ¡Olé!");
+  return ct("Chispa kijkt nieuwsgierig op. ¿Qué hacemos hoy?", "Chispa looks up, curious. ¿Qué hacemos hoy?");
 }
 /* v19.55: wat Chispa zegt is voortaan de straattaal van vandaag, zodat haar tekstballon en de kaart
    op haar pagina hetzelfde zeggen. FRASES blijft bestaan voor haar losse praatjes (chispaRandomSay,
@@ -6759,7 +6851,8 @@ function fraseVanDaag(){ var j = jergaVandaag(); return { es: j.es, nl: ct(j.nl,
 function chispaSay(f){
   var bub = document.getElementById("petBubble");
   if(!bub) return;
-  bub.innerHTML = "<span class='es'>"+f.es+"</span><span class='nl'>"+f.nl+"</span>";
+  // v19.67: de tekstballon nam blind f.nl, dus zei Chispa Nederlands tegen een Engelse gebruiker.
+  bub.innerHTML = "<span class='es'>"+f.es+"</span><span class='nl'>"+ct(f.nl, f.en || f.nl)+"</span>";
   bub.classList.remove("hidden");
   var box = document.getElementById("petBox");
   if(box){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
@@ -6775,16 +6868,16 @@ function chispaRandomSay(){
    ontgrendelen pas bij een hoger niveau — zo blijft er ook voor gevorderde spelers iets
    nieuws te halen. Client-only: S.rincon = {itemId:true}. */
 var RINCON = [
-  {id:"planta",    e:"🪴", naam:"Planta",              hint:"een beetje groen",              prijs:3,  pos:"left:3%; top:30%;"},
-  {id:"poster",    e:"🖼️", naam:"Póster de Alicante",  hint:"thuisgevoel aan de muur",       prijs:4,  pos:"left:7%; top:4%;"},
-  {id:"sombrilla", e:"⛱️", naam:"Sombrilla",           hint:"schaduw als een echte Spanjaard", prijs:4, pos:"right:4%; top:26%;"},
-  {id:"castillo",  e:"🏰", naam:"Castillo de arena",   hint:"zandkasteel in het aquarium",   prijs:5,  pos:"left:16%; top:33%;"},
-  {id:"guitarra2", e:"🎸", naam:"Guitarra española",   hint:"voor de serenades",             prijs:5,  pos:"right:13%; top:32%;"},
-  {id:"radio",     e:"📻", naam:"Radio",               hint:"bachata op verzoek",            prijs:6,  pos:"left:3%; top:16%;"},
-  {id:"discobol",  e:"🪩", naam:"Bola de discoteca",   hint:"voor de feestjes",              prijs:7,  pos:"right:9%; top:2%;"},
-  {id:"librero",   e:"📚", naam:"Estantería",          hint:"Chispa's eigen boekenkast",     prijs:7,  pos:"right:2%; top:14%;", min:6000},
-  {id:"farolillo", e:"🏮", naam:"Farolillos de feria", hint:"lampionnen als op de feria",    prijs:8,  pos:"left:45%; top:0;",      min:10000},
-  {id:"fuente",    e:"⛲", naam:"Fuente",              hint:"een echte binnenfontein",       prijs:10, pos:"left:30%; top:34%;",  min:15000}
+  {id:"planta",    e:"🪴", naam:"Planta",              hint:"een beetje groen", hintEn:"a bit of green",              prijs:3,  pos:"left:3%; top:30%;"},
+  {id:"poster",    e:"🖼️", naam:"Póster de Alicante",  hint:"thuisgevoel aan de muur", hintEn:"a piece of home on the wall",       prijs:4,  pos:"left:7%; top:4%;"},
+  {id:"sombrilla", e:"⛱️", naam:"Sombrilla",           hint:"schaduw als een echte Spanjaard", hintEn:"shade, like a real Spaniard", prijs:4, pos:"right:4%; top:26%;"},
+  {id:"castillo",  e:"🏰", naam:"Castillo de arena",   hint:"zandkasteel in het aquarium", hintEn:"a sandcastle in the tank",   prijs:5,  pos:"left:16%; top:33%;"},
+  {id:"guitarra2", e:"🎸", naam:"Guitarra española",   hint:"voor de serenades", hintEn:"for the serenades",             prijs:5,  pos:"right:13%; top:32%;"},
+  {id:"radio",     e:"📻", naam:"Radio",               hint:"bachata op verzoek", hintEn:"bachata on request",            prijs:6,  pos:"left:3%; top:16%;"},
+  {id:"discobol",  e:"🪩", naam:"Bola de discoteca",   hint:"voor de feestjes", hintEn:"for the parties",              prijs:7,  pos:"right:9%; top:2%;"},
+  {id:"librero",   e:"📚", naam:"Estantería",          hint:"Chispa's eigen boekenkast", hintEn:"Chispa's own bookcase",     prijs:7,  pos:"right:2%; top:14%;", min:6000},
+  {id:"farolillo", e:"🏮", naam:"Farolillos de feria", hint:"lampionnen als op de feria", hintEn:"lanterns like at the feria",    prijs:8,  pos:"left:45%; top:0;",      min:10000},
+  {id:"fuente",    e:"⛲", naam:"Fuente",              hint:"een echte binnenfontein", hintEn:"a real indoor fountain",       prijs:10, pos:"left:30%; top:34%;",  min:15000}
 ];
 function rinconDecorHtml(){
   var html = "";
@@ -7091,7 +7184,8 @@ function renderPet(){
   var lvl = petLevel(S.txp||0);
   var next = lvl < PET_LEVELS.length-1 ? PET_LEVELS[lvl+1] : null;
   var fiesta = fiestaVandaag();
-  var deco = fiesta ? {e:fiesta.e, txt:fiesta.naam+"! "+fiesta.txt} : DAYDECO[dayHash("deco") % DAYDECO.length];
+  var decoBron = fiesta ? {e:fiesta.e, txt:fiesta.naam+"! "+fiesta.txt, txtEn:fiesta.naam+"! "+(fiesta.txtEn||fiesta.txt)} : DAYDECO[dayHash("deco") % DAYDECO.length];
+  var deco = {e:decoBron.e, txt:decoTxt(decoBron)};
   // vriendjes-rij
   var amHtml = "";
   AMIGOS.forEach(function(a){
@@ -7099,7 +7193,7 @@ function renderPet(){
     if(open){
       amHtml += "<button class='amigo' data-amigo='"+a.id+"'>"+a.svg+"<small>"+a.naam+"</small></button>";
     } else {
-      amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>🔒 bij "+a.min.toLocaleString("nl-NL")+" "+xpw()+"</small></button>";
+      amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>"+ct("🔒 bij ", "🔒 at ")+getal(a.min)+" "+xpw()+"</small></button>";
     }
   });
   var cadeauGehad = S.chispaCadeau === today();
@@ -7127,7 +7221,7 @@ function renderPet(){
     "<span class='daydeco'>"+deco.e+"</span>"+
     (slaapt ? "<span class='zzz'>💤</span>" : "")+
     "<div id='petBubble' class='petbubble hidden'></div>"+
-    "<div id='petBox' class='chvive' title='Klik op Chispa!'>"+petSVG()+"</div>"+
+    "<div id='petBox' class='chvive' title='"+ct("Klik op Chispa!","Tap Chispa!")+"'>"+petSVG()+"</div>"+
     "<div class='amigorow'>"+amHtml+"</div>"+
     "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>· "+PET_LEVELS[lvl].naam+"</span></p>"+
     "<p class='petmood'>"+petMoodText()+"</p>"+
@@ -7146,13 +7240,13 @@ function renderPet(){
     tapaMenuHtml()+
     "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas · tik er een aan","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas · tap one")+"</p>"+
     "<div class='row center'>"+
-    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?"Stil een tapa neerzetten "+tapaHoy.e:"Geef de tapa van vandaag "+tapaHoy.e)+"</button>"+
+    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?ct("Stil een tapa neerzetten ","Quietly leave a tapa "):ct("Geef de tapa van vandaag ","Give today's tapa "))+tapaHoy.e+"</button>"+
     "<button class='ghost' id='btnFiesta'>🎉 ¡Fiesta!</button>"+
     "<button class='ghost' id='btnSerenade'>🎶 Serenade</button>"+
-    "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">🎁 "+(cadeauGehad?"Morgen weer":"Dagcadeautje")+"</button>"+
+    "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">🎁 "+(cadeauGehad?ct("Morgen weer","Back tomorrow"):ct("Dagcadeautje","Daily gift"))+"</button>"+
     "</div>"+
-    (next?"<p class='muted' style='margin-top:10px'>Nog "+Math.max(0,next.min-(S.txp||0)).toLocaleString("nl-NL")+" "+xpw()+" tot de volgende vorm: <b>"+next.naam+"</b> ("+next.hint+")</p>"
-         :"<p class='muted' style='margin-top:10px'>Chispa is een echte estrella: het hoogste niveau. ⭐ Maar tapas blijven welkom.</p>")+
+    (next?"<p class='muted' style='margin-top:10px'>"+ct("Nog ","Another ")+getal(Math.max(0,next.min-(S.txp||0)))+" "+xpw()+ct(" tot de volgende vorm: "," until the next form: ")+"<b>"+next.naam+"</b> ("+petHint(next)+")</p>"
+         :"<p class='muted' style='margin-top:10px'>"+ct("Chispa is een echte estrella: het hoogste niveau. ⭐ Maar tapas blijven welkom.","Chispa is a real estrella: the highest level. ⭐ But tapas are always welcome.")+"</p>")+
     "</div>"+
     /* v19.55: hier stond "Frase van de dag" uit een tweede lijst. Die lijst overlapte grotendeels met
        JERGA, dus zei Chispa op haar eigen pagina twee keer iets van vandaag. Nu is het er nog een: de
@@ -7184,7 +7278,7 @@ function renderPet(){
         ab.classList.remove("amigobounce"); void(ab.offsetWidth||0); ab.classList.add("amigobounce");
         chispaSay(a.frase);
       }
-      else { toast("Dit vriendje komt erbij als Chispa verder groeit. ¡Sigue estudiando!"); }
+      else { toast(ct("Dit vriendje komt erbij als Chispa verder groeit. ¡Sigue estudiando!","This friend joins once Chispa grows a bit more. ¡Sigue estudiando!")); }
     };
   });
   el.querySelectorAll("button.bailechip").forEach(function(bb){
@@ -7207,12 +7301,12 @@ function renderPet(){
 // verschillende spellen krijgt.
 function feedPet(){
   var res = tapaGeven();
-  if(!res){ toast("Je hebt nog geen tapas. Oefenen = tapas verdienen!"); return; }
+  if(!res){ toast(ct("Je hebt nog geen tapas. Oefenen = tapas verdienen!","You have no tapas yet. Practising = earning tapas!")); return; }
   var box = document.getElementById("petBox");
   if(box){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
-  toast(res.slaapt ? "¡Ssshh! Chispa vindt hem morgenvroeg. ❤️"
+  toast(res.slaapt ? ct("¡Ssshh! Chispa vindt hem morgenvroeg. ❤️","¡Ssshh! Chispa will find it in the morning. ❤️")
     : (res.nieuw ? "✨ "+ct("Nieuw op het menu: "+res.tapa.es, "New on the menu: "+res.tapa.es)
-                 : "¡Ñam ñam! Chispa smult. ❤️"));
+                 : ct("¡Ñam ñam! Chispa smult. ❤️","¡Ñam ñam! Chispa is tucking in. ❤️")));
   renderPet();
   chispaSay(res.slaapt
     ? {es:"Mmm... gracias. Mañana la como.", nl:"Mmm... dankje. Morgen eet ik hem op.", en:"Mmm... thanks. I'll eat it tomorrow."}
@@ -7221,31 +7315,34 @@ function feedPet(){
 function renderShop(){
   var el = document.getElementById("shopCard");
   var n = doneLessonCount();
-  var html = "<h2>Chispa's kledingkast</h2><p class='muted'>Accessoires verdien je door lessen af te ronden. "+
-    "Tapas (10 "+xpw()+" = 1 tapa, les af = +5, foutloze toets = +2) zijn om Chispa te voeren.</p>";
+  var html = "<h2>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2><p class='muted'>"+
+    ct("Accessoires verdien je door lessen af te ronden. Tapas (10 "+xpw()+" = 1 tapa, les af = +5, foutloze toets = +2) zijn om Chispa te voeren.",
+       "You earn accessories by finishing lessons. Tapas (10 "+xpw()+" = 1 tapa, lesson done = +5, flawless quiz = +2) are for feeding Chispa.")+"</p>";
   SHOP.forEach(function(it){
     var owned = !!S.owned[it.id] || n >= it.les;
     if(owned && !S.owned[it.id]){ S.owned[it.id] = true; persist(); }
     var wearing = !!S.wear[it.id];
-    html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+it.hint+"</small></div>";
+    html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
     if(!owned){
       var nog = it.les - n;
-      html += "<span class='muted'>🔒 nog "+nog+" les"+(nog>1?"sen":"")+"</span>";
+      html += "<span class='muted'>"+ct("🔒 nog "+nog+" les"+(nog>1?"sen":""), "🔒 "+nog+" more lesson"+(nog>1?"s":""))+"</span>";
     } else {
-      html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?"Doe af":"Draag")+"</button>";
+      html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?ct("Doe af","Take off"):ct("Draag","Wear"))+"</button>";
     }
     html += "</div>";
   });
-  html += "<h2 style='margin-top:18px'>Chispa's kamer</h2><p class='muted'>Richt de kamer in met je tapas. Sommige stukken komen pas vrij als Chispa verder groeit — er blijft altijd iets te sparen.</p>";
+  html += "<h2 style='margin-top:18px'>"+ct("Chispa's kamer","Chispa's room")+"</h2><p class='muted'>"+
+    ct("Richt de kamer in met je tapas. Sommige stukken komen pas vrij als Chispa verder groeit: er blijft altijd iets te sparen.",
+       "Decorate the room with your tapas. Some pieces only unlock once Chispa grows: there is always something left to save for.")+"</p>";
   var xpNu = S.txp || 0;
   RINCON.forEach(function(it){
     var owned = !!(S.rincon && S.rincon[it.id]);
     var locked = it.min && xpNu < it.min;
-    html += "<div class='shopitem'><div class='si-name'>"+it.e+" "+it.naam+"<small>"+it.hint+"</small></div>";
+    html += "<div class='shopitem'><div class='si-name'>"+it.e+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
     if(owned){
-      html += "<span class='muted'>✓ staat in de kamer</span>";
+      html += "<span class='muted'>"+ct("✓ staat in de kamer","✓ in the room")+"</span>";
     } else if(locked){
-      html += "<span class='muted'>🔒 bij "+it.min.toLocaleString("nl-NL")+" "+xpw()+"</span>";
+      html += "<span class='muted'>"+ct("🔒 bij ","🔒 at ")+getal(it.min)+" "+xpw()+"</span>";
     } else {
       var kan = (S.tapas||0) >= it.prijs;
       html += "<button class='"+(kan?"primary":"ghost")+"' data-rincon='"+it.id+"' "+(kan?"":"disabled style='opacity:.5'")+">🫒 "+it.prijs+"</button>";
@@ -7269,7 +7366,7 @@ function renderShop(){
       S.rincon[it.id] = true;
       persist();
       confetti([it.e,"🌮","✨"], 16);
-      toast(it.naam+" staat in Chispa's kamer! "+it.e);
+      toast(it.naam+ct(" staat in Chispa's kamer! "," is in Chispa's room! ")+it.e);
       renderPet(); renderShop();
     };
   });
@@ -7530,9 +7627,11 @@ function renderSongs(){
   document.getElementById("songView").classList.add("hidden");
   var el = document.getElementById("songList");
   el.classList.remove("hidden");
-  var html = "<div class='card'><h2>Música 🎵</h2><p class='muted'>Leer Spaans met liedjes: kijk de video en oogst de taal eruit. "+
-    "Er komt regelmatig nieuwe muziek bij.</p>"+
-    "<div class='row'><button class='ghost' id='btnMusTerug'>← Speeltuin</button></div></div>";
+  // v19.67: de muziekpagina was de laatste hele pagina die alleen Nederlands sprak.
+  var html = "<div class='card'><h2>Música 🎵</h2><p class='muted'>"+
+    ct("Leer Spaans met liedjes: kijk de video en oogst de taal eruit. Er komt regelmatig nieuwe muziek bij.",
+       "Learn Spanish with songs: watch the video and harvest the language out of it. New music is added regularly.")+"</p>"+
+    "<div class='row'><button class='ghost' id='btnMusTerug'>← "+ct("Speeltuin","Playground")+"</button></div></div>";
   var p0 = activeProfile();
   var mijnNiveau = p0 && p0.track === "beginner" ? "A0" : "A2";
   var lijst = SONGS.slice().sort(function(a, b){
@@ -7543,12 +7642,12 @@ function renderSongs(){
   lijst.forEach(function(sg){
     if(S.songHide && S.songHide[sg.id]) return;
     var past = (sg.lvl||"").indexOf(mijnNiveau) !== -1;
-    var sub = sg.artiest + " · " + sg.lvl + (past ? "" : " · 🔥 voor gevorderden, maar meeluisteren mag altijd");
+    var sub = sg.artiest + " · " + sg.lvl + (past ? "" : ct(" · 🔥 voor gevorderden, maar meeluisteren mag altijd"," · 🔥 for advanced learners, but listening along is always allowed"));
     html += "<div class='lesson"+(past?"":" locked")+"' data-song='"+sg.id+"' style='opacity:1'><div class='lnum'>🎵</div>"+
       "<div class='lbody'><b>"+sg.titel+"</b><span>"+sub+"</span></div><div class='lstatus'>▶</div></div>";
   });
   if(S.songHide && Object.keys(S.songHide).length){
-    html += "<p class='muted'><a href='#' id='songUnhide'>"+Object.keys(S.songHide).length+" verborgen liedje(s) terugzetten</a></p>";
+    html += "<p class='muted'><a href='#' id='songUnhide'>"+ct(Object.keys(S.songHide).length+" verborgen liedje(s) terugzetten", "restore "+Object.keys(S.songHide).length+" hidden song(s)")+"</a></p>";
   }
   function normTitel(t){ return stripAcc(String(t||"").toLowerCase()).replace(/[^a-z0-9 ]/g,"").trim(); }
   (S.mySongs||[]).forEach(function(ms, i){
@@ -7562,13 +7661,14 @@ function renderSongs(){
     if(alGedekt) return;
     var heeftOogst = (ms.oogst && ms.oogst.length) || songOogstVoor(ms.titel);
     html += "<div class='lesson' data-mysong='"+i+"'><div class='lnum'>🎵</div>"+
-      "<div class='lbody'><b>"+ms.titel+"</b><span>zelf toegevoegd · "+(heeftOogst ? "met taaloogst 🌾" : "taaloogst volgt bij de nachtelijke update")+"</span></div><div class='lstatus'>▶</div></div>";
+      "<div class='lbody'><b>"+ms.titel+"</b><span>"+ct("zelf toegevoegd · ","added by you · ")+(heeftOogst ? ct("met taaloogst 🌾","with a language harvest 🌾") : ct("taaloogst volgt bij de nachtelijke update","harvest follows in the nightly update"))+"</span></div><div class='lstatus'>▶</div></div>";
   });
-  html += "<div class='card'><h2>Zelf een lied toevoegen</h2>"+
-    "<p class='muted'>Plak een YouTube-link. De video werkt direct; de woordjes en uitleg maakt Claude bij de volgende wekelijkse update.</p>"+
+  html += "<div class='card'><h2>"+ct("Zelf een lied toevoegen","Add a song yourself")+"</h2>"+
+    "<p class='muted'>"+ct("Plak een YouTube-link. De video werkt direct; de woordjes en uitleg maakt Claude bij de volgende wekelijkse update.",
+      "Paste a YouTube link. The video works right away; Claude makes the words and the explanation in the next weekly update.")+"</p>"+
     "<input type='text' id='songUrl' placeholder='https://www.youtube.com/watch?v=...' autocomplete='off'>"+
-    "<input type='text' id='songTitel' placeholder='Titel en artiest' autocomplete='off' style='margin-top:8px'>"+
-    "<div class='row'><button class='primary' id='btnAddSong'>Toevoegen</button></div>"+
+    "<input type='text' id='songTitel' placeholder='"+ct("Titel en artiest","Title and artist")+"' autocomplete='off' style='margin-top:8px'>"+
+    "<div class='row'><button class='primary' id='btnAddSong'>"+ct("Toevoegen","Add")+"</button></div>"+
     "<p class='muted hidden' id='songHint' style='margin-top:8px'></p></div>";
   el.innerHTML = html;
   var bmt = document.getElementById("btnMusTerug");
@@ -7584,18 +7684,19 @@ function renderSongs(){
   var ba = document.getElementById("btnAddSong");
   if(ba) ba.onclick = function(){
     var url = (document.getElementById("songUrl").value||"").trim();
-    var tit = (document.getElementById("songTitel").value||"").trim() || "Mijn lied";
+    var tit = (document.getElementById("songTitel").value||"").trim() || ct("Mijn lied","My song");
     var id = ytId(url);
     var hint = document.getElementById("songHint");
     hint.classList.remove("hidden");
-    if(!id){ hint.textContent = "Hmm, dat lijkt geen YouTube-link. Kopieer de link van de video (Delen → Kopieer link)."; return; }
+    if(!id){ hint.textContent = ct("Hmm, dat lijkt geen YouTube-link. Kopieer de link van de video (Delen → Kopieer link).","Hmm, that doesn't look like a YouTube link. Copy the link from the video (Share → Copy link)."); return; }
     S.mySongs = S.mySongs || [];
-    S.mySongs.push({id:"my-"+id, titel:tit, artiest:"", yt:id, lvl:"", intro:"Taaloogst volgt bij de eerstvolgende nachtelijke update.", oogst:[], vragen:[], eigen:true});
+    S.mySongs.push({id:"my-"+id, titel:tit, artiest:"", yt:id, lvl:"", intro:ct("Taaloogst volgt bij de eerstvolgende nachtelijke update.","The language harvest follows in the next nightly update."), oogst:[], vragen:[], eigen:true});
     persist();
     logServer("lied", {titel:tit, yt:id, url:"https://www.youtube.com/watch?v="+id});
     var mail = "mailto:stefanwobben@gmail.com?subject="+encodeURIComponent("espanol-lied")+
       "&body="+encodeURIComponent("Taaloogst graag voor: "+tit+"\nhttps://www.youtube.com/watch?v="+id+"\nProfiel: "+(activeProfile()?activeProfile().name:""));
-    hint.innerHTML = "Toegevoegd! 🎵 <a href='"+mail+"'>Tik hier om het taaloogst-verzoek te versturen</a> (opent je mailapp, alleen op verzenden tikken).";
+    hint.innerHTML = ct("Toegevoegd! 🎵 <a href='"+mail+"'>Tik hier om het taaloogst-verzoek te versturen</a> (opent je mailapp, alleen op verzenden tikken).",
+      "Added! 🎵 <a href='"+mail+"'>Tap here to send the harvest request</a> (opens your mail app, you only have to tap send).");
     renderSongs();
   };
 }
@@ -7643,7 +7744,7 @@ function openSong(sg, skipPush){
       "<div class='row'><button class='primary' id='btnSongUrlOk'>Vervang video</button></div>";
     document.getElementById("btnSongUrlOk").onclick = function(){
       var id = ytId((document.getElementById("songNieuwUrl").value||"").trim());
-      if(!id){ toast("Dat lijkt geen YouTube-link."); return; }
+      if(!id){ toast(ct("Dat lijkt geen YouTube-link.","That does not look like a YouTube link.")); return; }
       if(sg.eigen){
         sg.yt = id;
         (S.mySongs||[]).forEach(function(ms){ if(ms.id === sg.id) ms.yt = id; });
@@ -7652,7 +7753,7 @@ function openSong(sg, skipPush){
         S.songYt[sg.id] = id;
       }
       persist();
-      toast("Video vervangen 🔁");
+      toast(ct("Video vervangen 🔁","Video replaced 🔁"));
       openSong(sg);
     };
   };
@@ -7821,7 +7922,7 @@ function wsCellClick(r, c){
     if(ws.woorden.every(function(w){ return w.found; })){
       S.tapas = (S.tapas||0) + 1; persist();
       confetti(["🧩","🎉","🌮"], 24);
-      toast("¡Puzzel opgelost! +1 tapa 🫒");
+      toast(ct("¡Puzzel opgelost! +1 tapa 🫒","¡Puzzle solved! +1 tapa 🫒"));
     }
   }
   renderFun();
@@ -9164,7 +9265,7 @@ function infGloss(inf){
   if(hit) return wTrans(hit);
   if(typeof VERBOS !== "undefined"){
     var v = VERBOS.filter(function(x){ return x.inf === eersteInf; })[0];
-    if(v) return v.nl;
+    if(v) return conjGloss(v);
   }
   if(typeof FREQ !== "undefined"){
     for(var i = 0; i < FREQ.length; i++){ if(FREQ[i][0] === eersteInf) return freqGloss(FREQ[i][0], FREQ[i][1]); }
@@ -11675,7 +11776,7 @@ function duelBewaar(id){
 }
 function duelNieuw(){
   api("/api/duel/nieuw", "POST", {speler: duelMijnNaam()}).then(function(res){
-    if(!res || !res.ok){ toast("Server even niet bereikbaar."); return; }
+    if(!res || !res.ok){ toast(ct("Server even niet bereikbaar.","Server is unreachable right now.")); return; }
     duelBewaar(res.duel.id);
     duelCur = res.duel;
     renderDuel();
@@ -11870,8 +11971,8 @@ var FUN_TXT = {
      dicNormal:"Luister normal", dicLento:"Luister lento",
      dicPlaceholder:"Typ wat je hoort...", dicSkip:"Volgende zin",
      dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari.",
-     cjS:"rondes van 10 vervoegingen: presente, indefinido, perfecto of alles door elkaar",
-     cjIntro:"Typ de juiste vervoeging voor dit werkwoord, deze persoon en deze tijd. Kies zelf welke tijd je drilt:",
+     cjS:"rondes van 10 vervoegingen, op de breedte die jij kiest",
+     cjIntro:"Typ de juiste vervoeging voor dit werkwoord en deze persoon.",
      cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord",
      huT:"Zinnen husselen", huS:"rondes van 8 zinnen, tik de Spaanse woorden in de juiste volgorde",
      huIntro:"Tik de woorden hieronder aan in de juiste volgorde om deze zin te bouwen.",
@@ -11898,8 +11999,8 @@ var FUN_TXT = {
      dicNormal:"Listen normal", dicLento:"Listen lento",
      dicPlaceholder:"Type what you hear...", dicSkip:"Next sentence",
      dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari.",
-     cjS:"rounds of 10 conjugations: present, preterite, perfect or all mixed",
-     cjIntro:"Type the correct conjugation for this verb, this person and this tense. Pick which tense to drill:",
+     cjS:"rounds of 10 conjugations, as wide as you choose",
+     cjIntro:"Type the correct conjugation for this verb and this person.",
      cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb",
      huT:"Scramble sentences", huS:"rounds of 8 sentences, tap the Spanish words in the right order",
      huIntro:"Tap the words below in the right order to build this sentence.",
@@ -11984,6 +12085,28 @@ function renderCompetenties(){
     renderCompetentieRij("spreken", c.spreken)+
     "</div>";
 }
+/* v19.67 — het profielscherm heeft een paar kaarten die gewoon in de HTML staan (steun-teaser,
+   sync, handmatige export). Die stonden vast in het Nederlands. Ze hier op naam zetten is minder
+   mooi dan alles renderen, maar wel eerlijk: het zijn drie blokjes, en een render-functie voor drie
+   blokjes is meer machinerie dan tekst. */
+function perfilStaticTaal(){
+  function zet(id, nl, en){ var e = document.getElementById(id); if(e) e.textContent = ct(nl, en); }
+  zet("perfSteunP", "Deze app is gratis en blijft gratis. Benieuwd waarom ik hem bouwde, en wil je misschien iets terugdoen?",
+      "This app is free and stays free. Curious why I built it, and maybe want to give something back?");
+  zet("btnNaarSteun", "Lees het verhaal 💛", "Read the story 💛");
+  zet("perfSyncKop", "Profiel & synchronisatie", "Profile & sync");
+  zet("perfSyncP", "Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder? Vul daar bij het profielscherm deze sync-code in:",
+      "Your progress syncs automatically. Want to continue on another device? Enter this sync code there on the profile screen:");
+  zet("btnSwitchProf", "Wissel profiel", "Switch profile");
+  zet("perfExpKop", "Voortgang verplaatsen (handmatig)", "Move your progress (manually)");
+  zet("perfExpP", "Alleen nodig als de server het niet doet: exporteer hier je voortgang en importeer hem elders.",
+      "Only needed if the server doesn't do it: export your progress here and import it elsewhere.");
+  zet("btnExportProgress", "Exporteer voortgang", "Export progress");
+  zet("btnImportProgress", "Importeer voortgang", "Import progress");
+  var ta = document.getElementById("progressDump");
+  if(ta) ta.placeholder = ct("Plak hier je geëxporteerde voortgang en klik nogmaals op importeer.",
+                             "Paste your exported progress here and click import again.");
+}
 function renderPerfil(){
   var el = document.getElementById("perfilCard");
   if(!el) return;
@@ -12015,7 +12138,7 @@ function renderPerfil(){
   var bm = document.getElementById("btnMailBewaar");
   if(bm) bm.onclick = function(){
     var m = (document.getElementById("perfilMail").value || "").trim();
-    if(m && m.indexOf("@") === -1){ toast("Dat lijkt geen e-mailadres."); return; }
+    if(m && m.indexOf("@") === -1){ toast(ct("Dat lijkt geen e-mailadres.","That does not look like an e-mail address.")); return; }
     S.mail = m; persist(); syncUp();
     toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
   };
@@ -14593,7 +14716,12 @@ function wireGramWiz(el){
   b = document.getElementById("gwHerhaalAlles"); if(b) b.onclick = function(){ gwStart(gwSess.id, 0); };
   b = document.getElementById("gwNaarDrill"); if(b) b.onclick = function(){
     var o = gwOnderwerp(gwSess.id);
-    S.conjTiempo = (o && o.drill) || "presente"; persist();
+    S.conjTiempo = (o && o.drill) || "presente";
+    // v19.67: wie vanuit de wizard doorklikt naar een verleden tijd moet die tijd ook echt krijgen.
+    // De knop belooft indefinido; hem dan op de kernstap laten landen waar alleen presente bestaat,
+    // zou een loze belofte zijn.
+    if(S.conjTiempo !== "presente") S.conjStap = "tijden";
+    persist();
     gwSess = null;
     funView = "conj"; conjIdx = null; conjRonde = null;
     show("speeltuin");
@@ -14697,7 +14825,8 @@ function renderStats(){
   var zinnenGoed = Object.keys(S.done).length;
   var quizzesDone = Object.keys(S.quiz).length;
   var kpi = leerKpi();
-  var boxLabels = ["nieuw/fout","1 dag","3 dagen","1 week","2 weken","1 maand"];
+  // v19.67: ook dit scherm sprak Nederlands tegen een Engelse gebruiker.
+  var boxLabels = ct("nieuw/fout|1 dag|3 dagen|1 week|2 weken|1 maand","new/wrong|1 day|3 days|1 week|2 weeks|1 month").split("|");
   var maxBox = Math.max.apply(null, boxes.concat([1]));
   var boxHtml = boxes.map(function(n,i){
     return "<div class='boxrow'><span style='width:80px'>"+boxLabels[i]+"</span>"+
@@ -14715,11 +14844,12 @@ function renderStats(){
   leeches.sort(function(a,b){ return b.n - a.n; });
   var leechHtml = "";
   if(leeches.length){
-    leechHtml = "<h2 style='margin-top:16px'>Hardnekkige woorden</h2>"+
-      "<p class='muted'>Deze blijven lastig (3+ keer fout). De beste remedie uit het geheugenonderzoek: maak er een eigen zin mee over je eigen leven. Claude kijkt hem na (+5 "+xpw()+" bij goed).</p>"+
+    leechHtml = "<h2 style='margin-top:16px'>"+ct("Hardnekkige woorden","Stubborn words")+"</h2>"+
+      "<p class='muted'>"+ct("Deze blijven lastig (3+ keer fout). De beste remedie uit het geheugenonderzoek: maak er een eigen zin mee over je eigen leven. Claude kijkt hem na (+5 "+xpw()+" bij goed).",
+        "These keep tripping you up (wrong 3+ times). The best remedy from memory research: write your own sentence with it, about your own life. Claude checks it (+5 "+xpw()+" if it's right).")+"</p>"+
       leeches.map(function(l, i){
         return "<div class='leech'><span><b>"+l.w.es+"</b> · "+wTrans(l.w)+"</span>"+
-          "<button class='ghost' style='padding:6px 12px' data-leechzin='"+l.w.id+"'>✍️ maak een zin</button></div>";
+          "<button class='ghost' style='padding:6px 12px' data-leechzin='"+l.w.id+"'>✍️ "+ct("maak een zin","write a sentence")+"</button></div>";
       }).join("")+
       "<div id='leechOef' class='hidden' style='margin-top:10px'></div>";
   }
@@ -14741,81 +14871,100 @@ function renderStats(){
   var vast = boxes[3] + boxes[4] + boxes[5]; // zit goed (1 week of langer interval)
   function prog(dagen){
     var tot = seen + Math.round(tempo * dagen);
-    return tot.toLocaleString("nl-NL");
+    return getal(tot);
   }
-  var koersHtml = "<h2>Jouw ontwikkeling 📈</h2>";
+  var koersHtml = "<h2>"+ct("Jouw ontwikkeling 📈","How you're doing 📈")+"</h2>";
   if(actief14 === 0){
-    koersHtml += "<p class='muted'>Nog geen activiteit in de afgelopen twee weken. Begin vandaag met 5 woordjes, dan staat hier morgen je koers.</p>";
+    koersHtml += "<p class='muted'>"+ct("Nog geen activiteit in de afgelopen twee weken. Begin vandaag met 5 woordjes, dan staat hier morgen je koers.",
+      "No activity in the past two weeks. Start today with 5 words and your trajectory will be here tomorrow.")+"</p>";
   } else {
     var ratio = doel14 / Math.max(1, Math.min(14, venster));
-    var oordeel = ratio >= 0.8 ? "Je ligt ijzersterk op koers 💪" : ratio >= 0.5 ? "Je ligt netjes op koers ✓" : ratio >= 0.2 ? "Je bent onderweg, maar er is ruimte: pak vandaag je dagdoel" : "De motor hapert een beetje: één klein dagje oppakken is genoeg om weer te rollen";
+    var oordeel = ratio >= 0.8 ? ct("Je ligt ijzersterk op koers 💪","You're rock solid on track 💪")
+      : ratio >= 0.5 ? ct("Je ligt netjes op koers ✓","You're nicely on track ✓")
+      : ratio >= 0.2 ? ct("Je bent onderweg, maar er is ruimte: pak vandaag je dagdoel","You're on your way, but there's room: hit your daily goal today")
+      : ct("De motor hapert een beetje: één klein dagje oppakken is genoeg om weer te rollen","The engine is spluttering a bit: one small day is enough to get it rolling again");
     var doelNoemer = Math.min(14, venster);
-    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · dagdoel gehaald op "+doel14+" van de laatste "+doelNoemer+" dagen · "+actief14+" dagen actief</span></p>"+
-      "<p class='muted' style='margin:6px 0'>Je kent nu <b>"+seen+"</b> woorden, waarvan <b>"+vast+"</b> stevig in je geheugen zitten (herhaalinterval van een week of langer)."+
-      (vast === 0 && seen > 0 ? " Heel logisch als je net begonnen bent: een week-interval kan pas na een week bestaan, ze komen eraan." : "")+
-      " Tempo: ±"+(Math.round(tempo*10)/10)+" nieuwe woorden per dag"+
-      (actief14 ? " (±"+(Math.round(tempoActief*10)/10)+" per actieve dag, het maximum is 15)" : "")+".</p>";
+    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · "+ct("dagdoel gehaald op "+doel14+" van de laatste "+doelNoemer+" dagen · "+actief14+" dagen actief",
+        "daily goal reached on "+doel14+" of the last "+doelNoemer+" days · active on "+actief14+" days")+"</span></p>"+
+      "<p class='muted' style='margin:6px 0'>"+
+      ct("Je kent nu <b>"+seen+"</b> woorden, waarvan <b>"+vast+"</b> stevig in je geheugen zitten (herhaalinterval van een week of langer).",
+         "You now know <b>"+seen+"</b> words, <b>"+vast+"</b> of them solidly (a review interval of a week or more).")+
+      (vast === 0 && seen > 0 ? ct(" Heel logisch als je net begonnen bent: een week-interval kan pas na een week bestaan, ze komen eraan.",
+         " Completely normal if you've just started: a week-long interval can only exist after a week. They're coming.") : "")+
+      ct(" Tempo: ±"," Pace: ±")+(Math.round(tempo*10)/10)+ct(" nieuwe woorden per dag"," new words a day")+
+      (actief14 ? ct(" (±"+(Math.round(tempoActief*10)/10)+" per actieve dag, het maximum is 15)",
+                     " (±"+(Math.round(tempoActief*10)/10)+" per active day, the maximum is 15)") : "")+".</p>";
     if(tempo > 0){
       koersHtml += "<div class='statgrid'>"+
-        "<div class='stat'><b>"+prog(7)+"</b><span class='muted'>woorden over 1 week</span></div>"+
-        "<div class='stat'><b>"+prog(30)+"</b><span class='muted'>over 1 maand</span></div>"+
-        "<div class='stat'><b>"+prog(365)+"</b><span class='muted'>over 1 jaar, dit tempo</span></div>"+
+        "<div class='stat'><b>"+prog(7)+"</b><span class='muted'>"+ct("woorden over 1 week","words in 1 week")+"</span></div>"+
+        "<div class='stat'><b>"+prog(30)+"</b><span class='muted'>"+ct("over 1 maand","in 1 month")+"</span></div>"+
+        "<div class='stat'><b>"+prog(365)+"</b><span class='muted'>"+ct("over 1 jaar, dit tempo","in 1 year, at this pace")+"</span></div>"+
         "</div>";
       var naar1000 = seen >= 1000 ? null : Math.ceil((1000 - seen) / tempo);
-      koersHtml += "<p class='muted' style='margin-top:6px'>Vuistregel uit frequentie-onderzoek: met ±1.000 goedgekozen woorden versta je het grootste deel van alledaagse gesprekken, rond de 3.000 zit je op vlot-lezen-niveau."+
-        (naar1000 ? " Op dit tempo zit jij op 1.000 woorden over ongeveer <b>"+(naar1000 > 60 ? Math.round(naar1000/30)+" maanden" : naar1000+" dagen")+"</b>." : " Die eerste mijlpaal van 1.000 heb jij al binnen. 🎉")+
-        " De app groeit elke nacht mee, dus er is altijd nieuwe voorraad.</p>";
+      koersHtml += "<p class='muted' style='margin-top:6px'>"+
+        ct("Vuistregel uit frequentie-onderzoek: met ±1.000 goedgekozen woorden versta je het grootste deel van alledaagse gesprekken, rond de 3.000 zit je op vlot-lezen-niveau.",
+           "Rule of thumb from frequency research: with ±1,000 well-chosen words you follow most everyday conversation; around 3,000 you read comfortably.")+
+        (naar1000 ? ct(" Op dit tempo zit jij op 1.000 woorden over ongeveer <b>"+(naar1000 > 60 ? Math.round(naar1000/30)+" maanden" : naar1000+" dagen")+"</b>.",
+                       " At this pace you'll hit 1,000 words in about <b>"+(naar1000 > 60 ? Math.round(naar1000/30)+" months" : naar1000+" days")+"</b>.")
+                  : ct(" Die eerste mijlpaal van 1.000 heb jij al binnen. 🎉"," You've already passed that first milestone of 1,000. 🎉"))+
+        ct(" De app groeit elke nacht mee, dus er is altijd nieuwe voorraad."," The app grows every night, so there's always new stock.")+"</p>";
     } else {
-      koersHtml += "<p class='muted'>Je herhaalt vooral (prima!), maar er kwamen geen nieuwe woorden bij de laatste twee weken. Eén nieuw lesje en de prognose verschijnt hier.</p>";
+      koersHtml += "<p class='muted'>"+ct("Je herhaalt vooral (prima!), maar er kwamen geen nieuwe woorden bij de laatste twee weken. Eén nieuw lesje en de prognose verschijnt hier.",
+        "You're mostly reviewing (which is fine!), but no new words came in over the past two weeks. One new lesson and the forecast appears here.")+"</p>";
     }
   }
   // ---- foutpercentage-tegel + trendzin (28 juli, verving het oude opgetelde "fouten gelogd") ----
   var kpiTegelWaarde = kpi.recent.pct === null ? "–" : kpi.recent.pct + "%";
   var kpiTekst;
   if(kpi.recent.pct === null){
-    kpiTekst = "Nog te weinig pogingen deze week om een foutpercentage te tonen (deze meting begint te tellen vanaf 28 juli, niet met terugwerkende kracht).";
+    kpiTekst = ct("Nog te weinig pogingen deze week om een foutpercentage te tonen (deze meting begint te tellen vanaf 28 juli, niet met terugwerkende kracht).",
+      "Not enough attempts this week to show an error rate yet (this measurement starts counting from 28 July, not retroactively).");
   } else if(kpi.trend === null){
-    kpiTekst = "Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout). Nog geen trend te tonen: daarvoor moet de week ervoor ook genoeg pogingen hebben.";
+    kpiTekst = ct("Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout). Nog geen trend te tonen: daarvoor moet de week ervoor ook genoeg pogingen hebben.",
+      "Error rate over the last 7 days: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" of "+kpi.recent.pog+" attempts wrong). No trend yet: the week before needs enough attempts too.");
   } else {
-    var trendTekst = kpi.trend < 0 ? ("↓ "+Math.abs(kpi.trend)+" procentpunt beter dan de week ervoor")
-      : kpi.trend > 0 ? ("↑ "+kpi.trend+" procentpunt hoger dan de week ervoor")
-      : "gelijk aan de week ervoor";
-    kpiTekst = "Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout), "+trendTekst+".";
+    var trendTekst = kpi.trend < 0 ? ct("↓ "+Math.abs(kpi.trend)+" procentpunt beter dan de week ervoor","↓ "+Math.abs(kpi.trend)+" percentage points better than the week before")
+      : kpi.trend > 0 ? ct("↑ "+kpi.trend+" procentpunt hoger dan de week ervoor","↑ "+kpi.trend+" percentage points higher than the week before")
+      : ct("gelijk aan de week ervoor","the same as the week before");
+    kpiTekst = ct("Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout), ",
+                  "Error rate over the last 7 days: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" of "+kpi.recent.pog+" attempts wrong), ")+trendTekst+".";
   }
-  el.innerHTML = koersHtml + "<h2 style='margin-top:16px'>Je voortgang</h2>"+
+  el.innerHTML = koersHtml + "<h2 style='margin-top:16px'>"+ct("Je voortgang","Your progress")+"</h2>"+
     "<div class='statgrid'>"+
-    "<div class='stat'><b>"+dagenTotaal()+"</b><span class='muted'>dagen erbij geweest</span></div>"+
-    "<div class='stat'><b>"+xpToday+"/"+dagdoel()+"</b><span class='muted'>"+xpw()+" vandaag</span></div>"+
-    "<div class='stat'><b>"+(S.txp||0)+"</b><span class='muted'>"+xpw()+" totaal</span></div>"+
-    "<div class='stat'><b>🫒 "+(S.tapas||0)+"</b><span class='muted'>tapas gespaard</span></div>"+
-    "<div class='stat'><b>"+seen+"/"+WORDS.length+"</b><span class='muted'>woorden gestart</span></div>"+
-    "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>zinnen gehaald</span></div>"+
-    "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>toetsjes gemaakt</span></div>"+
-    "<div class='stat'><b>"+kpiTegelWaarde+"</b><span class='muted'>fout (laatste 7 dagen)</span></div>"+
+    "<div class='stat'><b>"+dagenTotaal()+"</b><span class='muted'>"+ct("dagen erbij geweest","days showed up")+"</span></div>"+
+    "<div class='stat'><b>"+xpToday+"/"+dagdoel()+"</b><span class='muted'>"+xpw()+ct(" vandaag"," today")+"</span></div>"+
+    "<div class='stat'><b>"+(S.txp||0)+"</b><span class='muted'>"+xpw()+ct(" totaal"," in total")+"</span></div>"+
+    "<div class='stat'><b>🫒 "+(S.tapas||0)+"</b><span class='muted'>"+ct("tapas gespaard","tapas saved")+"</span></div>"+
+    "<div class='stat'><b>"+seen+"/"+WORDS.length+"</b><span class='muted'>"+ct("woorden gestart","words started")+"</span></div>"+
+    "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>"+ct("zinnen gehaald","sentences done")+"</span></div>"+
+    "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>"+ct("toetsjes gemaakt","quizzes taken")+"</span></div>"+
+    "<div class='stat'><b>"+kpiTegelWaarde+"</b><span class='muted'>"+ct("fout (laatste 7 dagen)","wrong (last 7 days)")+"</span></div>"+
     "</div>"+
     "<p class='muted' style='margin-top:6px'>"+kpiTekst+"</p>"+
-    "<h2 style='margin-top:16px'>Woorden per herhaalinterval</h2>"+boxHtml+
+    "<h2 style='margin-top:16px'>"+ct("Woorden per herhaalinterval","Words per review interval")+"</h2>"+boxHtml+
     leechHtml+
-    "<p class='muted' style='margin-top:8px'>Hoe verder naar onder, hoe beter een woord in je geheugen zit. Batch: "+BATCH+"</p>";
+    "<p class='muted' style='margin-top:8px'>"+ct("Hoe verder naar onder, hoe beter een woord in je geheugen zit. Batch: ","The further down, the better a word sits in your memory. Batch: ")+BATCH+"</p>";
   el.querySelectorAll("button[data-leechzin]").forEach(function(b){
     b.onclick = function(){
       var w = WORDS.filter(function(x){ return x.id === b.getAttribute("data-leechzin"); })[0];
       if(!w) return;
       var oef = document.getElementById("leechOef");
       oef.classList.remove("hidden");
-      oef.innerHTML = "<div class='uitleg'><b>Schrijfoefening:</b> maak een Spaanse zin over je eigen leven met <b>"+w.es+"</b> ("+wTrans(w)+").</div>"+
-        "<input type='text' id='leechIn' autocomplete='off' placeholder='Jouw zin met "+w.es.split(" ")[0]+"...' style='margin-top:8px'>"+
-        "<div class='row'><button class='primary' id='btnLeechCheck'>Laat Claude kijken</button></div>"+
+      oef.innerHTML = "<div class='uitleg'><b>"+ct("Schrijfoefening:","Writing exercise:")+"</b> "+
+        ct("maak een Spaanse zin over je eigen leven met <b>"+w.es+"</b> ("+wTrans(w)+").",
+           "write a Spanish sentence about your own life using <b>"+w.es+"</b> ("+wTrans(w)+").")+"</div>"+
+        "<input type='text' id='leechIn' autocomplete='off' placeholder='"+ct("Jouw zin met ","Your sentence with ")+w.es.split(" ")[0]+"...' style='margin-top:8px'>"+
+        "<div class='row'><button class='primary' id='btnLeechCheck'>"+ct("Laat Claude kijken","Let Claude check it")+"</button></div>"+
         "<div id='leechFb'></div>";
       document.getElementById("btnLeechCheck").onclick = function(){
         var zin = (document.getElementById("leechIn").value||"").trim();
         if(zin.length < 3) return;
         var btn = document.getElementById("btnLeechCheck");
-        btn.disabled = true; btn.textContent = "🤖 Claude leest...";
+        btn.disabled = true; btn.textContent = ct("🤖 Claude leest...","🤖 Claude is reading...");
         api("/api/ai/zin", "POST", {woord:w.es, zin:zin}).then(function(res){
           var fb = document.getElementById("leechFb");
-          btn.disabled = false; btn.textContent = "Laat Claude kijken";
-          if(!res || !res.ok){ fb.innerHTML = "<div class='feedback bijna'>AI even niet bereikbaar, probeer straks nog eens.</div>"; return; }
+          btn.disabled = false; btn.textContent = ct("Laat Claude kijken","Let Claude check it");
+          if(!res || !res.ok){ fb.innerHTML = "<div class='feedback bijna'>"+ct("AI even niet bereikbaar, probeer straks nog eens.","AI is unreachable right now, try again in a bit.")+"</div>"; return; }
           if(res.goed){
             addXP(5);
             confetti(["✍️","🎉","⭐️"], 14);
@@ -14866,7 +15015,7 @@ function mailErrors(){
   var url = "mailto:stefanwobben@gmail.com?subject="+encodeURIComponent("espanol-foutenlog "+(p?p.name:""))+
     "&body="+encodeURIComponent(body);
   window.location.href = url;
-  toast("Mailtje staat klaar, alleen nog op verzenden tikken ✉️");
+  toast(ct("Mailtje staat klaar, alleen nog op verzenden tikken ✉️","Your e-mail is ready, just hit send ✉️"));
 }
 
 function exportProgress(){
@@ -15012,7 +15161,9 @@ function show(tabId, skipPush){
     var sc = document.getElementById("syncCode");
     if(sc && pc) sc.textContent = ensureCode(pc);
     var ss = document.getElementById("syncStatus");
-    if(ss) ss.textContent = lastSync ? "Laatste sync: gelukt ✓" : "Laatste sync: wordt automatisch gedaan tijdens het oefenen";
+    if(ss) ss.textContent = lastSync ? ct("Laatste sync: gelukt ✓","Last sync: done ✓")
+                                     : ct("Laatste sync: wordt automatisch gedaan tijdens het oefenen","Last sync: happens automatically while you practise");
+    perfilStaticTaal();
   }
   if(tabId==="privacy"){ renderPrivacy(); }
   if(tabId==="speeltuin"){ renderFun(); }
