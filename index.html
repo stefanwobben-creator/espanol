@@ -266,6 +266,31 @@
   .shopitem{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed var(--border);}
   .shopitem .si-name{font-weight:700;}
   .shopitem .si-name small{display:block; font-weight:400; color:var(--muted); font-size:.78rem;}
+  /* v19.73 - de ceremonie. Stefan: "als je hem alles soort tapasjes hebt gegeven dan komt er een
+     hele ceremonie net alsof je mario bros of zelda hebt uitgespeeld." Een eindscherm moet alles
+     onderbreken, anders is het geen eindscherm maar een melding. Vandaar vast, schermvullend, en
+     met een knop die je zelf moet indrukken om eruit te komen. */
+  .finalewrap{position:fixed; inset:0; z-index:120; background:rgba(45,42,38,.94); display:flex;
+    align-items:center; justify-content:center; padding:18px; overflow-y:auto;
+    animation:finalein .5s ease both;}
+  .finalewrap.hidden{display:none;}
+  @keyframes finalein{from{opacity:0} to{opacity:1}}
+  .finalevak{max-width:520px; width:100%; text-align:center; color:#fff;}
+  .finaletitel{font-size:1.6rem; margin:6px 0 2px; color:#f7d774; letter-spacing:.02em;}
+  .finalesub{color:#e8e1d4; margin:0 0 16px; font-size:.95rem;}
+  .finalerij{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:14px 0 18px;}
+  .finaletapa{font-size:1.6rem; opacity:0; animation:finalepop .5s ease forwards;}
+  @keyframes finalepop{from{opacity:0; transform:scale(.3) rotate(-20deg)} to{opacity:1; transform:none}}
+  .finalechispa{margin:8px auto; width:150px;}
+  .finalechispa svg{width:100%; height:auto;}
+  .finaledatum{color:#c9c0b0; font-size:.85rem; margin:10px 0 0;}
+  /* En wat er daarna blijft staan: een plaquette in de vitrine. Een ceremonie die niets achterlaat
+     is een schermbeveiliger. */
+  .plaquette{background:linear-gradient(180deg,#fdf3e0,#f7e6c4); border:2px solid #d9b45c;
+    border-radius:12px; padding:10px 12px; margin:0 0 10px; text-align:center;}
+  .plaquette b{display:block; color:#8a6a1f; font-size:1rem;}
+  .plaquette span{color:#8a7a55; font-size:.82rem;}
+  .plaquette button{margin-top:8px;}
   .confettibit{position:fixed; top:-30px; font-size:1.5rem; z-index:98; pointer-events:none; animation:cfall 1.6s ease-in forwards;}
   @keyframes cfall{0%{transform:translateY(0) rotate(0); opacity:1} 100%{transform:translateY(105vh) rotate(540deg); opacity:.7}}
   .diffword{color:var(--red); font-weight:800; text-decoration:underline;}
@@ -714,7 +739,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.72";
+var APP_VERSIE = "v19.73";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7132,6 +7157,64 @@ function tapaVolgende(){
   return hoy;
 }
 function tapaAllemaal(){ return tapaMenuState().length >= TAPAS.length; }
+/* v19.73 - het eindscherm.
+   Stefan: "als je hem alles soort tapasjes hebt gegeven dan komt er een hele ceremonie net alsof
+   je mario bros of zelda hebt uitgespeeld."
+   Wat zo'n eindscherm doet, is drie dingen tegelijk. Het onderbreekt alles, zodat het moment niet
+   tussen de rest door glipt. Het laat zien wat je hebt gedaan, hier: alle achttien tapas nog een
+   keer, een voor een, want de verzameling zelf is het bewijs. En het laat iets achter, anders was
+   het een animatie en geen gebeurtenis. Dat laatste is de plaquette in de vitrine, en die kun je
+   aantikken om de ceremonie terug te kijken. Uitgespeeld betekent niet weg.
+   De datum wordt eenmalig vastgelegd; daarna gaat dit scherm nooit meer vanzelf open. */
+function tapaFinaleCheck(){
+  if(!tapaAllemaal()) return false;
+  if(S.tapaFinale) return false;
+  S.tapaFinale = today();
+  try { persist(); } catch(e){}
+  tapaFinaleTonen();
+  return true;
+}
+function tapaFinaleTonen(){
+  if(!document.body || !document.body.appendChild) return;
+  var wrap = document.getElementById("finaleWrap");
+  if(!wrap){
+    wrap = document.createElement("div");
+    wrap.id = "finaleWrap";
+    wrap.className = "finalewrap";
+    document.body.appendChild(wrap);
+  }
+  var chips = "";
+  TAPAS.forEach(function(tp, i){
+    chips += "<span class='finaletapa' style='animation-delay:"+(0.35 + i*0.12).toFixed(2)+"s' title='"+tp.es+"'>"+tp.e+"</span>";
+  });
+  var dier = "";
+  try { dier = petSVG(); } catch(e){ dier = ""; }
+  wrap.innerHTML = "<div class='finalevak'>"+
+    "<p class='finalesub' style='margin:0'><span class='es'>\u00a1Enhorabuena!</span></p>"+
+    "<h2 class='finaletitel'><span class='es'>El Gran Men\u00fa</span></h2>"+
+    "<p class='finalesub'>"+ct("Chispa heeft alle "+TAPAS.length+" tapas geproefd. Elke les die je deed staat hier op tafel.",
+                               "Chispa has tasted all "+TAPAS.length+" tapas. Every session you did is on this table.")+"</p>"+
+    "<div class='finalechispa'>"+dier+"</div>"+
+    "<div class='finalerij'>"+chips+"</div>"+
+    "<p class='finalesub'>"+ct("De kaart is af. Wat je hierna leert, leer je omdat je het wilt weten.",
+                               "The menu is complete. What you learn from here, you learn because you want to know it.")+"</p>"+
+    "<p class='finaledatum' id='finaleDatum'>"+ct("Compleet op ","Completed on ")+(S.tapaFinale || today())+"</p>"+
+    "<div class='row' style='justify-content:center; margin-top:14px'>"+
+      "<button class='primary' id='btnFinaleSluit'>"+ct("Terug naar Chispa","Back to Chispa")+"</button>"+
+    "</div>"+
+  "</div>";
+  wrap.classList.remove("hidden");
+  var b = document.getElementById("btnFinaleSluit");
+  if(b) b.onclick = function(){
+    wrap.classList.add("hidden");
+    try { renderChispaPagina(); } catch(e){}
+  };
+  // de confetti komt mee met de tapas die opkomen, niet in een klap vooraf
+  try {
+    confetti(TAPAS.map(function(t){ return t.e; }).concat(["\u2728","\ud83c\udf89"]), 34);
+    setTimeout(function(){ try { confetti(["\u2728","\ud83c\udf89","\u2b50"], 20); } catch(e){} }, 1200);
+  } catch(e){}
+}
 function tapaMenuState(){ if(!S.tapaMenu) S.tapaMenu = []; return S.tapaMenu; }
 function tapaMenuKent(id){ return tapaMenuState().indexOf(id) >= 0; }
 function tapaMenuNoteer(id){
@@ -7154,7 +7237,10 @@ function tapaGeven(){
   chispaZorgTik();
   var wens = chispaWensDoe("tapa");
   confetti([tp.e, "❤️", "😋"].concat(nieuw ? ["✨","🎉"] : []), nieuw ? 26 : 12);
-  return {tapa:tp, nieuw:nieuw, slaapt:slaapt, wens:wens};
+  // v19.73: was dit de laatste? Dan is het geen tapa meer maar een eindscherm.
+  var finale = false;
+  try { finale = tapaFinaleCheck(); } catch(e){}
+  return {tapa:tp, nieuw:nieuw, slaapt:slaapt, wens:wens, finale:finale};
 }
 function tapaMenuHtml(){
   // v19.72: het omkaderde vakje is wat je nu krijgt, niet wat de kalender zegt. Anders wijst het
@@ -7734,6 +7820,9 @@ function renderVitrine(){
   el.innerHTML = "<h2>"+ct("De vitrine","The display case")+" \ud83c\udf7d\ufe0f</h2>"+
     "<p class='muted' style='margin:0 0 12px'>"+ct("Twee verzamelingen die alleen maar kunnen groeien. Wegblijven kost je hier niets.","Two collections that can only grow. Staying away never costs you anything here.")+"</p>"+
     "<div class='vitrinevak'>"+
+      (S.tapaFinale ? "<div class='plaquette' id='tapaPlaquette'><b><span class='es'>El Gran Men\u00fa</span></b>"+
+        "<span>"+ct("alle "+TAPAS.length+" tapas geproefd \u00b7 ","all "+TAPAS.length+" tapas tasted \u00b7 ")+S.tapaFinale+"</span>"+
+        "<button class='ghost' id='btnFinaleTerug'>"+ct("Kijk de ceremonie terug","Watch the ceremony again")+"</button></div>" : "")+
       "<p class='bailehoy' id='tapaHoy'><span class='es'>"+(tapaKlaar ? "La tapa del d\u00eda" : "La pr\u00f3xima tapa")+"</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+
         (tapaKlaar ? "" : " \u00b7 "+ct("na je volgende les","after your next session"))+"</span></p>"+
       tapaMenuHtml()+
@@ -7745,6 +7834,8 @@ function renderVitrine(){
       "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen \u00b7 tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances \u00b7 tap one")+"</p>"+
     "</div>";
   tapaMenuWire(el);
+  var bt = document.getElementById("btnFinaleTerug");
+  if(bt) bt.onclick = function(){ tapaFinaleTonen(); };
   el.querySelectorAll("button.bailechip").forEach(function(bb){
     bb.onclick = function(){
       var id = bb.getAttribute("data-baile");
