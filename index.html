@@ -175,11 +175,15 @@
   @media (hover:hover){ .jrg:hover .jrgpop{display:block;} }
   /* v19.50: la jerga del día - Chispa introduceert een stukje spreektaal bij de woordjes/zinnetjes */
   .jergarij{display:flex; align-items:flex-start; gap:10px;}
-  .jergachispa{flex:0 0 auto; width:40px; height:42px; background:none; border:none; padding:0; cursor:pointer;}
-  .jergachispa svg{width:40px; height:42px; transition:transform .15s ease;}
-  .jergachispa:hover svg{transform:scale(1.12) rotate(-4deg);}
   .jergamid{flex:1 1 auto; min-width:0;}
-  .jergaes{font-weight:800; font-size:1.02rem; margin:3px 0 0;}
+  /* v19.79: de uitdrukking is nu zelf de luisterknop, want de mini-Chispa is weg. Hij moet er
+     als tekst uitzien en niet als knop, anders staat er alsnog een bedieningselement op een
+     woordkaart; alleen het luidsprekertje verklapt dat je erop kunt tikken. */
+  .jergaes{font-weight:800; font-size:1.02rem; margin:3px 0 0; display:block; width:100%;
+           text-align:left; background:none; border:none; padding:0; color:var(--ink);
+           font-family:inherit; cursor:pointer;}
+  .jergaes:hover{color:var(--accent);}
+  .jergalu{font-size:.72rem; opacity:.45; vertical-align:middle; margin-left:2px;}
   .jergalit{color:var(--muted); font-size:.78rem; margin:4px 0 0;}
   .jergabet{margin:6px 0 0; font-size:.9rem;}
   .jergavb{margin:8px 0 0; font-size:.86rem; font-style:italic;}
@@ -295,9 +299,9 @@
   .bailechip.hoy{border-color:var(--amber); background:var(--amber-soft);}
   .bailechip.gehad .es{color:var(--green);}
   /* mini-Chispa leeft ook mee, en draait rond als je hem aantikt */
-  .jergachispa svg, .lfchispa svg{animation:chbob 2.9s ease-in-out infinite;}
+  .lfchispa svg{animation:chbob 2.9s ease-in-out infinite;}
   @keyframes chbob{0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-3px) rotate(-4deg)}}
-  .jergachispa:hover svg, .lfchispa:hover svg{animation:none; transform:scale(1.12) rotate(-4deg);}
+  .lfchispa:hover svg{animation:none; transform:scale(1.12) rotate(-4deg);}
   .chminigiro svg{animation:chgiro .9s ease-in-out !important;}
   @keyframes petb{0%{transform:scale(1)} 40%{transform:scale(1.12) rotate(-3deg)} 100%{transform:scale(1)}}
   .shopitem{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed var(--border);}
@@ -801,7 +805,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.78";
+var APP_VERSIE = "v19.79";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3507,6 +3511,18 @@ function dagenLabel(){
   return d >= 3 ? (d + " " + ct("dagen", "days")) : "";
 }
 
+/* v19.79. Stefan: "mijn chispa verandert niet mee bovenin de status balk. dat moet natuurlijk wel."
+   Het tekenwerk klopte al (petSVG kent haar kleur, figuur, fase en kleren), maar het werd alleen
+   opnieuw gedaan als je punten veranderden. Een kleur kiezen is geen punt, dus bleef bovenin de
+   oude Chispa staan terwijl beneden de nieuwe stond: dan is het niet jouw Chispa maar een plaatje.
+   Daarom staat het hertekenen nu apart, en roept alles wat aan haar uiterlijk komt het aan. */
+function miniPetVerversen(){
+  var mp = document.getElementById("miniPet");
+  if(!mp) return;
+  mp.innerHTML = petSVG();
+  mp.onclick = function(){ scopeLesson = null; show("chispa"); };
+}
+
 function updateGoalUI(){
   var t = today();
   var x = S.xp[t] || 0;
@@ -3517,11 +3533,7 @@ function updateGoalUI(){
   var dl = dagenLabel();
   document.getElementById("goalTxt").textContent =
     (x >= dagdoel() ? "doel gehaald ✓" : x + "/" + dagdoel() + " "+xpw()+"") + (dl ? " · " + dl : "");
-  var mp = document.getElementById("miniPet");
-  if(mp){
-    mp.innerHTML = petSVG();
-    mp.onclick = function(){ scopeLesson = null; show("chispa"); };
-  }
+  miniPetVerversen();
   var un = document.getElementById("userName");
   if(un){ un.onclick = function(){ scopeLesson = null; show("perfil"); }; }
 }
@@ -4411,16 +4423,17 @@ function jergaHoor(){
   if(typeof dictadoSpreekTTS === "function") dictadoSpreekTTS(j.es, 0.9);
 }
 // Alles staat er meteen op: uitdrukking, letterlijk, betekenis, voorbeeld. Geen tussenstap, geen knop.
-// Tik je op Chispa zelf, dan zegt ze hem hardop; dat is spel, geen keuze.
+// v19.79. Stefan over de mini-Chispa die hier stond: "dit wil je niet zien hier. dat kan helemaal
+// weg." Terecht: het was een tweede, kleinere Chispa naast de echte, en op een woordkaart heeft ze
+// niets te zoeken. Hardop horen blijft, maar dat doe je nu door op de uitdrukking zelf te tikken.
 function jergaHtml(){
   var j = jergaVandaag();
   var st = jergaState();
   return "<div class='card'><div class='jergarij'>"+
-    "<button class='jergachispa jergaZeg' title='Chispa'>"+chispaMiniSvg()+"</button>"+
     "<div class='jergamid'>"+
       "<span class='kicker'>\uD83D\uDCAC "+ct("Chispa's straattaal van vandaag","Chispa's street Spanish today")+
         "<span class='jergawaar'>"+j.waar+"</span></span>"+
-      "<p class='jergaes'>"+j.es+"</p>"+
+      "<button type='button' class='jergaes jergaZeg' title='"+ct("Hoor het","Hear it")+"'>"+j.es+" <span class='jergalu'>\uD83D\uDD0A</span></button>"+
       "<p class='jergalit'>"+ct("letterlijk: ","literally: ")+ct(j.lit, j.lite)+"</p>"+
       "<p class='jergabet'>"+ct(j.nl, j.en)+"</p>"+
       "<p class='jergavb'>"+j.vb+"<span class='nl'>"+ct(j.vbnl, j.vben)+"</span></p>"+
@@ -4434,7 +4447,7 @@ function jergaRender(elId){
   jergaGezien();
   el.innerHTML = jergaHtml();
   var z = el.querySelector(".jergaZeg");
-  if(z) z.onclick = function(){ chispaMiniSpin(z); jergaHoor(); };
+  if(z) z.onclick = function(){ jergaHoor(); };
 }
 function renderWord(){
   // v19.70: de straattaal van vandaag stond op Chispa's pagina. Dat is een woordles en hoort hier.
@@ -8251,6 +8264,8 @@ function renderPet(){
   });
   // v19.78: het podium bovenaan toont dezelfde Chispa, dus het moet mee met elke hertekening
   try { chispaBalkInit(); balkLaatste = ""; balkVerversen(); chispaBalkCheck(); } catch(e){}
+  // v19.79: en het icoontje in de kop ook. Hertekenen we haar hier, dan is dat overal waar.
+  try { miniPetVerversen(); } catch(e){}
   // v19.51: één keer per dag geeft Chispa ongevraagd een voorstelling weg
   if(S.chispaBaileDag !== today() && !slaapt && !chispaFiestaBezig){
     S.chispaBaileDag = today();
@@ -10590,12 +10605,17 @@ function renderDic(){
 }
 
 /* ================= CHISPA-SPRITE (gebruikt door de spellen) ================= */
+/* v19.79: deze sprite was roze ingemetseld. Dat viel op zodra je Chispa oranje maakte: in de
+   spellen en in de lesbanner liep dan ineens een ander dier rond. Hij haalt zijn kleur nu uit
+   hetzelfde palet als de grote tekening, dus je kiest een kleur en zij is overal die kleur. */
 function escChispaMini(){
+  var K;
+  try { K = petKleur(); } catch(e){ K = {lijf:"#f8b8ce", rand:"#ef97b8", kieuw:"#e46a9a"}; }
   return "<ellipse cx='0' cy='14' rx='13' ry='3' fill='#00000015'/>"+
     "<g class='eschuppel'>"+
-    "<path d='M-11 -12 q-5 -5 -8 -2 M-13 -6 q-6 -2 -8 1 M11 -12 q5 -5 8 -2 M13 -6 q6 -2 8 1' stroke='#e46a9a' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
-    "<ellipse cx='0' cy='0' rx='13' ry='11' fill='#f8b8ce' stroke='#ef97b8' stroke-width='2'/>"+
-    "<path d='M11 6 q8 4 11 -2' stroke='#ef97b8' stroke-width='4' fill='none' stroke-linecap='round'/>"+
+    "<path d='M-11 -12 q-5 -5 -8 -2 M-13 -6 q-6 -2 -8 1 M11 -12 q5 -5 8 -2 M13 -6 q6 -2 8 1' stroke='"+K.kieuw+"' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
+    "<ellipse cx='0' cy='0' rx='13' ry='11' fill='"+K.lijf+"' stroke='"+K.rand+"' stroke-width='2'/>"+
+    "<path d='M11 6 q8 4 11 -2' stroke='"+K.rand+"' stroke-width='4' fill='none' stroke-linecap='round'/>"+
     "<circle cx='-4.5' cy='-2' r='2' fill='#2d2a26'/><circle cx='4.5' cy='-2' r='2' fill='#2d2a26'/>"+
     "<path d='M-4 4 Q0 7 4 4' stroke='#2d2a26' stroke-width='1.5' fill='none' stroke-linecap='round'/>"+
     "</g>";
