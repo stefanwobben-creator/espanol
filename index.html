@@ -409,6 +409,12 @@
   /* --- vitrine v19.70: twee verzamelingen naast elkaar, elk met een eigen vak --- */
   .vitrinevak{border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; margin-top:10px;}
   .vitrinevak > .kicker{display:block; margin-bottom:4px;}
+  /* --- instellingen-uitklapper v19.71 --- */
+  .instelrij{display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+             padding:2px 0; background:none; border:none; color:var(--ink); font-weight:700;
+             font-size:1rem; cursor:pointer; text-align:left;}
+  .instelrij #instelPijl{color:var(--muted); font-size:.9rem;}
+  #instelKop .muted{margin:6px 0 0; font-size:.85rem;}
   .gwuitleg{font-size:.97rem; line-height:1.55;}
   .gwuitleg p{margin:0 0 10px;}
   .gwuitleg ul{margin:0 0 10px; padding-left:20px;}
@@ -506,18 +512,32 @@
   </section>
 
   <!-- PROFIEL (via het 👤-icoontje): jouw gegevens, groepen, voortgang, steun -->
+  <!-- v19.71: het profielscherm in drie zones. Stefan: "als ik op stefan klikt is dat nu beetje
+       rommeltige ik zie meer admin achtige dingen, mijn voortgang en ook familie."
+       Bovenaan staat waar je staat (wie ben je, hoe goed ben je, hoever ben je in de cursus), in
+       het midden met wie je leert, en onderaan zit alles wat je één keer instelt en daarna nooit
+       meer aanraakt achter één regel. Admin is geen voortgang en hoort dus niet bovenaan. -->
   <section id="tab-perfil" class="hidden">
     <div class="card" id="perfilCard"></div>
-    <div class="card" id="familieCard"></div>
-    <div class="card" id="groepCard"></div>
     <div class="card" id="statsCard"></div>
     <!-- v19.69: de lessenlijst hoort bij "waar sta ik", niet bij "wat doe ik nu" -->
     <div id="cursusCard"></div>
+    <div class="card" id="familieCard"></div>
+    <div class="card" id="groepCard"></div>
     <div class="card" id="steunCard">
       <h2>Steun ¡Vamos! 💛</h2>
       <p class="muted" id="perfSteunP">Deze app is gratis en blijft gratis. Benieuwd waarom ik hem bouwde, en wil je misschien iets terugdoen?</p>
       <div class="row"><button class="primary" id="btnNaarSteun">Lees het verhaal 💛</button></div>
     </div>
+    <div class="card" id="instelKop">
+      <button class="instelrij" id="btnInstel" aria-expanded="false">
+        <span>⚙️ <span id="instelLbl">Instellingen en je gegevens</span></span>
+        <span id="instelPijl">▾</span>
+      </button>
+      <p class="muted" id="instelP">E-mail, sync-code, je voortgang verplaatsen, privacy en van profiel wisselen.</p>
+    </div>
+    <div id="instelBlok" class="hidden">
+    <div class="card" id="mailCard"></div>
     <div class="card">
       <h2 id="perfSyncKop">Profiel &amp; synchronisatie</h2>
       <p class="muted" id="perfSyncP">Je voortgang wordt automatisch gesynchroniseerd. Wil je op een ander apparaat verder?
@@ -536,6 +556,12 @@
       </div>
       <textarea id="progressDump" rows="5" class="hidden" style="margin-top:10px; font-size:.8rem;"
         placeholder="Plak hier je geëxporteerde voortgang en klik nogmaals op importeer."></textarea>
+    </div>
+    <div class="card">
+      <h2 id="perfPrivKop">Privacy</h2>
+      <p class="muted" id="perfPrivP">Wat er van je bewaard wordt, waar het staat, en wat er niet gebeurt.</p>
+      <div class="row"><button class="ghost" id="btnPerfPrivacy">🔒 Lees de privacyverklaring</button></div>
+    </div>
     </div>
   </section>
 
@@ -688,7 +714,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.70";
+var APP_VERSIE = "v19.71";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -12491,6 +12517,13 @@ function perfilStaticTaal(){
   zet("perfExpP", "Alleen nodig als de server het niet doet: exporteer hier je voortgang en importeer hem elders.",
       "Only needed if the server doesn't do it: export your progress here and import it elsewhere.");
   zet("btnExportProgress", "Exporteer voortgang", "Export progress");
+  zet("instelLbl", "Instellingen en je gegevens", "Settings and your data");
+  zet("instelP", "E-mail, sync-code, je voortgang verplaatsen, privacy en van profiel wisselen.",
+      "E-mail, sync code, moving your progress, privacy and switching profiles.");
+  zet("perfPrivKop", "Privacy", "Privacy");
+  zet("perfPrivP", "Wat er van je bewaard wordt, waar het staat, en wat er niet gebeurt.",
+      "What is kept about you, where it lives, and what does not happen.");
+  zet("btnPerfPrivacy", "🔒 Lees de privacyverklaring", "🔒 Read the privacy statement");
   zet("btnImportProgress", "Importeer voortgang", "Import progress");
   var ta = document.getElementById("progressDump");
   if(ta) ta.placeholder = ct("Plak hier je geëxporteerde voortgang en klik nogmaals op importeer.",
@@ -12507,10 +12540,15 @@ function renderPerfil(){
     "<span class='miniprof' style='width:52px; height:52px; font-size:1.5rem'>"+p.name.charAt(0).toUpperCase()+"</span>"+
     "<div><h2 style='margin:0'>"+p.name+"</h2>"+
     "<p class='muted' style='margin:2px 0 0'>"+gt("niveauLbl")+": "+lvl+" · "+gt("taalLbl")+": "+lang.vlag+" "+lang.naam+"</p></div></div>"+
-    "<p class='muted' style='margin:12px 0 4px'>"+gt("mailLbl")+"</p>"+
-    "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
-    "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>"+
     renderCompetenties();
+  // v19.71: je e-mailadres is een instelling, geen prestatie. Hij staat nu onderaan, achter
+  // "Instellingen en je gegevens", samen met de rest van het administratieve spul.
+  var mc = document.getElementById("mailCard");
+  if(mc) mc.innerHTML = "<h2>"+gt("mailLbl")+"</h2>"+
+    "<p class='muted'>"+ct("Alleen om je voortgang terug te kunnen vinden. Je krijgt er geen post van.",
+                           "Only so your progress can be found again. It gets you no mail.")+"</p>"+
+    "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
+    "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>";
   var huidigDoel = S.doel || 30;
   var doelen = [{n:10, lbl:(profLang()==="nl"?"Relaxed · 10":"Relaxed · 10")}, {n:30, lbl:(profLang()==="nl"?"Normaal · 30":"Normal · 30")}, {n:60, lbl:(profLang()==="nl"?"Fanatiek · 60":"Serious · 60")}];
   el.innerHTML += "<p class='muted' style='margin:12px 0 4px'>"+(profLang()==="nl"?"Dagdoel ("+xpw()+" per dag): zelf gekozen doelen werken het best.":"Daily goal ("+xpw()+" per day): self-chosen goals work best.")+"</p>"+
@@ -12526,7 +12564,9 @@ function renderPerfil(){
   });
   var bm = document.getElementById("btnMailBewaar");
   if(bm) bm.onclick = function(){
-    var m = (document.getElementById("perfilMail").value || "").trim();
+    var mi = document.getElementById("perfilMail");
+    if(!mi) return;
+    var m = (mi.value || "").trim();
     if(m && m.indexOf("@") === -1){ toast(ct("Dat lijkt geen e-mailadres.","That does not look like an e-mail address.")); return; }
     S.mail = m; persist(); syncUp();
     toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
@@ -12534,6 +12574,26 @@ function renderPerfil(){
   renderCursus();
   renderFamilia();
   renderGroepen();
+  instelWire();
+}
+/* v19.71 — de onderste zone. Alles hierin doe je één keer en daarna nooit meer, dus het hoort
+   niet zichtbaar te zijn terwijl je naar je voortgang kijkt. Eén regel, en wie hem nodig heeft
+   klapt hem open. De toestand is bewust niet opgeslagen: dicht is de normale stand. */
+var instelOpen = false;
+function instelWire(){
+  var b = document.getElementById("btnInstel");
+  var blok = document.getElementById("instelBlok");
+  if(!b || !blok) return;
+  function teken(){
+    blok.classList.toggle("hidden", !instelOpen);
+    b.setAttribute("aria-expanded", instelOpen ? "true" : "false");
+    var pijl = document.getElementById("instelPijl");
+    if(pijl) pijl.textContent = instelOpen ? "\u25b4" : "\u25be";
+  }
+  b.onclick = function(){ instelOpen = !instelOpen; teken(); };
+  var bp = document.getElementById("btnPerfPrivacy");
+  if(bp) bp.onclick = function(){ show("privacy"); };
+  teken();
 }
 function joinViaLink(gcode, poging){
   api("/api/groep/join", "POST", {gcode:gcode, code:mijnSyncCode()}).then(function(res){
@@ -15550,6 +15610,9 @@ function show(tabId, skipPush){
   if(tabId==="lezen"){ closeBoek(); }
   if(tabId==="chispa"){ renderChispaPagina(); }
   if(tabId==="perfil"){
+    // v19.71: wie zijn profiel opent komt kijken hoe het gaat, niet hoe het is ingesteld.
+    // De lade gaat dus dicht bij binnenkomst, maar niet bij een hertekening terwijl je erin bezig bent.
+    instelOpen = false;
     renderPerfil(); renderStats();
     var bns = document.getElementById("btnNaarSteun");
     if(bns) bns.onclick = function(){ show("steun"); };
