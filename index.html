@@ -126,6 +126,20 @@
   .petmood{color:var(--muted); font-size:.9rem; margin-bottom:8px;}
   .tapabadge{font-weight:800; font-size:1rem; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:6px 14px;}
   .petbounce{animation:petb .5s ease;}
+  /* v19.66 — de tapa van de dag. Bewust géén .primary: het einde van je les heeft al een hoofdknop
+     die zegt wat je nú kunt doen, en dit is geen navigatie maar een viering. Fogg: de celebration
+     moet direct op het gedrag volgen en gevóéld worden, dus krijgt hij zijn eigen, warmere vorm in
+     plaats van te concurreren met de knoppen eronder. */
+  .tapaknop{display:block; width:100%; margin:10px 0 2px; padding:14px 16px; border:2px solid var(--amber);
+    background:var(--amber-soft); color:var(--amber); font-weight:800; font-size:1.05rem;
+    border-radius:var(--radius); cursor:pointer; text-align:center; font-family:inherit;}
+  .tapaknop:active{transform:scale(.98);}
+  .tapaknop[disabled]{opacity:.8; cursor:default; border-style:dashed;}
+  .tapamenu{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 4px;}
+  .tapachip{font-size:1.15rem; line-height:1; padding:6px 8px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card); cursor:pointer; filter:grayscale(1); opacity:.35;}
+  .tapachip.gehad{filter:none; opacity:1; background:var(--amber-soft); border-color:var(--amber-soft);}
+  .tapachip.hoy{border-color:var(--amber); box-shadow:0 0 0 2px var(--amber-soft);}
   /* v19.49: mini-Chispa in de dagles + Tamagotchi-meters */
   .lfrow{display:flex; align-items:center; gap:10px;}
   .lfchispa{flex:0 0 auto; width:48px; height:50px; cursor:pointer; background:none; border:none; padding:0;}
@@ -647,7 +661,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.65";
+var APP_VERSIE = "v19.66";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3781,7 +3795,45 @@ var wQueue = [], wCur = null, wShown = false, wSessionDone = 0;
 function newToday(){ return S.newIntro[today()] || 0; }
 function newAllowance(){ return Math.max(0, MAX_NEW_PER_DAY - newToday()); }
 
-function buildQueue(){
+/* ================= DE DAGPORTIE (v19.66) =================
+   v19.64 haalde de schuldteller weg, maar niet de stapel eronder. Wie na drie weken terugkwam zag
+   geen "83" meer staan, en kreeg vervolgens gewoon 83 kaartjes achter elkaar. Dat is de teller
+   verstoppen, niet het probleem oplossen: het bleef precies zo onhoudbaar, alleen zonder
+   waarschuwing vooraf. Vanaf nu is een dagsessie een vaste portie, wat er ook op de plank ligt.
+
+   Waarom een vast getal en niet "alles wat vandaag toevallig open staat":
+   - Wat je vandaag doet mag niet afhangen van hoe lang je weg was. Anders straft de app afwezigheid
+     af, en dat is precies de motor die mensen laat stoppen.
+   - Fogg B=MAP: hoe kleiner en voorspelbaarder de handeling, hoe minder motivatie hij nodig heeft.
+     "Twaalf kaartjes" is een belofte die je vooraf kunt nakijken; "je wachtrij" is dat niet.
+   - Een achterstand verdwijnt niet, hij wordt gewoon per dag afgebouwd. De SRS-planning zelf blijft
+     onaangeraakt, dus niets raakt kwijt en niets verschuift.
+
+   De volgorde binnen de portie is niet willekeurig:
+   1. woorden waar je de afgelopen dagen op struikelde (S.errors) gaan voor. Dat is precies waar
+      ophalen het meeste oplevert, en het is het verschil tussen "nog eens" en "nu snap ik hem".
+   2. daarna het langst openstaande eerst, want dat is het meest weggezakt.
+   3. en er blijft altijd ruimte voor nieuwe woorden gereserveerd. Zonder die reservering vult een
+      grote achterstand de hele portie, en dan lever je dagen achter elkaar niets nieuws op:
+      alleen nog schuld inlossen. Nieuwe woorden zijn de reden dat je begon.
+
+   Binnen één les (scopeLesson) geldt de portie niet: daar is de verzameling al klein en begrensd,
+   en dan wil je gewoon je les kunnen afmaken. */
+var DAG_PORTIE = 12;        // hoeveel woordkaartjes één dagsessie is
+var DAG_PORTIE_NIEUW = 4;   // waarvan gereserveerd voor woorden die je nog nooit zag
+
+function bijnaGoedIds(){
+  // woorden waar je de laatste twee dagen op struikelde
+  var grens = addDays(today(), -2), uit = {};
+  for(var k in S.errors){
+    if(k.indexOf("woord:") !== 0) continue;
+    var e = S.errors[k];
+    if(e && e.laatst && e.laatst >= grens) uit[k.slice(6)] = true;
+  }
+  return uit;
+}
+
+function dagPortie(){
   var t = today();
   var allow = {};
   allowedWordIds().forEach(function(id){ allow[id] = true; });
@@ -3791,7 +3843,28 @@ function buildQueue(){
     if(st){ if(st.due <= t) due.push(w); }          // herhalingen: altijd, uit alle ooit geleerde woorden
     else if(allow[w.id]) fresh.push(w);             // nieuw: alleen uit de actieve/ontgrendelde lessen
   });
-  wQueue = due.concat(fresh.slice(0, newAllowance()));
+  var bijna = bijnaGoedIds();
+  due.sort(function(a, b){
+    var ba = bijna[a.id] ? 0 : 1, bb = bijna[b.id] ? 0 : 1;
+    if(ba !== bb) return ba - bb;                   // gisteren misgegaan gaat voor
+    var da = S.srs[a.id].due, db = S.srs[b.id].due;
+    return da < db ? -1 : (da > db ? 1 : 0);        // daarna: het langst open
+  });
+  var ruimteNieuw = Math.min(fresh.length, DAG_PORTIE_NIEUW, newAllowance());
+  var cap = scopeLesson ? Math.max(due.length + fresh.length, DAG_PORTIE) : DAG_PORTIE;
+  var herhaal = due.slice(0, Math.max(0, cap - ruimteNieuw));
+  if(scopeLesson) ruimteNieuw = Math.min(fresh.length, newAllowance());
+  var nieuw = fresh.slice(0, ruimteNieuw);
+  var vanGisteren = 0;
+  herhaal.forEach(function(w){ if(bijna[w.id]) vanGisteren++; });
+  return {herhaal:herhaal, nieuw:nieuw, vanGisteren:vanGisteren,
+          dueRest:Math.max(0, due.length - herhaal.length), verseRest:Math.max(0, fresh.length - nieuw.length),
+          totaal:herhaal.length + nieuw.length};
+}
+
+function buildQueue(){
+  var p = dagPortie();
+  wQueue = p.herhaal.concat(p.nieuw);
 }
 
 function dueCount(){
@@ -4196,13 +4269,21 @@ function renderWord(){
     var capKnop = capRest.length ? "<button class='primary' id='btnCapRest'>➕ "+
       ct("Nog "+capRest.length+" nieuwe "+(capRest.length===1?"woord":"woorden")+" tóch doen",
          "Do "+capRest.length+" more new word"+(capRest.length===1?"":"s")+" anyway")+"</button>" : "";
+    // v19.66: je portie voor vandaag is op, maar de plank is niet leeg. Dat mag je best weten —
+    // alleen als aanbod, niet als saldo. Geen getal, geen "nog N te gaan": één knop die je kunt
+    // negeren. Wie doorwil kan doorgaan, wie klaar is is klaar, en niemand krijgt een rekening.
+    var meerPortie = !scopeLesson && dagPortie().totaal > 0;
+    var portieKnop = meerPortie ? "<button class='"+(capRest.length?"ghost":"primary")+"' id='btnNogEenPortie'>"+
+      ct("Nog een portie woordjes","Another round of words")+"</button>" : "";
     el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · woordjes":"Woordjes")+"</span>"+
-      "<p class='big'>Alles gedaan ✓</p>"+
+      "<p class='big'>"+(scopeLesson ? "Alles gedaan ✓" : ct("Portie gedaan ✓","Round done ✓"))+"</p>"+
       "<p class='muted'>"+"Je hebt "+wSessionDone+" kaartje(s) gedaan. "+
       (capRest.length ? ct("Er "+(capRest.length===1?"wacht nog 1 nieuw woord":"wachten nog "+capRest.length+" nieuwe woorden")+" achter je dagmaximum van "+MAX_NEW_PER_DAY+" — morgen komen ze vanzelf, of doe ze nu.",
                            capRest.length===1?"1 new word is waiting behind your daily max of "+MAX_NEW_PER_DAY+" — it'll come tomorrow, or do it now.":capRest.length+" new words are waiting behind your daily max of "+MAX_NEW_PER_DAY+" — they'll come tomorrow, or do them now.")
-        : (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug." : "Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les."))+"</p>"+
-      "<div class='row'>"+capKnop+
+        : (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug."
+          : (meerPortie ? ct("Dit was je portie voor vandaag. Genoeg is genoeg, maar doorgaan mag.","That was your round for today. Enough is enough, but you may carry on.")
+                        : ct("Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les.","Reviews come back on their own; new words are waiting in the next lesson."))))+"</p>"+
+      "<div class='row'>"+capKnop+portieKnop+
       (scopeLesson ? "<button class='"+(capRest.length?"ghost":"primary")+"' id='btnRepeatAll'>Toch alles nog eens doen</button>"+
                      "<button class='ghost' id='btnBackLes'>Terug naar de les →</button>" : "")+
       "</div>";
@@ -4211,6 +4292,8 @@ function renderWord(){
       wQueue = geschud(capRest);
       renderWord();
     };
+    var bnp = document.getElementById("btnNogEenPortie");
+    if(bnp) bnp.onclick = function(){ buildQueue(); renderWord(); };
     var bb = document.getElementById("btnBackLes");
     if(bb) bb.onclick = function(){ show("lessen"); if(curLesson) openLesson(curLesson); };
     var br2 = document.getElementById("btnRepeatAll");
@@ -5662,6 +5745,21 @@ var LESFLOW_CHISPA = {
   produceren: {es:"¡Ahora hablas tú!",               nl:"En nu praat jij!",                   en:"Now you talk!"}
 };
 var LESFLOW_CHISPA_EERSTE = {es:"¡Hola! Soy Chispa. Vamos juntos.", nl:"Hoi! Ik ben Chispa. We doen dit samen.", en:"Hi! I'm Chispa. We'll do this together."};
+/* v19.66 — de begroeting vóór je begint. Chispa liep al mee dóór de dagles, maar stond er niet op
+   het moment dat je ervoor kiest. Dat is precies het moment waarop een prompt in Fogg's zin telt:
+   niet als herinnering achteraf, maar als het gezicht dat bij de handeling hoort. Eén zin, elke dag
+   een andere, nooit verwijtend en nooit een vraag die je moet beantwoorden. */
+var CHISPA_GROET = [
+  {es:"¡Hola! ¿Empezamos?",           nl:"Hoi! Beginnen we?",                  en:"Hey! Shall we start?"},
+  {es:"Te estaba esperando.",         nl:"Ik zat op je te wachten.",           en:"I was waiting for you."},
+  {es:"Cinco minutos y ya está.",     nl:"Vijf minuutjes en het staat er.",    en:"Five minutes and that's it."},
+  {es:"¿Vamos? Yo te acompaño.",      nl:"Zullen we? Ik ga met je mee.",       en:"Shall we? I'll come along."},
+  {es:"Poquito a poco, como siempre.",nl:"Beetje bij beetje, zoals altijd.",   en:"Little by little, as always."},
+  {es:"¡Qué bien que estás aquí!",    nl:"Wat fijn dat je er bent.",           en:"So glad you're here."},
+  {es:"Hoy también aprendemos algo.", nl:"Vandaag leren we weer wat.",         en:"Today we learn something too."},
+  {es:"Sin prisa, pero sin pausa.",   nl:"Geen haast, maar wel doorgaan.",     en:"No rush, but no stopping."}
+];
+function chispaGroet(){ return CHISPA_GROET[dayHash("groet") % CHISPA_GROET.length]; }
 function lesFlowChispaFrase(){
   if(!lesFlow) return LESFLOW_CHISPA.woorden;
   if(lesFlow.stap === "woorden" && typeof doneLessonCount === "function" && doneLessonCount() === 0) return LESFLOW_CHISPA_EERSTE;
@@ -5828,10 +5926,19 @@ function lesFlowKlaar(){
   // achter het nog actieve tabblad)
   show("lessen");
   var el = document.getElementById("lessonList");
-  confetti(["🎉","🌮","✨","💃"], 30);
+  var tapaHoy = tapaVanDaag();
+  confetti(["🎉",tapaHoy.e,"✨","💃"], 30);
   el.innerHTML = "<div class='card celebrate'><span class='kicker'>"+ct("Les afgerond","Session complete")+" 🎉</span>"+
     "<p class='big' style='margin:6px 0'>"+ct("¡Muy bien! Chispa is blij met je.","¡Muy bien! Chispa is happy with you.")+"</p>"+
     "<p class='muted'>+"+bonus+" 🫒 "+ct("tapas voor Chispa","tapas for Chispa")+(nieuw ? "" : " · "+ct("(je had vandaag al een les afgerond — telt gewoon nog een keer mee voor Chispa, maar niet dubbel voor de week)","(you'd already finished a session today — still counts for Chispa, just not twice for the week)"))+"</p>"+
+    // v19.66 — de viering. Fogg: een celebration moet dírect op het gedrag volgen, iets zijn wat je
+    // dóét, en iets wat je voelt. Een tapa erbij geboekt krijgen is geen van drieën. Zélf het bord
+    // neerzetten wel, en Chispa smakt terug. Bewust geen .primary-knop: de rij eronder zegt wat je
+    // nú kunt doen, dit zegt wat je zojuist gedaan hébt. Ze horen niet om dezelfde aandacht te vechten.
+    "<button class='tapaknop' id='btnLesFlowTapa'>"+tapaHoy.e+" "+
+      ct("Geef Chispa "+tapaHoy.es, "Give Chispa "+tapaHoy.es)+"</button>"+
+    "<p class='muted' id='tapaUitleg' style='margin:0 0 4px; text-align:center; font-size:.85rem'>"+
+      ct(tapaHoy.nl, tapaHoy.en)+"</p>"+
     (eersteOoit ? "<p style='margin:8px 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
     // v19.60: staat het dagdoel er al op, dan is "nog een les" niet meer de hoofdknop. Doorgaan mag,
     // maar het hoort niet het eerste te zijn wat je ziet op het moment dat je klaar bent.
@@ -5846,6 +5953,29 @@ function lesFlowKlaar(){
     samenKaartNu(false);
   document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
   document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
+  // v19.66 — het bord neerzetten. Eén keer per viering: daarna blijft de knop staan als bewijs dat
+  // het gebeurd is (uitgegrijsd, met Chispa's gesmak erin), niet als knop die je nóg eens kunt
+  // indrukken. Een viering die je kunt herhalen tot ze niets meer betekent is geen viering.
+  var blt = document.getElementById("btnLesFlowTapa");
+  if(blt) blt.onclick = function(){
+    var res = tapaGeven();
+    var uit = document.getElementById("tapaUitleg");
+    if(!res){
+      toast(ct("Je hebt nog geen tapas voor Chispa. Die verdien je met oefenen.",
+               "You have no tapas for Chispa yet — you earn those by practising."));
+      return;
+    }
+    blt.disabled = true;
+    blt.textContent = res.tapa.e+" ¡Ñam ñam! "+res.tapa.es+" ✓";
+    if(uit) uit.innerHTML = res.nieuw
+      ? "✨ "+ct("Nieuw op Chispa's menu: <b>"+res.tapa.es+"</b> ("+res.tapa.nl+")",
+                 "New on Chispa's menu: <b>"+res.tapa.es+"</b> ("+res.tapa.en+")")
+      : ct("Chispa kende deze al, en vindt hem nog steeds lekker.",
+           "Chispa knew this one already, and still loves it.");
+    chispaSay(res.slaapt
+      ? {es:"Mmm... gracias. Mañana la como.", nl:"Mmm... dankje. Morgen eet ik hem op.", en:"Mmm... thanks. I'll eat it tomorrow."}
+      : {es:"¡Ñam ñam! ¡"+res.tapa.es+"! ¡Qué rico!", nl:res.tapa.nl+"! Heerlijk!", en:res.tapa.en+"! Delicious!"});
+  };
   // op dit scherm niet opnieuw renderen na het vastzetten: dan zou de felicitatie verdwijnen
   bindSamen("na-les", function(){ var k = document.getElementById("momentKaart"); if(k) k.classList.add("hidden"); });
   // v19.60: einde les is de eerste natuurlijke grens. Staat het dagdoel-feest te wachten, dan komt
@@ -6097,12 +6227,41 @@ function ritmeCard(){
   // voortgangsbalk die nog iets van je wil, geen primaire knop. Alleen wat je gedaan hebt en wanneer
   // je morgen terugkomt. Doorleren kan nog steeds, maar je moet ernaar reiken.
   var afgesloten = dagKlaar();
+  // v19.66 — Chispa staat op het scherm waar je je dag begint, en de portie staat er in woorden bij.
+  // Stefan, 31 juli: "dat onboarding met Chispa, dat is ook leuk om echt in de dagcyclus terug te
+  // laten komen". Ze deed dat al ín de sessie (de banner per stap), maar niet ervóór. Nu begroet ze
+  // je bij de startknop, met een andere zin per dag, en vertelt ze meteen welke tapa er aan het
+  // eind op je wacht: de beloning bij naam noemen vóórdat je begint is de helft van de viering.
+  var groet = chispaGroet();
+  var tapaHoy = tapaVanDaag();
+  var portie = dagPortie();
+  var portieTxt = (function(){
+    var d = [];
+    d.push(portie.totaal + " " + ct("woordjes","words") + (portie.nieuw.length ? " (" + portie.nieuw.length + " " + ct("nieuw","new") + ")" : ""));
+    if(portie.vanGisteren) d.push(portie.vanGisteren + " " + ct("van gisteren","from yesterday"));
+    d.push("1 " + ct("grammaticapunt","grammar point"));
+    d.push("1 " + ct("toetsje","quiz"));
+    d.push("1 " + ct("oefenronde","practice round"));
+    return d.join(" · ") + " · ±5 min";
+  })();
   return "<div class='card"+(gedaanVandaag?" celebrate":"")+"'>"+
     (dag2 ? "<p style='margin:0 0 6px'>🌅 <b>"+ct("Dag 2!","Day 2!")+"</b> "+ct("Je woordjes van gisteren staan klaar om terug te komen — precies op tijd, zo blijven ze plakken.","Yesterday's words are ready to come back — right on time, that's how they stick.")+"</p>" : "")+
-    "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓") : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : ct("Start je les","Start your session"))+"</span>"+
-    "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+(afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.") : gedaanVandaag ? ct("¡Muy bien! Chispa is trots op je.","¡Muy bien! Chispa is proud of you.") : ct("Woordjes, een toetsje en één keer oefenen. Klaar in een paar minuten.","Words, a quiz and one practice round. Done in a few minutes."))+"</p>"+
+    "<div class='lfrow'>"+
+      "<button class='lfchispa' id='btnRitmeChispa' title='Chispa'>"+chispaMiniSvg()+"</button>"+
+      "<div class='lfmid'>"+
+        "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓") : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : "🚦 "+ct("Start je les","Start your session"))+"</span>"+
+        "<p class='lfsay'><span class='es'>"+(afgesloten ? "Hasta mañana." : gedaanVandaag ? "¡Muy bien!" : groet.es)+"</span>"+
+          "<span class='nl'>"+(afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.")
+            : gedaanVandaag ? ct("Chispa is trots op je.","Chispa is proud of you.")
+            : ct(groet.nl, groet.en))+"</span></p>"+
+      "</div>"+
+    "</div>"+
+    (afgesloten || gedaanVandaag ? "" :
+      "<p class='muted' style='margin:6px 0 0'>"+portieTxt+"</p>"+
+      "<p class='muted' style='margin:2px 0 0'>"+ct("Daarna mag je Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> geven.",
+                                                    "Then you get to give Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b>.")+"</p>")+
     (afgesloten
-      ? "<p class='muted' style='margin:0'><span id='btnDagToch' style='text-decoration:underline; cursor:pointer'>"+ct("toch nog een les doen","do another session anyway")+"</span></p>"
+      ? "<p class='muted' style='margin:8px 0 0'><span id='btnDagToch' style='text-decoration:underline; cursor:pointer'>"+ct("toch nog een les doen","do another session anyway")+"</span></p>"
       : "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>")+
     // v19.58: je eigen afspraak, elke dag terug te zien op de plek waar je hem uitvoert. Een
     // implementatie-intentie werkt doordat het moment de handeling oproept, dus moet het moment
@@ -6176,6 +6335,13 @@ function renderLessons(){
   listEl.innerHTML = html;
   var bsf = document.getElementById("btnStartLesFlow");
   if(bsf) bsf.onclick = function(){ lesFlowStart(); };
+  // v19.66: Chispa op de dagkaart is aanklikbaar, net als in de banner tijdens de les. Spel, geen keuze.
+  var brc = document.getElementById("btnRitmeChispa");
+  if(brc) brc.onclick = function(){
+    var g = chispaGroet();
+    chispaMiniSpin(brc);
+    toast("💬 " + g.es + " · " + ct(g.nl, g.en));
+  };
   // v19.60: "toch nog een les" heft de afsluiting van vandaag op. Wie doorleert wil niet bij elke
   // stap een scherm dat zegt dat hij klaar is.
   var bdt = document.getElementById("btnDagToch");
@@ -6447,6 +6613,89 @@ function dagenSinds(d){
 function chispaSlaapt(uur){
   if(uur === undefined) uur = new Date().getHours();
   return uur >= 23 || uur < 7;
+}
+/* ================= DE TAPA VAN DE DAG (v19.66) =================
+   Stefan, 31 juli: "hem een tapas geven (taco's tomaten sardientjes, pimentos padron, patatas
+   bravas) daar kun je nog meer in variëren, is ook een beetje dat moment van celebration van BJ
+   Fogg."
+
+   Drie dingen tegelijk, en ze versterken elkaar:
+   1. Fogg's celebration moet dírect op het gedrag volgen en gevóéld worden. Een getal dat met één
+      omhoog gaat voelt niets. Zelf een bord voor Chispa neerzetten, met confetti en haar mond vol,
+      wel. Daarom is de tapa een handeling en geen boeking.
+   2. Elke dag een ándere tapa. Eén generiek 🫒 wordt behang; "hoy: las patatas bravas" is elke dag
+      even iets nieuws, en het is meteen een Spaans woord dat je in een echte bar kunt bestellen.
+      De dag bepaalt welke (dayHash), dus hij is consistent binnen een dag en op elk scherm gelijk.
+   3. S.tapaMenu is een verzameling die alléén kan groeien, precies zoals S.dagen.count in v19.63.
+      "Je kent 8 van de 18 tapas" is een verleden dat je hebt opgebouwd; er is geen toestand waarin
+      dit getal zakt, en dus geen manier waarop wegblijven je iets kost.
+
+   De namen staan met lidwoord ("las patatas bravas"), want zo leer je het geslacht mee. */
+var TAPAS = [
+  {id:"aceitunas",   e:"🫒",  es:"las aceitunas",              nl:"olijven",                  en:"olives"},
+  {id:"bravas",      e:"🥔",  es:"las patatas bravas",         nl:"pittige aardappeltjes",    en:"spicy potatoes"},
+  {id:"padron",      e:"🌶️", es:"los pimientos de padrón",    nl:"gepofte pepertjes",        en:"blistered peppers"},
+  {id:"sardinas",    e:"🐟",  es:"las sardinas",               nl:"sardientjes",              en:"sardines"},
+  {id:"pantomate",   e:"🍅",  es:"el pan con tomate",          nl:"brood met tomaat",         en:"bread with tomato"},
+  {id:"taco",        e:"🌮",  es:"el taco",                    nl:"taco",                     en:"taco"},
+  {id:"tortilla",    e:"🥚",  es:"la tortilla española",       nl:"aardappelomelet",          en:"potato omelette"},
+  {id:"gambas",      e:"🍤",  es:"las gambas al ajillo",       nl:"garnalen in knoflook",     en:"garlic prawns"},
+  {id:"jamon",       e:"🍖",  es:"el jamón ibérico",           nl:"ibericoham",               en:"iberico ham"},
+  {id:"manchego",    e:"🧀",  es:"el queso manchego",          nl:"manchegokaas",             en:"manchego cheese"},
+  {id:"calamares",   e:"🦑",  es:"los calamares",              nl:"inktvisringen",            en:"fried squid"},
+  {id:"champis",     e:"🍄",  es:"los champiñones al ajillo",  nl:"champignons in knoflook",  en:"garlic mushrooms"},
+  {id:"pulpo",       e:"🐙",  es:"el pulpo a la gallega",      nl:"octopus uit Galicië",      en:"Galician octopus"},
+  {id:"albondigas",  e:"🍡",  es:"las albóndigas",             nl:"gehaktballetjes",          en:"meatballs"},
+  {id:"croquetas",   e:"🥐",  es:"las croquetas de jamón",     nl:"hamkroketjes",             en:"ham croquettes"},
+  {id:"ensaladilla", e:"🥗",  es:"la ensaladilla rusa",        nl:"aardappelsalade",          en:"potato salad"},
+  {id:"boquerones",  e:"🐠",  es:"los boquerones en vinagre",  nl:"ansjovis in azijn",        en:"anchovies in vinegar"},
+  {id:"chorizo",     e:"🌭",  es:"el chorizo al vino",         nl:"chorizo in wijn",          en:"chorizo in wine"}
+];
+function tapaVanDaag(){ return TAPAS[dayHash("tapa") % TAPAS.length]; }
+function tapaMenuState(){ if(!S.tapaMenu) S.tapaMenu = []; return S.tapaMenu; }
+function tapaMenuKent(id){ return tapaMenuState().indexOf(id) >= 0; }
+function tapaMenuNoteer(id){
+  var m = tapaMenuState();
+  if(m.indexOf(id) >= 0) return false;   // al bekend: geen tweede "nieuw!"-moment
+  m.push(id);
+  return true;                            // aanroeper regelt persist()
+}
+/* De handeling zelf, gedeeld door de Chispa-pagina en het einde van je dagsessie. Geeft terug wat
+   er gebeurd is, zodat de aanroeper er zijn eigen scherm bij kan maken; geeft null terug als je
+   geen tapa hebt. */
+function tapaGeven(){
+  if((S.tapas||0) < 1) return null;
+  var tp = tapaVanDaag();
+  var slaapt = chispaSlaapt();
+  S.tapas--;
+  S.fed = today();
+  var nieuw = tapaMenuNoteer(tp.id);
+  persist();
+  chispaZorgTik();
+  var wens = chispaWensDoe("tapa");
+  confetti([tp.e, "❤️", "😋"].concat(nieuw ? ["✨","🎉"] : []), nieuw ? 26 : 12);
+  return {tapa:tp, nieuw:nieuw, slaapt:slaapt, wens:wens};
+}
+function tapaMenuHtml(){
+  var hoy = tapaVanDaag();
+  var uit = "";
+  TAPAS.forEach(function(tp){
+    uit += "<button class='tapachip"+(tapaMenuKent(tp.id)?" gehad":"")+(tp.id===hoy.id?" hoy":"")+
+      "' data-tapa='"+tp.id+"' title='"+tp.es+"'>"+tp.e+"</button>";
+  });
+  return "<div class='tapamenu' id='tapaMenuRij'>"+uit+"</div>";
+}
+function tapaMenuWire(el){
+  if(!el) return;
+  el.querySelectorAll("button.tapachip").forEach(function(b){
+    b.onclick = function(){
+      var tp = TAPAS.filter(function(x){ return x.id === b.getAttribute("data-tapa"); })[0];
+      if(!tp) return;
+      if(tapaMenuKent(tp.id)) chispaSay({es:"¡"+tp.es+"! ¡Qué rico!", nl:tp.nl+"! Heerlijk!", en:tp.en+"! Delicious!"});
+      else toast(ct("Deze kent Chispa nog niet — die komt vanzelf een keer langs. "+tp.e,
+                    "Chispa hasn't had this one yet — it'll come around. "+tp.e));
+    };
+  });
 }
 var CHISPA_WENSEN = [
   {id:"tapa",   e:"🫒", es:"Hoy Chispa quiere una tapa.",        nl:"Chispa wil vandaag een tapa.",          en:"Chispa wants a tapa today."},
@@ -6854,6 +7103,8 @@ function renderPet(){
     }
   });
   var cadeauGehad = S.chispaCadeau === today();
+  var tapaHoy = tapaVanDaag();
+  var tapaGehad = tapaMenuState().length;
   // v19.49 Tamagotchi, v19.63 zonder de hongermeter: dagwens en nachtstand blijven.
   var wens = chispaWens();
   var wensOk = chispaWensVervuld();
@@ -6887,8 +7138,15 @@ function renderPet(){
     "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen · tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances · tap one")+"</p>"+
     "<p class='muted' style='font-size:.82rem; margin:8px 0 8px; text-align:center'>"+deco.txt+"</p>"+
     "<span class='tapabadge'>🫒 "+(S.tapas||0)+" tapas</span>"+
+    /* v19.66 — het menu van Chispa. Dezelfde gedachte als de dansen eronder: een verzameling die
+       alleen maar kan groeien, waarin elk vakje een echt Spaans woord is dat je met een smakkend
+       axolotl hebt geleerd in plaats van met een rijtje. De tapa van vandaag staat omkaderd, want
+       díé mag je straks geven; de grijze ken je nog niet en die komen vanzelf een keer langs. */
+    "<p class='bailehoy' id='tapaHoy'><span class='es'>La tapa del día</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>· "+ct(tapaHoy.nl, tapaHoy.en)+"</span></p>"+
+    tapaMenuHtml()+
+    "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas · tik er een aan","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas · tap one")+"</p>"+
     "<div class='row center'>"+
-    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?"Stil een tapa neerzetten 🫒":"Geef een tapa 🫒")+"</button>"+
+    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?"Stil een tapa neerzetten "+tapaHoy.e:"Geef de tapa van vandaag "+tapaHoy.e)+"</button>"+
     "<button class='ghost' id='btnFiesta'>🎉 ¡Fiesta!</button>"+
     "<button class='ghost' id='btnSerenade'>🎶 Serenade</button>"+
     "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">🎁 "+(cadeauGehad?"Morgen weer":"Dagcadeautje")+"</button>"+
@@ -6901,6 +7159,7 @@ function renderPet(){
        straattaal van vandaag, verhuisd van de woordjes- en vertaalpagina naar hier. */
     "<div id='jergaChispa'></div>";
   jergaRender("jergaChispa");
+  tapaMenuWire(el);
   var b = document.getElementById("btnFeed");
   if(b) b.onclick = feedPet;
   var bfi = document.getElementById("btnFiesta");
@@ -6942,20 +7201,22 @@ function renderPet(){
     setTimeout(function(){ if(chispaZichtbaar() && !chispaBeweegt()) chispaBaila(bailePorDia()); }, 900);
   }
 }
+// v19.66 — voeren loopt nu via tapaGeven(), zodat Chispa's pagina en het einde van je les precies
+// hetzelfde doen: dezelfde tapa van vandaag, dezelfde kosten (één tapa), hetzelfde menu dat groeit.
+// Twee plekken die hetzelfde lijken te doen maar het net iets anders doen, is hoe je stilletjes twee
+// verschillende spellen krijgt.
 function feedPet(){
-  if((S.tapas||0) < 1){ toast("Je hebt nog geen tapas. Oefenen = tapas verdienen!"); return; }
-  var slaapt = chispaSlaapt();
-  S.tapas--; S.fed = today(); persist();
+  var res = tapaGeven();
+  if(!res){ toast("Je hebt nog geen tapas. Oefenen = tapas verdienen!"); return; }
   var box = document.getElementById("petBox");
   if(box){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
-  chispaZorgTik();
-  chispaWensDoe("tapa");
-  confetti(["🌮","❤️","😋"], 12);
-  toast(slaapt ? "¡Ssshh! Chispa vindt hem morgenvroeg. ❤️" : "¡Ñam ñam! Chispa smult. ❤️");
+  toast(res.slaapt ? "¡Ssshh! Chispa vindt hem morgenvroeg. ❤️"
+    : (res.nieuw ? "✨ "+ct("Nieuw op het menu: "+res.tapa.es, "New on the menu: "+res.tapa.es)
+                 : "¡Ñam ñam! Chispa smult. ❤️"));
   renderPet();
-  chispaSay(slaapt
-    ? {es:"Mmm... gracias. Mañana la como.", nl:"Mmm... dankje. Morgen eet ik hem op."}
-    : {es:"¡Ñam ñam! ¡Qué rica esta tapa!", nl:"Mmm! Wat is deze tapa lekker!"});
+  chispaSay(res.slaapt
+    ? {es:"Mmm... gracias. Mañana la como.", nl:"Mmm... dankje. Morgen eet ik hem op.", en:"Mmm... thanks. I'll eat it tomorrow."}
+    : {es:"¡Ñam ñam! ¡"+res.tapa.es+"! ¡Qué rico!", nl:res.tapa.nl+"! Wat is deze tapa lekker!", en:res.tapa.en+"! What a great tapa!"});
 }
 function renderShop(){
   var el = document.getElementById("shopCard");
@@ -7569,7 +7830,11 @@ function wsCellClick(r, c){
 var UI_LANGS = {nl:{naam:"Nederlands", vlag:"🇳🇱", kort:"NL"}, en:{naam:"English", vlag:"🇬🇧", kort:"EN"}, fr:{naam:"Français", vlag:"🇫🇷", kort:"FR"}, de:{naam:"Deutsch", vlag:"🇩🇪", kort:"DE"}};
 var TRANS = {en:{"w1":"insecure","w2":"insecurity","w3":"anxious, tense","w4":"anxiety, tension","w5":"frustrated","w6":"frustration","w7":"easily scared, fearful","w8":"fear","w9":"excited, full of anticipation","w10":"joyful anticipation (not: illusion!)","w11":"ridiculous","w12":"enthusiastic","w13":"shy","w14":"funny, fun","w15":"happy, content","w16":"sad","w17":"free","w18":"to feel","w19":"to worry","w20":"to feel terrible","w21":"to learn","w22":"to forget","w23":"to remember","w24":"to repeat","w25":"to translate","w26":"to look up, to search","w27":"dictionary","w28":"word","w29":"sentence, phrase","w30":"sound","w31":"to pronounce","w32":"to improve","w33":"challenge","w34":"mistake, error","w35":"to be hard/difficult (for someone); to cost","w36":"to overcome the fear","w37":"vocabulary","w38":"grammar","w39":"to understand","w40":"Spanish speaker","w41":"to be born","w42":"to marry","w43":"to divorce","w44":"to die","w45":"to move (house)","w46":"to influence","w47":"to travel","w48":"life","w49":"death","w50":"painting","w51":"(artist's) work","w52":"era, time","w53":"famous","w54":"painter","w55":"suffering","w56":"exhibition","w57":"to stumble, to trip","w58":"to swim","w59":"sea","w60":"to make decisions","w61":"to discover","w62":"loved ones","w63":"country","w64":"everyone","w65":"biography","w66":"achievement","w67":"to be successful","w68":"prize, award","w69":"to begin (to)","w70":"to finish, to end","w71":"during","w72":"until","w73":"century","w74":"to retire","w75":"war","w76":"to flee","w77":"to compose","w78":"to direct, to lead","w79":"to star in","w80":"to achieve, to manage to","w81":"singer","w82":"to leave, to go away","w83":"hair","w84":"eyes","w85":"tall","w86":"short (height)","w87":"slim","w88":"handsome, pretty","w89":"to wear glasses","w90":"beard","w91":"to look like, to resemble","w92":"to get along well/badly with","w93":"character, personality","w94":"open (personality)","w95":"quiet (person)","w96":"funny","w97":"partner, couple","w98":"to know (someone), to meet","w99":"flat, apartment","w100":"bedroom","w101":"kitchen","w102":"bathroom","w103":"living room","w104":"terrace","w105":"balcony","w106":"garden","w107":"wardrobe, closet","w108":"bed","w109":"sofa (masculine, despite the -a!)","w110":"furniture","w111":"furnished","w112":"bright, light-filled","w113":"spacious","w114":"cosy, welcoming","w115":"noisy","w116":"quiet, calm","w117":"neighbourhood","w118":"the outskirts (always plural)","w119":"to rent (and rent out)","w120":"rent (price)","w121":"lift, elevator","w122":"to love (something) (me encanta)","b1":"hello","b2":"goodbye","b3":"thank you","b4":"please","b5":"yes / no","b6":"good morning","b7":"good evening, good night","b8":"see you tomorrow","b9":"my name is...","b10":"how are you?","b11":"house","b12":"dog","b13":"cat","b14":"book","b15":"school","b16":"friend","b17":"family","b18":"mother","b19":"father","b20":"brother / sister","b21":"to eat","b22":"to drink","b23":"to speak, to talk","b24":"to live","b25":"to be (essence/traits)","b26":"to be (place/state)","b27":"to have","b28":"to go","b29":"big","b30":"small","b31":"pretty, nice","b32":"nice, kind","b33":"water","b34":"food","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"the Netherlands","b38":"a little","b39":"where?","b40":"a lot, much","b41":"Dutch (person)","b42":"Spanish (person)","b43":"name","b44":"work, job","b45":"teacher","b46":"student","b47":"to work","b48":"to study","b49":"year","b50":"what's your name?","b51":"to read","b52":"to write","b53":"to listen","b54":"to understand","b55":"word","b56":"language","b57":"city","b58":"village","b59":"beach","b60":"mountain","b61":"river","b62":"sea","b63":"north","b64":"south","b65":"park","b66":"square","b67":"museum","b68":"church","b69":"climate (el, despite the -a)","b70":"it's hot","b71":"it's cold","b72":"it rains / it's raining","b73":"people (singular in Spanish!)","b74":"pretty, nice","w123":"to ask a favour","w124":"favour","w125":"to lend","w126":"to lend, to let","w127":"to borrow","w128":"could you...?","w129":"would you mind...?","w130":"excuse","w131":"to apologize","w132":"to forgive","w133":"I'm (so) sorry","w134":"noise","w135":"to bother, to disturb","w136":"neighbour","w137":"right now","w138":"at this moment","w139":"busy","w140":"key","w141":"mobile phone","w142":"permission","w143":"to have dinner","w144":"to take a shower","w145":"before, previously","w146":"now","w147":"not anymore","w148":"still","w149":"invention","w150":"discovery","w151":"electricity","w152":"wheel","w153":"writing","w154":"fire","w155":"custom, habit","w156":"to usually do (something)","w157":"to change","w158":"old, former, back then","w159":"modern","w160":"generation","w161":"grandparents","w162":"as a child, when I was little","w163":"trip, excursion","w164":"concert","w165":"play (theatre)","w166":"landscape","w167":"accommodation","w168":"to book","w169":"reservation","w170":"to be worth it","w171":"hassle, drag (informal)","w172":"luck","w173":"shame, pity","w174":"to seem, to think (opinion)","w175":"to plan","w176":"plan","w177":"to feel like (doing something)","w178":"to enjoy","w179":"relaxing","w180":"exciting","w181":"recipe","w182":"ingredient","w183":"to cook","w184":"to boil","w185":"to fry","w186":"to mix","w187":"to add","w188":"to cut","w189":"to peel","w190":"oven","w191":"frying pan","w192":"pot, pan","w193":"a pinch of","w194":"a little (of)","w195":"enough, quite a lot","w196":"too much","w197":"tablespoon (as a quantity)","w198":"flavour, taste","w199":"head","w200":"back","w201":"stomach","w202":"throat","w203":"to hurt","w204":"pain, ache","w205":"to be sick, ill","w206":"to have a fever","w207":"cough","w208":"a cold (illness)","w209":"to rest","w210":"to take (a pill)","w211":"pill","w212":"syrup (medicine)","w213":"healthy","w214":"serious","w215":"to get better, to improve","w216":"advice","w217":"moment","w218":"unforgettable","w219":"surprise","w220":"to surprise, to be surprised","w221":"anecdote, story","w222":"to tell (a story)","w223":"suddenly","w224":"while","w225":"in the end","w226":"memory","w227":"to remember","w228":"to get emotional","w229":"emotion","w230":"to celebrate","w231":"celebration","w232":"unexpected","w233":"to come true (a dream)","w234":"dream","b75":"clothes","b76":"T-shirt","b77":"trousers, pants","b78":"dress","b79":"shoes","b80":"jacket","b81":"red","b82":"blue","b83":"green","b84":"yellow","b85":"black","b86":"white","b87":"shop, store","b88":"to buy","b89":"expensive","b90":"cheap","b91":"price","b92":"a hundred","b93":"how much is it?","b94":"to prefer","b95":"to wear","b96":"(clothing) size","b97":"grandfather / grandmother","b98":"uncle / aunt","b99":"cousin","b100":"son / daughter","b101":"my","b102":"your","b103":"his / her / their / your (formal)","b104":"our","b105":"to know, to meet (a person)","b106":"boyfriend / girlfriend","b107":"married","b108":"single","b109":"older","b110":"younger","b111":"sport","b112":"music","b113":"to play","b114":"football","b115":"to get up","b116":"to shower","b117":"to have breakfast","b118":"to have lunch","b119":"to have dinner","b120":"to go to bed","b121":"morning","b122":"afternoon","b123":"evening, night","b124":"hour, time","b125":"clock, watch","b126":"early","b127":"late","b128":"always","b129":"never","b130":"sometimes","b131":"every day","b132":"to wake up","b133":"breakfast","b134":"lunch","b135":"dinner","b136":"set menu","b137":"menu (in a restaurant)","b138":"waiter / waitress","b139":"to want","b140":"to order","b141":"to bring","b142":"table","b143":"dish, plate","b144":"drink","b145":"bread","b146":"fruit","b147":"vegetables","b148":"meat","b149":"fish","b150":"the bill","b151":"building","b152":"street","b153":"centre","b154":"near, close to","b155":"far (from)","b156":"next to, beside","b157":"opposite, in front of","b158":"between","b159":"safe","b160":"clean","b161":"dirty","b162":"modern","b163":"old, ancient","b164":"public transport","b165":"to walk","b166":"neighbour","b167":"quiet, peaceful","b168":"noisy","b169":"to know how to, can (skill)","b170":"to be able to, can (ability/permission)","b171":"to drive","b172":"to swim","b173":"to cook","b174":"to dance","b175":"to sing","b176":"to draw","b177":"to play (an instrument)","b178":"piano","b179":"guitar","b180":"to learn to","b181":"already","b182":"not yet","b183":"to have (auxiliary)","b184":"done, made (past participle of hacer)","b185":"seen (past participle of ver)","b186":"driving licence"}, fr:{"w1":"peu sûr de soi","w2":"l'insécurité","w3":"anxieux, tendu","w4":"l'anxiété","w5":"frustré","w6":"la frustration","w7":"peureux, craintif","w8":"la peur","w9":"enthousiaste, impatient","w10":"la joie anticipée (pas : illusion !)","w11":"ridicule","w12":"enthousiaste","w13":"timide","w14":"amusant, drôle","w15":"content","w16":"triste","w17":"libre","w18":"se sentir","w19":"s'inquiéter","w20":"se sentir très mal","w21":"apprendre","w22":"oublier","w23":"se souvenir de","w24":"répéter","w25":"traduire","w26":"chercher","w27":"le dictionnaire","w28":"le mot","w29":"la phrase","w30":"le son","w31":"prononcer","w32":"améliorer","w33":"le défi","w34":"l'erreur, la faute","w35":"coûter (de l'effort)","w36":"surmonter la peur","w37":"le vocabulaire","w38":"la grammaire","w39":"comprendre","w40":"l'hispanophone","w41":"naître","w42":"se marier (avec)","w43":"divorcer","w44":"mourir","w45":"déménager","w46":"influencer","w47":"voyager","w48":"la vie","w49":"la mort","w50":"le tableau","w51":"l'œuvre","w52":"l'époque","w53":"célèbre","w54":"le peintre / la peintre","w55":"la souffrance","w56":"l'exposition","w57":"trébucher","w58":"nager","w59":"la mer","w60":"prendre des décisions","w61":"découvrir","w62":"les proches, les êtres chers","w63":"le pays","w64":"tout le monde","w65":"la biographie","w66":"la réussite, l'exploit","w67":"avoir du succès","w68":"le prix (qu'on gagne)","w69":"commencer (à)","w70":"terminer, finir","w71":"pendant","w72":"jusqu'à","w73":"le siècle","w74":"prendre sa retraite","w75":"la guerre","w76":"fuir","w77":"composer","w78":"diriger, réaliser","w79":"jouer le rôle principal dans","w80":"réussir à, obtenir","w81":"le chanteur / la chanteuse","w82":"s'en aller, partir","w83":"les cheveux","w84":"les yeux","w85":"grand (de taille)","w86":"petit (de taille)","w87":"mince","w88":"beau, joli","w89":"porter des lunettes","w90":"la barbe","w91":"ressembler à","w92":"bien / mal s'entendre avec","w93":"le caractère","w94":"ouvert (caractère)","w95":"silencieux, réservé","w96":"drôle","w97":"le/la partenaire, le couple","w98":"connaître, rencontrer","w99":"l'appartement","w100":"la chambre","w101":"la cuisine","w102":"la salle de bains","w103":"le salon","w104":"la terrasse","w105":"le balcon","w106":"le jardin","w107":"l'armoire","w108":"le lit","w109":"le canapé (masculin malgré le -a !)","w110":"les meubles","w111":"meublé","w112":"lumineux","w113":"spacieux","w114":"accueillant, chaleureux","w115":"bruyant","w116":"tranquille, calme","w117":"le quartier","w118":"la banlieue (toujours pluriel en espagnol)","w119":"louer","w120":"le loyer","w121":"l'ascenseur","w122":"adorer (me encanta)","b1":"bonjour, salut","b2":"au revoir","b3":"merci","b4":"s'il te plaît / s'il vous plaît","b5":"oui / non","b6":"bonjour (le matin)","b7":"bonsoir, bonne nuit","b8":"à demain","b9":"je m'appelle...","b10":"comment ça va ?","b11":"la maison","b12":"le chien","b13":"le chat","b14":"le livre","b15":"l'école","b16":"l'ami / l'amie","b17":"la famille","b18":"la mère","b19":"le père","b20":"le frère / la sœur","b21":"manger","b22":"boire","b23":"parler","b24":"vivre, habiter","b25":"être (caractéristiques)","b26":"être (lieu/état)","b27":"avoir","b28":"aller","b29":"grand","b30":"petit","b31":"joli, beau","b32":"sympathique, gentil","b33":"l'eau","b34":"la nourriture","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"les Pays-Bas","b38":"un peu","b39":"où ?","b40":"beaucoup","b41":"néerlandais / néerlandaise","b42":"espagnol / espagnole","b43":"le nom","b44":"le travail","b45":"le professeur / la professeure","b46":"l'étudiant / l'étudiante","b47":"travailler","b48":"étudier","b49":"l'année, l'an","b50":"comment tu t'appelles ?","b51":"lire","b52":"écrire","b53":"écouter","b54":"comprendre","b55":"le mot","b56":"la langue (el idioma : masculin !)","b57":"la ville","b58":"le village","b59":"la plage","b60":"la montagne","b61":"la rivière, le fleuve","b62":"la mer","b63":"le nord","b64":"le sud","b65":"le parc","b66":"la place","b67":"le musée","b68":"l'église","b69":"le climat (el clima : masculin !)","b70":"il fait chaud","b71":"il fait froid","b72":"il pleut","b73":"les gens (singulier en espagnol !)","b74":"joli, beau","w123":"demander un service","w124":"le service, la faveur","w125":"prêter","w126":"prêter, laisser","w127":"emprunter","w128":"pourrais-tu... ?","w129":"ça te dérangerait de... ?","w130":"l'excuse","w131":"s'excuser","w132":"pardonner","w133":"je suis (vraiment) désolé","w134":"le bruit","w135":"déranger, gêner","w136":"le voisin / la voisine","w137":"tout de suite","w138":"en ce moment","w139":"occupé / occupée","w140":"la clé","w141":"le portable","w142":"la permission","w143":"dîner","w144":"se doucher","w145":"avant","w146":"maintenant","w147":"ne...plus","w148":"encore","w149":"l'invention","w150":"la découverte","w151":"l'électricité","w152":"la roue","w153":"l'écriture","w154":"le feu","w155":"la coutume, l'habitude","w156":"avoir l'habitude de","w157":"changer","w158":"ancien","w159":"moderne","w160":"la génération","w161":"les grands-parents","w162":"quand j'étais petit(e)","w163":"l'excursion","w164":"le concert","w165":"la pièce de théâtre","w166":"le paysage","w167":"le logement, l'hébergement","w168":"réserver","w169":"la réservation","w170":"valoir la peine","w171":"la corvée, l'ennui (familier)","w172":"la chance","w173":"le dommage, la peine","w174":"trouver, penser (opinion)","w175":"planifier","w176":"le plan, le projet","w177":"avoir envie de","w178":"profiter de","w179":"relaxant","w180":"passionnant","w181":"la recette","w182":"l'ingrédient","w183":"cuisiner","w184":"bouillir","w185":"frire","w186":"mélanger","w187":"ajouter","w188":"couper","w189":"éplucher","w190":"le four","w191":"la poêle","w192":"la casserole","w193":"une pincée de","w194":"un peu de","w195":"assez, pas mal de","w196":"trop de","w197":"la cuillère à soupe (quantité)","w198":"le goût, la saveur","w199":"la tête","w200":"le dos","w201":"l'estomac","w202":"la gorge","w203":"faire mal","w204":"la douleur","w205":"être malade","w206":"avoir de la fièvre","w207":"la toux","w208":"le rhume","w209":"se reposer","w210":"prendre (un médicament)","w211":"le comprimé, le cachet","w212":"le sirop (médicament)","w213":"sain, en bonne santé","w214":"grave","w215":"aller mieux, guérir","w216":"le conseil","w217":"le moment","w218":"inoubliable","w219":"la surprise","w220":"surprendre, être surpris","w221":"l'anecdote","w222":"raconter (une histoire)","w223":"soudain, tout à coup","w224":"pendant que","w225":"finalement","w226":"le souvenir","w227":"se souvenir de","w228":"être ému","w229":"l'émotion","w230":"fêter, célébrer","w231":"la fête, la célébration","w232":"inattendu","w233":"se réaliser (un rêve)","w234":"le rêve","b75":"les vêtements","b76":"le t-shirt","b77":"le pantalon","b78":"la robe","b79":"les chaussures","b80":"la veste","b81":"rouge","b82":"bleu","b83":"vert","b84":"jaune","b85":"noir","b86":"blanc","b87":"le magasin","b88":"acheter","b89":"cher","b90":"bon marché, pas cher","b91":"le prix","b92":"cent","b93":"combien ça coûte ?","b94":"préférer","b95":"porter","b96":"la taille","b97":"le grand-père / la grand-mère","b98":"l'oncle / la tante","b99":"le cousin / la cousine","b100":"le fils / la fille","b101":"mon/ma/mes","b102":"ton/ta/tes","b103":"son/sa/ses","b104":"notre/nos","b105":"connaître","b106":"le copain / la copine","b107":"marié","b108":"célibataire","b109":"plus âgé, aîné","b110":"plus jeune, cadet","b111":"le sport","b112":"la musique","b113":"jouer","b114":"le football","b115":"se lever","b116":"se doucher","b117":"prendre le petit-déjeuner","b118":"déjeuner","b119":"dîner","b120":"se coucher","b121":"le matin","b122":"l'après-midi","b123":"le soir, la nuit","b124":"l'heure","b125":"l'horloge, la montre","b126":"tôt","b127":"tard","b128":"toujours","b129":"jamais","b130":"parfois","b131":"tous les jours","b132":"se réveiller","b133":"le petit-déjeuner","b134":"le déjeuner","b135":"le dîner","b136":"le menu (fixe)","b137":"la carte","b138":"le serveur / la serveuse","b139":"vouloir","b140":"commander","b141":"apporter","b142":"la table","b143":"le plat","b144":"la boisson","b145":"le pain","b146":"le fruit","b147":"le légume","b148":"la viande","b149":"le poisson","b150":"l'addition","b151":"le bâtiment","b152":"la rue","b153":"le centre","b154":"près (de)","b155":"loin (de)","b156":"à côté de","b157":"en face de","b158":"entre","b159":"sûr, sécurisé","b160":"propre","b161":"sale","b162":"moderne","b163":"ancien","b164":"les transports en commun","b165":"marcher","b166":"le voisin / la voisine","b167":"tranquille, calme","b168":"bruyant","b169":"savoir (faire quelque chose)","b170":"pouvoir","b171":"conduire","b172":"nager","b173":"cuisiner","b174":"danser","b175":"chanter","b176":"dessiner","b177":"jouer (d'un instrument)","b178":"le piano","b179":"la guitare","b180":"apprendre à","b181":"déjà","b182":"pas encore","b183":"avoir (auxiliaire)","b184":"fait (participe passé de hacer)","b185":"vu (participe passé de ver)","b186":"le permis de conduire"}, de:{"w1":"unsicher","w2":"die Unsicherheit","w3":"angespannt, ängstlich","w4":"die Anspannung, die Angst","w5":"frustriert","w6":"die Frustration","w7":"schreckhaft, ängstlich veranlagt","w8":"die Angst","w9":"voller Vorfreude, begeistert","w10":"die Vorfreude (nicht: Illusion!)","w11":"lächerlich","w12":"begeistert","w13":"schüchtern","w14":"lustig, unterhaltsam","w15":"zufrieden, froh","w16":"traurig","w17":"frei","w18":"sich fühlen","w19":"sich Sorgen machen","w20":"sich elend fühlen","w21":"lernen","w22":"vergessen","w23":"sich erinnern, behalten","w24":"wiederholen","w25":"übersetzen","w26":"suchen, nachschlagen","w27":"das Wörterbuch","w28":"das Wort","w29":"der Satz","w30":"der Laut, der Klang","w31":"aussprechen","w32":"verbessern","w33":"die Herausforderung","w34":"der Fehler","w35":"schwerfallen (auch: kosten)","w36":"die Angst überwinden","w37":"der Wortschatz","w38":"die Grammatik","w39":"verstehen","w40":"der/die Spanischsprachige","w41":"geboren werden","w42":"heiraten","w43":"sich scheiden lassen","w44":"sterben","w45":"umziehen","w46":"beeinflussen","w47":"reisen","w48":"das Leben","w49":"der Tod","w50":"das Gemälde","w51":"das Werk (eines Künstlers)","w52":"die Epoche, die Zeit","w53":"berühmt","w54":"der Maler / die Malerin","w55":"das Leiden","w56":"die Ausstellung","w57":"stolpern","w58":"schwimmen","w59":"das Meer","w60":"Entscheidungen treffen","w61":"entdecken","w62":"die Liebsten, die Nahestehenden","w63":"das Land","w64":"alle, jeder","w65":"die Biografie","w66":"die Leistung, der Erfolg","w67":"Erfolg haben","w68":"der Preis (den man gewinnt)","w69":"anfangen (mit)","w70":"beenden, enden","w71":"während","w72":"bis","w73":"das Jahrhundert","w74":"in Rente gehen","w75":"der Krieg","w76":"fliehen","w77":"komponieren","w78":"Regie führen, leiten","w79":"die Hauptrolle spielen in","w80":"erreichen, schaffen","w81":"der Sänger / die Sängerin","w82":"weggehen, aufbrechen","w83":"das Haar","w84":"die Augen","w85":"groß (von Statur)","w86":"klein (von Statur)","w87":"schlank","w88":"gutaussehend, hübsch","w89":"eine Brille tragen","w90":"der Bart","w91":"ähneln, aussehen wie","w92":"sich gut/schlecht verstehen mit","w93":"der Charakter","w94":"offen (Charakter)","w95":"still, ruhig (Person)","w96":"witzig, lustig","w97":"der Partner / die Partnerin, das Paar","w98":"kennen, kennenlernen","w99":"die Wohnung","w100":"das Schlafzimmer","w101":"die Küche","w102":"das Badezimmer","w103":"das Wohnzimmer","w104":"die Terrasse","w105":"der Balkon","w106":"der Garten","w107":"der Schrank","w108":"das Bett","w109":"das Sofa (männlich, trotz -a!)","w110":"die Möbel","w111":"möbliert","w112":"hell, lichtdurchflutet","w113":"geräumig","w114":"gemütlich, einladend","w115":"laut","w116":"ruhig","w117":"das Viertel, die Nachbarschaft","w118":"die Vororte (immer Plural)","w119":"mieten (und vermieten)","w120":"die Miete","w121":"der Aufzug","w122":"etwas lieben (me encanta)","b1":"hallo","b2":"tschüss, auf Wiedersehen","b3":"danke","b4":"bitte","b5":"ja / nein","b6":"guten Morgen","b7":"guten Abend, gute Nacht","b8":"bis morgen","b9":"ich heiße...","b10":"wie geht's?","b11":"das Haus","b12":"der Hund","b13":"die Katze","b14":"das Buch","b15":"die Schule","b16":"der Freund / die Freundin","b17":"die Familie","b18":"die Mutter","b19":"der Vater","b20":"der Bruder / die Schwester","b21":"essen","b22":"trinken","b23":"sprechen, reden","b24":"wohnen, leben","b25":"sein (Eigenschaften)","b26":"sein (Ort/Zustand)","b27":"haben","b28":"gehen","b29":"groß","b30":"klein","b31":"schön, hübsch","b32":"nett, sympathisch","b33":"das Wasser","b34":"das Essen","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"die Niederlande","b38":"ein bisschen","b39":"wo?","b40":"viel","b41":"niederländisch / Niederländer(in)","b42":"spanisch / Spanier(in)","b43":"der Name","b44":"die Arbeit","b45":"der Lehrer / die Lehrerin","b46":"der Student / die Studentin","b47":"arbeiten","b48":"studieren, lernen","b49":"das Jahr","b50":"wie heißt du?","b51":"lesen","b52":"schreiben","b53":"zuhören","b54":"verstehen","b55":"das Wort","b56":"die Sprache (el idioma: männlich!)","b57":"die Stadt","b58":"das Dorf","b59":"der Strand","b60":"der Berg","b61":"der Fluss","b62":"das Meer","b63":"der Norden","b64":"der Süden","b65":"der Park","b66":"der Platz","b67":"das Museum","b68":"die Kirche","b69":"das Klima (el clima: männlich!)","b70":"es ist heiß","b71":"es ist kalt","b72":"es regnet","b73":"die Leute (im Spanischen Singular!)","b74":"schön, hübsch","w123":"um einen Gefallen bitten","w124":"der Gefallen","w125":"verleihen, ausleihen (an jemanden)","w126":"leihen, lassen","w127":"sich leihen (von jemandem)","w128":"könntest du...?","w129":"würde es dir etwas ausmachen...?","w130":"die Ausrede, die Entschuldigung","w131":"sich entschuldigen","w132":"verzeihen","w133":"es tut mir (sehr) leid","w134":"der Lärm","w135":"stören","w136":"der Nachbar / die Nachbarin","w137":"sofort, gerade jetzt","w138":"in diesem Moment","w139":"beschäftigt","w140":"der Schlüssel","w141":"das Handy","w142":"die Erlaubnis","w143":"zu Abend essen","w144":"duschen","w145":"früher, vorher","w146":"jetzt","w147":"nicht mehr","w148":"noch","w149":"die Erfindung","w150":"die Entdeckung","w151":"die Elektrizität","w152":"das Rad","w153":"die Schrift","w154":"das Feuer","w155":"die Gewohnheit","w156":"gewöhnlich tun, pflegen zu","w157":"ändern, sich verändern","w158":"alt, ehemalig","w159":"modern","w160":"die Generation","w161":"die Großeltern","w162":"als ich klein war","w163":"der Ausflug","w164":"das Konzert","w165":"das Theaterstück","w166":"die Landschaft","w167":"die Unterkunft","w168":"reservieren","w169":"die Reservierung","w170":"sich lohnen","w171":"der Ärger, die Mühe (umgangssprachlich)","w172":"das Glück","w173":"schade, das Bedauern","w174":"finden, meinen (Meinung)","w175":"planen","w176":"der Plan","w177":"Lust haben auf","w178":"genießen","w179":"entspannend","w180":"aufregend","w181":"das Rezept","w182":"die Zutat","w183":"kochen","w184":"kochen (Flüssigkeit), aufkochen","w185":"braten, frittieren","w186":"mischen","w187":"hinzufügen","w188":"schneiden","w189":"schälen","w190":"der Ofen","w191":"die Pfanne","w192":"der Topf","w193":"eine Prise","w194":"ein bisschen","w195":"genug, ziemlich viel","w196":"zu viel","w197":"der Esslöffel (als Menge)","w198":"der Geschmack","w199":"der Kopf","w200":"der Rücken","w201":"der Magen","w202":"der Hals","w203":"wehtun","w204":"der Schmerz","w205":"krank sein","w206":"Fieber haben","w207":"der Husten","w208":"die Erkältung","w209":"sich ausruhen","w210":"einnehmen (Medikament)","w211":"die Tablette","w212":"der Sirup (Medikament)","w213":"gesund","w214":"ernst","w215":"sich bessern, gesund werden","w216":"der Rat","w217":"der Moment","w218":"unvergesslich","w219":"die Überraschung","w220":"überraschen, überrascht sein","w221":"die Anekdote","w222":"erzählen (eine Geschichte)","w223":"plötzlich","w224":"während","w225":"schließlich, am Ende","w226":"die Erinnerung","w227":"sich erinnern","w228":"gerührt sein, bewegt sein","w229":"die Emotion","w230":"feiern","w231":"die Feier","w232":"unerwartet","w233":"in Erfüllung gehen (ein Traum)","w234":"der Traum","b75":"die Kleidung","b76":"das T-Shirt","b77":"die Hose","b78":"das Kleid","b79":"die Schuhe","b80":"die Jacke","b81":"rot","b82":"blau","b83":"grün","b84":"gelb","b85":"schwarz","b86":"weiß","b87":"das Geschäft, der Laden","b88":"kaufen","b89":"teuer","b90":"billig, günstig","b91":"der Preis","b92":"hundert","b93":"wie viel kostet das?","b94":"vorziehen, lieber mögen","b95":"tragen, anhaben","b96":"die (Kleider)Größe","b97":"der Großvater / die Großmutter","b98":"der Onkel / die Tante","b99":"der Cousin / die Cousine","b100":"der Sohn / die Tochter","b101":"mein","b102":"dein","b103":"sein / ihr / Ihr","b104":"unser","b105":"kennen, kennenlernen","b106":"der Freund / die Freundin (Beziehung)","b107":"verheiratet","b108":"Single, ledig","b109":"älter","b110":"jünger","b111":"der Sport","b112":"die Musik","b113":"spielen","b114":"der Fußball","b115":"aufstehen","b116":"duschen","b117":"frühstücken","b118":"zu Mittag essen","b119":"zu Abend essen","b120":"ins Bett gehen","b121":"der Morgen","b122":"der Nachmittag","b123":"der Abend, die Nacht","b124":"die Stunde, die Uhrzeit","b125":"die Uhr","b126":"früh","b127":"spät","b128":"immer","b129":"nie","b130":"manchmal","b131":"jeden Tag","b132":"aufwachen","b133":"das Frühstück","b134":"das Mittagessen","b135":"das Abendessen","b136":"das Tagesmenü","b137":"die Speisekarte","b138":"der Kellner / die Kellnerin","b139":"wollen","b140":"bestellen","b141":"bringen","b142":"der Tisch","b143":"das Gericht, der Teller","b144":"das Getränk","b145":"das Brot","b146":"das Obst","b147":"das Gemüse","b148":"das Fleisch","b149":"der Fisch","b150":"die Rechnung","b151":"das Gebäude","b152":"die Straße","b153":"das Zentrum","b154":"nahe (bei)","b155":"weit (von)","b156":"neben","b157":"gegenüber","b158":"zwischen","b159":"sicher","b160":"sauber","b161":"schmutzig","b162":"modern","b163":"alt","b164":"der öffentliche Nahverkehr","b165":"gehen, laufen","b166":"der Nachbar / die Nachbarin","b167":"ruhig","b168":"laut","b169":"können (Fähigkeit)","b170":"können (Möglichkeit/Erlaubnis)","b171":"Auto fahren","b172":"schwimmen","b173":"kochen","b174":"tanzen","b175":"singen","b176":"zeichnen","b177":"(ein Instrument) spielen","b178":"das Klavier","b179":"die Gitarre","b180":"lernen, etwas zu tun","b181":"schon, bereits","b182":"noch nicht","b183":"haben (Hilfsverb)","b184":"gemacht (Partizip von hacer)","b185":"gesehen (Partizip von ver)","b186":"der Führerschein"}};
 var TXT = {
-  lessen:{nl:"Lessen",en:"Lessons",fr:"Leçons",de:"Lektionen"},
+  // v19.66: het eerste tabblad heet niet meer "Lessen" maar "Vandaag". Een lessenlijst nodigt uit om
+  // te bladeren en te vergelijken hoeveel je nog niet gedaan hebt; "Vandaag" heeft maar één inhoud,
+  // en die is af zodra je hem gedaan hebt. De id blijft `lessen`, zodat show(), boot() en elke test
+  // gewoon blijven werken: dit is een naamswijziging op het scherm, geen verbouwing eronder.
+  lessen:{nl:"Vandaag",en:"Today",fr:"Aujourd'hui",de:"Heute"},
   woorden:{nl:"Woordjes",en:"Words",fr:"Mots",de:"Wörter"},
   vertalen:{nl:"Vertalen",en:"Translate",fr:"Traduire",de:"Übersetzen"},
   toetsjes:{nl:"Toetsjes",en:"Quizzes",fr:"Quiz",de:"Tests"},
