@@ -661,7 +661,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.67";
+var APP_VERSIE = "v19.68";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4963,39 +4963,124 @@ var VERBOS_SUBJ = {
 var CONJ_PRONOMBRES = ["yo","tú","él / ella / usted","nosotros / nosotras","vosotros / vosotras","ellos / ellas / ustedes"];
 var CONJ_RONDE_LEN = 10;
 
-/* v19.67 — de Conjugador begint niet meer middenin.
-   Stefan, 31 juli: "de werkwoorden oefenen in alle mogelijke vormen is veel te moeilijk voor een
-   beginner". Dat klopte, en het was erger dan het klinkt: wie op A0 binnenkwam kreeg meteen
-   drieëndertig werkwoorden, zes personen (vosotros incluis) en een rij knoppen waarop de subjuntivo
-   even hard stond te lonken als het presente. Dat is niet moeilijk maar onmogelijk, en onmogelijk is
-   de kortste route naar stoppen. Fogg zou zeggen: je krijgt gedrag niet op gang door de beloning op
-   te schroeven maar door het gedrag kleiner te maken (de ability-kant van B=MAP).
-   Wat hier NIET gebeurt: er wordt niets afgesloten. Geen slotje, geen "eerst dit halen". Alle drie
-   de stappen staan als gewone knoppen naast elkaar en je mag ze op elk moment aantikken. Het enige
-   dat verandert is waar je begint, en dat hangt af van het niveau dat je zelf koos. */
-var CONJ_KERN = ["hablar","comer","vivir","ser","estar","tener","ir","hacer","querer","poder"];
-var CONJ_STAPPEN = [
-  {id:"kern", nl:"de kern", en:"the core", personen:[0,1,2],
-   uitNl:"Tien werkwoorden die je elke dag gebruikt, in het presente, voor yo, tú en él/ella.",
-   uitEn:"Ten verbs you use every day, in the present, for yo, tú and él/ella."},
-  {id:"breed", nl:"alle personen", en:"all persons", personen:[0,1,2,3,4,5],
-   uitNl:"Alle werkwoorden en alle zes de personen, nog altijd alleen in het presente.",
-   uitEn:"All verbs and all six persons, still in the present only."},
-  {id:"tijden", nl:"meer tijden", en:"more tenses", personen:[0,1,2,3,4,5],
-   uitNl:"Ook de verleden tijden en de subjuntivo. Kies hieronder welke je drilt.",
-   uitEn:"Past tenses and the subjunctive as well. Pick below which one you drill."}
+/* v19.68 \u2014 de Conjugador is een ladder, geen keuzemenu.
+   Stefan, 31 juli: "het begin moet heel makkelijk, je wilt nu nog niet het gevoel hebben dat het te
+   moeilijk is. Dus eerst bijv alleen ar werkwoorden tegenwoordige tijd, dan er dan ir dan
+   onregelmatige dan verleden tijd 1 etc. Dat je door succes een nieuwe fase ontgrendelt."
+   v19.67 maakte de start al kleiner, maar liet je nog steeds zelf kiezen h\u00f3\u00e9 klein. Kiezen kan
+   alleen als je overziet waar je aan begint, en dat is nou net wat een beginner niet heeft. Dus geen
+   menu maar een volgorde: elf fasen, van vier regelmatige -ar-werkwoorden in het presente tot alle
+   tijden door elkaar. Je begint bij \u00e9\u00e9n en je opent de volgende door hem te verdienen.
+   Waarom hier w\u00e9l slotjes mogen, terwijl v19.67 nadrukkelijk schreef dat er niets afgesloten wordt:
+   de rem is de bijwerking, niet de bedoeling. Het slotje is er om open te gaan. Een slot dat nooit
+   opengaat is een muur, maar een slot dat opengaat zodra je acht van je laatste tien goed hebt, is
+   een bewijs dat je iets kunt wat je gisteren niet kon. En acht op tien is geen willekeurig getal:
+   rond de 85% ligt het punt waarop mensen het snelst leren, dus je schuift precies door op het moment
+   dat het te makkelijk begint te worden. Niet eerder, en (belangrijker) niet later. */
+var CONJ_UITGANGEN = {
+  ar:["o","as","a","amos","\u00e1is","an"],
+  er:["o","es","e","emos","\u00e9is","en"],
+  ir:["o","es","e","imos","\u00eds","en"]
+};
+// Regelmatigheid wordt uitgerekend, niet met de hand bijgehouden. Zet er morgen iemand een werkwoord
+// bij, dan sorteert dat zichzelf in de juiste fase in plaats van stilletjes buiten de ladder te vallen.
+function conjGroep(v){ return v.inf.slice(-2); }
+function conjRegelmatig(v){
+  var g = conjGroep(v), u = CONJ_UITGANGEN[g];
+  if(!u || !v.presente) return false;
+  var stam = v.inf.slice(0, -2);
+  for(var i=0; i<6; i++) if(v.presente[i] !== stam + u[i]) return false;
+  return true;
+}
+// De zeven onregelmatige werkwoorden die je op je eerste dag in Spanje al nodig hebt. De overige
+// vijftien komen pas in de fase daarna: "onregelmatig" als \u00e9\u00e9n bak van tweentwintig uitzonderingen
+// is precies de muur die we hier aan het slopen zijn.
+var CONJ_ONREG_KERN = ["ser","estar","tener","ir","hacer","querer","poder"];
+// pool is een filter over VERBOS, geen vaste lijst met infinitieven. Nieuwe werkwoorden landen daardoor
+// vanzelf in de brede fasen en veranderen nooit stiekem de inhoud van fase 1.
+var CONJ_FASES = [
+  {id:"ar", tijd:"presente", personen:[0,1,2], nl:"werkwoorden op -ar", en:"-ar verbs",
+   uitNl:"Alleen regelmatige werkwoorden op -ar, in het presente, voor yo, t\u00fa en \u00e9l/ella.",
+   uitEn:"Regular -ar verbs only, in the present, for yo, t\u00fa and \u00e9l/ella.",
+   pool:function(v){ return conjRegelmatig(v) && conjGroep(v) === "ar"; }},
+  {id:"er", tijd:"presente", personen:[0,1,2], nl:"werkwoorden op -er", en:"-er verbs",
+   uitNl:"Nu de regelmatige -er-werkwoorden. Dezelfde drie personen, dezelfde tijd.",
+   uitEn:"Now the regular -er verbs. Same three persons, same tense.",
+   pool:function(v){ return conjRegelmatig(v) && conjGroep(v) === "er"; }},
+  {id:"ir", tijd:"presente", personen:[0,1,2], nl:"werkwoorden op -ir", en:"-ir verbs",
+   uitNl:"De regelmatige -ir-werkwoorden. Ze lijken op de -er-groep; het verschil zit bij nosotros.",
+   uitEn:"The regular -ir verbs. They look like the -er group; the difference is at nosotros.",
+   pool:function(v){ return conjRegelmatig(v) && conjGroep(v) === "ir"; }},
+  {id:"seis", tijd:"presente", personen:[0,1,2,3,4,5], nl:"alle zes de personen", en:"all six persons",
+   uitNl:"Alle regelmatige werkwoorden door elkaar, nu ook nosotros, vosotros en ellos.",
+   uitEn:"All regular verbs mixed, now including nosotros, vosotros and ellos.",
+   pool:function(v){ return conjRegelmatig(v); }},
+  {id:"onreg", tijd:"presente", personen:[0,1,2,3,4,5], nl:"de zeven onregelmatige", en:"the seven irregulars",
+   uitNl:"ser, estar, tener, ir, hacer, querer en poder: de zeven die je het vaakst nodig hebt.",
+   uitEn:"ser, estar, tener, ir, hacer, querer and poder: the seven you need most often.",
+   pool:function(v){ return CONJ_ONREG_KERN.indexOf(v.inf) !== -1; }},
+  {id:"presente", tijd:"presente", personen:[0,1,2,3,4,5], nl:"het hele presente", en:"the full present",
+   uitNl:"Alle werkwoorden die de app kent, in het presente, alle personen.",
+   uitEn:"Every verb the app knows, in the present, all persons.",
+   pool:function(v){ return true; }},
+  {id:"indefreg", tijd:"indefinido", personen:[0,1,2,3,4,5], nl:"verleden tijd 1", en:"past tense 1",
+   uitNl:"Het pret\u00e9rito indefinido: gebeurd en afgelopen. Eerst alleen de regelmatige vormen.",
+   uitEn:"The pret\u00e9rito indefinido: happened and finished. Regular forms first.",
+   pool:function(v){ return conjRegelmatig(v); }},
+  {id:"indef", tijd:"indefinido", personen:[0,1,2,3,4,5], nl:"verleden tijd 1, compleet", en:"past tense 1, complete",
+   uitNl:"Hetzelfde indefinido, nu met de onregelmatige vormen erbij. Fui, hice, tuve.",
+   uitEn:"The same indefinido, now with the irregular forms too. Fui, hice, tuve.",
+   pool:function(v){ return true; }},
+  {id:"perfecto", tijd:"perfecto", personen:[0,1,2,3,4,5], nl:"verleden tijd 2", en:"past tense 2",
+   uitNl:"Het pret\u00e9rito perfecto: haber plus het voltooid deelwoord. He hablado, has comido.",
+   uitEn:"The pret\u00e9rito perfecto: haber plus the past participle. He hablado, has comido.",
+   pool:function(v){ return true; }},
+  {id:"subjuntivo", tijd:"subjuntivo", personen:[0,1,2,3,4,5], nl:"de subjuntivo", en:"the subjunctive",
+   uitNl:"De vorm voor wensen, twijfel en gevoel. Que hables, ojal\u00e1 venga.",
+   uitEn:"The mood of wishes, doubt and feeling. Que hables, ojal\u00e1 venga.",
+   pool:function(v){ return true; }},
+  {id:"mix", tijd:"mix", personen:[0,1,2,3,4,5], nl:"alles door elkaar", en:"everything mixed",
+   uitNl:"Alle tijden door elkaar. De echte toets is niet elke vorm kennen, maar ze uit elkaar houden.",
+   uitEn:"All tenses shuffled. The real test is not knowing each form, but telling them apart.",
+   pool:function(v){ return true; }}
 ];
-function conjStapDefault(){
-  var p = null;
-  try { p = activeProfile(); } catch(e){}
-  return (p && p.track === "beginner") ? "kern" : "tijden";
+function conjFaseIdx(id){
+  for(var i=0; i<CONJ_FASES.length; i++) if(CONJ_FASES[i].id === id) return i;
+  return -1;
 }
-function conjStapById(id){
-  for(var i=0; i<CONJ_STAPPEN.length; i++) if(CONJ_STAPPEN[i].id === id) return CONJ_STAPPEN[i];
-  return null;
+// Wat je gisteren al kon, neemt een update je niet af. Wie al met de Conjugador heeft geoefend (of in
+// v19.67 al breder had gekozen) krijgt de hele ladder open; alleen wie hier nieuw binnenkomt begint
+// onderaan. Een update die je terugzet naar af is precies zo'n reden om te stoppen.
+function conjOpenInit(){
+  if(typeof S.conjOpen === "number") return S.conjOpen;
+  var open = 0, geoefend = false;
+  try {
+    for(var k in S.errors){ if(k.indexOf("conj:") === 0){ geoefend = true; break; } }
+  } catch(e){}
+  if(geoefend || S.conjStap === "breed" || S.conjStap === "tijden"){
+    open = CONJ_FASES.length - 1;
+  } else {
+    var p = null;
+    try { p = activeProfile(); } catch(e){}
+    open = (p && p.track === "beginner") ? 0 : conjFaseIdx("presente");
+  }
+  S.conjOpen = open;
+  try { persist(); } catch(e){}
+  return open;
 }
-function conjStap(){ return conjStapById(S.conjStap) || conjStapById(conjStapDefault()) || CONJ_STAPPEN[2]; }
-function conjPersonen(){ return conjStap().personen; }
+function conjOpenMax(){ return conjOpenInit(); }
+function conjFaseNu(){
+  var open = conjOpenMax();
+  var i = conjFaseIdx(S.conjFase);
+  if(i < 0 || i > open) i = open;
+  return CONJ_FASES[i] || CONJ_FASES[0];
+}
+function conjFasePool(){
+  var f = conjFaseNu();
+  var pool = VERBOS.filter(f.pool);
+  return pool.length ? pool : VERBOS;
+}
+function conjPersonen(){ return conjFaseNu().personen; }
 // het werkwoord stond tot nu toe altijd met zijn Nederlandse vertaling op de kaart, ook als de rest
 // van de app Engels was. Eén los Nederlands woordje middenin een Engels scherm is precies het soort
 // slordigheid dat een gebruiker laat twijfelen of de rest wel klopt.
@@ -5015,16 +5100,13 @@ function cjMkStaat(v, p, t){
   if(!cjMk || cjMk.key !== k) cjMk = {key:k, opties:null, gekozen:null, beantwoord:false, fb:"", getypt:""};
   return cjMk;
 }
-// Tijdkeuze (29 juli, v19.44). Blijft staan in S.conjTiempo, dus over sessies en apparaten heen.
-// "mix" trekt per opgave opnieuw uit alle drie de tijden: dat is precies de moeilijkheid die Stefan
-// noemde (niet elke vorm los kennen, maar ze uit elkaar houden als ze door elkaar komen).
+// Tijdkeuze (29 juli, v19.44; herzien in v19.68). De losse rij tijdknoppen is weg: de tijd hoort bij
+// de fase waar je staat. S.conjTiempo blijft bestaan als doorgeefluik vanuit de grammatica-wizard
+// ("drill dit in het indefinido"), maar hij stuurt de drill niet meer buiten de ladder om.
+// "mix" is nu de laatste fase in plaats van een knop: alle tijden door elkaar is de eindstand, want
+// dat is de echte moeilijkheid (niet elke vorm los kennen, maar ze uit elkaar houden).
 var CONJ_TIEMPOS = ["presente","indefinido","perfecto","subjuntivo","mix"];
-// v19.67: op de eerste twee stappen bestaat de tijdkeuze niet. Niet omdat hij verboden is, maar omdat
-// hij er niet staat: een keuze die je nog niet kunt overzien is geen vrijheid, die is ruis.
-function conjTiempoKeuze(){
-  if(conjStap().id !== "tijden") return "presente";
-  return (S.conjTiempo && CONJ_TIEMPOS.indexOf(S.conjTiempo) !== -1) ? S.conjTiempo : "presente";
-}
+function conjTiempoKeuze(){ return conjFaseNu().tijd; }
 function conjTiempoActief(){
   var k = conjTiempoKeuze();
   if(k !== "mix") return k;
@@ -5064,14 +5146,9 @@ function cjMeerkeuzeOpties(v, p, t){
   return geschud([correct].concat(afleiders));
 }
 function conjVerbPool(t){
-  // v19.67: op stap "kern" is de bak werkwoorden tien groot in plaats van drieëndertig. Tien is
-  // genoeg om een ronde van tien te vullen zonder herhaling, en klein genoeg dat je ze na een week
-  // écht kent in plaats van ze allemaal een beetje te herkennen.
-  var basis = VERBOS;
-  if(conjStap().id === "kern"){
-    var kern = VERBOS.filter(function(v){ return CONJ_KERN.indexOf(v.inf) !== -1; });
-    if(kern.length) basis = kern;
-  }
+  // v19.68: de bak werkwoorden komt uit de fase waar je staat. Fase 1 is er vier groot; dat is klein
+  // genoeg om ze na een paar rondes \u00e9cht te kennen in plaats van ze allemaal een beetje te herkennen.
+  var basis = conjFasePool();
   if(t === "presente") return basis;
   var tabel = (t === "subjuntivo") ? VERBOS_SUBJ : VERBOS_PASADO;
   var pool = basis.filter(function(v){ return !!tabel[v.inf]; });
@@ -5092,23 +5169,81 @@ function pickConjugacion(){
   var verb = pool[Math.floor(Math.random()*pool.length)];
   return {verb:verb, p:pers[Math.floor(Math.random()*pers.length)], t:t};
 }
-function conjStapKiezerHtml(){
-  var nu = conjStap().id;
-  return "<div class='row' id='cjStap' style='gap:6px; margin:2px 0 6px; flex-wrap:wrap'>"+
-    CONJ_STAPPEN.map(function(s){
-      return "<button type='button' class='"+(nu===s.id?"primary":"ghost")+" cj-stap' data-s='"+s.id+"' style='padding:6px 12px; font-size:0.82rem; min-width:0'>"+ct(s.nl, s.en)+"</button>";
-    }).join("")+"</div>"+
-    "<p class='muted' id='cjStapUit' style='margin:0 0 8px; font-size:0.85rem'>"+ct(conjStap().uitNl, conjStap().uitEn)+"</p>";
+// --- ontgrendelen door succes -------------------------------------------------
+// Acht van je laatste tien goed in de fase waar je staat, en de volgende gaat open. De teller loopt
+// per fase, en alleen je hoogste fase geeft een sleutel: terugstappen naar iets makkelijks kan je
+// dus niet vooruit duwen. Je verdient de volgende stap met de stof van de stap waar je staat.
+var CONJ_ONTGRENDEL_N = 10;
+var CONJ_ONTGRENDEL_GOED = 8;
+function conjLog(goed){
+  var f = conjFaseNu();
+  if(!S.conjLaatste) S.conjLaatste = {};
+  var r = (S.conjLaatste[f.id] || []).slice();
+  r.push(goed ? 1 : 0);
+  if(r.length > CONJ_ONTGRENDEL_N) r = r.slice(r.length - CONJ_ONTGRENDEL_N);
+  S.conjLaatste[f.id] = r;
 }
-function wireConjStapKiezer(){
-  var row = document.getElementById("cjStap");
+function conjFaseScore(id){
+  var r = (S.conjLaatste && S.conjLaatste[id]) || [];
+  var goed = 0;
+  for(var i=0; i<r.length; i++) goed += r[i];
+  return {n:r.length, goed:goed};
+}
+// Geeft de zojuist ontgrendelde fase terug, of null. Deze functie viert zelf niets: dat doet de
+// aanroeper, zodat je hem ook vanuit een test kunt draaien zonder dat er tapas gaan rondvliegen.
+function conjProbeerOntgrendelen(){
+  var i = conjFaseIdx(conjFaseNu().id);
+  if(i < 0 || i !== conjOpenMax()) return null;
+  if(i >= CONJ_FASES.length - 1) return null;
+  var sc = conjFaseScore(CONJ_FASES[i].id);
+  if(sc.n < CONJ_ONTGRENDEL_N || sc.goed < CONJ_ONTGRENDEL_GOED) return null;
+  S.conjOpen = i + 1;
+  S.conjFase = CONJ_FASES[i+1].id;
+  if(S.conjLaatste) S.conjLaatste[CONJ_FASES[i].id] = [];
+  try { persist(); } catch(e){}
+  return CONJ_FASES[i+1];
+}
+// De kaart boven de opgave: waar sta je, wat houdt dat in, en hoe ver ben je van de volgende fase.
+// De meter is bewust de enige "score" die hier staat. Een percentage zou hetzelfde zeggen maar het
+// als oordeel laten klinken; een balkje dat vollooopt is een belofte.
+function conjFaseKaartHtml(){
+  var f = conjFaseNu(), i = conjFaseIdx(f.id), open = conjOpenMax();
+  var sc = conjFaseScore(f.id);
+  var vol = Math.min(sc.goed, CONJ_ONTGRENDEL_GOED);
+  var pct = Math.round((vol / CONJ_ONTGRENDEL_GOED) * 100);
+  var top = i >= CONJ_FASES.length - 1;
+  var h = "<div id='cjFase' style='margin:2px 0 8px'>"+
+    "<p class='muted' id='cjFaseKop' style='margin:0 0 2px; font-size:0.85rem'><b>"+ct("Fase ","Phase ")+(i+1)+"/"+CONJ_FASES.length+" \u00b7 "+ct(f.nl, f.en)+"</b></p>"+
+    "<p class='muted' id='cjFaseUit' style='margin:0 0 6px; font-size:0.85rem'>"+ct(f.uitNl, f.uitEn)+"</p>";
+  if(top){
+    h += "<p class='muted' id='cjFaseDoel' style='margin:0 0 6px; font-size:0.8rem'>"+ct("Je hebt de hele ladder open. Hier oefen je alles door elkaar.","You have the whole ladder open. Here you drill everything mixed.")+"</p>";
+  } else {
+    h += "<div id='cjFaseMeter' style='height:6px; border-radius:99px; background:var(--border); overflow:hidden; margin:0 0 4px'>"+
+           "<div style='height:100%; width:"+pct+"%; background:var(--green); border-radius:99px'></div>"+
+         "</div>"+
+         "<p class='muted' id='cjFaseDoel' style='margin:0 0 6px; font-size:0.8rem'>"+
+           ct(CONJ_ONTGRENDEL_GOED+" van je laatste "+CONJ_ONTGRENDEL_N+" goed opent de volgende fase ("+vol+"/"+CONJ_ONTGRENDEL_GOED+")",
+              CONJ_ONTGRENDEL_GOED+" out of your last "+CONJ_ONTGRENDEL_N+" correct opens the next phase ("+vol+"/"+CONJ_ONTGRENDEL_GOED+")")+
+         "</p>";
+  }
+  h += "<div class='row' id='cjFaseRij' style='gap:5px; flex-wrap:wrap'>"+
+    CONJ_FASES.map(function(x, n){
+      var naam = ct(x.nl, x.en).replace(/'/g, "&#39;");
+      if(n > open){
+        return "<span class='cj-fase-slot' title='"+ct("Nog op slot","Still locked")+"' style='padding:5px 9px; font-size:0.78rem; border:1px solid var(--border); border-radius:99px; color:var(--muted)'>\ud83d\udd12</span>";
+      }
+      return "<button type='button' class='"+(n===i?"primary":"ghost")+" cj-fase' data-f='"+x.id+"' title='"+naam+"' style='padding:5px 10px; font-size:0.78rem; min-width:0'>"+(n+1)+"</button>";
+    }).join("")+"</div></div>";
+  return h;
+}
+function wireConjFaseKiezer(){
+  var row = document.getElementById("cjFase");
   if(!row) return;
-  row.querySelectorAll(".cj-stap").forEach(function(b){
+  row.querySelectorAll(".cj-fase").forEach(function(b){
     b.onclick = function(){
-      S.conjStap = b.getAttribute("data-s");
+      S.conjFase = b.getAttribute("data-f");
       persist();
-      // net als bij de tijdkeuze: je ronde blijft staan, alleen de huidige opgave wordt opnieuw
-      // getrokken binnen de nieuwe breedte
+      // je ronde blijft staan, alleen de huidige opgave wordt opnieuw getrokken binnen de nieuwe fase
       conjIdx = pickConjugacion();
       cjModusOverride = null;
       cjMk = null;
@@ -5116,29 +5251,19 @@ function wireConjStapKiezer(){
     };
   });
 }
-function conjTiempoKiezerHtml(){
-  var k = conjTiempoKeuze();
-  var opts = [["presente","presente"],["indefinido","indefinido"],["perfecto","perfecto"],["subjuntivo","subjuntivo"],["mix","mix \ud83c\udfb2"]];
-  return "<div class='row' id='cjTiempo' style='gap:6px; margin:2px 0 8px; flex-wrap:wrap'>"+
-    opts.map(function(o){
-      return "<button type='button' class='"+(k===o[0]?"primary":"ghost")+" cj-tiempo' data-t='"+o[0]+"' style='padding:6px 12px; font-size:0.82rem; min-width:0'>"+o[1]+"</button>";
-    }).join("")+"</div>";
-}
-function wireConjTiempoKiezer(){
-  var row = document.getElementById("cjTiempo");
-  if(!row) return;
-  row.querySelectorAll(".cj-tiempo").forEach(function(b){
-    b.onclick = function(){
-      S.conjTiempo = b.getAttribute("data-t");
-      persist();
-      // ronde-teller blijft staan (halverwege een ronde je voortgang kwijtraken is nergens goed voor),
-      // alleen de huidige opgave wordt opnieuw getrokken in de nieuwe tijd
-      conjIdx = pickConjugacion();
-      cjModusOverride = null;
-      cjMk = null;
-      renderFunConjugador();
-    };
-  });
+// Alleen de fasekaart opnieuw tekenen, zonder de opgave eronder aan te raken. Dat is het verschil
+// tussen een meter die meeloopt terwijl je antwoordt en een re-render die je net gegeven antwoord
+// van het scherm veegt.
+function conjFaseKaartVerversen(){
+  try {
+    var oud = document.getElementById("cjFase");
+    if(!oud || !oud.parentNode) return;
+    var wrap = document.createElement("div");
+    wrap.innerHTML = conjFaseKaartHtml();
+    if(!wrap.firstChild) return;
+    oud.parentNode.replaceChild(wrap.firstChild, oud);
+    wireConjFaseKiezer();
+  } catch(e){}
 }
 function conjugadorNieuweRonde(){
   conjRonde = {n:0, lengte:CONJ_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
@@ -5167,8 +5292,7 @@ function renderFunConjugador(){
   var html = (inFlowCjR ? lesFlowBannerHtml() : "")+"<h2>Conjugador 🎯</h2>"+
     "<span class='kicker' id='cjKicker'>" + conjugadorKickerTekst() + "</span>"+
     "<p class='muted'>" + fx("cjIntro") + "</p>"+
-    conjStapKiezerHtml()+
-    (conjStap().id === "tijden" ? conjTiempoKiezerHtml() : "")+
+    conjFaseKaartHtml()+
     "<div class='card' style='text-align:center; margin:10px 0'>"+
       "<p class='muted' style='margin:0 0 2px'>"+v.inf+" <span style='font-weight:400'>("+conjGloss(v)+")</span></p>"+
       "<p class='big' style='margin:4px 0'>"+CONJ_PRONOMBRES[c.p]+"</p>"+
@@ -5177,8 +5301,7 @@ function renderFunConjugador(){
     "<div id='cjBody'></div>";
   el.innerHTML = html;
   lesFlowWireBanner();
-  wireConjStapKiezer();
-  wireConjTiempoKiezer();
+  wireConjFaseKiezer();
   renderConjugadorBody();
 }
 function renderConjugadorBody(){
@@ -5315,6 +5438,19 @@ function checkConjugador(){
   } else {
     conjRonde.streak = 0;
   }
+  // v19.68: dit antwoord telt mee voor de fase waar je staat. De viering hangt bewust aan het antwoord
+  // zelf en niet aan het einde van de ronde: Fogg's punt is dat een viering direct moet volgen op het
+  // gedrag, anders koppelt je hoofd hem er niet aan. Geen toast erbij, want twee signalen tegelijk
+  // voor \u00e9\u00e9n gebeurtenis leest als ruis in plaats van als feest.
+  conjLog(goedBeantwoord);
+  var nieuweFase = conjProbeerOntgrendelen();
+  if(nieuweFase){
+    S.tapas = (S.tapas||0) + 1;
+    html += "<div class='feedback ok' style='margin-top:4px'>\ud83d\udd13 "+
+      ct("Fase ","Phase ")+(conjFaseIdx(nieuweFase.id)+1)+" "+ct("open","unlocked")+": <b>"+
+      ct(nieuweFase.nl, nieuweFase.en)+"</b> +1 \ud83e\uded2</div>";
+  }
+  conjFaseKaartVerversen();
   var kickerEl = document.getElementById("cjKicker");
   if(kickerEl) kickerEl.textContent = conjugadorKickerTekst();
   mk.fb = html;
@@ -11971,7 +12107,7 @@ var FUN_TXT = {
      dicNormal:"Luister normal", dicLento:"Luister lento",
      dicPlaceholder:"Typ wat je hoort...", dicSkip:"Volgende zin",
      dicGeen:"Jouw browser ondersteunt geen spraak (Web Speech API). Probeer Chrome of Safari.",
-     cjS:"rondes van 10 vervoegingen, op de breedte die jij kiest",
+     cjS:"rondes van 10 vervoegingen, fase voor fase een stukje breder",
      cjIntro:"Typ de juiste vervoeging voor dit werkwoord en deze persoon.",
      cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord",
      huT:"Zinnen husselen", huS:"rondes van 8 zinnen, tik de Spaanse woorden in de juiste volgorde",
@@ -11999,7 +12135,7 @@ var FUN_TXT = {
      dicNormal:"Listen normal", dicLento:"Listen lento",
      dicPlaceholder:"Type what you hear...", dicSkip:"Next sentence",
      dicGeen:"Your browser doesn't support speech (Web Speech API). Try Chrome or Safari.",
-     cjS:"rounds of 10 conjugations, as wide as you choose",
+     cjS:"rounds of 10 conjugations, one unlocked phase at a time",
      cjIntro:"Type the correct conjugation for this verb and this person.",
      cjPlaceholder:"Type the conjugation...", cjSkip:"Next verb",
      huT:"Scramble sentences", huS:"rounds of 8 sentences, tap the Spanish words in the right order",
@@ -14716,11 +14852,17 @@ function wireGramWiz(el){
   b = document.getElementById("gwHerhaalAlles"); if(b) b.onclick = function(){ gwStart(gwSess.id, 0); };
   b = document.getElementById("gwNaarDrill"); if(b) b.onclick = function(){
     var o = gwOnderwerp(gwSess.id);
-    S.conjTiempo = (o && o.drill) || "presente";
-    // v19.67: wie vanuit de wizard doorklikt naar een verleden tijd moet die tijd ook echt krijgen.
-    // De knop belooft indefinido; hem dan op de kernstap laten landen waar alleen presente bestaat,
-    // zou een loze belofte zijn.
-    if(S.conjTiempo !== "presente") S.conjStap = "tijden";
+    var drill = (o && o.drill) || "presente";
+    S.conjTiempo = drill;
+    // v19.68: de wizard belooft een tijd, dus de Conjugador moet die tijd ook echt geven. Zit de
+    // bijbehorende fase nog op slot, dan gaat hij hier open. De app heeft je zelf op deze knop laten
+    // klikken; je dan tegen een slotje aan laten lopen is de gebruiker straffen voor het volgen van
+    // je eigen advies.
+    var fid = drill === "indefinido" ? "indef" : (drill === "perfecto" ? "perfecto" :
+              (drill === "subjuntivo" ? "subjuntivo" : "presente"));
+    var fi = conjFaseIdx(fid);
+    if(fi > conjOpenMax()) S.conjOpen = fi;
+    S.conjFase = fid;
     persist();
     gwSess = null;
     funView = "conj"; conjIdx = null; conjRonde = null;
