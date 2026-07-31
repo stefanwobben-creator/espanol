@@ -328,6 +328,26 @@
   .tourdots{display:flex; gap:6px; justify-content:center; margin-bottom:12px;}
   .tourdots span{width:8px; height:8px; border-radius:50%; background:var(--border); display:inline-block;}
   .tourdots span.aan{background:var(--accent);}
+  /* v19.60: de dagafsluiting. Schermvullend, want dit is het enige moment van de dag waarop de app
+     mag zeggen "en nu is het klaar". Alles eronder verdwijnt achter een warme waas, zodat er geen
+     volgende knop in beeld staat die je terug de app in trekt. */
+  .feestwrap{position:fixed; inset:0; background:rgba(45,42,38,.62); z-index:100; display:flex;
+             align-items:center; justify-content:center; padding:16px; overflow-y:auto;}
+  .feestcard{background:var(--card); border-radius:22px; padding:22px 20px 18px; max-width:400px; width:100%;
+             text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.4); animation:feestin .38s cubic-bezier(.2,.9,.3,1.3);}
+  @keyframes feestin{0%{transform:scale(.82) translateY(18px); opacity:0} 100%{transform:scale(1) translateY(0); opacity:1}}
+  .feestpet svg{width:132px; height:120px;}
+  .feestkop{font-size:1.35rem; font-weight:800; margin:4px 0 2px; color:var(--ink);}
+  .feestsub{font-size:.95rem; color:var(--muted); margin:0 0 12px;}
+  .feestcijfers{display:flex; gap:8px; justify-content:center; margin:0 0 14px;}
+  .feestcijfers div{flex:1; background:var(--amber-soft); border:1.5px solid var(--amber); border-radius:12px; padding:8px 4px;}
+  .feestcijfers b{display:block; font-size:1.2rem; color:var(--ink);}
+  .feestcijfers span{font-size:.7rem; color:var(--muted);}
+  .feestmorgen{background:var(--bg); border:1.5px dashed var(--border); border-radius:14px; padding:12px 12px 10px; margin:0 0 12px; text-align:left;}
+  .feestmorgen .kicker{margin-bottom:2px;}
+  .feestcard .row{justify-content:center;}
+  .feestklein{font-size:.78rem; color:var(--muted); margin:10px 0 0;}
+  .feestklein span{text-decoration:underline; cursor:pointer;}
   .tiles{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
   .tile{width:40px; height:44px; border-radius:8px; background:var(--amber-soft); border:1.5px solid var(--amber);
         display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:1.15rem; color:var(--ink);}
@@ -618,7 +638,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.59";
+var APP_VERSIE = "v19.60";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2467,7 +2487,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{}, dag:{} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
@@ -2503,6 +2523,7 @@ function normaliseerState(s){
   s.samen = s.samen || {}; // v19.57: uitnodigen (gedeeld-datum, laatste tik, of er al iemand naast je zit)
   s.ritme = s.ritme || {}; // v19.58: wanneer & waar (implementatie-intentie), puur voor jezelf
   s.maatje = s.maatje || {}; // v19.58: de ene persoon die meekijkt en zelf niet leert
+  s.dag = s.dag || {};     // v19.60: de dagafsluiting (feest gezien op datum X, klaar gemeld op datum Y)
   return s;
 }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
@@ -3235,8 +3256,12 @@ function addXP(n){
       S.streak.count = 1;
     }
     S.streak.last = t;
-    confetti(["🔥","⭐️","🎉"], 18);
-    toast("¡Objetivo del día conseguido! 🔥 Streak: " + S.streak.count);
+    // v19.60: het dagdoel halen was tot nu toe een toast van drie seconden en achttien confetti-
+    // snippers, midden in een oefening. Stefan: "het is mooi als dat echt een close is". Dus geen
+    // feest meer midden in een vraag: we zetten alleen een vlag, en het feest komt op de eerste
+    // natuurlijke grens (einde les of terug op het lessenoverzicht). Onderbreken tijdens een
+    // oefening is precies wat je niet wilt bij iets dat "af" moet voelen.
+    S.dag.wacht = t;
     logServer("dagdoel", {streak:S.streak.count, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
   }
   var lvlAfter = petLevel(S.txp);
@@ -5755,8 +5780,13 @@ function lesFlowKlaar(){
     "<p class='big' style='margin:6px 0'>"+ct("¡Muy bien! Chispa is blij met je.","¡Muy bien! Chispa is happy with you.")+"</p>"+
     "<p class='muted'>+"+bonus+" 🫒 "+ct("tapas voor Chispa","tapas for Chispa")+(nieuw ? "" : " · "+ct("(je had vandaag al een les afgerond — telt gewoon nog een keer mee voor Chispa, maar niet dubbel voor de week)","(you'd already finished a session today — still counts for Chispa, just not twice for the week)"))+"</p>"+
     (eersteOoit ? "<p style='margin:8px 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
-    "<div class='row'><button class='primary' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button>"+
-    "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>"+
+    // v19.60: staat het dagdoel er al op, dan is "nog een les" niet meer de hoofdknop. Doorgaan mag,
+    // maar het hoort niet het eerste te zijn wat je ziet op het moment dat je klaar bent.
+    ((S.xp[t] || 0) >= dagdoel()
+      ? "<div class='row'><button class='primary' id='btnLesFlowTerug'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button>"+
+        "<button class='ghost' id='btnLesFlowNogEens'>"+ct("Toch nog een les","One more anyway")+"</button></div></div>"
+      : "<div class='row'><button class='primary' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button>"+
+        "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>")+
     // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
     // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
     // v19.58: hoogstens ÉÉN vraag onder de felicitatie, gekozen door samenKaartNu().
@@ -5765,6 +5795,9 @@ function lesFlowKlaar(){
   document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
   // op dit scherm niet opnieuw renderen na het vastzetten: dan zou de felicitatie verdwijnen
   bindSamen("na-les", function(){ var k = document.getElementById("momentKaart"); if(k) k.classList.add("hidden"); });
+  // v19.60: einde les is de eerste natuurlijke grens. Staat het dagdoel-feest te wachten, dan komt
+  // het hier bovenop, met de felicitatie er netjes onder als je hem wegtikt.
+  dagFeestCheck();
 }
 
 /* ================= LESSEN: WEERGAVE ================= */
@@ -5868,6 +5901,134 @@ function bindMoment(opnieuw){
   };
 }
 
+/* ================= DE DAGAFSLUITING (v19.60) =================
+   Stefan: "de dagflow gaat nu oneindig door, maar het is mooi als dat echt een close is, dat je
+   bijvoorbeeld zegt wanneer je het morgen doet, en dan ook echt een visueel feestje in je scherm,
+   zo van dagdoel bereikt, goed zo."
+
+   Drie dingen die hier samenkomen, en waarom juist deze drie:
+
+   1. Een echt einde. Een app zonder eindpunt laat de keuze om te stoppen aan jou, en die keuze
+      voelt altijd als opgeven. Een app die zelf zegt "je bent klaar" geeft je dat gevoel cadeau.
+      Dit is het Zeigarnik-verhaal omgedraaid: onafgemaakte taken blijven in je hoofd hangen, dus
+      een expliciete afsluiting is niet alleen prettig maar ook rustgevender dan eindeloos door.
+   2. Vieren op het moment zelf. De beloning zat tot nu toe in een toast van drie seconden, midden
+      in een oefening. Dat is precies de plek waar hij niet landt. Nu wacht hij tot de eerste
+      natuurlijke grens.
+   3. De afspraak voor morgen op het juiste moment. De implementatie-intentie (zie het blok
+      hierboven, Gollwitzer & Sheeran 2006) stond na je eerste les. Maar "wanneer doe je hem
+      morgen" hoort aan het eind van je dag, niet aan het begin: je staat er dan op de plek en het
+      tijdstip waarop je het straks weer gaat doen, en je hebt net bewezen dat het lukt.
+
+   Wat we bewust NIET doen: het feest is geen harde deur. Wie door wil kan door, alleen niet meer
+   per ongeluk. De knop "Nog een les" blijft bestaan, hij is alleen niet meer het eerste wat je ziet.
+   Doorleren afknijpen zou het middel erger maken dan de kwaal. */
+function dagFeestWacht(){
+  // is er een gevierd-moment blijven staan dat nog niet getoond is?
+  var t = today();
+  return !!(S && S.dag && S.dag.wacht === t && S.dag.feest !== t);
+}
+function dagKlaar(){
+  return !!(S && S.dag && S.dag.klaar === today());
+}
+function dagFeestKaart(){
+  var t = today();
+  var xp = S.xp[t] || 0;
+  var st = streakNow();
+  var heeftMoment = !!(S.ritme && S.ritme.wanneer);
+  var dans = ["chsalsa","chcumbia","chmerengue","chjarabe"][Math.floor(Math.random()*4)];
+  return "<div class='feestwrap' id='feestWrap'><div class='feestcard'>"+
+    "<div class='feestpet "+dans+"'>"+petSVG()+"</div>"+
+    "<p class='feestkop'>"+ct("Dagdoel bereikt! 🎉","Daily goal reached! 🎉")+"</p>"+
+    "<p class='feestsub'>"+ct("Goed zo. Chispa heeft het gezien.","Nice work. Chispa saw it.")+"</p>"+
+    "<div class='feestcijfers'>"+
+      "<div><b>"+xp+"</b><span>"+xpw()+" "+ct("vandaag","today")+"</span></div>"+
+      "<div><b>🔥 "+st+"</b><span>"+ct(st===1?"dag op rij":"dagen op rij", st===1?"day in a row":"days in a row")+"</span></div>"+
+      "<div><b>🫒 "+(S.tapas||0)+"</b><span>tapas</span></div>"+
+    "</div>"+
+    "<div class='feestmorgen' id='feestMorgen'>"+
+      (heeftMoment
+        ? "<span class='kicker'>"+ct("Morgen","Tomorrow")+"</span>"+
+          "<p style='margin:4px 0 0'>📌 <b>"+momentTekst()+"</b></p>"+
+          "<p class='feestklein' style='margin:4px 0 0'><span id='feestWijzig'>"+ct("ander moment kiezen","pick another moment")+"</span></p>"
+        : "<span class='kicker'>"+ct("Nog één ding 📌","One more thing 📌")+"</span>"+
+          "<p style='margin:4px 0 6px; font-weight:700'>"+ct("Wanneer doe je hem morgen?","When will you do it tomorrow?")+"</p>"+
+          MOMENTEN.map(function(m){
+            return "<button class='ghost trackpick feestpick' data-moment='"+m.id+"' style='display:block; width:100%; text-align:left; margin:4px 0'>"+
+              m.e+" "+ct(m.nl, m.en)+"</button>";
+          }).join("")+
+          "<input type='text' id='feestAnders' class='hidden' autocomplete='off' placeholder='"+ct("Bijvoorbeeld: na het avondeten","For example: after dinner")+"'>")+
+    "</div>"+
+    "<div class='row'><button class='primary' id='btnFeestKlaar'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button></div>"+
+    "<p class='feestklein'><span id='btnFeestDoor'>"+ct("toch nog even door","keep going anyway")+"</span></p>"+
+    "</div></div>";
+}
+function dagFeestToon(){
+  if(document.getElementById("feestWrap")) return;
+  if(!document.body || !document.body.appendChild) return;
+  var wrap = document.createElement("div");
+  wrap.innerHTML = dagFeestKaart();
+  document.body.appendChild(wrap.firstChild);
+  S.dag.feest = today();
+  persist();
+  confetti(["🎉","🌮","✨","💃","🔥","⭐️"], 46);
+  // tweede golf, zodat het even doorgaat in plaats van één plof
+  setTimeout(function(){ confetti(["🎊","🫒","🌟"], 26); }, 520);
+  var keuze = (S.ritme && S.ritme.wanneer) || null;
+  var inp = document.getElementById("feestAnders");
+  var picks = document.querySelectorAll(".feestpick");
+  for(var i=0;i<picks.length;i++){
+    (function(b){
+      b.onclick = function(){
+        keuze = b.getAttribute("data-moment");
+        for(var j=0;j<picks.length;j++){ picks[j].classList.toggle("active", picks[j] === b); }
+        if(inp){ inp.classList.toggle("hidden", keuze !== "anders"); if(keuze === "anders") inp.focus(); }
+      };
+    })(picks[i]);
+  }
+  var wijzig = document.getElementById("feestWijzig");
+  if(wijzig) wijzig.onclick = function(){
+    // opnieuw kiezen: gooi de huidige keuze leeg en teken de kaart opnieuw
+    S.ritme.wanneer = ""; S.ritme.tekst = "";
+    dagFeestSluit(true);
+    S.dag.feest = "";
+    dagFeestToon();
+  };
+  function bewaarMoment(){
+    if(!keuze) return false;
+    S.ritme = S.ritme || {};
+    S.ritme.wanneer = keuze;
+    S.ritme.tekst = (keuze === "anders" && inp) ? (inp.value || "").trim().slice(0, 60) : "";
+    S.ritme.sinds = today();
+    return true;
+  }
+  document.getElementById("btnFeestKlaar").onclick = function(){
+    bewaarMoment();
+    S.dag.klaar = today();
+    persist(); syncUp();
+    dagFeestSluit();
+    if(S.ritme && S.ritme.wanneer){
+      toast(ct("Tot morgen, "+momentTekst()+".","See you tomorrow, "+momentTekst()+"."));
+    }
+    renderLessons();
+    show("lessen");
+  };
+  document.getElementById("btnFeestDoor").onclick = function(){
+    bewaarMoment();
+    persist();
+    dagFeestSluit();
+  };
+}
+function dagFeestSluit(stil){
+  var w = document.getElementById("feestWrap");
+  if(w && w.remove) w.remove();
+  if(!stil){ S.dag.wacht = ""; persist(); }
+}
+function dagFeestCheck(){
+  // aanroepen op natuurlijke grenzen: einde les en het lessenoverzicht. Nooit midden in een oefening.
+  if(dagFeestWacht()) dagFeestToon();
+}
+
 function ritmeCard(){
   var t = today();
   var gedaanVandaag = !!S.lesFlow[t];
@@ -5878,16 +6039,22 @@ function ritmeCard(){
   var qOver = quizDueCount();
   function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
   var dag2 = S.gestart === addDays(t, -1);
+  // v19.60: heb je vandaag op "Klaar voor vandaag" getikt, dan is dit scherm rustig. Geen open
+  // voortgangsbalk die nog iets van je wil, geen primaire knop. Alleen wat je gedaan hebt en wanneer
+  // je morgen terugkomt. Doorleren kan nog steeds, maar je moet ernaar reiken.
+  var afgesloten = dagKlaar();
   return "<div class='card"+(gedaanVandaag?" celebrate":"")+"'>"+
     (dag2 ? "<p style='margin:0 0 6px'>🌅 <b>"+ct("Dag 2!","Day 2!")+"</b> "+ct("Je woordjes van gisteren staan klaar om terug te komen — precies op tijd, zo blijven ze plakken.","Yesterday's words are ready to come back — right on time, that's how they stick.")+"</p>" : "")+
-    "<span class='kicker'>"+(gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : ct("Start je les","Start your session"))+"</span>"+
-    "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+(gedaanVandaag ? ct("¡Muy bien! Chispa is trots op je.","¡Muy bien! Chispa is proud of you.") : ct("Woordjes, een toetsje en één keer oefenen. Klaar in een paar minuten.","Words, a quiz and one practice round. Done in a few minutes."))+"</p>"+
-    "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>"+
+    "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓") : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : ct("Start je les","Start your session"))+"</span>"+
+    "<p class='big' style='margin:6px 0; font-size:1.15rem'>"+(afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.") : gedaanVandaag ? ct("¡Muy bien! Chispa is trots op je.","¡Muy bien! Chispa is proud of you.") : ct("Woordjes, een toetsje en één keer oefenen. Klaar in een paar minuten.","Words, a quiz and one practice round. Done in a few minutes."))+"</p>"+
+    (afgesloten
+      ? "<p class='muted' style='margin:0'><span id='btnDagToch' style='text-decoration:underline; cursor:pointer'>"+ct("toch nog een les doen","do another session anyway")+"</span></p>"
+      : "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>")+
     // v19.58: je eigen afspraak, elke dag terug te zien op de plek waar je hem uitvoert. Een
     // implementatie-intentie werkt doordat het moment de handeling oproept, dus moet het moment
     // in beeld staan en niet weggestopt in instellingen.
     ((S.ritme && S.ritme.wanneer)
-      ? "<p class='muted' style='margin:8px 0 0'>📌 "+ct("Jouw moment: ","Your moment: ")+"<b>"+momentTekst()+"</b> · "+
+      ? "<p class='muted' style='margin:8px 0 0'>📌 "+(afgesloten ? ct("Morgen: ","Tomorrow: ") : ct("Jouw moment: ","Your moment: "))+"<b>"+momentTekst()+"</b> · "+
         "<span id='momentRegel' style='text-decoration:underline; cursor:pointer'>"+ct("wijzigen","change")+"</span></p>"
       : "")+
     "<div class='ritme' style='margin-top:10px'>"+
@@ -5951,6 +6118,10 @@ function renderLessons(){
   listEl.innerHTML = html;
   var bsf = document.getElementById("btnStartLesFlow");
   if(bsf) bsf.onclick = function(){ lesFlowStart(); };
+  // v19.60: "toch nog een les" heft de afsluiting van vandaag op. Wie doorleert wil niet bij elke
+  // stap een scherm dat zegt dat hij klaar is.
+  var bdt = document.getElementById("btnDagToch");
+  if(bdt) bdt.onclick = function(){ S.dag.klaar = ""; persist(); lesFlowStart(); };
   bindSamen("lessen", function(){ renderLessons(); });
   var mReg = document.getElementById("momentRegel");
   if(mReg) mReg.onclick = function(){ momentOpen = true; renderLessons(); };
@@ -5961,6 +6132,9 @@ function renderLessons(){
       if(l) openLesson(l);
     }; }
   });
+  // v19.60: tweede natuurlijke grens. Haal je je dagdoel in de Speeltuin of bij Vertalen, dan komt
+  // het feest zodra je terug bent op je lessenoverzicht.
+  dagFeestCheck();
 }
 
 function openLesson(l, skipPush){
