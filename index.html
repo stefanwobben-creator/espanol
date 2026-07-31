@@ -207,6 +207,43 @@
            background:radial-gradient(ellipse at center, #ffd54d44 0%, #e85a8a22 55%, transparent 74%);
            animation:chvloerpuls 1.05s ease-in-out infinite;}
   @keyframes chvloerpuls{0%,100%{transform:scale(.88); opacity:.5} 50%{transform:scale(1.1); opacity:1}}
+  /* v19.78: Chispa blijft in beeld.
+     De knoppen waarmee je haar iets laat doen staan onderaan een pagina van ruim zevenduizend
+     pixels, en zijzelf staat bovenaan. Je drukt op "dansen" en er gebeurt iets, maar niet in
+     jouw blikveld: de handeling en het gevolg zitten los van elkaar, en dan voelt het alsof de
+     knop niets doet. De oplossing is niet jou naar haar toe scrollen, want dan raak je je plek
+     kwijt in precies het lijstje waar je mee bezig was. Zij komt naar jou toe: zodra ze uit
+     beeld raakt plakt er een klein podium bovenaan, en alle bewegingen spelen zich daar af.
+     Dat kost geen tweede animatiesysteem, want chispaBox() en chispaPropLaag() wijzen terwijl
+     de balk staat gewoon naar deze twee elementen. */
+  .chbalk{position:fixed; left:0; right:0; top:0; z-index:70; transform:translateY(-125%);
+          transition:transform .28s cubic-bezier(.2,.8,.3,1); pointer-events:none;}
+  .chbalk.aan{transform:translateY(0); pointer-events:auto;}
+  .chbalkin{max-width:640px; margin:0 auto; box-sizing:border-box; display:flex; align-items:center;
+            gap:10px; padding:6px 16px 8px; cursor:pointer;
+            background:var(--card); border:1px solid var(--border); border-top:none;
+            border-radius:0 0 var(--radius) var(--radius); box-shadow:0 6px 18px rgba(45,42,38,.14);}
+  .chbalkstage{position:relative; width:84px; height:76px; flex:0 0 auto;}
+  #balkBox{position:absolute; left:0; right:0; top:0; bottom:0; will-change:transform;
+           display:flex; align-items:center; justify-content:center;}
+  #balkBox svg{width:80px; height:73px;}
+  .chbalktxt{flex:1 1 auto; min-width:0; line-height:1.3;}
+  .chbalktxt b{font-size:.95rem;}
+  .chbalktxt span{display:block; font-size:.76rem; color:var(--muted);}
+  .chbalkop{flex:0 0 auto; width:32px; height:32px; border-radius:999px; cursor:pointer;
+            border:1px solid var(--border); background:var(--bg); color:var(--muted); font-size:1rem;}
+  /* de props zijn getekend voor een podium van 230 breed; hier is het 84 */
+  .chbalk .chvloer{top:60%; width:74px; height:22px; margin-left:-37px;}
+  /* het podium is 2,7x kleiner dan de kaart, dus alles wat erop staat ook: anders staat er een
+     gitaar van levensgrootte voor haar gezicht */
+  .chbalk .chprop{font-size:.78rem;}
+  /* de noten krijgen op de kaart een plek ergens over haar lijf, want daar is ruimte zat. In
+     een podium van 84 breed is dat haar gezicht, en dan staat ze te dansen achter een gordijn
+     van muzieknoten. Hier stijgen ze dus langs haar op, aan de rand, in plaats van er overheen. */
+  .chbalk .chnota{font-size:.68rem; left:auto!important; right:-4px; top:56%!important;
+                  animation:chnotaklein 1.7s ease-out forwards;}
+  @keyframes chnotaklein{0%{transform:translate(0,0) rotate(-10deg); opacity:0} 20%{opacity:.9}
+                         100%{transform:translate(15px,-48px) rotate(16deg); opacity:0}}
   /* de bewegingen zelf; !important zodat ze de rustanimatie en petbounce altijd verslaan */
   .chgiro{animation:chgiro 1.3s ease-in-out !important;}
   @keyframes chgiro{0%{transform:perspective(700px) rotateY(0) scale(1)}
@@ -473,6 +510,22 @@
       <span id="miniPet" title="Chispa"></span>
     </div>
   </header>
+
+  <!-- v19.78: het meereizende podium. Staat buiten alle tabs omdat hij vast aan het scherm hangt
+       en niet aan de pagina; chispaBalkCheck() bepaalt wanneer hij te zien is. -->
+  <div id="chispaBalk" class="chbalk" aria-hidden="true">
+    <div class="chbalkin" id="chispaBalkIn">
+      <div class="chbalkstage">
+        <div id="balkProps" class="chprops"></div>
+        <div id="balkBox" class="chvive"></div>
+      </div>
+      <div class="chbalktxt">
+        <b>Chispa</b>
+        <span id="balkFase"></span>
+      </div>
+      <button type="button" id="btnBalkOmhoog" class="chbalkop" title="Naar Chispa">&#8593;</button>
+    </div>
+  </div>
 
   <!-- PROFIELKEUZE -->
   <section id="tab-profiel" class="hidden">
@@ -748,7 +801,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.77";
+var APP_VERSIE = "v19.78";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7740,8 +7793,112 @@ function baileState(){
   if(!S.bailes) S.bailes = [];
   return S.bailes;
 }
-function chispaBox(){ return document.getElementById("petBox"); }
-function chispaPropLaag(){ return document.getElementById("chispaProps"); }
+/* v19.78: er zijn nu twee podia, de kaart en de balk bovenaan, en precies een ervan is het
+   echte. Alle bewegingshelpers vragen hun doelwit hier op, dus dit is de enige plek waar het
+   verschil bestaat. Niets anders in de animatiecode weet dat de balk bestaat. */
+function chispaBalkAan(){
+  var b = document.getElementById("chispaBalk");
+  if(!b || !b.classList || !b.classList.contains) return false;
+  return b.classList.contains("aan") && !!document.getElementById("balkBox");
+}
+function chispaPodia(extra){
+  var uit = [];
+  ["petBox", "balkBox"].forEach(function(id){
+    var e = document.getElementById(id);
+    if(e && e.classList && e.classList.remove) uit.push(e);
+  });
+  if(extra && extra.classList && extra.classList.remove && uit.indexOf(extra) === -1) uit.push(extra);
+  return uit;
+}
+function chispaPropLagen(){
+  var uit = [];
+  ["chispaProps", "balkProps"].forEach(function(id){
+    var e = document.getElementById(id);
+    if(e && e.querySelector) uit.push(e);
+  });
+  return uit;
+}
+function chispaBox(){
+  if(chispaBalkAan()) return document.getElementById("balkBox");
+  return document.getElementById("petBox");
+}
+function chispaPropLaag(){
+  if(chispaBalkAan()) return document.getElementById("balkProps");
+  return document.getElementById("chispaProps");
+}
+/* v19.78: de balk vullen, tonen en verbergen. Meer dan dit is het niet: hij tekent dezelfde
+   Chispa nog een keer, klein, en zet er de naam van haar fase bij zodat je ziet wie er danst. */
+var balkLaatste = "";
+function balkVerversen(){
+  var bx = document.getElementById("balkBox");
+  if(!bx) return;
+  var fs = document.getElementById("balkFase");
+  if(fs){
+    try { fs.textContent = PET_LEVELS[petLevel(S.txp || 0)].naam; } catch(e){}
+  }
+  var leeg = !bx.innerHTML || bx.innerHTML.indexOf("<svg") === -1;
+  // Anders dan bij de kaart hoeft hier niet gewacht te worden tot een beweging klaar is. De
+  // beweging zit op #balkBox zelf en hier wordt alleen de tekening dáárbinnen vervangen, dus ze
+  // danst rustig door terwijl ze ondertussen een kroon op krijgt.
+  var svg = "";
+  try { svg = petSVG(); } catch(e){ return; }
+  if(svg === balkLaatste && !leeg) return;
+  balkLaatste = svg;
+  bx.innerHTML = svg;
+}
+function chispaBalkCheck(){
+  var b = document.getElementById("chispaBalk");
+  if(!b || !b.classList || !b.classList.contains) return;
+  var sec = document.getElementById("tab-chispa");
+  var pet = document.getElementById("petBox");
+  var aan = false;
+  if(sec && sec.classList && !sec.classList.contains("hidden") && pet && pet.getBoundingClientRect){
+    var r = pet.getBoundingClientRect();
+    aan = r.bottom < 8;
+  }
+  if(aan === b.classList.contains("aan")) return;
+  if(aan) b.classList.add("aan"); else b.classList.remove("aan");
+  if(b.setAttribute) b.setAttribute("aria-hidden", aan ? "false" : "true");
+  balkVerversen();
+  // wie midden in een beweging van podium wisselt, neemt de beweging mee
+  var oudP = aan ? document.getElementById("petBox") : document.getElementById("balkBox");
+  var nieuwP = aan ? document.getElementById("balkBox") : document.getElementById("petBox");
+  if(oudP && nieuwP && oudP.classList && nieuwP.classList && oudP.classList.contains &&
+     oudP.classList.contains("chbezig")){
+    CHISPA_MOVES.forEach(function(k){
+      if(oudP.classList.contains(k)){ oudP.classList.remove(k); nieuwP.classList.add(k); }
+    });
+    oudP.classList.remove("chbezig");
+    nieuwP.classList.add("chbezig");
+  }
+  // en de spullen die bij die beweging horen gaan mee. Een dansvloer die op het verlaten podium
+  // blijft liggen is twee keer fout: boven mist hij, en beneden blijft hij gloeien.
+  var oudL = aan ? document.getElementById("chispaProps") : document.getElementById("balkProps");
+  var nwL = aan ? document.getElementById("balkProps") : document.getElementById("chispaProps");
+  if(oudL && nwL && oudL.children && nwL.appendChild){
+    while(oudL.children.length){ nwL.appendChild(oudL.children[0]); }
+  }
+}
+function chispaBalkInit(){
+  if(window.chispaBalkKlaar) return;
+  var b = document.getElementById("chispaBalk");
+  if(!b) return;
+  window.chispaBalkKlaar = true;
+  var naarBoven = function(){
+    var pc = document.getElementById("petCard");
+    if(pc && pc.scrollIntoView){
+      try { pc.scrollIntoView({behavior:"smooth", block:"start"}); } catch(e){ pc.scrollIntoView(); }
+    }
+  };
+  var bin = document.getElementById("chispaBalkIn");
+  if(bin) bin.onclick = naarBoven;
+  try {
+    window.addEventListener("scroll", chispaBalkCheck, {passive:true});
+    window.addEventListener("resize", chispaBalkCheck);
+  } catch(e){
+    try { window.addEventListener("scroll", chispaBalkCheck); } catch(e2){}
+  }
+}
 function chispaZichtbaar(){
   var s = document.getElementById("tab-chispa");
   if(!s || !s.classList || !s.classList.contains) return false;
@@ -7749,8 +7906,9 @@ function chispaZichtbaar(){
   return !!chispaBox();
 }
 function chispaBeweegt(){
-  var b = chispaBox();
-  return !!(b && b.classList && b.classList.contains && b.classList.contains("chbezig"));
+  return chispaPodia().some(function(b){
+    return !!(b.classList.contains && b.classList.contains("chbezig"));
+  });
 }
 function chispaMove(klas, ms, klaar){
   var box = chispaBox();
@@ -7762,19 +7920,19 @@ function chispaMove(klas, ms, klaar){
   box.classList.add(klas);
   if(chispaMoveTimer) clearTimeout(chispaMoveTimer);
   chispaMoveTimer = setTimeout(function(){
-    var b2 = chispaBox();
-    if(b2 && b2.classList){ b2.classList.remove(klas); b2.classList.remove("chbezig"); }
+    // v19.78: opruimen op alle podia. Wie tijdens een dans terugscrollt wisselt van podium, en
+    // dan zou de klasse blijven hangen op het podium dat niemand meer opruimt.
+    chispaPodia(box).forEach(function(b2){ b2.classList.remove(klas); b2.classList.remove("chbezig"); });
     if(klaar) klaar();
   }, ms || 2400);
   return true;
 }
 function chispaStop(){
   if(chispaMoveTimer){ clearTimeout(chispaMoveTimer); chispaMoveTimer = null; }
-  var box = chispaBox();
-  if(box && box.classList){
+  chispaPodia().forEach(function(box){
     CHISPA_MOVES.forEach(function(k){ box.classList.remove(k); });
     box.classList.remove("chbezig");
-  }
+  });
   chispaVloer(false);
 }
 function chispaProp(klas, emoji, ms){
@@ -7805,15 +7963,21 @@ function chispaNotas(n){
   }
 }
 function chispaVloer(aan){
-  var laag = chispaPropLaag();
-  if(!laag || !laag.querySelector) return;
-  var oud = laag.querySelector(".chvloer");
-  if(aan && !oud && laag.appendChild && document.createElement){
-    var d = document.createElement("div");
-    d.className = "chvloer";
-    laag.appendChild(d);
+  if(aan){
+    var laag = chispaPropLaag();
+    if(!laag || !laag.querySelector) return;
+    if(!laag.querySelector(".chvloer") && laag.appendChild && document.createElement){
+      var d = document.createElement("div");
+      d.className = "chvloer";
+      laag.appendChild(d);
+    }
+    return;
   }
-  if(!aan && oud && oud.parentNode && oud.parentNode.removeChild) oud.parentNode.removeChild(oud);
+  // uit gaat op beide lagen, anders blijft de dansvloer gloeien op het podium dat je verliet
+  chispaPropLagen().forEach(function(l){
+    var oud = l.querySelector(".chvloer");
+    if(oud && oud.parentNode && oud.parentNode.removeChild) oud.parentNode.removeChild(oud);
+  });
 }
 /* Nooit midden in een beweging herrenderen: dat bouwt de DOM opnieuw op en dan stopt de dans. */
 function chispaHerrenderStraks(ms, pogingen){
@@ -8085,6 +8249,8 @@ function renderPet(){
       else { toast(ct("Dit vriendje komt erbij als Chispa verder groeit. \u00a1Sigue estudiando!","This friend joins once Chispa grows a bit more. \u00a1Sigue estudiando!")); }
     };
   });
+  // v19.78: het podium bovenaan toont dezelfde Chispa, dus het moet mee met elke hertekening
+  try { chispaBalkInit(); balkLaatste = ""; balkVerversen(); chispaBalkCheck(); } catch(e){}
   // v19.51: één keer per dag geeft Chispa ongevraagd een voorstelling weg
   if(S.chispaBaileDag !== today() && !slaapt && !chispaFiestaBezig){
     S.chispaBaileDag = today();
@@ -16113,6 +16279,8 @@ function show(tabId, skipPush){
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
   if(tabId==="chispa"){ renderChispaPagina(); }
+  // v19.78: wie de chispa-pagina verlaat neemt haar podium niet mee naar de woordjes
+  try { chispaBalkCheck(); } catch(e){}
   if(tabId==="perfil"){
     // v19.71: wie zijn profiel opent komt kijken hoe het gaat, niet hoe het is ingesteld.
     // De lade gaat dus dicht bij binnenkomst, maar niet bij een hertekening terwijl je erin bezig bent.
