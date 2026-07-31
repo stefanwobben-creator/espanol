@@ -739,7 +739,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.74";
+var APP_VERSIE = "v19.75";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3599,7 +3599,7 @@ var PET_LEVELS = [
   {min:1600,  naam:"chica",        hint:"leest alles wat ze tegenkomt",   hintEn:"reads everything she finds"},
   {min:3500,  naam:"adolescente",  hint:"eigen kapsel, eigen mening",     hintEn:"own hair, own opinions"},
   {min:7000,  naam:"adulta",       hint:"volgroeid, staart en al",        hintEn:"fully grown, tail and all"},
-  {min:14000, naam:"abuela sabia", hint:"grijs aan de kieuwen, en wijs",  hintEn:"grey at the gills, and wise"}
+  {min:14000, naam:"abuela sabia", hint:"half doorschijnend, en wijs",   hintEn:"half see-through, and wise"}
 ];
 /* Vriendjes: verschijnen naast Chispa vanaf een bepaald niveau */
 var AMIGOS = [
@@ -6984,6 +6984,7 @@ function petFaseVorm(lvl){
     oogR:  l(11.0, 5.2),
     kieuw: l(0.55, 1.0),
     poot:  l(0.28, 1.0),
+    arm: l(0.34, 1.0),
     staart: Math.max(0, (t - 0.28) / 0.72)
   };
   // M is de hoogte waarop ze het breedst is. Bij een jong dier ligt daar haar hoofd, bij een
@@ -6992,6 +6993,16 @@ function petFaseVorm(lvl){
   // Grote ogen, laag in een rond hoofd, is jong. Kleinere ogen, hoog in een smaller hoofd, is oud.
   v.oogY = v.T + (v.B - v.T) * l(0.54, 0.28);
   v.mondY = v.oogY + l(15, 21);
+  if(oud){
+    // Stefan: "die wijze dan doorzichtig alsof het geest is en ik denk dat ie schattiger mag."
+    // Ouderdom tekenen als verval is een keuze, en niet de leukste. De abuela heeft dezelfde bouw
+    // als de adulta, maar grotere ogen en een kleiner mondje: schattiger, niet ouder. Het verschil
+    // dat je meteen ziet zit niet in haar gezicht maar in haar aanwezigheid, en die staat verderop.
+    v.oogR = 7.6;
+    v.oogX = 17.0;
+    v.mondY = v.oogY + 17;
+    v.arm = 0.92;
+  }
   return v;
 }
 
@@ -7043,7 +7054,7 @@ function petSVGFase(lvl, mood, w){
   var kieuwK = v.oud ? "#bda3ad" : K.kieuw;
   var puntK  = v.oud ? "#d5c2c9" : K.punt;
 
-  var g = "<g transform='translate(100 100) scale(" + v.sc.toFixed(3) + ") translate(-100 -100)'>";
+  var g = "<g" + (v.oud ? " opacity='.72'" : "") + " transform='translate(100 100) scale(" + v.sc.toFixed(3) + ") translate(-100 -100)'>";
 
   // --- kieuwen: drie takken per kant, die vanaf de wangen naar buiten waaieren. De aanhechting
   //     ligt binnen het lijf en wordt erdoor bedekt, want kieuwen groeien uit het dier, niet ernaast.
@@ -7082,7 +7093,7 @@ function petSVGFase(lvl, mood, w){
 
   // --- gezicht ---
   var oL = 100 - v.oogX, oR = 100 + v.oogX;
-  var mondB = 10 + 6 * v.t;
+  var mondB = v.oud ? 9 : 10 + 6 * v.t;
   var mond = mood === "happy"
     ? "M" + (100 - mondB) + " " + (v.mondY - 3) + " Q100 " + (v.mondY + 10) + " " + (100 + mondB) + " " + (v.mondY - 3)
     : mood === "ok"
@@ -7116,21 +7127,63 @@ function petSVGFase(lvl, mood, w){
       " L" + (100 - fw * 0.58).toFixed(1) + " " + (fy + 12).toFixed(1) + " Z' fill='" + K.kieuw + "'/>";
   }
   if(v.oud){
-    // abuela sabia: wenkbrauwen en een ooglid. Geen kromme rug en geen stok; ouder worden is hier
-    // geen aftakeling maar het einde van de lijst, en dat is een goede plek.
-    teken += "<path d='M" + (oL - v.oogR - 4).toFixed(1) + " " + (v.oogY - v.oogR - 6).toFixed(1) + " q" + (v.oogR + 4).toFixed(1) + " -7 " + (2 * v.oogR + 8).toFixed(1) + " -2" +
-      " M" + (oR - v.oogR - 4).toFixed(1) + " " + (v.oogY - v.oogR - 8).toFixed(1) + " q" + (v.oogR + 4).toFixed(1) + " -5 " + (2 * v.oogR + 8).toFixed(1) + " 2" +
-      "' stroke='#fffdfb' stroke-width='4' fill='none' stroke-linecap='round'/>";
-    teken += "<path d='M" + (oL - v.oogR - 2).toFixed(1) + " " + (v.oogY - 2).toFixed(1) + " q" + (v.oogR + 2).toFixed(1) + " -5 " + (2 * v.oogR + 4).toFixed(1) + " -1" +
-      " M" + (oR - v.oogR - 2).toFixed(1) + " " + (v.oogY - 3).toFixed(1) + " q" + (v.oogR + 2).toFixed(1) + " -4 " + (2 * v.oogR + 4).toFixed(1) + " 1" +
-      "' stroke='#c9a8b4' stroke-width='2' fill='none' stroke-linecap='round'/>";
+    // abuela sabia: witte wenkbrauwen, hoog en rond. Geen ooglid meer, geen kromme rug en geen
+    // stok: dat las als moe in plaats van wijs. En twee vonkjes, want ze is er half.
+    teken += "<path d='M" + (oL - v.oogR - 5).toFixed(1) + " " + (v.oogY - v.oogR - 8).toFixed(1) + " q" + (v.oogR + 5).toFixed(1) + " -8 " + (2 * v.oogR + 10).toFixed(1) + " -1" +
+      " M" + (oR - v.oogR - 5).toFixed(1) + " " + (v.oogY - v.oogR - 9).toFixed(1) + " q" + (v.oogR + 5).toFixed(1) + " -7 " + (2 * v.oogR + 10).toFixed(1) + " 1" +
+      "' stroke='#fffdfb' stroke-width='3.5' fill='none' stroke-linecap='round'/>";
+    // Een blos die er altijd is. Schattig is geen stemming maar een eigenschap, en bij haar mag
+    // dat: ze heeft alles al meegemaakt en kijkt nog steeds vrolijk.
+    teken += "<ellipse cx='" + (oL - v.oogR - 5).toFixed(1) + "' cy='" + (v.oogY + 10).toFixed(1) + "' rx='7' ry='4.5' fill='" + K.blos + "' opacity='.7'/>" +
+      "<ellipse cx='" + (oR + v.oogR + 5).toFixed(1) + "' cy='" + (v.oogY + 10).toFixed(1) + "' rx='7' ry='4.5' fill='" + K.blos + "' opacity='.7'/>";
+    teken += "<g fill='#fffdfb' opacity='.85'>" +
+      "<circle cx='" + (100 - v.W - 8).toFixed(1) + "' cy='" + (v.T + 26).toFixed(1) + "' r='2.6'/>" +
+      "<circle cx='" + (100 + v.W + 11).toFixed(1) + "' cy='" + (v.T + 44).toFixed(1) + "' r='2'/>" +
+      "<circle cx='" + (100 + v.W + 2).toFixed(1) + "' cy='" + (v.B + 4).toFixed(1) + "' r='2.3'/></g>";
   }
 
   // --- pootjes: kleine stompjes die uitgroeien ---
   var pl = 8 + 9 * v.poot;
   var poten = "<path d='M" + (100 - v.W * 0.40).toFixed(1) + " " + (v.B - 12).toFixed(1) + " q-" + (pl * 0.55).toFixed(1) + " " + pl.toFixed(1) + " " + (pl * 0.4).toFixed(1) + " " + (pl + 3).toFixed(1) +
     " M" + (100 + v.W * 0.40).toFixed(1) + " " + (v.B - 12).toFixed(1) + " q" + (pl * 0.55).toFixed(1) + " " + pl.toFixed(1) + " -" + (pl * 0.4).toFixed(1) + " " + (pl + 3).toFixed(1) +
-    "' stroke='" + rand + "' stroke-width='" + (4 + 2.5 * v.poot).toFixed(1) + "' fill='none' stroke-linecap='round'/>";
+    "' stroke='" + rand + "' stroke-width='" + (3.4 + 2 * v.poot).toFixed(1) + "' fill='none' stroke-linecap='round'/>";
+
+  // --- armpjes: hetzelfde paar armen in elke fase, maar niet in dezelfde houding. Daar zit het
+  //     karakter, en het scheelt dat het geen kostuum is: een peuter die waggelt, een ni\u00f1a met
+  //     een vinger in de lucht (\u00bfpor qu\u00e9?), een adolescente met de hand in de zij, een adulta die
+  //     haar armen opengooit, een abuela met haar handen samen. Acht keer hetzelfde dier, acht keer
+  //     een andere bui. Hoek 0 is recht opzij, positief is omlaag; b is de bocht in de elleboog.
+  var POSES = {
+    1: [{a: 54,  b: 2, l: 0.62}, {a: 54,  b: 2, l: 0.62}],
+    2: [{a: 20,  b: 4, l: 0.92}, {a: 20,  b: 4, l: 0.92}],
+    3: [{a: 50,  b: 5, l: 0.88}, {a: -62, b: 5, l: 1.12}],
+    4: [{a: 64,  b: 8, l: 1.00}, {a: 64,  b: 8, l: 1.00}],
+    5: [{a: 84,  b: 12, l: 0.80}, {a: 10, b: 5, l: 1.08}],
+    6: [{a: -32, b: 5, l: 1.16}, {a: -32, b: 5, l: 1.16}],
+    7: [{a: 16,  b: 7, l: 0.86}, {a: 16,  b: 7, l: 0.86}]
+  };
+  var pose = POSES[lvl] || POSES[6];
+  // De aanhechting ligt op de rand van het lijf, niet erbinnen: een arm die door haar buik loopt is
+  // geen arm maar een lijn op haar buik. Alles wijst naar buiten; de houding zit in de hoek.
+  var aY = v.M + (v.B - v.M) * 0.26;
+  var armL = v.W * (0.48 + 0.16 * v.t) * v.arm;
+  var armPad = "", handen = "";
+  for(var s = 0; s < 2; s++){
+    var zij = s === 0 ? -1 : 1;
+    var ax = 100 + zij * v.W * 0.88;
+    var pa = pose[s].a * Math.PI / 180;
+    var aL = armL * pose[s].l;
+    var hx = ax + zij * Math.cos(pa) * aL;
+    var hy = aY + Math.sin(pa) * aL;
+    var ddx = hx - ax, ddy = hy - aY;
+    var dl = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
+    var cx2 = (ax + hx) / 2 + zij * (-ddy / dl) * pose[s].b;
+    var cy2 = (aY + hy) / 2 + zij * (ddx / dl) * pose[s].b;
+    armPad += "<path d='M" + ax.toFixed(1) + " " + aY.toFixed(1) + " Q" + cx2.toFixed(1) + " " + cy2.toFixed(1) + " " + hx.toFixed(1) + " " + hy.toFixed(1) + "'/>";
+    handen += "<circle cx='" + hx.toFixed(1) + "' cy='" + hy.toFixed(1) + "' r='" + (3.4 + 2.2 * v.t).toFixed(1) + "' fill='" + lijf + "' stroke='" + rand + "' stroke-width='2.5'/>";
+  }
+  // Eén streek, net als de pootjes: een arm met een eigen omlijning werd bij deze maat een oortje.
+  var armen = "<g stroke='" + rand + "' stroke-width='" + (4.5 + 3 * v.t).toFixed(1) + "' fill='none' stroke-linecap='round'>" + armPad + "</g>" + handen;
 
   // --- accessoires uit de kledingkast: die schuiven mee met de fase in plaats van vast te zitten ---
   var hoedY = v.T + 6, brilY = v.oogY, sjaalY = v.mondY + 14 + 10 * v.t;
@@ -7169,11 +7222,17 @@ function petSVGFase(lvl, mood, w){
       "<path d='M" + (100 + v.W * 0.72) + " " + (v.oogY - 12) + " q8 -22 -12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>" +
       "<circle cx='100' cy='" + (v.T + 2) + "' r='4' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/></g>" : "";
 
-  return "<svg viewBox='0 0 200 180'>" +
-    "<ellipse cx='100' cy='170' rx='" + (26 + 32 * v.t).toFixed(0) + "' ry='" + (7 + 5 * v.t).toFixed(0) + "' fill='#00000012'/>" + g +
+  // Een geest werpt geen schaduw maar geeft licht. Dat ene verschil doet meer voor "zij is anders
+  // dan de adulta" dan tien rimpels bij elkaar, en het maakt haar niet zieliger maar bijzonderder.
+  var voet = v.oud
+    ? "<ellipse cx='100' cy='104' rx='76' ry='68' fill='#f6dbe4' opacity='.28'/>" +
+      "<ellipse cx='100' cy='102' rx='60' ry='56' fill='#fdeef3' opacity='.40'/>" +
+      "<ellipse cx='100' cy='170' rx='26' ry='5' fill='#e8c9d5' opacity='.40'/>"
+    : "<ellipse cx='100' cy='170' rx='" + (26 + 32 * v.t).toFixed(0) + "' ry='" + (7 + 5 * v.t).toFixed(0) + "' fill='#00000012'/>";
+  return "<svg viewBox='0 0 200 180'>" + voet + g +
     staart + kieuwen +
     "<path d='" + petLijfPad(v.T, v.B, v.W, v.P, v.topf, v.shf) + "' fill='" + lijf + "' stroke='" + rand + "' stroke-width='3'/>" +
-    poten +
+    armen + poten +
     "<circle cx='" + oL + "' cy='" + v.oogY + "' r='" + v.oogR.toFixed(1) + "' fill='#2d2a26'/>" +
     "<circle cx='" + oR + "' cy='" + v.oogY + "' r='" + v.oogR.toFixed(1) + "' fill='#2d2a26'/>" +
     "<circle cx='" + (oL + 2) + "' cy='" + (v.oogY - 2.5) + "' r='" + (v.oogR * 0.34).toFixed(1) + "' fill='#fff'/>" +
