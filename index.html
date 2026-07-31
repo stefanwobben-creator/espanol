@@ -97,8 +97,25 @@
   .chips{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
   .chip{font-size:.8rem; font-weight:700; padding:6px 12px; border-radius:999px; border:1.5px solid var(--border); color:var(--muted); background:var(--card);}
   .chip.ok{border-color:var(--green); color:var(--green); background:var(--green-soft);}
+  /* v19.80. Stefan: "chispa mag ook veel wat groter hier" en "de huisdieren moet veel groter en
+     echt in de compositie bij chispa staan er niet eromheen zoals de rest van de decoratie".
+     Dat was een echte fout, geen smaakkwestie. De vriendjes stonden in een keurig rijtje ónder
+     haar, even groot als een pictogram, en het decor stond er in dezelfde maat omheen. Alles even
+     belangrijk is hetzelfde als niets belangrijk: je zag een lijst met plaatjes, geen kamer.
+     Nu is er één toneel. Zij staat groot in het midden, de vriendjes staan groot op dezelfde
+     grond en half voor haar langs, en het decor ligt daar zichtbaar achter. */
   .petstage{display:flex; flex-direction:column; align-items:center; padding:8px 0; position:relative;}
-  .petstage #petBox svg{width:230px; height:210px;}
+  .chscene{position:relative; width:100%; max-width:360px; height:272px; margin:2px auto 6px;}
+  /* één gedeelde grond onder het hele gezelschap; dat is wat ze tot een tafereel maakt */
+  .chgrond{position:absolute; left:50%; bottom:48px; width:330px; height:44px; margin-left:-165px;
+           border-radius:50%; z-index:0; pointer-events:none;
+           background:radial-gradient(ellipse at center, #2d2a2616 0%, #2d2a260a 58%, transparent 78%);}
+  .chdecor{position:absolute; left:0; right:0; top:0; bottom:0; z-index:0; pointer-events:none;}
+  /* niet met transform centreren: alle dansen zitten óók op transform van deze doos en zouden
+     haar dan bij elke beweging terugsmijten naar de linkerrand */
+  .petstage #petBox{position:absolute; left:0; right:0; bottom:20px; text-align:center; z-index:2;
+                    pointer-events:none;}
+  .petstage #petBox svg{width:min(272px, 76%); height:auto; pointer-events:auto;}
   #petBox{cursor:pointer;}
   .petbubble{position:relative; max-width:300px; background:var(--card); border:2px solid var(--accent); border-radius:14px;
              padding:8px 14px; font-size:.95rem; font-weight:700; margin-bottom:10px; text-align:center;
@@ -109,19 +126,46 @@
   .daydeco{position:absolute; top:6px; right:10px; font-size:1.7rem; animation:decofloat 3s ease-in-out infinite; pointer-events:none;}
   @keyframes decofloat{0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-8px) rotate(5deg)}}
   @keyframes bubpop{0%{transform:scale(.7); opacity:0} 100%{transform:scale(1); opacity:1}}
-  .amigorow{display:flex; gap:14px; margin:8px 0 2px; justify-content:center;}
-  .amigo{text-align:center; cursor:pointer; border:none; background:none; padding:0; color:var(--ink);}
-  .amigo svg{width:48px; height:44px;}
-  .amigo small{display:block; font-size:.62rem; color:var(--muted); max-width:64px;}
-  .amigo.locked{opacity:.45; filter:grayscale(1);}
-  /* Chispa 2.0 (29 juli): grotere vriendjes, dans-animatie en kamer-decor */
-  .amigo svg{width:66px; height:60px; transition:transform .15s ease;}
-  .amigo:not(.locked):hover svg{transform:scale(1.12) rotate(-3deg);}
-  .amigo small{font-size:.68rem; max-width:84px;}
+  /* v19.80: de vriendjes staan ín het toneel in plaats van eronder. Groot genoeg om een dier te
+     zijn, met wat diepte: wie verder weg staat is kleiner en staat hoger. Ze staan bewust een
+     beetje over haar heen, want dat is wat een compositie doet, en het is precies waarom je
+     straks ziet dat ze op haar reageren. */
+  .amigo{position:absolute; cursor:pointer; border:none; background:none; padding:0; line-height:0;
+         color:var(--ink); z-index:3;}
+  .amigo svg{width:92px; height:86px; transition:transform .15s ease;}
+  .amigo:not(.locked):hover svg{transform:scale(1.1) rotate(-3deg);}
+  /* Namen stonden hier als vast labeltje onder elk dier. Drie bijschriften in een tafereel van
+     360 breed is geen compositie maar een fotobijschrift, en bij de rand liepen ze de kaart uit.
+     Wie een vriendje aantikt krijgt zijn naam nu in de tekstballon, waar de rest ook staat. Een
+     slotje is het enige dat wél altijd zichtbaar moet zijn, want dat is een belofte. */
+  .amigo small{position:absolute; left:50%; transform:translateX(-50%); top:100%; margin-top:1px;
+               white-space:nowrap; font-size:.62rem; line-height:1.5; color:var(--muted);
+               background:#faf6efcc; border-radius:999px; padding:0 7px;}
+  .amigo.locked{opacity:.42; filter:grayscale(1);}
+  .amigo.a0{left:2px; bottom:30px;}
+  .amigo.a1{right:2px; bottom:24px;}
+  .amigo.a2{right:1%; bottom:146px; z-index:1;}
+  .amigo.a2 svg{width:72px; height:67px;}
+  /* Wie achteraan staat stond op niets: een kat die halverwege de kaart in de lucht hangt is geen
+     diepte maar een zwevend plaatje. Hij krijgt zijn eigen stukje grond, kleiner en vager dan dat
+     van het gezelschap vooraan, want dat is hoe je ziet dat iets verder weg is. */
+  .amigo.a2::after{content:''; position:absolute; left:50%; bottom:-3px; width:56px; height:12px;
+                   margin-left:-28px; border-radius:50%; z-index:-1; pointer-events:none;
+                   background:radial-gradient(ellipse at center, #2d2a2618 0%, transparent 72%);}
   .amigobounce{animation:petb .5s ease;}
   .petdance{animation:petd 2.6s ease-in-out infinite;}
+  /* v19.80. Stefan: "juist het effect van die interactie op hen is leuk" en "dansen zie je nog
+     niet gebeuren". Zij danste alleen. Drie vriendjes die stokstijf naast een gloeiende dansvloer
+     staan maken van een feestje een filmpje waar je naar kijkt. Nu doen ze mee, ieder net iets
+     later: gelijk op de maat is een machine, net niet gelijk is een gezelschap. */
+  .chscene.baila .amigo:not(.locked) svg{animation:petd 1.9s ease-in-out infinite;}
+  .chscene.baila .amigo.a1:not(.locked) svg{animation-delay:.24s;}
+  .chscene.baila .amigo.a2:not(.locked) svg{animation-delay:.48s;}
   @keyframes petd{0%,100%{transform:rotate(0) scale(1)} 15%{transform:rotate(-6deg) scale(1.05)} 30%{transform:rotate(5deg) scale(1.07)} 45%{transform:rotate(-5deg) scale(1.04)} 60%{transform:rotate(6deg) scale(1.08)} 80%{transform:rotate(-3deg) scale(1.02)}}
-  .decoritem{position:absolute; font-size:1.9rem; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(0,0,0,.14)); z-index:1;}
+  /* v19.80: het decor is decor. Het stond even groot en even scherp als de dieren en vocht
+     daardoor om dezelfde aandacht; nu ligt het kleiner en zachter achter het gezelschap. */
+  .decoritem{position:absolute; font-size:1.5rem; pointer-events:none; opacity:.62;
+             filter:drop-shadow(0 2px 2px rgba(0,0,0,.10)); z-index:0;}
   .petname{font-size:1.3rem; font-weight:800; margin:4px 0 0;}
   .petmood{color:var(--muted); font-size:.9rem; margin-bottom:8px;}
   .tapabadge{font-weight:800; font-size:1rem; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:6px 14px;}
@@ -154,7 +198,7 @@
   .wensrij.vervuld{color:var(--green);}
   .zorgglow #petBox svg{filter:drop-shadow(0 0 12px var(--amber));}
   .petslaap #petBox svg{opacity:.72; filter:saturate(.65);}
-  .zzz{position:absolute; top:20px; left:50%; margin-left:34px; font-size:1.5rem; z-index:2;
+  .zzz{position:absolute; top:34px; left:50%; margin-left:52px; font-size:1.5rem; z-index:4;
        animation:zzzfloat 3s ease-in-out infinite; pointer-events:none;}
   @keyframes zzzfloat{0%{transform:translateY(0); opacity:.15} 45%{transform:translateY(-12px); opacity:1} 100%{transform:translateY(-24px); opacity:0}}
   /* v19.55: jargon-uitleg. Grammaticawoorden als infinitief of gerundio krijgen een stippellijn en
@@ -196,18 +240,21 @@
   #petBox{will-change:transform;}
   .chvive{animation:chvive 3.6s ease-in-out infinite;}
   @keyframes chvive{0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-5px) scale(1.02)}}
-  .chprops{position:absolute; left:0; right:0; top:0; bottom:0; pointer-events:none; z-index:4; overflow:hidden;}
-  .chprop{position:absolute; font-size:2.1rem; filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));}
+  /* v19.80: de proppenlaag lag als geheel vóór Chispa, dus de dansvloer lag als een roze waas
+     over haar buik in plaats van als licht onder haar voeten. De laag zelf stapelt nu niet meer,
+     en elk stuk kiest zelf zijn hoogte: vloer eronder, gitaar en noten erboven. */
+  .chprops{position:absolute; left:0; right:0; top:0; bottom:0; pointer-events:none; overflow:hidden;}
+  .chprop{position:absolute; font-size:2.1rem; z-index:5; filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));}
   .chguit{left:11%; top:44%; animation:chstrum .42s ease-in-out infinite;}
   @keyframes chstrum{0%,100%{transform:rotate(-14deg) translateY(0)} 50%{transform:rotate(-5deg) translateY(-6px)}}
   .chmar{right:10%; top:38%; animation:chshake .17s linear infinite;}
   .chmar2{left:7%; top:32%; animation:chshake .17s linear infinite reverse;}
   @keyframes chshake{0%{transform:rotate(-18deg)} 50%{transform:rotate(20deg)} 100%{transform:rotate(-18deg)}}
-  .chnota{position:absolute; font-size:1.5rem;
+  .chnota{position:absolute; font-size:1.5rem; z-index:5;
           animation:chnotaop 2s ease-out forwards; pointer-events:none;}
   @keyframes chnotaop{0%{transform:translateY(0) rotate(-8deg); opacity:0} 18%{opacity:1}
                       100%{transform:translateY(-82px) rotate(18deg); opacity:0}}
-  .chvloer{position:absolute; left:50%; top:58%; width:230px; height:60px; margin-left:-115px; border-radius:50%;
+  .chvloer{position:absolute; z-index:1; left:50%; top:auto; bottom:34px; width:300px; height:64px; margin-left:-150px; border-radius:50%;
            background:radial-gradient(ellipse at center, #ffd54d44 0%, #e85a8a22 55%, transparent 74%);
            animation:chvloerpuls 1.05s ease-in-out infinite;}
   @keyframes chvloerpuls{0%,100%{transform:scale(.88); opacity:.5} 50%{transform:scale(1.1); opacity:1}}
@@ -805,7 +852,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.79";
+var APP_VERSIE = "v19.80";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7762,7 +7809,7 @@ var RINCON = [
   {id:"castillo",  e:"🏰", naam:"Castillo de arena",   hint:"zandkasteel in het aquarium", hintEn:"a sandcastle in the tank",   prijs:5,  pos:"left:16%; top:33%;"},
   {id:"guitarra2", e:"🎸", naam:"Guitarra española",   hint:"voor de serenades", hintEn:"for the serenades",             prijs:5,  pos:"right:13%; top:32%;"},
   {id:"radio",     e:"📻", naam:"Radio",               hint:"bachata op verzoek", hintEn:"bachata on request",            prijs:6,  pos:"left:3%; top:16%;"},
-  {id:"discobol",  e:"🪩", naam:"Bola de discoteca",   hint:"voor de feestjes", hintEn:"for the parties",              prijs:7,  pos:"right:9%; top:2%;"},
+  {id:"discobol",  e:"🪩", naam:"Bola de discoteca",   hint:"voor de feestjes", hintEn:"for the parties",              prijs:7,  pos:"right:28%; top:0;"},
   {id:"librero",   e:"📚", naam:"Estantería",          hint:"Chispa's eigen boekenkast", hintEn:"Chispa's own bookcase",     prijs:7,  pos:"right:2%; top:14%;", min:6000},
   {id:"farolillo", e:"🏮", naam:"Farolillos de feria", hint:"lampionnen als op de feria", hintEn:"lanterns like at the feria",    prijs:8,  pos:"left:45%; top:0;",      min:10000},
   {id:"fuente",    e:"⛲", naam:"Fuente",              hint:"een echte binnenfontein", hintEn:"a real indoor fountain",       prijs:10, pos:"left:30%; top:34%;",  min:15000}
@@ -7968,14 +8015,29 @@ function chispaNotas(n){
         var el = document.createElement("span");
         el.className = "chnota";
         el.textContent = noten[k % noten.length];
-        if(el.style){ el.style.left = (16 + (k * 17) % 62) + "%"; el.style.top = "46%"; }
+        // v19.80: ze stegen op door het midden, dus dwars over haar gezicht. Nu gaan ze om en om
+        // links en rechts langs haar omhoog: je ziet de muziek én je ziet wie er danst.
+        if(el.style){
+          el.style.left = (k % 2 ? 74 + (k * 7) % 16 : 10 + (k * 7) % 16) + "%";
+          el.style.top = "56%";
+        }
         laag.appendChild(el);
         setTimeout(function(){ if(el.parentNode && el.parentNode.removeChild) el.parentNode.removeChild(el); }, 2100);
       }, k * 240);
     })(i);
   }
 }
+/* v19.80: het hele toneel weet of er gedanst wordt, niet alleen zij. De vriendjes hangen aan
+   deze ene klasse, zodat er geen tweede animatiesysteem bijkomt en zij nooit uit de maat kunnen
+   raken met haar: de dansvloer gaat aan, dus iedereen danst. */
+function chispaScene(aan){
+  var sc = document.getElementById("chScene");
+  if(!sc || !sc.classList || !sc.classList.add) return false;
+  if(aan) sc.classList.add("baila"); else sc.classList.remove("baila");
+  return true;
+}
 function chispaVloer(aan){
+  try { chispaScene(!!aan); } catch(e){}
   if(aan){
     var laag = chispaPropLaag();
     if(!laag || !laag.querySelector) return;
@@ -8201,12 +8263,18 @@ function renderPet(){
   var deco = {e:decoBron.e, txt:decoTxt(decoBron)};
   var lvl = petLevel(S.txp||0);
   var amHtml = "";
-  AMIGOS.forEach(function(a){
+  // v19.80: elk vriendje krijgt een vaste plek in het tafereel (a0 links voor, a1 rechts voor,
+  // a2 verder naar achteren). Dat het een vaste plek is, is het punt: een dier dat elke keer
+  // ergens anders staat is een icoontje, een dier dat altijd op dezelfde plek zit woont er.
+  AMIGOS.forEach(function(a, i){
     var open = (S.txp||0) >= a.min;
+    var plek = " a" + i;
     if(open){
-      amHtml += "<button class='amigo' data-amigo='"+a.id+"'>"+a.svg+"<small>"+a.naam+"</small></button>";
+      // geen naambordje meer onder het dier: dat is een fotobijschrift, geen tafereel. Tik hem
+      // aan en hij stelt zichzelf voor in de tekstballon, net als zij.
+      amHtml += "<button class='amigo"+plek+"' data-amigo='"+a.id+"' title='"+a.naam+"'>"+a.svg+"</button>";
     } else {
-      amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>"+ct("\ud83d\udd12 bij ", "\ud83d\udd12 at ")+getal(a.min)+" "+xpw()+"</small></button>";
+      amHtml += "<button class='amigo locked"+plek+"' data-amigo='' title='"+ct("Nog op slot","Still locked")+"'>"+a.svg+"<small>\ud83d\udd12 "+getal(a.min)+"</small></button>";
     }
   });
   var cadeauGehad = S.chispaCadeau === today();
@@ -8216,13 +8284,16 @@ function renderPet(){
   var vandaagGezorgd = zorgState().laatst === today();
   var stageKlas = "petstage" + (vandaagGezorgd ? " zorgglow" : "") + (slaapt ? " petslaap" : "");
   el.innerHTML = "<div class='"+stageKlas+"'>"+
-    rinconDecorHtml()+
-    "<div id='chispaProps' class='chprops'></div>"+
-    "<span class='daydeco'>"+deco.e+"</span>"+
-    (slaapt ? "<span class='zzz'>\ud83d\udca4</span>" : "")+
     "<div id='petBubble' class='petbubble hidden'></div>"+
-    "<div id='petBox' class='chvive' title='"+ct("Klik op Chispa!","Tap Chispa!")+"'>"+petSVG()+"</div>"+
-    "<div class='amigorow'>"+amHtml+"</div>"+
+    "<div class='chscene' id='chScene'>"+
+      "<div class='chdecor'>"+rinconDecorHtml()+"</div>"+
+      "<span class='chgrond'></span>"+
+      "<span class='daydeco'>"+deco.e+"</span>"+
+      (slaapt ? "<span class='zzz'>\ud83d\udca4</span>" : "")+
+      "<div id='chispaProps' class='chprops'></div>"+
+      "<div id='petBox' class='chvive' title='"+ct("Klik op Chispa!","Tap Chispa!")+"'>"+petSVG()+"</div>"+
+      amHtml+
+    "</div>"+
     "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>\u00b7 "+PET_LEVELS[lvl].naam+"</span></p>"+
     "<p class='petmood'>"+petMoodText()+"</p>"+
     "<p class='wensrij"+(wensOk?" vervuld":"")+"' id='wensRij'>"+wens.e+" <span class='es'>"+wens.es+"</span>"+
@@ -8257,7 +8328,9 @@ function renderPet(){
       var a = AMIGOS.filter(function(x){ return x.id === id; })[0];
       if(a){
         ab.classList.remove("amigobounce"); void(ab.offsetWidth||0); ab.classList.add("amigobounce");
-        chispaSay(a.frase);
+        // v19.80: zijn naam hoort bij wat hij zegt. Zo leer je hem kennen zonder dat er een
+        // bijschrift onder hem hoeft te blijven staan.
+        chispaSay({es:a.frase.es, nl:a.naam+" \u00b7 "+a.frase.nl, en:a.naam+" \u00b7 "+(a.frase.en||a.frase.nl)});
       }
       else { toast(ct("Dit vriendje komt erbij als Chispa verder groeit. \u00a1Sigue estudiando!","This friend joins once Chispa grows a bit more. \u00a1Sigue estudiando!")); }
     };
