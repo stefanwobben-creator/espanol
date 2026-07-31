@@ -390,6 +390,22 @@
   .es{font-style:normal; color:var(--accent); font-weight:700;}
   h2{font-size:1.15rem; margin:4px 0 10px;}
   .kicker{font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  /* --- dagbord v19.69 --- */
+  .nwrij{display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:.94rem; line-height:1.4;}
+  .nwrij:last-child{border-bottom:none; padding-bottom:2px;}
+  .nwrij[data-nwgo]{cursor:pointer;}
+  .nwrij .nwe{flex:0 0 auto; font-size:1.15rem; line-height:1.25;}
+  .lijnstrook{display:flex; align-items:flex-end; gap:4px; height:38px; margin-top:10px;}
+  .lijnstaaf{flex:1; border-radius:3px 3px 0 0; background:var(--border);}
+  .lijnstaaf.half{background:var(--amber-soft); border-bottom:2px solid var(--amber);}
+  .lijnstaaf.vol{background:var(--green-soft); border-bottom:2px solid var(--green);}
+  .lijnstaaf[data-vandaag]{outline:2px solid var(--accent); outline-offset:1px;}
+  .speelgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .speelknop{display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 8px;
+             border-radius:var(--radius); border:1.5px solid var(--border); background:var(--card);
+             color:var(--ink); font-weight:700; font-size:.9rem; cursor:pointer;}
+  .speelknop .spe{font-size:1.5rem; line-height:1;}
+  .speelknop:hover{border-color:var(--accent); background:var(--accent-soft);}
   .gwuitleg{font-size:.97rem; line-height:1.55;}
   .gwuitleg p{margin:0 0 10px;}
   .gwuitleg ul{margin:0 0 10px; padding-left:20px;}
@@ -489,6 +505,8 @@
     <div class="card" id="familieCard"></div>
     <div class="card" id="groepCard"></div>
     <div class="card" id="statsCard"></div>
+    <!-- v19.69: de lessenlijst hoort bij "waar sta ik", niet bij "wat doe ik nu" -->
+    <div id="cursusCard"></div>
     <div class="card" id="steunCard">
       <h2>Steun ¡Vamos! 💛</h2>
       <p class="muted" id="perfSteunP">Deze app is gratis en blijft gratis. Benieuwd waarom ik hem bouwde, en wil je misschien iets terugdoen?</p>
@@ -661,7 +679,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.68";
+var APP_VERSIE = "v19.69";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6498,57 +6516,187 @@ function ritmeCard(){
     "</div></div>";
 }
 
+/* ================= HET DAGBORD (v19.69) =================
+   Stefan: "op dagniveau wil je overzicht van je progressie, de krabbel van iemand, of iemands
+   prestatie zien en direct naar leuke spelletjes."
+   Vandaag beantwoordt nu drie vragen in deze volgorde: wat is er nieuw, hoe loopt het, en waar
+   kan ik nu spelen. De lessenlijst is weg; die staat op Profiel en beantwoordt "waar sta ik".
+
+   Het nieuws werkt met een ochtendfoto. Bij het eerste bezoek van een dag leggen we de stand van
+   je verzamelingen vast; het verschil met nu is wat je vandaag hebt binnengehaald. Geen extra
+   administratie in de unlock-code, en de foto kan alleen maar bijgewerkt worden, nooit verloren. */
+function dagSnapNu(){
+  var tapas = 0, bailes = 0, fases = 0;
+  try { tapas = tapaMenuState().length; } catch(e){}
+  try { bailes = baileState().length; } catch(e){}
+  try { fases = conjOpenMax(); } catch(e){}
+  var lessen = 0;
+  try { tLessons().forEach(function(l){ if(!l.stub && lessonProgress(l).done) lessen++; }); } catch(e){}
+  return {tapas:tapas, bailes:bailes, fases:fases, lessen:lessen, dagen:dagenTotaal()};
+}
+function dagSnapOchtend(){
+  var t = today();
+  var nu = dagSnapNu();
+  if(!S.snap || S.snap.d !== t){
+    S.snap = {d:t, tapas:nu.tapas, bailes:nu.bailes, fases:nu.fases, lessen:nu.lessen, dagen:nu.dagen};
+    try { persist(); } catch(e){}
+  }
+  return S.snap;
+}
+/* de krabbels die vandaag voor jou binnenkwamen. famCache is het antwoord van /api/familia; als
+   dat er nog niet is halen we het één keer per sessie op en tekenen we alleen dit blok opnieuw. */
+var dagKrabGehaald = false;
+function dagKrabbels(){
+  var mij = "";
+  try { mij = krabbelIkBen(); } catch(e){}
+  if(!mij || !famCache || !famCache.krabbels) return [];
+  return famCache.krabbels.filter(function(x){
+    return x && String(x.naar || "").toLowerCase() === mij;
+  });
+}
+function dagNieuwsRegels(){
+  var och = dagSnapOchtend();
+  var nu = dagSnapNu();
+  var r = [];
+  dagKrabbels().forEach(function(x){
+    var kr = null;
+    try { kr = krabbelVind(x.sleutel); } catch(e){}
+    if(!kr) return;
+    r.push({e:kr.e, t:"<b>"+x.van+"</b> "+ct("schreef je","wrote you")+": <span class='es'>"+kr.es+"</span>", go:"perfil"});
+  });
+  if(nu.tapas > och.tapas){
+    r.push({e:"\ud83e\uded2", t:ct("Nieuwe tapa geproefd","New tapa tasted")+" \u00b7 "+nu.tapas+"/18", go:"chispa"});
+  }
+  if(nu.bailes > och.bailes){
+    r.push({e:"\ud83d\udc83", t:ct("Chispa leerde een nieuwe dans","Chispa learned a new dance")+" \u00b7 "+nu.bailes, go:"chispa"});
+  }
+  if(nu.fases > och.fases){
+    r.push({e:"\ud83c\udfaf", t:ct("Nieuwe fase open in de Conjugador","New phase unlocked in the Conjugador"), go:"conj"});
+  }
+  if(nu.lessen > och.lessen){
+    r.push({e:"\u2713", t:ct("Les afgerond","Lesson finished")+" \u00b7 "+nu.lessen+" "+ct("in totaal","in total"), go:"perfil"});
+  }
+  return r;
+}
+function dagNieuwsHtml(){
+  var r = dagNieuwsRegels();
+  var html = "<div class='card' id='nieuwsKaart'><span class='kicker'>"+ct("Nieuw voor jou","New for you")+"</span>";
+  if(r.length){
+    html += r.map(function(x){
+      return "<div class='nwrij'"+(x.go?" data-nwgo='"+x.go+"'":"")+"><span class='nwe'>"+x.e+"</span><span>"+x.t+"</span></div>";
+    }).join("");
+  } else {
+    var gis = (S.xp && S.xp[addDays(today(),-1)]) || 0;
+    html += "<p class='muted' style='margin:6px 0 0'>"+
+      (gis > 0 ? ct("Nog niets nieuws vandaag. Gisteren haalde je "+gis+" "+xpw()+"; doe je les, dan staat hier zo weer wat.",
+                    "Nothing new yet today. Yesterday you got "+gis+" "+xpw()+"; do your lesson and something will show up here.")
+               : ct("Nog niets nieuws vandaag. Doe je les of geef Chispa een tapa, dan verandert dat.",
+                    "Nothing new yet today. Do your lesson or give Chispa a tapa and that will change."))+"</p>";
+  }
+  return html + "</div>";
+}
+/* jouw lijn: veertien dagen in één strook, geen tabel. De hoogte is je xp, de kleur zegt of je je
+   dagdoel haalde. Eén klik en je staat bij de cijfers op Profiel. */
+function dagLijnHtml(){
+  var t = today(), doel = dagdoel(), max = 1, xs = [];
+  for(var i = 13; i >= 0; i--){
+    var d = addDays(t, -i);
+    var x = (S.xp && S.xp[d]) || 0;
+    if(x > max) max = x;
+    xs.push({d:d, x:x});
+  }
+  var actief = xs.filter(function(a){ return a.x > 0; }).length;
+  var gehaald = xs.filter(function(a){ return a.x >= doel; }).length;
+  var staven = xs.map(function(a, i){
+    var h = Math.max(3, Math.round(34 * a.x / max));
+    var cls = "lijnstaaf" + (a.x >= doel ? " vol" : (a.x > 0 ? " half" : ""));
+    return "<span class='"+cls+"'"+(i===13?" data-vandaag='1'":"")+" style='height:"+h+"px' title='"+a.d+" \u00b7 "+a.x+" "+xpw()+"'></span>";
+  }).join("");
+  var dg = dagenTotaal();
+  return "<div class='card' id='lijnKaart'><span class='kicker'>"+ct("Jouw lijn","Your line")+"</span>"+
+    "<div class='lijnstrook'>"+staven+"</div>"+
+    "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
+      ct("Laatste 14 dagen \u00b7 "+actief+" dagen geoefend \u00b7 dagdoel gehaald op "+gehaald,
+         "Last 14 days \u00b7 practised on "+actief+" days \u00b7 daily goal reached on "+gehaald)+
+      (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p>"+
+    "<div class='row' style='margin-top:8px'><button class='ghost' id='btnLijnMeer'>"+ct("Alle cijfers","All the numbers")+" \u2192</button></div></div>";
+}
+/* vier spelletjes, recht erin. Aventura staat vast (dat is het grote spel), de andere drie
+   wisselen per dag, zodat je niet elke ochtend dezelfde drie ziet. */
+var DAGSPELLEN = [
+  {v:"ws",      e:"\ud83d\udd0d", n:"Sopa de letras"},
+  {v:"kruis",   e:"\u270f\ufe0f", n:"Crucigrama"},
+  {v:"dictado", e:"\ud83d\udd0a", n:"Dictado"},
+  {v:"conj",    e:"\ud83c\udfaf", n:"Conjugador"},
+  {v:"hu",      e:"\ud83e\udde9", n:"Husselen"},
+  {v:"mem",     e:"\ud83c\udccf", n:"Memory"}
+];
+function dagSpelKeuze(){
+  var h = dayHash("spel");
+  var uit = [];
+  for(var i = 0; i < 3; i++) uit.push(DAGSPELLEN[(h + i * 2) % DAGSPELLEN.length]);
+  return uit;
+}
+function dagSpeelHtml(){
+  var keus = dagSpelKeuze();
+  var knoppen = "<button class='speelknop' data-speel='avt'><span class='spe'>\ud83d\uddfa\ufe0f</span>Aventura</button>";
+  keus.forEach(function(k){
+    knoppen += "<button class='speelknop' data-speel='"+k.v+"'><span class='spe'>"+k.e+"</span>"+k.n+"</button>";
+  });
+  return "<div class='card' id='speelKaart'><span class='kicker'>"+ct("Even spelen","Play something")+"</span>"+
+    "<div class='speelgrid'>"+knoppen+"</div>"+
+    "<div class='row' style='margin-top:8px'><button class='ghost' id='btnAlleSpellen'>"+ct("Alle spelletjes","All the games")+" \u2192</button></div></div>";
+}
+function speelNaar(v){
+  funView = v;
+  if(v === "dictado"){ dIdx = null; dRonde = null; }
+  if(v === "conj"){ conjIdx = null; conjRonde = null; }
+  if(v === "hu"){ huIdx = null; huRonde = null; }
+  if(v === "kruis"){ kruisLos = null; }
+  show("speeltuin");
+}
+function dagBordWire(el){
+  el.querySelectorAll("[data-nwgo]").forEach(function(b){
+    var g = b.getAttribute("data-nwgo");
+    b.onclick = function(){ if(g === "conj") speelNaar("conj"); else show(g); };
+  });
+  var bl = document.getElementById("btnLijnMeer");
+  if(bl) bl.onclick = function(){ show("perfil"); };
+  el.querySelectorAll("[data-speel]").forEach(function(b){
+    var v = b.getAttribute("data-speel");
+    b.onclick = function(){ speelNaar(v); };
+  });
+  var ba = document.getElementById("btnAlleSpellen");
+  if(ba) ba.onclick = function(){ funView = null; show("speeltuin"); };
+  // krabbels komen van de server; één keer per sessie ophalen en dan alleen het nieuwsblok verversen
+  if(!dagKrabGehaald && !famCache && typeof api === "function"){
+    dagKrabGehaald = true;
+    try {
+      api("/api/familia").then(function(res){
+        if(res && res.ok && res.spelers) famCache = res;
+        var k = document.getElementById("nieuwsKaart");
+        if(k && k.parentNode && dagKrabbels().length){ renderLessons(); }
+      });
+    } catch(e){}
+  }
+}
+
 function renderLessons(){
   curLesson = null; scopeLesson = null;
   document.getElementById("lessonView").classList.add("hidden");
   var listEl = document.getElementById("lessonList");
   listEl.classList.remove("hidden");
-  var ls = tLessons();
   var html = ritmeCard();
   // v19.57: de uitnodiging staat direct onder de dagkaart, dus meteen in beeld. Hij verdwijnt
   // zodra je gedeeld hebt of zodra er iemand naast je zit; blijven vragen is zeuren.
   // v19.58: ook hier hoogstens één vraag tegelijk; samenKaartNu() bepaalt welke.
   html += samenKaartNu(true);
-  ls.forEach(function(l, i){
-    var unlocked = lessonUnlocked(i) && !l.stub;
-    var p = l.stub ? null : lessonProgress(l);
-    var status, cls = "lesson";
-    if(l.stub){
-      status = "🔜"; cls += " locked";
-    } else if(p.done){
-      status = "✓"; cls += " done";
-    } else if(lessonUnlocked(i)){
-      status = "▶";
-    } else {
-      status = "🔒"; cls += " locked";
-    }
-    var sub = lesDoel(l);
-    if(l.stub){ sub += ct(" · volgt in de wekelijkse update", " · coming in the weekly update"); }
-    else if(p && !p.done && lessonUnlocked(i)){
-      var parts = [];
-      if(!p.spiek) parts.push(ct("start met de spiekbrief","start with the cheat sheet"));
-      else { parts.push(ct("woorden ","words ")+p.w+"/"+p.wt); parts.push(ct("zinnen ","sentences ")+p.s+"/"+p.stt); parts.push(ct("toetsjes ","quizzes ")+p.q+"/"+p.qt); }
-      sub = parts.join(" · ");
-    }
-    html += "<div class='"+cls+"' data-les='"+(l.stub||!lessonUnlocked(i)?"":l.id)+"'>"+
-      "<div class='lnum'>"+l.num+"</div>"+
-      "<div class='lbody'><b>"+l.titel+"</b><span>"+sub+"</span></div>"+
-      "<div class='lstatus'>"+status+"</div></div>";
-  });
-  var rl = reviewLessons();
-  if(rl.length){
-    html += "<div class='card' style='margin-top:4px'><span class='kicker'>"+ct("Opfrissen · A1","Refresh · A1")+"</span>"+
-      "<p class='muted' style='margin:6px 0 0'>"+ct("De basis zakt weg als je hem nooit meer aanraakt. Deze lessen staan altijd open; de woorden draaien mee in je herhaalsysteem.","The basics fade if you never touch them again. These lessons stay open; their words keep rotating through your review system.")+"</p></div>";
-    rl.forEach(function(l){
-      var p = lessonProgress(l);
-      var cls = "lesson" + (p.done ? " done" : "");
-      html += "<div class='"+cls+"' data-les='"+l.id+"'>"+
-        "<div class='lnum'>A1</div>"+
-        "<div class='lbody'><b>"+l.titel+"</b><span>"+lesDoel(l)+"</span></div>"+
-        "<div class='lstatus'>"+(p.done?"✓":"↻")+"</div></div>";
-    });
-  }
+  // v19.69: het dagbord. Wat is er nieuw, hoe loopt het, waar kan ik nu spelen.
+  html += dagNieuwsHtml();
+  html += dagLijnHtml();
+  html += dagSpeelHtml();
   listEl.innerHTML = html;
+  dagBordWire(listEl);
   var bsf = document.getElementById("btnStartLesFlow");
   if(bsf) bsf.onclick = function(){ lesFlowStart(); };
   // v19.66: Chispa op de dagkaart is aanklikbaar, net als in de banner tijdens de les. Spel, geen keuze.
@@ -6565,16 +6713,74 @@ function renderLessons(){
   bindSamen("lessen", function(){ renderLessons(); });
   var mReg = document.getElementById("momentRegel");
   if(mReg) mReg.onclick = function(){ momentOpen = true; renderLessons(); };
-  listEl.querySelectorAll(".lesson").forEach(function(el2){
-    var lid = el2.getAttribute("data-les");
-    if(lid){ el2.onclick = function(){
-      var l = findLesson(lid);
-      if(l) openLesson(l);
-    }; }
-  });
   // v19.60: tweede natuurlijke grens. Haal je je dagdoel in de Speeltuin of bij Vertalen, dan komt
   // het feest zodra je terug bent op je lessenoverzicht.
   dagFeestCheck();
+}
+
+// v19.69: de cursuslijst staat nu op Profiel, naast je competenties en je cijfers. Daar hoort hij:
+// het is het antwoord op "waar sta ik", niet op "wat doe ik nu". Vandaag gaat over vandaag.
+function cursusRijenHtml(){
+  var ls = tLessons();
+  var html = "";
+  ls.forEach(function(l, i){
+      var unlocked = lessonUnlocked(i) && !l.stub;
+      var p = l.stub ? null : lessonProgress(l);
+      var status, cls = "lesson";
+      if(l.stub){
+        status = "🔜"; cls += " locked";
+      } else if(p.done){
+        status = "✓"; cls += " done";
+      } else if(lessonUnlocked(i)){
+        status = "▶";
+      } else {
+        status = "🔒"; cls += " locked";
+      }
+      var sub = lesDoel(l);
+      if(l.stub){ sub += ct(" · volgt in de wekelijkse update", " · coming in the weekly update"); }
+      else if(p && !p.done && lessonUnlocked(i)){
+        var parts = [];
+        if(!p.spiek) parts.push(ct("start met de spiekbrief","start with the cheat sheet"));
+        else { parts.push(ct("woorden ","words ")+p.w+"/"+p.wt); parts.push(ct("zinnen ","sentences ")+p.s+"/"+p.stt); parts.push(ct("toetsjes ","quizzes ")+p.q+"/"+p.qt); }
+        sub = parts.join(" · ");
+      }
+      html += "<div class='"+cls+"' data-les='"+(l.stub||!lessonUnlocked(i)?"":l.id)+"'>"+
+        "<div class='lnum'>"+l.num+"</div>"+
+        "<div class='lbody'><b>"+l.titel+"</b><span>"+sub+"</span></div>"+
+        "<div class='lstatus'>"+status+"</div></div>";
+    });
+    var rl = reviewLessons();
+    if(rl.length){
+      html += "<div class='card' style='margin-top:4px'><span class='kicker'>"+ct("Opfrissen · A1","Refresh · A1")+"</span>"+
+        "<p class='muted' style='margin:6px 0 0'>"+ct("De basis zakt weg als je hem nooit meer aanraakt. Deze lessen staan altijd open; de woorden draaien mee in je herhaalsysteem.","The basics fade if you never touch them again. These lessons stay open; their words keep rotating through your review system.")+"</p></div>";
+      rl.forEach(function(l){
+        var p = lessonProgress(l);
+        var cls = "lesson" + (p.done ? " done" : "");
+        html += "<div class='"+cls+"' data-les='"+l.id+"'>"+
+          "<div class='lnum'>A1</div>"+
+          "<div class='lbody'><b>"+l.titel+"</b><span>"+lesDoel(l)+"</span></div>"+
+          "<div class='lstatus'>"+(p.done?"✓":"↻")+"</div></div>";
+      });
+    }
+  return html;
+}
+
+function renderCursus(){
+  var el = document.getElementById("cursusCard");
+  if(!el) return;
+  el.innerHTML = "<div class='card'><span class='kicker'>"+ct("De cursus","The course")+"</span>"+
+    "<p class='muted' style='margin:6px 0 0'>"+ct("Waar je staat in de leerlijn. Je hoeft hier niets te kiezen: de dagkaart op Vandaag pakt vanzelf de eerstvolgende les.","Where you are in the course. You don't have to pick anything here: the day card on Today grabs your next lesson by itself.")+"</p></div>"+
+    cursusRijenHtml();
+  el.querySelectorAll(".lesson").forEach(function(el2){
+    var lid = el2.getAttribute("data-les");
+    if(lid){ el2.onclick = function(){
+      var l = findLesson(lid);
+      if(!l) return;
+      // de lesweergave woont in tab-lessen; daar moeten we eerst heen
+      show("lessen");
+      openLesson(l);
+    }; }
+  });
 }
 
 function openLesson(l, skipPush){
@@ -12278,6 +12484,7 @@ function renderPerfil(){
     S.mail = m; persist(); syncUp();
     toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
   };
+  renderCursus();
   renderFamilia();
   renderGroepen();
 }
