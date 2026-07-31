@@ -714,7 +714,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.71";
+var APP_VERSIE = "v19.72";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6197,7 +6197,7 @@ function lesFlowKlaar(){
   // achter het nog actieve tabblad)
   show("lessen");
   var el = document.getElementById("lessonList");
-  var tapaHoy = tapaVanDaag();
+  var tapaHoy = tapaVolgende();
   confetti(["🎉",tapaHoy.e,"✨","💃"], 30);
   el.innerHTML = "<div class='card celebrate'><span class='kicker'>"+ct("Les afgerond","Session complete")+" 🎉</span>"+
     "<p class='big' style='margin:6px 0'>"+ct("¡Muy bien! Chispa is blij met je.","¡Muy bien! Chispa is happy with you.")+"</p>"+
@@ -6504,7 +6504,7 @@ function ritmeCard(){
   // je bij de startknop, met een andere zin per dag, en vertelt ze meteen welke tapa er aan het
   // eind op je wacht: de beloning bij naam noemen vóórdat je begint is de helft van de viering.
   var groet = chispaGroet();
-  var tapaHoy = tapaVanDaag();
+  var tapaHoy = tapaVolgende();
   var portie = dagPortie();
   var portieTxt = (function(){
     var d = [];
@@ -7111,6 +7111,27 @@ var TAPAS = [
   {id:"chorizo",     e:"🌭",  es:"el chorizo al vino",         nl:"chorizo in wijn",          en:"chorizo in wine"}
 ];
 function tapaVanDaag(){ return TAPAS[dayHash("tapa") % TAPAS.length]; }
+/* v19.72 - welke tapa Chispa nu krijgt.
+   Stefan: "nu krijg ik alleen maar champginos." Terecht, en het was geen smaakkwestie maar een
+   ontwerpfout: tapaGeven() gaf altijd tapaVanDaag(), dus je kon er hoogstens een per dag ontdekken.
+   Achttien tapas betekende dan achttien dagen minimum, terwijl je op een dag tien lessen kunt doen.
+   Wie twee keer op een dag oefende kreeg twee keer hetzelfde bord: de tweede les leverde niets op.
+   Nu levert elke les iets nieuws op zolang er nog iets nieuws is. De tapa van de dag houdt zijn
+   voorrang, want die staat op de dagkaart beloofd voordat je begint; ken je hem al, dan loop je de
+   kaart af vanaf een plek die per dag en per stand verschuift, zodat de volgorde niet elke keer
+   dezelfde is. Ken je ze allemaal, dan krijg je weer die van vandaag: dan is hij geen slot meer
+   maar gewoon een smaak. */
+function tapaVolgende(){
+  var hoy = tapaVanDaag();
+  if(!tapaMenuKent(hoy.id)) return hoy;
+  var start = (dayHash("tapa") + tapaMenuState().length) % TAPAS.length;
+  for(var i = 0; i < TAPAS.length; i++){
+    var tp = TAPAS[(start + i) % TAPAS.length];
+    if(!tapaMenuKent(tp.id)) return tp;
+  }
+  return hoy;
+}
+function tapaAllemaal(){ return tapaMenuState().length >= TAPAS.length; }
 function tapaMenuState(){ if(!S.tapaMenu) S.tapaMenu = []; return S.tapaMenu; }
 function tapaMenuKent(id){ return tapaMenuState().indexOf(id) >= 0; }
 function tapaMenuNoteer(id){
@@ -7124,7 +7145,7 @@ function tapaMenuNoteer(id){
    geen tapa hebt. */
 function tapaGeven(){
   if((S.tapas||0) < 1) return null;
-  var tp = tapaVanDaag();
+  var tp = tapaVolgende();
   var slaapt = chispaSlaapt();
   S.tapas--;
   S.fed = today();
@@ -7136,7 +7157,9 @@ function tapaGeven(){
   return {tapa:tp, nieuw:nieuw, slaapt:slaapt, wens:wens};
 }
 function tapaMenuHtml(){
-  var hoy = tapaVanDaag();
+  // v19.72: het omkaderde vakje is wat je nu krijgt, niet wat de kalender zegt. Anders wijst het
+  // menu naar iets wat je allang geproefd hebt terwijl je iets anders op je bord krijgt.
+  var hoy = tapaVolgende();
   var uit = "";
   TAPAS.forEach(function(tp){
     uit += "<button class='tapachip"+(tapaMenuKent(tp.id)?" gehad":"")+(tp.id===hoy.id?" hoy":"")+
@@ -7698,8 +7721,9 @@ function renderGroei(){
 function renderVitrine(){
   var el = document.getElementById("vitrineCard");
   if(!el) return;
-  var tapaHoy = tapaVanDaag();
+  var tapaHoy = tapaVolgende();
   var tapaGehad = tapaMenuState().length;
+  var tapaKlaar = tapaAllemaal();
   var bd = bailePorDia();
   var bekend = baileState();
   var bailHtml = "";
@@ -7710,7 +7734,8 @@ function renderVitrine(){
   el.innerHTML = "<h2>"+ct("De vitrine","The display case")+" \ud83c\udf7d\ufe0f</h2>"+
     "<p class='muted' style='margin:0 0 12px'>"+ct("Twee verzamelingen die alleen maar kunnen groeien. Wegblijven kost je hier niets.","Two collections that can only grow. Staying away never costs you anything here.")+"</p>"+
     "<div class='vitrinevak'>"+
-      "<p class='bailehoy' id='tapaHoy'><span class='es'>La tapa del d\u00eda</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+"</span></p>"+
+      "<p class='bailehoy' id='tapaHoy'><span class='es'>"+(tapaKlaar ? "La tapa del d\u00eda" : "La pr\u00f3xima tapa")+"</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+
+        (tapaKlaar ? "" : " \u00b7 "+ct("na je volgende les","after your next session"))+"</span></p>"+
       tapaMenuHtml()+
       "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas \u00b7 tik er een aan","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one")+"</p>"+
     "</div>"+
