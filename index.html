@@ -739,7 +739,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.73";
+var APP_VERSIE = "v19.74";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3592,18 +3592,14 @@ function leerKpi(){
 
 /* ================= PET-CONSTANTEN ================= */
 var PET_LEVELS = [
-  {min:0,     naam:"huevo (ei)",    hint:"er zit iets in...", hintEn:"something's in there..."},
-  {min:150,   naam:"bebé",          hint:"net uit het ei", hintEn:"fresh out of the egg"},
-  {min:600,   naam:"joven",         hint:"groeit als kool", hintEn:"growing fast"},
-  {min:1500,  naam:"maestro",       hint:"verdient zijn snor", hintEn:"earning that moustache"},
-  {min:3000,  naam:"profesor",      hint:"met echte afstudeerhoed", hintEn:"with a real graduation cap"},
-  {min:6000,  naam:"poeta",         hint:"baret op, poëzie in het hart", hintEn:"beret on, poetry in the heart"},
-  {min:10000, naam:"bailaor",       hint:"flamenco! roos in de mond", hintEn:"flamenco! rose in the mouth"},
-  {min:15000, naam:"chef de tapas", hint:"koksmuts verdiend", hintEn:"chef's hat earned"},
-  {min:21000, naam:"campeón",       hint:"gouden medaille", hintEn:"gold medal"},
-  {min:28000, naam:"leyenda",       hint:"een gouden gloed", hintEn:"a golden glow"},
-  {min:36000, naam:"el sabio",      hint:"wijze witte baard", hintEn:"wise white beard"},
-  {min:45000, naam:"estrella",      hint:"kroon en sterren", hintEn:"crown and stars"}
+  {min:0,     naam:"huevo",        hint:"er zit iets in...",              hintEn:"something's in there..."},
+  {min:80,    naam:"beb\u00e9",         hint:"net uit het ei, met een scherf op haar kop", hintEn:"fresh out of the egg, a shell on her head"},
+  {min:250,   naam:"peque\u00f1a",      hint:"waggelt achter je aan",          hintEn:"waddles after you"},
+  {min:700,   naam:"ni\u00f1a",         hint:"vraagt de hele dag \u00bfpor qu\u00e9?",     hintEn:"asks \u00bfpor qu\u00e9? all day"},
+  {min:1600,  naam:"chica",        hint:"leest alles wat ze tegenkomt",   hintEn:"reads everything she finds"},
+  {min:3500,  naam:"adolescente",  hint:"eigen kapsel, eigen mening",     hintEn:"own hair, own opinions"},
+  {min:7000,  naam:"adulta",       hint:"volgroeid, staart en al",        hintEn:"fully grown, tail and all"},
+  {min:14000, naam:"abuela sabia", hint:"grijs aan de kieuwen, en wijs",  hintEn:"grey at the gills, and wise"}
 ];
 /* Vriendjes: verschijnen naast Chispa vanaf een bepaald niveau */
 var AMIGOS = [
@@ -6935,129 +6931,256 @@ function renderLessonSpiek(l){
 }
 
 /* ================= CHISPA (tamagotchi) ================= */
-// Chispa's evolutie is bewust opgeknipt in een paar GROTE, zichtbare vormsprongen (ei -> baby ->
-// volwassen -> stralende meestervorm) i.p.v. steeds hetzelfde lijf met alleen een extra accessoire.
-// Binnen zo'n vorm blijft de opbouw wel subtiel (net als voorheen: hoedjes/medailles/baard komen
-// er per niveau geleidelijk bij) — Stefans gekozen aanpak: "duidelijker evolutie per fase".
+/* ===== v19.74 — de acht levensfases van Chispa ==========================================
+   Stefan: "de meerdere stadia van chispa zelf maakt je meer betrokken bij diens ontwikkeling.
+   Daarom is dat van belang. (...) maar het is nog steeds chispa."
+
+   Die laatste halve zin is de hele ontwerpopgave. Twaalf niveaus met steeds een andere hoed erop
+   waren geen ontwikkeling maar een prijzenkast: het dier veranderde niet, er kwam alleen spul bij.
+   En acht losse tekeningen zouden het omgekeerde probleem geven: dan is elke fase een ander beest.
+
+   Daarom is dit één tekening met een leeftijd erin. Wat door alle acht fases hetzelfde blijft is
+   waaraan je haar herkent: de zes kieuwtakken van een axolotl, het roze, de twee zwarte ogen met
+   hun lichtpunt, de brede mond. Wat verandert is de verhouding, en dat is precies waaraan een mens
+   leeftijd afleest: een baby heeft een groot hoofd met de ogen laag in het gezicht, een volwassene
+   heeft een kleiner hoofd met de ogen halverwege. Dat heet het kindschema, en het werkt hier net zo
+   goed als bij een echt dier.
+
+   De acht: huevo (het ei), bebé, pequeña, niña, chica, adolescente, adulta, abuela sabia.
+   Zeven daarvan leven, dus de vormcurve loopt over zes stappen; abuela deelt haar bouw met adulta
+   en verschilt in wat ouder worden echt doet: grijs aan de kieuwen, wenkbrauwen, iets kleiner.
+   Ze is nadrukkelijk geen aftakeling maar het eindpunt van een leven lang leren.
+
+   De kleur loopt via petKleur() en niet via vaste hexcodes, zodat "hem beetje customizen met een
+   kleurtje" (Stefan) later alleen die functie hoeft aan te passen en niet dertig tekenregels.
+=========================================================================================== */
+function petKleur(){
+  // v19.74: één plek waar Chispa's kleuren vandaan komen. Standaard is ze roze, want dat is ze.
+  var k = (S && S.petKleur) || "rosa";
+  var P = PET_KLEUREN.filter(function(x){ return x.id === k; })[0] || PET_KLEUREN[0];
+  return P;
+}
+var PET_KLEUREN = [
+  {id:"rosa", naam:"rosa", nl:"roze", en:"pink", lijf:"#f8b8ce", rand:"#ef97b8", kieuw:"#e46a9a", punt:"#f08bb0", blos:"#f7b7cd"}
+];
+
+function petFaseVorm(lvl){
+  // t loopt van 0 (bebé) tot 1 (adulta). De abuela deelt de volwassen bouw: ouder worden is hier
+  // geen krimpen of krommen, alleen grijzen.
+  var leef = Math.max(1, Math.min(7, lvl));
+  var t = Math.min(1, (leef - 1) / 5);
+  function l(a, b){ return a + (b - a) * t; }
+  var oud = leef >= 7;
+  var v = {
+    t: t, oud: oud,
+    sc:    oud ? 0.98 : l(0.58, 1.04),
+    W:     l(46, 56),
+    T:     l(58, 30),
+    B:     l(138, 168),
+    P:     l(0.42, 0.62),
+    topf:  l(0.95, 0.48),
+    shf:   l(0.42, 0.72),
+    oogX:  l(15.5, 18.5),
+    oogR:  l(11.0, 5.2),
+    kieuw: l(0.55, 1.0),
+    poot:  l(0.28, 1.0),
+    staart: Math.max(0, (t - 0.28) / 0.72)
+  };
+  // M is de hoogte waarop ze het breedst is. Bij een jong dier ligt daar haar hoofd, bij een
+  // volwassen dier haar buik. Dat ene getal draagt het hele kindschema.
+  v.M = v.T + (v.B - v.T) * v.P;
+  // Grote ogen, laag in een rond hoofd, is jong. Kleinere ogen, hoog in een smaller hoofd, is oud.
+  v.oogY = v.T + (v.B - v.T) * l(0.54, 0.28);
+  v.mondY = v.oogY + l(15, 21);
+  return v;
+}
+
+/* Het lijf is één gesloten peervorm. T en B zijn boven- en onderkant, W de halve breedte, P de
+   hoogte van het breedste punt, topf hoe rond ze bovenaan is en shf hoe laat het uitlopen begint.
+   Klein kind: bijna een bol (topf hoog, P hoog in beeld). Volwassene: een smallere kop op een
+   zwaarder onderlijf. Er wordt niets extra's getekend om dat verschil te maken; het zit in de curve. */
+function petLijfPad(T, B, W, P, topf, shf){
+  if(topf === undefined) topf = 0.82;
+  if(shf === undefined) shf = 0.52;
+  var M = T + (B - T) * P;
+  var lft = 100 - W, rgt = 100 + W;
+  return "M100 " + T +
+    " C " + (100 + W * topf) + " " + T + " " + rgt + " " + (T + (M - T) * shf) + " " + rgt + " " + M +
+    " C " + rgt + " " + (M + (B - M) * 0.66) + " " + (100 + W * 0.60) + " " + B + " 100 " + B +
+    " C " + (100 - W * 0.60) + " " + B + " " + lft + " " + (M + (B - M) * 0.66) + " " + lft + " " + M +
+    " C " + lft + " " + (T + (M - T) * shf) + " " + (100 - W * topf) + " " + T + " 100 " + T + " Z";
+}
+
 function petSVG(){
   var lvl = petLevel(S.txp || 0);
   var mood = petMoodKey();
   var w = S.wear || {};
-  if(lvl === 0){
-    // het ei
-    return "<svg viewBox='0 0 200 180'>"+
-      "<ellipse cx='100' cy='150' rx='55' ry='14' fill='#00000012'/>"+
-      "<path d='M100 30 C 140 30 160 80 160 115 C 160 150 133 168 100 168 C 67 168 40 150 40 115 C 40 80 60 30 100 30 Z' fill='#fde8d8' stroke='#e8c8ab' stroke-width='3'/>"+
-      "<path d='M75 95 l12 12 l-9 10 M118 80 l-10 12 l12 9' stroke='#e0b48e' stroke-width='3' fill='none' stroke-linecap='round'/>"+
-      (w.sombrero?"<g><ellipse cx='100' cy='38' rx='46' ry='11' fill='#c98a3d'/><path d='M78 38 Q100 2 122 38 Z' fill='#b5762e'/></g>":"")+
-      (w.flor?"<circle cx='142' cy='55' r='9' fill='#e85a8a'/><circle cx='142' cy='55' r='4' fill='#ffd54d'/>":"")+
-      (w.bufanda?"<rect x='55' y='120' width='90' height='14' rx='7' fill='#c0392b'/>":"")+
-      "</svg>";
-  }
-  if(lvl <= 2) return petSVGBaby(lvl, mood, w);
-  return petSVGGroot(lvl, mood, w);
+  if(lvl === 0) return petSVGEi(w);
+  return petSVGFase(lvl, mood, w);
 }
 
-// ================= CHISPA: BABY-VORM (lvl 1-2, bebé/joven) =================
-// Bewust een heel andere, rondere, staartloze vorm dan de volwassen Chispa (petSVGGroot) i.p.v.
-// gewoon een kleinere versie van hetzelfde lijf — zo is de sprong ei -> baby -> volwassen ook echt
-// te zíen, niet alleen te lezen aan het niveau-label.
-function petSVGBaby(lvl, mood, w){
-  var groei = lvl - 1; // 0 = bebé (net uit het ei, kieuwstompjes, dichte oogjes-houding), 1 = joven
-  var scale = 0.7 + groei*0.16;
-  var mouth = mood==="happy" ? "M88 108 Q100 118 112 108" : mood==="ok" ? "M90 111 L110 111" : "M88 113 Q100 105 112 113";
-  var g = "<g transform='translate(100 100) scale("+scale+") translate(-100 -100)'>";
-  var gillLen = 10 + groei*8;
-  // pootjes MOETEN na het lijf getekend worden (anders verdwijnen ze onder de ronde buik) en steken
-  // net onder de rand van de cirkel (die tot cy 166 loopt) uit, zodat ze ook echt zichtbaar zijn
-  var voetjes = groei
-    ? "<ellipse cx='78' cy='168' rx='11' ry='8' fill='#f5b8ce'/><ellipse cx='122' cy='168' rx='11' ry='8' fill='#f5b8ce'/>"
-    : "<ellipse cx='82' cy='165' rx='7' ry='6' fill='#f5b8ce'/><ellipse cx='118' cy='165' rx='7' ry='6' fill='#f5b8ce'/>";
-  return "<svg viewBox='0 0 200 180'>"+
-    "<ellipse cx='100' cy='166' rx='50' ry='11' fill='#00000010'/>"+ g +
-    // piepkleine kieuwstompjes (nog geen lange sierlijke kieuwen zoals bij de volwassen vorm)
-    "<g stroke='#f0a0c0' stroke-width='6' stroke-linecap='round'>"+
-    "<path d='M56 78 q-"+gillLen+" -4 -"+(gillLen+6)+" 4'/><path d='M56 96 q-"+gillLen+" 2 -"+(gillLen+6)+" 10'/>"+
-    "<path d='M144 78 q"+gillLen+" -4 "+(gillLen+6)+" 4'/><path d='M144 96 q"+gillLen+" 2 "+(gillLen+6)+" 10'/></g>"+
-    "<circle cx='"+(40-gillLen)+"' cy='82' r='4' fill='#f6bcd6'/><circle cx='"+(40-gillLen)+"' cy='106' r='4' fill='#f6bcd6'/>"+
-    "<circle cx='"+(160+gillLen)+"' cy='82' r='4' fill='#f6bcd6'/><circle cx='"+(160+gillLen)+"' cy='106' r='4' fill='#f6bcd6'/>"+
-    // rond, plomp lijfje (bewust geen staartuitloop zoals bij de volwassen Chispa)
-    "<circle cx='100' cy='104' r='62' fill='#ffe3ee' stroke='#f5b8ce' stroke-width='3'/>"+
-    voetjes +
-    // grote, sprankelende babyogen
-    "<circle cx='78' cy='96' r='10' fill='#2d2a26'/><circle cx='122' cy='96' r='10' fill='#2d2a26'/>"+
-    "<circle cx='81' cy='93' r='3.4' fill='#fff'/><circle cx='125' cy='93' r='3.4' fill='#fff'/>"+
-    "<ellipse cx='70' cy='112' rx='8' ry='5' fill='#f7b7cd'/><ellipse cx='130' cy='112' rx='8' ry='5' fill='#f7b7cd'/>"+
-    "<path d='"+mouth+"' stroke='#2d2a26' stroke-width='3' fill='none' stroke-linecap='round'/>"+
-    (w.gafas?"<g><circle cx='78' cy='96' r='15' fill='#2d2a26cc'/><circle cx='122' cy='96' r='15' fill='#2d2a26cc'/><path d='M93 96 L107 96' stroke='#2d2a26' stroke-width='4'/></g>":"")+
-    (w.flor?"<circle cx='140' cy='64' r='8' fill='#e85a8a'/><circle cx='140' cy='64' r='3.5' fill='#ffd54d'/>":"")+
-    (w.sombrero?"<g><ellipse cx='100' cy='56' rx='44' ry='10' fill='#c98a3d'/><path d='M78 56 Q100 20 122 56 Z' fill='#b5762e'/></g>":"")+
-    (w.bufanda?"<rect x='62' y='134' width='76' height='12' rx='6' fill='#c0392b'/>":"")+
-    "</g></svg>";
+/* Fase 0: het ei. Blijft wat het was, want een ei is geen jong dier maar een belofte. */
+function petSVGEi(w){
+  var K = petKleur();
+  return "<svg viewBox='0 0 200 180'>" +
+    "<ellipse cx='100' cy='150' rx='55' ry='14' fill='#00000012'/>" +
+    "<path d='M100 30 C 140 30 160 80 160 115 C 160 150 133 168 100 168 C 67 168 40 150 40 115 C 40 80 60 30 100 30 Z' fill='#fde8d8' stroke='#e8c8ab' stroke-width='3'/>" +
+    "<path d='M75 95 l12 12 l-9 10 M118 80 l-10 12 l12 9' stroke='#e0b48e' stroke-width='3' fill='none' stroke-linecap='round'/>" +
+    "<circle cx='100' cy='128' r='7' fill='" + K.lijf + "' opacity='.55'/>" +
+    (w.sombrero ? "<g><ellipse cx='100' cy='38' rx='46' ry='11' fill='#c98a3d'/><path d='M78 38 Q100 2 122 38 Z' fill='#b5762e'/></g>" : "") +
+    (w.flor ? "<circle cx='142' cy='55' r='9' fill='#e85a8a'/><circle cx='142' cy='55' r='4' fill='#ffd54d'/>" : "") +
+    (w.bufanda ? "<rect x='55' y='120' width='90' height='14' rx='7' fill='#c0392b'/>" : "") +
+    "</svg>";
 }
 
-// ================= CHISPA: VOLWASSEN + STRALENDE MEESTERVORM (lvl 3-11) =================
-// lvl 3-8 (maestro t/m campeón): de vertrouwde volwassen vorm, met per niveau geleidelijk meer
-// accessoires (net als voorheen). Vanaf lvl 9 (leyenda) wordt dit expliciet een "stralende
-// meestervorm": groter, warmere kleur met gouden randen, en grote sierveren/vleugels achter het
-// lijf — dát is de tweede grote, in één oogopslag zichtbare sprong (naast ei->baby->volwassen).
-function petSVGGroot(lvl, mood, w){
-  var stralend = lvl >= 9;
-  var scale = stralend ? Math.min(1.22 + (lvl-9)*0.04, 1.3) : Math.min(1.0 + (lvl-3)*0.02, 1.1);
-  var mouth = mood==="happy" ? "M85 105 Q100 120 115 105" : mood==="ok" ? "M87 110 L113 110" : "M85 114 Q100 102 115 114";
-  var blush = mood==="happy" ? "<ellipse cx='70' cy='100' rx='7' ry='4' fill='#f7b7cd'/><ellipse cx='130' cy='100' rx='7' ry='4' fill='#f7b7cd'/>" : "";
-  var g = "<g transform='translate(100 95) scale("+scale+") translate(-100 -95)'>";
-  // welke hoed hoort bij dit niveau? (eigen sombrero-accessoire gaat vóór)
-  var tierHat = "";
-  if(!w.sombrero){
-    if(lvl>=11)      tierHat = "<g><path d='M74 44 L74 24 L86 36 L100 18 L114 36 L126 24 L126 44 Z' fill='#ffd54d' stroke='#e0a800' stroke-width='2.5'/><circle cx='100' cy='24' r='4' fill='#e85a8a'/></g>";
-    else if(lvl>=7)  tierHat = "<g><path d='M76 44 Q72 12 100 14 Q128 12 124 44 Z' fill='#fff' stroke='#d8d2c6' stroke-width='2.5'/><rect x='74' y='40' width='52' height='9' rx='4' fill='#fff' stroke='#d8d2c6' stroke-width='2.5'/></g>";
-    else if(lvl>=5)  tierHat = "<g><path d='M70 42 Q100 18 130 42 Q100 50 70 42 Z' fill='#2d2a26'/><circle cx='100' cy='24' r='3.5' fill='#2d2a26'/></g>";
-    else if(lvl>=4)  tierHat = "<g><rect x='88' y='34' width='24' height='10' rx='3' fill='#2d2a26'/><path d='M60 34 L100 18 L140 34 L100 44 Z' fill='#2d2a26'/><path d='M136 34 L136 52' stroke='#ffd54d' stroke-width='3'/><circle cx='136' cy='55' r='4' fill='#ffd54d'/></g>";
+function petSVGFase(lvl, mood, w){
+  var v = petFaseVorm(lvl);
+  var K = petKleur();
+  // De abuela wordt niet grijs maar bleker: dezelfde roze, met de kleur eruit gelopen. Zo blijft
+  // ze herkenbaar hetzelfde dier en lezen witte wenkbrauwen wél tegen haar huid.
+  var lijf   = v.oud ? "#f3d3dd" : K.lijf;
+  var rand   = v.oud ? "#d8b6c2" : K.rand;
+  var kieuwK = v.oud ? "#bda3ad" : K.kieuw;
+  var puntK  = v.oud ? "#d5c2c9" : K.punt;
+
+  var g = "<g transform='translate(100 100) scale(" + v.sc.toFixed(3) + ") translate(-100 -100)'>";
+
+  // --- kieuwen: drie takken per kant, die vanaf de wangen naar buiten waaieren. De aanhechting
+  //     ligt binnen het lijf en wordt erdoor bedekt, want kieuwen groeien uit het dier, niet ernaast.
+  var kL = v.kieuw;
+  var lengte = (26 + 16 * v.t) * kL;
+  var hoeken = [-30, 0, 26];
+  var takken = "", punten = "";
+  for(var i = 0; i < 3; i++){
+    var a = hoeken[i] * Math.PI / 180;
+    var y0 = v.oogY - 12 + i * 11;
+    var dx = Math.cos(a) * lengte, dy = Math.sin(a) * lengte;
+    var xr = 100 + v.W - 12, xl = 100 - v.W + 12;
+    takken += "<path d='M" + xr.toFixed(1) + " " + y0.toFixed(1) +
+      " Q" + (xr + dx * 0.55).toFixed(1) + " " + (y0 + dy * 0.30).toFixed(1) +
+      " " + (xr + dx).toFixed(1) + " " + (y0 + dy).toFixed(1) + "'/>";
+    takken += "<path d='M" + xl.toFixed(1) + " " + y0.toFixed(1) +
+      " Q" + (xl - dx * 0.55).toFixed(1) + " " + (y0 + dy * 0.30).toFixed(1) +
+      " " + (xl - dx).toFixed(1) + " " + (y0 + dy).toFixed(1) + "'/>";
+    var pr = (3 + 3.4 * kL).toFixed(1);
+    punten += "<circle cx='" + (xr + dx).toFixed(1) + "' cy='" + (y0 + dy).toFixed(1) + "' r='" + pr + "' fill='" + puntK + "'/>";
+    punten += "<circle cx='" + (xl - dx).toFixed(1) + "' cy='" + (y0 + dy).toFixed(1) + "' r='" + pr + "' fill='" + puntK + "'/>";
   }
-  var aura = stralend ? "<ellipse cx='100' cy='100' rx='"+(84+(lvl-9)*3)+"' ry='"+(76+(lvl-9)*3)+"' fill='#ffd54d22'/><ellipse cx='100' cy='100' rx='"+(72+(lvl-9)*3)+"' ry='"+(66+(lvl-9)*3)+"' fill='#ffd54d1c'/>" : "";
-  var sterren = stralend ? "<g fill='#ffd54d'><path d='M28 30 l3 6 6 1 -4 5 1 6 -6 -3 -6 3 1 -6 -4 -5 6 -1 Z'/><path d='M168 24 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/><path d='M176 120 l2.5 5 5 1 -3.5 4 1 5 -5 -2.5 -5 2.5 1 -5 -3.5 -4 5 -1 Z'/></g>" : "";
-  // grote sierveren/vleugels: het duidelijkste verschil met de gewone volwassen vorm hierboven
-  var vleugels = stralend
-    ? "<g fill='#ffd54d33'><path d='M42 100 Q6 70 10 24 Q34 42 46 78 Z'/><path d='M158 100 Q194 70 190 24 Q166 42 154 78 Z'/></g>"+
-      "<g fill='#ffcb6b55'><path d='M46 112 Q14 96 4 56 Q28 66 50 92 Z'/><path d='M154 112 Q186 96 196 56 Q172 66 150 92 Z'/></g>"
+  var kieuwen = "<g stroke='" + kieuwK + "' stroke-width='" + (3 + 3.5 * kL).toFixed(1) + "' stroke-linecap='round' fill='none'>" + takken + "</g>" + punten;
+
+  // --- staartvin: een platte vin achter het lijf, geen haak ernaast. Komt pas als ze uit de
+  //     peuterfase groeit en wordt daarna breder.
+  var st = v.staart;
+  var vin = v.W * (0.48 + 0.38 * st);
+  var vx = 100 + v.W * 0.55;
+  var staart = st > 0.03
+    ? "<path d='M" + vx.toFixed(1) + " " + (v.B - 48).toFixed(1) +
+      " Q" + (vx + vin * 1.05).toFixed(1) + " " + (v.B - 34).toFixed(1) + " " + (vx + vin).toFixed(1) + " " + (v.B - 10).toFixed(1) +
+      " Q" + (vx + vin * 0.55).toFixed(1) + " " + (v.B + 6).toFixed(1) + " " + (vx - 6).toFixed(1) + " " + (v.B - 6).toFixed(1) +
+      " Z' fill='" + puntK + "' stroke='" + rand + "' stroke-width='2.5' stroke-linejoin='round'/>"
     : "";
-  var medaille = lvl>=8 ? "<g><path d='M86 138 L100 152 L114 138' stroke='#c0392b' stroke-width='5' fill='none'/><circle cx='100' cy='152' r='9' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/><text x='100' y='156' text-anchor='middle' font-size='10' font-weight='bold' fill='#a5661e'>1</text></g>" : "";
-  var roos = lvl>=6 ? "<g><path d='M113 112 q14 4 22 0' stroke='#3a7d44' stroke-width='2.5' fill='none'/><circle cx='137' cy='111' r='6' fill='#c0392b'/><circle cx='134' cy='108' r='3' fill='#e85a8a'/></g>" : "";
-  var baard = lvl>=10 ? "<path d='M82 116 Q84 142 100 144 Q116 142 118 116 Q109 124 100 122 Q91 124 82 116 Z' fill='#f5f0e8' stroke='#ddd5c8' stroke-width='2'/>" : "";
+
+  // --- gezicht ---
+  var oL = 100 - v.oogX, oR = 100 + v.oogX;
+  var mondB = 10 + 6 * v.t;
+  var mond = mood === "happy"
+    ? "M" + (100 - mondB) + " " + (v.mondY - 3) + " Q100 " + (v.mondY + 10) + " " + (100 + mondB) + " " + (v.mondY - 3)
+    : mood === "ok"
+      ? "M" + (100 - mondB * 0.8) + " " + v.mondY + " L" + (100 + mondB * 0.8) + " " + v.mondY
+      : "M" + (100 - mondB) + " " + (v.mondY + 3) + " Q100 " + (v.mondY - 7) + " " + (100 + mondB) + " " + (v.mondY + 3);
+  var blos = mood === "happy"
+    ? "<ellipse cx='" + (oL - v.oogR - 4) + "' cy='" + (v.oogY + 9) + "' rx='" + (6 + v.t) + "' ry='4' fill='" + K.blos + "'/>" +
+      "<ellipse cx='" + (oR + v.oogR + 4) + "' cy='" + (v.oogY + 9) + "' rx='" + (6 + v.t) + "' ry='4' fill='" + K.blos + "'/>"
+    : "";
+
+  // --- wat elke fase van de vorige onderscheidt, buiten de verhoudingen om. Drie stuks, niet meer:
+  //     de rest van het verschil moet uit de bouw komen, anders is het acht kostuums en geen dier.
+  var teken = "";
+  if(lvl === 1){
+    // net uit het ei: een gebarsten kapje blijft nog even op haar kop liggen
+    var sw = v.W * 0.72;
+    teken += "<path d='M" + (100 - sw).toFixed(1) + " " + (v.T + 12).toFixed(1) +
+      " l" + (sw * 0.34).toFixed(1) + " -14 l" + (sw * 0.30).toFixed(1) + " 10 l" + (sw * 0.42).toFixed(1) + " -16" +
+      " l" + (sw * 0.38).toFixed(1) + " 12 l" + (sw * 0.32).toFixed(1) + " -8 l" + (sw * 0.24).toFixed(1) + " 16 Z'" +
+      " fill='#fde8d8' stroke='#e8c8ab' stroke-width='2' stroke-linejoin='round'/>";
+  }
+  if(lvl === 5){
+    // adolescente: een pony over haar voorhoofd. Het eerste wat ze zelf koos.
+    var fw = v.W * 0.62, fy = v.T + 4;
+    teken += "<path d='M" + (100 - fw).toFixed(1) + " " + (fy + 20).toFixed(1) +
+      " Q" + (100 - fw * 0.9).toFixed(1) + " " + (fy - 7).toFixed(1) + " 100 " + (fy - 2).toFixed(1) +
+      " Q" + (100 + fw * 0.95).toFixed(1) + " " + (fy - 6).toFixed(1) + " " + (100 + fw * 0.8).toFixed(1) + " " + (fy + 14).toFixed(1) +
+      " L" + (100 + fw * 0.45).toFixed(1) + " " + (fy + 23).toFixed(1) +
+      " L" + (100 + fw * 0.15).toFixed(1) + " " + (fy + 12).toFixed(1) +
+      " L" + (100 - fw * 0.25).toFixed(1) + " " + (fy + 25).toFixed(1) +
+      " L" + (100 - fw * 0.58).toFixed(1) + " " + (fy + 12).toFixed(1) + " Z' fill='" + K.kieuw + "'/>";
+  }
+  if(v.oud){
+    // abuela sabia: wenkbrauwen en een ooglid. Geen kromme rug en geen stok; ouder worden is hier
+    // geen aftakeling maar het einde van de lijst, en dat is een goede plek.
+    teken += "<path d='M" + (oL - v.oogR - 4).toFixed(1) + " " + (v.oogY - v.oogR - 6).toFixed(1) + " q" + (v.oogR + 4).toFixed(1) + " -7 " + (2 * v.oogR + 8).toFixed(1) + " -2" +
+      " M" + (oR - v.oogR - 4).toFixed(1) + " " + (v.oogY - v.oogR - 8).toFixed(1) + " q" + (v.oogR + 4).toFixed(1) + " -5 " + (2 * v.oogR + 8).toFixed(1) + " 2" +
+      "' stroke='#fffdfb' stroke-width='4' fill='none' stroke-linecap='round'/>";
+    teken += "<path d='M" + (oL - v.oogR - 2).toFixed(1) + " " + (v.oogY - 2).toFixed(1) + " q" + (v.oogR + 2).toFixed(1) + " -5 " + (2 * v.oogR + 4).toFixed(1) + " -1" +
+      " M" + (oR - v.oogR - 2).toFixed(1) + " " + (v.oogY - 3).toFixed(1) + " q" + (v.oogR + 2).toFixed(1) + " -4 " + (2 * v.oogR + 4).toFixed(1) + " 1" +
+      "' stroke='#c9a8b4' stroke-width='2' fill='none' stroke-linecap='round'/>";
+  }
+
+  // --- pootjes: kleine stompjes die uitgroeien ---
+  var pl = 8 + 9 * v.poot;
+  var poten = "<path d='M" + (100 - v.W * 0.40).toFixed(1) + " " + (v.B - 12).toFixed(1) + " q-" + (pl * 0.55).toFixed(1) + " " + pl.toFixed(1) + " " + (pl * 0.4).toFixed(1) + " " + (pl + 3).toFixed(1) +
+    " M" + (100 + v.W * 0.40).toFixed(1) + " " + (v.B - 12).toFixed(1) + " q" + (pl * 0.55).toFixed(1) + " " + pl.toFixed(1) + " -" + (pl * 0.4).toFixed(1) + " " + (pl + 3).toFixed(1) +
+    "' stroke='" + rand + "' stroke-width='" + (4 + 2.5 * v.poot).toFixed(1) + "' fill='none' stroke-linecap='round'/>";
+
+  // --- accessoires uit de kledingkast: die schuiven mee met de fase in plaats van vast te zitten ---
+  var hoedY = v.T + 6, brilY = v.oogY, sjaalY = v.mondY + 14 + 10 * v.t;
+  var wearVoor = "";
+  if(w.gafas){
+    var br = v.oogR + 6;
+    wearVoor += "<g><circle cx='" + oL + "' cy='" + brilY + "' r='" + br + "' fill='#2d2a26cc'/><circle cx='" + oR + "' cy='" + brilY + "' r='" + br + "' fill='#2d2a26cc'/>" +
+      "<path d='M" + (oL + br) + " " + brilY + " L" + (oR - br) + " " + brilY + "' stroke='#2d2a26' stroke-width='4'/></g>";
+  }
+  if(w.bufanda){
+    wearVoor += "<g><path d='M" + (100 - v.W * 0.72) + " " + sjaalY + " Q100 " + (sjaalY + 18) + " " + (100 + v.W * 0.72) + " " + sjaalY +
+      " L" + (100 + v.W * 0.70) + " " + (sjaalY + 13) + " Q100 " + (sjaalY + 30) + " " + (100 - v.W * 0.70) + " " + (sjaalY + 13) + " Z' fill='#c0392b'/>" +
+      "<rect x='" + (100 + v.W * 0.38) + "' y='" + (sjaalY + 6) + "' width='13' height='" + (20 + 8 * v.t).toFixed(0) + "' rx='6' fill='#c0392b'/></g>";
+  }
+  if(w.guitarra){
+    wearVoor += "<g transform='rotate(18 " + (100 + v.W * 0.8) + " " + (v.B - 26) + ")'>" +
+      "<ellipse cx='" + (100 + v.W * 0.8) + "' cy='" + (v.B - 22) + "' rx='16' ry='12' fill='#c98a3d'/>" +
+      "<ellipse cx='" + (100 + v.W * 0.8) + "' cy='" + (v.B - 36) + "' rx='10' ry='8' fill='#c98a3d'/>" +
+      "<circle cx='" + (100 + v.W * 0.8) + "' cy='" + (v.B - 22) + "' r='4' fill='#7a5636'/>" +
+      "<rect x='" + (100 + v.W * 0.8 - 2.5) + "' y='" + (v.B - 62) + "' width='5' height='22' fill='#7a5636'/></g>";
+  }
+  if(w.sombrero){
+    wearVoor += "<g><ellipse cx='100' cy='" + (hoedY + 6) + "' rx='" + (v.W * 0.92) + "' ry='" + (10 + 2 * v.t).toFixed(1) + "' fill='#c98a3d'/>" +
+      "<path d='M" + (100 - v.W * 0.46) + " " + (hoedY + 6) + " Q100 " + (hoedY - 34) + " " + (100 + v.W * 0.46) + " " + (hoedY + 6) + " Z' fill='#b5762e'/>" +
+      "<path d='M" + (100 - v.W * 0.46) + " " + (hoedY + 6) + " Q100 " + (hoedY + 18) + " " + (100 + v.W * 0.46) + " " + (hoedY + 6) + "' fill='none' stroke='#a5661e' stroke-width='3'/></g>";
+  }
+  // de bloem gaat als laatste, want met hoed op steekt ze in de rand en niet eronder
+  if(w.flor){
+    var fx = 100 + v.W * 0.70, fy2 = v.T + 14;
+    wearVoor += "<g><circle cx='" + fx + "' cy='" + (fy2 - 6) + "' r='6' fill='#e85a8a'/><circle cx='" + (fx + 8) + "' cy='" + fy2 + "' r='6' fill='#e85a8a'/>" +
+      "<circle cx='" + fx + "' cy='" + (fy2 + 6) + "' r='6' fill='#e85a8a'/><circle cx='" + (fx - 8) + "' cy='" + fy2 + "' r='6' fill='#e85a8a'/>" +
+      "<circle cx='" + fx + "' cy='" + fy2 + "' r='5' fill='#ffd54d'/></g>";
+  }
   var lauwer = (typeof weekIdNu === "function" && S.weekWin === weekIdNu())
-    ? "<g><path d='M58 78 q-8 -22 12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>"+
-      "<path d='M142 78 q8 -22 -12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>"+
-      "<g fill='#a9c45f'><ellipse cx='58' cy='68' rx='6' ry='3.5' transform='rotate(-40 58 68)'/><ellipse cx='62' cy='56' rx='6' ry='3.5' transform='rotate(-60 62 56)'/><ellipse cx='70' cy='47' rx='6' ry='3.5' transform='rotate(-75 70 47)'/>"+
-      "<ellipse cx='142' cy='68' rx='6' ry='3.5' transform='rotate(40 142 68)'/><ellipse cx='138' cy='56' rx='6' ry='3.5' transform='rotate(60 138 56)'/><ellipse cx='130' cy='47' rx='6' ry='3.5' transform='rotate(75 130 47)'/></g>"+
-      "<circle cx='100' cy='40' r='4' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/></g>" : "";
-  var lijfFill = stralend ? "#fbbdd2" : "#f8b8ce";
-  var lijfStroke = stralend ? "#e0a800" : "#ef97b8";
-  var kieuwKleur = stralend ? "#f0a83a" : "#e46a9a";
-  return "<svg viewBox='0 0 200 180'>"+ aura + sterren + vleugels +
-    "<ellipse cx='100' cy='166' rx='60' ry='12' fill='#00000012'/>"+ g +
-    // kieuwen (axolotl!) — bij de stralende meestervorm krijgen ze een gouden gloed
-    "<g stroke='"+kieuwKleur+"' stroke-width='7' stroke-linecap='round'>"+
-    "<path d='M52 70 Q38 60 34 46'/><path d='M50 84 Q32 80 24 70'/><path d='M52 98 Q36 100 28 94'/>"+
-    "<path d='M148 70 Q162 60 166 46'/><path d='M150 84 Q168 80 176 70'/><path d='M148 98 Q164 100 172 94'/></g>"+
-    "<circle cx='34' cy='44' r='5' fill='#f08bb0'/><circle cx='22' cy='69' r='5' fill='#f08bb0'/><circle cx='26' cy='94' r='5' fill='#f08bb0'/>"+
-    "<circle cx='166' cy='44' r='5' fill='#f08bb0'/><circle cx='178' cy='69' r='5' fill='#f08bb0'/><circle cx='174' cy='94' r='5' fill='#f08bb0'/>"+
-    // lijf + kop
-    "<path d='M100 40 C 145 40 158 78 158 105 C 158 140 132 160 100 160 C 68 160 42 140 42 105 C 42 78 55 40 100 40 Z' fill='"+lijfFill+"' stroke='"+lijfStroke+"' stroke-width='3'/>"+
-    "<path d='M78 158 q-6 12 4 14 M122 158 q6 12 -4 14' stroke='"+lijfStroke+"' stroke-width='6' fill='none' stroke-linecap='round'/>"+
-    // ogen
-    "<circle cx='78' cy='88' r='7' fill='#2d2a26'/><circle cx='122' cy='88' r='7' fill='#2d2a26'/>"+
-    "<circle cx='80' cy='86' r='2.4' fill='#fff'/><circle cx='124' cy='86' r='2.4' fill='#fff'/>"+
-    blush +
-    "<path d='"+mouth+"' stroke='#2d2a26' stroke-width='3.5' fill='none' stroke-linecap='round'/>"+
-    "<path d='M84 116 Q92 110 100 116 Q108 110 116 116' stroke='"+(lvl>=10?"#f5f0e8":"#7a5636")+"' stroke-width='4' fill='none' stroke-linecap='round'/>"+
-    baard + roos + medaille + lauwer +
-    (w.gafas?"<g><circle cx='78' cy='88' r='13' fill='#2d2a26cc'/><circle cx='122' cy='88' r='13' fill='#2d2a26cc'/><path d='M91 88 L109 88' stroke='#2d2a26' stroke-width='4'/></g>":"")+
-    (w.flor?"<g><circle cx='143' cy='52' r='6' fill='#e85a8a'/><circle cx='153' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='64' r='6' fill='#e85a8a'/><circle cx='133' cy='58' r='6' fill='#e85a8a'/><circle cx='143' cy='58' r='5' fill='#ffd54d'/></g>":"")+
-    (w.sombrero?"<g><ellipse cx='100' cy='46' rx='52' ry='12' fill='#c98a3d'/><path d='M74 46 Q100 4 126 46 Z' fill='#b5762e'/><path d='M74 46 Q100 58 126 46' fill='none' stroke='#a5661e' stroke-width='3'/></g>":"")+
-    (w.bufanda?"<g><path d='M58 128 Q100 148 142 128 L140 142 Q100 160 60 142 Z' fill='#c0392b'/><rect x='120' y='134' width='14' height='26' rx='6' fill='#c0392b'/></g>":"")+
-    (w.guitarra?"<g transform='rotate(18 150 135)'><ellipse cx='150' cy='138' rx='17' ry='13' fill='#c98a3d'/><ellipse cx='150' cy='124' rx='11' ry='9' fill='#c98a3d'/><circle cx='150' cy='134' r='5' fill='#7a5636'/><rect x='147' y='92' width='6' height='30' fill='#7a5636'/></g>":"")+
-    tierHat +
+    ? "<g><path d='M" + (100 - v.W * 0.72) + " " + (v.oogY - 12) + " q-8 -22 12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>" +
+      "<path d='M" + (100 + v.W * 0.72) + " " + (v.oogY - 12) + " q8 -22 -12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>" +
+      "<circle cx='100' cy='" + (v.T + 2) + "' r='4' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/></g>" : "";
+
+  return "<svg viewBox='0 0 200 180'>" +
+    "<ellipse cx='100' cy='170' rx='" + (26 + 32 * v.t).toFixed(0) + "' ry='" + (7 + 5 * v.t).toFixed(0) + "' fill='#00000012'/>" + g +
+    staart + kieuwen +
+    "<path d='" + petLijfPad(v.T, v.B, v.W, v.P, v.topf, v.shf) + "' fill='" + lijf + "' stroke='" + rand + "' stroke-width='3'/>" +
+    poten +
+    "<circle cx='" + oL + "' cy='" + v.oogY + "' r='" + v.oogR.toFixed(1) + "' fill='#2d2a26'/>" +
+    "<circle cx='" + oR + "' cy='" + v.oogY + "' r='" + v.oogR.toFixed(1) + "' fill='#2d2a26'/>" +
+    "<circle cx='" + (oL + 2) + "' cy='" + (v.oogY - 2.5) + "' r='" + (v.oogR * 0.34).toFixed(1) + "' fill='#fff'/>" +
+    "<circle cx='" + (oR + 2) + "' cy='" + (v.oogY - 2.5) + "' r='" + (v.oogR * 0.34).toFixed(1) + "' fill='#fff'/>" +
+    blos +
+    "<path d='" + mond + "' stroke='#2d2a26' stroke-width='" + (2.6 + 1.2 * v.t).toFixed(1) + "' fill='none' stroke-linecap='round'/>" +
+    teken + wearVoor + lauwer +
     "</g></svg>";
 }
 /* ===== v19.49 Tamagotchi-mechanics =====================================================
@@ -7775,7 +7898,7 @@ function renderGroei(){
     "<div class='goalbar'><div style='width:"+pct+"%'></div></div>";
   html += next
     ? "<p class='muted' style='margin:6px 0 0'>"+ct("Nog ","Another ")+getal(Math.max(0,next.min-xpNu))+" "+xpw()+ct(" tot de volgende vorm: "," until the next form: ")+"<b>"+next.naam+"</b> \u00b7 "+ct(next.hint, next.hintEn)+"</p>"
-    : "<p class='muted' style='margin:6px 0 0'>"+ct("Chispa is een echte estrella: de hoogste vorm. \u2b50 Maar tapas blijven welkom.","Chispa is a real estrella: the highest form. \u2b50 But tapas are always welcome.")+"</p>";
+    : "<p class='muted' style='margin:6px 0 0'>"+ct("Chispa is abuela geworden. Ze groeit niet verder, maar jullie leren wel verder \u2014 en tapas blijven welkom.","Chispa has become an abuela. She won't grow any further, but you two keep learning \u2014 and tapas are always welcome.")+"</p>";
   var n = doneLessonCount();
   html += "<h2 style='margin-top:18px'>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2><p class='muted'>"+
     ct("Accessoires verdien je door lessen af te ronden.","You earn accessories by finishing lessons.")+"</p>";
@@ -12103,7 +12226,7 @@ var TOUR = [
   {titel:"Samen leren 👤",
    txt:"Tik op je <b>naam</b> bovenaan voor je voortgang, je geheime sync-code en <b>Groepen</b>: start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
   {titel:"Ik groei met je mee ✨",
-   txt:"Je hebt net je eerste taco's verdiend, en van taco's groei ík: van ei tot estrella, in 12 vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Tot morgen?</b> Dan bewaar ik je woordjes van vandaag en staan er nieuwe voor je klaar: vijf minuutjes, zelfde plek. ¿Trato hecho? (afgesproken?) ¡Vamos!"}
+   txt:"Je hebt net je eerste taco's verdiend, en van taco's groei ík: van ei tot abuela, in acht vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Tot morgen?</b> Dan bewaar ik je woordjes van vandaag en staan er nieuwe voor je klaar: vijf minuutjes, zelfde plek. ¿Trato hecho? (afgesproken?) ¡Vamos!"}
 ];
 var TOUR_EN = [
   {titel:"¡Hola! I'm Chispa 🐾",
@@ -12118,7 +12241,7 @@ var TOUR_EN = [
   {titel:"Learn together 👤",
    txt:"Tap your <b>name</b> at the top for your progress, your secret sync code and <b>Groups</b>: start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
   {titel:"I grow with you ✨",
-   txt:"You just earned your first tacos, and tacos are what make me grow: from egg to estrella, in 12 forms. Go at your own pace — missing a day is fine. <b>See you tomorrow?</b> I'll keep today's words safe and have new ones ready: five minutes, same place. ¿Trato hecho? (deal?) ¡Vamos!"}
+   txt:"You just earned your first tacos, and tacos are what make me grow: from egg to abuela, in eight forms. Go at your own pace — missing a day is fine. <b>See you tomorrow?</b> I'll keep today's words safe and have new ones ready: five minutes, same place. ¿Trato hecho? (deal?) ¡Vamos!"}
 ];
 function tourLijst(){
   var lijst = profLang() === "nl" ? TOUR : TOUR_EN;
