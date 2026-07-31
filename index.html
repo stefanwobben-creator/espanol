@@ -748,7 +748,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.76";
+var APP_VERSIE = "v19.77";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3395,6 +3395,17 @@ function addXP(n){
     S.dag.wacht = t;
     logServer("dagdoel", {streak:S.streak.count, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
   }
+  // v19.77: de kleren die op tacos opengaan. Stil openzetten zou de moeite weggooien: dit is
+  // precies zo'n moment waarvan Fogg zegt dat je het moet vieren, en het is bovendien het enige
+  // wat er nog binnenkomt als de lessen op zijn.
+  S.owned = S.owned || {};
+  SHOP.forEach(function(it){
+    if(it.xp && !S.owned[it.id] && (S.txp || 0) >= it.xp){
+      S.owned[it.id] = true;
+      confetti(["✨","🎉","👑"], 20);
+      toast(ct("Nieuw in de kledingkast: ", "New in the wardrobe: ") + it.naam + " " + it.emoji);
+    }
+  });
   var lvlAfter = petLevel(S.txp);
   if(lvlAfter > lvlBefore){
     confetti(["🎉","✨","🌮","💃"], 30);
@@ -3701,13 +3712,51 @@ function fiestaVandaag(){
   return null;
 }
 function petLevel(txp){ var lv=0; for(var i=0;i<PET_LEVELS.length;i++){ if(txp>=PET_LEVELS[i].min) lv=i; } return lv; }
+/* ================= DE KLEDINGKAST (v19.77) =================
+   Twee dingen zijn hier veranderd, en ze horen bij elkaar.
+
+   1. Elk item heeft een `slot`: de plek op haar lijf waar het hoort. Zonder dat kon je een
+      koksmuts door een sombrero heen dragen, en dat is geen keuze maar een tekenfout. Aantrekken
+      betekent nu dat wat daar al zat, afgaat.
+
+   2. De zes oude rangen (maestro met zijn snor, profesor met de afstudeerhoed, poeta met de
+      baret, chef de tapas, campeon met de medaille, estrella met de kroon) zijn terug, maar als
+      kleding. In het twaalf-rangen-model dat v19.74 verving verschenen ze automatisch op haar
+      kop zodra je genoeg tacos had; je had er niets over te zeggen en je kon ze niet afzetten.
+      Dat is een uniform. Dit is een garderobe, en dat past bij een dier dat van jou is.
+
+   Ze gaan bewust op tacos open en niet op lessen. De lessen raken een keer op, het oefenen niet,
+   en dit is precies de vraag die daarna overblijft: wat verdien ik nog als Chispa is uitgegroeid?
+   De laatste drie liggen ver voorbij de abuela (14.000), zodat er ook daarna nog iets komt. */
 var SHOP = [
-  {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", hintEn:"a flower behind the ear", les:1, emoji:"🌺"},
-  {id:"gafas",    naam:"Gafas de sol", hint:"zonnebril", hintEn:"sunglasses",                les:2, emoji:"🕶️"},
-  {id:"bufanda",  naam:"Bufanda",      hint:"een warme sjaal", hintEn:"a warm scarf",          les:3, emoji:"🧣"},
-  {id:"sombrero", naam:"Sombrero",     hint:"een echte Spaanse hoed", hintEn:"a proper Spanish hat",   les:4, emoji:"👒"},
-  {id:"guitarra", naam:"Guitarra",     hint:"voor de serenades", hintEn:"for the serenades",        les:5, emoji:"🎸"}
+  {id:"flor",     naam:"Flor",         hint:"een bloem achter het oor", hintEn:"a flower behind the ear", les:1, slot:"haar",   emoji:"🌺"},
+  {id:"gafas",    naam:"Gafas de sol", hint:"zonnebril", hintEn:"sunglasses",                les:2, slot:"ogen",   emoji:"🕶️"},
+  {id:"bufanda",  naam:"Bufanda",      hint:"een warme sjaal", hintEn:"a warm scarf",          les:3, slot:"hals",   emoji:"🧣"},
+  {id:"sombrero", naam:"Sombrero",     hint:"een echte Spaanse hoed", hintEn:"a proper Spanish hat",   les:4, slot:"hoofd",  emoji:"👒"},
+  {id:"guitarra", naam:"Guitarra",     hint:"voor de serenades", hintEn:"for the serenades",        les:5, slot:"handen", emoji:"🎸"},
+  {id:"bigote",   naam:"Bigote",       hint:"de snor van een maestro", hintEn:"a maestro\u2019s moustache",  xp:2000,  slot:"snor",  emoji:"👨"},
+  {id:"birrete",  naam:"Birrete",      hint:"de afstudeerhoed van een profesor", hintEn:"a profesor\u2019s graduation cap", xp:4500,  slot:"hoofd", emoji:"🎓"},
+  {id:"boina",    naam:"Boina",        hint:"baret op, po\u00ebzie in het hart", hintEn:"beret on, poetry in the heart",  xp:9000,  slot:"hoofd", emoji:"🎨"},
+  {id:"gorro",    naam:"Gorro de chef",hint:"voor de chef de tapas", hintEn:"for the chef de tapas",   xp:16000, slot:"hoofd", emoji:"🍳"},
+  {id:"medalla",  naam:"Medalla",      hint:"goud, van toen je campe\u00f3n was", hintEn:"gold, from when you were campe\u00f3n", xp:25000, slot:"hals",  emoji:"🏅"},
+  {id:"corona",   naam:"Corona",       hint:"de kroon van een estrella", hintEn:"an estrella\u2019s crown",  xp:40000, slot:"hoofd", emoji:"👑"}
 ];
+function shopBij(id){ return SHOP.filter(function(x){ return x.id === id; })[0] || null; }
+function shopVrij(it){
+  if(!it) return false;
+  if(S.owned && S.owned[it.id]) return true;
+  return it.xp ? (S.txp || 0) >= it.xp : doneLessonCount() >= it.les;
+}
+// Aan- en uitdoen loopt hierlangs en niet meer via een losse toggle, want alleen hier weet je
+// wat er nog meer op diezelfde plek zit.
+function wearAan(id){
+  var it = shopBij(id);
+  if(!it) return;
+  S.wear = S.wear || {};
+  if(S.wear[id]){ S.wear[id] = false; return; }
+  SHOP.forEach(function(x){ if(x.slot === it.slot) S.wear[x.id] = false; });
+  S.wear[id] = true;
+}
 function doneLessonCount(){
   var n = 0;
   for(var k in S.lessons){ if(S.lessons[k] && S.lessons[k].done) n++; }
@@ -7244,6 +7293,9 @@ function petSVGFase(lvl, mood, w){
 
   // --- accessoires uit de kledingkast: die schuiven mee met de fase in plaats van vast te zitten ---
   var hoedY = v.T + 6, brilY = v.oogY, sjaalY = v.mondY + 14 + 10 * v.t;
+  // v19.77: hs is hoe hoog een hoed mag opbouwen. De breedte volgt vanzelf uit v.W, de hoogte
+  // niet, en een hoed van volwassen hoogte op een babyhoofd is geen hoed maar een emmer.
+  var hs = 0.58 + 0.42 * v.t;
   var wearVoor = "";
   if(w.gafas){
     var br = v.oogR + 6;
@@ -7266,6 +7318,49 @@ function petSVGFase(lvl, mood, w){
     wearVoor += "<g><ellipse cx='100' cy='" + (hoedY + 6) + "' rx='" + (v.W * 0.92) + "' ry='" + (10 + 2 * v.t).toFixed(1) + "' fill='#c98a3d'/>" +
       "<path d='M" + (100 - v.W * 0.46) + " " + (hoedY + 6) + " Q100 " + (hoedY - 34) + " " + (100 + v.W * 0.46) + " " + (hoedY + 6) + " Z' fill='#b5762e'/>" +
       "<path d='M" + (100 - v.W * 0.46) + " " + (hoedY + 6) + " Q100 " + (hoedY + 18) + " " + (100 + v.W * 0.46) + " " + (hoedY + 6) + "' fill='none' stroke='#a5661e' stroke-width='3'/></g>";
+  }
+  // v19.77: de zes oude rangtekens, opnieuw getekend maar nu parametrisch, zodat ze net als de
+  // rest van de kast met haar meegroeien in plaats van op een vaste maat te blijven staan.
+  if(w.bigote){
+    var gap = v.mondY - v.oogY;
+    var bw = v.W * (0.42 + 0.14 * v.t), by = v.mondY - gap * 0.30, bd = gap * 0.50;
+    wearVoor += "<path d='M100 " + by.toFixed(1) + " C" + (100 - bw * 0.55).toFixed(1) + " " + (by - bd * 0.30).toFixed(1) + " " + (100 - bw).toFixed(1) + " " + (by + bd * 0.10).toFixed(1) + " " + (100 - bw * 0.92).toFixed(1) + " " + (by + bd).toFixed(1) +
+      " M100 " + by.toFixed(1) + " C" + (100 + bw * 0.55).toFixed(1) + " " + (by - bd * 0.30).toFixed(1) + " " + (100 + bw).toFixed(1) + " " + (by + bd * 0.10).toFixed(1) + " " + (100 + bw * 0.92).toFixed(1) + " " + (by + bd).toFixed(1) +
+      "' stroke='#6b4a2f' stroke-width='" + (4.6 + 2.2 * v.t).toFixed(1) + "' fill='none' stroke-linecap='round'/>";
+  }
+  if(w.medalla){
+    var mY = v.mondY + (12 + 9 * v.t) * hs, mR = 7 + 3 * v.t, mL = 14 * hs;
+    wearVoor += "<g><path d='M" + (100 - v.W * 0.30).toFixed(1) + " " + mY.toFixed(1) + " L100 " + (mY + mL).toFixed(1) + " L" + (100 + v.W * 0.30).toFixed(1) + " " + mY.toFixed(1) + "' stroke='#c0392b' stroke-width='5' fill='none'/>" +
+      "<circle cx='100' cy='" + (mY + mL + mR).toFixed(1) + "' r='" + mR.toFixed(1) + "' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/>" +
+      "<circle cx='100' cy='" + (mY + mL + mR).toFixed(1) + "' r='" + (mR * 0.45).toFixed(1) + "' fill='none' stroke='#e0a800' stroke-width='2'/></g>";
+  }
+  if(w.birrete){
+    wearVoor += "<g><rect x='" + (100 - v.W * 0.32).toFixed(1) + "' y='" + (hoedY - 2).toFixed(1) + "' width='" + (v.W * 0.64).toFixed(1) + "' height='" + (9 + 3 * v.t).toFixed(1) + "' rx='3' fill='#2d2a26'/>" +
+      "<path d='M" + (100 - v.W * 0.88).toFixed(1) + " " + (hoedY - 2).toFixed(1) + " L100 " + (hoedY - 16 * hs).toFixed(1) + " L" + (100 + v.W * 0.88).toFixed(1) + " " + (hoedY - 2).toFixed(1) + " L100 " + (hoedY + 8 * hs).toFixed(1) + " Z' fill='#2d2a26'/>" +
+      "<path d='M" + (100 + v.W * 0.60).toFixed(1) + " " + (hoedY - 7).toFixed(1) + " L" + (100 + v.W * 0.60).toFixed(1) + " " + (hoedY + 14).toFixed(1) + "' stroke='#ffd54d' stroke-width='3' stroke-linecap='round'/>" +
+      "<circle cx='" + (100 + v.W * 0.60).toFixed(1) + "' cy='" + (hoedY + 17).toFixed(1) + "' r='4' fill='#ffd54d'/></g>";
+  }
+  if(w.boina){
+    wearVoor += "<g><path d='M" + (100 - v.W * 0.80).toFixed(1) + " " + (hoedY + 2).toFixed(1) + " Q" + (100 - v.W * 0.30).toFixed(1) + " " + (hoedY - 26 * hs).toFixed(1) + " " + (100 + v.W * 0.72).toFixed(1) + " " + (hoedY - 6 * hs).toFixed(1) +
+      " Q" + (100 + v.W * 0.40).toFixed(1) + " " + (hoedY + 12).toFixed(1) + " " + (100 - v.W * 0.80).toFixed(1) + " " + (hoedY + 2).toFixed(1) + " Z' fill='#6b2d3c' stroke='#54222e' stroke-width='2'/>" +
+      "<circle cx='" + (100 - v.W * 0.10).toFixed(1) + "' cy='" + (hoedY - 17 * hs).toFixed(1) + "' r='3.5' fill='#54222e'/></g>";
+  }
+  if(w.gorro){
+    var gw = v.W * 0.40;
+    wearVoor += "<g fill='#fffdfb' stroke='#d8d2c6' stroke-width='2.5' stroke-linejoin='round'>" +
+      "<path d='M" + (100 - gw * 1.05).toFixed(1) + " " + (hoedY + 2).toFixed(1) +
+      " C" + (100 - gw * 1.55).toFixed(1) + " " + (hoedY - 13 * hs).toFixed(1) + " " + (100 - gw * 1.10).toFixed(1) + " " + (hoedY - 24 * hs).toFixed(1) + " " + (100 - gw * 0.46).toFixed(1) + " " + (hoedY - 20 * hs).toFixed(1) +
+      " C" + (100 - gw * 0.26).toFixed(1) + " " + (hoedY - 31 * hs).toFixed(1) + " " + (100 + gw * 0.26).toFixed(1) + " " + (hoedY - 31 * hs).toFixed(1) + " " + (100 + gw * 0.46).toFixed(1) + " " + (hoedY - 20 * hs).toFixed(1) +
+      " C" + (100 + gw * 1.10).toFixed(1) + " " + (hoedY - 24 * hs).toFixed(1) + " " + (100 + gw * 1.55).toFixed(1) + " " + (hoedY - 13 * hs).toFixed(1) + " " + (100 + gw * 1.05).toFixed(1) + " " + (hoedY + 2).toFixed(1) + " Z'/>" +
+      "<rect x='" + (100 - gw).toFixed(1) + "' y='" + (hoedY - 3).toFixed(1) + "' width='" + (gw * 2).toFixed(1) + "' height='" + (8 + 2.5 * v.t).toFixed(1) + "' rx='3'/></g>";
+  }
+  if(w.corona){
+    var cw = v.W * 0.60;
+    wearVoor += "<g><path d='M" + (100 - cw).toFixed(1) + " " + (hoedY + 5).toFixed(1) + " L" + (100 - cw).toFixed(1) + " " + (hoedY - 16 * hs).toFixed(1) +
+      " L" + (100 - cw * 0.48).toFixed(1) + " " + (hoedY - 5 * hs).toFixed(1) + " L100 " + (hoedY - 25 * hs).toFixed(1) +
+      " L" + (100 + cw * 0.48).toFixed(1) + " " + (hoedY - 5 * hs).toFixed(1) + " L" + (100 + cw).toFixed(1) + " " + (hoedY - 16 * hs).toFixed(1) +
+      " L" + (100 + cw).toFixed(1) + " " + (hoedY + 5).toFixed(1) + " Z' fill='#ffd54d' stroke='#e0a800' stroke-width='2.5' stroke-linejoin='round'/>" +
+      "<circle cx='100' cy='" + (hoedY - 15 * hs).toFixed(1) + "' r='4' fill='#e85a8a'/></g>";
   }
   // de bloem gaat als laatste, want met hoed op steekt ze in de rand en niet eronder
   if(w.flor){
@@ -8036,27 +8131,48 @@ function renderGroei(){
   html += "<p class='zorglabel' style='margin:12px 0 0'>"+ct("Haar figuur","Her build")+"</p>"+
     "<div class='vormrij' id='vormRij'>"+vr+"</div>";
 
+  // v19.77: twee groepen, want er zijn nu twee manieren om iets te verdienen en die door elkaar
+  // zetten maakt onnavolgbaar waarom het ene wel opengaat en het andere niet.
   var n = doneLessonCount();
-  html += "<h2 style='margin-top:18px'>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2><p class='muted'>"+
-    ct("Accessoires verdien je door lessen af te ronden.","You earn accessories by finishing lessons.")+"</p>";
-  SHOP.forEach(function(it){
-    var owned = !!S.owned[it.id] || n >= it.les;
-    if(owned && !S.owned[it.id]){ S.owned[it.id] = true; persist(); }
-    var wearing = !!S.wear[it.id];
-    html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
-    if(!owned){
-      var nog = it.les - n;
-      html += "<span class='muted'>"+ct("\ud83d\udd12 nog "+nog+" les"+(nog>1?"sen":""), "\ud83d\udd12 "+nog+" more lesson"+(nog>1?"s":""))+"</span>";
-    } else {
-      html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?ct("Doe af","Take off"):ct("Draag","Wear"))+"</button>";
-    }
-    html += "</div>";
-  });
+  html += "<h2 style='margin-top:18px'>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2>"+
+    "<p class='muted' style='margin:0'>"+ct("Per plek draagt ze \u00e9\u00e9n ding tegelijk.","She wears one thing at a time per spot.")+"</p>"+
+    "<div id='kastBlok'>";
+  var kastRij = function(lijst, kop, onder){
+    if(!lijst.length) return;
+    html += "<p class='zorglabel' style='margin:12px 0 0'>"+kop+"</p>"+
+      "<p class='muted' style='margin:0 0 2px; font-size:.85rem'>"+onder+"</p>";
+    lijst.forEach(function(it){
+      var vrij = shopVrij(it);
+      if(vrij && !S.owned[it.id]){ S.owned[it.id] = true; persist(); }
+      var wearing = !!S.wear[it.id];
+      html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
+      if(!vrij){
+        if(it.xp){
+          var nogX = getal(it.xp - (S.txp || 0));
+          html += "<span class='muted'>"+ct("\ud83d\udd12 nog "+nogX+" "+xpw(), "\ud83d\udd12 "+nogX+" "+xpw()+" to go")+"</span>";
+        } else {
+          var nog = it.les - n;
+          html += "<span class='muted'>"+ct("\ud83d\udd12 nog "+nog+" les"+(nog>1?"sen":""), "\ud83d\udd12 "+nog+" more lesson"+(nog>1?"s":""))+"</span>";
+        }
+      } else {
+        html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?ct("Doe af","Take off"):ct("Draag","Wear"))+"</button>";
+      }
+      html += "</div>";
+    });
+  };
+  kastRij(SHOP.filter(function(x){ return !x.xp; }),
+    ct("Verdiend met lessen","Earned by finishing lessons"),
+    ct("Elke afgeronde les legt er iets in.","Every lesson you finish puts something in."));
+  kastRij(SHOP.filter(function(x){ return !!x.xp; }),
+    ct("Verdiend met oefenen","Earned by practising"),
+    ct("Dit waren vroeger de rangen. Nu zijn het kleren: je verdient ze met "+xpw()+" en je draagt ze als je er zin in hebt.",
+       "These used to be ranks. Now they are clothes: you earn them with "+xpw()+" and you wear them when you feel like it."));
+  html += "</div>";
   el.innerHTML = html;
   el.querySelectorAll("button[data-wear]").forEach(function(b){
     b.onclick = function(){
       var id = b.getAttribute("data-wear");
-      S.wear[id] = !S.wear[id]; persist();
+      wearAan(id); persist();
       renderPet(); renderGroei();
     };
   });
