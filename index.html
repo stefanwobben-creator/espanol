@@ -18,8 +18,8 @@
   header{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:8px 0 14px;}
   header h1{font-size:1.45rem; margin:0; letter-spacing:-0.02em;}
   header h1 span{color:var(--accent);}
-  .badge{background:var(--accent-soft); color:var(--accent); font-weight:600; font-size:.8rem;
-         padding:4px 10px; border-radius:999px; white-space:nowrap;}
+  /* v19.64: .badge is verwijderd samen met de "N woordjes te doen" bovenin. Bewust ook de stijl:
+     zolang de opmaak klaarstaat, is een schuldteller terugzetten één regel HTML. */
   nav{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:14px;}
   nav button{flex:0 0 auto; border:1px solid var(--border); background:var(--card); color:var(--muted);
              padding:8px 14px; border-radius:999px; font-size:.9rem; font-weight:600; cursor:pointer;}
@@ -391,8 +391,12 @@
 <div class="wrap">
   <header>
     <h1>¡Vamos <span id="userName" class="naamknop" title="Profiel & groepen">…</span>!</h1>
+    <!-- v19.64: hier stond "12 woordjes te doen". Dat getal groeit terwijl je wég bent, dus het
+         verwelkomt je met een schuld: hoe langer je niet kwam, hoe groter het verwijt bovenaan het
+         scherm. Precies de reden die Stefan noemde om te stoppen ("niet vol te houden, te lastig").
+         De herhalingen lopen onder water gewoon door; ze worden voortaan in porties aangeboden in
+         plaats van als saldo getoond. Wat hier overblijft is Chispa. -->
     <div style="display:flex; align-items:center; gap:8px;">
-      <div class="badge" id="dueBadge">…</div>
       <span id="miniPet" title="Chispa"></span>
     </div>
   </header>
@@ -635,7 +639,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.63";
+var APP_VERSIE = "v19.64";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2644,7 +2648,7 @@ var SIGNUP_TXT = {
      hint:"Kies een niveau, of doe de test van 10 vragen (2 minuten).",
      syncKop:"Oefen je al op een ander apparaat?", syncUitleg:"Vul je sync-code in (te vinden op je andere apparaat op je profielpagina) en ga verder waar je was.",
      syncKnop:"Haal mijn voortgang op", herstel:"Code kwijt? Herstel via je e-mailadres", herstelPh:"Het e-mailadres van je profiel",
-     herstelKnop:"Zoek mijn voortgang", badge:"kies profiel",
+     herstelKnop:"Zoek mijn voortgang",
      doel:"Dagdoel (kies wat bij jou past, aanpassen kan altijd):", d10:"Relaxed · 10 taco's", d30:"Normaal · 30 taco's", d60:"Fanatiek · 60 taco's"},
  en:{welkom:"Welcome! Create your profile", nieuw:"New profile", kies:"Who's practising?", naamPh:"Name",
      niveau:"Level:", a0:"A0 · completely new", a1:"A1 · a few words", a2:"A2 · I know the basics", b1:"B1 · coming soon",
@@ -2655,7 +2659,7 @@ var SIGNUP_TXT = {
      hint:"Pick a level, or take the 10-question test (2 minutes).",
      syncKop:"Already practising on another device?", syncUitleg:"Enter your sync code (found on your profile page on your other device) and continue where you left off.",
      syncKnop:"Get my progress", herstel:"Lost your code? Recover via e-mail", herstelPh:"The e-mail address of your profile",
-     herstelKnop:"Find my progress", badge:"pick a profile",
+     herstelKnop:"Find my progress",
      doel:"Daily goal (pick what fits you, you can change it anytime):", d10:"Relaxed · 10 tacos", d30:"Normal · 30 tacos", d60:"Serious · 60 tacos"},
  fr:{welkom:"Bienvenue ! Crée ton profil", nieuw:"Nouveau profil", kies:"Qui va pratiquer ?", naamPh:"Prénom",
      niveau:"Niveau :", a0:"A0 · totalement débutant", a1:"A1 · quelques mots", a2:"A2 · je connais les bases", b1:"B1 · bientôt",
@@ -2666,7 +2670,7 @@ var SIGNUP_TXT = {
      hint:"Choisis un niveau, ou fais le test de 10 questions (2 minutes).",
      syncKop:"Tu pratiques déjà sur un autre appareil ?", syncUitleg:"Saisis ton code de synchronisation (sur ta page de profil de l'autre appareil) et reprends où tu en étais.",
      syncKnop:"Récupérer ma progression", herstel:"Code perdu ? Récupère via ton e-mail", herstelPh:"L'adresse e-mail de ton profil",
-     herstelKnop:"Retrouver ma progression", badge:"choisis un profil",
+     herstelKnop:"Retrouver ma progression",
      doel:"Objectif quotidien (modifiable à tout moment) :", d10:"Tranquille · 10 tacos", d30:"Normal · 30 tacos", d60:"Motivé · 60 tacos"},
  de:{welkom:"Willkommen! Erstelle dein Profil", nieuw:"Neues Profil", kies:"Wer übt?", naamPh:"Name",
      niveau:"Niveau:", a0:"A0 · ganz neu", a1:"A1 · ein paar Wörter", a2:"A2 · ich kenne die Basics", b1:"B1 · bald",
@@ -2677,7 +2681,7 @@ var SIGNUP_TXT = {
      hint:"Wähle ein Niveau oder mach den Test mit 10 Fragen (2 Minuten).",
      syncKop:"Übst du schon auf einem anderen Gerät?", syncUitleg:"Gib deinen Sync-Code ein (auf der Profilseite deines anderen Geräts) und mach weiter, wo du warst.",
      syncKnop:"Fortschritt holen", herstel:"Code verloren? Über E-Mail wiederherstellen", herstelPh:"Die E-Mail-Adresse deines Profils",
-     herstelKnop:"Fortschritt suchen", badge:"Profil wählen",
+     herstelKnop:"Fortschritt suchen",
      doel:"Tagesziel (jederzeit änderbar):", d10:"Entspannt · 10 Tacos", d30:"Normal · 30 Tacos", d60:"Ehrgeizig · 60 Tacos"}
 };
 // v19.57: de begroeting voor wie via een uitnodigingslink binnenkomt, in alle vier de talen van
@@ -2882,8 +2886,6 @@ function applySignupLang(){
   zet("lnkHerstel", d.herstel);
   ph("herstelMail", d.herstelPh);
   zet("btnHerstel", d.herstelKnop);
-  var db = document.getElementById("dueBadge");
-  if(db && !activeProfile()) db.textContent = d.badge;
   // B1-knop (heeft geen data-lvl)
   document.querySelectorAll("#tab-profiel .row button[disabled]").forEach(function(b){ b.textContent = d.b1; });
 }
@@ -2967,7 +2969,6 @@ function renderProfileScreen(){
   if(ft2) ft2.classList.add("hidden");
   TABS.forEach(function(t){ document.getElementById("tab-"+t.id).classList.add("hidden"); });
   document.getElementById("userName").textContent = "…";
-  document.getElementById("dueBadge").textContent = "kies profiel";
   var list = document.getElementById("profileList");
   var kop = document.getElementById("profKiesKop");
   if(kop) kop.classList.toggle("hidden", !profiles.list.length);
@@ -3797,9 +3798,13 @@ function dueCount(){
   return due + Math.min(fresh, newAllowance());
 }
 
+/* v19.64 — de badge bovenin is weg, deze functie niet.
+   dueCount() blijft bestaan en klopt nog steeds; alleen niemand krijgt het saldo meer te zien. De
+   ruim vijftien aanroepen door de app heen blijven bewust staan: het is het haakje "er is zojuist
+   iets geleerd, ververs de koptekst". Zodra de dagsessie er is hangt daar weer iets aan, en dan
+   hoeven die aanroepen niet opnieuw uitgevent te worden. Wat hier níét mag terugkomen is een getal
+   dat oploopt terwijl je weg bent. */
 function updateBadge(){
-  var n = dueCount();
-  document.getElementById("dueBadge").textContent = n>0 ? (n+" "+tt("teDoen")) : tt("allesGedaan").toLowerCase();
 }
 
 /* ===== JARGON-UITLEG (v19.55) =====
@@ -5334,12 +5339,18 @@ function renderQuizMenu(){
   var teDoen = rest.filter(function(qz){ var b = S.quiz[qz.id]; return b === undefined || b / qz.vragen.length < 0.8; });
   var gehaald = rest.filter(function(qz){ return teDoen.indexOf(qz) === -1; });
   if(herhaling.length){
-    html += "<p style='margin:4px 0'><b>🔁 "+ct("Tijd voor herhaling","Time to review")+"</b> <span class='muted'>· "+herhaling.length+"</span></p>"+
+    // v19.64: het kopje blijft, het aantal gaat eruit. De kaartjes eronder staan er toch al; het
+    // getal voegde alleen het gevoel van een stapel toe, en die stapel is hoger naarmate je langer
+    // wegbleef.
+    html += "<p style='margin:4px 0'><b>🔁 "+ct("Tijd voor herhaling","Time to review")+"</b></p>"+
       "<p class='muted' style='font-size:.85rem; margin:0 0 6px'>"+ct("Deze regel begint weer weg te zakken. Even opfrissen.","This rule is starting to fade again. Time to refresh it.")+"</p>";
     herhaling.forEach(function(qz){ html += kaart(qz, true); });
   }
   if(teDoen.length){
-    html += "<p style='margin:14px 0 4px'><b>"+ct("Nog niet gedaan","Not done yet")+"</b> <span class='muted'>· "+ct("geen haast: ze komen ook van zichzelf langs","no rush: they come back on their own")+"</span></p>";
+    // v19.64: "Nog niet gedaan" beschrijft dezelfde lijst als een verzuim: het kopje vertelt je wat
+    // je hebt nagelaten. "Nieuw voor jou" vertelt je wat er te halen valt, en dat is precies even
+    // waar. Alleen het frame verandert, de lijst niet.
+    html += "<p style='margin:14px 0 4px'><b>"+ct("Nieuw voor jou","New for you")+"</b> <span class='muted'>· "+ct("geen haast: ze komen ook van zichzelf langs","no rush: they come back on their own")+"</span></p>";
     teDoen.forEach(function(qz){ html += kaart(qz, false); });
   }
   if(gehaald.length){
@@ -6068,9 +6079,10 @@ function ritmeCard(){
   var gedaanVandaag = !!S.lesFlow[t];
   var nieuw = newToday();
   var xp = S.xp[t] || 0;
+  // v19.64: `over` telt nog steeds wat er openstaat, maar wordt alleen nog gebruikt om te zien of je
+  // bíj bent. Het aantal zelf komt niet meer in beeld; quizDueCount() hoeft hier niet meer geteld.
   var over = 0;
   WORDS.forEach(function(w){ var st = S.srs[w.id]; if(st && st.due <= t) over++; });
-  var qOver = quizDueCount();
   function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
   var dag2 = S.gestart === addDays(t, -1);
   // v19.60: heb je vandaag op "Klaar voor vandaag" getikt, dan is dit scherm rustig. Geen open
@@ -6093,9 +6105,13 @@ function ritmeCard(){
       : "")+
     "<div class='ritme' style='margin-top:10px'>"+
     chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
-    chip(over === 0, over === 0 ? ct("herhalingen bij","reviews done") : over+ct(" herhalingen open"," reviews open"))+
+    // v19.64: dit chipje verschijnt alleen nog als je bíj bent. Het is een schouderklopje geworden
+    // in plaats van een saldo. "14 herhalingen open" en "3 grammatica-herhalingen open" zijn eruit:
+    // die getallen groeiden juist door terwijl je niets deed, dus ze straften wegblijven af en
+    // maakten terugkomen duurder naarmate je langer weg was. Zo'n rekening hoort niet op het scherm
+    // waar je je dag begint. De planning eronder loopt onveranderd door.
+    (over === 0 ? chip(true, ct("herhalingen bij","reviews done")) : "")+
     chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" "+xpw()+"")+
-    (qOver > 0 ? chip(false, "🔁 "+qOver+ct(" grammatica-herhaling"+(qOver>1?"en":"")+" open"," grammar review"+(qOver>1?"s":"")+" open")) : "")+
     "</div></div>";
 }
 
@@ -7557,9 +7573,10 @@ var TXT = {
   hoeZegJe:{nl:"Hoe zeg je dit in het Spaans?",en:"How do you say this in Spanish?",fr:"Comment dit-on ça en espagnol ?",de:"Wie sagt man das auf Spanisch?"},
   wistIk:{nl:"Wist ik ✓",en:"I knew it ✓",fr:"Je savais ✓",de:"Wusste ich ✓"},
   wistNiet:{nl:"Wist ik niet ✗",en:"Didn't know ✗",fr:"Je ne savais pas ✗",de:"Wusste ich nicht ✗"},
-  teGaan:{nl:"te gaan",en:"to go",fr:"restants",de:"übrig"},
-  teDoen:{nl:"woordjes te doen",en:"words to review",fr:"mots à réviser",de:"Wörter fällig"},
-  allesGedaan:{nl:"Alles gedaan ✓",en:"All done ✓",fr:"Tout est fait ✓",de:"Alles geschafft ✓"}
+  teGaan:{nl:"te gaan",en:"to go",fr:"restants",de:"übrig"}
+  // v19.64: teDoen ("woordjes te doen") en allesGedaan hoorden bij de badge bovenin en zijn met die
+  // badge meegegaan. Ze staan hier bewust niet als dode vertaling te wachten: een sleutel die er nog
+  // is, is een sleutel die iemand terugzet.
 };
 function profLang(){
   if(S && S.lang) return S.lang;
