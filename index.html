@@ -406,6 +406,9 @@
              color:var(--ink); font-weight:700; font-size:.9rem; cursor:pointer;}
   .speelknop .spe{font-size:1.5rem; line-height:1;}
   .speelknop:hover{border-color:var(--accent); background:var(--accent-soft);}
+  /* --- vitrine v19.70: twee verzamelingen naast elkaar, elk met een eigen vak --- */
+  .vitrinevak{border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; margin-top:10px;}
+  .vitrinevak > .kicker{display:block; margin-bottom:4px;}
   .gwuitleg{font-size:.97rem; line-height:1.55;}
   .gwuitleg p{margin:0 0 10px;}
   .gwuitleg ul{margin:0 0 10px; padding-left:20px;}
@@ -494,9 +497,12 @@
   </section>
 
   <!-- CHISPA (alleen het huisdier, via het mini-icoontje) -->
+  <!-- v19.70: vier kaarten, elk met één taak. Chispa zelf, haar groei, de vitrine, haar kamer. -->
   <section id="tab-chispa" class="hidden">
     <div class="card" id="petCard"></div>
-    <div class="card" id="shopCard"></div>
+    <div class="card" id="groeiCard"></div>
+    <div class="card" id="vitrineCard"></div>
+    <div class="card" id="kamerCard"></div>
   </section>
 
   <!-- PROFIEL (via het 👤-icoontje): jouw gegevens, groepen, voortgang, steun -->
@@ -640,6 +646,9 @@
   <!-- WOORDJES -->
   <section id="tab-woorden" class="hidden">
     <div class="card" id="wCard"></div>
+    <!-- v19.70: de straattaal van vandaag stond op Chispa's pagina. Dat is een woordles, en die
+         hoort bij de woordjes. Chispa's pagina is haar pagina, geen leerpagina. -->
+    <div id="jergaWoorden"></div>
   </section>
 
   <!-- VERTALEN -->
@@ -679,7 +688,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.69";
+var APP_VERSIE = "v19.70";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4270,6 +4279,8 @@ function jergaRender(elId){
   if(z) z.onclick = function(){ chispaMiniSpin(z); jergaHoor(); };
 }
 function renderWord(){
+  // v19.70: de straattaal van vandaag stond op Chispa's pagina. Dat is een woordles en hoort hier.
+  try { jergaRender("jergaWoorden"); } catch(e){}
   var el = document.getElementById("wCard");
   if(!wQueue.length){ buildQueue(); }
   if(!wQueue.length){
@@ -7340,7 +7351,7 @@ function chispaHerrenderStraks(ms, pogingen){
   var p = pogingen || 0;
   setTimeout(function(){
     if((chispaFiestaBezig || chispaBeweegt()) && p < 8){ chispaHerrenderStraks(1200, p + 1); return; }
-    if(chispaZichtbaar()) renderPet();
+    if(chispaZichtbaar()) renderChispaPagina();
   }, ms || 600);
 }
 function chispaBaila(baile, stilBeeld){
@@ -7497,7 +7508,7 @@ function chispaCadeau(){
     chispaSay({es:"¡¡JACKPOT!! ¡Cinco tapas!", nl:"JACKPOT! Vijf tapas!"});
   }
   persist();
-  renderPet();
+  renderChispaPagina();
 }
 /* Aai-teller: elke 7e aai doet Chispa iets bijzonders. */
 var chispaAaiTeller = 0;
@@ -7521,81 +7532,63 @@ function chispaAai(){
     chispaRandomSay();
   }
 }
+/* ================= CHISPA'S PAGINA (v19.70, vier kaarten) =================
+   Stefan: "chispa begint beetje rommelig scherm te worden."
+   Dat kwam niet door de hoeveelheid maar doordat één kolom vier dingen deed: het dier, haar
+   groei, twee verzamelingen en een woordles. Nu heeft elke kaart één taak:
+     1. petCard     - Chispa zelf. Wie is ze, hoe voelt ze zich, wat wil ze, en wat kun je doen.
+     2. groeiCard   - haar groei: welke vorm nu, welke volgt, en de kledingkast erbij.
+     3. vitrineCard - de vitrine: tapas en dansen naast elkaar, elk met hun teller.
+     4. kamerCard   - haar kamer.
+   De jerga is weg van deze pagina; die staat bij de woordjes, want het is een woordles. */
+/* De hele pagina in één keer. Vier kaarten die elkaars cijfers laten zien (tapas, dansen,
+   vormen), dus wie er één ververst moet ze meestal allemaal verversen. */
+function renderChispaPagina(){
+  renderPet();
+  try { renderGroei(); renderVitrine(); renderKamer(); } catch(e){}
+}
 function renderPet(){
   var el = document.getElementById("petCard");
-  var lvl = petLevel(S.txp||0);
-  var next = lvl < PET_LEVELS.length-1 ? PET_LEVELS[lvl+1] : null;
+  if(!el) return;
   var fiesta = fiestaVandaag();
   var decoBron = fiesta ? {e:fiesta.e, txt:fiesta.naam+"! "+fiesta.txt, txtEn:fiesta.naam+"! "+(fiesta.txtEn||fiesta.txt)} : DAYDECO[dayHash("deco") % DAYDECO.length];
   var deco = {e:decoBron.e, txt:decoTxt(decoBron)};
-  // vriendjes-rij
+  var lvl = petLevel(S.txp||0);
   var amHtml = "";
   AMIGOS.forEach(function(a){
     var open = (S.txp||0) >= a.min;
     if(open){
       amHtml += "<button class='amigo' data-amigo='"+a.id+"'>"+a.svg+"<small>"+a.naam+"</small></button>";
     } else {
-      amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>"+ct("🔒 bij ", "🔒 at ")+getal(a.min)+" "+xpw()+"</small></button>";
+      amHtml += "<button class='amigo locked' data-amigo=''>"+a.svg+"<small>"+ct("\ud83d\udd12 bij ", "\ud83d\udd12 at ")+getal(a.min)+" "+xpw()+"</small></button>";
     }
   });
   var cadeauGehad = S.chispaCadeau === today();
-  var tapaHoy = tapaVanDaag();
-  var tapaGehad = tapaMenuState().length;
-  // v19.49 Tamagotchi, v19.63 zonder de hongermeter: dagwens en nachtstand blijven.
   var wens = chispaWens();
   var wensOk = chispaWensVervuld();
   var slaapt = chispaSlaapt();
   var vandaagGezorgd = zorgState().laatst === today();
-  // v19.51: de dans van de dag + welke dansen je al gezien hebt
-  var bd = bailePorDia();
-  var bekend = baileState();
-  var bailHtml = "";
-  BAILES.forEach(function(b){
-    bailHtml += "<button class='bailechip"+(b.id===bd.id?" hoy":"")+(bekend.indexOf(b.id)>=0?" gehad":"")+"' data-baile='"+b.id+"' title='"+b.land+"'>"+
-      b.e+" <span class='es'>"+b.es+"</span></button>";
-  });
-  // de gloed is nu een "je bent er vandaag geweest"-signaal: hij verschijnt bij aandacht en
-  // verdwijnt gewoon weer, zonder dat er een reeks aan hangt die je kwijt kunt raken.
   var stageKlas = "petstage" + (vandaagGezorgd ? " zorgglow" : "") + (slaapt ? " petslaap" : "");
   el.innerHTML = "<div class='"+stageKlas+"'>"+
     rinconDecorHtml()+
     "<div id='chispaProps' class='chprops'></div>"+
     "<span class='daydeco'>"+deco.e+"</span>"+
-    (slaapt ? "<span class='zzz'>💤</span>" : "")+
+    (slaapt ? "<span class='zzz'>\ud83d\udca4</span>" : "")+
     "<div id='petBubble' class='petbubble hidden'></div>"+
     "<div id='petBox' class='chvive' title='"+ct("Klik op Chispa!","Tap Chispa!")+"'>"+petSVG()+"</div>"+
     "<div class='amigorow'>"+amHtml+"</div>"+
-    "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>· "+PET_LEVELS[lvl].naam+"</span></p>"+
+    "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>\u00b7 "+PET_LEVELS[lvl].naam+"</span></p>"+
     "<p class='petmood'>"+petMoodText()+"</p>"+
     "<p class='wensrij"+(wensOk?" vervuld":"")+"' id='wensRij'>"+wens.e+" <span class='es'>"+wens.es+"</span>"+
-      (wensOk ? " ✓" : " <span class='muted' style='font-weight:400'>· "+ct(wens.nl, wens.en)+"</span>")+"</p>"+
-    "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del día</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>· "+bd.land+"</span></p>"+
-    "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
-    "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen · tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances · tap one")+"</p>"+
+      (wensOk ? " \u2713" : " <span class='muted' style='font-weight:400'>\u00b7 "+ct(wens.nl, wens.en)+"</span>")+"</p>"+
     "<p class='muted' style='font-size:.82rem; margin:8px 0 8px; text-align:center'>"+deco.txt+"</p>"+
-    "<span class='tapabadge'>🫒 "+(S.tapas||0)+" tapas</span>"+
-    /* v19.66 — het menu van Chispa. Dezelfde gedachte als de dansen eronder: een verzameling die
-       alleen maar kan groeien, waarin elk vakje een echt Spaans woord is dat je met een smakkend
-       axolotl hebt geleerd in plaats van met een rijtje. De tapa van vandaag staat omkaderd, want
-       díé mag je straks geven; de grijze ken je nog niet en die komen vanzelf een keer langs. */
-    "<p class='bailehoy' id='tapaHoy'><span class='es'>La tapa del día</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>· "+ct(tapaHoy.nl, tapaHoy.en)+"</span></p>"+
-    tapaMenuHtml()+
-    "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas · tik er een aan","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas · tap one")+"</p>"+
     "<div class='row center'>"+
-    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?ct("Stil een tapa neerzetten ","Quietly leave a tapa "):ct("Geef de tapa van vandaag ","Give today's tapa "))+tapaHoy.e+"</button>"+
-    "<button class='ghost' id='btnFiesta'>🎉 ¡Fiesta!</button>"+
-    "<button class='ghost' id='btnSerenade'>🎶 Serenade</button>"+
-    "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">🎁 "+(cadeauGehad?ct("Morgen weer","Back tomorrow"):ct("Dagcadeautje","Daily gift"))+"</button>"+
+    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?ct("Stil een tapa neerzetten ","Quietly leave a tapa "):ct("Geef een tapa ","Give a tapa "))+"\ud83e\uded2 "+(S.tapas||0)+"</button>"+
+    "<button class='ghost' id='btnFiesta'>\ud83c\udf89 \u00a1Fiesta!</button>"+
+    "<button class='ghost' id='btnSerenade'>\ud83c\udfb6 Serenade</button>"+
+    "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">\ud83c\udf81 "+(cadeauGehad?ct("Morgen weer","Back tomorrow"):ct("Dagcadeautje","Daily gift"))+"</button>"+
     "</div>"+
-    (next?"<p class='muted' style='margin-top:10px'>"+ct("Nog ","Another ")+getal(Math.max(0,next.min-(S.txp||0)))+" "+xpw()+ct(" tot de volgende vorm: "," until the next form: ")+"<b>"+next.naam+"</b> ("+petHint(next)+")</p>"
-         :"<p class='muted' style='margin-top:10px'>"+ct("Chispa is een echte estrella: het hoogste niveau. ⭐ Maar tapas blijven welkom.","Chispa is a real estrella: the highest level. ⭐ But tapas are always welcome.")+"</p>")+
-    "</div>"+
-    /* v19.55: hier stond "Frase van de dag" uit een tweede lijst. Die lijst overlapte grotendeels met
-       JERGA, dus zei Chispa op haar eigen pagina twee keer iets van vandaag. Nu is het er nog een: de
-       straattaal van vandaag, verhuisd van de woordjes- en vertaalpagina naar hier. */
-    "<div id='jergaChispa'></div>";
-  jergaRender("jergaChispa");
-  tapaMenuWire(el);
+    "</div>";
   var b = document.getElementById("btnFeed");
   if(b) b.onclick = feedPet;
   var bfi = document.getElementById("btnFiesta");
@@ -7620,14 +7613,7 @@ function renderPet(){
         ab.classList.remove("amigobounce"); void(ab.offsetWidth||0); ab.classList.add("amigobounce");
         chispaSay(a.frase);
       }
-      else { toast(ct("Dit vriendje komt erbij als Chispa verder groeit. ¡Sigue estudiando!","This friend joins once Chispa grows a bit more. ¡Sigue estudiando!")); }
-    };
-  });
-  el.querySelectorAll("button.bailechip").forEach(function(bb){
-    bb.onclick = function(){
-      var id = bb.getAttribute("data-baile");
-      var bl = BAILES.filter(function(x){ return x.id === id; })[0];
-      if(bl) chispaBaila(bl);
+      else { toast(ct("Dit vriendje komt erbij als Chispa verder groeit. \u00a1Sigue estudiando!","This friend joins once Chispa grows a bit more. \u00a1Sigue estudiando!")); }
     };
   });
   // v19.51: één keer per dag geeft Chispa ongevraagd een voorstelling weg
@@ -7637,6 +7623,125 @@ function renderPet(){
     setTimeout(function(){ if(chispaZichtbaar() && !chispaBeweegt()) chispaBaila(bailePorDia()); }, 900);
   }
 }
+
+/* kaart 2 - de groei. Hier hoort de kledingkast bij: kleren gaan over hoe ze eruitziet, dus die
+   staan naast haar vorm en niet in een winkeltje verderop. */
+function renderGroei(){
+  var el = document.getElementById("groeiCard");
+  if(!el) return;
+  var lvl = petLevel(S.txp||0);
+  var next = lvl < PET_LEVELS.length-1 ? PET_LEVELS[lvl+1] : null;
+  var xpNu = S.txp || 0;
+  var vorige = PET_LEVELS[lvl].min;
+  var pct = next ? Math.max(0, Math.min(100, Math.round(100*(xpNu-vorige)/Math.max(1,next.min-vorige)))) : 100;
+  var html = "<h2>"+ct("Chispa's groei","Chispa's growth")+" \ud83c\udf31</h2>"+
+    "<p style='margin:0 0 2px'><b>"+PET_LEVELS[lvl].naam+"</b> <span class='muted'>\u00b7 "+ct(PET_LEVELS[lvl].hint, PET_LEVELS[lvl].hintEn)+"</span></p>"+
+    "<p class='muted' style='font-size:.85rem; margin:0 0 8px'>"+ct("Vorm ","Form ")+(lvl+1)+"/"+PET_LEVELS.length+"</p>"+
+    "<div class='goalbar'><div style='width:"+pct+"%'></div></div>";
+  html += next
+    ? "<p class='muted' style='margin:6px 0 0'>"+ct("Nog ","Another ")+getal(Math.max(0,next.min-xpNu))+" "+xpw()+ct(" tot de volgende vorm: "," until the next form: ")+"<b>"+next.naam+"</b> \u00b7 "+ct(next.hint, next.hintEn)+"</p>"
+    : "<p class='muted' style='margin:6px 0 0'>"+ct("Chispa is een echte estrella: de hoogste vorm. \u2b50 Maar tapas blijven welkom.","Chispa is a real estrella: the highest form. \u2b50 But tapas are always welcome.")+"</p>";
+  var n = doneLessonCount();
+  html += "<h2 style='margin-top:18px'>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2><p class='muted'>"+
+    ct("Accessoires verdien je door lessen af te ronden.","You earn accessories by finishing lessons.")+"</p>";
+  SHOP.forEach(function(it){
+    var owned = !!S.owned[it.id] || n >= it.les;
+    if(owned && !S.owned[it.id]){ S.owned[it.id] = true; persist(); }
+    var wearing = !!S.wear[it.id];
+    html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
+    if(!owned){
+      var nog = it.les - n;
+      html += "<span class='muted'>"+ct("\ud83d\udd12 nog "+nog+" les"+(nog>1?"sen":""), "\ud83d\udd12 "+nog+" more lesson"+(nog>1?"s":""))+"</span>";
+    } else {
+      html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?ct("Doe af","Take off"):ct("Draag","Wear"))+"</button>";
+    }
+    html += "</div>";
+  });
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-wear]").forEach(function(b){
+    b.onclick = function(){
+      var id = b.getAttribute("data-wear");
+      S.wear[id] = !S.wear[id]; persist();
+      renderPet(); renderGroei();
+    };
+  });
+}
+
+/* kaart 3 - de vitrine. Twee verzamelingen die alleen maar kunnen groeien, naast elkaar en met
+   hun eigen teller, zodat je in \u00e9\u00e9n oogopslag ziet hoever je bent. */
+function renderVitrine(){
+  var el = document.getElementById("vitrineCard");
+  if(!el) return;
+  var tapaHoy = tapaVanDaag();
+  var tapaGehad = tapaMenuState().length;
+  var bd = bailePorDia();
+  var bekend = baileState();
+  var bailHtml = "";
+  BAILES.forEach(function(b){
+    bailHtml += "<button class='bailechip"+(b.id===bd.id?" hoy":"")+(bekend.indexOf(b.id)>=0?" gehad":"")+"' data-baile='"+b.id+"' title='"+b.land+"'>"+
+      b.e+" <span class='es'>"+b.es+"</span></button>";
+  });
+  el.innerHTML = "<h2>"+ct("De vitrine","The display case")+" \ud83c\udf7d\ufe0f</h2>"+
+    "<p class='muted' style='margin:0 0 12px'>"+ct("Twee verzamelingen die alleen maar kunnen groeien. Wegblijven kost je hier niets.","Two collections that can only grow. Staying away never costs you anything here.")+"</p>"+
+    "<div class='vitrinevak'>"+
+      "<p class='bailehoy' id='tapaHoy'><span class='es'>La tapa del d\u00eda</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+"</span></p>"+
+      tapaMenuHtml()+
+      "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas \u00b7 tik er een aan","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one")+"</p>"+
+    "</div>"+
+    "<div class='vitrinevak'>"+
+      "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del d\u00eda</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>\u00b7 "+bd.land+"</span></p>"+
+      "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
+      "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen \u00b7 tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances \u00b7 tap one")+"</p>"+
+    "</div>";
+  tapaMenuWire(el);
+  el.querySelectorAll("button.bailechip").forEach(function(bb){
+    bb.onclick = function(){
+      var id = bb.getAttribute("data-baile");
+      var bl = BAILES.filter(function(x){ return x.id === id; })[0];
+      if(bl) chispaBaila(bl);
+    };
+  });
+}
+
+/* kaart 4 - haar kamer. */
+function renderKamer(){
+  var el = document.getElementById("kamerCard");
+  if(!el) return;
+  var html = "<h2>"+ct("Chispa's kamer","Chispa's room")+" \ud83c\udfe1</h2><p class='muted'>"+
+    ct("Richt de kamer in met je tapas. Sommige stukken komen pas vrij als Chispa verder groeit: er blijft altijd iets te sparen.",
+       "Decorate the room with your tapas. Some pieces only unlock once Chispa grows: there is always something left to save for.")+"</p>"+
+    "<span class='tapabadge'>\ud83e\uded2 "+(S.tapas||0)+" tapas</span>";
+  var xpNu = S.txp || 0;
+  RINCON.forEach(function(it){
+    var owned = !!(S.rincon && S.rincon[it.id]);
+    var locked = it.min && xpNu < it.min;
+    html += "<div class='shopitem'><div class='si-name'>"+it.e+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
+    if(owned){
+      html += "<span class='muted'>"+ct("\u2713 staat in de kamer","\u2713 in the room")+"</span>";
+    } else if(locked){
+      html += "<span class='muted'>"+ct("\ud83d\udd12 bij ","\ud83d\udd12 at ")+getal(it.min)+" "+xpw()+"</span>";
+    } else {
+      var kan = (S.tapas||0) >= it.prijs;
+      html += "<button class='"+(kan?"primary":"ghost")+"' data-rincon='"+it.id+"' "+(kan?"":"disabled style='opacity:.5'")+">\ud83e\uded2 "+it.prijs+"</button>";
+    }
+    html += "</div>";
+  });
+  el.innerHTML = html;
+  el.querySelectorAll("button[data-rincon]").forEach(function(b){
+    b.onclick = function(){
+      var it = RINCON.filter(function(x){ return x.id === b.getAttribute("data-rincon"); })[0];
+      if(!it || (S.tapas||0) < it.prijs) return;
+      S.tapas -= it.prijs;
+      S.rincon = S.rincon || {};
+      S.rincon[it.id] = true;
+      persist();
+      confetti([it.e,"\ud83c\udf2e","\u2728"], 16);
+      toast(it.naam+ct(" staat in Chispa's kamer! "," is in Chispa's room! ")+it.e);
+      renderPet(); renderKamer();
+    };
+  });
+}
+
 // v19.66 — voeren loopt nu via tapaGeven(), zodat Chispa's pagina en het einde van je les precies
 // hetzelfde doen: dezelfde tapa van vandaag, dezelfde kosten (één tapa), hetzelfde menu dat groeit.
 // Twee plekken die hetzelfde lijken te doen maar het net iets anders doen, is hoe je stilletjes twee
@@ -7649,71 +7754,13 @@ function feedPet(){
   toast(res.slaapt ? ct("¡Ssshh! Chispa vindt hem morgenvroeg. ❤️","¡Ssshh! Chispa will find it in the morning. ❤️")
     : (res.nieuw ? "✨ "+ct("Nieuw op het menu: "+res.tapa.es, "New on the menu: "+res.tapa.es)
                  : ct("¡Ñam ñam! Chispa smult. ❤️","¡Ñam ñam! Chispa is tucking in. ❤️")));
+  // v19.70: het menu en de tapateller wonen nu op de vitrine, dus die moet mee verversen
   renderPet();
+  try { renderVitrine(); renderKamer(); } catch(e){}
   chispaSay(res.slaapt
     ? {es:"Mmm... gracias. Mañana la como.", nl:"Mmm... dankje. Morgen eet ik hem op.", en:"Mmm... thanks. I'll eat it tomorrow."}
     : {es:"¡Ñam ñam! ¡"+res.tapa.es+"! ¡Qué rico!", nl:res.tapa.nl+"! Wat is deze tapa lekker!", en:res.tapa.en+"! What a great tapa!"});
 }
-function renderShop(){
-  var el = document.getElementById("shopCard");
-  var n = doneLessonCount();
-  var html = "<h2>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2><p class='muted'>"+
-    ct("Accessoires verdien je door lessen af te ronden. Tapas (10 "+xpw()+" = 1 tapa, les af = +5, foutloze toets = +2) zijn om Chispa te voeren.",
-       "You earn accessories by finishing lessons. Tapas (10 "+xpw()+" = 1 tapa, lesson done = +5, flawless quiz = +2) are for feeding Chispa.")+"</p>";
-  SHOP.forEach(function(it){
-    var owned = !!S.owned[it.id] || n >= it.les;
-    if(owned && !S.owned[it.id]){ S.owned[it.id] = true; persist(); }
-    var wearing = !!S.wear[it.id];
-    html += "<div class='shopitem'><div class='si-name'>"+it.emoji+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
-    if(!owned){
-      var nog = it.les - n;
-      html += "<span class='muted'>"+ct("🔒 nog "+nog+" les"+(nog>1?"sen":""), "🔒 "+nog+" more lesson"+(nog>1?"s":""))+"</span>";
-    } else {
-      html += "<button class='ghost' data-wear='"+it.id+"'>"+(wearing?ct("Doe af","Take off"):ct("Draag","Wear"))+"</button>";
-    }
-    html += "</div>";
-  });
-  html += "<h2 style='margin-top:18px'>"+ct("Chispa's kamer","Chispa's room")+"</h2><p class='muted'>"+
-    ct("Richt de kamer in met je tapas. Sommige stukken komen pas vrij als Chispa verder groeit: er blijft altijd iets te sparen.",
-       "Decorate the room with your tapas. Some pieces only unlock once Chispa grows: there is always something left to save for.")+"</p>";
-  var xpNu = S.txp || 0;
-  RINCON.forEach(function(it){
-    var owned = !!(S.rincon && S.rincon[it.id]);
-    var locked = it.min && xpNu < it.min;
-    html += "<div class='shopitem'><div class='si-name'>"+it.e+" "+it.naam+"<small>"+itemHint(it)+"</small></div>";
-    if(owned){
-      html += "<span class='muted'>"+ct("✓ staat in de kamer","✓ in the room")+"</span>";
-    } else if(locked){
-      html += "<span class='muted'>"+ct("🔒 bij ","🔒 at ")+getal(it.min)+" "+xpw()+"</span>";
-    } else {
-      var kan = (S.tapas||0) >= it.prijs;
-      html += "<button class='"+(kan?"primary":"ghost")+"' data-rincon='"+it.id+"' "+(kan?"":"disabled style='opacity:.5'")+">🫒 "+it.prijs+"</button>";
-    }
-    html += "</div>";
-  });
-  el.innerHTML = html;
-  el.querySelectorAll("button[data-wear]").forEach(function(b){
-    b.onclick = function(){
-      var id = b.getAttribute("data-wear");
-      S.wear[id] = !S.wear[id]; persist();
-      renderPet(); renderShop();
-    };
-  });
-  el.querySelectorAll("button[data-rincon]").forEach(function(b){
-    b.onclick = function(){
-      var it = RINCON.filter(function(x){ return x.id === b.getAttribute("data-rincon"); })[0];
-      if(!it || (S.tapas||0) < it.prijs) return;
-      S.tapas -= it.prijs;
-      S.rincon = S.rincon || {};
-      S.rincon[it.id] = true;
-      persist();
-      confetti([it.e,"🌮","✨"], 16);
-      toast(it.naam+ct(" staat in Chispa's kamer! "," is in Chispa's room! ")+it.e);
-      renderPet(); renderShop();
-    };
-  });
-}
-
 /* ================= MÚSICA ================= */
 var SONGS = [
  {id:"song-bachata", titel:"La Bachata", artiest:"Manuel Turizo", yt:"TiM_TFpT_DE", lvl:"A2",
@@ -15501,7 +15548,7 @@ function show(tabId, skipPush){
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
-  if(tabId==="chispa"){ renderPet(); renderShop(); }
+  if(tabId==="chispa"){ renderChispaPagina(); }
   if(tabId==="perfil"){
     renderPerfil(); renderStats();
     var bns = document.getElementById("btnNaarSteun");
