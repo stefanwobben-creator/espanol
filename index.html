@@ -264,6 +264,15 @@
   .chminigiro svg{animation:chgiro .9s ease-in-out !important;}
   @keyframes petb{0%{transform:scale(1)} 40%{transform:scale(1.12) rotate(-3deg)} 100%{transform:scale(1)}}
   .shopitem{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed var(--border);}
+  /* v19.76 - haar van jou maken. Een kleur kies je met je ogen, dus de knop is de kleur zelf en
+     geen woord met een kleur ernaast. */
+  .kleurrij{display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 2px;}
+  .kleurknop{width:38px; height:38px; border-radius:50%; border:3px solid var(--border); cursor:pointer; padding:0; position:relative;}
+  .kleurknop.aan{border-color:var(--ink); box-shadow:0 0 0 3px var(--card), 0 0 0 5px var(--accent-soft);}
+  .kleurknop span{position:absolute; inset:6px; border-radius:50%;}
+  .vormrij{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 2px;}
+  .vormknop{border:2px solid var(--border); background:var(--card); border-radius:var(--radius); padding:6px 12px; cursor:pointer; font-size:.9rem; color:var(--ink);}
+  .vormknop.aan{border-color:var(--accent); background:var(--accent-soft); font-weight:700;}
   .shopitem .si-name{font-weight:700;}
   .shopitem .si-name small{display:block; font-weight:400; color:var(--muted); font-size:.78rem;}
   /* v19.73 - de ceremonie. Stefan: "als je hem alles soort tapasjes hebt gegeven dan komt er een
@@ -739,7 +748,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.75";
+var APP_VERSIE = "v19.76";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6948,11 +6957,13 @@ function renderLessonSpiek(l){
 
    De acht: huevo (het ei), bebé, pequeña, niña, chica, adolescente, adulta, abuela sabia.
    Zeven daarvan leven, dus de vormcurve loopt over zes stappen; abuela deelt haar bouw met adulta
-   en verschilt in wat ouder worden echt doet: grijs aan de kieuwen, wenkbrauwen, iets kleiner.
-   Ze is nadrukkelijk geen aftakeling maar het eindpunt van een leven lang leren.
+   en verschilt in haar aanwezigheid: half doorschijnend, grotere ogen, een kleiner mondje en licht
+   in plaats van een schaduw. Ze is nadrukkelijk geen aftakeling maar het eindpunt van een leven
+   lang leren.
 
-   De kleur loopt via petKleur() en niet via vaste hexcodes, zodat "hem beetje customizen met een
-   kleurtje" (Stefan) later alleen die functie hoeft aan te passen en niet dertig tekenregels.
+   Kleur en vorm lopen via petKleur() en petVorm() en niet via vaste hexcodes of vaste getallen,
+   zodat "hem beetje customizen met een kleurtje" (Stefan) precies twee tabellen kost en geen
+   dertig tekenregels.
 =========================================================================================== */
 function petKleur(){
   // v19.74: één plek waar Chispa's kleuren vandaan komen. Standaard is ze roze, want dat is ze.
@@ -6960,9 +6971,47 @@ function petKleur(){
   var P = PET_KLEUREN.filter(function(x){ return x.id === k; })[0] || PET_KLEUREN[0];
   return P;
 }
+// v19.76. Stefan: "dan misschien al beetje kunnen aanpassen (bijv kleur, vorm, beetje eigen
+// maken)". Zes paletten, en ze zijn alle zes meteen vrij. Dat is een bewuste keuze: een kleur is
+// geen prestatie maar een identiteit, en identiteit achter een slot zetten is precies het
+// tegenovergestelde van "haar van jou maken". Er valt in deze app al genoeg te ontdekken (tapas,
+// dansen, kleding, acht vormen); dit hoeft geen grind erbij te zijn.
+// Elk palet heeft dezelfde vijf rollen, zodat de tekening niets van kleur hoeft te weten:
+// lijf (vlak), rand (omlijning en armen), kieuw (de takken), punt (de kieuwpuntjes), blos.
 var PET_KLEUREN = [
-  {id:"rosa", naam:"rosa", nl:"roze", en:"pink", lijf:"#f8b8ce", rand:"#ef97b8", kieuw:"#e46a9a", punt:"#f08bb0", blos:"#f7b7cd"}
+  {id:"rosa",   naam:"rosa",   nl:"roze",   en:"pink",   lijf:"#f8b8ce", rand:"#ef97b8", kieuw:"#e46a9a", punt:"#f08bb0", blos:"#f7b7cd"},
+  {id:"menta",  naam:"menta",  nl:"mint",   en:"mint",   lijf:"#a9ddc4", rand:"#7cc5a4", kieuw:"#4da585", punt:"#93d3b6", blos:"#f3b6b6"},
+  {id:"cielo",  naam:"cielo",  nl:"lucht",  en:"sky",    lijf:"#a9cdf0", rand:"#7fb0e0", kieuw:"#4f89c8", punt:"#96c0e8", blos:"#f2b8c4"},
+  {id:"lila",   naam:"lila",   nl:"lila",   en:"lilac",  lijf:"#cbb6e8", rand:"#a98fd4", kieuw:"#8367b8", punt:"#bda6e0", blos:"#f0b4c8"},
+  {id:"arena",  naam:"arena",  nl:"zand",   en:"sand",   lijf:"#f2d09a", rand:"#dcae6b", kieuw:"#bd8b41", punt:"#eac287", blos:"#f3b39b"},
+  {id:"coral",  naam:"coral",  nl:"koraal", en:"coral",  lijf:"#f8b49a", rand:"#ef9376", kieuw:"#d96c48", punt:"#f4a488", blos:"#f7aeae"}
 ];
+
+// Eén vormkeuze, en niet meer dan één. De acht levensfases dragen al een vormcurve (het
+// kindschema); een tweede curve eroverheen mag die niet overstemmen, anders is een adulta in
+// "esbelta" ineens jonger dan een chica in "redonda" en klopt het aflezen van leeftijd niet meer.
+// Daarom zijn de factoren klein: je ziet het naast elkaar, maar het blijft haar leeftijd die de
+// vorm bepaalt. wf schaalt de breedte, pf verschuift het breedste punt, tf de rondheid bovenaan.
+var PET_VORMEN = [
+  {id:"clasica", naam:"cl\u00e1sica", nl:"klassiek", en:"classic", wf:1.00, pf:0.00,  tf:1.00},
+  {id:"redonda", naam:"redonda",   nl:"rond",     en:"round",   wf:1.09, pf:-0.05, tf:1.10},
+  {id:"esbelta", naam:"esbelta",   nl:"slank",    en:"slim",    wf:0.90, pf:0.05,  tf:0.92}
+];
+function petVorm(){
+  var k = (S && S.petVorm) || "clasica";
+  return PET_VORMEN.filter(function(x){ return x.id === k; })[0] || PET_VORMEN[0];
+}
+// De abuela is geen tweede kleur maar dezelfde kleur met het pigment eruit gelopen. Uitrekenen in
+// plaats van opschrijven, anders is elk nieuw palet meteen weer roze als ze oud wordt.
+function petBleek(hex, mate){
+  var h = String(hex).replace("#",""), uit = "#";
+  for(var i = 0; i < 3; i++){
+    var c = parseInt(h.substr(i*2,2),16);
+    c = Math.round(c + (238 - c) * mate);
+    uit += ("0"+Math.max(0,Math.min(255,c)).toString(16)).slice(-2);
+  }
+  return uit;
+}
 
 function petFaseVorm(lvl){
   // t loopt van 0 (bebé) tot 1 (adulta). De abuela deelt de volwassen bouw: ouder worden is hier
@@ -6987,6 +7036,12 @@ function petFaseVorm(lvl){
     arm: l(0.34, 1.0),
     staart: Math.max(0, (t - 0.28) / 0.72)
   };
+  // v19.76: de gekozen vorm schuift over de leeftijdscurve heen, niet ervoor in de plaats.
+  var Fv = petVorm();
+  v.vorm = Fv.id;
+  v.W = v.W * Fv.wf;
+  v.P = Math.max(0.24, Math.min(0.80, v.P + Fv.pf));
+  v.topf = Math.max(0.30, Math.min(1.10, v.topf * Fv.tf));
   // M is de hoogte waarop ze het breedst is. Bij een jong dier ligt daar haar hoofd, bij een
   // volwassen dier haar buik. Dat ene getal draagt het hele kindschema.
   v.M = v.T + (v.B - v.T) * v.P;
@@ -7047,12 +7102,14 @@ function petSVGEi(w){
 function petSVGFase(lvl, mood, w){
   var v = petFaseVorm(lvl);
   var K = petKleur();
-  // De abuela wordt niet grijs maar bleker: dezelfde roze, met de kleur eruit gelopen. Zo blijft
-  // ze herkenbaar hetzelfde dier en lezen witte wenkbrauwen wél tegen haar huid.
-  var lijf   = v.oud ? "#f3d3dd" : K.lijf;
-  var rand   = v.oud ? "#d8b6c2" : K.rand;
-  var kieuwK = v.oud ? "#bda3ad" : K.kieuw;
-  var puntK  = v.oud ? "#d5c2c9" : K.punt;
+  // De abuela wordt niet grijs maar bleker: dezelfde kleur, met het pigment eruit gelopen. Zo
+  // blijft ze herkenbaar hetzelfde dier en lezen witte wenkbrauwen wél tegen haar huid. Sinds
+  // v19.76 wordt dat uitgerekend uit het gekozen palet, zodat een mintgroene Chispa ook mintgroen
+  // oud wordt in plaats van stiekem roze.
+  var lijf   = v.oud ? petBleek(K.lijf, 0.52) : K.lijf;
+  var rand   = v.oud ? petBleek(K.rand, 0.50) : K.rand;
+  var kieuwK = v.oud ? petBleek(K.kieuw, 0.62) : K.kieuw;
+  var puntK  = v.oud ? petBleek(K.punt, 0.55) : K.punt;
 
   var g = "<g" + (v.oud ? " opacity='.72'" : "") + " transform='translate(100 100) scale(" + v.sc.toFixed(3) + ") translate(-100 -100)'>";
 
@@ -7225,9 +7282,9 @@ function petSVGFase(lvl, mood, w){
   // Een geest werpt geen schaduw maar geeft licht. Dat ene verschil doet meer voor "zij is anders
   // dan de adulta" dan tien rimpels bij elkaar, en het maakt haar niet zieliger maar bijzonderder.
   var voet = v.oud
-    ? "<ellipse cx='100' cy='104' rx='76' ry='68' fill='#f6dbe4' opacity='.28'/>" +
-      "<ellipse cx='100' cy='102' rx='60' ry='56' fill='#fdeef3' opacity='.40'/>" +
-      "<ellipse cx='100' cy='170' rx='26' ry='5' fill='#e8c9d5' opacity='.40'/>"
+    ? "<ellipse cx='100' cy='104' rx='76' ry='68' fill='" + petBleek(K.lijf, 0.62) + "' opacity='.28'/>" +
+      "<ellipse cx='100' cy='102' rx='60' ry='56' fill='" + petBleek(K.lijf, 0.86) + "' opacity='.40'/>" +
+      "<ellipse cx='100' cy='170' rx='26' ry='5' fill='" + petBleek(K.rand, 0.42) + "' opacity='.40'/>"
     : "<ellipse cx='100' cy='170' rx='" + (26 + 32 * v.t).toFixed(0) + "' ry='" + (7 + 5 * v.t).toFixed(0) + "' fill='#00000012'/>";
   return "<svg viewBox='0 0 200 180'>" + voet + g +
     staart + kieuwen +
@@ -7958,6 +8015,27 @@ function renderGroei(){
   html += next
     ? "<p class='muted' style='margin:6px 0 0'>"+ct("Nog ","Another ")+getal(Math.max(0,next.min-xpNu))+" "+xpw()+ct(" tot de volgende vorm: "," until the next form: ")+"<b>"+next.naam+"</b> \u00b7 "+ct(next.hint, next.hintEn)+"</p>"
     : "<p class='muted' style='margin:6px 0 0'>"+ct("Chispa is abuela geworden. Ze groeit niet verder, maar jullie leren wel verder \u2014 en tapas blijven welkom.","Chispa has become an abuela. She won't grow any further, but you two keep learning \u2014 and tapas are always welcome.")+"</p>";
+  // v19.76 - haar van jou maken. Dit staat bewust boven de kledingkast: kleding doe je aan en uit,
+  // maar een kleur en een vorm zijn wie ze is. En het staat op deze kaart en niet bij de
+  // instellingen, want het is geen instelling maar spelen.
+  var kNu = petKleur().id, vNu = petVorm().id;
+  html += "<h2 style='margin-top:18px'>"+ct("Maak haar van jou","Make her yours")+" \ud83c\udfa8</h2>"+
+    "<p class='muted' style='margin:0'>"+ct("Kleur en vorm zijn meteen vrij: dit hoef je niet te verdienen.","Colour and shape are yours from the start: nothing to unlock here.")+"</p>";
+  var kr = "";
+  PET_KLEUREN.forEach(function(kk){
+    kr += "<button class='kleurknop"+(kk.id===kNu?" aan":"")+"' data-kleur='"+kk.id+"' title='"+ct(kk.nl,kk.en)+"' aria-label='"+ct(kk.nl,kk.en)+"' aria-pressed='"+(kk.id===kNu)+"' style='background:"+kk.rand+"'><span style='background:"+kk.lijf+"'></span></button>";
+  });
+  html += "<p class='zorglabel' style='margin:10px 0 0'>"+ct("Haar kleur","Her colour")+"</p>"+
+    "<div class='kleurrij' id='kleurRij'>"+kr+"</div>";
+  var vr = "";
+  PET_VORMEN.forEach(function(vv){
+    vr += "<button class='vormknop"+(vv.id===vNu?" aan":"")+"' data-vorm='"+vv.id+"' aria-pressed='"+(vv.id===vNu)+"'><span class='es'>"+vv.naam+"</span> <span class='muted'>\u00b7 "+ct(vv.nl,vv.en)+"</span></button>";
+  });
+  // Bewust "figuur" en niet "vorm": twee regels hoger staat "Vorm 7/8", en dat gaat over haar
+  // leeftijd. Twee betekenissen van hetzelfde woord op dezelfde kaart is hoe je iemand kwijtraakt.
+  html += "<p class='zorglabel' style='margin:12px 0 0'>"+ct("Haar figuur","Her build")+"</p>"+
+    "<div class='vormrij' id='vormRij'>"+vr+"</div>";
+
   var n = doneLessonCount();
   html += "<h2 style='margin-top:18px'>"+ct("Chispa's kledingkast","Chispa's wardrobe")+"</h2><p class='muted'>"+
     ct("Accessoires verdien je door lessen af te ronden.","You earn accessories by finishing lessons.")+"</p>";
@@ -7979,6 +8057,18 @@ function renderGroei(){
     b.onclick = function(){
       var id = b.getAttribute("data-wear");
       S.wear[id] = !S.wear[id]; persist();
+      renderPet(); renderGroei();
+    };
+  });
+  el.querySelectorAll("button[data-kleur]").forEach(function(b){
+    b.onclick = function(){
+      S.petKleur = b.getAttribute("data-kleur"); persist();
+      renderPet(); renderGroei();
+    };
+  });
+  el.querySelectorAll("button[data-vorm]").forEach(function(b){
+    b.onclick = function(){
+      S.petVorm = b.getAttribute("data-vorm"); persist();
       renderPet(); renderGroei();
     };
   });
