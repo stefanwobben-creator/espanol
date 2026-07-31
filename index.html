@@ -135,12 +135,9 @@
   .lfsay{margin:4px 0 0; font-size:.86rem;}
   .lfsay .es{font-weight:700;}
   .lfsay .nl{display:block; color:var(--muted); font-size:.78rem; font-weight:400;}
-  .zorgbar{width:190px; height:9px; border-radius:999px; background:var(--border); overflow:hidden; margin:8px 0 2px;}
-  .zorgvul{height:100%; border-radius:999px; transition:width .5s ease;}
   .zorglabel{font-size:.74rem; color:var(--muted); text-align:center;}
   .wensrij{display:flex; align-items:center; gap:8px; justify-content:center; font-size:.86rem; font-weight:700; margin:8px 0 2px; text-align:center;}
   .wensrij.vervuld{color:var(--green);}
-  .zorgreeks{font-weight:800; font-size:.82rem; background:var(--green-soft); color:var(--green); border-radius:999px; padding:4px 12px; margin-top:8px;}
   .zorgglow #petBox svg{filter:drop-shadow(0 0 12px var(--amber));}
   .petslaap #petBox svg{opacity:.72; filter:saturate(.65);}
   .zzz{position:absolute; top:20px; left:50%; margin-left:34px; font-size:1.5rem; z-index:2;
@@ -638,7 +635,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.62";
+var APP_VERSIE = "v19.63";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2507,6 +2504,16 @@ function normaliseerState(s){
   for(k in d){ if(s[k] === undefined || s[k] === null) s[k] = d[k]; }
   s.xp = s.xp || {};
   s.streak = s.streak || {count:0, last:""};
+  // v19.63: de streak kon dalen, en een getal dat kan dalen is een schuld. Wat we tonen is
+  // voortaan het aantal dagen dat je er bent geweest; dat kan alleen omhoog. Bij de eerste
+  // keer laden leiden we dat af uit de xp-geschiedenis, zodat niemands getal zakt door de
+  // upgrade. S.streak blijft meelopen (de server leest hem nog) maar is nergens meer zichtbaar.
+  if(!s.dagen || typeof s.dagen.count !== "number"){
+    var dgTel = 0, dgLaatst = "", dgK;
+    for(dgK in s.xp){ if(s.xp[dgK] > 0){ dgTel++; if(dgK > dgLaatst) dgLaatst = dgK; } }
+    if(s.streak && s.streak.count > dgTel) dgTel = s.streak.count;
+    s.dagen = {count:dgTel, last:dgLaatst};
+  }
   if(s.txp === undefined){ s.txp = 0; for(k in s.xp){ s.txp += s.xp[k]; } }
   if(s.tapas === undefined){ s.tapas = Math.floor(s.txp / 10); }
   s.tapaP = s.tapaP || 0;
@@ -2525,7 +2532,7 @@ function normaliseerState(s){
   s.modusKeuze = s.modusKeuze || {};
   s.gramwiz = s.gramwiz || {};
   s.rincon = s.rincon || {};
-  s.zorg = s.zorg || {};   // v19.49: Tamagotchi-zorg (honger komt uit S.fed, reeks + dagwens hier)
+  s.zorg = s.zorg || {};   // v19.49: Chispa-zorg. v19.63: reeks = aantal dagen samen, loopt alleen op
   s.jerga = s.jerga || {}; // v19.50: jerga del día (gezien-lijst + de uitdrukking van vandaag)
   if(!s.jerga.gezien) s.jerga.gezien = [];
   s.samen = s.samen || {}; // v19.57: uitnodigen (gedeeld-datum, laatste tik, of er al iemand naast je zit)
@@ -3246,6 +3253,12 @@ function addXP(n){
   var was = S.xp[t] || 0;
   var lvlBefore = petLevel(S.txp || 0);
   S.xp[t] = was + n;
+  // v19.63: één tik per dag waarop je iets doet. Niet gebonden aan het dagdoel, want dan zou
+  // een korte dag niet meetellen, en niet aan gisteren, want dan zou wegblijven straffen.
+  if(n > 0 && S.dagen && S.dagen.last !== t){
+    S.dagen.count = (S.dagen.count || 0) + 1;
+    S.dagen.last = t;
+  }
   S.txp = (S.txp || 0) + n;
   S.tapaP = (S.tapaP || 0) + n;
   var earned = 0;
@@ -3306,6 +3319,19 @@ function streakNow(){
   if(S.streak.last === addDays(t,-2) && siestaVrij(t)) return S.streak.count;
   return 0;
 }
+/* v19.63 — het getal dat wél in beeld staat.
+   Stefan over waarom hij zou stoppen: "dat ik merk dat het niet vol te houden is, het niet leuk
+   is, te lastig". Een streak van 40 die naar 0 springt is precies dat: hij maakt van één gemiste
+   dag een verlies, en van terugkomen een schuldbekentenis. Het aantal dagen dat je er bent
+   geweest kan alleen maar oplopen; wegblijven kost niets, terugkomen levert altijd +1 op. */
+function dagenTotaal(){
+  return (S.dagen && S.dagen.count) || 0;
+}
+function dagenLabel(){
+  // vóór dag drie zegt het getal nog niets: een "1" naast je dagdoel voelt als bijna-niets.
+  var d = dagenTotaal();
+  return d >= 3 ? (d + " " + ct("dagen", "days")) : "";
+}
 
 function updateGoalUI(){
   var t = today();
@@ -3314,9 +3340,9 @@ function updateGoalUI(){
   var fill = document.getElementById("goalFill");
   fill.style.width = pct + "%";
   fill.className = x >= dagdoel() ? "done" : "";
-  var st = streakNow();
+  var dl = dagenLabel();
   document.getElementById("goalTxt").textContent =
-    (x >= dagdoel() ? "doel gehaald ✓" : x + "/" + dagdoel() + " "+xpw()+"") + " · 🔥 " + st;
+    (x >= dagdoel() ? "doel gehaald ✓" : x + "/" + dagdoel() + " "+xpw()+"") + (dl ? " · " + dl : "");
   var mp = document.getElementById("miniPet");
   if(mp){
     mp.innerHTML = petSVG();
@@ -5942,7 +5968,7 @@ function dagKlaar(){
 function dagFeestKaart(){
   var t = today();
   var xp = S.xp[t] || 0;
-  var st = streakNow();
+  var st = dagenTotaal();
   var heeftMoment = !!(S.ritme && S.ritme.wanneer);
   var dans = ["chsalsa","chcumbia","chmerengue","chjarabe"][Math.floor(Math.random()*4)];
   return "<div class='feestwrap' id='feestWrap'><div class='feestcard'>"+
@@ -5951,7 +5977,7 @@ function dagFeestKaart(){
     "<p class='feestsub'>"+ct("Goed zo. Chispa heeft het gezien.","Nice work. Chispa saw it.")+"</p>"+
     "<div class='feestcijfers'>"+
       "<div><b>"+xp+"</b><span>"+xpw()+" "+ct("vandaag","today")+"</span></div>"+
-      "<div><b>🔥 "+st+"</b><span>"+ct(st===1?"dag op rij":"dagen op rij", st===1?"day in a row":"days in a row")+"</span></div>"+
+      "<div><b>"+st+"</b><span>"+ct(st===1?"dag erbij geweest":"dagen erbij geweest", st===1?"day showed up":"days showed up")+"</span></div>"+
       "<div><b>🫒 "+(S.tapas||0)+"</b><span>tapas</span></div>"+
     "</div>"+
     "<div class='feestmorgen' id='feestMorgen'>"+
@@ -6363,7 +6389,8 @@ function petSVGGroot(lvl, mood, w){
 /* ===== v19.49 Tamagotchi-mechanics =====================================================
    Stefan: "welke mechanics van tamagotchi kan je beter toepassen op chispa doe dat".
    Vier dingen maken een Tamagotchi een Tamagotchi, en die zaten er nog niet in:
-     1. een behoefte die zichtbaar oploopt zolang je wegblijft (honger, met een balkje),
+     1. een behoefte die zichtbaar oploopt zolang je wegblijft (honger, met een balkje)
+        -- v19.63 teruggedraaid: zie de toelichting bij chispaHonger hieronder,
      2. een dag- en nachtritme: 's nachts slaapt ze, dan is de toon anders,
      3. ze vraagt zélf om iets, en dat vervullen levert je iets terug op,
      4. zorg op reeks: goede zorg wordt zichtbaar (gloed + mijlpalen).
@@ -6389,11 +6416,10 @@ function dagenSinds(d){
   }
   return n;
 }
-function chispaHonger(){
-  // 0 = net gegeten, 100 = rammelt. Loopt per dag op, niet per uur: geen grind-mechaniek.
-  if(!S.fed) return 40;
-  return Math.max(0, Math.min(100, dagenSinds(S.fed) * 34));
-}
+/* v19.63 — de hongermeter is weg.
+   Hij deed precies wat een Tamagotchi doet: een leeg buikje is honger, honger is een verwijt, en
+   dan kom je terug uit schuld in plaats van uit zin. Voor een leerapp is dat de verkeerde motor.
+   Voeren blijft, de dagwens blijft, alleen de meter die oploopt zolang je wegblijft gaat eruit. */
 function chispaSlaapt(uur){
   if(uur === undefined) uur = new Date().getHours();
   return uur >= 23 || uur < 7;
@@ -6418,32 +6444,32 @@ function chispaWensDoe(id){
   return true;
 }
 function chispaZorgReeks(){
-  var z = zorgState();
-  if(!z.laatst) return 0;
-  return dagenSinds(z.laatst) <= 1 ? (z.reeks||0) : 0;
+  return zorgState().reeks || 0;
 }
 function chispaZorgTik(){
-  // één tik per dag: wie vandaag zorgt houdt de reeks vast, wie een dag mist begint opnieuw.
+  // v19.63: dit was een reeks die brak zodra je een dag oversloeg. Nu is het het aantal dagen
+  // dat je samen iets gedaan hebt, en dat kan alleen oplopen. Mijlpalen leveren tapas op;
+  // wegblijven kost nooit iets. Eén tik per dag.
   var z = zorgState();
   var t = today();
   if(z.laatst === t) return z.reeks;
-  z.reeks = (z.laatst === addDays(t,-1) ? (z.reeks||0) : 0) + 1;
+  z.reeks = (z.reeks||0) + 1;
   z.laatst = t;
   if(z.reeks > (z.beste||0)) z.beste = z.reeks;
-  if(z.reeks === 3 || z.reeks === 7 || z.reeks === 30){
+  if(z.reeks === 3 || z.reeks === 7 || z.reeks === 30 || (z.reeks > 30 && z.reeks % 30 === 0)){
     S.tapas = (S.tapas||0) + 2;
-    confetti(["🔥","🫒","💛"], 18);
-    toast(ct("Zorgreeks van "+z.reeks+" dagen! +2 tapas 🫒","Care streak of "+z.reeks+" days! +2 tapas 🫒"));
+    confetti(["✨","🫒","💛"], 18);
+    toast(ct(z.reeks+" dagen samen met Chispa! +2 tapas 🫒", z.reeks+" days together with Chispa! +2 tapas 🫒"));
   }
   persist();
   return z.reeks;
 }
 function petMoodKey(){
-  if(!S.fed) return "ok";
-  var h = chispaHonger();
-  if(h <= 0) return "happy";
-  if(h <= 40) return "ok";
-  return "hungry";
+  // v19.63: geen honger meer, dus ook geen chagrijnige Chispa als straf. Ze is blij als je er
+  // vandaag was of haar net gevoerd hebt, en anders gewoon rustig. Nooit verwijtend.
+  var t = today();
+  if(S.fed === t || (S.xp && S.xp[t] > 0)) return "happy";
+  return "ok";
 }
 function petMoodText(){
   var lvl = petLevel(S.txp||0);
@@ -6451,8 +6477,7 @@ function petMoodText(){
   if(chispaSlaapt()) return "Chispa slaapt zacht. ¡Buenas noches! 💤";
   var k = petMoodKey();
   if(k==="happy") return "Chispa is dolgelukkig en vol energie. ¡Olé!";
-  if(k==="ok") return "Chispa heeft wel weer trek in een tapa...";
-  return "Chispa rammelt van de honger, al "+dagenSinds(S.fed)+" dagen niets gehad. ¡Una tapa, por favor!";
+  return "Chispa kijkt nieuwsgierig op. ¿Qué hacemos hoy?";
 }
 /* v19.55: wat Chispa zegt is voortaan de straattaal van vandaag, zodat haar tekstballon en de kaart
    op haar pagina hetzelfde zeggen. FRASES blijft bestaan voor haar losse praatjes (chispaRandomSay,
@@ -6805,14 +6830,11 @@ function renderPet(){
     }
   });
   var cadeauGehad = S.chispaCadeau === today();
-  // v19.49 Tamagotchi: honger-meter, dagwens, zorgreeks en een nachtstand.
-  var honger = chispaHonger();
-  var vol = Math.max(0, 100 - honger);
-  var kleur = honger <= 20 ? "var(--green)" : (honger <= 60 ? "var(--amber)" : "var(--red)");
+  // v19.49 Tamagotchi, v19.63 zonder de hongermeter: dagwens en nachtstand blijven.
   var wens = chispaWens();
   var wensOk = chispaWensVervuld();
-  var reeks = chispaZorgReeks();
   var slaapt = chispaSlaapt();
+  var vandaagGezorgd = zorgState().laatst === today();
   // v19.51: de dans van de dag + welke dansen je al gezien hebt
   var bd = bailePorDia();
   var bekend = baileState();
@@ -6821,7 +6843,9 @@ function renderPet(){
     bailHtml += "<button class='bailechip"+(b.id===bd.id?" hoy":"")+(bekend.indexOf(b.id)>=0?" gehad":"")+"' data-baile='"+b.id+"' title='"+b.land+"'>"+
       b.e+" <span class='es'>"+b.es+"</span></button>";
   });
-  var stageKlas = "petstage" + (reeks >= 3 ? " zorgglow" : "") + (slaapt ? " petslaap" : "");
+  // de gloed is nu een "je bent er vandaag geweest"-signaal: hij verschijnt bij aandacht en
+  // verdwijnt gewoon weer, zonder dat er een reeks aan hangt die je kwijt kunt raken.
+  var stageKlas = "petstage" + (vandaagGezorgd ? " zorgglow" : "") + (slaapt ? " petslaap" : "");
   el.innerHTML = "<div class='"+stageKlas+"'>"+
     rinconDecorHtml()+
     "<div id='chispaProps' class='chprops'></div>"+
@@ -6832,11 +6856,8 @@ function renderPet(){
     "<div class='amigorow'>"+amHtml+"</div>"+
     "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>· "+PET_LEVELS[lvl].naam+"</span></p>"+
     "<p class='petmood'>"+petMoodText()+"</p>"+
-    "<div class='zorgbar' id='hongerBar' title='"+ct("Hoe vol Chispa zit","How full Chispa is")+"'><div class='zorgvul' style='width:"+vol+"%; background:"+kleur+"'></div></div>"+
-    "<p class='zorglabel' id='hongerLabel'>"+ct("Buikje","Belly")+": "+vol+"%"+(honger>=68 ? " · "+ct("tijd voor een tapa","time for a tapa") : "")+"</p>"+
     "<p class='wensrij"+(wensOk?" vervuld":"")+"' id='wensRij'>"+wens.e+" <span class='es'>"+wens.es+"</span>"+
       (wensOk ? " ✓" : " <span class='muted' style='font-weight:400'>· "+ct(wens.nl, wens.en)+"</span>")+"</p>"+
-    (reeks > 0 ? "<span class='zorgreeks' id='zorgReeks'>🔥 "+reeks+" "+ct(reeks===1?"dag goed gezorgd":"dagen goed gezorgd", reeks===1?"day of good care":"days of good care")+"</span>" : "")+
     "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del día</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>· "+bd.land+"</span></p>"+
     "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
     "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen · tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances · tap one")+"</p>"+
@@ -11988,6 +12009,10 @@ function maatjeVoorbeeld(){
     if((S.xp[d] || 0) >= dagdoel()) dagen++;
     if(S.lesFlow[d]) lessen++;
   }
+  // v19.63: hier staat bewust nog wél de streak. Dit kaartje belooft "dit ziet je maatje", en de
+  // server stuurt op dit moment nog steeds een streak mee. Zodra die payload dagen meestuurt (met
+  // het opruimen van de wedstrijdonderdelen) gaat hij hier én in de maatjes- en familieweergave
+  // in één keer om. Liever een vlammetje te veel dan een kaartje dat liegt over wat je deelt.
   return "<div class='uitleg' style='margin-top:8px'><b>"+ct("Dit ziet hij, en verder niets:","This is all they see:")+"</b><br>"+
     "🔥 "+streakNow()+" · <b>"+dagen+"/7</b> "+ct("dagen doel gehaald","days goal hit")+" · "+lessen+" "+ct("lessen","sessions")+" · "+
     Object.keys(S.srs || {}).length+" "+ct("woorden geleerd","words learned")+
@@ -14469,7 +14494,7 @@ function renderStats(){
   }
   el.innerHTML = koersHtml + "<h2 style='margin-top:16px'>Je voortgang</h2>"+
     "<div class='statgrid'>"+
-    "<div class='stat'><b>🔥 "+streakNow()+"</b><span class='muted'>dagen streak</span></div>"+
+    "<div class='stat'><b>"+dagenTotaal()+"</b><span class='muted'>dagen erbij geweest</span></div>"+
     "<div class='stat'><b>"+xpToday+"/"+dagdoel()+"</b><span class='muted'>"+xpw()+" vandaag</span></div>"+
     "<div class='stat'><b>"+(S.txp||0)+"</b><span class='muted'>"+xpw()+" totaal</span></div>"+
     "<div class='stat'><b>🫒 "+(S.tapas||0)+"</b><span class='muted'>tapas gespaard</span></div>"+
