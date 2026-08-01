@@ -271,30 +271,47 @@
           transition:transform .28s cubic-bezier(.2,.8,.3,1); pointer-events:none;}
   .chbalk.aan{transform:translateY(0); pointer-events:auto;}
   .chbalkin{max-width:640px; margin:0 auto; box-sizing:border-box; display:flex; align-items:center;
-            gap:10px; padding:6px 16px 8px; cursor:pointer;
+            gap:10px; padding:8px 16px 10px; cursor:pointer;
             background:var(--card); border:1px solid var(--border); border-top:none;
             border-radius:0 0 var(--radius) var(--radius); box-shadow:0 6px 18px rgba(45,42,38,.14);}
-  .chbalkstage{position:relative; width:84px; height:76px; flex:0 0 auto;}
+  /* v19.81. Stefan: "de sticky header mag ook nog wat groter, kan bij wel 1,5 keer zo groot
+     zijn als nu". Er zat meer achter dan smaak: op 80px was ze zo klein dat een dans van dertien
+     pixels heen en weer letterlijk niet te zien was, en dat is precies waarom hij dacht dat ze in
+     de balk niet danste. Groter maken is hier dus geen opsmuk maar de reparatie zelf. Het podium
+     rekt bovendien mee met wat er over is, want de reis van links naar rechts heeft ruimte nodig
+     en die is op een telefoon anders dan op een laptop. */
+  .chbalkstage{position:relative; flex:1 1 auto; min-width:126px; height:114px;}
   #balkBox{position:absolute; left:0; right:0; top:0; bottom:0; will-change:transform;
            display:flex; align-items:center; justify-content:center;}
-  #balkBox svg{width:80px; height:73px;}
-  .chbalktxt{flex:1 1 auto; min-width:0; line-height:1.3;}
-  .chbalktxt b{font-size:.95rem;}
+  #balkBox svg{width:120px; height:110px;}
+  .chbalktxt{flex:0 1 auto; min-width:0; line-height:1.3;}
+  .chbalktxt b{font-size:1.02rem;}
   .chbalktxt span{display:block; font-size:.76rem; color:var(--muted);}
   .chbalkop{flex:0 0 auto; width:32px; height:32px; border-radius:999px; cursor:pointer;
             border:1px solid var(--border); background:var(--bg); color:var(--muted); font-size:1rem;}
-  /* de props zijn getekend voor een podium van 230 breed; hier is het 84 */
-  .chbalk .chvloer{top:60%; width:74px; height:22px; margin-left:-37px;}
-  /* het podium is 2,7x kleiner dan de kaart, dus alles wat erop staat ook: anders staat er een
-     gitaar van levensgrootte voor haar gezicht */
-  .chbalk .chprop{font-size:.78rem;}
-  /* de noten krijgen op de kaart een plek ergens over haar lijf, want daar is ruimte zat. In
-     een podium van 84 breed is dat haar gezicht, en dan staat ze te dansen achter een gordijn
-     van muzieknoten. Hier stijgen ze dus langs haar op, aan de rand, in plaats van er overheen. */
-  .chbalk .chnota{font-size:.68rem; left:auto!important; right:-4px; top:56%!important;
+  /* de props zijn getekend voor een podium van 360 breed; hier is het krap de helft */
+  .chbalk .chvloer{top:62%; width:112px; height:32px; margin-left:-56px;}
+  .chbalk .chprop{font-size:1.15rem;}
+  /* v19.81: de noten stonden hier tegen de rechterrand geplakt, want in een podium van 84 breed
+     zou alles wat erboven zweeft haar gezicht bedekken. Nu het podium meerekt is er weer ruimte
+     naast haar, dus ze mogen terug naar hun eigen plek: om en om links en rechts langs haar op. */
+  .chbalk .chnota{font-size:1rem; top:52%!important;
                   animation:chnotaklein 1.7s ease-out forwards;}
   @keyframes chnotaklein{0%{transform:translate(0,0) rotate(-10deg); opacity:0} 20%{opacity:.9}
-                         100%{transform:translate(15px,-48px) rotate(16deg); opacity:0}}
+                         100%{transform:translate(16px,-70px) rotate(16deg); opacity:0}}
+  /* v19.81 - de reislaag. Stefan: "Bij dans bijv is leuk als ze helemaal van links naar rehts
+     gaat en weer terug". Elke dans zit al op transform van de doos zelf, dus daar kan er geen
+     tweede transform bij: die zou de dans overschrijven. De reis krijgt daarom een eigen laag
+     eromheen. Twee geneste transforms tellen bij elkaar op, dus ze danst en loopt tegelijk,
+     zonder dat er een tweede animatiesysteem bijkomt. Hoe ver ze kan lopen meet chispaReis(),
+     want in de balk hangt dat af van hoeveel ruimte er naast de tekst over is. */
+  .chviajelaag{position:absolute; left:0; right:0; top:0; bottom:0; pointer-events:none; --reis:40px;}
+  .chviajelaag.viaja{animation:chviaje 4.4s ease-in-out;}
+  @keyframes chviaje{0%{transform:translateX(0)}
+                     22%{transform:translateX(calc(var(--reis) * -1))}
+                     50%{transform:translateX(0)}
+                     78%{transform:translateX(var(--reis))}
+                     100%{transform:translateX(0)}}
   /* de bewegingen zelf; !important zodat ze de rustanimatie en petbounce altijd verslaan */
   .chgiro{animation:chgiro 1.3s ease-in-out !important;}
   @keyframes chgiro{0%{transform:perspective(700px) rotateY(0) scale(1)}
@@ -336,6 +353,10 @@
   .chguitarra{animation:chguitarra .46s ease-in-out infinite !important;}
   @keyframes chguitarra{0%,100%{transform:rotate(-7deg) translateY(0)} 50%{transform:rotate(-12deg) translateY(-6px) scaleY(1.03)}}
   /* el baile del dia: kiesrij met echte dansen, altijd in het Spaans */
+  .muziekchip{border:1px solid var(--border); background:#fff; color:var(--muted); border-radius:999px;
+              padding:2px 9px; font-size:.72rem; cursor:pointer; margin-left:6px; vertical-align:middle;}
+  .muziekchip:hover{border-color:var(--accent); color:var(--accent);}
+  .muziekchip.stil{background:var(--bg); color:var(--muted); border-style:dashed;}
   .bailehoy{font-size:.86rem; text-align:center; margin:10px 0 0;}
   .bailehoy .es{font-weight:800;}
   .bailerij{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 2px;}
@@ -567,8 +588,10 @@
   <div id="chispaBalk" class="chbalk" aria-hidden="true">
     <div class="chbalkin" id="chispaBalkIn">
       <div class="chbalkstage">
-        <div id="balkProps" class="chprops"></div>
-        <div id="balkBox" class="chvive"></div>
+        <div id="balkViaje" class="chviajelaag">
+          <div id="balkProps" class="chprops"></div>
+          <div id="balkBox" class="chvive"></div>
+        </div>
       </div>
       <div class="chbalktxt">
         <b>Chispa</b>
@@ -852,7 +875,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.80";
+var APP_VERSIE = "v19.81";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7673,9 +7696,9 @@ function tapaMenuNoteer(id){
 /* De handeling zelf, gedeeld door de Chispa-pagina en het einde van je dagsessie. Geeft terug wat
    er gebeurd is, zodat de aanroeper er zijn eigen scherm bij kan maken; geeft null terug als je
    geen tapa hebt. */
-function tapaGeven(){
+function tapaGeven(gekozen){
   if((S.tapas||0) < 1) return null;
-  var tp = tapaVolgende();
+  var tp = gekozen || tapaVolgende();
   var slaapt = chispaSlaapt();
   S.tapas--;
   S.fed = today();
@@ -7700,15 +7723,20 @@ function tapaMenuHtml(){
   });
   return "<div class='tapamenu' id='tapaMenuRij'>"+uit+"</div>";
 }
+/* v19.81 - aantikken is geven.
+   Stefan: "op een tpas klikken is niet direct geven."
+   Dat klopte, en het was een van die dingen die een menu meteen kapotmaken: het zag eruit als een
+   kaart waar je van kiest, en het gedroeg zich als een vitrinekast waar je tegenaan tikt. Eerder
+   zei hij al "nu krijg ik alleen maar champginos" - de app koos, jij keek toe. Nu kost een tapa
+   nog steeds een tapa (die verdien je met leren), maar welke ze krijgt, kies jij. Het menu is
+   daarmee de plek van de handeling in plaats van een lijst ernaast. */
 function tapaMenuWire(el){
   if(!el) return;
   el.querySelectorAll("button.tapachip").forEach(function(b){
     b.onclick = function(){
       var tp = TAPAS.filter(function(x){ return x.id === b.getAttribute("data-tapa"); })[0];
       if(!tp) return;
-      if(tapaMenuKent(tp.id)) chispaSay({es:"¡"+tp.es+"! ¡Qué rico!", nl:tp.nl+"! Heerlijk!", en:tp.en+"! Delicious!"});
-      else toast(ct("Deze kent Chispa nog niet — die komt vanzelf een keer langs. "+tp.e,
-                    "Chispa hasn't had this one yet — it'll come around. "+tp.e));
+      feedPet(tp);   // regelt zelf de lege-voorraadmelding, het slapen, en het opnieuw tekenen
     };
   });
 }
@@ -7878,6 +7906,17 @@ function chispaPropLagen(){
   });
   return uit;
 }
+function chispaViajeLagen(){
+  var uit = [];
+  ["chispaViaje", "balkViaje"].forEach(function(id){
+    var e = document.getElementById(id);
+    if(e && e.classList && e.classList.remove) uit.push(e);
+  });
+  return uit;
+}
+function chispaViajeLaag(){
+  return document.getElementById(chispaBalkAan() ? "balkViaje" : "chispaViaje");
+}
 function chispaBox(){
   if(chispaBalkAan()) return document.getElementById("balkBox");
   return document.getElementById("petBox");
@@ -7938,6 +7977,13 @@ function chispaBalkCheck(){
   if(oudL && nwL && oudL.children && nwL.appendChild){
     while(oudL.children.length){ nwL.appendChild(oudL.children[0]); }
   }
+  // v19.81: en de reis gaat ook mee. Wie tijdens een dans van podium wisselt zag haar anders
+  // halverwege stilstaan, of erger: beneden dooreizen op een podium dat niemand meer ziet.
+  var oudR = aan ? document.getElementById("chispaViaje") : document.getElementById("balkViaje");
+  if(oudR && oudR.classList && oudR.classList.contains && oudR.classList.contains("viaja")){
+    oudR.classList.remove("viaja");
+    try { chispaReis(true, 4400); } catch(e){}
+  }
 }
 function chispaBalkInit(){
   if(window.chispaBalkKlaar) return;
@@ -7994,6 +8040,34 @@ function chispaStop(){
     box.classList.remove("chbezig");
   });
   chispaVloer(false);
+  chispaReis(false);
+  try { chMuziekUit(); } catch(e){}
+}
+/* v19.81: de reis zelf. Aan is: meet hoeveel ruimte er naast haar over is, zet dat in --reis en
+   start de loop; uit is: op beide podia weghalen, want wie halverwege wegscrollt laat anders een
+   laag achter die eeuwig blijft schuiven. De meting gebeurt hier en niet in CSS omdat de balk op
+   een telefoon smal is en op een laptop breed, en "helemaal naar links" moet allebei kloppen. */
+function chispaReis(aan, ms){
+  if(!aan){
+    chispaViajeLagen().forEach(function(l){ l.classList.remove("viaja"); });
+    return false;
+  }
+  var laag = chispaViajeLaag();
+  if(!laag || !laag.classList || !laag.classList.add) return false;
+  try {
+    var box = chispaBox();
+    var svg = box && box.querySelector ? box.querySelector("svg") : null;
+    var br = laag.getBoundingClientRect ? laag.getBoundingClientRect() : null;
+    var sr = svg && svg.getBoundingClientRect ? svg.getBoundingClientRect() : null;
+    if(br && sr && br.width && sr.width && laag.style && laag.style.setProperty){
+      laag.style.setProperty("--reis", Math.max(14, Math.round((br.width - sr.width) / 2) - 4) + "px");
+    }
+  } catch(e){}
+  laag.classList.remove("viaja");
+  void(laag.offsetWidth || 0);
+  try { if(laag.style) laag.style.animationDuration = ((ms || 4400) / 1000) + "s"; } catch(e){}
+  laag.classList.add("viaja");
+  return true;
 }
 function chispaProp(klas, emoji, ms){
   var laag = chispaPropLaag();
@@ -8062,6 +8136,257 @@ function chispaHerrenderStraks(ms, pogingen){
     if(chispaZichtbaar()) renderChispaPagina();
   }, ms || 600);
 }
+/* ================= v19.81: MUZIEK BIJ DE DANS =================
+   Stefan, twee keer: "verder iwl je als je dans er ook het passende muziekje bij (dus salsa,
+   flemanco, alelmaal anders muziek)" en daarna "ook de muziek hoor ik niet".
+   Dat laatste was letterlijk waar: chispaBaila() speelde nooit iets af, alleen chispaFiesta()
+   deed dat. Acht dansen die alle acht dezelfde stilte kregen is precies het tegenovergestelde
+   van wat een dans is. Een salsa herken je aan de clave, een flamenco aan de palmas op de
+   compas, een merengue aan die eindeloze guira: het ritme is de dans.
+
+   Waarom niet de bestaande Aventura-motor? Die speelt een Andalusische cadens en verder niets,
+   en alles daarin valt stil zodra S.avtStil aanstaat. Voor acht verschillende ritmes heb je
+   losse slaginstrumenten nodig, geen tweede gitaarpartij. Dus staat hier een kleine eigen set
+   die door een gedeelde bus loopt, zodat een nieuwe dans de vorige netjes kan afkappen.
+
+   Alles wordt vooruit ingepland op de klok van WebAudio zelf, niet met setTimeout. Een dans
+   duurt 4,4 seconde; timers in JavaScript zijn in die orde van grootte hoorbaar te laat, en
+   niets is zo ontnuchterend als een ritme dat wiebelt. */
+var chBusNode = null;
+function chBus(){
+  var ac = avtCtx(); if(!ac) return null;
+  if(chBusNode) return chBusNode;
+  try {
+    var g = ac.createGain();
+    g.gain.value = 0.85;
+    g.connect(ac.destination);
+    chBusNode = g;
+    return g;
+  } catch(e){ return null; }
+}
+/* Eén knop om alles af te kappen. Zonder dit stapelen twee snel achter elkaar aangeklikte dansen
+   zich op elkaar, en dan hoor je geen salsa en geen tango maar een ongeluk. */
+function chMuziekUit(){
+  var ac = avtCtx();
+  var oud = chBusNode;
+  chBusNode = null;
+  if(!oud || !ac) return false;
+  try {
+    var t = ac.currentTime;
+    oud.gain.cancelScheduledValues(t);
+    oud.gain.setValueAtTime(oud.gain.value, t);
+    oud.gain.linearRampToValueAtTime(0.0001, t + 0.12);
+    setTimeout(function(){ try { oud.disconnect(); } catch(e){} }, 400);
+  } catch(e){}
+  return true;
+}
+function chRuis(when, duur, freq, q, vol, type){
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus) return;
+  try {
+    var n = Math.max(8, Math.floor(ac.sampleRate * duur));
+    var buf = ac.createBuffer(1, n, ac.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i = 0; i < n; i++){ d[i] = (Math.random()*2 - 1) * Math.pow(1 - i/n, 2.2); }
+    var src = ac.createBufferSource(); src.buffer = buf;
+    var f = ac.createBiquadFilter(); f.type = type || "bandpass"; f.frequency.value = freq; f.Q.value = q;
+    var g = ac.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(bus); src.start(when);
+  } catch(e){}
+}
+function chBom(when, vol){            // bombo / tambora: de klap onderin
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus) return;
+  try {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(140, when);
+    o.frequency.exponentialRampToValueAtTime(46, when + 0.10);
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol || 0.26, when + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.26);
+    o.connect(g); g.connect(bus); o.start(when); o.stop(when + 0.3);
+  } catch(e){}
+}
+function chTik(when, vol){            // clave, llamador, rimshot: het houtje
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus) return;
+  var v = vol || 0.09;
+  try {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(2150, when);
+    o.frequency.exponentialRampToValueAtTime(1250, when + 0.045);
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(v, when + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.08);
+    o.connect(g); g.connect(bus); o.start(when); o.stop(when + 0.11);
+  } catch(e){}
+  chRuis(when, 0.03, 3300, 1.4, v * 0.45, "bandpass");
+}
+function chSjek(when, vol){ chRuis(when, 0.055, 6400, 0.7, vol || 0.045, "highpass"); }  // guira / shaker
+function chPalm(when, vol){ chRuis(when, 0.05, 1900, 0.9, vol || 0.10, "bandpass"); }    // palmas
+function chSnaar(freq, when, duur, vol){   // gitaar, requinto, tres
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus || !freq) return;
+  try {
+    var g = ac.createGain();
+    g.gain.setValueAtTime(vol || 0.06, when);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + duur);
+    var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = Math.min(freq*4, 4400); f.Q.value = 1;
+    [-5, 5].forEach(function(det){
+      var o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq; o.detune.value = det;
+      o.connect(f); o.start(when); o.stop(when + duur + 0.05);
+    });
+    f.connect(g); g.connect(bus);
+  } catch(e){}
+}
+function chBas(freq, when, duur, vol){
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus || !freq) return;
+  try {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = "triangle"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol || 0.16, when + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + duur);
+    o.connect(g); g.connect(bus); o.start(when); o.stop(when + duur + 0.05);
+  } catch(e){}
+}
+function chRiet(freq, when, duur, vol){    // accordeon (cumbia) en bandoneon (tango)
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus || !freq) return;
+  try {
+    var g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol || 0.05, when + 0.06);
+    g.gain.setValueAtTime(vol || 0.05, when + duur*0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + duur);
+    var f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = freq*2.2; f.Q.value = 0.8;
+    [-9, 9].forEach(function(det){
+      var o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = freq; o.detune.value = det;
+      o.connect(f); o.start(when); o.stop(when + duur + 0.05);
+    });
+    f.connect(g); g.connect(bus);
+  } catch(e){}
+}
+function chBlaas(freq, when, duur, vol){   // trompetstoot (merengue, jarabe)
+  var ac = avtCtx(), bus = chBus(); if(!ac || !bus || !freq) return;
+  try {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(freq * 0.94, when);
+    o.frequency.linearRampToValueAtTime(freq, when + 0.045);
+    var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = Math.min(freq*3.4, 5200); f.Q.value = 2;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(vol || 0.07, when + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + duur);
+    o.connect(f); f.connect(g); g.connect(bus); o.start(when); o.stop(when + duur + 0.05);
+  } catch(e){}
+}
+function chHz(root, semi){ return root * Math.pow(2, semi/12); }
+
+/* De acht ritmes. Per dans: hoe lang een stap duurt, hoeveel stappen er in een maat gaan, welke
+   akkoorden er onder liggen, en op welke stappen welk instrument slaat. Patronen zijn lijstjes
+   van lijstjes: het eerste lijstje is maat 1, het tweede maat 2, daarna begint het weer opnieuw.
+   Dat is nodig omdat bijvoorbeeld de son clave niet in een maat past maar in twee.
+   Toonhoogtes staan als halve tonen boven de grondtoon, zodat elk patroon meeverhuist met het
+   akkoord dat er op dat moment onder ligt. */
+var BAILE_MUZIEK = {
+  /* Cuba. De 3-2 son clave is het skelet; de piano speelt een montuno in achtsten, de bas een
+     tumbao die de tel juist niet raakt (op de "en" van 2 en op 4). */
+  salsa: {stap:0.090, n:16, akk:[110, 146.83], q:[0,4,7],
+    kick:[[6,12]], tik:[[0,6,12],[4,8]], sjek:[[0,2,4,6,8,10,12,14]], palma:[[4,12]],
+    bas:[[6,0,0.32],[12,7,0.32],[14,-5,0.22]],
+    mel:[[0,24,.22],[2,28,.22],[4,31,.22],[6,28,.22],[8,24,.22],[10,31,.22],[12,28,.22],[14,24,.22]],
+    melInstr:"snaar", vmel:0.055, vbas:0.17},
+  /* Espana. Palmas op de compas, gitaar op de Andalusische cadens Am-G-F-E: elke maat een stap
+     verder naar beneden. Geen trommel, want die hoort er niet. */
+  flamenco: {stap:0.180, n:6, akk:[220, 196, 174.61, 164.81], q:[0,4,7],
+    kick:[], tik:[], sjek:[], palma:[[0,3],[2,4]],
+    bas:[[0,-24,0.5]],
+    mel:[[0,0,.5],[3,7,.4]], akkoord:[[0,.55],[3,.45]],
+    melInstr:"snaar", vmel:0.06, vbas:0.13, vpalma:0.12},
+  /* Colombia. Het hele geheim zit in de llamador: die slaat consequent naast de tel, en daardoor
+     loopt cumbia alsof hij nooit haast heeft. Daarboven de guacharaca en een accordeon. */
+  cumbia: {stap:0.145, n:16, akk:[110, 130.81], q:[0,3,7],
+    kick:[[0,10]], tik:[[2,6,10,14]], sjek:[[0,2,4,6,8,10,12,14]], palma:[],
+    bas:[[0,0,.45],[6,7,.3],[8,0,.4],[14,-5,.28]],
+    mel:[[0,24,.4],[3,26,.22],[4,27,.5],[8,31,.4],[11,29,.22],[12,27,.5]],
+    melInstr:"riet", vmel:0.05, vbas:0.17},
+  /* Republica Dominicana. Merengue is snelheid: de guira gaat door alle zestienden heen en houdt
+     nooit op, de bas marcheert recht op de tel, de blazers roepen ertussendoor. */
+  merengue: {stap:0.085, n:16, akk:[146.83, 196], q:[0,4,7],
+    kick:[[0,3,4,8,11,12]], tik:[[4,12]],
+    sjek:[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]], palma:[],
+    bas:[[0,0,.18],[4,0,.18],[8,7,.18],[12,7,.18]],
+    mel:[[0,24,.16],[2,28,.16],[4,31,.28],[8,28,.16],[10,24,.16],[12,31,.36]],
+    melInstr:"blaas", vmel:0.06, vbas:0.16, vsjek:0.03},
+  /* Republica Dominicana, maar dan het tegenovergestelde. Bachata leunt op de vier: daar zit de
+     tik van de heup. De requinto tokkelt er een arpeggio omheen. */
+  bachata: {stap:0.135, n:16, akk:[110, 87.31, 98, 110], q:[0,3,7],
+    kick:[[0,8]], tik:[[2,6,10,14]], sjek:[], palma:[[12]],
+    bas:[[0,0,.4],[6,7,.28],[8,0,.4],[12,10,.32]],
+    mel:[[0,24,.3],[2,27,.3],[4,31,.3],[6,36,.3],[8,31,.3],[10,27,.3],[12,24,.42],[14,19,.42]],
+    melInstr:"snaar", vmel:0.055, vbas:0.17},
+  /* Argentina. Marcato in cuatro: vier zware tellen, met daar dwars doorheen de 3-3-2 van de
+     habanera. Het bandoneon zingt erboven, in mineur, en eindigt op de dominant. */
+  tango: {stap:0.150, n:8, akk:[220, 220, 174.61, 164.81], q:[0,3,7],
+    kick:[[0,2,4,6]], tik:[[0,3,6]], sjek:[], palma:[],
+    bas:[[0,-24,.28],[2,-24,.28],[4,-17,.28],[6,-17,.28]],
+    mel:[[0,0,.45],[3,3,.3],[4,2,.55],[6,0,.3]],
+    melInstr:"riet", vmel:0.055, vbas:0.15, vkick:0.2},
+  /* Puerto Rico. De dembow zelf: trap op 1 en op de en-van-3, snare op de bekende vier plekken.
+     Verder zo min mogelijk, want reggaeton is ruimte. */
+  reggaeton: {stap:0.1375, n:16, akk:[110, 92.5], q:[0,3,7],
+    kick:[[0,8]], tik:[[3,6,11,14]], sjek:[[0,2,4,6,8,10,12,14]], palma:[],
+    bas:[[0,0,.5],[6,3,.28],[8,0,.5],[14,-2,.28]],
+    mel:[[0,24,.4],[6,27,.28],[8,31,.5],[14,26,.28]],
+    melInstr:"riet", vmel:0.05, vbas:0.2, vkick:0.32},
+  /* Mexico. Zes achtsten in plaats van vier tellen, groot majeur, trompetten in tertsen en het
+     stampen van de zapateado eronder. Een eigen wijsje, niet de echte melodie. */
+  jarabe: {stap:0.145, n:6, akk:[130.81, 130.81, 174.61, 196, 130.81], q:[0,4,7],
+    kick:[[0,3]], tik:[], sjek:[], palma:[[0,2,3,5]],
+    bas:[[0,0,.26],[3,7,.26]],
+    mel:[[0,24,.26],[1,28,.2],[2,31,.26],[3,28,.34],[5,24,.28]],
+    melInstr:"blaas", vmel:0.06, vbas:0.16}
+};
+function chMelInstr(naam){
+  if(naam === "riet") return chRiet;
+  if(naam === "blaas") return chBlaas;
+  return chSnaar;
+}
+function baileRij(pat, b){
+  if(!pat || !pat.length) return [];
+  return pat[b % pat.length] || [];
+}
+/* Zet één dans in zijn geheel klaar. Geeft terug hoeveel milliseconde er muziek staat, of 0 als
+   er niets speelt (geen geluid mogelijk, of Chispa staat op stil). */
+function baileMuziek(id, ms){
+  chMuziekUit();
+  if(S.chispaStil) return 0;
+  var m = BAILE_MUZIEK[id];
+  if(!m) return 0;
+  var ac = avtCtx(); if(!ac) return 0;
+  if(!chBus()) return 0;
+  var maatSec = m.stap * m.n;
+  var maten = Math.max(1, Math.round((ms || 4400) / 1000 / maatSec));
+  var t0 = ac.currentTime + 0.06;
+  var speel = chMelInstr(m.melInstr);
+  for(var b = 0; b < maten; b++){
+    (function(bar){
+      var tb = t0 + bar * maatSec;
+      var root = m.akk[bar % m.akk.length];
+      baileRij(m.kick, bar).forEach(function(i){ chBom(tb + i*m.stap, m.vkick || 0.26); });
+      baileRij(m.tik, bar).forEach(function(i){ chTik(tb + i*m.stap, m.vtik || 0.085); });
+      baileRij(m.sjek, bar).forEach(function(i){ chSjek(tb + i*m.stap, m.vsjek || 0.042); });
+      baileRij(m.palma, bar).forEach(function(i){ chPalm(tb + i*m.stap, m.vpalma || 0.10); });
+      (m.bas || []).forEach(function(x){ chBas(chHz(root, x[1]), tb + x[0]*m.stap, x[2], m.vbas || 0.16); });
+      (m.mel || []).forEach(function(x){ speel(chHz(root, x[1]), tb + x[0]*m.stap, x[2], m.vmel || 0.055); });
+      // een aangeslagen akkoord wordt van onder naar boven getokkeld, niet in één klap
+      (m.akkoord || []).forEach(function(x){
+        (m.q || [0,4,7]).concat([12]).forEach(function(semi, k){
+          chSnaar(chHz(root, semi), tb + x[0]*m.stap + k*0.016, x[1], (m.vmel || 0.055) * 0.85);
+        });
+      });
+    })(b);
+  }
+  return Math.round(maten * maatSec * 1000);
+}
 function chispaBaila(baile, stilBeeld){
   var b = baile || bailePorDia();
   if(chispaSlaapt()){
@@ -8073,10 +8398,12 @@ function chispaBaila(baile, stilBeeld){
   if(nieuw){ lijst.push(b.id); persist(); }
   if(!stilBeeld) chispaSay({es:b.zeg, nl:ct(b.zegnl, b.zegen) + " (" + b.land + ")"});
   chispaVloer(true);
+  chispaReis(true, 4400);
+  try { baileMuziek(b.id, 4400); } catch(e){}
   chispaNotas(6);
   if(b.id === "flamenco" || b.id === "jarabe") chispaProp("chguit", "🎸", 4600);
   if(b.id === "cumbia" || b.id === "merengue"){ chispaProp("chmar", "🪇", 4600); chispaProp("chmar2", "🪇", 4600); }
-  chispaMove(b.klas, 4400, function(){ chispaVloer(false); });
+  chispaMove(b.klas, 4400, function(){ chispaVloer(false); chispaReis(false); });
   chispaZorgTik();
   if(chispaWensDoe("musica")) chispaHerrenderStraks(4800);
   else if(nieuw) chispaHerrenderStraks(4800);
@@ -8099,6 +8426,7 @@ function chispaFiesta(){
   confetti(["🎉","💃","🎶","✨"], 20);
   chispaSay({es:"¡Que empiece la fiesta! Bailamos " + b.es + ".", nl:"Laat het feest beginnen! We dansen " + b.nl + "."});
   chispaVloer(true);
+  chispaReis(true, 7250);   // de vier stappen van de choreografie duren samen precies zo lang
   chispaNotas(12);
   chispaZorgTik();
   chispaWensDoe("musica");
@@ -8113,6 +8441,7 @@ function chispaFiesta(){
   function volgende(){
     if(i >= stappen.length){
       chispaVloer(false);
+      chispaReis(false);
       chispaFiestaBezig = false;
       confetti(["🎊","💛","🫒"], 14);
       chispaSay({es:"¡Qué fiesta! Gracias por bailar conmigo.", nl:"Wat een feest! Bedankt voor het dansen."});
@@ -8290,8 +8619,10 @@ function renderPet(){
       "<span class='chgrond'></span>"+
       "<span class='daydeco'>"+deco.e+"</span>"+
       (slaapt ? "<span class='zzz'>\ud83d\udca4</span>" : "")+
-      "<div id='chispaProps' class='chprops'></div>"+
-      "<div id='petBox' class='chvive' title='"+ct("Klik op Chispa!","Tap Chispa!")+"'>"+petSVG()+"</div>"+
+      "<div id='chispaViaje' class='chviajelaag'>"+
+        "<div id='chispaProps' class='chprops'></div>"+
+        "<div id='petBox' class='chvive' title='"+ct("Klik op Chispa!","Tap Chispa!")+"'>"+petSVG()+"</div>"+
+      "</div>"+
       amHtml+
     "</div>"+
     "<p class='petname'>Chispa <span class='muted' style='font-size:.8rem'>\u00b7 "+PET_LEVELS[lvl].naam+"</span></p>"+
@@ -8446,6 +8777,11 @@ function renderGroei(){
 
 /* kaart 3 - de vitrine. Twee verzamelingen die alleen maar kunnen groeien, naast elkaar en met
    hun eigen teller, zodat je in \u00e9\u00e9n oogopslag ziet hoever je bent. */
+function chMuziekLabel(){
+  return S.chispaStil ? "\ud83d\udd07 " + ct("muziek uit", "music off")
+                      : "\ud83d\udd0a " + ct("muziek aan", "music on");
+}
+
 function renderVitrine(){
   var el = document.getElementById("vitrineCard");
   if(!el) return;
@@ -8468,12 +8804,13 @@ function renderVitrine(){
       "<p class='bailehoy' id='tapaHoy'><span class='es'>"+(tapaKlaar ? "La tapa del d\u00eda" : "La pr\u00f3xima tapa")+"</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+
         (tapaKlaar ? "" : " \u00b7 "+ct("na je volgende les","after your next session"))+"</span></p>"+
       tapaMenuHtml()+
-      "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas \u00b7 tik er een aan","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one")+"</p>"+
+      "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas \u00b7 tik er een aan om hem te geven","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one to feed it to her")+"</p>"+
     "</div>"+
     "<div class='vitrinevak'>"+
       "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del d\u00eda</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>\u00b7 "+bd.land+"</span></p>"+
       "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
-      "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen \u00b7 tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances \u00b7 tap one")+"</p>"+
+      "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen \u00b7 tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances \u00b7 tap one")+
+        " <button class='muziekchip' id='btnChMuziek' type='button'>"+chMuziekLabel()+"</button></p>"+
     "</div>";
   tapaMenuWire(el);
   var bt = document.getElementById("btnFinaleTerug");
@@ -8485,6 +8822,18 @@ function renderVitrine(){
       if(bl) chispaBaila(bl);
     };
   });
+  /* v19.81: muziek aan of uit. Stefan vroeg om muziek bij de dansjes, maar iemand die in de trein
+     leert wil kunnen blijven leren zonder dat de hele coupe meedanst. De knop staat naast de
+     dansen zelf, want daar hoort hij, en niet weggestopt bij de instellingen waar je hem pas
+     vindt als je al geschrokken bent. */
+  var mz = document.getElementById("btnChMuziek");
+  if(mz) mz.onclick = function(){
+    S.chispaStil = !S.chispaStil;
+    if(S.chispaStil){ try { chMuziekUit(); } catch(e){} }
+    try { persist(); } catch(e){}
+    mz.textContent = chMuziekLabel();
+    mz.className = "muziekchip" + (S.chispaStil ? " stil" : "");
+  };
 }
 
 /* kaart 4 - haar kamer. */
@@ -8530,8 +8879,8 @@ function renderKamer(){
 // hetzelfde doen: dezelfde tapa van vandaag, dezelfde kosten (één tapa), hetzelfde menu dat groeit.
 // Twee plekken die hetzelfde lijken te doen maar het net iets anders doen, is hoe je stilletjes twee
 // verschillende spellen krijgt.
-function feedPet(){
-  var res = tapaGeven();
+function feedPet(gekozen){
+  var res = tapaGeven(gekozen);
   if(!res){ toast(ct("Je hebt nog geen tapas. Oefenen = tapas verdienen!","You have no tapas yet. Practising = earning tapas!")); return; }
   var box = document.getElementById("petBox");
   if(box){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
