@@ -69,6 +69,9 @@
   .boxrow{display:flex; align-items:center; gap:8px; margin:4px 0; font-size:.88rem;}
   .boxrow .bar{flex:1; height:10px; background:var(--border); border-radius:99px; overflow:hidden;}
   .boxrow .bar > div{height:100%; background:var(--accent);}
+  /* v19.87: één balk, twee waarheden. Vol = stevig, licht = onderweg. */
+  .boxrow .bar.duo{display:flex;}
+  .boxrow .bar.duo > .marge{background:var(--accent); opacity:.34;}
   .warn{background:var(--amber-soft); color:var(--amber); border-radius:10px; padding:10px 14px; font-size:.88rem; margin-bottom:14px;}
   .goalline{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
   .goalbar{flex:1; height:9px; background:var(--border); border-radius:99px; overflow:hidden;}
@@ -79,7 +82,6 @@
          padding:14px 22px; border-radius:12px; font-weight:700; box-shadow:0 8px 30px rgba(0,0,0,.25);
          opacity:0; transition:opacity .3s, bottom .3s; pointer-events:none; z-index:99; font-size:1rem;}
   .toast.show{opacity:1; bottom:44px;}
-  .leech{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border); font-size:.92rem;}
   .trackpick.active{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
   .profbtn{display:block; width:100%; text-align:left; margin-top:8px; padding:14px; border-radius:10px;
            border:1.5px solid var(--border); background:var(--card); font-size:1.05rem; font-weight:700; cursor:pointer; color:var(--ink);}
@@ -552,6 +554,22 @@
   .es{font-style:normal; color:var(--accent); font-weight:700;}
   h2{font-size:1.15rem; margin:4px 0 10px;}
   .kicker{font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  /* --- v19.91: de eerste sessie. Zijn moeder zag niet hoeveel er nog kwam, zag niet
+       hoe ze kon stoppen, en kon een instelknop niet van een verder-knop onderscheiden.
+       Drie CSS-klassen die dat verschil zichtbaar maken: een balk die vooruitgang toont,
+       een mini-knop voor alles wat geen handeling in de oefening is, en een uitleg-regel
+       die verschijnt op het moment dat hij nodig is. --- */
+  .wbalk{display:flex; gap:3px; margin:2px 0 6px;}
+  .wbalk > span{flex:1 1 0; height:9px; border-radius:99px; background:var(--border);}
+  .wbalk > span.aan{background:var(--green);}
+  .wtel{font-size:.95rem; font-weight:700; margin:0 0 2px;}
+  button.mini{background:none; border:none; padding:5px 0; margin:6px 0 0; color:var(--muted);
+              font-size:.85rem; font-weight:600; text-decoration:underline; cursor:pointer;
+              font-family:inherit; display:block;}
+  .stoprij{margin-top:14px; padding-top:8px; border-top:1px dashed var(--border);}
+  .stoprij button.mini{margin:0;}
+  .waarom{background:var(--bg); border-left:3px solid var(--accent); border-radius:6px;
+          padding:8px 10px; margin:10px 0 0; font-size:.88rem; color:var(--muted); line-height:1.45;}
   /* --- dagbord v19.69 --- */
   .nwrij{display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:.94rem; line-height:1.4;}
   .nwrij:last-child{border-bottom:none; padding-bottom:2px;}
@@ -636,8 +654,11 @@
         <button class="ghost trackpick" data-track="a2" data-lvl="A2">A2 · ik ken de basis</button>
         <button class="ghost" disabled style="opacity:.45">B1 · binnenkort</button>
       </div>
-      <p class="muted" style="margin:10px 0 4px" id="lblTaal">Moedertaal / mother tongue:</p>
-      <div class="row" id="langRow"></div>
+      <p class="muted" style="margin:10px 0 4px"><a href="#" id="lnkTaal">Moedertaal: 🇳🇱 Nederlands · wijzigen</a></p>
+      <div id="taalBox" class="hidden">
+        <p class="muted" style="margin:2px 0 4px" id="lblTaal">Moedertaal / mother tongue:</p>
+        <div class="row" id="langRow"></div>
+      </div>
       <p class="muted" style="margin:12px 0 4px"><a href="#" id="lnkMeerOpties">⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook later)</a></p>
       <div id="meerOpties" class="hidden">
       <p class="muted" style="margin:10px 0 4px" id="lblDoel">Dagdoel:</p>
@@ -649,18 +670,20 @@
       </div>
       <div class="row">
         <button class="primary" id="btnNewProf">Start</button>
-        <button class="ghost" id="btnPlacement">Weet ik niet: doe de niveautest</button>
       </div>
+      <button class="mini" id="btnPlacement">Weet ik niet: doe de niveautest</button>
       <p class="muted" id="profHint" style="margin-top:8px">Kies een niveau, of doe de test van 10 vragen (2 minuten).</p>
-      <h2 style="margin-top:18px" id="kopSync">Oefen je al op een ander apparaat?</h2>
-      <p class="muted" id="lblSyncUitleg">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
-      <input type="text" id="syncCodeIn" placeholder="bijv. elise-x7k2m9p4qa3b" autocomplete="off">
-      <div class="row"><button class="ghost" id="btnSyncLogin">Haal mijn voortgang op</button></div>
-      <p class="muted" style="margin-top:8px"><a href="#" id="lnkHerstel">Code kwijt? Herstel via je e-mailadres</a></p>
-      <div id="herstelBox" class="hidden">
-        <input type="email" id="herstelMail" placeholder="Het e-mailadres van je profiel" autocomplete="email">
-        <div class="row"><button class="ghost" id="btnHerstel">Zoek mijn voortgang</button></div>
-        <div id="herstelUit"></div>
+      <p class="muted" style="margin-top:16px"><a href="#" id="kopSync">Oefen je al op een ander apparaat?</a></p>
+      <div id="syncBox" class="hidden">
+        <p class="muted" id="lblSyncUitleg">Vul je sync-code in (te vinden op je andere apparaat onder Voortgang) en ga verder waar je was.</p>
+        <input type="text" id="syncCodeIn" placeholder="bijv. elise-x7k2m9p4qa3b" autocomplete="off">
+        <div class="row"><button class="ghost" id="btnSyncLogin">Haal mijn voortgang op</button></div>
+        <p class="muted" style="margin-top:8px"><a href="#" id="lnkHerstel">Code kwijt? Herstel via je e-mailadres</a></p>
+        <div id="herstelBox" class="hidden">
+          <input type="email" id="herstelMail" placeholder="Het e-mailadres van je profiel" autocomplete="email">
+          <div class="row"><button class="ghost" id="btnHerstel">Zoek mijn voortgang</button></div>
+          <div id="herstelUit"></div>
+        </div>
       </div>
       <p class="muted" id="appVerProf" style="margin-top:10px"></p>
     </div>
@@ -683,6 +706,16 @@
     <div id="lessonView" class="hidden"></div>
   </section>
 
+  <!-- CURSUS (v19.90) -->
+  <!-- Stefan: "bij profiel horen de lessen eigenlijk ook niet, die verdienen dan een aparte tab
+       (...) want nu is het volgens mij conceptueel meer verweven in je dagcyclus in de vorm van
+       woorden, grammatica en spelen." Hij had gelijk en het was erger dan hij dacht: de lessenlijst
+       stond niet alleen op je profiel, hij stond er alleen daar. Het tabblad Vandaag is de
+       dagcyclus, dus de leerlijn zelf zat verstopt achter je naam. -->
+  <section id="tab-cursus" class="hidden">
+    <div id="cursusCard"></div>
+  </section>
+
   <!-- CHISPA (alleen het huisdier, via het mini-icoontje) -->
   <!-- v19.70: vier kaarten, elk met één taak. Chispa zelf, haar groei, de vitrine, haar kamer. -->
   <section id="tab-chispa" class="hidden">
@@ -701,8 +734,6 @@
   <section id="tab-perfil" class="hidden">
     <div class="card" id="perfilCard"></div>
     <div class="card" id="statsCard"></div>
-    <!-- v19.69: de lessenlijst hoort bij "waar sta ik", niet bij "wat doe ik nu" -->
-    <div id="cursusCard"></div>
     <div class="card" id="familieCard"></div>
     <div class="card" id="groepCard"></div>
     <div class="card" id="steunCard">
@@ -718,6 +749,7 @@
       <p class="muted" id="instelP">E-mail, sync-code, je voortgang verplaatsen, privacy en van profiel wisselen.</p>
     </div>
     <div id="instelBlok" class="hidden">
+    <div class="card" id="nivClaimCard"></div>
     <div class="card" id="mailCard"></div>
     <div class="card">
       <h2 id="perfSyncKop">Profiel &amp; synchronisatie</h2>
@@ -895,7 +927,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.82";
+var APP_VERSIE = "v19.91";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2362,6 +2394,264 @@ var B_CHEATSHEET = [
   "<p>Tip: nueve looks like 'nuevo' (new); cuatro can help you remember 'quartet'.</p>"}
 ];
 
+/* ================= A1-KERNWOORDEN (v19.84) =================
+   De Cervantes-inventaris telt 390 enkelwoordige A1-eenheden. Daarvan zaten er
+   146 in de pool; de andere 244 staan hieronder. Het zijn geen "extra" woorden
+   maar de ontbrekende bodem: hombre, mujer, dinero, tren, hotel, teléfono. Zonder
+   die bodem kan een niveau-bewuste dagportie niets aanbieden, want er is op A1
+   simpelweg niets meer te kiezen. Elk woord heeft een voorbeeldzin waarin het
+   doelwoord nooit vooraan staat: je moet het in een lopende zin herkennen en kunt
+   het niet aan de plek raden.
+   Deze woorden horen bij geen enkele AULA-les. Ze staan los, en de dagportie
+   ordent ze op niveau (zie dagPortie).
+   ========================================================================= */
+var K_WORDS = [
+  {id:"k1", es:"el hombre", nl:"de man", tag:"kern-mensen", ej:"Ese hombre es mi vecino.", ejnl:"Die man is mijn buurman."},
+  {id:"k2", es:"la mujer", nl:"de vrouw", tag:"kern-mensen", ej:"Una mujer pregunta por ti.", ejnl:"Een vrouw vraagt naar je."},
+  {id:"k3", es:"el niño", nl:"het kind, de jongen", tag:"kern-mensen", ej:"El niño duerme en el sofá.", ejnl:"Het kind slaapt op de bank."},
+  {id:"k4", es:"la niña", nl:"het meisje", tag:"kern-mensen", ej:"Esa niña tiene seis años.", ejnl:"Dat meisje is zes jaar."},
+  {id:"k5", es:"el chico", nl:"de jongen", tag:"kern-mensen", ej:"Un chico de mi clase vive aquí.", ejnl:"Een jongen uit mijn klas woont hier."},
+  {id:"k6", es:"la chica", nl:"het meisje", tag:"kern-mensen", ej:"La chica del bar se llama Ana.", ejnl:"Het meisje van de bar heet Ana."},
+  {id:"k7", es:"joven", nl:"jong", tag:"kern-mensen", ej:"Mi jefe es muy joven.", ejnl:"Mijn baas is heel jong."},
+  {id:"k8", es:"el señor", nl:"de meneer", tag:"kern-mensen", ej:"Pregunta al señor de la entrada.", ejnl:"Vraag het aan de meneer bij de ingang."},
+  {id:"k9", es:"la señora", nl:"de mevrouw", tag:"kern-mensen", ej:"Esa señora vive en el tercero.", ejnl:"Die mevrouw woont op de derde."},
+  {id:"k10", es:"los señores", nl:"de heren; meneer en mevrouw", tag:"kern-mensen", ej:"Los señores García llegan mañana.", ejnl:"De heer en mevrouw García komen morgen."},
+  {id:"k11", es:"el marido", nl:"de echtgenoot, man", tag:"kern-mensen", ej:"Su marido trabaja en Madrid.", ejnl:"Haar man werkt in Madrid."},
+  {id:"k12", es:"la edad", nl:"de leeftijd", tag:"kern-mensen", ej:"No sé la edad de Marta.", ejnl:"Ik weet Marta's leeftijd niet."},
+  {id:"k13", es:"la nacionalidad", nl:"de nationaliteit", tag:"kern-mensen", ej:"¿Cuál es tu nacionalidad?", ejnl:"Wat is je nationaliteit?"},
+  {id:"k14", es:"la dirección", nl:"het adres; de richting", tag:"kern-mensen", ej:"Escribe aquí tu dirección.", ejnl:"Schrijf hier je adres."},
+  {id:"k15", es:"el extranjero / la extranjera", nl:"de buitenlander", tag:"kern-mensen", ej:"En mi calle vive un extranjero.", ejnl:"In mijn straat woont een buitenlander."},
+  {id:"k16", es:"alemán / alemana", nl:"Duits(e)", tag:"kern-mensen", ej:"Mi profesor es alemán.", ejnl:"Mijn docent is Duits."},
+  {id:"k17", es:"japonés / japonesa", nl:"Japans(e)", tag:"kern-mensen", ej:"Este coche es japonés.", ejnl:"Deze auto is Japans."},
+  {id:"k18", es:"mexicano / mexicana", nl:"Mexicaans(e)", tag:"kern-mensen", ej:"La comida mexicana pica mucho.", ejnl:"Het Mexicaanse eten is heel pittig."},
+  {id:"k19", es:"marroquí", nl:"Marokkaans(e)", tag:"kern-mensen", ej:"Tengo un amigo marroquí.", ejnl:"Ik heb een Marokkaanse vriend."},
+  {id:"k20", es:"divorciado / divorciada", nl:"gescheiden", tag:"kern-mensen", ej:"Mis padres están divorciados.", ejnl:"Mijn ouders zijn gescheiden."},
+  {id:"k21", es:"separado / separada", nl:"uit elkaar", tag:"kern-mensen", ej:"Ahora vive separada de él.", ejnl:"Nu leeft ze van hem gescheiden."},
+  {id:"k22", es:"viudo / viuda", nl:"weduwnaar / weduwe", tag:"kern-mensen", ej:"Mi abuela es viuda desde 2010.", ejnl:"Mijn oma is weduwe sinds 2010."},
+  {id:"k23", es:"llamarse", nl:"heten", tag:"kern-mensen", ej:"¿Cómo se llama tu hermana?", ejnl:"Hoe heet je zus?"},
+  {id:"k24", es:"firmar", nl:"ondertekenen", tag:"kern-mensen", ej:"Tienes que firmar aquí abajo.", ejnl:"Je moet hier onderaan tekenen."},
+  {id:"k25", es:"las gafas", nl:"de bril", tag:"kern-mensen", ej:"Sin gafas no veo nada.", ejnl:"Zonder bril zie ik niets."},
+  {id:"k26", es:"la cartera", nl:"de portemonnee, tas", tag:"kern-mensen", ej:"Llevo el carné en la cartera.", ejnl:"Ik heb mijn pasje in mijn portemonnee."},
+  {id:"k27", es:"la avenida", nl:"de laan", tag:"kern-mensen", ej:"Vivimos en una avenida muy ancha.", ejnl:"We wonen aan een heel brede laan."},
+  {id:"k28", es:"el paseo", nl:"de wandeling; de boulevard", tag:"kern-mensen", ej:"Damos un paseo después de comer.", ejnl:"We maken een wandeling na het eten."},
+  {id:"k29", es:"el coche", nl:"de auto", tag:"kern-reizen", ej:"Vamos en coche a la playa.", ejnl:"We gaan met de auto naar het strand."},
+  {id:"k30", es:"el tren", nl:"de trein", tag:"kern-reizen", ej:"El tren sale a las ocho.", ejnl:"De trein vertrekt om acht uur."},
+  {id:"k31", es:"el autobús", nl:"de bus", tag:"kern-reizen", ej:"Cojo el autobús cada mañana.", ejnl:"Ik neem elke ochtend de bus."},
+  {id:"k32", es:"el metro", nl:"de metro", tag:"kern-reizen", ej:"En metro llegas antes.", ejnl:"Met de metro ben je er eerder."},
+  {id:"k33", es:"el taxi", nl:"de taxi", tag:"kern-reizen", ej:"Pedimos un taxi por teléfono.", ejnl:"We bestellen telefonisch een taxi."},
+  {id:"k34", es:"el / la taxista", nl:"de taxichauffeur", tag:"kern-reizen", ej:"El taxista no sabía la calle.", ejnl:"De taxichauffeur kende de straat niet."},
+  {id:"k35", es:"el avión", nl:"het vliegtuig", tag:"kern-reizen", ej:"Nuestro avión sale con retraso.", ejnl:"Ons vliegtuig vertrekt met vertraging."},
+  {id:"k36", es:"el aeropuerto", nl:"de luchthaven", tag:"kern-reizen", ej:"Te recojo en el aeropuerto.", ejnl:"Ik haal je op van het vliegveld."},
+  {id:"k37", es:"el puerto", nl:"de haven", tag:"kern-reizen", ej:"Cerca del puerto hay marisco.", ejnl:"Bij de haven eet je zeevruchten."},
+  {id:"k38", es:"la carretera", nl:"de weg, autoweg", tag:"kern-reizen", ej:"Esta carretera va a Toledo.", ejnl:"Deze weg gaat naar Toledo."},
+  {id:"k39", es:"el aparcamiento", nl:"de parkeerplaats", tag:"kern-reizen", ej:"Dejo el coche en el aparcamiento.", ejnl:"Ik laat de auto op de parkeerplaats staan."},
+  {id:"k40", es:"el garaje", nl:"de garage", tag:"kern-reizen", ej:"Guardamos las bicis en el garaje.", ejnl:"We zetten de fietsen in de garage."},
+  {id:"k41", es:"el conductor / la conductora", nl:"de bestuurder", tag:"kern-reizen", ej:"El conductor abre la puerta.", ejnl:"De bestuurder doet de deur open."},
+  {id:"k42", es:"el hotel", nl:"het hotel", tag:"kern-reizen", ej:"Dormimos dos noches en un hotel.", ejnl:"We slapen twee nachten in een hotel."},
+  {id:"k43", es:"el camping", nl:"de camping", tag:"kern-reizen", ej:"Este verano vamos de camping.", ejnl:"Deze zomer gaan we kamperen."},
+  {id:"k44", es:"la maleta", nl:"de koffer", tag:"kern-reizen", ej:"Mi maleta pesa demasiado.", ejnl:"Mijn koffer is te zwaar."},
+  {id:"k45", es:"el pasaporte", nl:"het paspoort", tag:"kern-reizen", ej:"Necesitas el pasaporte para entrar.", ejnl:"Je hebt je paspoort nodig om binnen te komen."},
+  {id:"k46", es:"el mapa", nl:"de kaart, landkaart", tag:"kern-reizen", ej:"Busco la ciudad en el mapa.", ejnl:"Ik zoek de stad op de kaart."},
+  {id:"k47", es:"el plano", nl:"de plattegrond", tag:"kern-reizen", ej:"Tengo un plano del metro.", ejnl:"Ik heb een plattegrond van de metro."},
+  {id:"k48", es:"el horario", nl:"het rooster, de dienstregeling", tag:"kern-reizen", ej:"Mira el horario de los trenes.", ejnl:"Kijk op de dienstregeling van de treinen."},
+  {id:"k49", es:"el / la turista", nl:"de toerist", tag:"kern-reizen", ej:"En agosto hay muchos turistas.", ejnl:"In augustus zijn er veel toeristen."},
+  {id:"k50", es:"las vacaciones", nl:"de vakantie", tag:"kern-reizen", ej:"En vacaciones no hago nada.", ejnl:"In de vakantie doe ik niets."},
+  {id:"k51", es:"la publicidad", nl:"de reclame", tag:"kern-reizen", ej:"Hay demasiada publicidad en la tele.", ejnl:"Er is te veel reclame op tv."},
+  {id:"k52", es:"la habitación", nl:"de kamer", tag:"kern-wonen", ej:"Mi habitación da al patio.", ejnl:"Mijn kamer kijkt uit op de binnenplaats."},
+  {id:"k53", es:"el apartamento", nl:"het appartement", tag:"kern-wonen", ej:"Alquilan un apartamento pequeño.", ejnl:"Ze huren een klein appartement."},
+  {id:"k54", es:"el estudio", nl:"de studio; de studeerkamer", tag:"kern-wonen", ej:"Vive sola en un estudio.", ejnl:"Ze woont alleen in een studio."},
+  {id:"k55", es:"el baño", nl:"de badkamer, wc", tag:"kern-wonen", ej:"El baño está al fondo.", ejnl:"De badkamer is achterin."},
+  {id:"k56", es:"la ducha", nl:"de douche", tag:"kern-wonen", ej:"Después de la ducha desayuno.", ejnl:"Na de douche ontbijt ik."},
+  {id:"k57", es:"el lavabo", nl:"de wastafel", tag:"kern-wonen", ej:"Deja el jabón en el lavabo.", ejnl:"Leg de zeep op de wastafel."},
+  {id:"k58", es:"la puerta", nl:"de deur", tag:"kern-wonen", ej:"Cierra la puerta, por favor.", ejnl:"Doe de deur dicht, alsjeblieft."},
+  {id:"k59", es:"la ventana", nl:"het raam", tag:"kern-wonen", ej:"Por la ventana entra mucho sol.", ejnl:"Door het raam komt veel zon binnen."},
+  {id:"k60", es:"la escalera", nl:"de trap", tag:"kern-wonen", ej:"Subo por la escalera, no cojo el ascensor.", ejnl:"Ik ga de trap op, ik neem de lift niet."},
+  {id:"k61", es:"la silla", nl:"de stoel", tag:"kern-wonen", ej:"Pon la silla al lado de la mesa.", ejnl:"Zet de stoel naast de tafel."},
+  {id:"k62", es:"el sillón", nl:"de fauteuil", tag:"kern-wonen", ej:"Mi padre lee en el sillón.", ejnl:"Mijn vader leest in de fauteuil."},
+  {id:"k63", es:"la estantería", nl:"de boekenkast", tag:"kern-wonen", ej:"Los libros están en la estantería.", ejnl:"De boeken staan in de boekenkast."},
+  {id:"k64", es:"la televisión", nl:"de televisie", tag:"kern-wonen", ej:"Vemos la televisión por la noche.", ejnl:"We kijken 's avonds televisie."},
+  {id:"k65", es:"la radio", nl:"de radio", tag:"kern-wonen", ej:"Escucho la radio en el coche.", ejnl:"Ik luister radio in de auto."},
+  {id:"k66", es:"el vídeo", nl:"de video", tag:"kern-wonen", ej:"Grabé la fiesta en vídeo.", ejnl:"Ik heb het feest op video opgenomen."},
+  {id:"k67", es:"el DVD", nl:"de dvd", tag:"kern-wonen", ej:"Todavía tengo un DVD de esa película.", ejnl:"Ik heb nog een dvd van die film."},
+  {id:"k68", es:"nuevo / nueva", nl:"nieuw", tag:"kern-wonen", ej:"Tengo un móvil nuevo.", ejnl:"Ik heb een nieuwe telefoon."},
+  {id:"k69", es:"viejo / vieja", nl:"oud", tag:"kern-wonen", ej:"Ese edificio es muy viejo.", ejnl:"Dat gebouw is heel oud."},
+  {id:"k70", es:"la clase", nl:"de les; de klas", tag:"kern-school", ej:"Hoy no tenemos clase.", ejnl:"Vandaag hebben we geen les."},
+  {id:"k71", es:"la lección", nl:"de les (het hoofdstuk)", tag:"kern-school", ej:"Estudiamos la lección tres.", ejnl:"We bestuderen les drie."},
+  {id:"k72", es:"la unidad", nl:"de eenheid, het hoofdstuk", tag:"kern-school", ej:"Esta unidad trata del pasado.", ejnl:"Dit hoofdstuk gaat over de verleden tijd."},
+  {id:"k73", es:"el ejercicio", nl:"de oefening", tag:"kern-school", ej:"Haz el ejercicio dos, por favor.", ejnl:"Maak oefening twee, alsjeblieft."},
+  {id:"k74", es:"el examen", nl:"het examen, de toets", tag:"kern-school", ej:"Tengo un examen el lunes.", ejnl:"Ik heb maandag een toets."},
+  {id:"k75", es:"la pregunta", nl:"de vraag", tag:"kern-school", ej:"Tu pregunta es muy buena.", ejnl:"Je vraag is heel goed."},
+  {id:"k76", es:"la página", nl:"de bladzijde", tag:"kern-school", ej:"Abrid el libro por la página diez.", ejnl:"Sla het boek open op bladzijde tien."},
+  {id:"k77", es:"la pizarra", nl:"het bord", tag:"kern-school", ej:"Escribe la palabra en la pizarra.", ejnl:"Schrijf het woord op het bord."},
+  {id:"k78", es:"el bolígrafo", nl:"de pen", tag:"kern-school", ej:"¿Me dejas un bolígrafo?", ejnl:"Leen je me een pen?"},
+  {id:"k79", es:"el lápiz", nl:"het potlood", tag:"kern-school", ej:"Escribo la lista a lápiz.", ejnl:"Ik schrijf het lijstje met potlood."},
+  {id:"k80", es:"la goma", nl:"de gum", tag:"kern-school", ej:"Necesito una goma para borrar esto.", ejnl:"Ik heb een gum nodig om dit uit te vegen."},
+  {id:"k81", es:"la fotocopia", nl:"de kopie", tag:"kern-school", ej:"Haz una fotocopia de la página.", ejnl:"Maak een kopie van de bladzijde."},
+  {id:"k82", es:"la biblioteca", nl:"de bibliotheek", tag:"kern-school", ej:"Estudio en la biblioteca.", ejnl:"Ik studeer in de bibliotheek."},
+  {id:"k83", es:"el instituto", nl:"de middelbare school", tag:"kern-school", ej:"Mi hijo va al instituto.", ejnl:"Mijn zoon zit op de middelbare school."},
+  {id:"k84", es:"la universidad", nl:"de universiteit", tag:"kern-school", ej:"Estudia Derecho en la universidad.", ejnl:"Hij studeert rechten aan de universiteit."},
+  {id:"k85", es:"la actividad", nl:"de activiteit", tag:"kern-school", ej:"Esta actividad dura diez minutos.", ejnl:"Deze activiteit duurt tien minuten."},
+  {id:"k86", es:"comprender", nl:"begrijpen", tag:"kern-school", ej:"No comprendo esta frase.", ejnl:"Ik begrijp deze zin niet."},
+  {id:"k87", es:"practicar", nl:"oefenen", tag:"kern-school", ej:"Quiero practicar español contigo.", ejnl:"Ik wil Spaans met je oefenen."},
+  {id:"k88", es:"el sol", nl:"de zon", tag:"kern-natuur", ej:"Hoy hace mucho sol.", ejnl:"Vandaag schijnt de zon volop."},
+  {id:"k89", es:"llover", nl:"regenen", tag:"kern-natuur", ej:"En Galicia llueve mucho.", ejnl:"In Galicië regent het veel."},
+  {id:"k90", es:"nevar", nl:"sneeuwen", tag:"kern-natuur", ej:"En diciembre nieva en la sierra.", ejnl:"In december sneeuwt het in de bergen."},
+  {id:"k91", es:"la primavera", nl:"de lente", tag:"kern-natuur", ej:"En primavera todo florece.", ejnl:"In de lente bloeit alles."},
+  {id:"k92", es:"el verano", nl:"de zomer", tag:"kern-natuur", ej:"Este verano vamos a Cádiz.", ejnl:"Deze zomer gaan we naar Cádiz."},
+  {id:"k93", es:"el otoño", nl:"de herfst", tag:"kern-natuur", ej:"En otoño empiezan las clases.", ejnl:"In de herfst beginnen de lessen."},
+  {id:"k94", es:"el invierno", nl:"de winter", tag:"kern-natuur", ej:"El invierno aquí es corto.", ejnl:"De winter is hier kort."},
+  {id:"k95", es:"el campo", nl:"het platteland; het veld", tag:"kern-natuur", ej:"Los domingos vamos al campo.", ejnl:"Op zondag gaan we naar buiten, het land in."},
+  {id:"k96", es:"la flor", nl:"de bloem", tag:"kern-natuur", ej:"Le regalé una flor.", ejnl:"Ik gaf haar een bloem."},
+  {id:"k97", es:"la planta", nl:"de plant; de verdieping", tag:"kern-natuur", ej:"Riego las plantas los sábados.", ejnl:"Ik geef de planten water op zaterdag."},
+  {id:"k98", es:"el animal", nl:"het dier", tag:"kern-natuur", ej:"Mi animal preferido es el perro.", ejnl:"Mijn lievelingsdier is de hond."},
+  {id:"k99", es:"el lugar", nl:"de plek, plaats", tag:"kern-natuur", ej:"Es un lugar muy tranquilo.", ejnl:"Het is een heel rustige plek."},
+  {id:"k100", es:"el este", nl:"het oosten", tag:"kern-natuur", ej:"Valencia está en el este.", ejnl:"Valencia ligt in het oosten."},
+  {id:"k101", es:"el oeste", nl:"het westen", tag:"kern-natuur", ej:"Portugal queda al oeste.", ejnl:"Portugal ligt in het westen."},
+  {id:"k102", es:"el colegio", nl:"de basisschool", tag:"kern-natuur", ej:"Los niños salen del colegio a las cinco.", ejnl:"De kinderen komen om vijf uur uit school."},
+  {id:"k103", es:"el restaurante", nl:"het restaurant", tag:"kern-natuur", ej:"Cenamos en un restaurante italiano.", ejnl:"We eten in een Italiaans restaurant."},
+  {id:"k104", es:"el bar", nl:"het café", tag:"kern-eten", ej:"Tomamos algo en el bar de abajo.", ejnl:"We drinken iets in het café beneden."},
+  {id:"k105", es:"el bocadillo", nl:"het broodje (stokbrood)", tag:"kern-eten", ej:"Me pido un bocadillo de jamón.", ejnl:"Ik neem een broodje ham."},
+  {id:"k106", es:"el sándwich", nl:"de tosti, sandwich", tag:"kern-eten", ej:"Prefiero un sándwich caliente.", ejnl:"Ik heb liever een warme tosti."},
+  {id:"k107", es:"la hamburguesa", nl:"de hamburger", tag:"kern-eten", ej:"Los viernes comemos hamburguesa.", ejnl:"Op vrijdag eten we hamburgers."},
+  {id:"k108", es:"la ensalada", nl:"de salade", tag:"kern-eten", ej:"De primero, una ensalada.", ejnl:"Als voorgerecht een salade."},
+  {id:"k109", es:"la sopa", nl:"de soep", tag:"kern-eten", ej:"Esta sopa está muy salada.", ejnl:"Deze soep is heel zout."},
+  {id:"k110", es:"la tortilla", nl:"de omelet", tag:"kern-eten", ej:"Nos ponen tortilla de patatas.", ejnl:"Ze zetten ons een aardappelomelet voor."},
+  {id:"k111", es:"la paella", nl:"de paella", tag:"kern-eten", ej:"Los domingos hacemos paella.", ejnl:"Op zondag maken we paella."},
+  {id:"k112", es:"el postre", nl:"het nagerecht", tag:"kern-eten", ej:"De postre hay fruta o helado.", ejnl:"Als toetje is er fruit of ijs."},
+  {id:"k113", es:"la leche", nl:"de melk", tag:"kern-eten", ej:"Tomo el café con leche.", ejnl:"Ik drink mijn koffie met melk."},
+  {id:"k114", es:"la cerveza", nl:"het bier", tag:"kern-eten", ej:"Una cerveza bien fría, por favor.", ejnl:"Een lekker koud biertje, alsjeblieft."},
+  {id:"k115", es:"el té", nl:"de thee", tag:"kern-eten", ej:"Por la noche bebo té.", ejnl:"'s Avonds drink ik thee."},
+  {id:"k116", es:"la merienda", nl:"het tussendoortje ('s middags)", tag:"kern-eten", ej:"La merienda es a las cinco.", ejnl:"Het tussendoortje is om vijf uur."},
+  {id:"k117", es:"merendar", nl:"een tussendoortje eten", tag:"kern-eten", ej:"Los niños meriendan al salir del colegio.", ejnl:"De kinderen eten wat als ze uit school komen."},
+  {id:"k118", es:"el dinero", nl:"het geld", tag:"kern-diensten", ej:"No llevo dinero encima.", ejnl:"Ik heb geen geld bij me."},
+  {id:"k119", es:"el euro", nl:"de euro", tag:"kern-diensten", ej:"Cuesta un euro con veinte.", ejnl:"Het kost een euro twintig."},
+  {id:"k120", es:"el céntimo", nl:"de cent", tag:"kern-diensten", ej:"Me faltan diez céntimos.", ejnl:"Ik kom tien cent tekort."},
+  {id:"k121", es:"la tarjeta", nl:"de kaart, pas", tag:"kern-diensten", ej:"¿Puedo pagar con tarjeta?", ejnl:"Kan ik met de kaart betalen?"},
+  {id:"k122", es:"el médico / la médica", nl:"de dokter", tag:"kern-diensten", ej:"Mañana voy al médico.", ejnl:"Morgen ga ik naar de dokter."},
+  {id:"k123", es:"el hospital", nl:"het ziekenhuis", tag:"kern-diensten", ej:"Trabaja en un hospital grande.", ejnl:"Ze werkt in een groot ziekenhuis."},
+  {id:"k124", es:"la enfermera", nl:"de verpleegkundige (vrouw)", tag:"kern-diensten", ej:"La enfermera me puso la vacuna.", ejnl:"De verpleegkundige gaf me de prik."},
+  {id:"k125", es:"la policía", nl:"de politie", tag:"kern-diensten", ej:"Llama a la policía.", ejnl:"Bel de politie."},
+  {id:"k126", es:"el bombero / la bombera", nl:"de brandweerman/-vrouw", tag:"kern-diensten", ej:"Mi primo es bombero.", ejnl:"Mijn neef is brandweerman."},
+  {id:"k127", es:"el papel", nl:"het papier; de rol", tag:"kern-diensten", ej:"Dame una hoja de papel.", ejnl:"Geef me een vel papier."},
+  {id:"k128", es:"el sello", nl:"de postzegel", tag:"kern-diensten", ej:"Necesito un sello para esta carta.", ejnl:"Ik heb een postzegel nodig voor deze brief."},
+  {id:"k129", es:"el sobre", nl:"de envelop", tag:"kern-diensten", ej:"Mete la carta en el sobre.", ejnl:"Stop de brief in de envelop."},
+  {id:"k130", es:"la postal", nl:"de ansichtkaart", tag:"kern-diensten", ej:"Te mando una postal desde Sevilla.", ejnl:"Ik stuur je een kaart uit Sevilla."},
+  {id:"k131", es:"el mercado", nl:"de markt", tag:"kern-winkel", ej:"Compro la fruta en el mercado.", ejnl:"Ik koop mijn fruit op de markt."},
+  {id:"k132", es:"vender", nl:"verkopen", tag:"kern-winkel", ej:"Aquí venden pan recién hecho.", ejnl:"Hier verkopen ze vers brood."},
+  {id:"k133", es:"el vendedor / la vendedora", nl:"de verkoper", tag:"kern-winkel", ej:"El vendedor me hizo un descuento.", ejnl:"De verkoper gaf me korting."},
+  {id:"k134", es:"el comprador / la compradora", nl:"de koper", tag:"kern-winkel", ej:"Ya hay un comprador para el piso.", ejnl:"Er is al een koper voor het appartement."},
+  {id:"k135", es:"el billete", nl:"het kaartje; het bankbiljet", tag:"kern-winkel", ej:"Saco un billete de ida y vuelta.", ejnl:"Ik koop een retourtje."},
+  {id:"k136", es:"la salida", nl:"de uitgang; het vertrek", tag:"kern-winkel", ej:"La salida está a la derecha.", ejnl:"De uitgang is rechts."},
+  {id:"k137", es:"la información", nl:"de informatie", tag:"kern-winkel", ej:"Pide información en el mostrador.", ejnl:"Vraag informatie aan de balie."},
+  {id:"k138", es:"el bolso", nl:"de (hand)tas", tag:"kern-winkel", ej:"Llevo las llaves en el bolso.", ejnl:"Ik heb de sleutels in mijn tas."},
+  {id:"k139", es:"la camisa", nl:"het overhemd", tag:"kern-winkel", ej:"Esa camisa te queda bien.", ejnl:"Dat overhemd staat je goed."},
+  {id:"k140", es:"la falda", nl:"de rok", tag:"kern-winkel", ej:"Se puso una falda negra.", ejnl:"Ze trok een zwarte rok aan."},
+  {id:"k141", es:"el jersey", nl:"de trui", tag:"kern-winkel", ej:"Ponte un jersey, hace frío.", ejnl:"Doe een trui aan, het is koud."},
+  {id:"k142", es:"los vaqueros", nl:"de spijkerbroek", tag:"kern-winkel", ej:"Casi siempre llevo vaqueros.", ejnl:"Ik draag bijna altijd een spijkerbroek."},
+  {id:"k143", es:"más", nl:"meer", tag:"kern-hoeveel", ej:"Quiero un poco más de arroz.", ejnl:"Ik wil iets meer rijst."},
+  {id:"k144", es:"menos", nl:"minder", tag:"kern-hoeveel", ej:"Hoy hay menos gente.", ejnl:"Vandaag zijn er minder mensen."},
+  {id:"k145", es:"muy", nl:"heel, zeer", tag:"kern-hoeveel", ej:"Está muy cansada.", ejnl:"Ze is heel moe."},
+  {id:"k146", es:"largo / larga", nl:"lang", tag:"kern-hoeveel", ej:"Es una película muy larga.", ejnl:"Het is een heel lange film."},
+  {id:"k147", es:"corto / corta", nl:"kort", tag:"kern-hoeveel", ej:"Tiene el pelo corto.", ejnl:"Hij heeft kort haar."},
+  {id:"k148", es:"gordo / gorda", nl:"dik", tag:"kern-hoeveel", ej:"Mi gato está un poco gordo.", ejnl:"Mijn kat is een beetje dik."},
+  {id:"k149", es:"caliente", nl:"warm, heet", tag:"kern-hoeveel", ej:"El café está muy caliente.", ejnl:"De koffie is heel heet."},
+  {id:"k150", es:"frío / fría", nl:"koud", tag:"kern-hoeveel", ej:"El agua está fría.", ejnl:"Het water is koud."},
+  {id:"k151", es:"rápido / rápida", nl:"snel", tag:"kern-hoeveel", ej:"Este tren es más rápido.", ejnl:"Deze trein is sneller."},
+  {id:"k152", es:"lento / lenta", nl:"langzaam", tag:"kern-hoeveel", ej:"Mi ordenador va muy lento.", ejnl:"Mijn computer is heel traag."},
+  {id:"k153", es:"despacio", nl:"langzaam, rustig aan", tag:"kern-hoeveel", ej:"Habla más despacio, por favor.", ejnl:"Praat langzamer, alsjeblieft."},
+  {id:"k154", es:"el kilómetro", nl:"de kilometer", tag:"kern-hoeveel", ej:"Queda a tres kilómetros de aquí.", ejnl:"Het ligt op drie kilometer hiervandaan."},
+  {id:"k155", es:"aquí", nl:"hier", tag:"kern-plaats", ej:"Ven aquí un momento.", ejnl:"Kom hier even."},
+  {id:"k156", es:"allí", nl:"daar", tag:"kern-plaats", ej:"Tu abrigo está allí.", ejnl:"Je jas ligt daar."},
+  {id:"k157", es:"en", nl:"in, op", tag:"kern-plaats", ej:"Te espero en la puerta.", ejnl:"Ik wacht op je bij de deur."},
+  {id:"k158", es:"de", nl:"van, uit", tag:"kern-plaats", ej:"Soy de Holanda.", ejnl:"Ik kom uit Nederland."},
+  {id:"k159", es:"entrar", nl:"binnengaan", tag:"kern-plaats", ej:"No puedes entrar sin entrada.", ejnl:"Je mag er niet in zonder kaartje."},
+  {id:"k160", es:"salir", nl:"weggaan, uitgaan", tag:"kern-plaats", ej:"Salimos de casa a las siete.", ejnl:"We gaan om zeven uur van huis."},
+  {id:"k161", es:"llegar", nl:"aankomen", tag:"kern-plaats", ej:"Siempre llega tarde.", ejnl:"Hij komt altijd te laat."},
+  {id:"k162", es:"venir", nl:"komen", tag:"kern-plaats", ej:"¿Vienes conmigo?", ejnl:"Kom je met me mee?"},
+  {id:"k163", es:"volver", nl:"terugkomen, teruggaan", tag:"kern-plaats", ej:"Vuelvo en cinco minutos.", ejnl:"Ik ben over vijf minuten terug."},
+  {id:"k164", es:"después", nl:"daarna, later", tag:"kern-plaats", ej:"Nos vemos después de comer.", ejnl:"We zien elkaar na het eten."},
+  {id:"k165", es:"abrir", nl:"openen, opendoen", tag:"kern-eigenschap", ej:"¿Puedes abrir la ventana?", ejnl:"Kun je het raam opendoen?"},
+  {id:"k166", es:"cerrar", nl:"sluiten, dichtdoen", tag:"kern-eigenschap", ej:"Cierran la tienda a las nueve.", ejnl:"Ze sluiten de winkel om negen uur."},
+  {id:"k167", es:"la entrada", nl:"de ingang; het toegangskaartje", tag:"kern-eigenschap", ej:"Compramos las entradas por internet.", ejnl:"We kopen de kaartjes op internet."},
+  {id:"k168", es:"ver", nl:"zien, kijken", tag:"kern-eigenschap", ej:"No veo bien de lejos.", ejnl:"Ik zie niet goed veraf."},
+  {id:"k169", es:"claro / clara", nl:"licht; duidelijk", tag:"kern-eigenschap", ej:"Prefiero el azul claro.", ejnl:"Ik heb liever lichtblauw."},
+  {id:"k170", es:"oscuro / oscura", nl:"donker", tag:"kern-eigenschap", ej:"La habitación es muy oscura.", ejnl:"De kamer is heel donker."},
+  {id:"k171", es:"gris", nl:"grijs", tag:"kern-eigenschap", ej:"Hoy el cielo está gris.", ejnl:"Vandaag is de lucht grijs."},
+  {id:"k172", es:"marrón", nl:"bruin", tag:"kern-eigenschap", ej:"Tiene los ojos marrones.", ejnl:"Ze heeft bruine ogen."},
+  {id:"k173", es:"naranja", nl:"oranje", tag:"kern-eigenschap", ej:"Lleva una camiseta naranja.", ejnl:"Hij draagt een oranje T-shirt."},
+  {id:"k174", es:"hoy", nl:"vandaag", tag:"kern-tijd", ej:"No trabajo hoy.", ejnl:"Ik werk vandaag niet."},
+  {id:"k175", es:"ayer", nl:"gisteren", tag:"kern-tijd", ej:"Te llamé ayer por la tarde.", ejnl:"Ik heb je gisteren 's middags gebeld."},
+  {id:"k176", es:"el día", nl:"de dag", tag:"kern-tijd", ej:"Pasamos el día en la playa.", ejnl:"We brachten de dag door op het strand."},
+  {id:"k177", es:"la semana", nl:"de week", tag:"kern-tijd", ej:"La semana que viene tengo vacaciones.", ejnl:"Volgende week heb ik vakantie."},
+  {id:"k178", es:"el mes", nl:"de maand", tag:"kern-tijd", ej:"El mes pasado cambié de trabajo.", ejnl:"Vorige maand ben ik van baan veranderd."},
+  {id:"k179", es:"el minuto", nl:"de minuut", tag:"kern-tijd", ej:"Espera un minuto.", ejnl:"Wacht een minuutje."},
+  {id:"k180", es:"pronto", nl:"gauw, vroeg", tag:"kern-tijd", ej:"Vuelve pronto.", ejnl:"Kom gauw terug."},
+  {id:"k181", es:"normalmente", nl:"normaal gesproken", tag:"kern-tijd", ej:"Los domingos normalmente ceno a las nueve.", ejnl:"Op zondag eet ik normaal gesproken om negen uur."},
+  {id:"k182", es:"cuando", nl:"wanneer, als", tag:"kern-tijd", ej:"Te aviso cuando llegue.", ejnl:"Ik laat het weten wanneer ik er ben."},
+  {id:"k183", es:"bien", nl:"goed", tag:"kern-oordeel", ej:"Lo has hecho muy bien.", ejnl:"Je hebt het heel goed gedaan."},
+  {id:"k184", es:"bueno / buena", nl:"goed, lekker", tag:"kern-oordeel", ej:"Este vino es muy bueno.", ejnl:"Deze wijn is heel goed."},
+  {id:"k185", es:"malo / mala", nl:"slecht", tag:"kern-oordeel", ej:"Hace muy mal tiempo.", ejnl:"Het is heel slecht weer."},
+  {id:"k186", es:"regular", nl:"matig, gaat wel", tag:"kern-oordeel", ej:"¿Qué tal? Regular.", ejnl:"Hoe gaat het? Gaat wel."},
+  {id:"k187", es:"fácil", nl:"makkelijk", tag:"kern-oordeel", ej:"Este ejercicio es muy fácil.", ejnl:"Deze oefening is heel makkelijk."},
+  {id:"k188", es:"difícil", nl:"moeilijk", tag:"kern-oordeel", ej:"Es difícil aparcar aquí.", ejnl:"Het is moeilijk om hier te parkeren."},
+  {id:"k189", es:"feo / fea", nl:"lelijk", tag:"kern-oordeel", ej:"Ese edificio es bastante feo.", ejnl:"Dat gebouw is behoorlijk lelijk."},
+  {id:"k190", es:"interesante", nl:"interessant", tag:"kern-oordeel", ej:"Fue una charla muy interesante.", ejnl:"Het was een heel interessante lezing."},
+  {id:"k191", es:"pagar", nl:"betalen", tag:"kern-oordeel", ej:"Yo pago las cañas.", ejnl:"Ik betaal de biertjes."},
+  {id:"k192", es:"el cine", nl:"de bioscoop; de film(kunst)", tag:"kern-kunst", ej:"Los martes el cine es más barato.", ejnl:"Op dinsdag is de bioscoop goedkoper."},
+  {id:"k193", es:"la película", nl:"de film", tag:"kern-kunst", ej:"Esa película dura tres horas.", ejnl:"Die film duurt drie uur."},
+  {id:"k194", es:"el teatro", nl:"het theater", tag:"kern-kunst", ej:"Vamos al teatro el sábado.", ejnl:"We gaan zaterdag naar het theater."},
+  {id:"k195", es:"el actor", nl:"de acteur", tag:"kern-kunst", ej:"Ese actor sale en todo.", ejnl:"Die acteur speelt overal in mee."},
+  {id:"k196", es:"la actriz", nl:"de actrice", tag:"kern-kunst", ej:"Su madre es actriz.", ejnl:"Zijn moeder is actrice."},
+  {id:"k197", es:"la foto", nl:"de foto", tag:"kern-kunst", ej:"Nos hacemos una foto juntos.", ejnl:"We maken samen een foto."},
+  {id:"k198", es:"el monumento", nl:"het monument", tag:"kern-kunst", ej:"En esta plaza hay un monumento antiguo.", ejnl:"Op dit plein staat een oud monument."},
+  {id:"k199", es:"la catedral", nl:"de kathedraal", tag:"kern-kunst", ej:"Desde aquí se ve la catedral.", ejnl:"Vanaf hier zie je de kathedraal."},
+  {id:"k200", es:"alegre", nl:"vrolijk", tag:"kern-karakter", ej:"Es una persona muy alegre.", ejnl:"Het is een heel vrolijk iemand."},
+  {id:"k201", es:"serio / seria", nl:"serieus, ernstig", tag:"kern-karakter", ej:"Mi hermano es bastante serio.", ejnl:"Mijn broer is nogal serieus."},
+  {id:"k202", es:"antipático / antipática", nl:"onaardig", tag:"kern-karakter", ej:"El camarero fue muy antipático.", ejnl:"De ober was heel onaardig."},
+  {id:"k203", es:"inteligente", nl:"slim, intelligent", tag:"kern-karakter", ej:"Es más inteligente de lo que parece.", ejnl:"Hij is slimmer dan hij lijkt."},
+  {id:"k204", es:"sociable", nl:"sociaal, gezellig", tag:"kern-karakter", ej:"No soy muy sociable por las mañanas.", ejnl:"Ik ben 's ochtends niet erg sociaal."},
+  {id:"k205", es:"trabajador / trabajadora", nl:"hardwerkend", tag:"kern-karakter", ej:"Es una chica muy trabajadora.", ejnl:"Ze is een heel hardwerkend meisje."},
+  {id:"k206", es:"el presidente / la presidenta", nl:"de president, voorzitter", tag:"kern-samenleving", ej:"El presidente habla esta noche.", ejnl:"De president spreekt vanavond."},
+  {id:"k207", es:"el rey", nl:"de koning", tag:"kern-samenleving", ej:"En España hay un rey.", ejnl:"In Spanje is er een koning."},
+  {id:"k208", es:"la reina", nl:"de koningin", tag:"kern-samenleving", ej:"La reina visita el hospital.", ejnl:"De koningin bezoekt het ziekenhuis."},
+  {id:"k209", es:"el abogado / la abogada", nl:"de advocaat", tag:"kern-samenleving", ej:"Mi vecina es abogada.", ejnl:"Mijn buurvrouw is advocaat."},
+  {id:"k210", es:"la capital", nl:"de hoofdstad", tag:"kern-samenleving", ej:"Madrid es la capital de España.", ejnl:"Madrid is de hoofdstad van Spanje."},
+  {id:"k211", es:"la religión", nl:"de religie, het geloof", tag:"kern-geloof", ej:"No hablamos de religión en la mesa.", ejnl:"We praten niet over geloof aan tafel."},
+  {id:"k212", es:"cristiano / cristiana", nl:"christelijk, christen", tag:"kern-geloof", ej:"Su familia es cristiana.", ejnl:"Zijn familie is christelijk."},
+  {id:"k213", es:"musulmán / musulmana", nl:"islamitisch, moslim", tag:"kern-geloof", ej:"Tengo un compañero musulmán.", ejnl:"Ik heb een islamitische collega."},
+  {id:"k214", es:"judío / judía", nl:"joods", tag:"kern-geloof", ej:"Visitamos el barrio judío.", ejnl:"We bezochten de Joodse wijk."},
+  {id:"k215", es:"budista", nl:"boeddhistisch", tag:"kern-geloof", ej:"Sigue la filosofía budista.", ejnl:"Hij volgt de boeddhistische filosofie."},
+  {id:"k216", es:"el quiosco", nl:"de kiosk", tag:"kern-media", ej:"Compro el periódico en el quiosco.", ejnl:"Ik koop de krant bij de kiosk."},
+  {id:"k217", es:"la arroba", nl:"het apenstaartje (@)", tag:"kern-media", ej:"Mi correo lleva una arroba, claro.", ejnl:"In mijn mailadres zit natuurlijk een apenstaartje."},
+  {id:"k218", es:"el punto", nl:"de punt", tag:"kern-media", ej:"Escribe punto com al final.", ejnl:"Schrijf punt com aan het eind."},
+  {id:"k219", es:"el guion", nl:"het streepje; het script", tag:"kern-media", ej:"Mi apellido lleva un guion.", ejnl:"In mijn achternaam zit een streepje."},
+  {id:"k220", es:"la farmacia", nl:"de apotheek", tag:"kern-gezond", ej:"Hay una farmacia en la esquina.", ejnl:"Er is een apotheek op de hoek."},
+  {id:"k221", es:"el enfermero", nl:"de verpleger", tag:"kern-gezond", ej:"Su hijo es enfermero.", ejnl:"Haar zoon is verpleger."},
+  {id:"k222", es:"el jabón", nl:"de zeep", tag:"kern-gezond", ej:"Se acabó el jabón.", ejnl:"De zeep is op."},
+  {id:"k223", es:"bañarse", nl:"een bad nemen; zwemmen", tag:"kern-gezond", ej:"Nos bañamos en el mar.", ejnl:"We zwemmen in zee."},
+  {id:"k224", es:"la nariz", nl:"de neus", tag:"kern-gezond", ej:"Me duele la nariz.", ejnl:"Mijn neus doet pijn."},
+  {id:"k225", es:"el compañero / la compañera", nl:"de collega, maat", tag:"kern-relaties", ej:"Un compañero de trabajo me lo dijo.", ejnl:"Een collega vertelde het me."},
+  {id:"k226", es:"la fiesta", nl:"het feest", tag:"kern-relaties", ej:"Su fiesta empieza a las diez.", ejnl:"Haar feest begint om tien uur."},
+  {id:"k227", es:"el nieto / la nieta", nl:"het kleinkind", tag:"kern-relaties", ej:"Su nieto tiene dos años.", ejnl:"Haar kleinzoon is twee."},
+  {id:"k228", es:"el sobrino / la sobrina", nl:"de neef, nicht (kind van broer of zus)", tag:"kern-relaties", ej:"Mi sobrina estudia música.", ejnl:"Mijn nichtje studeert muziek."},
+  {id:"k229", es:"la empresa", nl:"het bedrijf", tag:"kern-werk", ej:"Trabaja en una empresa holandesa.", ejnl:"Hij werkt bij een Nederlands bedrijf."},
+  {id:"k230", es:"la oficina", nl:"het kantoor", tag:"kern-werk", ej:"Estoy en la oficina hasta las seis.", ejnl:"Ik ben tot zes uur op kantoor."},
+  {id:"k231", es:"el jefe / la jefa", nl:"de baas", tag:"kern-werk", ej:"Mi jefa vuelve el lunes.", ejnl:"Mijn baas is maandag terug."},
+  {id:"k232", es:"el director / la directora", nl:"de directeur", tag:"kern-werk", ej:"El director firma el contrato.", ejnl:"De directeur tekent het contract."},
+  {id:"k233", es:"la profesión", nl:"het beroep", tag:"kern-werk", ej:"¿Cuál es tu profesión?", ejnl:"Wat is je beroep?"},
+  {id:"k234", es:"el teléfono", nl:"de telefoon", tag:"kern-werk", ej:"Te doy mi teléfono.", ejnl:"Ik geef je mijn nummer."},
+  {id:"k235", es:"el fax", nl:"de fax", tag:"kern-werk", ej:"Antes mandábamos un fax.", ejnl:"Vroeger stuurden we een fax."},
+  {id:"k236", es:"el ordenador", nl:"de computer", tag:"kern-techniek", ej:"Mi ordenador va lentísimo.", ejnl:"Mijn computer is loeitraag."},
+  {id:"k237", es:"internet", nl:"internet", tag:"kern-techniek", ej:"Lo busco en internet.", ejnl:"Ik zoek het op internet op."},
+  {id:"k238", es:"el número", nl:"het nummer, getal", tag:"kern-techniek", ej:"¿Me das tu número?", ejnl:"Geef je me je nummer?"},
+  {id:"k239", es:"el juego", nl:"het spel", tag:"kern-vrijetijd", ej:"Este juego es para dos personas.", ejnl:"Dit spel is voor twee personen."},
+  {id:"k240", es:"esquiar", nl:"skiën", tag:"kern-vrijetijd", ej:"En enero vamos a esquiar.", ejnl:"In januari gaan we skiën."},
+  {id:"k241", es:"con", nl:"met", tag:"kern-bestaan", ej:"Voy con mi hermana.", ejnl:"Ik ga met mijn zus."},
+  {id:"k242", es:"sin", nl:"zonder", tag:"kern-bestaan", ej:"Tomo el café sin azúcar.", ejnl:"Ik drink mijn koffie zonder suiker."},
+  {id:"k243", es:"quizá / quizás", nl:"misschien", tag:"kern-bestaan", ej:"Este verano quizá vayamos a Cádiz.", ejnl:"Deze zomer gaan we misschien naar Cádiz."},
+  {id:"k244", es:"creer", nl:"geloven, denken", tag:"kern-bestaan", ej:"Creo que tienes razón.", ejnl:"Ik denk dat je gelijk hebt."}
+];
+
 var TRACKS = {
   a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-6"},
   beginner: {label:"A0 · AULA 1", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"a0-batch-4"}
@@ -2752,7 +3042,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{}, dag:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
@@ -2799,6 +3089,22 @@ function normaliseerState(s){
   s.ritme = s.ritme || {}; // v19.58: wanneer & waar (implementatie-intentie), puur voor jezelf
   s.maatje = s.maatje || {}; // v19.58: de ene persoon die meekijkt en zelf niet leert
   s.dag = s.dag || {};     // v19.60: de dagafsluiting (feest gezien op datum X, klaar gemeld op datum Y)
+  if(s.claim === undefined) s.claim = null;  // v19.85: je eenmalige niveau-verklaring
+  if(s.tempo === undefined) s.tempo = null;  // v19.85: portie van vandaag, bevroren
+  // v19.85: vanaf welke datum de richtingstellers (st.r / st.p) betekenis hebben. Wie
+  // al maanden oefent heeft duizenden beurten zonder registratie; die tellen we niet
+  // als "nooit geproduceerd". Meten begint vandaag, niet met terugwerkende kracht.
+  if(!s.richtingVanaf) s.richtingVanaf = today();
+  /* v19.90: je doel bestaat uit twee losse dingen, want ze doen iets anders.
+     doelMin is hoeveel tijd je er per dag in wilt stoppen en stuurt je dagportie
+     aan (via S.doel, dat de rest van de app al leest). doelNiv/doelDatum is waar
+     je wilt uitkomen; dat stuurt niets aan, dat is een richting om je tempo naast
+     te leggen. Wie van voor v19.90 komt houdt zijn punten-doel, we leiden er
+     alleen de minuten uit af. */
+  if(s.doelMin === undefined) s.doelMin = (s.doel || GOAL) <= 15 ? 5 : ((s.doel || GOAL) <= 45 ? 10 : 20);
+  if(s.doelNiv === undefined) s.doelNiv = null;
+  if(s.doelMnd === undefined) s.doelMnd = null;
+  if(s.doelDatum === undefined) s.doelDatum = null;
   return s;
 }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
@@ -2856,7 +3162,10 @@ function mergeServerGroepen(res){
 function serverPull(p){
   api("/api/state/" + ensureCode(p)).then(function(res){
     if(res && res.ok && res.state && (res.state.txp||0) > (S.txp||0)){
+      var metingVoor = S.meting;
       S = normaliseerState(res.state);
+      mengMeting(metingVoor);   // v19.83: weekmetingen overleven een pull
+      snapshotSchrijf();
       store.save(S);
       mergeServerGroepen(res);
       updateBadge(); updateGoalUI();
@@ -2987,6 +3296,10 @@ SIGNUP_TXT.nl.meer = "⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook l
 SIGNUP_TXT.en.meer = "⚙️ More options: daily goal, e-mail, group code (you can also do this later)";
 SIGNUP_TXT.fr.meer = "⚙️ Plus d'options : objectif quotidien, e-mail, code de groupe (possible plus tard aussi)";
 SIGNUP_TXT.de.meer = "⚙️ Mehr Optionen: Tagesziel, E-Mail, Gruppencode (geht auch später)";
+SIGNUP_TXT.nl.wijzig = "wijzigen";
+SIGNUP_TXT.en.wijzig = "change";
+SIGNUP_TXT.fr.wijzig = "modifier";
+SIGNUP_TXT.de.wijzig = "ändern";
 
 /* ===== LEER-EERST-PROEVERIJ (29 juli, onboarding-onderzoek) =====
    Duolingo's best gevalideerde onboarding-ingreep: eerst iets leren, dán pas registreren (+20% DAU).
@@ -3126,6 +3439,12 @@ function applySignupLang(){
     var l = b.getAttribute("data-lvl"); if(lv[l]) b.textContent = lv[l];
   });
   zet("lblTaal", d.taal);
+  var lt = document.getElementById("lnkTaal");
+  if(lt){
+    var ui = UI_LANGS[newLang] || UI_LANGS.nl;
+    lt.textContent = String(d.taal || "").replace(/[:\s]+$/, "")+": "+ui.vlag+" "+ui.naam+
+                     " · "+(d.wijzig || SIGNUP_TXT.nl.wijzig);
+  }
   zet("lblDoel", d.doel);
   zet("lnkMeerOpties", d.meer || SIGNUP_TXT.nl.meer);
   renderDoelRow();
@@ -3252,6 +3571,19 @@ function renderProfileScreen(){
     if(mo) mo.classList.toggle("hidden");
     return false;
   };
+  // v19.91: uitklappers voor taal en voor het terugkeerblok.
+  function vouw(linkId, boxId){
+    var l = document.getElementById(linkId);
+    if(!l) return;
+    l.onclick = function(e){
+      if(e && e.preventDefault) e.preventDefault();
+      var b = document.getElementById(boxId);
+      if(b) b.classList.toggle("hidden");
+      return false;
+    };
+  }
+  vouw("lnkTaal", "taalBox");
+  vouw("kopSync", "syncBox");
   // leer-eerst: gloednieuwe bezoekers (geen enkel profiel op dit apparaat) proeven eerst 3 woordjes
   function normaalBegin(){
     var pd = proefData();
@@ -3321,7 +3653,9 @@ function renderProfileScreen(){
       profiles.active = bestaand.name;
       saveProfiles();
       store.key = bestaand.key;
+      var metingVoor2 = S.meting;
       S = normaliseerState(res.state);
+      mengMeting(metingVoor2);   // v19.83: idem bij inloggen met een sync-code
       store.save(S);
       mergeServerGroepen(res);
       boot();
@@ -3426,11 +3760,11 @@ function boot(){
   var tr = TRACKS[p.track] || TRACKS.a2;
   if(p.track === "a2"){
     // A2'ers krijgen ook alle A1-materiaal mee als opfris-lessen (kennis zakt anders weg)
-    WORDS = tr.words.concat(B_WORDS);
+    WORDS = tr.words.concat(B_WORDS).concat(K_WORDS);
     SENTENCES = tr.sentences.concat(B_SENTENCES);
     QUIZZES = tr.quizzes.concat(B_QUIZZES);
   } else {
-    WORDS = tr.words; SENTENCES = tr.sentences; QUIZZES = tr.quizzes;
+    WORDS = tr.words.concat(K_WORDS); SENTENCES = tr.sentences; QUIZZES = tr.quizzes;
   }
   CHEATSHEET = tr.cheat; BATCH = tr.batch;
   store.key = p.key;
@@ -3442,6 +3776,12 @@ function boot(){
   quizSpreid(); // bestaande achterstand uitsmeren i.p.v. als stapel presenteren
   // startdatum voor het dag-2-welkom (alleen voor echt verse profielen, niet met terugwerkende kracht)
   if(!S.gestart && !(S.txp > 0)) S.gestart = today();
+  // v19.85: wie bij het aanmelden A2 koos, of de plaatsingstoets op A2 uitkwam, heeft
+  // daarmee al gezegd dat A1 grotendeels bekend is. Dan hoef je dat niet nog eens per
+  // woord te bevestigen. Alleen bij een vers profiel: bij iemand die al maanden bezig
+  // is zou een stille bulkpromotie zijn eigen geschiedenis overschrijven.
+  if(p.track === "a2" && S.claim === null && !(S.txp > 0)) niveauClaim(0);
+  snapshotSchrijf(); // v19.83: nulmeting van de week, onzichtbaar
   // proeverij verzilveren: XP + SRS-start van de 3 proefwoordjes verhuizen mee naar dit profiel
   var pd0 = proefData();
   if(pd0 && pd0.klaar && !S.proefVerzilverd){
@@ -3459,6 +3799,7 @@ function boot(){
   }
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
+  wRondeIds = null; wRondeTot = 0; wNetFout = {}; // v19.91
   document.getElementById("userName").textContent = p.name;
   document.getElementById("tab-profiel").classList.add("hidden");
   document.getElementById("goalLine").classList.remove("hidden");
@@ -3653,6 +3994,445 @@ var INTERVALS = [0,1,3,7,14,30];
 var GRAM_INTERVALS = [0,4,12,30,75,150];
 // hoeveel dagen er minimaal tussen twee wachtende toetsjes zitten (zie quizSpreid)
 var GRAM_SPREID = 3;
+
+/* ================= NULMETING & VOORTGANG (v19.83) =================
+   Dit is nog niet zichtbaar. Het legt alleen één keer per week een momentopname
+   van je tellers vast. Reden: "hoe lang nog" kun je alleen schatten uit een
+   reeks, en een week die je niet vastlegt is permanent weg. De nulmeting van nu
+   is het waardevolst, want er komt binnenkort een flinke lading nieuwe woorden bij.
+
+   Noemer: het Plan curricular del Instituto Cervantes, de enige gepubliceerde
+   lijst die per niveau opsomt wat je moet kennen. Geteld zijn de enkelwoordige
+   eenheden uit de nociones-inventarissen (hoofdstuk 8 en 9), elk woord één keer,
+   op het laagste niveau waar het voorkomt.
+   Eerlijkheidshalve: de koppeling pool -> Cervantes vergelijkt genormaliseerde
+   vormen en kent geen vervoegingen en geen betekenis. De dekking is daardoor
+   eerder een onder- dan een overschatting, en bedoeld als trendmeter, niet als
+   exact cijfer. */
+var PCIC_NOEMER = {"A1": 390, "A2": 409, "B1": 828, "B2": 1485, "C1": 1665, "C2": 1973};
+var PCIC_IDMAP_RAW = "b100 hijo|b101 mi|b105 conocer|b106 novio|b107 casado|b108 soltero|b109 mayor|b11 casa|b110 menor menores|b112 musica|b113 jugar|b115 levantar levantarse|b116 ducharse|b117 desayunar|b118 comer|b119 cenar|b12 perro|b120 acostarse|b121 manana|b122 tarde|b123 noche|b124 hora|b125 reloj|b126 temprano|b127 tarde|b128 siempre|b129 nunca|b13 gato|b132 despertar|b133 desayuno|b135 cena|b137 carta|b138 camarero|b14 libro|b141 traer|b142 mesa|b143 plato|b145 pan|b146 fruta|b147 verdura|b148 carne|b149 pescado|b15 escuela|b150 cuenta|b151 edificio|b152 calle|b153 centro|b154 cerca|b155 lejos|b158 entre|b159 seguro|b16 amigo|b160 limpio|b161 sucio|b162 moderno|b163 antiguo|b165 caminar|b166 vecino|b167 tranquilo|b168 ruidoso|b169 saber|b17 familia|b170 poder|b171 conducir|b172 nadar|b173 cocinar|b174 bailar|b175 cantar|b176 dibujar|b177 tocar|b178 piano|b179 guitarra|b18 madre|b181 ya|b183 haber|b184 hecho|b187 huevos|b188 playa|b19 padre padres|b190 olas|b191 olvidar|b192 gaviota|b194 nube|b196 torpe|b198 llorar|b199 corazon corazones|b20 hermano|b200 ritmo|b202 calle|b203 vacio|b205 recordar|b207 hoja|b208 correr|b209 cola|b21 comer|b210 respirar|b211 fuerte|b213 banco|b214 temblar|b215 lagrima|b216 suficiente|b217 niebla|b218 esquina|b22 beber|b221 faltar|b222 arbol|b223 apenas|b224 silencio|b227 gigante|b23 hablar|b230 rendir rendirse|b236 travieso|b238 destruir|b239 espeso|b24 vivir|b240 antiguo|b243 hermano|b245 crecer|b246 dorada dorado|b247 estacion|b248 brillante|b249 terminar|b25 ser|b250 aprender|b251 recuerdo|b26 estar|b27 tener|b28 ir|b29 grande|b3 gracias|b30 pequeno|b31 bonito|b32 simpatico|b33 agua|b34 comida|b38 poco|b39 donde|b40 mucho|b42 espanol|b43 nombre|b44 trabajo|b45 profesor|b46 estudiante|b47 trabajar|b48 estudiar|b49 ano|b5 no si|b51 leer|b52 escribir escribirse|b53 escuchar|b54 entender|b55 palabra|b57 ciudad|b58 pueblo|b59 playa|b60 montana|b61 rio|b62 mar|b63 norte|b64 sur|b65 parque|b66 plaza|b67 museo|b68 iglesia|b73 gente|b74 bonito|b77 pantalones|b79 zapatos|b81 rojo|b82 azul|b83 verde|b84 amarillo|b85 negro|b86 blanco|b87 tienda|b88 comprar|b89 cara caro|b90 barato|b91 precio|b95 llevar llevarse|b96 talla|b97 abuelo|b98 tio|b99 primo|k1 hombre|k10 senor senores|k100 este|k101 oeste|k102 colegio|k103 restaurante|k104 bar|k105 bocadillo|k106 sandwich|k107 hamburguesa|k108 ensalada|k109 sopa|k11 marido|k110 tortilla|k111 paella|k112 postre|k113 leche|k114 cerveza|k115 te|k116 merienda|k117 merendar|k118 dinero|k119 euro|k12 edad|k120 centimo|k121 tarjeta|k122 medico|k123 hospital|k124 enfermera|k125 policia|k126 bombero|k127 papel|k128 sello|k129 sobre|k13 nacionalidad|k130 postal|k131 mercado|k132 vender|k133 vendedor|k134 comprador|k135 billete|k136 salida|k137 informacion|k138 bolso|k139 camisa|k14 direccion|k140 falda|k141 jersey|k142 vaqueros|k143 mas|k144 menos|k145 muy|k146 largo|k147 corto|k148 gordo|k149 caliente|k15 extranjero|k150 frio|k151 rapido|k152 lento|k153 despacio|k154 kilometro|k155 aqui|k156 alli|k157 en|k158 de|k159 entrar|k16 aleman|k160 salir salirse|k161 llegar|k162 venir|k163 volver|k164 despues|k165 abrir|k166 cerrar|k167 entrada entradas|k168 ver|k169 claro|k17 japones|k170 oscuro|k171 gris|k172 marron|k173 naranja|k174 hoy|k175 ayer|k176 dia|k177 semana|k178 mes|k179 minuto|k18 mexicano|k180 pronto|k181 normalmente|k182 cuando|k183 bien bienes|k184 bueno|k185 malo|k186 regular|k187 facil|k188 dificil|k189 feo|k19 marroqui|k190 interesante|k191 pagar|k192 cine|k193 pelicula|k194 teatro|k195 actor|k196 actriz|k197 foto|k198 monumento|k199 catedral|k2 mujer|k20 divorciado|k200 alegre|k201 serio|k202 antipatico|k203 inteligente|k204 sociable|k205 trabajador|k206 presidente|k207 rey|k208 reina|k209 abogado|k21 separado|k210 capital|k211 religion|k212 cristiano|k213 musulman|k214 judias judio|k215 budista|k216 quiosco|k217 arroba|k218 punto|k219 guion|k22 viudo|k220 farmacia|k221 enfermero|k222 jabon|k223 banarse|k224 nariz|k225 companero|k226 fiesta|k227 nieto|k228 sobrino|k229 empresa|k23 llamarse|k230 oficina|k231 jefe|k232 director|k233 profesion|k234 telefono|k235 fax|k236 ordenador|k237 internet|k238 numero|k239 juego|k24 firmar|k240 esquiar|k241 con|k242 sin|k243 quiza|k244 creer|k25 gafas|k26 cartera|k27 avenida|k28 paseo|k29 coche|k3 nino|k30 tren|k31 autobus|k32 metro|k33 taxi|k34 taxista|k35 avion|k36 aeropuerto|k37 puerto|k38 carretera|k39 aparcamiento|k4 nina|k40 garaje|k41 conductor|k42 hotel|k43 campin|k44 maleta|k45 pasaporte|k46 mapa|k47 plano planos|k48 horario|k49 turista|k5 chico|k50 vacacion vacaciones|k51 publicidad|k52 habitacion|k53 apartamento|k54 estudio|k55 bano|k56 ducha|k57 lavabo|k58 puerta|k59 ventana|k6 chica|k60 escalera|k61 silla|k62 sillon|k63 estanteria|k64 television|k65 radio|k66 video|k67 dvd|k68 nuevo|k69 viejo|k7 joven|k70 clase|k71 leccion|k72 unidad|k73 ejercicio|k74 examen|k75 pregunta|k76 pagina|k77 pizarra|k78 boligrafo|k79 lapiz|k8 senor senores|k80 goma|k81 fotocopia|k82 biblioteca|k83 instituto|k84 universidad|k85 actividad|k86 comprender|k87 practicar|k88 sol|k89 llover|k9 senora|k90 nevar|k91 primavera|k92 verano|k93 otono|k94 invierno|k95 campo|k96 flor|k97 planta|k98 animal|k99 lugar|w10 ilusion|w100 dormitorio|w101 cocina|w103 salon|w104 terraza|w106 jardin|w107 armario|w108 cama|w109 sofa|w11 ridiculo|w111 amueblado|w112 luminoso|w113 amplio|w114 acogedor|w115 ruidoso|w116 tranquilo|w117 barrio|w118 afuera afueras|w120 alquiler|w121 ascensor|w122 encantar|w126 dejar|w13 timido|w131 disculpar|w134 ruido|w136 vecino|w139 ocupado|w140 llaves|w141 movil|w143 cenar|w144 ducharse|w145 ante antes|w146 ahora|w148 todavia|w149 invento|w15 contento|w150 descubrimiento|w151 electricidad|w153 escritura|w157 cambiar|w158 antiguo|w159 moderno|w160 generacion|w161 abuelo|w163 excursion|w164 concierto|w166 paisaje|w167 alojamiento|w168 reservar|w17 libre|w171 rollo|w173 pena|w174 parecer|w175 planear|w176 plan|w178 disfrutar|w18 sentir|w181 receta|w182 ingrediente ingredientes|w183 cocinar|w184 hervir|w185 freir|w187 anadir|w188 cortar|w190 horno|w191 sarten|w192 cazuela|w195 bastante|w196 demasiado|w197 cucharada|w199 cabeza|w200 espalda|w201 estomago|w202 garganta|w203 doler|w21 aprender|w210 tomar|w211 pastilla|w214 grave|w215 mejorar|w217 momento|w22 olvidar|w220 sorprender sorprenderse|w221 anecdota|w222 contar|w226 recuerdo|w227 recordar|w229 emocion|w23 recordar|w230 celebrar|w231 celebracion|w232 inesperado|w234 sueno|w235 huevos|w236 playa|w238 olas|w239 olvidar|w24 repetir repetirse|w240 gaviota|w242 nube|w244 torpe|w246 llorar|w247 corazon corazones|w248 ritmo|w250 calle|w251 vacio|w253 recordar|w255 hoja|w256 correr|w257 cola|w258 respirar|w259 fuerte|w261 banco|w262 temblar|w263 lagrima|w264 suficiente|w265 niebla|w266 esquina|w269 faltar|w27 diccionario|w270 arbol|w271 apenas|w272 silencio|w275 gigante|w278 rendir rendirse|w28 palabra|w284 travieso|w286 destruir|w287 espeso|w288 antiguo|w29 frase|w291 hermano|w293 crecer|w294 dorada dorado|w295 estacion|w296 brillante|w297 terminar|w298 aprender|w299 recuerdo|w30 sonido|w32 mejorar|w33 reto|w34 error|w35 costar|w39 entender|w41 nacer|w42 casarse|w43 divorciarse|w44 morir|w47 viajar|w48 vida|w49 muerte|w5 frustrado|w50 cuadro|w52 epoca|w54 pintor|w55 sufrimiento|w56 exposicion|w57 tropezar|w58 nadar|w59 mar|w6 frustracion|w63 pais|w65 biografia|w66 logro|w68 premio|w69 empezar|w70 terminar|w71 durante|w72 hasta|w73 siglo|w74 jubilarse|w75 guerra|w76 huir|w77 componer|w78 dirigir|w80 conseguir|w81 cantante|w82 irse|w83 pelo|w84 ojo|w85 alto|w86 bajo|w87 delgado|w88 guapo|w9 ilusionado|w93 caracter caracteres|w94 abierto|w95 callado|w97 pareja|w98 conocer|w99 piso";
+var PCIC_KEYNIV_RAW = "A1:abogado abrir abuelo actividad actor actriz aeropuerto agua ahora alegre aleman alli alto amarillo amigo animal ano antes antipatico aparcamiento apartamento aprender aqui arbol armario arroba ascensor autobus avenida avion ayer azul bailar bajo banarse banco bano bar barato bastante beber biblioteca bien billete blanco bocadillo boligrafo bolso bombero bonito budista bueno caliente calle cama camarero cambiar camisa campin campo cantante cantar capital carne caro carretera carta cartera casa casado catedral cena cenar centimo centro cerca cerrar cerveza chica chico cine ciudad claro clase coche cocina colegio comer comida companero comprador comprar comprender con concierto conductor correr corto costar creer cristiano cuando de delgado desayunar desayuno despacio despues dia diccionario dificil dinero direccion director divorciado dormitorio ducha ducharse dvd edad edificio ejercicio empezar empresa en enfermera enfermero ensalada entender entrada entrar entre escalera escribir escuchar escuela espanol esquiar estanteria estar este estudiante estudiar estudio euro examen exposicion extranjero facil falda familia farmacia fax feo fiesta firmar flor foto fotocopia frio fruta gafas garaje gente goma gordo grande gris guapo guion haber habitacion hablar hamburguesa hermano hijo hombre hora horario hospital hotel hoy huevos iglesia informacion instituto inteligente interesante internet invierno ir jabon japones jardin jefe jersey joven judio juego kilometro lapiz largo lavabo leccion leche leer lejos lento levantarse libro llamarse llaves llegar llover lugar madre maleta malo manana mapa mar marido marron marroqui mas medico menos mercado merendar merienda mes mesa metro mexicano minuto momento montana monumento movil mucho mujer museo musica musulman muy nacionalidad nadar naranja nariz negro nevar nieto nina nino no noche nombre normalmente norte novio nuevo numero nunca oeste oficina ojo ordenador oscuro otono padre padres paella pagar pagina pais pan pantalones papel pareja parque pasaporte paseo pelicula pelo pequeno pescado piso pizarra plano planta playa plaza poco policia postal postre practicar precio pregunta presidente primavera primo profesion profesor pronto publicidad pueblo puerta puerto punto quiosco quiza radio rapido regular reina religion reloj repetir restaurante rey rio rojo saber salida salir salon sandwich sello semana senor senora senores separado ser serio si siempre silla sillon simpatico sin sobre sobrino sociable sofa sol soltero sopa sur tarde tarjeta taxi taxista te teatro telefono television temprano tener terminar terraza tienda timido tio tortilla trabajador trabajar trabajo tren turista unidad universidad vacaciones vaqueros vendedor vender venir ventana ver verano verde verdura viajar video viejo viudo vivir volver zapatos|A2:abierto acostarse amueblado antiguo barrio cabeza caminar cara caracter casarse cocinar crecer cuadro demasiado dibujar divorciarse doler durante encantar espalda esquina estacion estomago excursion fuerte garganta gato guerra guitarra hasta hoja ingrediente jugar limpio llevar mayor moderno morir nacer niebla nube perro piano pintor plato poder receta reservar ruido sucio talla traer tranquilo vecino ya|B1:afueras alquiler biografia callado celebrar cola conducir conocer conseguir contar corazon cucharada cuenta dejar descubrimiento destruir electricidad error frase freir gracias hervir horno ingredientes invento irse jubilarse judias levantar libre llorar luminoso menor muerte ocupado olas olvidar paisaje palabra parecer pastilla plan planos premio recordar respirar rollo ruidoso sarten seguro siglo silencio sonido sueno tocar todavia travieso vacacion vacio vida|B2:acogedor afuera alojamiento amplio anadir anecdota ante cazuela celebracion componer contento dirigir disfrutar donde dorada dorado emocion epoca espeso faltar generacion gigante grave hecho huir ilusionado lagrima llevarse mejorar menores mi recuerdo ridiculo ritmo sorprender sorprenderse suficiente tropezar|C1:apenas bienes brillante despertar disculpar escribirse frustracion frustrado gaviota ilusion inesperado logro pena planear rendir rendirse reto sentir sufrimiento temblar tomar torpe|C2:caracteres corazones cortar entradas escritura repetirse salirse";
+var _pcicMap = null, _pcicNiv = null;
+function pcicMap(){
+  if(_pcicMap) return _pcicMap;
+  _pcicMap = {};
+  PCIC_IDMAP_RAW.split("|").forEach(function(r){
+    var p = r.split(" ");
+    _pcicMap[p[0]] = p.slice(1);
+  });
+  return _pcicMap;
+}
+function pcicNiv(){
+  if(_pcicNiv) return _pcicNiv;
+  _pcicNiv = {};
+  PCIC_KEYNIV_RAW.split("|").forEach(function(r){
+    var i = r.indexOf(":"), n = r.slice(0, i);
+    r.slice(i+1).split(" ").forEach(function(k){ if(k) _pcicNiv[k] = n; });
+  });
+  return _pcicNiv;
+}
+
+// Stevig = de bovenste box. Omdat een fout antwoord de box terugzet op 0 (zie
+// answerWord), betekent die box vijf keer achter elkaar goed over minstens 25
+// dagen. Er is dus geen aparte "beheerst"-vlag nodig; de ladder is het bewijs.
+function stevigDrempel(){ return INTERVALS.length - 1; }
+
+/* ================= SPEL VOEDT DE WOORD-SRS (v19.89) =================
+   Tot nu toe schreven alleen de woordtrainer, Crucigrama en de rondleiding naar
+   S.srs. Alle andere spellen gaven wel XP maar konden je voortgangsbalk niet
+   raken, want die telt PCIC-sleutels van woorden in S.srs. Een maand spelen kon
+   dus per definitie niets opleveren op het scherm dat er voor Stefan het meest
+   toe doet.
+
+   Wat nu meetelt: spellen waarin je het Spaans zelf produceert (Dictado typen,
+   Husselen bouwen). Wat niet: herkennen (Sopa, Memory) en oordelen (El
+   Corrector), want een woord aanwijzen is geen woord kennen.
+
+   Het plafond is box 3. Dat is geen willekeurig getal: box 3 is precies waar de
+   lichte strook op je voortgangsscherm begint (zie dekw in voortgangTellers).
+   Spelen duwt een woord dus zichtbaar de marge in, maar nooit over de streep.
+   Stevig betekent vijf keer los uit je hoofd, en dat blijft de woordtrainer. */
+var SPEL_PLAFOND = 3;
+var _spelWIdx = null;
+function spelWordIdx(){
+  if(_spelWIdx && _spelWIdx.n === WORDS.length) return _spelWIdx.map;
+  var map = {};
+  WORDS.forEach(function(w){
+    String(w.es || "").split("/").forEach(function(deel){
+      var k = stripAcc(norm(deel));
+      if(k && !map[k]) map[k] = w.id;
+    });
+  });
+  _spelWIdx = {n:WORDS.length, map:map};
+  return map;
+}
+/* Eenrichtingsverkeer: een spel kan een woord omhoog helpen tot het plafond en
+   verder niets. Nieuwe woorden introduceren doet het niet (dat is de les), en
+   omlaag halen ook niet (de fout is al op zinsniveau gelogd). */
+function spelSrsBij(id){
+  var st = S.srs[id];
+  if(!st || typeof st !== "object") return false;
+  if((st.box || 0) >= SPEL_PLAFOND) return false;
+  var t = today();
+  st.box = Math.min((st.box || 0) + 1, SPEL_PLAFOND);
+  st.due = addDays(t, INTERVALS[st.box]);
+  st.n = (st.n || 0) + 1;
+  st.r = (st.r || 0) + 1;           // receptief/productief, zie v19.85
+  st.sp = 1;                        // v19.91: laatste stap kwam uit een spel
+  S.srs[id] = st;
+  return true;
+}
+/* De woorden uit een goed geproduceerde zin, elk hoogstens een keer. */
+function spelZinSrs(zin){
+  var map = spelWordIdx(), gezien = {}, n = 0;
+  String((zin && zin.es) || "").split(/[^A-Za-z\u00c0-\u024f]+/).forEach(function(tok){
+    if(!tok) return;
+    var id = map[stripAcc(norm(tok))];
+    if(!id || gezien[id]) return;
+    gezien[id] = 1;
+    if(spelSrsBij(id)) n++;
+  });
+  if(n){ persist(); updateBadge(); }
+  return n;
+}
+
+/* ================= NIVEAU VAN EEN WOORD (v19.84) =================
+   Tot nu toe was de dagportie niveau-blind: hij sorteerde op vervaldatum en
+   op "gisteren fout", en pakte nieuwe woorden in poolvolgorde. Wie net begon
+   kon dus een B2-woord voor een A1-woord krijgen, puur omdat het toevallig
+   eerder in de lijst stond.
+   De PCIC-kaart die al in de app zit (pcicMap + pcicNiv) weet per woord welk
+   niveau het laagst is. Dat is nu de volgorde van nieuwe woorden: eerst de
+   A1-bodem, dan A2, en zo verder. Woorden die Cervantes niet kent (namen,
+   verhaalwoorden uit het Chispa-boek) gaan achteraan, niet weg.
+   ================================================================= */
+var NIV_RANG = {A1:0, A2:1, B1:2, B2:3, C1:4, C2:5};
+var _nivCache = {};
+function woordNiveau(id){
+  if(_nivCache[id] !== undefined) return _nivCache[id];
+  var ks = pcicMap()[id], niv = pcicNiv(), best = 9, i, r;
+  if(ks) for(i = 0; i < ks.length; i++){
+    r = NIV_RANG[niv[ks[i]]];
+    if(r !== undefined && r < best) best = r;
+  }
+  _nivCache[id] = best;
+  return best;
+}
+
+/* ================= DE POORT (v19.85) =================
+   Stefan, 1 augustus: "ik denk dat het van belang is dat je de basis echt solide
+   neerzet voor je verder gaat. 30 procent stevig laten rijpen, want anders krijg
+   je er in A2 last van."
+
+   v19.84 sorteerde nieuwe woorden op niveau, maar dat is een volgorde, geen poort:
+   zodra het laatste A1-woord één keer gezien was, stroomde A2 binnen. Gezien is niet
+   gekend. Vanaf nu geldt: een niveau is af als 85% van de Cervantes-eenheden op dat
+   niveau stevig is (box 5, dus vijf keer achter elkaar goed over minstens 25 dagen).
+   Pas dan gaat het volgende open.
+
+   Twee ontsnappingsclausules, allebei nodig:
+   - De pool dékt A2 maar voor een fractie (55 van de 409). Een pure percentage-poort
+     zou B1 dus voor altijd op slot zetten voor iets dat niet aan de leerling ligt maar
+     aan de inhoud. Daarom telt een niveau ook als af zodra er geen niet-stevige
+     poolwoorden meer op dat niveau liggen: je hebt gedaan wat er te doen was.
+   - En er sijpelt altijd één woord van boven de poort binnen (zie dagPortie). Stefan:
+     "het ziet tegen het randje van dit ken ik allemaal al aan, maar dan toch ook af en
+     toe wat nieuwe dingen." Een dichte deur is geen rijping, dat is een muur.
+
+   En de vraag die hij terugkaatste ("moet ik dat nu beslissen? ik ben geen pedagoog"):
+   als de receptieve kant straks veel sterker is dan de productieve, gaat de poort tóch
+   open, met productieve oefening op de A1-woorden ernaast. Produceren loopt bij iedere
+   leerder achter op herkennen; pariteit eisen betekent dat niemand ooit A2 haalt. Een
+   dichte deur op het moment dat je zichtbaar vooruitgaat is precies waar "leuk en
+   ontspannen" breekt. Het gat blijft zichtbaar (st.r / st.p), maar blokkeert niet.
+   ===================================================== */
+var NIV_NAAM = ["A1","A2","B1","B2","C1","C2"];
+var POORT_PCT = 0.85;
+
+function nogTeHalen(rang){
+  // ligt er op dit niveau nog een poolwoord dat niet stevig is?
+  var drempel = stevigDrempel(), i, w, st;
+  for(i = 0; i < WORDS.length; i++){
+    w = WORDS[i];
+    if(woordNiveau(w.id) !== rang) continue;
+    st = S.srs[w.id];
+    if(!st || (st.box || 0) < drempel) return true;
+  }
+  return false;
+}
+
+function poortRang(){
+  var t = voortgangTellers(), i, n;
+  for(i = 0; i < NIV_NAAM.length; i++){
+    n = NIV_NAAM[i];
+    if((t.dek[n] || 0) / (PCIC_NOEMER[n] || 1) >= POORT_PCT) continue; // gehaald
+    if(!nogTeHalen(i)) continue;                                       // niets meer te doen
+    return i;                                                          // hier ligt de poort
+  }
+  return 9; // alles open, ook de woorden die Cervantes niet kent
+}
+
+/* ================= JE NIVEAU CLAIMEN (v19.85) =================
+   In plaats van 390 keer "dit ken ik al" tikken zeg je één keer waar je staat. De
+   woorden van dat niveau verdwijnen daarmee niet: ze starten in box 3 en komen
+   verspreid over een maand één keer langs om de claim te controleren. Zeg je dan
+   "wist ik niet", dan valt zo'n woord gewoon terug naar box 0, net als elk ander.
+   Ze tellen ook niet mee als stevig: een claim is een claim, geen bewijs, en dus
+   schuift de poort er geen millimeter van op.
+   Alleen woorden die je nog nooit zag worden aangeraakt. Wat je al aan het leren
+   bent blijft staan waar het staat; niemand wordt door een knop teruggezet. */
+function niveauClaim(rang){
+  var t = today(), n = 0, i, w;
+  if(rang >= 0){
+    for(i = 0; i < WORDS.length; i++){
+      w = WORDS[i];
+      if(woordNiveau(w.id) > rang) continue;
+      if(S.srs[w.id]) continue;              // hier ben je al mee bezig: afblijven
+      // spreiden over een maand, anders staat er morgen een stapel van 390
+      S.srs[w.id] = {box:3, due:addDays(t, 3 + (n % 28)), claim:1};
+      n++;
+    }
+  }
+  S.claim = {niv:rang, d:t, n:n};
+  persist();
+  return n;
+}
+
+function niveauClaimTerug(){
+  // Alleen wat de claim zelf heeft neergezet en waar sindsdien niets mee gebeurd is.
+  var n = 0, id, st;
+  for(id in S.srs){
+    st = S.srs[id];
+    if(st && st.claim && !st.n){ delete S.srs[id]; n++; }
+  }
+  S.claim = null;
+  persist();
+  return n;
+}
+
+/* ================= HET TEMPO VOLGT HET FOUTPERCENTAGE (v19.85) =================
+   Stefan: "daarom vind ik dat foutpercentage ook zo'n mooie graadmeter."
+   Dat is het ook, en het lag er al (trackPoging/leerKpi sinds 28 juli) zonder dat
+   er iets mee gebeurde. Vanaf nu stuurt het de portie: gaat het je makkelijk af
+   (onder de 15% fout), dan mag er meer bij; struikel je veel (boven de 25%), dan
+   gaat het aantal nieuwe woorden omlaag terwijl de herhalingen doorlopen. Niet
+   omdat je minder kunt, maar omdat nieuwe stof stapelen terwijl de oude wankelt
+   precies de A2-ellende oplevert waar dit alles om begonnen is.
+   Pas vanaf 40 pogingen in zeven dagen; onder dat aantal is een percentage ruis.
+   Eén keer per dag vastgezet, zodat je portie niet halverwege de sessie verspringt. */
+/* ================= DE ONDERGRENS (v19.86) =================
+   Stefan, gevraagd waar de grens ligt tussen "mijn discipline hapert" en "het
+   ontwerp deugt niet": "nou minder dan 4 keer per week".
+
+   Dat is een oordeel over de app. Dus meet de app het zelf, en reageert erop
+   zoals je op een ontwerpfout hoort te reageren: door het ding kleiner en
+   makkelijker te maken. Niet door harder te duwen. Een melding die zegt dat je
+   te weinig komt is precies de duolingo-schuldmachine waar dit project tegen
+   begonnen is; het enige wat hier verandert is dat de dagportie krimpt tot iets
+   dat je in een paar minuten af hebt. Terugkomen moet goedkoper worden, niet
+   dringender.
+
+   Pas na veertien dagen sinds je start, anders veroordeelt de app een gebruiker
+   die er nog niet lang genoeg is om een venster te vullen. Het herstelt vanzelf:
+   kom je weer vaker, dan groeit de portie mee terug. */
+var TERUGKOM_PW = 4;        // Stefans getal: keer per week
+var TERUGKOM_VENSTER = 14;  // waarover we het meten
+
+function actiefVenster(dagen){
+  var n = 0, t = today(), i, d;
+  for(i = 0; i < dagen; i++){
+    d = addDays(t, -i);
+    if((S.xp[d] || 0) > 0) n++;
+  }
+  return n;
+}
+
+function terugkomKpi(){
+  var v = TERUGKOM_VENSTER;
+  var norm = Math.round(TERUGKOM_PW * v / 7);
+  var actief = actiefVenster(v);
+  // "rijp" = je bent lang genoeg bezig om er iets over te kunnen zeggen
+  var rijp = !!S.gestart && S.gestart <= addDays(today(), -v);
+  return {actief:actief, venster:v, norm:norm, pw:TERUGKOM_PW,
+          rijp:rijp, onder:(rijp && actief < norm)};
+}
+function herstelModus(){ return terugkomKpi().onder; }
+
+function tempoVandaag(){
+  var t = today();
+  if(S.tempo && S.tempo.d === t) return S.tempo;
+  // v19.86: kom je minder dan vier keer per week terug, dan is de app te groot.
+  // Dan wordt hij kleiner, zonder er iets van te zeggen op het moment zelf.
+  if(herstelModus()){
+    S.tempo = {d:t, n:2, cap:6, pct:-1, herstel:1};
+    persist();
+    return S.tempo;
+  }
+  var nieuw = DAG_PORTIE_NIEUW, cap = DAG_PORTIE;
+  var k = leerKpi().recent;
+  if(k.pog >= 40 && k.pct !== null){
+    if(k.pct < 15){ nieuw = DAG_PORTIE_NIEUW + 2; cap = DAG_PORTIE + 6; }
+    else if(k.pct > 25){ nieuw = Math.max(1, Math.round(DAG_PORTIE_NIEUW / 2)); }
+  }
+  S.tempo = {d:t, n:Math.min(nieuw, MAX_NEW_PER_DAY), cap:cap, pct:(k.pct === null ? -1 : k.pct)};
+  persist();
+  return S.tempo;
+}
+function nieuwPerDag(){ return tempoVandaag().n; }
+function portieMax(){ return tempoVandaag().cap; }
+
+function voortgangTellers(){
+  var drempel = stevigDrempel();
+  var stevig = 0, bijna = 0, geoefend = 0, keys = {}, mp = pcicMap(), id, st, b, ks, i;
+  for(id in S.srs){
+    st = S.srs[id];
+    if(!st || typeof st !== "object") continue;
+    geoefend++;
+    b = st.box || 0;
+    if(b >= drempel){
+      stevig++;
+      ks = mp[id];
+      if(ks) for(i = 0; i < ks.length; i++) keys[ks[i]] = 1;
+    } else if(b >= drempel - 1){ bijna++; }
+  }
+  var niv = pcicNiv(), dek = {A1:0, A2:0, B1:0, B2:0, C1:0, C2:0}, k, n;
+  for(k in keys){ n = niv[k]; if(n) dek[n]++; }
+  /* v19.87. Stefan: "de 0% en data die nu sowieso fout zijn (...) ook met de
+     marge richting doel". Box 5 vraagt vijf goede antwoorden over minstens 25
+     dagen; vóór dag 25 kan dek dus niets anders zijn dan 0, hoe goed je ook
+     bezig bent. Een balk die vier weken stilstaat meet niet, die ontmoedigt.
+     dekw telt dezelfde noemers, maar vanaf een herhaalinterval van een week
+     (box 3). Het verschil tussen dek en dekw is precies de marge: wat onderweg
+     is naar stevig. */
+  var opweg = {}, dekw = {A1:0, A2:0, B1:0, B2:0, C1:0, C2:0};
+  for(id in S.srs){
+    st = S.srs[id];
+    if(!st || typeof st !== "object") continue;
+    if((st.box || 0) < 3) continue;
+    ks = mp[id];
+    if(ks) for(i = 0; i < ks.length; i++) opweg[ks[i]] = 1;
+  }
+  for(k in opweg){ n = niv[k]; if(n) dekw[n]++; }
+  return {stevig:stevig, bijna:bijna, geoefend:geoefend, dek:dek, dekw:dekw};
+}
+
+function isoWeek(dateStr){
+  var p = dateStr.split("-"), d = new Date(Date.UTC(+p[0], +p[1]-1, +p[2]));
+  var dag = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dag);
+  var jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  var wk = Math.ceil((((d - jan1) / 86400000) + 1) / 7);
+  return d.getUTCFullYear() + "-W" + String(wk).padStart(2, "0");
+}
+
+function mengMeting(voor){
+  // Weekmetingen zijn geschiedenis: die mogen nooit verdwijnen omdat een ander
+  // apparaat toevallig een hogere tellerstand had. Bij een pull voegen we de
+  // weken samen. Staat dezelfde week aan beide kanten, dan wint de hoogste
+  // stand: binnen één week kan het aantal stevige woorden alleen oplopen, dus
+  // de hoogste meting is de laatste, en de laatste is de juiste.
+  if(!voor) return;
+  S.meting = S.meting || {};
+  for(var w in voor){
+    if(!S.meting[w] || (voor[w].stevig || 0) > (S.meting[w].stevig || 0)) S.meting[w] = voor[w];
+  }
+}
+function snapshotSchrijf(){
+  try{
+    var t = today(), w = isoWeek(t);
+    S.meting = S.meting || {};               // let op: S.snap is bezet door de dag-ochtendfoto
+    if(S.meting[w]) return;                  // deze week al vastgelegd
+    var c = voortgangTellers();
+    // v19.91: over drie weken kijken we naar deze reeks. Zonder dit veld is er dan een
+    // getal dat twee dingen tegelijk kan betekenen ("de app werkt" of "spelen werkt"),
+    // en dat valt achteraf niet meer uit elkaar te halen. Nu wel: spel = woorden waarvan
+    // de laatste stap uit een spel kwam, spelw = daarvan de woorden die al meetellen (box >= 3).
+    var sp = 0, spw = 0, srsK, srsE;
+    for(srsK in S.srs){
+      srsE = S.srs[srsK];
+      if(srsE && typeof srsE === "object" && srsE.sp){ sp++; if((srsE.box || 0) >= 3) spw++; }
+    }
+    S.meting[w] = {d:t, stevig:c.stevig, bijna:c.bijna, geoefend:c.geoefend,
+                 dek:c.dek, txp:S.txp || 0, spel:sp, spelw:spw};
+    persist();
+  }catch(e){}                                // een meter mag de app nooit omver duwen
+}
+
+// Schatting "hoe lang nog", als band en nooit als datum. Geeft null zolang er
+// minder dan drie weekpunten liggen: met twee punten is elk tempo toeval. De band
+// wordt smaller naarmate er meer weken in zitten, want de onzekerheid van een
+// gemiddelde krimpt met de wortel van het aantal metingen.
+/* v19.90. "Wanneer is A1 vol?" en "waar sta ik over drie maanden?" zijn dezelfde
+   reeks vanaf twee kanten bekeken. Ze hoorden dus niet twee keer los uitgerekend
+   te worden: dan kunnen ze uit elkaar lopen en spreekt hetzelfde scherm zichzelf
+   tegen. Dit is de enige plek waar het tempo berekend wordt.
+   Marge is twee standaardfouten van het weekgemiddelde: die krimpt met de wortel
+   van het aantal weken, dus de uitspraak wordt vanzelf scherper naarmate je langer
+   meedoet. Onder de drie weken staat hier niets, want met twee punten is elk
+   tempo toeval. */
+function tempoMeting(niveau){
+  var ws = Object.keys(S.meting || {}).sort();
+  if(ws.length < 3) return null;
+  var reeks = ws.map(function(w){ return (S.meting[w].dek || {})[niveau] || 0; });
+  var d = [], i;
+  for(i = 1; i < reeks.length; i++) d.push(reeks[i] - reeks[i-1]);
+  var som = d.reduce(function(a, b){ return a + b; }, 0), gem = som / d.length;
+  var v = d.reduce(function(a, b){ return a + (b - gem) * (b - gem); }, 0) / Math.max(1, d.length - 1);
+  return {gem:gem, marge:2 * Math.sqrt(v / d.length), weken:ws.length, nu:reeks[reeks.length - 1]};
+}
+
+function voortgangBand(niveau){
+  var m = tempoMeting(niveau);
+  if(!m) return null;
+  if(m.gem <= 0) return {tempo:m.gem, onder:null, boven:null, weken:m.weken};
+  var rest = (PCIC_NOEMER[niveau] || 0) - m.nu;
+  if(rest <= 0) return {tempo:m.gem, onder:0, boven:0, weken:m.weken};
+  var snel = m.gem + m.marge, traag = m.gem - m.marge;
+  return {
+    tempo: m.gem,
+    weken: m.weken,
+    onder: Math.ceil(rest / snel),
+    boven: traag > 0 ? Math.ceil(rest / traag) : null   // null = bovengrens nog open
+  };
+}
+
+/* De omgekeerde vraag, die Stefan wilde kunnen stellen: niet "wanneer ben ik er",
+   maar "waar sta ik over x tijd". Bewust een ondergrens en een bovengrens, want
+   een enkel getal zou hier doen alsof we het weten. Nooit lager dan waar je nu
+   staat (stevige woorden kunnen niet verdampen) en nooit hoger dan de noemer. */
+function voorspelWaar(niveau, weken){
+  var m = tempoMeting(niveau);
+  if(!m) return null;
+  var noemer = PCIC_NOEMER[niveau] || 0;
+  var laag = Math.round(m.nu + Math.max(0, m.gem - m.marge) * weken);
+  var hoog = Math.round(m.nu + Math.max(0, m.gem + m.marge) * weken);
+  return {nu:m.nu, noemer:noemer, weken:weken, tempo:m.gem,
+          laag:Math.min(noemer, Math.max(m.nu, laag)),
+          hoog:Math.min(noemer, Math.max(m.nu, hoog))};
+}
+
+/* ================= HET DOEL (v19.90) =================
+   Twee doelen die niet hetzelfde zijn. De minuten per dag sturen echt iets aan:
+   ze zetten je dagdoel en daarmee de portie. Het niveaudoel stuurt niets aan; het
+   bestaat alleen om je gemeten tempo tegenaan te houden. Daarom staat het nergens
+   als groot getal en kleurt het nooit rood: Stefan wil de indicator belangrijker
+   houden dan de doelstelling, en een deadline die je mist is een indicator die
+   liegt. */
+var DOEL_MIN_XP = 3;                 // ongeveer wat een minuut oefenen oplevert
+function doelMinuten(){ return (S && S.doelMin) || 10; }
+function doelStand(){
+  var niv = S && S.doelNiv, dat = S && S.doelDatum;
+  if(!niv || !dat) return null;
+  var weken = Math.round((new Date(dat) - new Date(today())) / 604800000);
+  var tel = voortgangTellers();
+  var nu = tel.dek[niv] || 0, noemer = PCIC_NOEMER[niv] || 0;
+  var rest = Math.max(0, noemer - nu);
+  var m = tempoMeting(niv);
+  return {niv:niv, datum:dat, weken:weken, nu:nu, noemer:noemer, rest:rest,
+          nodig: weken > 0 ? rest / weken : null,
+          tempo: m ? m.gem : null, klaar: rest === 0};
+}
+
 
 /* ================= GRAMMATICA-SRS (herbruikt INTERVALS, net als woorden) ================= */
 // Grammatica zakt net zo weg als woordenschat, maar had nog geen herhaalsysteem. Elk toetsje
@@ -4066,6 +4846,9 @@ function allowedWordIds(){
   BOOK.forEach(function(h){
     if(S.boek[h.id] && S.boek[h.id].done) out = out.concat(boekWoorden(h));
   });
+  // v19.84: de A1-kernwoorden hangen aan geen enkele les, dus er is niets om te
+  // ontgrendelen. Ze staan altijd open; de volgorde regelt de dagportie.
+  out = out.concat(K_WORDS.map(function(w){ return w.id; }));
   return out;
 }
 function allowedSentIds(){
@@ -4138,14 +4921,28 @@ function dagPortie(){
     var da = S.srs[a.id].due, db = S.srs[b.id].due;
     return da < db ? -1 : (da > db ? 1 : 0);        // daarna: het langst open
   });
-  var ruimteNieuw = Math.min(fresh.length, DAG_PORTIE_NIEUW, newAllowance());
-  var cap = scopeLesson ? Math.max(due.length + fresh.length, DAG_PORTIE) : DAG_PORTIE;
+  // v19.84: nieuwe woorden op niveau, laagste eerst. Array.sort is stabiel, dus
+  // binnen hetzelfde niveau blijft de bestaande (les)volgorde staan.
+  var poort = 9;
+  if(!scopeLesson){
+    fresh.sort(function(a, b){ return woordNiveau(a.id) - woordNiveau(b.id); });
+    // v19.85: alles binnen de poort mag, plus precies één woord van erbuiten. Die ene
+    // is het verschil tussen rijpen en vastzitten: je basis krijgt de tijd, maar je
+    // krijgt elke dag ook iets wat je nog nooit zag. fresh is al op niveau gesorteerd,
+    // dus het eerste woord buiten de poort is automatisch het eerstvolgende niveau.
+    poort = poortRang();
+    var binnen = [], buiten = [];
+    fresh.forEach(function(w){ (woordNiveau(w.id) <= poort ? binnen : buiten).push(w); });
+    fresh = binnen.concat(buiten.slice(0, 1));
+  }
+  var ruimteNieuw = Math.min(fresh.length, nieuwPerDag(), newAllowance());
+  var cap = scopeLesson ? Math.max(due.length + fresh.length, DAG_PORTIE) : portieMax();
   var herhaal = due.slice(0, Math.max(0, cap - ruimteNieuw));
   if(scopeLesson) ruimteNieuw = Math.min(fresh.length, newAllowance());
   var nieuw = fresh.slice(0, ruimteNieuw);
   var vanGisteren = 0;
   herhaal.forEach(function(w){ if(bijna[w.id]) vanGisteren++; });
-  return {herhaal:herhaal, nieuw:nieuw, vanGisteren:vanGisteren,
+  return {herhaal:herhaal, nieuw:nieuw, vanGisteren:vanGisteren, poort:poort,
           dueRest:Math.max(0, due.length - herhaal.length), verseRest:Math.max(0, fresh.length - nieuw.length),
           totaal:herhaal.length + nieuw.length};
 }
@@ -4153,6 +4950,7 @@ function dagPortie(){
 function buildQueue(){
   var p = dagPortie();
   wQueue = p.herhaal.concat(p.nieuw);
+  wRondeZet(wQueue); // v19.91: de noemer van de balk staat vast zodra de ronde begint
 }
 
 function dueCount(){
@@ -4539,11 +5337,84 @@ function jergaRender(elId){
   var z = el.querySelector(".jergaZeg");
   if(z) z.onclick = function(){ jergaHoor(); };
 }
+/* ================= v19.91: DE EERSTE SESSIE =================
+   Stefan keek mee met zijn moeder, die vamos voor het eerst gebruikte: "als ik er niet
+   naast zat was het haar niet gelukt." Zes dingen, en geen ervan is een kwestie van
+   wennen. Ze zijn alle zes een eigenschap van dit scherm.
+
+   Wat hier gerepareerd wordt:
+   - hoeveel moet ik nog? Dat stond in kleine grijze hoofdletters ("5 TE GAAN"). Nu is
+     het een balk met een blokje per kaartje en een regel in gewone taal eronder.
+     Belangrijk: een fout antwoord schuift de balk niet op. Dat is niet streng, dat is
+     eerlijk: het kaartje is nog niet klaar, en dat zie je.
+   - waarom komt dit terug? Dat stond in een onboarding-scherm dat ze niet gelezen heeft
+     (en gelijk had ze). Het staat nu op het kaartje zelf, op het moment dat het gebeurt.
+   - hoe stop ik? Dat kon je nergens zien. Nu staat er altijd een uitgang, en die zegt
+     erbij dat stoppen niets kost.
+   ============================================================= */
+var wRondeIds = null, wRondeTot = 0, wNetFout = {};
+function wRondeZet(lijst){
+  wRondeIds = {}; wRondeTot = 0;
+  (lijst || []).forEach(function(w){
+    if(w && w.id && !wRondeIds[w.id]){ wRondeIds[w.id] = 1; wRondeTot++; }
+  });
+}
+function wRondeGedaan(){
+  if(!wRondeIds) return 0;
+  var open = {}, n = 0, id;
+  wQueue.forEach(function(w){ open[w.id] = 1; });
+  for(id in wRondeIds){ if(!open[id]) n++; }
+  return n;
+}
+function wBalkHtml(){
+  if(!wRondeIds || wRondeTot <= 0) return "";
+  var gedaan = wRondeGedaan(), i, seg = "";
+  if(wRondeTot <= 24){
+    for(i = 0; i < wRondeTot; i++) seg += "<span class='"+(i < gedaan ? "aan" : "")+"'></span>";
+    seg = "<div class='wbalk'>"+seg+"</div>";
+  } else {
+    seg = "<div class='progressbar'><div style='width:"+Math.round(100 * gedaan / wRondeTot)+"%'></div></div>";
+  }
+  return seg+"<p class='wtel'>"+ct(gedaan+" van de "+wRondeTot+" gedaan",
+                                   gedaan+" of "+wRondeTot+" done")+"</p>";
+}
+function wStopHtml(){
+  return "<div class='stoprij'><button class='mini' id='btnWStop'>"+
+    ct("Klaar voor nu \u2713 (je verliest niets)","Done for now \u2713 (you lose nothing)")+"</button></div>";
+}
+function wStopWire(){
+  var b = document.getElementById("btnWStop");
+  if(!b) return;
+  b.onclick = function(){
+    persist();
+    lesFlow = null; scopeLesson = null;
+    wQueue = []; wCur = null; wRondeIds = null; wRondeTot = 0; wNetFout = {};
+    show("lessen");
+    toast(ct("Opgeslagen. Je verliest niets.","Saved. You lose nothing."));
+  };
+}
+/* De uitleg op het moment zelf. Niet in een modal vooraf, want die leest niemand, en
+   terecht: op dat moment is er nog niets om uit te leggen. */
+function wWaaromHtml(){
+  if(!wCur) return "";
+  if(wNetFout[wCur.id]) return "<p class='waarom'>"+ct(
+    "Deze komt nog een keer langs omdat je hem net niet wist. Zo blijft hij hangen.",
+    "This one comes round again because you just missed it. That's how it sticks.")+"</p>";
+  var st = S.srs[wCur.id];
+  var jong = !S.dagen || (S.dagen.count || 0) <= 7;
+  if(jong && st && (st.n || 0) >= 1) return "<p class='waarom'>"+ct(
+    "Deze had je al eens. Hem terugzien vlak voor je hem vergeet is precies hoe hij blijft zitten.",
+    "You've had this one before. Seeing it again just before you forget is how it sticks.")+"</p>";
+  return "";
+}
 function renderWord(){
-  // v19.70: de straattaal van vandaag stond op Chispa's pagina. Dat is een woordles en hoort hier.
-  try { jergaRender("jergaWoorden"); } catch(e){}
   var el = document.getElementById("wCard");
   if(!wQueue.length){ buildQueue(); }
+  // v19.70: de straattaal van vandaag hoort bij de woordjes, niet bij Chispa.
+  // v19.91: maar niet onder een lopende oefening. Dat was een tweede leskaart op hetzelfde
+  // scherm, en dat is precies "teveel informatie". Hij verschijnt als de portie klaar is.
+  var jw = document.getElementById("jergaWoorden");
+  if(jw && wQueue.length) jw.innerHTML = "";
   if(!wQueue.length){
     if(lesFlow && lesFlow.stap === "woorden"){ lesFlowVolgende(); return; }
     // Woorden die alléén door de dagcap (max 15 nieuw/dag) buiten de wachtrij vallen: expliciet aanbieden.
@@ -4557,9 +5428,17 @@ function renderWord(){
         return !!allow[w.id];
       });
     })();
-    var capKnop = capRest.length ? "<button class='primary' id='btnCapRest'>➕ "+
-      ct("Nog "+capRest.length+" nieuwe "+(capRest.length===1?"woord":"woorden")+" tóch doen",
-         "Do "+capRest.length+" more new word"+(capRest.length===1?"":"s")+" anyway")+"</button>" : "";
+    // v19.91: het getal alleen binnen een les, waar het een handvol is en afmaken het doel.
+    // Daarbuiten is het de hele plank en dus een schuld. Dan een aanbod zonder getal, en
+    // hoogstens een paar woorden tegelijk.
+    var capExtra = Math.min(capRest.length, 5);
+    var capKnop = !capRest.length ? "" : (scopeLesson
+      ? "<button class='primary' id='btnCapRest'>➕ "+
+        ct("Nog "+capRest.length+" nieuw"+(capRest.length===1?" woord":"e woorden")+" tóch doen",
+           "Do "+capRest.length+" more new word"+(capRest.length===1?"":"s")+" anyway")+"</button>"
+      // ghost en niet primary: klaar is klaar. Dit is een aanbod, geen volgende stap.
+      : "<button class='ghost' id='btnCapRest'>➕ "+
+        ct("Toch nog een paar nieuwe woordjes","A few more new words anyway")+"</button>");
     // v19.66: je portie voor vandaag is op, maar de plank is niet leeg. Dat mag je best weten —
     // alleen als aanbod, niet als saldo. Geen getal, geen "nog N te gaan": één knop die je kunt
     // negeren. Wie doorwil kan doorgaan, wie klaar is is klaar, en niemand krijgt een rekening.
@@ -4568,9 +5447,13 @@ function renderWord(){
       ct("Nog een portie woordjes","Another round of words")+"</button>" : "";
     el.innerHTML = "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · woordjes":"Woordjes")+"</span>"+
       "<p class='big'>"+(scopeLesson ? "Alles gedaan ✓" : ct("Portie gedaan ✓","Round done ✓"))+"</p>"+
-      "<p class='muted'>"+"Je hebt "+wSessionDone+" kaartje(s) gedaan. "+
-      (capRest.length ? ct("Er "+(capRest.length===1?"wacht nog 1 nieuw woord":"wachten nog "+capRest.length+" nieuwe woorden")+" achter je dagmaximum van "+MAX_NEW_PER_DAY+" — morgen komen ze vanzelf, of doe ze nu.",
-                           capRest.length===1?"1 new word is waiting behind your daily max of "+MAX_NEW_PER_DAY+" — it'll come tomorrow, or do it now.":capRest.length+" new words are waiting behind your daily max of "+MAX_NEW_PER_DAY+" — they'll come tomorrow, or do them now.")
+      "<p class='muted'>"+ct("Je hebt "+wSessionDone+" "+(wSessionDone===1?"kaartje":"kaartjes")+" gedaan. ",
+                             "You did "+wSessionDone+" card"+(wSessionDone===1?"":"s")+". ")+
+      (capRest.length ? (scopeLesson
+        ? ct("Er "+(capRest.length===1?"wacht nog 1 nieuw woord":"wachten nog "+capRest.length+" nieuwe woorden")+" achter je dagmaximum van "+MAX_NEW_PER_DAY+". Morgen komen ze vanzelf, of doe ze nu.",
+             capRest.length===1?"1 new word is waiting behind your daily max of "+MAX_NEW_PER_DAY+". It'll come tomorrow, or do it now.":capRest.length+" new words are waiting behind your daily max of "+MAX_NEW_PER_DAY+". They'll come tomorrow, or do them now.")
+        : ct("Dit was je portie voor vandaag: "+MAX_NEW_PER_DAY+" nieuwe woordjes per dag blijven beter plakken dan honderd in een keer. Morgen staan de volgende klaar.",
+             "That was your round for today: "+MAX_NEW_PER_DAY+" new words a day stick better than a hundred at once. The next ones are ready tomorrow."))
         : (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug."
           : (meerPortie ? ct("Dit was je portie voor vandaag. Genoeg is genoeg, maar doorgaan mag.","That was your round for today. Enough is enough, but you may carry on.")
                         : ct("Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les.","Reviews come back on their own; new words are waiting in the next lesson."))))+"</p>"+
@@ -4581,7 +5464,8 @@ function renderWord(){
     var bcap = document.getElementById("btnCapRest");
     if(bcap) bcap.onclick = function(){
       wQueue = geschud(capRest);
-      renderWord();
+      if(!scopeLesson) wQueue = wQueue.slice(0, capExtra); // v19.91: een paar, geen magazijn
+      wRondeZet(wQueue); renderWord();
     };
     var bnp = document.getElementById("btnNogEenPortie");
     if(bnp) bnp.onclick = function(){ buildQueue(); renderWord(); };
@@ -4593,8 +5477,9 @@ function renderWord(){
       scopeLesson.words.forEach(function(id){ ids[id] = true; });
       wQueue = WORDS.filter(function(w){ return ids[w.id]; });
       wQueue.sort(function(){ return Math.random() - 0.5; });
-      renderWord();
+      wRondeZet(wQueue); renderWord();
     };
+    try { jergaRender("jergaWoorden"); } catch(e){} // v19.91: nu wel, de oefening is klaar
     updateBadge(); return;
   }
   wCur = wQueue[0]; wShown = false;
@@ -4602,13 +5487,34 @@ function renderWord(){
   var kort = UI_LANGS[profLang()].kort;
   var front = S.dir==="es-nl" ? wCur.es : wTrans(wCur);
   var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
+  // v19.91: het aantal "te gaan" stond hier in kleine grijze hoofdletters, tussen twee
+  // andere dingen in. Dat is de plek waar je iets zet wat niemand hoeft te zien. Nu
+  // draagt de balk het, en houdt de kicker alleen nog waar je bent.
+  // En btnDir stond als tweede knop naast btnShow: even groot, even zwaar, terwijl het
+  // een instelling is en geen stap. Precies de knop waar ze op klikte. Nu een tekstlink
+  // onder de kaart: nog steeds bereikbaar, niet meer te verwarren met "verder".
+  // In de lesflow draagt de banner het woord "woordjes" al. Dan blijft hier alleen "nuevo" over.
+  var kicker = inFlow
+    ? (isNew ? "<span style='color:var(--accent)'>nuevo</span>" : "")
+    : (scopeLesson ? "Les "+scopeLesson.num+" · " : "")+tt("woorden")+
+      (isNew ? " · <span style='color:var(--accent)'>nuevo</span>" : "");
   el.innerHTML = (inFlow ? lesFlowBannerHtml() : "")+
-    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+tt("woorden")+" · "+wQueue.length+" "+tt("teGaan")+" "+(isNew?"· <span style='color:var(--accent)'>nuevo</span>":"")+"</span>"+
+    (kicker ? "<span class='kicker'>"+kicker+"</span>" : "")+
+    wBalkHtml()+
     "<p class='big'>"+front+"</p>"+
     "<p class='muted'>"+(S.dir==="es-nl"?tt("watBetekent"):tt("hoeZegJe"))+"</p>"+
-    "<div class='row'><button class='primary' id='btnShow'>"+tt("toonAntwoord")+"</button>"+
-    "<button class='ghost' id='btnDir'>↔ "+(S.dir==="es-nl"?"ES → "+kort:kort+" → ES")+"</button></div>";
+    "<div class='row'><button class='primary' id='btnShow'>"+tt("toonAntwoord")+"</button></div>"+
+    wWaaromHtml()+
+    "<button class='mini' id='btnDir'>↔ "+(S.dir==="es-nl"
+      ? ct("Andersom oefenen: "+kort+" → ES", "Practise the other way: "+kort+" → ES")
+      : ct("Andersom oefenen: ES → "+kort, "Practise the other way: ES → "+kort))+"</button>"+
+    wStopHtml();
+  // v19.85: de knop "Dit ken ik al" is weg. Stefan: "dit ken ik al klinkt een beetje
+  // verwarrend want ik doe dat al met de flashcards." Klopt: omdraaien, "wist ik",
+  // klaar. Twee knoppen voor hetzelfde gebaar is er één te veel. Wie al Spaans kan
+  // zegt dat nu één keer bij het instellen (zie niveauClaim), niet 390 keer per kaartje.
   lesFlowWireBanner();
+  wStopWire();
   document.getElementById("btnShow").onclick = showWord;
   document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
 }
@@ -4620,13 +5526,20 @@ function showWord(){
   var back  = S.dir==="es-nl" ? wTrans(wCur) : wCur.es;
   var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
   el.innerHTML = (inFlow ? lesFlowBannerHtml() : "")+
-    "<span class='kicker'>"+tt("woorden")+" · "+wQueue.length+" "+tt("teGaan")+"</span>"+
+    (inFlow ? "" : "<span class='kicker'>"+tt("woorden")+"</span>")+
+    wBalkHtml()+
     "<p class='big'>"+front+"</p>"+
     "<p class='big' style='color:var(--accent)'>"+back+"</p>"+
     "<span class='tag'>"+wCur.tag+"</span>"+
+    // v19.84: bij de kernwoorden hoort een zin waarin het woord niet vooraan staat.
+    // Een los woord onthoud je als losse tegel; in een zin zie je wat het doet.
+    (wCur.ej ? "<p class='muted' style='margin:10px 2px 0; line-height:1.5'>"+wCur.ej+
+      (profLang()==="nl" && wCur.ejnl ? "<br><span style='opacity:.65'>"+wCur.ejnl+"</span>" : "")+"</p>" : "")+
     "<div class='row'><button class='good' id='btnGood'>"+tt("wistIk")+"</button>"+
-    "<button class='bad' id='btnBad'>"+tt("wistNiet")+"</button></div>";
+    "<button class='bad' id='btnBad'>"+tt("wistNiet")+"</button></div>"+
+    wStopHtml();
   lesFlowWireBanner();
+  wStopWire();
   document.getElementById("btnGood").onclick = function(){ answerWord(true); };
   document.getElementById("btnBad").onclick = function(){ answerWord(false); };
 }
@@ -4636,16 +5549,27 @@ function answerWord(good){
   var st = S.srs[wCur.id];
   if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0) + 1; }
   st.n = (st.n||0) + 1; // hoe vaak geoefend (voor het woordenboek)
+  // v19.85: herkennen en produceren zijn niet hetzelfde. ES->NL is herkennen (st.r),
+  // NL->ES is produceren (st.p). Nu alleen tellen, nog niet sturen: een poort die
+  // draait op een cijfer dat nooit gemeten is, is een gok met een percentage erop.
+  // Zodra er een paar weken data ligt kan de stevig-eis eisen dat beide kanten
+  // gelopen zijn; tot die tijd is dit gewoon een teller die meekijkt.
+  if(S.dir === "es-nl") st.r = (st.r||0) + 1; else st.p = (st.p||0) + 1;
+  // v19.91: dit woord kreeg zijn laatste stap van jou, niet van een spel. Zie spelSrsBij
+  // en snapshotSchrijf: zo blijven "werkt de app" en "werkt spelen" apart te lezen.
+  if(st.sp) delete st.sp;
   if(good){
     st.box = Math.min(st.box+1, INTERVALS.length-1);
     st.due = addDays(t, INTERVALS[st.box]);
     wQueue.shift();
+    delete wNetFout[wCur.id];
     addXP(2); trackPoging(false);
   } else {
     st.box = 0; st.due = t;
     st.f = (st.f||0) + 1;
     logError(wCur.id, "woord", wCur.tag, wCur.es);
     wQueue.push(wQueue.shift()); // achteraan opnieuw
+    wNetFout[wCur.id] = 1;       // v19.91: waarom hij zo terugkomt, staat straks op de kaart
     addXP(1); // ook fouten zijn oefening
   }
   S.srs[wCur.id] = st; wSessionDone++; persist(); updateBadge(); checkLessonComplete(); renderWord();
@@ -5083,9 +6007,11 @@ function checkDictado(){
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 "+xpw()+")</div>";
     S.done[s.id] = true; addXP(5); compMark("luisteren", s.id); trackPoging(false);
+    spelZinSrs(s);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
     S.done[s.id] = true; addXP(4); compMark("luisteren", s.id); trackPoging(false);
+    spelZinSrs(s);
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
@@ -5887,6 +6813,7 @@ function checkHusselen(){
   if(goedBeantwoord){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 "+xpw()+")</div>";
     S.done[s.id] = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
+    spelZinSrs(s);
   } else {
     html = "<div class='feedback fout'>"+ct("Nog niet. De juiste volgorde is: ","Not yet. The correct order is: ")+"<b>"+s.es+"</b></div>";
     logError(s.id, "husselen", s.tag, built); addXP(1);
@@ -5914,6 +6841,447 @@ function checkHusselen(){
   var br = document.getElementById("btnHuReset"); if(br) br.disabled = true;
 }
 
+
+/* ================= EL CORRECTOR (v19.88) =================
+   Het grammaticaspel. De app kon grammatica uitleggen (GRAMWIZ) en overhoren
+   (toetsjes), maar er was geen spel waarin grammatica de handeling zelf is.
+
+   Hier zie je de Nederlandse zin plus een Spaanse vertaling waar hoogstens één
+   woord fout in staat. Jij wijst het aan. "Hoogstens", want ongeveer een op de
+   vijf zinnen klopt gewoon: zonder die schone zinnen train je alleen de reflex
+   dat er altijd wel iets mis is, en dat is geen grammatica.
+
+   De foute zinnen worden gemaakt in plaats van opgeschreven: CORR_REGELS pakt
+   een echte zin uit de cursus en verbouwt precies één woord tot een fout die
+   een Nederlandstalige ook echt maakt (ser waar estar hoort, accent weg, se bij
+   een ik-vorm). Zo is de voorraad even groot als het zinnenboek zelf.
+
+   Elke regel heeft zijn eigen Leitner-doosje in S.corr, los van de woord-SRS en
+   los van de toets-SRS: een regel die je fout doet komt over twee dagen terug,
+   een regel die vijf keer achter elkaar goed gaat pas over maanden. */
+var CORR_RONDE_LEN = 8;
+var CORR_INTERVALS = [0, 2, 5, 12, 30, 75];
+var CORR_SCHOON_KANS = 0.2;   // deel van de opgaven waarin niets fout is
+var CORR_ACC = {"á":"a","é":"e","í":"i","ó":"o","ú":"u","Á":"A","É":"E","Í":"I","Ó":"O","Ú":"U"};
+/* na een lidwoord komt meestal een zelfstandig naamwoord, maar "la" en "los" zijn
+   ook lijdend voorwerp ("la veo"). Dan klopt een getalfout niet, dus die woorden
+   slaan we over. */
+var CORR_NA_LIDW_NIET = ("veo ves ve vi vio vemos ven tengo tiene tienen quiero quiere hago hace "+
+  "dijo dice conozco conoce llamo llama compro compra como come escribo escribe leo lee uso usa "+
+  "pongo pone doy da miro mira busco busca llevo lleva dejo deja paso pasa tomo toma he ha has").split(" ");
+var CORR_DEELW = /^(.*(ado|ido)|visto|hecho|dicho|puesto|escrito|vuelto|abierto|roto|muerto)$/;
+/* meervoudige bepaalwoorden: hieraan zie je dat wat volgt in het meervoud hoort. */
+var CORR_MEERV = /^(los|las|unos|unas|mis|tus|sus|nuestros|nuestras|vuestros|vuestras|muchos|muchas|pocos|pocas|varios|varias|todos|todas|estos|estas|esos|esas|aquellos|aquellas|algunos|algunas|otros|otras|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)$/;
+/* meervoudige koppelwerkwoorden: wat erachter komt hoort ook in het meervoud. */
+var CORR_KOPPEL = /^(son|est\u00e1n|eran|estaban|somos|estamos|sois|est\u00e1is|ser\u00e1n|estar\u00e1n|parecen)$/;
+/* het enkelvoud van een meervoudig bijvoeglijk naamwoord, of null als het
+   wegstrepen van de s niet klopt (-ones hoort bij -\u00f3n, niet bij -one). */
+function corrEnkelvoud(kaal){
+  var k = kaal.toLowerCase();
+  // wij-vormen en jullie-vormen zijn werkwoorden, geen bijvoeglijke naamwoorden:
+  // vamos wordt geen vamo.
+  if(/(mos|\u00e1is|\u00e9is|\u00eds)$/.test(k)) return null;
+  if(/(os|as)$/.test(k)) return kaal.slice(0, -1);
+  if(/es$/.test(k) && !/(ones|anes|eses|ines)$/.test(k) && /e$/.test(k.slice(0, -1))) return kaal.slice(0, -1);
+  return null;
+}
+
+function corrKaal(t){ return (t || "").replace(/^[¿¡"'(«]+/, "").replace(/[.,!?;:")»']+$/, ""); }
+function corrOmhulsel(t, nieuw){
+  var pre = (t.match(/^[¿¡"'(«]+/) || [""])[0];
+  var post = (t.match(/[.,!?;:")»']+$/) || [""])[0];
+  return pre + nieuw + post;
+}
+function corrHoofdletter(oud, nieuw){
+  return /^[A-ZÁÉÍÓÚÑ]/.test(oud) ? nieuw.charAt(0).toUpperCase() + nieuw.slice(1) : nieuw;
+}
+function corrZonderAccent(w){
+  return w.replace(/[áéíóúÁÉÍÓÚ]/g, function(c){ return CORR_ACC[c]; });
+}
+function corrPaar(tabel){
+  return function(kaal){
+    var k = tabel[kaal.toLowerCase()];
+    return k ? k : null;
+  };
+}
+function corrBevat(tokens, re){
+  for(var i = 0; i < tokens.length; i++){ if(re.test(corrKaal(tokens[i]).toLowerCase())) return true; }
+  return false;
+}
+
+/* Elke regel: id, hoe hij heet, waarom het fout is, en maak(kaal, tokens, i) die
+   het foute woord teruggeeft of null als de regel hier niet past. gw verwijst
+   naar het onderwerp in de uitlegwizard, zodat je vanuit een fout meteen door
+   kunt naar de uitleg. */
+var CORR_REGELS = [
+ {id:"acento", gw:"klemtoon",
+  naam:"Klemtoon en accent", naamEn:"Stress and accents",
+  waarom:"Het streepje is geen versiering: het zegt waar de klemtoon ligt. Zonder accent staat er een ander woord, of een andere tijd.",
+  waaromEn:"The accent is not decoration: it says where the stress falls. Without it you get a different word, or a different tense.",
+  maak:function(kaal){
+    if(!/[áéíóúÁÉÍÓÚ]/.test(kaal)) return null;
+    var zonder = corrZonderAccent(kaal);
+    return zonder === kaal ? null : zonder;
+  }},
+
+ {id:"lidwoord", gw:null,
+  naam:"Lidwoord en zelfstandig naamwoord", naamEn:"Article and noun",
+  waarom:"Een lidwoord telt mee met zijn zelfstandig naamwoord: el libro / los libros. Eén van de twee in het meervoud kan niet.",
+  waaromEn:"An article agrees in number with its noun: el libro / los libros. One of the two in the plural cannot happen.",
+  maak:function(kaal, tokens, i){
+    var k = kaal.toLowerCase();
+    var nx = corrKaal(tokens[i+1] || "").toLowerCase();
+    if(!nx || nx.length < 4) return null;
+    if(CORR_NA_LIDW_NIET.indexOf(nx) !== -1) return null;
+    var mv = /s$/.test(nx);
+    if(k === "los" && mv) return "el";
+    if(k === "las" && mv) return "la";
+    if(k === "el" && !mv) return "los";
+    if(k === "la" && !mv) return "las";
+    if(k === "un" && !mv) return "unos";
+    if(k === "una" && !mv) return "unas";
+    return null;
+  }},
+
+ {id:"concordancia", gw:null,
+  naam:"Bijvoeglijk naamwoord", naamEn:"Adjective agreement",
+  waarom:"Een bijvoeglijk naamwoord past zich aan aan het woord waar het bij hoort: las palabras largas, niet larga.",
+  waaromEn:"An adjective matches the noun it belongs to: las palabras largas, not larga.",
+  maak:function(kaal, tokens, i){
+    if(i < 2) return null;
+    if(/^[A-Z\u00c1\u00c9\u00cd\u00d3\u00da\u00d1]/.test(kaal)) return null;  // geen eigennamen: los Pa\u00edses Bajos
+    var det = corrKaal(tokens[i-2] || "").toLowerCase();
+    var nw = corrKaal(tokens[i-1] || "").toLowerCase();
+    if(!CORR_MEERV.test(det)) return null;
+    if(!/s$/.test(nw) || CORR_MEERV.test(nw)) return null;   // ertussen hoort een meervoudig zelfst. nw
+    var k = kaal.toLowerCase();
+    if(k.length < 5 || CORR_MEERV.test(k)) return null;
+    return corrEnkelvoud(kaal);
+  }},
+
+ {id:"predicado", gw:null,
+  naam:"Bijvoeglijk naamwoord in het gezegde", naamEn:"Adjective after to be",
+  waarom:"Ook achter son en est\u00e1n telt het bijvoeglijk naamwoord mee met het onderwerp: mis vecinos son simp\u00e1ticos, niet simp\u00e1tico.",
+  waaromEn:"After son and est\u00e1n the adjective still agrees with the subject: mis vecinos son simp\u00e1ticos, not simp\u00e1tico.",
+  maak:function(kaal, tokens, i){
+    if(i < 1) return null;
+    if(/^[A-Z\u00c1\u00c9\u00cd\u00d3\u00da\u00d1]/.test(kaal)) return null;
+    var k = kaal.toLowerCase();
+    if(k.length < 5 || CORR_MEERV.test(k)) return null;
+    var j, w, koppel = -1;
+    for(j = 0; j < i; j++){
+      w = corrKaal(tokens[j] || "").toLowerCase();
+      if(CORR_KOPPEL.test(w)) koppel = j;
+    }
+    if(koppel === -1) return null;      // geen meervoudig son/est\u00e1n ervoor
+    return corrEnkelvoud(kaal);
+  }},
+
+ {id:"gustar", gw:null,
+  naam:"Gustar en familie", naamEn:"Gustar and friends",
+  waarom:"Bij gustar, encantar en costar is het ding het onderwerp, niet de persoon: me gustan los retos, want los retos is meervoud.",
+  waaromEn:"With gustar, encantar and costar the thing is the subject, not the person: me gustan los retos, because los retos is plural.",
+  maak:function(kaal, tokens, i){
+    if(i < 1) return null;
+    var vorig = corrKaal(tokens[i-1] || "").toLowerCase();
+    if(!/^(me|te|le|nos|os|les)$/.test(vorig)) return null;
+    return corrPaar({"gusta":"gustan","gustan":"gusta","encanta":"encantan","encantan":"encanta",
+      "cuesta":"cuestan","cuestan":"cuesta","duele":"duelen","duelen":"duele",
+      "interesa":"interesan","interesan":"interesa","apetece":"apetecen","apetecen":"apetece",
+      "parece":"parecen","parecen":"parece"})(kaal);
+  }},
+
+ {id:"reflexivo", gw:null,
+  naam:"Wederkerend voornaamwoord", naamEn:"Reflexive pronoun",
+  waarom:"Het voornaamwoord hoort bij dezelfde persoon als het werkwoord: me siento, te sientes, se siente. Se bij een ik-vorm bestaat niet.",
+  waaromEn:"The pronoun matches the person of the verb: me siento, te sientes, se siente. Se with an I-form does not exist.",
+  maak:function(kaal, tokens, i){
+    var k = kaal.toLowerCase();
+    if(k !== "me" && k !== "nos" && k !== "te") return null;
+    var nx = corrKaal(tokens[i+1] || "").toLowerCase();
+    if(nx.length < 3) return null;
+    if(!/(o|é|í|amos|emos|imos)$/.test(nx)) return null;   // eerste persoon
+    return "se";
+  }},
+
+ {id:"serestar", gw:"serestar",
+  naam:"Ser of estar", naamEn:"Ser or estar",
+  waarom:"Estar gaat over waar je bent en hoe het nú met je is; ser over wat iets is. Bij een plek of een toestand kan ser niet.",
+  waaromEn:"Estar is about where you are and how you are right now; ser about what something is. With a place or a state, ser cannot be used.",
+  maak:function(kaal){
+    return corrPaar({"está":"es","están":"son","estoy":"soy","estás":"eres","estamos":"somos",
+      "estaba":"era","estaban":"eran","estuve":"fui"})(kaal);
+  }},
+
+ {id:"porpara", gw:"porpara",
+  naam:"Por of para", naamEn:"Por or para",
+  waarom:"Para wijst vooruit (doel, bestemming, deadline), por wijst achteruit of eromheen (reden, ruil, weg, duur).",
+  waaromEn:"Para points forward (goal, destination, deadline), por points backward or around (reason, exchange, route, duration).",
+  maak:function(kaal){
+    return corrPaar({"por":"para","para":"por"})(kaal);
+  }},
+
+ {id:"haber", gw:null,
+  naam:"Haber, de juiste persoon", naamEn:"Haber, the right person",
+  waarom:"He, has, ha, hemos, han: het hulpwerkwoord zegt wie het deed. Het deelwoord erachter verandert nooit mee.",
+  waaromEn:"He, has, ha, hemos, han: the auxiliary says who did it. The participle behind it never changes.",
+  maak:function(kaal, tokens, i){
+    var nx = corrKaal(tokens[i+1] || "").toLowerCase();
+    if(!nx || !CORR_DEELW.test(nx)) return null;
+    return corrPaar({"he":"ha","has":"ha","ha":"he","hemos":"han","han":"hemos"})(kaal);
+  }},
+
+ {id:"perfindef", gw:"perfindef",
+  naam:"Perfecto of indefinido", naamEn:"Perfect or preterite",
+  waarom:"He hablado hoort bij een tijdvak dat nog loopt (hoy, ya, esta semana). Bij ayer is het vak dicht, en dan kan he niet meer.",
+  waaromEn:"He hablado belongs to a time frame that is still running (hoy, ya, esta semana). With ayer the frame is closed, so he cannot be used.",
+  maak:function(kaal, tokens){
+    var k = kaal.toLowerCase();
+    if(!/^(hoy|ya|nunca|siempre|todav\u00eda)$/.test(k)) return null;
+    if(!corrBevat(tokens, /^(he|has|ha|hemos|han)$/)) return null;
+    return "ayer";
+  }},
+
+ {id:"muymucho", gw:null,
+  naam:"Muy of mucho", naamEn:"Muy or mucho",
+  waarom:"Muy staat voor een bijvoeglijk naamwoord of bijwoord (muy bien), mucho staat er alleen of bij een zelfstandig naamwoord (mucho trabajo).",
+  waaromEn:"Muy goes before an adjective or adverb (muy bien), mucho stands alone or before a noun (mucho trabajo).",
+  maak:function(kaal, tokens, i){
+    if(kaal.toLowerCase() !== "muy") return null;
+    if(!corrKaal(tokens[i+1] || "")) return null;
+    return "mucho";
+  }}
+];
+function corrRegel(id){
+  for(var i = 0; i < CORR_REGELS.length; i++){ if(CORR_REGELS[i].id === id) return CORR_REGELS[i]; }
+  return null;
+}
+function corrRegelNaam(r){ return profLang() === "nl" ? r.naam : r.naamEn; }
+function corrRegelWaarom(r){ return profLang() === "nl" ? r.waarom : r.waaromEn; }
+
+/* het Leitner-doosje per regel. Fout betekent niet "morgen weer", dat voelt als
+   straf; het betekent overmorgen, en dan opnieuw opbouwen. */
+function corrSrsBij(id, goed){
+  S.corr = S.corr || {};
+  var st = S.corr[id] || {box:0, due:"", goed:0, fout:0};
+  if(goed){
+    st.goed++;
+    st.box = Math.min((st.box || 0) + 1, CORR_INTERVALS.length - 1);
+    st.due = addDays(today(), CORR_INTERVALS[st.box]);
+  } else {
+    st.fout++;
+    st.box = 0;
+    st.due = addDays(today(), 2);
+  }
+  S.corr[id] = st;
+}
+function corrDueRegels(){
+  var t = today();
+  return CORR_REGELS.filter(function(r){
+    var st = (S.corr || {})[r.id];
+    return !st || !st.due || st.due <= t;
+  });
+}
+function corrDueHaalbaar(){
+  var haalbaar = corrBereikbaar();
+  return corrDueRegels().filter(function(r){ return haalbaar.indexOf(r.id) !== -1; });
+}
+function corrRegelVolgorde(){
+  var haalbaar = corrBereikbaar();
+  var pool = CORR_REGELS.filter(function(r){ return haalbaar.indexOf(r.id) !== -1; });
+  if(!pool.length) pool = CORR_REGELS;
+  var dueIds = corrDueRegels().map(function(r){ return r.id; });
+  var due = shuffleArr(pool.filter(function(r){ return dueIds.indexOf(r.id) !== -1; }));
+  var rest = shuffleArr(pool.filter(function(r){ return dueIds.indexOf(r.id) === -1; }));
+  return due.concat(rest);
+}
+/* Welke regels zijn in jouw zinnenboek überhaupt te oefenen? Wie op A0 zit
+   heeft andere zinnen dan wie op A2 zit, en een regel die in geen enkele zin
+   voorkomt hoort niet in de noemer van "x van de y regels staan stevig".
+   Dat is dezelfde afspraak als bij de dekkingsgetallen: nooit een noemer waar
+   je niet bij kunt. */
+var corrBereikCache = null;
+function corrBereikbaar(){
+  if(corrBereikCache && corrBereikCache.n === SENTENCES.length) return corrBereikCache.ids;
+  var ids = CORR_REGELS.filter(function(r){
+    for(var i = 0; i < SENTENCES.length; i++){ if(corrKandidaten(SENTENCES[i], r).length) return true; }
+    return false;
+  }).map(function(r){ return r.id; });
+  corrBereikCache = {n:SENTENCES.length, ids:ids};
+  return ids;
+}
+/* hoeveel regels staan er stevig? Dat is het enige getal dat dit spel over
+   grammatica kan claimen, en het gaat alleen omhoog als je ze blijft halen. */
+function corrStevig(){
+  var haalbaar = corrBereikbaar(), n = 0;
+  haalbaar.forEach(function(id){
+    var st = (S.corr || {})[id];
+    if(st && st.box >= 3) n++;
+  });
+  return n;
+}
+
+var corrOpg = null;     // {zin, regel, tokens, i, goedWoord, foutWoord, schoon, klaar, gekozen}
+var corrRonde = null;   // {n, lengte, goed, streak, besteStreak, beloond}
+
+function corrKandidaten(zin, regel){
+  var tokens = zin.es.split(/\s+/), uit = [], i, kaal, fout;
+  for(i = 0; i < tokens.length; i++){
+    kaal = corrKaal(tokens[i]);
+    if(!kaal) continue;
+    fout = null;
+    try { fout = regel.maak(kaal, tokens, i); } catch(e){ fout = null; }
+    if(fout && fout.toLowerCase() !== kaal.toLowerCase()) uit.push({i:i, kaal:kaal, fout:fout});
+  }
+  return uit;
+}
+function corrNieuweOpgave(){
+  var allow = {};
+  allowedSentIds().forEach(function(id){ allow[id] = true; });
+  var pool = SENTENCES.filter(function(x){ return allow[x.id] && x.es.split(/\s+/).length >= 3; });
+  if(pool.length < 4) pool = SENTENCES.filter(function(x){ return x.es.split(/\s+/).length >= 3; });
+  if(!pool.length) pool = SENTENCES;
+  var volgorde = corrRegelVolgorde(), zinnen = shuffleArr(pool), r, z, k, keuze;
+  for(r = 0; r < volgorde.length; r++){
+    for(z = 0; z < zinnen.length; z++){
+      k = corrKandidaten(zinnen[z], volgorde[r]);
+      if(!k.length) continue;
+      keuze = k[Math.floor(Math.random() * k.length)];
+      corrOpg = {zin:zinnen[z], regel:volgorde[r], tokens:zinnen[z].es.split(/\s+/),
+                 i:keuze.i, goedWoord:keuze.kaal, foutWoord:keuze.fout,
+                 schoon:Math.random() < CORR_SCHOON_KANS, klaar:false, gekozen:null};
+      if(!corrOpg.schoon){
+        corrOpg.tokens[keuze.i] = corrOmhulsel(corrOpg.tokens[keuze.i],
+          corrHoofdletter(keuze.kaal, keuze.fout));
+      }
+      return;
+    }
+  }
+  corrOpg = null;
+}
+function corrNieuweRonde(){
+  corrRonde = {n:0, lengte:CORR_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
+  corrNieuweOpgave();
+}
+function corrKickerTekst(){
+  return ct("Zin ","Sentence ") + (corrRonde.n + 1) + "/" + corrRonde.lengte +
+    (corrRonde.streak > 0 ? " · 🔥 " + corrRonde.streak : "");
+}
+function corrVolgende(){
+  corrRonde.n++;
+  if(corrRonde.n < corrRonde.lengte) corrNieuweOpgave(); else corrOpg = null;
+  renderFunCorrector();
+}
+function corrKies(i){
+  if(!corrOpg || corrOpg.klaar) return;
+  corrOpg.klaar = true;
+  corrOpg.gekozen = i;
+  var goed = corrOpg.schoon ? (i === -1) : (i === corrOpg.i);
+  corrSrsBij(corrOpg.regel.id, goed);
+  if(goed){
+    addXP(3); trackPoging(false);
+    corrRonde.goed++; corrRonde.streak++;
+    if(corrRonde.streak > corrRonde.besteStreak) corrRonde.besteStreak = corrRonde.streak;
+    if(corrRonde.streak % 3 === 0){ S.tapas = (S.tapas || 0) + 1; }
+  } else {
+    addXP(1);
+    logError(corrOpg.zin.id, "corrector", corrOpg.regel.id, today());
+    corrRonde.streak = 0;
+  }
+  persist();
+  renderFunCorrector();
+}
+function corrZinHtml(){
+  var uit = "", i, tok, klas, stijl;
+  for(i = 0; i < corrOpg.tokens.length; i++){
+    tok = corrOpg.tokens[i];
+    stijl = "";
+    if(corrOpg.klaar){
+      if(!corrOpg.schoon && i === corrOpg.i) stijl = "background:#ffd6d6; border-color:#c00";
+      else if(i === corrOpg.gekozen) stijl = "background:#ffe9b3";
+    }
+    klas = "ghost corr-tile";
+    uit += "<button class='"+klas+"' data-corr='"+i+"' style='"+stijl+"'"+
+      (corrOpg.klaar ? " disabled" : "")+">"+tok+"</button>";
+  }
+  return "<div style='display:flex; flex-wrap:wrap; gap:6px; margin:10px 0'>"+uit+"</div>";
+}
+function renderFunCorrector(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!corrRonde) corrNieuweRonde();
+  if(corrRonde.n >= corrRonde.lengte){ renderCorrRondeKlaar(); return; }
+  if(!corrOpg) corrNieuweOpgave();
+  if(!corrOpg){
+    el.innerHTML = "<h2>El Corrector 🕵️</h2><p class='muted'>"+
+      ct("Er zijn nog te weinig zinnen vrijgespeeld om fouten in te verstoppen. Doe eerst een les.",
+         "Not enough sentences unlocked yet to hide mistakes in. Do a lesson first.")+"</p>"+
+      "<div class='row'><button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>";
+    document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
+    return;
+  }
+  var goed = corrOpg.klaar && (corrOpg.schoon ? corrOpg.gekozen === -1 : corrOpg.gekozen === corrOpg.i);
+  var html = "<h2>El Corrector 🕵️</h2>"+
+    "<span class='kicker' id='corrKicker'>"+corrKickerTekst()+"</span>"+
+    "<p class='muted'>"+fx("coIntro")+"</p>"+
+    "<p class='big' style='margin:8px 0; font-size:1.05rem'>"+zinPrompt(corrOpg.zin)+"</p>"+
+    corrZinHtml()+
+    "<div class='row'><button class='"+(corrOpg.klaar ? "ghost" : "primary")+"' id='btnCorrOk'"+
+      (corrOpg.klaar ? " disabled" : "")+">"+fx("coTodo")+"</button>"+
+      "<button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>";
+  if(corrOpg.klaar){
+    html += "<div class='feedback "+(goed ? "ok" : "fout")+"' style='margin-top:10px'>"+
+      (goed
+        ? (corrOpg.schoon ? ct("Klopt: aan deze zin mankeert niks. ✓ (+3 ","Right: nothing wrong with this one. ✓ (+3 ")
+                          : ct("Gevonden! ✓ (+3 ","Found it! ✓ (+3 ")) + xpw() + ")"
+        : (corrOpg.schoon
+            ? ct("Deze zin was al goed. Er viel niets te verbeteren.","This sentence was already correct. There was nothing to fix.")
+            : ct("Het foute woord was <b>"+corrKaal(corrOpg.tokens[corrOpg.i])+"</b>, daar hoort <b>"+corrOpg.goedWoord+"</b> te staan.",
+                 "The wrong word was <b>"+corrKaal(corrOpg.tokens[corrOpg.i])+"</b>, it should be <b>"+corrOpg.goedWoord+"</b>.")))+
+      "</div>"+
+      "<div class='uitleg'><b>"+corrRegelNaam(corrOpg.regel)+"</b><br>"+corrRegelWaarom(corrOpg.regel)+"<br>"+
+        "<span class='muted'>"+ct("Goed: ","Correct: ")+"<b>"+corrOpg.zin.es+"</b></span></div>"+
+      "<div class='row' style='margin-top:6px'><button class='primary' id='btnCorrVolgende'>"+fx("coSkip")+" →</button>"+
+        (corrOpg.regel.gw ? "<button class='ghost' data-gwstart='"+corrOpg.regel.gw+"'>🧠 "+ct("Leg uit","Explain")+" →</button>" : "")+
+      "</div>";
+  }
+  el.innerHTML = html;
+  el.querySelectorAll("[data-corr]").forEach(function(b){
+    b.onclick = function(){ corrKies(parseInt(b.getAttribute("data-corr"), 10)); };
+  });
+  el.querySelectorAll("[data-gwstart]").forEach(function(b){
+    b.onclick = function(){ var id = b.getAttribute("data-gwstart"); show("spiekbrief"); gwStart(id); };
+  });
+  var bo = document.getElementById("btnCorrOk");
+  if(bo) bo.onclick = function(){ corrKies(-1); };
+  var bv = document.getElementById("btnCorrVolgende");
+  if(bv) bv.onclick = function(){ corrVolgende(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
+}
+function renderCorrRondeKlaar(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var perfect = corrRonde.goed === corrRonde.lengte;
+  var goedGenoeg = corrRonde.goed >= Math.ceil(corrRonde.lengte * 0.75);
+  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
+  if(bonus > 0 && !corrRonde.beloond){
+    S.tapas = (S.tapas || 0) + bonus; corrRonde.beloond = true; persist();
+    if(perfect) confetti(["🕵️","🔥","🎉"], 24);
+  }
+  var stevig = corrStevig(), haalbaar = corrBereikbaar().length;
+  el.innerHTML = "<h2>El Corrector 🕵️</h2>"+
+    "<div class='feedback "+(perfect ? "ok" : goedGenoeg ? "bijna" : "fout")+"'>"+
+      ct("Ronde klaar: ","Round done: ")+corrRonde.goed+"/"+corrRonde.lengte+
+      (corrRonde.besteStreak > 1 ? " · 🔥 "+ct("beste streak: ","best streak: ")+corrRonde.besteStreak : "")+
+    "</div>"+
+    (bonus > 0 ? "<p class='muted'>+"+bonus+" 🫒 "+ct("tapas bonus!","tapas bonus!")+"</p>" : "")+
+    "<p class='muted'>"+ct(stevig+" van de "+haalbaar+" grammaticaregels staan stevig. Een regel die je goed doet komt later terug, een regel die misgaat over twee dagen.",
+       stevig+" of the "+haalbaar+" grammar rules are solid. A rule you get right comes back later, one you miss comes back in two days.")+"</p>"+
+    "<div class='row'><button class='primary' id='btnCorrNieuweRonde'>"+ct("Nieuwe ronde","New round")+"</button>"+
+      "<button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>";
+  document.getElementById("btnCorrNieuweRonde").onclick = function(){ corrNieuweRonde(); renderFunCorrector(); };
+  document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
+}
 
 /* ================= TOETSJES ================= */
 var qState = null;
@@ -6901,7 +8269,8 @@ var DAGSPELLEN = [
   {v:"dictado", e:"\ud83d\udd0a", n:"Dictado"},
   {v:"conj",    e:"\ud83c\udfaf", n:"Conjugador"},
   {v:"hu",      e:"\ud83e\udde9", n:"Husselen"},
-  {v:"mem",     e:"\ud83c\udccf", n:"Memory"}
+  {v:"mem",     e:"\ud83c\udccf", n:"Memory"},
+  {v:"corr",    e:"\ud83d\udd75\ufe0f", n:"El Corrector"}
 ];
 function dagSpelKeuze(){
   var h = dayHash("spel");
@@ -6924,6 +8293,7 @@ function speelNaar(v){
   if(v === "dictado"){ dIdx = null; dRonde = null; }
   if(v === "conj"){ conjIdx = null; conjRonde = null; }
   if(v === "hu"){ huIdx = null; huRonde = null; }
+  if(v === "corr"){ corrOpg = null; corrRonde = null; }
   if(v === "kruis"){ kruisLos = null; }
   show("speeltuin");
 }
@@ -7040,8 +8410,8 @@ function cursusRijenHtml(){
 function renderCursus(){
   var el = document.getElementById("cursusCard");
   if(!el) return;
-  el.innerHTML = "<div class='card'><span class='kicker'>"+ct("De cursus","The course")+"</span>"+
-    "<p class='muted' style='margin:6px 0 0'>"+ct("Waar je staat in de leerlijn. Je hoeft hier niets te kiezen: de dagkaart op Vandaag pakt vanzelf de eerstvolgende les.","Where you are in the course. You don't have to pick anything here: the day card on Today grabs your next lesson by itself.")+"</p></div>"+
+  el.innerHTML = "<div class='card'><h2 style='margin:0'>"+ct("De cursus","The course")+"</h2>"+
+    "<p class='muted' style='margin:6px 0 0'>"+ct("Waar je staat in de leerlijn. Je hoeft hier niets te kiezen: de dagkaart op Vandaag pakt vanzelf de eerstvolgende les. Dit is om te zien waar je heen gaat.","Where you are in the course. You don't have to pick anything here: the day card on Today grabs your next lesson by itself. This is here so you can see where you're heading.")+"</p></div>"+
     cursusRijenHtml();
   el.querySelectorAll(".lesson").forEach(function(el2){
     var lid = el2.getAttribute("data-les");
@@ -9544,6 +10914,7 @@ var TXT = {
   // en die is af zodra je hem gedaan hebt. De id blijft `lessen`, zodat show(), boot() en elke test
   // gewoon blijven werken: dit is een naamswijziging op het scherm, geen verbouwing eronder.
   lessen:{nl:"Vandaag",en:"Today",fr:"Aujourd'hui",de:"Heute"},
+  cursus:{nl:"Cursus",en:"Course",fr:"Cours",de:"Kurs"},
   woorden:{nl:"Woordjes",en:"Words",fr:"Mots",de:"Wörter"},
   vertalen:{nl:"Vertalen",en:"Translate",fr:"Traduire",de:"Übersetzen"},
   toetsjes:{nl:"Toetsjes",en:"Quizzes",fr:"Quiz",de:"Tests"},
@@ -13178,11 +14549,11 @@ var TOUR = [
   {titel:"Je eerste woordje 🎉", oefen:{id:"b1", es:"hola", opts:["hallo","tot ziens"], c:0}},
   {titel:"En nummer twee ✨", oefen:{id:"b3", es:"gracias", opts:["alsjeblieft","dank je wel"], c:1}},
   {titel:"Zo werkt het 🧠",
-   txt:"Zo simpel is het! Elke dag krijg je maximaal <b>15 nieuwe woordjes</b> (expres: kleine porties blijven plakken) en komt alles terug precies wanneer je het bijna vergeten bent: dat heet <b>spaced repetition</b>. Bij elke les lees je eerst kort de grammatica. En <b>fouten zijn goud</b>: daar leer je het meest van, dus ook een fout antwoord levert taco's op. (Meer hierover onderaan bij 💛.)"},
+   txt:"Elke dag een klein stapje: hooguit <b>15 nieuwe woordjes</b>. Wat je niet wist komt vanzelf terug tot het blijft zitten. En een fout antwoord? Ook goed. Daar leer je het meest van, en het levert net zo goed taco's op."},
   {titel:"Nog eentje dan 😄", oefen:{id:"b2", es:"adiós", opts:["tot ziens","goedemorgen"], c:0}},
-  {titel:"Alles binnen handbereik 🧭",
+  {titel:"Alles binnen handbereik 🧭", laat:true,
    txt:"Onder <b>Grammatica</b> staat elk onderwerp opgeknipt in stappen met vragen erbij (plus alle spiekbrieven en toetsjes), de ronde 📖-knop rechtsonder is je woordenboek (opent als popup, altijd bij de hand), en in de <b>Speeltuin</b> leer je spelenderwijs verder met muziek, memory en meer."},
-  {titel:"Samen leren 👤",
+  {titel:"Samen leren 👤", laat:true,
    txt:"Tik op je <b>naam</b> bovenaan voor je voortgang, je geheime sync-code en <b>Groepen</b>: start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
   {titel:"Ik groei met je mee ✨",
    txt:"Je hebt net je eerste taco's verdiend, en van taco's groei ík: van ei tot abuela, in acht vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Tot morgen?</b> Dan bewaar ik je woordjes van vandaag en staan er nieuwe voor je klaar: vijf minuutjes, zelfde plek. ¿Trato hecho? (afgesproken?) ¡Vamos!"}
@@ -13193,11 +14564,11 @@ var TOUR_EN = [
   {titel:"Your first word 🎉", oefen:{id:"b1", es:"hola", opts:["hello","goodbye"], c:0}},
   {titel:"And number two ✨", oefen:{id:"b3", es:"gracias", opts:["please","thank you"], c:1}},
   {titel:"How it works 🧠",
-   txt:"That's all there is to it! Each day you get at most <b>15 new words</b> (on purpose: small portions stick) and everything comes back exactly when you're about to forget it: that's called <b>spaced repetition</b>. Every lesson starts with a short grammar note. And <b>mistakes are gold</b>: they're where you learn the most, so even a wrong answer earns tacos. (More on this at the bottom under 💛.)"},
+   txt:"One small step a day: at most <b>15 new words</b>. Whatever you didn't know comes back until it sticks. And a wrong answer? That's fine too. It's where you learn the most, and it earns tacos just the same."},
   {titel:"One more 😄", oefen:{id:"b2", es:"adiós", opts:["goodbye","good morning"], c:0}},
-  {titel:"Everything within reach 🧭",
+  {titel:"Everything within reach 🧭", laat:true,
    txt:"Under <b>Grammar</b> every topic is cut into steps with questions (plus all the cheat sheets and quizzes), the round 📖 button bottom right is your dictionary (opens as a popup, always at hand), and in the <b>Playground</b> you keep learning through music, memory and more."},
-  {titel:"Learn together 👤",
+  {titel:"Learn together 👤", laat:true,
    txt:"Tap your <b>name</b> at the top for your progress, your secret sync code and <b>Groups</b>: start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
   {titel:"I grow with you ✨",
    txt:"You just earned your first tacos, and tacos are what make me grow: from egg to abuela, in eight forms. Go at your own pace — missing a day is fine. <b>See you tomorrow?</b> I'll keep today's words safe and have new ones ready: five minutes, same place. ¿Trato hecho? (deal?) ¡Vamos!"}
@@ -13206,6 +14577,12 @@ function tourLijst(){
   var lijst = profLang() === "nl" ? TOUR : TOUR_EN;
   // na de proeverij zijn de 3 oefenwoordjes al gedaan: welkom + oefenstappen overslaan
   if(S.proefTour) lijst = lijst.slice(1).filter(function(st){ return !st.oefen; });
+  // v19.91: "bij de onboarding heeft ze alles uitleg-tekst niet gelezen." Klopt, en dat is
+  // geen fout van haar: op minuut een is er nog niets waar die tekst over gaat. De schermen
+  // over groepen, woordenboek en speeltuin zijn antwoorden op vragen die je pas in week twee
+  // hebt. Ze zijn niet weg, ze staan achter de link Rondleiding onderaan, en verschijnen
+  // vanzelf als je hem daar opnieuw opent. De eerste keer is korter.
+  if(!S.tour) lijst = lijst.filter(function(st){ return !st.laat; });
   return lijst;
 }
 function showTour(stap){
@@ -13589,7 +14966,10 @@ var FUN_TXT = {
      cjPlaceholder:"Typ de vervoeging...", cjSkip:"Volgende werkwoord",
      huT:"Zinnen husselen", huS:"rondes van 8 zinnen, tik de Spaanse woorden in de juiste volgorde",
      huIntro:"Tik de woorden hieronder aan in de juiste volgorde om deze zin te bouwen.",
-     huLeeg:"Tik hieronder de woorden in de juiste volgorde", huSkip:"Volgende zin"},
+     huLeeg:"Tik hieronder de woorden in de juiste volgorde", huSkip:"Volgende zin",
+     coT:"El Corrector", coS:"rondes van 8 zinnen, tik het woord aan dat niet klopt",
+     coIntro:"In de Spaanse zin hieronder zit hoogstens één fout. Tik het woord aan dat niet klopt, of zeg dat de zin al goed is.",
+     coTodo:"De zin klopt ✓", coSkip:"Volgende zin"},
  en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
@@ -13618,6 +14998,9 @@ var FUN_TXT = {
      huT:"Scramble sentences", huS:"rounds of 8 sentences, tap the Spanish words in the right order",
      huIntro:"Tap the words below in the right order to build this sentence.",
      huLeeg:"Tap the words below in the right order", huSkip:"Next sentence",
+     coT:"El Corrector", coS:"rounds of 8 sentences, tap the word that is wrong",
+     coIntro:"The Spanish sentence below contains at most one mistake. Tap the word that is wrong, or say the sentence is already correct.",
+     coTodo:"The sentence is fine ✓", coSkip:"Next sentence",
      }
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
@@ -13633,6 +15016,7 @@ function renderFun(){
   if(funView === "dictado"){ renderFunDictado(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
   if(funView === "hu"){ renderFunHusselen(); return; }
+  if(funView === "corr"){ renderFunCorrector(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
@@ -13643,6 +15027,7 @@ function renderFun(){
     "<div class='lesson' id='ftDictado'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>Dictado</b><span>" + fx("dicS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftConj'><div class='lnum'>\ud83c\udfaf</div><div class='lbody'><b>Conjugador</b><span>" + fx("cjS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftHu'><div class='lnum'>\ud83e\udde9</div><div class='lbody'><b>" + fx("huT") + "</b><span>" + fx("huS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    "<div class='lesson' id='ftCorr'><div class='lnum'>\ud83d\udd75\ufe0f</div><div class='lbody'><b>" + fx("coT") + "</b><span>" + fx("coS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
     // v19.57: dit was een zin die je vertelde dat je ergens anders op iets moest tikken. Nu staat
@@ -13658,6 +15043,7 @@ function renderFun(){
   document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
   document.getElementById("ftConj").onclick = function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); };
   document.getElementById("ftHu").onclick = function(){ funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); };
+  document.getElementById("ftCorr").onclick = function(){ funView = "corr"; corrOpg = null; corrRonde = null; navPush({t:"fun", v:"corr"}); renderFun(); };
   document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
   document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
 }
@@ -13747,19 +15133,8 @@ function renderPerfil(){
                            "Only so your progress can be found again. It gets you no mail.")+"</p>"+
     "<input type='email' id='perfilMail' placeholder='E-mail' autocomplete='email' value=\""+((S.mail||"").replace(/"/g,"&quot;"))+"\">"+
     "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>";
-  var huidigDoel = S.doel || 30;
-  var doelen = [{n:10, lbl:(profLang()==="nl"?"Relaxed · 10":"Relaxed · 10")}, {n:30, lbl:(profLang()==="nl"?"Normaal · 30":"Normal · 30")}, {n:60, lbl:(profLang()==="nl"?"Fanatiek · 60":"Serious · 60")}];
-  el.innerHTML += "<p class='muted' style='margin:12px 0 4px'>"+(profLang()==="nl"?"Dagdoel ("+xpw()+" per dag): zelf gekozen doelen werken het best.":"Daily goal ("+xpw()+" per day): self-chosen goals work best.")+"</p>"+
-    "<div class='row'>"+doelen.map(function(d){
-      return "<button class='ghost trackpick"+(d.n===huidigDoel?" active":"")+"' data-doel='"+d.n+"'>"+d.lbl+"</button>";
-    }).join("")+"</div>";
-  el.querySelectorAll("button[data-doel]").forEach(function(b){
-    b.onclick = function(){
-      S.doel = +b.getAttribute("data-doel"); persist(); syncUp();
-      updateGoalUI(); renderPerfil();
-      toast(profLang()==="nl" ? "Dagdoel: "+S.doel+" "+xpw()+" per dag ✓" : "Daily goal: "+S.doel+" "+xpw()+" per day ✓");
-    };
-  });
+  el.innerHTML += doelBlokHtml();
+  doelBlokWire(el);
   var bm = document.getElementById("btnMailBewaar");
   if(bm) bm.onclick = function(){
     var mi = document.getElementById("perfilMail");
@@ -13769,10 +15144,123 @@ function renderPerfil(){
     S.mail = m; persist(); syncUp();
     toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
   };
-  renderCursus();
+  renderNivClaim();
   renderFamilia();
   renderGroepen();
   instelWire();
+}
+
+/* v19.90. Stefan: "over je doel hier kunnen zien (wat nu 60XP) maar die kunt
+   aanpassen naar welk niveau je op x tijd wilt bereiken en/of hoeveel tijd per dag."
+   Punten zijn geen doel: 60 punten zegt niets over Spaans en alles over hoeveel je
+   op knoppen hebt gedrukt. Dus staan er nu twee dingen, en ze doen expres niet
+   hetzelfde. De minuten sturen je dagportie aan. Het niveaudoel stuurt niets aan;
+   dat is een richting waar de app je gemeten tempo naast legt, in een grijze regel
+   onder je balken en nergens anders. */
+function doelBlokHtml(){
+  var mi = doelMinuten();
+  var mins = [{n:5, nl:"5 minuten", en:"5 minutes"},
+              {n:10, nl:"10 minuten", en:"10 minutes"},
+              {n:20, nl:"20 minuten", en:"20 minutes"}];
+  var h = "<h2 style='margin:18px 0 2px'>"+ct("Jouw doel 🎯","Your goal 🎯")+"</h2>"+
+    "<p class='muted' style='margin:0 0 6px'>"+
+      ct("Hoeveel tijd wil je er per dag in stoppen? Dit bepaalt hoe groot je dagportie is.",
+         "How much time do you want to put in each day? This sets how big your daily portion is.")+"</p>"+
+    "<div class='row'>"+mins.map(function(m){
+      return "<button class='ghost trackpick"+(m.n === mi ? " active" : "")+"' data-dmin='"+m.n+"'>"+ct(m.nl, m.en)+"</button>";
+    }).join("")+"</div>"+
+    "<p class='muted' style='margin:6px 0 0; font-size:.82rem'>"+
+      ct("Dat komt neer op ongeveer "+(mi * DOEL_MIN_XP)+" "+xpw()+" per dag; zo is het balkje bovenin gerekend. Een schatting, geen stopwatch.",
+         "That works out at roughly "+(mi * DOEL_MIN_XP)+" "+xpw()+" a day; that's how the bar at the top is calculated. An estimate, not a stopwatch.")+"</p>";
+  var niv = (S && S.doelNiv) || null;
+  var nivs = [{v:"", nl:"geen", en:"none"}, {v:"A1", nl:"A1 vol", en:"A1 full"}, {v:"A2", nl:"A2 vol", en:"A2 full"}];
+  h += "<p class='muted' style='margin:14px 0 6px'>"+
+    ct("En waar wil je uitkomen? Dit stuurt niets aan. Het geeft de app iets om je gemeten tempo naast te leggen, meer niet.",
+       "And where do you want to end up? This drives nothing. It just gives the app something to hold your measured pace against.")+"</p>"+
+    "<div class='row'>"+nivs.map(function(o){
+      return "<button class='ghost trackpick"+(((o.v || null) === niv) ? " active" : "")+"' data-dniv='"+o.v+"'>"+ct(o.nl, o.en)+"</button>";
+    }).join("")+"</div>";
+  if(niv){
+    var mnd = [{m:3, nl:"binnen 3 maanden", en:"within 3 months"},
+               {m:6, nl:"binnen 6 maanden", en:"within 6 months"},
+               {m:12, nl:"binnen een jaar", en:"within a year"}];
+    h += "<div class='row' style='margin-top:6px'>"+mnd.map(function(o){
+      return "<button class='ghost trackpick"+(((S && S.doelMnd) === o.m) ? " active" : "")+"' data-dmnd='"+o.m+"'>"+ct(o.nl, o.en)+"</button>";
+    }).join("")+"</div>"+
+    "<p class='muted' style='margin:6px 0 0; font-size:.82rem'>"+
+      ((S && S.doelDatum)
+        ? ct("Je doel staat op "+niv+" vol op "+datumUit(S.doelDatum)+". Wat dat per week vraagt en wat je nu haalt, staat bij je voortgang.",
+             "Your goal is "+niv+" full by "+datumUit(S.doelDatum)+". What that asks per week and what you're actually doing is on your progress screen.")
+        : ct("Kies er nog een termijn bij.","Pick a horizon to go with it."))+"</p>";
+  }
+  return h;
+}
+
+function doelBlokWire(el){
+  el.querySelectorAll("button[data-dmin]").forEach(function(b){
+    b.onclick = function(){
+      S.doelMin = +b.getAttribute("data-dmin");
+      S.doel = S.doelMin * DOEL_MIN_XP;     // de rest van de app rekent nog in punten
+      persist(); syncUp(); updateGoalUI(); renderPerfil(); renderStats();
+      toast(ct("Dagdoel: "+S.doelMin+" minuten per dag ✓",
+               "Daily goal: "+S.doelMin+" minutes a day ✓"));
+    };
+  });
+  el.querySelectorAll("button[data-dniv]").forEach(function(b){
+    b.onclick = function(){
+      var v = b.getAttribute("data-dniv");
+      S.doelNiv = v || null;
+      if(!v){ S.doelDatum = null; S.doelMnd = null; }
+      else if(!S.doelMnd){ S.doelMnd = 6; S.doelDatum = addDays(today(), 182); }
+      persist(); syncUp(); renderPerfil(); renderStats();
+    };
+  });
+  el.querySelectorAll("button[data-dmnd]").forEach(function(b){
+    b.onclick = function(){
+      S.doelMnd = +b.getAttribute("data-dmnd");
+      S.doelDatum = addDays(today(), Math.round(S.doelMnd * 30.4));
+      persist(); syncUp(); renderPerfil(); renderStats();
+      toast(ct("Doel: "+S.doelNiv+" vol op "+datumUit(S.doelDatum)+" ✓",
+               "Goal: "+S.doelNiv+" full by "+datumUit(S.doelDatum)+" ✓"));
+    };
+  });
+}
+
+/* v19.85 - hier zeg je één keer wat je al kunt, in plaats van het per kaartje te
+   moeten aangeven. Het staat bij de instellingen en niet in je dagsessie: het is
+   iets wat je hooguit twee keer in je leven doet. */
+function renderNivClaim(){
+  var el = document.getElementById("nivClaimCard");
+  if(!el) return;
+  var c = S.claim, huidig = c ? c.niv : null;
+  var opties = [{r:-1, lbl:ct("Ik begin bij nul","I'm starting from zero")},
+                {r:0,  lbl:ct("A1 ken ik grotendeels","I mostly know A1")},
+                {r:1,  lbl:ct("A2 ken ik grotendeels","I mostly know A2")}];
+  el.innerHTML = "<h2>"+ct("Wat ken je al?","What do you already know?")+"</h2>"+
+    "<p class='muted'>"+ct("De woorden van dat niveau slaan we niet over. Ze starten hoger in de ladder en komen verspreid over een maand één keer langs om je claim te controleren. Zit er iets bij dat je toch niet kent, dan begint dat woord gewoon opnieuw.",
+      "We don't skip the words at that level. They start higher up the ladder and come by once, spread over a month, to check your claim. Anything you turn out not to know simply starts over.")+"</p>"+
+    "<div class='row'>"+opties.map(function(o){
+      return "<button class='ghost trackpick"+(o.r === huidig ? " active" : "")+"' data-claim='"+o.r+"'>"+o.lbl+"</button>";
+    }).join("")+"</div>"+
+    (c && c.n ? "<p class='muted' style='margin-top:10px'>"+
+      ct(c.n+" woorden staan hoger in de ladder sinds "+c.d+".", c.n+" words have been higher up the ladder since "+c.d+".")+
+      " <button class='ghost' id='btnClaimTerug' style='padding:4px 10px; font-size:.85rem'>"+
+      ct("terugdraaien","undo")+"</button></p>" : "");
+  el.querySelectorAll("button[data-claim]").forEach(function(b){
+    b.onclick = function(){
+      var r = +b.getAttribute("data-claim");
+      var n = niveauClaim(r);
+      syncUp(); renderNivClaim(); renderStats();
+      toast(n ? ct(n+" woorden staan klaar op jouw niveau ✓", n+" words set to your level ✓")
+              : ct("Genoteerd: we beginnen bij het begin ✓","Noted: we start at the beginning ✓"));
+    };
+  });
+  var bt = document.getElementById("btnClaimTerug");
+  if(bt) bt.onclick = function(){
+    var n = niveauClaimTerug();
+    syncUp(); renderNivClaim(); renderStats();
+    toast(ct(n+" woorden staan weer op nul.", n+" words are back at zero."));
+  };
 }
 /* v19.71 — de onderste zone. Alles hierin doe je één keer en daarna nooit meer, dus het hoort
    niet zichtbaar te zijn terwijl je naar je voortgang kijkt. Eén regel, en wie hem nodig heeft
@@ -16471,6 +17959,249 @@ function renderCheat(){
 }
 
 /* ================= VOORTGANG ================= */
+/* ================= JE BASIS (v19.85) =================
+   Stefan over waarom hij met Duolingo stopte: "ik doe de habit maar ik leer niks."
+   Het bewijs dat dit anders is, is de A1-balk die vult. Die staat daarom nu bovenaan
+   je voortgang, met eronder de drie cijfers die er echt toe doen: hoe vaak je fout
+   zit (de graadmeter), waar de poort staat, en hoe vaak je terugkwam. Dat laatste is
+   geen prestatie maar een voorspeller: de balk vult alleen als je blijft komen.
+   ===================================================== */
+/* v19.90, Stefans zesde punt: voortgang zien op A1 en A2 volgens Cervantes.
+   voortgangTellers() telde A2 al mee, alleen kwam het nooit op het scherm. Een
+   balk per niveau, met dezelfde afspraak: donker is stevig (vijf goede beurten
+   over vijfentwintig dagen), licht is onderweg (herhaalinterval van een week of
+   langer). De noemers komen uit het Plan Curricular van het Cervantes. */
+function nivBalkHtml(niveau, t){
+  var n = PCIC_NOEMER[niveau] || 0;
+  var d = t.dek[niveau] || 0;
+  var w = Math.max(d, (t.dekw && t.dekw[niveau]) || 0);
+  var pct = n ? Math.round(100 * d / n) : 0;
+  var pctW = n ? Math.round(100 * (w - d) / n) : 0;
+  return "<div class='boxrow'><span style='width:80px'>"+niveau+"</span>"+
+    "<div class='bar duo'><div style='width:"+Math.min(100, pct)+"%'></div>"+
+      "<div class='marge' style='width:"+Math.min(100 - Math.min(100, pct), pctW)+"%'></div></div>"+
+    "<b style='width:44px; text-align:right'>"+pct+"%</b></div>"+
+    "<p class='muted' style='margin:0 0 8px; font-size:.82rem'>"+
+      ct("<b>"+d+"</b> stevig"+(w > d ? " en <b>"+(w - d)+"</b> onderweg" : "")+" van de "+n+" woorden die het Instituto Cervantes voor "+niveau+" telt.",
+         "<b>"+d+"</b> solid"+(w > d ? " and <b>"+(w - d)+"</b> on the way" : "")+" of the "+n+" words the Instituto Cervantes counts for "+niveau+".")+"</p>";
+}
+
+function basisHtml(actief14){
+  var t = voortgangTellers();
+  var d1 = t.dek.A1 || 0;
+  var w1 = Math.max(d1, (t.dekw && t.dekw.A1) || 0);   // onderweg is nooit minder dan stevig
+  var pctW = Math.round(100 * (w1 - d1) / (PCIC_NOEMER.A1 || 390));
+  var poort = poortRang();
+  var k = leerKpi().recent;
+  var doelPct = Math.round(POORT_PCT * 100);
+  var poortTxt;
+  if(poort <= 0){
+    poortTxt = ct("A1 is nu aan de beurt. Zodra "+doelPct+"% stevig staat gaat A2 open; tot die tijd krijg je er elke dag één woord van hogerop bij.",
+                  "A1 is up now. Once "+doelPct+"% is solid, A2 opens; until then you get one word from higher up each day.");
+  } else if(poort >= 9){
+    poortTxt = ct("Je basis staat. Alles is open.","Your base is in place. Everything is open.");
+  } else {
+    poortTxt = ct("A1 staat. Je bouwt nu verder op "+NIV_NAAM[poort]+".",
+                  "A1 is in place. You're building on "+NIV_NAAM[poort]+" now.");
+  }
+  var dagen = (S.dagen && S.dagen.count) || 0;
+  var tk = terugkomKpi();
+  var pw = Math.round(10 * tk.actief * 7 / tk.venster) / 10;
+  var pwTxt = tk.rijp ? String(pw).replace(".", ",") + "×" : actief14 + "/14";
+  // v19.86: de zin die Stefan zelf heeft gedefinieerd. Onder zijn grens neemt de
+  // app de schuld, niet de gebruiker, en laat zien wat hij eraan doet.
+  var terugTxt = "";
+  if(tk.onder){
+    terugTxt = "<p class='muted' style='margin:8px 0 0'>"+
+      ct("Je komt nu minder dan "+tk.pw+" keer per week terug. Dat is de grens die je zelf hebt getrokken: "+
+         "daaronder ligt het aan het ontwerp, niet aan jou. Dus is je dagportie kleiner gemaakt "+
+         "("+portieMax()+" woorden, waarvan "+nieuwPerDag()+" nieuw) zodat een sessie in een paar minuten klaar is. "+
+         "Kom je weer vaker, dan groeit hij vanzelf terug.",
+         "You're coming back less than "+tk.pw+" times a week. That's the line you drew yourself: "+
+         "below it, the design is at fault, not you. So your daily portion has been made smaller "+
+         "("+portieMax()+" words, "+nieuwPerDag()+" of them new) so a session takes a couple of minutes. "+
+         "Come back more often and it grows back on its own.")+"</p>";
+  }
+  return "<h2>"+ct("Je basis 🧱","Your base 🧱")+"</h2>"+
+    "<p class='muted' style='margin:6px 0 8px'>"+
+      // v19.90: hier stond wat donker en licht betekenen, maar niet meer waaraan je
+      // dat kunt afmeten. Die definitie stond sinds v19.87 in de app en hoort er te
+      // blijven: zonder de maatstaf is "onderweg" een gevoel in plaats van een grens.
+      ct("De twee niveaus die samen de basis vormen. Donker is stevig (vijf goede beurten over 25 dagen), licht is onderweg (herhaalinterval van een week of langer).",
+         "The two levels that together make up the base. Dark is solid (five correct turns across 25 days), light is on the way (review interval of a week or more).")+"</p>"+
+    nivBalkHtml("A1", t)+nivBalkHtml("A2", t)+
+    (pctW > 0 ? "<p class='muted' style='margin:2px 0 0; font-size:.82rem'>"+
+       ct("De lichte strook is je marge: die staat klaar om stevig te worden. Een woord kan pas na 25 dagen stevig heten, dus in het begin is dat de strook die beweegt. Dictado en Husselen duwen woorden in deze strook; stevig verdien je in de woordtrainer.",
+          "The light band is your margin: those are queued to become solid. A word can only count as solid after 25 days, so early on that's the band that moves. Dictado and Husselen push words into this band; solid is earned in the word trainer.")+"</p>" : "")+
+    "<p class='muted' style='margin:8px 0 0'>"+poortTxt+"</p>"+
+    "<div class='statgrid' style='margin-top:10px'>"+
+      // v19.86b, Stefan: "ik vind de indicator belangrijker dan de doelstelling."
+      // Dus staat het terugkomcijfer vooraan, in zijn eenheid: keer per week.
+      // v19.90d: in de opbouwfase is het getal "9/14", en dan klopt "keer per week"
+      // niet met wat er staat. Het label volgt nu het getal in plaats van andersom.
+      "<div class='stat'><b>"+pwTxt+"</b><span class='muted'>"+(tk.rijp
+        ? ct("keer per week terug ("+dagen+" dagen totaal)","times a week you come back ("+dagen+" days total)")
+        : ct("van de laatste 14 dagen actief ("+dagen+" dagen totaal)","of the last 14 days active ("+dagen+" days total)"))+"</span></div>"+
+      // v19.90: hier stonden ook het foutpercentage en het grammaticacijfer. Die
+      // staan nu bij "Wat je kunt", een stukje verderop op ditzelfde scherm, en
+      // twee keer hetzelfde getal laten zien maakt allebei de keren ongeloofwaardig.
+      // Wat hier overblijft gaat over je ritme, en dat is precies wat deze plek
+      // hoort te zijn: de voorspeller, niet de opbrengst.
+      "<div class='stat'><b>"+nieuwPerDag()+"</b><span class='muted'>"+ct("nieuwe woorden per dag","new words a day")+"</span></div>"+
+      "</div>"+terugTxt+
+    (tk.rijp && !tk.onder
+      ? "<p class='muted' style='margin:8px 0 0'>"+
+        ct("Boven je eigen ondergrens van "+tk.pw+" keer per week. Dit is het cijfer dat het meest voorspelt, "+
+           "want die A1-balk vult alleen als je blijft komen.",
+           "Above your own floor of "+tk.pw+" times a week. This is the number that predicts the most, "+
+           "because that A1 bar only fills if you keep coming back.")+"</p>"
+      : "");
+}
+
+/* ================= DE MARGE RICHTING DOEL (v19.87) =================
+   Hier stond een prognose: hoeveel woorden je over een week, een maand en een
+   jaar zou kennen. Die was op drie manieren fout. Hij extrapoleerde lineair
+   vanuit het aantal woorden dat je ooit begonnen was (niet gekend), hij negeerde
+   het dagmaximum, de poort en de omvang van de pool, en hij gaf één getal waar
+   de onzekerheid enorm is. Over 365 dagen leverde dat fantasie op, en fantasie
+   op je voortgangsscherm maakt elk ander cijfer op datzelfde scherm verdacht.
+
+   Wat er nu staat is voortgangBand(), die al sinds v19.83 in het bestand lag
+   zonder ooit getoond te worden: een ondergrens en een bovengrens in weken,
+   gerekend over je wekelijkse metingen, met een marge van twee standaardfouten.
+   Hij verschijnt pas bij drie weekmetingen, want met twee punten is elk tempo
+   toeval. Tot die tijd staat er wat er waar is: dat we aan het meten zijn, en
+   hoeveel weken er nog nodig zijn. Stefan zelf: "gaan we beginnen meten en over
+   3 weken ofzo kijken wat we met de data kunnen doen."  */
+function bandHtml(niveau){
+  var weken = Object.keys(S.meting || {}).length;
+  var b = voortgangBand(niveau);
+  if(!b){
+    var nog = Math.max(1, 3 - weken);
+    return "<p class='muted' style='margin-top:6px'>"+
+      ct("Er wordt gemeten: elke week legt de app vast hoeveel "+niveau+"-woorden er stevig staan. "+
+         "Na drie metingen staat hier een schatting met marge, niet eerder, want met twee punten is elk tempo toeval. "+
+         "Nog <b>"+nog+"</b> "+(nog === 1 ? "week" : "weken")+" te gaan.",
+         "Measuring: every week the app records how many "+niveau+" words are solid. "+
+         "After three measurements an estimate with a margin appears here, not before, because with two points any pace is coincidence. "+
+         "<b>"+nog+"</b> more "+(nog === 1 ? "week" : "weeks")+" to go.")+"</p>";
+  }
+  if(b.onder === 0 && b.boven === 0){
+    return "<p class='muted' style='margin-top:6px'>"+
+      ct(niveau+" is vol. Alles wat Cervantes voor dit niveau telt, staat stevig.",
+         niveau+" is full. Everything Cervantes counts for this level is solid.")+"</p>";
+  }
+  if(b.tempo <= 0){
+    return "<p class='muted' style='margin-top:6px'>"+
+      ct("Over de gemeten weken kwamen er per saldo geen "+niveau+"-woorden bij die stevig staan. "+
+         "Dat kan kloppen als je vooral herhaalt: stevig worden kost vijfentwintig dagen, dus de eerste weken zie je hier niets.",
+         "Across the measured weeks no "+niveau+" words became solid on balance. "+
+         "That can be right if you're mostly reviewing: becoming solid takes twenty-five days, so the first weeks show nothing here.")+"</p>";
+  }
+  var kop = b.boven === null
+    ? ct("minstens "+b.onder+" weken","at least "+b.onder+" weeks")
+    : b.onder + ct(" tot "," to ") + b.boven + ct(" weken"," weeks");
+  return "<div class='statgrid' style='margin-top:6px'>"+
+      "<div class='stat'><b>"+kop+"</b><span class='muted'>"+ct("tot "+niveau+" vol is","until "+niveau+" is full")+"</span></div>"+
+      "<div class='stat'><b>"+(Math.round(b.tempo * 10) / 10)+"</b><span class='muted'>"+ct("stevige woorden per week","solid words a week")+"</span></div>"+
+      "<div class='stat'><b>"+b.weken+"</b><span class='muted'>"+ct("weken gemeten","weeks measured")+"</span></div>"+
+      "</div>"+
+    "<p class='muted' style='margin-top:6px'>"+
+      ct("Dit is een marge, geen datum. Hij is berekend uit je eigen weekmetingen en wordt smaller naarmate er meer weken in zitten. "+
+         (b.boven === null ? "De bovengrens staat nog open: daarvoor schommelt je tempo nog te veel." : "Ga je harder, dan schuift hij vanzelf mee."),
+         "This is a margin, not a date. It's computed from your own weekly measurements and narrows as more weeks come in. "+
+         (b.boven === null ? "The upper bound is still open: your pace still varies too much for one." : "Speed up and it moves along on its own."))+"</p>";
+}
+
+/* v19.90, Stefans derde punt: "een voorspelling kunnen doen over waar je staat
+   over x tijd." Dezelfde weekmetingen als de band, maar omgedraaid. Drie termijnen
+   om uit te kiezen, en per niveau een strook in plaats van een getal. Onder de
+   drie weekmetingen staat er niets dan wat waar is: dat we nog aan het meten zijn.
+
+   De doelregel hangt hieronder en niet erboven, en is grijs en niet groot. Dat is
+   geen bescheidenheid maar de afspraak: het cijfer dat voorspelt of je A1 uitkrijgt
+   is hoe vaak je terugkomt, niet welke datum je een keer hebt aangeklikt. */
+var voorspelWk = 13;
+// Een Nederlandse decimaal is een komma. Klein ding, maar een getal dat er
+// buitenlands uitziet leest als een getal dat ergens anders vandaan komt.
+// v19.90d: een ISO-datum in een lopende zin leest als een logregel. In een zin
+// hoort de datum zoals je hem uitspreekt.
+var MAAND_NL = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
+var MAAND_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function datumUit(iso){
+  var d = String(iso || "").split("-");
+  if(d.length !== 3) return String(iso || "");
+  var m = parseInt(d[1], 10) - 1;
+  if(!(m >= 0 && m < 12)) return String(iso);
+  var nl = profLang() === "nl";
+  return parseInt(d[2], 10) + " " + (nl ? MAAND_NL[m] : MAAND_EN[m]) + " " + d[0];
+}
+function getal1(n){
+  var v = Math.round(n * 10) / 10;
+  return profLang() === "nl" ? String(v).replace(".", ",") : String(v);
+}
+function doelRegelHtml(){
+  var ds = doelStand();
+  if(!ds) return "";
+  var kop = "<p class='muted' style='margin-top:10px'>";
+  if(ds.klaar) return kop+ct("Je doel is gehaald: "+ds.niv+" staat vol.",
+                             "You reached your goal: "+ds.niv+" is full.")+"</p>";
+  if(ds.weken <= 0) return kop+ct("De datum van je doel ("+datumUit(ds.datum)+") is voorbij. Er staan "+ds.nu+" van de "+ds.noemer+" "+ds.niv+"-woorden stevig. Zet er een nieuwe termijn bij als je wilt.",
+                                  "Your goal date ("+datumUit(ds.datum)+") has passed. "+ds.nu+" of the "+ds.noemer+" "+ds.niv+" words are solid. Set a new horizon if you like.")+"</p>";
+  var nodig = getal1(ds.nodig);
+  var txt = ct("Je doel: "+ds.niv+" vol op "+datumUit(ds.datum)+". Dat vraagt <b>"+nodig+"</b> stevige woorden per week, "+ds.weken+" weken lang.",
+               "Your goal: "+ds.niv+" full by "+datumUit(ds.datum)+". That asks for <b>"+nodig+"</b> solid words a week, for "+ds.weken+" weeks.");
+  if(ds.tempo === null){
+    txt += ct(" Wat je nu haalt is nog niet te meten; vanaf drie weekmetingen staat het hier.",
+              " What you're actually doing isn't measurable yet; from three weekly measurements on it appears here.");
+  } else {
+    txt += ct(" Je haalt er nu <b>"+getal1(ds.tempo)+"</b> per week.",
+              " Right now you're doing <b>"+getal1(ds.tempo)+"</b> a week.");
+    txt += ds.tempo >= ds.nodig
+      ? ct(" Dat is genoeg.", " That's enough.")
+      : ct(" Dat is minder, dus in dit tempo wordt het later. Dat is geen fout: een doel is hier een richting, en het cijfer dat telt blijft hoe vaak je terugkomt.",
+           " That's less, so at this pace it'll be later. That's not a failure: a goal here is a direction, and the number that counts stays how often you come back.");
+  }
+  return kop+txt+"</p>";
+}
+function voorspelHtml(){
+  var h = "<h2 style='margin-top:16px'>"+ct("Waar je straks staat 🔭","Where you'll be 🔭")+"</h2>";
+  if(!voorspelWaar("A1", voorspelWk)){
+    var gemeten = Object.keys(S.meting || {}).length, nog = Math.max(1, 3 - gemeten);
+    return h + "<p class='muted'>"+
+      ct("Nog niet te zeggen. Er liggen "+gemeten+" weekmetingen; vanaf drie kan hier een strook staan in plaats van een gok. Nog <b>"+nog+"</b> "+(nog === 1 ? "week" : "weken")+" te gaan.",
+         "Can't be said yet. There are "+gemeten+" weekly measurements; from three on a band can appear here instead of a guess. <b>"+nog+"</b> more "+(nog === 1 ? "week" : "weeks")+" to go.")+"</p>"+
+      doelRegelHtml();
+  }
+  var opties = [{w:4, nl:"over een maand", en:"in a month"},
+                {w:13, nl:"over drie maanden", en:"in three months"},
+                {w:26, nl:"over een half jaar", en:"in six months"}];
+  h += "<div class='row'>"+opties.map(function(o){
+    return "<button class='ghost trackpick"+(o.w === voorspelWk ? " active" : "")+"' data-vwk='"+o.w+"'>"+ct(o.nl, o.en)+"</button>";
+  }).join("")+"</div><div style='margin-top:8px'></div>";
+  ["A1","A2"].forEach(function(niv){
+    var v = voorspelWaar(niv, voorspelWk);
+    if(!v || !v.noemer) return;
+    var pl = Math.round(100 * v.laag / v.noemer), ph = Math.round(100 * v.hoog / v.noemer);
+    h += "<div class='boxrow'><span style='width:80px'>"+niv+"</span>"+
+      "<div class='bar duo'><div style='width:"+Math.min(100, pl)+"%'></div>"+
+        "<div class='marge' style='width:"+Math.min(100 - Math.min(100, pl), Math.max(0, ph - pl))+"%'></div></div>"+
+      "<b style='width:74px; text-align:right'>"+pl+ct(" tot "," to ")+ph+"%</b></div>"+
+      "<p class='muted' style='margin:0 0 8px; font-size:.82rem'>"+
+        ct("Nu <b>"+v.nu+"</b> stevig, dan <b>"+v.laag+"</b> tot <b>"+v.hoog+"</b> van de "+v.noemer+".",
+           "Now <b>"+v.nu+"</b> solid, then <b>"+v.laag+"</b> to <b>"+v.hoog+"</b> of "+v.noemer+".")+"</p>";
+  });
+  h += "<p class='muted' style='font-size:.82rem'>"+
+    ct("Gerekend uit je eigen weekmetingen, met de marge erbij. Het is een strook en geen getal, want een getal zou hier doen alsof we het weten. Blijf je vaker komen, dan schuift de hele strook mee omhoog.",
+       "Computed from your own weekly measurements, margin included. It's a band and not a number, because a number would pretend we know. Keep coming back more often and the whole band moves up.")+"</p>";
+  return h + doelRegelHtml();
+}
+function voorspelWire(el){
+  el.querySelectorAll("button[data-vwk]").forEach(function(b){
+    b.onclick = function(){ voorspelWk = +b.getAttribute("data-vwk"); renderStats(); };
+  });
+}
+
 function renderStats(){
   var el = document.getElementById("statsCard");
   var boxes = [0,0,0,0,0,0];
@@ -16486,27 +18217,11 @@ function renderStats(){
     return "<div class='boxrow'><span style='width:80px'>"+boxLabels[i]+"</span>"+
       "<div class='bar'><div style='width:"+Math.round(100*n/maxBox)+"%'></div></div><b style='width:24px; text-align:right'>"+n+"</b></div>";
   }).join("");
-  // hardnekkige woorden (leeches): 3x of vaker fout
-  var leeches = [];
-  Object.keys(S.errors).forEach(function(k){
-    var e = S.errors[k];
-    if(e.type === "woord" && e.count >= 3){
-      var w = WORDS.filter(function(x){ return x.id === e.id; })[0];
-      if(w) leeches.push({w:w, n:e.count});
-    }
-  });
-  leeches.sort(function(a,b){ return b.n - a.n; });
-  var leechHtml = "";
-  if(leeches.length){
-    leechHtml = "<h2 style='margin-top:16px'>"+ct("Hardnekkige woorden","Stubborn words")+"</h2>"+
-      "<p class='muted'>"+ct("Deze blijven lastig (3+ keer fout). De beste remedie uit het geheugenonderzoek: maak er een eigen zin mee over je eigen leven. Claude kijkt hem na (+5 "+xpw()+" bij goed).",
-        "These keep tripping you up (wrong 3+ times). The best remedy from memory research: write your own sentence with it, about your own life. Claude checks it (+5 "+xpw()+" if it's right).")+"</p>"+
-      leeches.map(function(l, i){
-        return "<div class='leech'><span><b>"+l.w.es+"</b> · "+wTrans(l.w)+"</span>"+
-          "<button class='ghost' style='padding:6px 12px' data-leechzin='"+l.w.id+"'>✍️ "+ct("maak een zin","write a sentence")+"</button></div>";
-      }).join("")+
-      "<div id='leechOef' class='hidden' style='margin-top:10px'></div>";
-  }
+  /* v19.90, Stefan: "de moeilijke woordjes, dat kan weg." Hier stond een lijst
+     hardnekkige woorden met een schrijfoefening erbij. Weg, met de oefening en al:
+     een woord dat drie keer fout ging komt via het herhaalsysteem toch al terug,
+     en een aparte schandpaal ernaast maakt van je voortgangsscherm een lijst met
+     wat je niet kunt. */
   var t2 = today();
   var xpToday = S.xp[t2] || 0;
   // ---- koers & prognose over de laatste 14 dagen ----
@@ -16522,53 +18237,50 @@ function renderStats(){
   var venster = eersteActief === null ? 14 : (eersteActief + 1);
   var tempo = nieuw14 / Math.max(1, venster);
   var tempoActief = actief14 ? nieuw14 / actief14 : 0;
-  var vast = boxes[3] + boxes[4] + boxes[5]; // zit goed (1 week of langer interval)
-  function prog(dagen){
-    var tot = seen + Math.round(tempo * dagen);
-    return getal(tot);
-  }
-  var koersHtml = "<h2>"+ct("Jouw ontwikkeling 📈","How you're doing 📈")+"</h2>";
+  // v19.87: box 5 is stevig (dat is stevigDrempel(), en dat is wat de A1-balk telt),
+  // box 3 en 4 zijn onderweg. Hiervoor heette box 3 ook "stevig", waardoor hetzelfde
+  // scherm twee verschillende getallen stevig noemde.
+  var vast = boxes[5];
+  var opweg = boxes[3] + boxes[4];
+  var koersHtml = basisHtml(actief14) + "<h2>"+ct("Jouw ontwikkeling 📈","How you're doing 📈")+"</h2>";
   if(actief14 === 0){
     koersHtml += "<p class='muted'>"+ct("Nog geen activiteit in de afgelopen twee weken. Begin vandaag met 5 woordjes, dan staat hier morgen je koers.",
       "No activity in the past two weeks. Start today with 5 words and your trajectory will be here tomorrow.")+"</p>";
   } else {
-    var ratio = doel14 / Math.max(1, Math.min(14, venster));
-    var oordeel = ratio >= 0.8 ? ct("Je ligt ijzersterk op koers 💪","You're rock solid on track 💪")
-      : ratio >= 0.5 ? ct("Je ligt netjes op koers ✓","You're nicely on track ✓")
-      : ratio >= 0.2 ? ct("Je bent onderweg, maar er is ruimte: pak vandaag je dagdoel","You're on your way, but there's room: hit your daily goal today")
-      : ct("De motor hapert een beetje: één klein dagje oppakken is genoeg om weer te rollen","The engine is spluttering a bit: one small day is enough to get it rolling again");
+    /* v19.86b. Stefan: "ik vind de indicator belangrijker dan de doelstelling."
+       Het oordeel hing aan doel14: op hoeveel dagen je je XP-doel haalde. Dat maakt
+       van een gemiste dag een fout. Het hangt nu aan hoe vaak je terugkwam, want
+       dat is wat voorspelt of je ooit A1 uitkrijgt. Het dagdoel staat er nog, een
+       regel lager, als informatie in plaats van als vonnis. */
+    var perWeek = actief14 * 7 / Math.max(1, Math.min(14, venster));
+    var oordeel = perWeek >= 6 ? ct("Je bent er bijna dagelijks 💪","You're here almost daily 💪")
+      : perWeek >= TERUGKOM_PW ? ct("Je blijft terugkomen, en dat is het cijfer dat telt ✓","You keep coming back, and that's the number that counts ✓")
+      : perWeek >= 2 ? ct("Je komt terug, alleen wat onregelmatig. Eén korte sessie telt net zo goed mee.","You do come back, just irregularly. One short session counts just as much.")
+      : ct("Het is even stil geweest. Twee minuten vandaag zetten de teller weer aan.","It's been quiet for a bit. Two minutes today gets the counter going again.");
     var doelNoemer = Math.min(14, venster);
-    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · "+ct("dagdoel gehaald op "+doel14+" van de laatste "+doelNoemer+" dagen · "+actief14+" dagen actief",
-        "daily goal reached on "+doel14+" of the last "+doelNoemer+" days · active on "+actief14+" days")+"</span></p>"+
+    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · "+ct(actief14+" van de laatste "+doelNoemer+" dagen actief · dagdoel gehaald op "+doel14,
+        "active on "+actief14+" of the last "+doelNoemer+" days · daily goal reached on "+doel14)+"</span></p>"+
       "<p class='muted' style='margin:6px 0'>"+
-      ct("Je kent nu <b>"+seen+"</b> woorden, waarvan <b>"+vast+"</b> stevig in je geheugen zitten (herhaalinterval van een week of langer).",
-         "You now know <b>"+seen+"</b> words, <b>"+vast+"</b> of them solidly (a review interval of a week or more).")+
-      (vast === 0 && seen > 0 ? ct(" Heel logisch als je net begonnen bent: een week-interval kan pas na een week bestaan, ze komen eraan.",
-         " Completely normal if you've just started: a week-long interval can only exist after a week. They're coming.") : "")+
-      ct(" Tempo: ±"," Pace: ±")+(Math.round(tempo*10)/10)+ct(" nieuwe woorden per dag"," new words a day")+
-      (actief14 ? ct(" (±"+(Math.round(tempoActief*10)/10)+" per actieve dag, het maximum is 15)",
-                     " (±"+(Math.round(tempoActief*10)/10)+" per active day, the maximum is 15)") : "")+".</p>";
-    if(tempo > 0){
-      koersHtml += "<div class='statgrid'>"+
-        "<div class='stat'><b>"+prog(7)+"</b><span class='muted'>"+ct("woorden over 1 week","words in 1 week")+"</span></div>"+
-        "<div class='stat'><b>"+prog(30)+"</b><span class='muted'>"+ct("over 1 maand","in 1 month")+"</span></div>"+
-        "<div class='stat'><b>"+prog(365)+"</b><span class='muted'>"+ct("over 1 jaar, dit tempo","in 1 year, at this pace")+"</span></div>"+
-        "</div>";
-      var naar1000 = seen >= 1000 ? null : Math.ceil((1000 - seen) / tempo);
-      koersHtml += "<p class='muted' style='margin-top:6px'>"+
-        ct("Vuistregel uit frequentie-onderzoek: met ±1.000 goedgekozen woorden versta je het grootste deel van alledaagse gesprekken, rond de 3.000 zit je op vlot-lezen-niveau.",
-           "Rule of thumb from frequency research: with ±1,000 well-chosen words you follow most everyday conversation; around 3,000 you read comfortably.")+
-        (naar1000 ? ct(" Op dit tempo zit jij op 1.000 woorden over ongeveer <b>"+(naar1000 > 60 ? Math.round(naar1000/30)+" maanden" : naar1000+" dagen")+"</b>.",
-                       " At this pace you'll hit 1,000 words in about <b>"+(naar1000 > 60 ? Math.round(naar1000/30)+" months" : naar1000+" days")+"</b>.")
-                  : ct(" Die eerste mijlpaal van 1.000 heb jij al binnen. 🎉"," You've already passed that first milestone of 1,000. 🎉"))+
-        ct(" De app groeit elke nacht mee, dus er is altijd nieuwe voorraad."," The app grows every night, so there's always new stock.")+"</p>";
-    } else {
-      koersHtml += "<p class='muted'>"+ct("Je herhaalt vooral (prima!), maar er kwamen geen nieuwe woorden bij de laatste twee weken. Eén nieuw lesje en de prognose verschijnt hier.",
-        "You're mostly reviewing (which is fine!), but no new words came in over the past two weeks. One new lesson and the forecast appears here.")+"</p>";
+      ct("Je bent met <b>"+seen+"</b> woorden bezig geweest: <b>"+vast+"</b> staan stevig, <b>"+opweg+"</b> zijn onderweg.",
+         "You've worked on <b>"+seen+"</b> words: <b>"+vast+"</b> are solid, <b>"+opweg+"</b> on their way.")+
+      (vast === 0 && seen > 0 ? ct(" Dat eerste getal blijft de eerste vier weken op nul staan, en dat hoort: stevig betekent vijf keer goed over vijfentwintig dagen. Kijk zolang naar het tweede.",
+         " That first number stays at zero for the first four weeks, and that's correct: solid means five correct answers across twenty-five days. Watch the second one meanwhile.") : "")+
+      ct(" Tempo: ongeveer "," Pace: about ")+getal1(tempo)+ct(" nieuwe woorden per dag"," new words a day")+
+      (actief14 ? ct(" ("+getal1(tempoActief)+" per actieve dag, het maximum is 15)",
+                     " ("+getal1(tempoActief)+" per active day, the maximum is 15)") : "")+".</p>";
+    /* v19.87: de band hangt aan stevige woorden per week, niet aan nieuwe woorden
+       per dag. Wie alleen herhaalt maakt nog steeds woorden stevig, dus die hoort
+       zijn schatting ook te zien. Vandaar: geen if op tempo meer. */
+    if(tempo === 0){
+      koersHtml += "<p class='muted'>"+ct("Je herhaalt vooral, en dat telt gewoon mee: herhalen is wat een woord stevig maakt.",
+        "You're mostly reviewing, and that counts: reviewing is what makes a word solid.")+"</p>";
     }
+    koersHtml += bandHtml("A1");
   }
   // ---- foutpercentage-tegel + trendzin (28 juli, verving het oude opgetelde "fouten gelogd") ----
-  var kpiTegelWaarde = kpi.recent.pct === null ? "–" : kpi.recent.pct + "%";
+  // v19.90: hier stond een liggend streepje als leegwaarde. Weg ermee, en meteen
+  // in woorden: een tegel die "nog niets" zegt is duidelijker dan een teken.
+  var kpiTegelWaarde = kpi.recent.pct === null ? ct("nog niets","none yet") : kpi.recent.pct + "%";
   var kpiTekst;
   if(kpi.recent.pct === null){
     kpiTekst = ct("Nog te weinig pogingen deze week om een foutpercentage te tonen (deze meting begint te tellen vanaf 28 juli, niet met terugwerkende kracht).",
@@ -16583,56 +18295,42 @@ function renderStats(){
     kpiTekst = ct("Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout), ",
                   "Error rate over the last 7 days: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" of "+kpi.recent.pog+" attempts wrong), ")+trendTekst+".";
   }
-  el.innerHTML = koersHtml + "<h2 style='margin-top:16px'>"+ct("Je voortgang","Your progress")+"</h2>"+
+  /* v19.90, Stefans tweede punt: systeem- en leerindicatoren scheiden. Ze stonden
+     in één raster van acht tegels, en daar is een tapa net zo groot als een stevig
+     woord. Dan gaat het scherm dagen tellen in plaats van Spaans, en dat is precies
+     zijn eigen kritiek op Duolingo: "ik doe de habit maar ik leer niks."
+     Boven staat nu wat je kunt. Wat de app bijhoudt om je aan de gang te houden
+     staat eronder, ingeklapt, want het is nuttig maar het is geen Spaans. */
+  el.innerHTML = koersHtml + voorspelHtml() +
+    "<h2 style='margin-top:16px'>"+ct("Wat je kunt","What you can do")+"</h2>"+
+    "<p class='muted' style='margin:0 0 8px'>"+ct("Deze cijfers gaan over Spaans.","These numbers are about Spanish.")+"</p>"+
+    "<div class='statgrid'>"+
+    "<div class='stat'><b>"+vast+"</b><span class='muted'>"+ct("woorden stevig","words solid")+"</span></div>"+
+    "<div class='stat'><b>"+opweg+"</b><span class='muted'>"+ct("woorden onderweg","words on the way")+"</span></div>"+
+    "<div class='stat'><b>"+corrStevig()+"/"+corrBereikbaar().length+"</b><span class='muted'>"+ct("grammaticaregels stevig","grammar rules solid")+"</span></div>"+
+    "<div class='stat'><b>"+kpiTegelWaarde+"</b><span class='muted'>"+ct("fout (laatste 7 dagen)","wrong (last 7 days)")+"</span></div>"+
+    "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>"+ct("zinnen gehaald","sentences done")+"</span></div>"+
+    "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>"+ct("toetsjes gemaakt","quizzes taken")+"</span></div>"+
+    "</div>"+
+    "<p class='muted' style='margin-top:6px'>"+kpiTekst+"</p>"+
+    "<h2 style='margin-top:16px'>"+ct("Woorden per herhaalinterval","Words per review interval")+"</h2>"+boxHtml+
+    "<p class='muted' style='margin-top:8px'>"+
+      // v19.90: hier stond ook nog een keer hoeveel woorden je hebt aangeraakt.
+      // Dat getal staat vier regels hoger al; twee keer hetzelfde zeggen maakt een
+      // scherm langer en niet duidelijker.
+      ct("Hoe verder naar onder, hoe beter een woord in je geheugen zit.",
+         "The further down, the better a word sits in your memory.")+"</p>"+
+    "<details style='margin-top:18px'><summary>"+ct("Wat de app bijhoudt","What the app keeps score of")+"</summary>"+
+    "<p class='muted'>"+
+      ct("Punten, tapas en dagen houden je aan de gang, en daar zijn ze goed voor. Maar het is geen Spaans, dus staan ze hier en niet tussen de cijfers hierboven.",
+         "Points, tapas and days keep you going, and they're good at that. But they aren't Spanish, so they live here and not among the numbers above.")+"</p>"+
     "<div class='statgrid'>"+
     "<div class='stat'><b>"+dagenTotaal()+"</b><span class='muted'>"+ct("dagen erbij geweest","days showed up")+"</span></div>"+
     "<div class='stat'><b>"+xpToday+"/"+dagdoel()+"</b><span class='muted'>"+xpw()+ct(" vandaag"," today")+"</span></div>"+
     "<div class='stat'><b>"+(S.txp||0)+"</b><span class='muted'>"+xpw()+ct(" totaal"," in total")+"</span></div>"+
     "<div class='stat'><b>🫒 "+(S.tapas||0)+"</b><span class='muted'>"+ct("tapas gespaard","tapas saved")+"</span></div>"+
-    "<div class='stat'><b>"+seen+"/"+WORDS.length+"</b><span class='muted'>"+ct("woorden gestart","words started")+"</span></div>"+
-    "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>"+ct("zinnen gehaald","sentences done")+"</span></div>"+
-    "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>"+ct("toetsjes gemaakt","quizzes taken")+"</span></div>"+
-    "<div class='stat'><b>"+kpiTegelWaarde+"</b><span class='muted'>"+ct("fout (laatste 7 dagen)","wrong (last 7 days)")+"</span></div>"+
-    "</div>"+
-    "<p class='muted' style='margin-top:6px'>"+kpiTekst+"</p>"+
-    "<h2 style='margin-top:16px'>"+ct("Woorden per herhaalinterval","Words per review interval")+"</h2>"+boxHtml+
-    leechHtml+
-    "<p class='muted' style='margin-top:8px'>"+ct("Hoe verder naar onder, hoe beter een woord in je geheugen zit. Batch: ","The further down, the better a word sits in your memory. Batch: ")+BATCH+"</p>";
-  el.querySelectorAll("button[data-leechzin]").forEach(function(b){
-    b.onclick = function(){
-      var w = WORDS.filter(function(x){ return x.id === b.getAttribute("data-leechzin"); })[0];
-      if(!w) return;
-      var oef = document.getElementById("leechOef");
-      oef.classList.remove("hidden");
-      oef.innerHTML = "<div class='uitleg'><b>"+ct("Schrijfoefening:","Writing exercise:")+"</b> "+
-        ct("maak een Spaanse zin over je eigen leven met <b>"+w.es+"</b> ("+wTrans(w)+").",
-           "write a Spanish sentence about your own life using <b>"+w.es+"</b> ("+wTrans(w)+").")+"</div>"+
-        "<input type='text' id='leechIn' autocomplete='off' placeholder='"+ct("Jouw zin met ","Your sentence with ")+w.es.split(" ")[0]+"...' style='margin-top:8px'>"+
-        "<div class='row'><button class='primary' id='btnLeechCheck'>"+ct("Laat Claude kijken","Let Claude check it")+"</button></div>"+
-        "<div id='leechFb'></div>";
-      document.getElementById("btnLeechCheck").onclick = function(){
-        var zin = (document.getElementById("leechIn").value||"").trim();
-        if(zin.length < 3) return;
-        var btn = document.getElementById("btnLeechCheck");
-        btn.disabled = true; btn.textContent = ct("🤖 Claude leest...","🤖 Claude is reading...");
-        api("/api/ai/zin", "POST", {woord:w.es, zin:zin}).then(function(res){
-          var fb = document.getElementById("leechFb");
-          btn.disabled = false; btn.textContent = ct("Laat Claude kijken","Let Claude check it");
-          if(!res || !res.ok){ fb.innerHTML = "<div class='feedback bijna'>"+ct("AI even niet bereikbaar, probeer straks nog eens.","AI is unreachable right now, try again in a bit.")+"</div>"; return; }
-          if(res.goed){
-            addXP(5);
-            confetti(["✍️","🎉","⭐️"], 14);
-            fb.innerHTML = "<div class='feedback ok'>🤖 "+res.uitleg+" (+5 "+xpw()+")</div>";
-            // beloning: leech-teller resetten, hij mag opnieuw bewijzen dat hij hangt
-            var k = "woord:"+w.id;
-            if(S.errors[k]){ S.errors[k].count = 0; persist(); }
-          } else {
-            fb.innerHTML = "<div class='feedback fout'>🤖 "+res.uitleg+"</div>";
-          }
-        });
-      };
-    };
-  });
+    "</div><p class='muted' style='margin-top:8px'>Batch: "+BATCH+"</p></details>";
+  voorspelWire(el);
 }
 
 function exportErrors(){
@@ -16697,6 +18395,7 @@ function alertBox(msg){
 /* ================= NAVIGATIE ================= */
 var TABS = [
   {id:"lessen", label:"Lessen"},
+  {id:"cursus", label:"Cursus"},   // v19.90: de leerlijn, weg bij het profiel vandaan
   {id:"woorden", label:"Woordjes"},
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes", nav:false}, // v19.47: geen eigen tab meer, zit nu in Grammatica
@@ -16806,6 +18505,7 @@ function show(tabId, skipPush){
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
+  if(tabId==="cursus"){ renderCursus(); }
   if(tabId==="chispa"){ renderChispaPagina(); }
   // v19.78: wie de chispa-pagina verlaat neemt haar podium niet mee naar de woordjes
   try { chispaBalkCheck(); } catch(e){}
