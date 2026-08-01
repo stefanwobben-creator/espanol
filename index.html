@@ -280,10 +280,29 @@
      de balk niet danste. Groter maken is hier dus geen opsmuk maar de reparatie zelf. Het podium
      rekt bovendien mee met wat er over is, want de reis van links naar rechts heeft ruimte nodig
      en die is op een telefoon anders dan op een laptop. */
-  .chbalkstage{position:relative; flex:1 1 auto; min-width:126px; height:114px;}
+  /* v19.82: haar rekwisieten reizen met haar mee, en op een breed scherm belandden de gitaar en
+     de nootjes daardoor naast de kaart, zwevend in het niets. De reislaag mag buiten haar
+     podium komen, wat je ervan ziet niet. */
+  .chbalkstage{position:relative; flex:1 1 auto; min-width:126px; height:114px; overflow:hidden;}
   #balkBox{position:absolute; left:0; right:0; top:0; bottom:0; will-change:transform;
            display:flex; align-items:center; justify-content:center;}
   #balkBox svg{width:120px; height:110px;}
+  /* v19.82. Stefan klikte om 04:19 op een dans en zag niets gebeuren. Ze sliep, en ze zei dat
+     ook keurig, alleen in de tekstballon van de kamer: zevenduizend pixels onder de balk waar hij
+     stond te kijken. Dat is precies de fout die deze hele reeks probeert uit te roeien, nu in de
+     stille variant. Dus krijgt de balk zijn eigen ballon, vlak onder de rand, met het pijltje
+     omhoog naar haar toe. Wat ze zegt komt aan waar je haar ziet. */
+  .balkbubbel{position:absolute; top:100%; left:50%; transform:translateX(-50%);
+              width:calc(100% - 32px); max-width:608px; margin-top:6px; z-index:71;
+              box-sizing:border-box;
+              background:var(--card); border:2px solid var(--accent); border-radius:14px;
+              padding:8px 12px; font-size:.9rem; font-weight:600; text-align:center;
+              box-shadow:0 6px 18px rgba(45,42,38,.16); pointer-events:none;}
+  .balkbubbel .nl{display:block; color:var(--muted); font-size:.76rem; font-weight:400; margin-top:2px;}
+  .balkbubbel:before{content:""; position:absolute; top:-9px; left:var(--pijl,72px); margin-left:-8px;
+                     width:0; height:0;
+                     border-left:8px solid transparent; border-right:8px solid transparent;
+                     border-bottom:9px solid var(--accent);}
   .chbalktxt{flex:0 1 auto; min-width:0; line-height:1.3;}
   .chbalktxt b{font-size:1.02rem;}
   .chbalktxt span{display:block; font-size:.76rem; color:var(--muted);}
@@ -599,6 +618,7 @@
       </div>
       <button type="button" id="btnBalkOmhoog" class="chbalkop" title="Naar Chispa">&#8593;</button>
     </div>
+    <div id="balkBubble" class="balkbubbel hidden"></div>
   </div>
 
   <!-- PROFIELKEUZE -->
@@ -875,7 +895,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.81";
+var APP_VERSIE = "v19.82";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7564,9 +7584,39 @@ function dagenSinds(d){
    Hij deed precies wat een Tamagotchi doet: een leeg buikje is honger, honger is een verwijt, en
    dan kom je terug uit schuld in plaats van uit zin. Voor een leerapp is dat de verkeerde motor.
    Voeren blijft, de dagwens blijft, alleen de meter die oploopt zolang je wegblijft gaat eruit. */
+/* v19.82: je mag haar wakker maken. Chispa slaapt tussen elf en zeven, en tot nu toe was dat een
+   dichte deur: klikte je 's nachts op een dans, dan gebeurde er niets. Voor een app die je gebruikt
+   wanneer het jou uitkomt is dat de verkeerde afspraak - Stefan zat om kwart over vier te kijken.
+   Slapen blijft wel bestaan, want dat ze een eigen ritme heeft is juist wat haar levend maakt.
+   Alleen is het nu een deur die je open kunt duwen: van muziek wordt ze wakker, ze doet mee, en
+   daarna gaat ze weer slapen. Het wakkere venster is bewust niet opgeslagen: morgennacht slaapt
+   ze gewoon weer. */
+var chWakkerTot = 0;
 function chispaSlaapt(uur){
-  if(uur === undefined) uur = new Date().getHours();
+  if(uur === undefined){
+    if(chWakkerTot && new Date().getTime() < chWakkerTot) return false;
+    uur = new Date().getHours();
+  }
   return uur >= 23 || uur < 7;
+}
+function chispaWakker(ms){
+  chWakkerTot = new Date().getTime() + (ms || 6000);
+  // meteen opnieuw tekenen, anders danst ze met haar ogen dicht
+  try { if(chispaBalkAan()) balkVerversen(); else if(chispaZichtbaar()) renderPet(); } catch(e){}
+  return true;
+}
+function chispaSlaapHerstel(ms, pogingen){
+  setTimeout(function(){
+    try {
+      // niet midden in een dans of een fiesta opnieuw tekenen: dan sloop je precies de beweging
+      // waarvoor ze wakker werd gemaakt. Even wachten tot ze uitgedanst is.
+      if((chispaFiestaBezig || chispaBeweegt()) && (pogingen || 0) < 8){
+        chispaSlaapHerstel(1200, (pogingen || 0) + 1);
+        return;
+      }
+      if(chispaBalkAan()) balkVerversen(); else if(chispaZichtbaar()) renderChispaPagina();
+    } catch(e){}
+  }, ms || 6000);
 }
 /* ================= DE TAPA VAN DE DAG (v19.66) =================
    Stefan, 31 juli: "hem een tapas geven (taco's tomaten sardientjes, pimentos padron, patatas
@@ -7812,15 +7862,41 @@ function petMoodText(){
    het dagcadeautje); alleen "de frase van vandaag" komt nu uit JERGA. */
 function fraseVanDaag(){ var j = jergaVandaag(); return { es: j.es, nl: ct(j.nl, j.en), e: "\uD83D\uDCAC" }; }
 function chispaSay(f){
-  var bub = document.getElementById("petBubble");
-  if(!bub) return;
   // v19.67: de tekstballon nam blind f.nl, dus zei Chispa Nederlands tegen een Engelse gebruiker.
-  bub.innerHTML = "<span class='es'>"+f.es+"</span><span class='nl'>"+ct(f.nl, f.en || f.nl)+"</span>";
-  bub.classList.remove("hidden");
-  var box = document.getElementById("petBox");
-  if(box){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
+  var tekst = "<span class='es'>"+f.es+"</span><span class='nl'>"+ct(f.nl, f.en || f.nl)+"</span>";
+  // v19.82: allebei de ballonnen krijgen de zin, maar alleen die van het podium dat nu in beeld
+  // staat gaat open. Zo staat er niets te praten waar niemand kijkt, en wie halverwege omhoog
+  // scrollt leest daar hetzelfde. Zonder dit sprak ze bij een sticky balk letterlijk in het luchtledige.
+  var balk = false;
+  try { balk = chispaBalkAan(); } catch(e){}
+  var ids = ["petBubble", "balkBubble"];
+  var open = balk ? "balkBubble" : "petBubble";
+  var iets = false;
+  ids.forEach(function(id){
+    var b = document.getElementById(id);
+    if(!b || !b.classList) return;
+    b.innerHTML = tekst;
+    if(id === open){ b.classList.remove("hidden"); iets = true; }
+    else b.classList.add("hidden");
+  });
+  if(!iets) return;
+  // het pijltje wijst naar waar ze echt staat, niet naar een vaste plek in de balk
+  if(open === "balkBubble") try {
+    var bal = document.getElementById("balkBubble"), bx = document.getElementById("balkBox");
+    var rb = bal.getBoundingClientRect(), rx = bx.getBoundingClientRect();
+    if(rb.width > 0) bal.style.setProperty("--pijl",
+      Math.max(16, Math.min(rb.width - 16, (rx.left + rx.width/2) - rb.left)) + "px");
+  } catch(e){}
+  var box = null;
+  try { box = chispaBox(); } catch(e){}
+  if(box && box.classList){ box.classList.remove("petbounce"); void(box.offsetWidth||0); box.classList.add("petbounce"); }
   if(window.chispaTimer) clearTimeout(window.chispaTimer);
-  window.chispaTimer = setTimeout(function(){ bub.classList.add("hidden"); }, 5000);
+  window.chispaTimer = setTimeout(function(){
+    ids.forEach(function(id){
+      var b = document.getElementById(id);
+      if(b && b.classList) b.classList.add("hidden");
+    });
+  }, 5000);
 }
 function chispaRandomSay(){
   var f = FRASES[Math.floor(Math.random()*FRASES.length)];
@@ -8389,14 +8465,17 @@ function baileMuziek(id, ms){
 }
 function chispaBaila(baile, stilBeeld){
   var b = baile || bailePorDia();
-  if(chispaSlaapt()){
-    chispaSay({es:"Zzz... mañana bailamos, ¿vale?", nl:"Zzz... morgen dansen we, goed?"});
-    return false;
-  }
+  // v19.82: sliep ze, dan wordt ze wakker van de muziek in plaats van je weg te sturen.
+  var gewekt = false;
+  if(chispaSlaapt()){ gewekt = true; chispaWakker(5800); }
   var lijst = baileState();
   var nieuw = lijst.indexOf(b.id) < 0;
   if(nieuw){ lijst.push(b.id); persist(); }
-  if(!stilBeeld) chispaSay({es:b.zeg, nl:ct(b.zegnl, b.zegen) + " (" + b.land + ")"});
+  if(!stilBeeld) chispaSay(gewekt
+    ? {es:"Mmm... ¿música? Vale, vale... ¡bailamos!",
+       nl:"Mmm... muziek? Oké, oké... we dansen!",
+       en:"Mmm... music? Okay, okay... let's dance!"}
+    : {es:b.zeg, nl:ct(b.zegnl, b.zegen) + " (" + b.land + ")"});
   chispaVloer(true);
   chispaReis(true, 4400);
   try { baileMuziek(b.id, 4400); } catch(e){}
@@ -8405,6 +8484,7 @@ function chispaBaila(baile, stilBeeld){
   if(b.id === "cumbia" || b.id === "merengue"){ chispaProp("chmar", "🪇", 4600); chispaProp("chmar2", "🪇", 4600); }
   chispaMove(b.klas, 4400, function(){ chispaVloer(false); chispaReis(false); });
   chispaZorgTik();
+  if(gewekt) chispaSlaapHerstel(6100);   // daarna mag ze weer verder slapen
   if(chispaWensDoe("musica")) chispaHerrenderStraks(4800);
   else if(nieuw) chispaHerrenderStraks(4800);
   return true;
@@ -8412,10 +8492,8 @@ function chispaBaila(baile, stilBeeld){
 /* Het dagelijkse feestje: een korte choreografie van vier bewegingen met de serenade eronder. */
 function chispaFiesta(){
   if(chispaFiestaBezig) return false;
-  if(chispaSlaapt()){
-    chispaSay({es:"Ahora duermo... ¡pero mañana fiesta!", nl:"Nu slaap ik... maar morgen feest!"});
-    return false;
-  }
+  // v19.82: ook het feestje maakt haar wakker in plaats van je weg te sturen.
+  if(chispaSlaapt()){ chispaWakker(8200); chispaSlaapHerstel(8500); }
   chispaFiestaBezig = true;
   var b = bailePorDia();
   var lijst = baileState();
@@ -8777,9 +8855,16 @@ function renderGroei(){
 
 /* kaart 3 - de vitrine. Twee verzamelingen die alleen maar kunnen groeien, naast elkaar en met
    hun eigen teller, zodat je in \u00e9\u00e9n oogopslag ziet hoever je bent. */
+/* v19.82: "muziek uit" op een knop leest als een opdracht ("klik hier om uit te zetten") terwijl
+   het een stand was ("de muziek staat uit"). Wie geen muziek hoorde drukte dus precies op de knop
+   die het geluid uitzette. Nu staat er een hele zin, en de titel vertelt wat een klik doet. */
 function chMuziekLabel(){
-  return S.chispaStil ? "\ud83d\udd07 " + ct("muziek uit", "music off")
-                      : "\ud83d\udd0a " + ct("muziek aan", "music on");
+  return S.chispaStil ? "\ud83d\udd07 " + ct("muziek staat uit", "music is off")
+                      : "\ud83d\udd0a " + ct("muziek staat aan", "music is on");
+}
+function chMuziekTitel(){
+  return S.chispaStil ? ct("Tik om de muziek aan te zetten", "Tap to turn the music on")
+                      : ct("Tik om de muziek uit te zetten", "Tap to turn the music off");
 }
 
 function renderVitrine(){
@@ -8810,7 +8895,7 @@ function renderVitrine(){
       "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del d\u00eda</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>\u00b7 "+bd.land+"</span></p>"+
       "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
       "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen \u00b7 tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances \u00b7 tap one")+
-        " <button class='muziekchip' id='btnChMuziek' type='button'>"+chMuziekLabel()+"</button></p>"+
+        " <button class='muziekchip"+(S.chispaStil?" stil":"")+"' id='btnChMuziek' type='button' title='"+chMuziekTitel()+"'>"+chMuziekLabel()+"</button></p>"+
     "</div>";
   tapaMenuWire(el);
   var bt = document.getElementById("btnFinaleTerug");
@@ -8832,6 +8917,7 @@ function renderVitrine(){
     if(S.chispaStil){ try { chMuziekUit(); } catch(e){} }
     try { persist(); } catch(e){}
     mz.textContent = chMuziekLabel();
+    mz.title = chMuziekTitel();
     mz.className = "muziekchip" + (S.chispaStil ? " stil" : "");
   };
 }
