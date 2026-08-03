@@ -661,7 +661,7 @@
       </div>
       <p class="muted" style="margin:12px 0 4px"><a href="#" id="lnkMeerOpties">⚙️ Meer opties: dagdoel, e-mail, groepscode (kan ook later)</a></p>
       <div id="meerOpties" class="hidden">
-      <p class="muted" style="margin:10px 0 4px" id="lblDoel">Dagdoel:</p>
+      <p class="muted" style="margin:10px 0 4px" id="lblDoel">Tijd per dag:</p>
       <div class="row" id="doelRow"></div>
       <p class="muted" style="margin:10px 0 4px" id="lblMailUitleg">Optioneel: e-mail, zodat je je voortgang kunt terugvinden als je je toegangscode kwijt bent.</p>
       <input type="email" id="newProfMail" placeholder="E-mail (optioneel)" autocomplete="email">
@@ -927,7 +927,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.91";
+var APP_VERSIE = "v19.92";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2706,6 +2706,41 @@ TRACKS.beginner.lessons = [
   spiek:[20,21], words:rng("b",169,186), sents:rng("bs",63,69), quizzes:["bq-saberpoder","bq-perfecto"]}
 ];
 
+/* ================= DOOR DE AVONDRUN TOEGEVOEGDE CONTENT (v19.92) =================
+   Stefan, 3 augustus: "als alle content er nog niet is voor dit doel dan ontwikkelt het systeem zich
+   in de avondrun om nieuwe lessen toe te voegen zodat ik na A2 ook door kan naar B1."
+   Hierboven staat alles wat met de hand is gemaakt, en dat blijft zo. Hieronder staat één blok dat door
+   tools/curriculum.js wordt beheerd. De nachtrun raakt NOOIT een hand-geschreven lesregel aan — die
+   staan vol rng()-expressies en .concat()-kettingen, en een script dat daarin gaat knippen sloopt vroeg
+   of laat je curriculum. In plaats daarvan schrijft de run alleen:
+     - nieuwe items achteraan WORDS / SENTENCES / QUIZZES / CHEATSHEET
+     - en dit blok, dat zegt bij welke les ze horen.
+   Zo is elke nachtelijke wijziging een leesbare diff en met één regel terug te draaien.
+   lessen:       les-id -> extra ids die aan een BESTAANDE les worden gehangen (gaten dichten)
+   nieuweLessen: complete nieuwe lessen achter de bestaande (het pad verlengen, richting B1) */
+var EXTRA_CONTENT = {lessen:{}, nieuweLessen:[]};
+
+function pasExtraContentToe(){
+  var ls = TRACKS.a2.lessons;
+  ls.forEach(function(l){
+    var e = EXTRA_CONTENT.lessen[l.id];
+    if(!e) return;
+    l.words = l.words.concat(e.words || []);
+    l.sents = l.sents.concat(e.sents || []);
+    l.quizzes = l.quizzes.concat(e.quizzes || []);
+    if(e.spiek) l.spiek = l.spiek.concat(e.spiek);
+  });
+  // Nieuwe lessen sluiten achter de laatste aan. Een B1-les is gewoon de volgende les in hetzelfde pad
+  // (niveau:"B1", zodat de lijst er een label bij kan zetten); een apart track zou betekenen dat je
+  // halverwege van profiel moet wisselen, en dat wil niemand.
+  EXTRA_CONTENT.nieuweLessen.forEach(function(l){
+    if(ls.some(function(x){ return x.id === l.id; })) return;
+    ls.push(l);
+  });
+  ls.forEach(function(l, i){ l.num = i + 1; });
+}
+pasExtraContentToe();
+
 /* ================= CHISPA-BOEK: "Las Crónicas de Chispa" (v19.23) =================
    Eén doorlopend verhaal, los van de lessen-tracks maar wel gekoppeld aan lesvoortgang
    voor het ontgrendelen (drempel = benodigd aantal voltooide lessen in het EIGEN track,
@@ -3179,6 +3214,15 @@ function serverPull(p){
 function logServer(kind, payload){
   var p = activeProfile();
   if(!p) return;
+  // v19.92: elk logje krijgt een klein voortgangsprofiel mee. De avondrun (tools/curriculum.js) kan
+  // hiermee uitrekenen hoeveel dagen nieuwe woorden er nog op de plank liggen bij jouw tempo, en dus
+  // wanneer hij het pad moet verlengen. Zonder deze drie getallen zou hij moeten gokken.
+  try{
+    payload = payload || {};
+    payload.geleerd = Object.keys(S.srs || {}).length;
+    payload.minuten = doelMinuten();
+    payload.lessenAf = doneLessonCount();
+  }catch(e){}
   api("/api/log", "POST", {code: ensureCode(p), kind: kind, payload: payload});
 }
 
@@ -3201,7 +3245,7 @@ function activeProfile(){
   return null;
 }
 
-var newTrack = null, newLang = "nl", newDoel = 30;
+var newTrack = null, newLang = "nl", newMinuten = 10; // minuten per dag, gekozen bij aanmelden
 /* ---- aanmeldscherm in de eigen taal (browsertaal als startpunt) ---- */
 var SIGNUP_TXT = {
  nl:{welkom:"Welkom! Maak je profiel", nieuw:"Nieuw profiel", kies:"Wie gaat er oefenen?", naamPh:"Naam",
@@ -3214,7 +3258,8 @@ var SIGNUP_TXT = {
      syncKop:"Oefen je al op een ander apparaat?", syncUitleg:"Vul je sync-code in (te vinden op je andere apparaat op je profielpagina) en ga verder waar je was.",
      syncKnop:"Haal mijn voortgang op", herstel:"Code kwijt? Herstel via je e-mailadres", herstelPh:"Het e-mailadres van je profiel",
      herstelKnop:"Zoek mijn voortgang",
-     doel:"Dagdoel (kies wat bij jou past, aanpassen kan altijd):", d10:"Relaxed · 10 taco's", d30:"Normaal · 30 taco's", d60:"Fanatiek · 60 taco's"},
+     doel:"Hoeveel tijd per dag? Dit bepaalt hoe groot je dagportie is — aanpassen kan altijd, bijvoorbeeld in de vakantie.",
+     m5:"5 minuten", m10:"10 minuten", m20:"20 minuten", m30:"30 minuten"},
  en:{welkom:"Welcome! Create your profile", nieuw:"New profile", kies:"Who's practising?", naamPh:"Name",
      niveau:"Level:", a0:"A0 · completely new", a1:"A1 · a few words", a2:"A2 · I know the basics", b1:"B1 · coming soon",
      taal:"Mother tongue:", mailUitleg:"Optional: e-mail, so you can recover your progress if you ever lose your access code.",
@@ -3225,7 +3270,8 @@ var SIGNUP_TXT = {
      syncKop:"Already practising on another device?", syncUitleg:"Enter your sync code (found on your profile page on your other device) and continue where you left off.",
      syncKnop:"Get my progress", herstel:"Lost your code? Recover via e-mail", herstelPh:"The e-mail address of your profile",
      herstelKnop:"Find my progress",
-     doel:"Daily goal (pick what fits you, you can change it anytime):", d10:"Relaxed · 10 tacos", d30:"Normal · 30 tacos", d60:"Serious · 60 tacos"},
+     doel:"How much time per day? This sets how big your daily portion is — you can change it anytime, for example on holiday.",
+     m5:"5 minutes", m10:"10 minutes", m20:"20 minutes", m30:"30 minutes"},
  fr:{welkom:"Bienvenue ! Crée ton profil", nieuw:"Nouveau profil", kies:"Qui va pratiquer ?", naamPh:"Prénom",
      niveau:"Niveau :", a0:"A0 · totalement débutant", a1:"A1 · quelques mots", a2:"A2 · je connais les bases", b1:"B1 · bientôt",
      taal:"Langue maternelle :", mailUitleg:"Facultatif : e-mail, pour retrouver ta progression si tu perds ton code d'accès.",
@@ -3236,7 +3282,8 @@ var SIGNUP_TXT = {
      syncKop:"Tu pratiques déjà sur un autre appareil ?", syncUitleg:"Saisis ton code de synchronisation (sur ta page de profil de l'autre appareil) et reprends où tu en étais.",
      syncKnop:"Récupérer ma progression", herstel:"Code perdu ? Récupère via ton e-mail", herstelPh:"L'adresse e-mail de ton profil",
      herstelKnop:"Retrouver ma progression",
-     doel:"Objectif quotidien (modifiable à tout moment) :", d10:"Tranquille · 10 tacos", d30:"Normal · 30 tacos", d60:"Motivé · 60 tacos"},
+     doel:"Combien de temps par jour ? Cela détermine la taille de ta portion quotidienne — modifiable à tout moment, par exemple en vacances.",
+     m5:"5 minutes", m10:"10 minutes", m20:"20 minutes", m30:"30 minutes"},
  de:{welkom:"Willkommen! Erstelle dein Profil", nieuw:"Neues Profil", kies:"Wer übt?", naamPh:"Name",
      niveau:"Niveau:", a0:"A0 · ganz neu", a1:"A1 · ein paar Wörter", a2:"A2 · ich kenne die Basics", b1:"B1 · bald",
      taal:"Muttersprache:", mailUitleg:"Optional: E-Mail, damit du deinen Fortschritt wiederfindest, falls du deinen Zugangscode verlierst.",
@@ -3247,7 +3294,8 @@ var SIGNUP_TXT = {
      syncKop:"Übst du schon auf einem anderen Gerät?", syncUitleg:"Gib deinen Sync-Code ein (auf der Profilseite deines anderen Geräts) und mach weiter, wo du warst.",
      syncKnop:"Fortschritt holen", herstel:"Code verloren? Über E-Mail wiederherstellen", herstelPh:"Die E-Mail-Adresse deines Profils",
      herstelKnop:"Fortschritt suchen",
-     doel:"Tagesziel (jederzeit änderbar):", d10:"Entspannt · 10 Tacos", d30:"Normal · 30 Tacos", d60:"Ehrgeizig · 60 Tacos"}
+     doel:"Wie viel Zeit pro Tag? Das bestimmt die Größe deiner Tagesportion — jederzeit änderbar, zum Beispiel im Urlaub.",
+     m5:"5 Minuten", m10:"10 Minuten", m20:"20 Minuten", m30:"30 Minuten"}
 };
 // v19.57: de begroeting voor wie via een uitnodigingslink binnenkomt, in alle vier de talen van
 // het aanmeldscherm. Meedoen gaat vanzelf zodra het profiel bestaat; hier staat alleen waaróm.
@@ -3407,12 +3455,12 @@ function renderDoelRow(){
   var row = document.getElementById("doelRow");
   if(!row) return;
   var d = SIGNUP_TXT[newLang] || SIGNUP_TXT.nl;
-  var opties = [{n:10, l:d.d10}, {n:30, l:d.d30}, {n:60, l:d.d60}];
+  var opties = [{n:5, l:d.m5}, {n:10, l:d.m10}, {n:20, l:d.m20}, {n:30, l:d.m30}];
   row.innerHTML = opties.map(function(o){
-    return "<button class='ghost trackpick doelpick"+(o.n===newDoel?" active":"")+"' data-doel='"+o.n+"'>"+o.l+"</button>";
+    return "<button class='ghost trackpick doelpick"+(o.n===newMinuten?" active":"")+"' data-doel='"+o.n+"'>"+o.l+"</button>";
   }).join("");
   row.querySelectorAll(".doelpick").forEach(function(b){
-    b.onclick = function(){ newDoel = +b.getAttribute("data-doel"); renderDoelRow(); };
+    b.onclick = function(){ newMinuten = +b.getAttribute("data-doel"); renderDoelRow(); };
   });
 }
 function applySignupLang(){
@@ -3672,7 +3720,7 @@ function renderProfileScreen(){
     var mail = (document.getElementById("newProfMail") ? document.getElementById("newProfMail").value : "").trim();
     var gc = (document.getElementById("newProfGroep") ? document.getElementById("newProfGroep").value : "").trim().toLowerCase();
     if(gc) pendingGroep = gc;
-    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1", lang:newLang, mail:mail, doel:newDoel});
+    profiles.list.push({name:name, track:newTrack, key:"espanol-"+slug+"-v1", lang:newLang, mail:mail, doelMin:newMinuten});
     saveProfiles();
     selectProfile(name);
   };
@@ -3726,7 +3774,7 @@ function renderPlacement(){
       var mailP = (document.getElementById("newProfMail") ? document.getElementById("newProfMail").value : "").trim();
       var gcP = (document.getElementById("newProfGroep") ? document.getElementById("newProfGroep").value : "").trim().toLowerCase();
       if(gcP) pendingGroep = gcP;
-      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1", lang:newLang, mail:mailP, doel:newDoel});
+      profiles.list.push({name:pName, track:track, key:"espanol-"+slug+"-v1", lang:newLang, mail:mailP, doelMin:newMinuten});
       saveProfiles();
       document.getElementById("placeCard").classList.add("hidden");
       selectProfile(pName);
@@ -3771,7 +3819,10 @@ function boot(){
   S = normaliseerState(store.load()); // v19.56: dezelfde normalisatie als bij een pull van de server
   if(!S.lang) S.lang = p.lang || "nl"; // moedertaal per profiel, synct mee via S
   if(!S.mail && p.mail) S.mail = p.mail; // optioneel e-mailadres (voor herstel), synct mee
-  if(!S.doel && p.doel) S.doel = p.doel; // gekozen dagdoel bij aanmelden
+  // v19.92: bij aanmelden kies je minuten per dag, niet meer een aantal taco's. Die minuten sturen
+  // de dagportie; het taco-doel van de balk bovenin wordt eruit afgeleid.
+  if(p.doelMin && !S.doelMinGezet){ S.doelMin = p.doelMin; S.doelMinGezet = 1; S.doel = p.doelMin * DOEL_MIN_XP; }
+  if(!S.doel) S.doel = doelMinuten() * DOEL_MIN_XP;
   buildNav();
   quizSpreid(); // bestaande achterstand uitsmeren i.p.v. als stapel presenteren
   // startdatum voor het dag-2-welkom (alleen voor echt verse profielen, niet met terugwerkende kracht)
@@ -4161,15 +4212,52 @@ function nogTeHalen(rang){
   return false;
 }
 
+/* v19.92 — de poort telt je claim mee, de voortgangsbalk niet.
+   Gemeten op v19.91 met een vers A2-profiel: de claim zet 411 A1-woorden in box 3, en omdat een claim
+   bewust niet als "stevig" telt (box 5) staat de A1-dekking op 0% en ligt de poort op A1. Daardoor
+   krijg je precies één nieuw woord per dag — de "één woord van buiten de poort"-regel — en pas na
+   ruim een maand aan claim-controles kan dat veranderen. Voor Stefans doel (stevig A2 binnen drie
+   maanden) is dat negentig woorden: onhaalbaar.
+   De oplossing houdt beide belangen heel. Zeg je "A1 ken ik", dan mag je aan A2 werken: voor de POORT
+   telt een claim mee als dekking. Op je voortgangsbalk verandert niets, want daar hoort alleen bewijs
+   (box 5) te staan. En het is zelfcorrigerend: zakt een claim-woord bij de controle terug naar box 0,
+   dan valt het uit deze telling en kan de poort weer dichtschuiven. */
+function poortDekking(){
+  var drempel = stevigDrempel(), keys = {}, mp = pcicMap(), id, st, b, ks, i;
+  for(id in S.srs){
+    st = S.srs[id];
+    if(!st || typeof st !== "object") continue;
+    b = st.box || 0;
+    if(b >= drempel || (st.claim && b >= 3)){
+      ks = mp[id];
+      if(ks) for(i = 0; i < ks.length; i++) keys[ks[i]] = 1;
+    }
+  }
+  var niv = pcicNiv(), dek = {A1:0, A2:0, B1:0, B2:0, C1:0, C2:0}, k, n;
+  for(k in keys){ n = niv[k]; if(n) dek[n]++; }
+  return dek;
+}
 function poortRang(){
-  var t = voortgangTellers(), i, n;
+  var dek = poortDekking(), i, n;
   for(i = 0; i < NIV_NAAM.length; i++){
     n = NIV_NAAM[i];
-    if((t.dek[n] || 0) / (PCIC_NOEMER[n] || 1) >= POORT_PCT) continue; // gehaald
-    if(!nogTeHalen(i)) continue;                                       // niets meer te doen
+    if((dek[n] || 0) / (PCIC_NOEMER[n] || 1) >= POORT_PCT) continue;   // gehaald (of geclaimd)
+    if(!nogTeHalenPoort(i)) continue;                                  // niets meer te doen
     return i;                                                          // hier ligt de poort
   }
   return 9; // alles open, ook de woorden die Cervantes niet kent
+}
+// Zelfde vraag als nogTeHalen(), maar een geclaimd woord geldt hier als afgehandeld.
+function nogTeHalenPoort(rang){
+  var drempel = stevigDrempel(), i, w, st;
+  for(i = 0; i < WORDS.length; i++){
+    w = WORDS[i];
+    if(woordNiveau(w.id) !== rang) continue;
+    st = S.srs[w.id];
+    if(!st) return true;
+    if((st.box || 0) < drempel && !(st.claim && (st.box || 0) >= 3)) return true;
+  }
+  return false;
 }
 
 /* ================= JE NIVEAU CLAIMEN (v19.85) =================
@@ -4268,11 +4356,11 @@ function tempoVandaag(){
     persist();
     return S.tempo;
   }
-  var nieuw = DAG_PORTIE_NIEUW, cap = DAG_PORTIE;
+  var nieuw = dagPortieNieuw(), cap = dagPortieCap();
   var k = leerKpi().recent;
   if(k.pog >= 40 && k.pct !== null){
-    if(k.pct < 15){ nieuw = DAG_PORTIE_NIEUW + 2; cap = DAG_PORTIE + 6; }
-    else if(k.pct > 25){ nieuw = Math.max(1, Math.round(DAG_PORTIE_NIEUW / 2)); }
+    if(k.pct < 15){ nieuw = dagPortieNieuw() + 2; cap = dagPortieCap() + 6; }
+    else if(k.pct > 25){ nieuw = Math.max(1, Math.round(dagPortieNieuw() / 2)); }
   }
   S.tempo = {d:t, n:Math.min(nieuw, MAX_NEW_PER_DAY), cap:cap, pct:(k.pct === null ? -1 : k.pct)};
   persist();
@@ -4789,16 +4877,32 @@ function lessonProgress(l){
   // lessen, en zonder deze voorrang zou elke toevoeging voltooide lessen met terugwerkende kracht
   // "heropenen" en alle vervolg-lessen weer op slot zetten (bug gemeld 29 juli). De tellingen blijven
   // gewoon zichtbaar zolang de les nog niet af is; nieuwe zinnen draaien via de oefenpool mee.
-  return {spiek:!!st.spiek, w:w, wt:l.words.length, s:s, stt:l.sents.length, q:q, qt:l.quizzes.length,
+  // qa = toetsjes die je minstens één keer hebt gemaakt, ongeacht de score. Zie lessonOpen(): daarmee
+  // gaat de volgende les open, en met q (>=80%) gaat het ✓-vinkje aan.
+  var qa = l.quizzes.filter(function(id){ return S.quiz[id] !== undefined; }).length;
+  return {spiek:!!st.spiek, w:w, wt:l.words.length, s:s, stt:l.sents.length, q:q, qt:l.quizzes.length, qa:qa,
     done: !!st.done || (!!st.spiek && w===l.words.length && s===l.sents.length && q===l.quizzes.length)};
+}
+/* v19.92 — nieuwe woordenschat krijgen en een les helemaal afronden zijn twee verschillende dingen.
+   Ze waren hetzelfde, en dat liep vast. Een les is pas "af" als de spiekbrief-vlag staat én alle
+   woorden, zinnen en toetsjes klaar zijn, en die vlag kon je alleen zetten met de knop "Gelezen!" in
+   de lesweergave — waar de dagles nooit langskomt. Gemeten op v19.91 met twaalf gespeelde daglessen:
+   nul lessen af, les 2 nog op slot, geen enkel nieuw leswoord uit een les.
+   Nu gaat de volgende les open zodra je de woorden van deze les hebt gezien en elk toetsje één keer
+   hebt gemaakt — niet gehaald. Een toetsje dat je niet haalt komt via de grammatica-herhaling terug
+   tot het wél zit, en het ✓-vinkje blijft eisen dat je het haalt. Wat hier weggaat is uitsluitend de
+   blokkade op je woordenschat: één regel die nog niet zit mag je hele inname niet stilzetten. */
+function lessonOpen(l){
+  var p = lessonProgress(l);
+  if(!p) return false;
+  return p.done || (p.w === p.wt && p.qa === p.qt);
 }
 function lessonUnlocked(i){
   var ls = tLessons();
   if(i===0) return true;
   var prev = ls[i-1];
   if(prev.stub) return false;
-  var p = lessonProgress(prev);
-  return p ? p.done : false;
+  return lessonOpen(prev);
 }
 function checkLessonComplete(){
   var ls = tLessons().concat(reviewLessons());
@@ -4890,8 +4994,16 @@ function newAllowance(){ return Math.max(0, MAX_NEW_PER_DAY - newToday()); }
 
    Binnen één les (scopeLesson) geldt de portie niet: daar is de verzameling al klein en begrensd,
    en dan wil je gewoon je les kunnen afmaken. */
-var DAG_PORTIE = 12;        // hoeveel woordkaartjes één dagsessie is
-var DAG_PORTIE_NIEUW = 4;   // waarvan gereserveerd voor woorden die je nog nooit zag
+/* v19.92 — de portie volgt nu écht de minuten die je bij je doel hebt gekozen. Het instelscherm
+   beloofde dat al ("dit bepaalt hoe groot je dagportie is"), maar de twee getallen hieronder waren
+   constanten: wie 5 of 20 minuten koos kreeg exact dezelfde twaalf kaartjes als iemand op 10.
+   Stefan, 3 augustus: "ik 30 minuten maar mijn moeder minder ... het moet niet hardcoded zijn maar
+   dynamisch ... straks vakantieperiode pas ik het even aan naar minder tijd per dag."
+   De verhouding van 10 minuten (12 kaartjes, 4 nieuw) is de kalibratie die er al stond; die houden we
+   aan en schalen hem lineair. Dus 5 → 6/2, 10 → 12/4, 20 → 24/8, 30 → 36/12. tempoVandaag() past het
+   daarna nog aan op je foutpercentage en op herstelmodus, dus dit is de basis, niet het eindwoord. */
+function dagPortieCap(){ return Math.max(4, Math.round(doelMinuten() * 1.2)); }
+function dagPortieNieuw(){ return Math.max(1, Math.round(doelMinuten() * 0.4)); }
 
 function bijnaGoedIds(){
   // woorden waar je de laatste twee dagen op struikelde
@@ -4911,7 +5023,11 @@ function dagPortie(){
   var due = [], fresh = [];
   WORDS.forEach(function(w){
     var st = S.srs[w.id];
-    if(st){ if(st.due <= t) due.push(w); }          // herhalingen: altijd, uit alle ooit geleerde woorden
+    // v19.92: buiten een les komen herhalingen uit alles wat je ooit leerde — dat hoort zo. Maar
+    // binnen een les (scopeLesson) niet: "Les 3 · Woordjes (0/16)" gaf 129 kaarten waarvan 114 uit
+    // andere lessen, en het eerste woord van les 3 verscheen pas op kaart 114 terwijl de lesteller al
+    // die tijd stilstond.
+    if(st){ if(st.due <= t && (!scopeLesson || allow[w.id])) due.push(w); }
     else if(allow[w.id]) fresh.push(w);             // nieuw: alleen uit de actieve/ontgrendelde lessen
   });
   var bijna = bijnaGoedIds();
@@ -4931,12 +5047,27 @@ function dagPortie(){
     // krijgt elke dag ook iets wat je nog nooit zag. fresh is al op niveau gesorteerd,
     // dus het eerste woord buiten de poort is automatisch het eerstvolgende niveau.
     poort = poortRang();
+    /* v19.92 — de woorden van de les waar je nu aan werkt gaan altijd door de poort.
+       De poort sorteert op PCIC-frequentie, maar een les uit AULA is thematisch samengesteld: les 1
+       ("Cómo me siento aprendiendo español") bestaat uit 9 A1-woorden, 17 op B1/B2-niveau en 22 die
+       helemaal niet in de frequentielijst staan. Met de poort op A2 valt dus vrijwel de hele les
+       buiten de poort, en dan levert de portie precies één nieuw woord per dag — gemeten op v19.91,
+       en dat verandert niet met de tijd, want het zit in de samenstelling van de les.
+       De poort blijft doen waar hij voor bedoeld is: hij houdt de BREDE woordenpool op niveau, zodat je
+       niet willekeurig in zeldzame woorden belandt, en de sortering op niveau blijft ook staan (makkelijk
+       eerst). Maar een woord dat in een ontgrendelde les zit is een keuze van het curriculum en geen
+       willekeur — dat laat hij door. Anders remt de poort precies het materiaal af waar je aan werkt. */
+    var inLes = {};
+    tLessons().forEach(function(l, i){
+      if(l.stub || !lessonUnlocked(i)) return;
+      l.words.forEach(function(id){ inLes[id] = 1; });
+    });
     var binnen = [], buiten = [];
-    fresh.forEach(function(w){ (woordNiveau(w.id) <= poort ? binnen : buiten).push(w); });
+    fresh.forEach(function(w){ (inLes[w.id] || woordNiveau(w.id) <= poort ? binnen : buiten).push(w); });
     fresh = binnen.concat(buiten.slice(0, 1));
   }
   var ruimteNieuw = Math.min(fresh.length, nieuwPerDag(), newAllowance());
-  var cap = scopeLesson ? Math.max(due.length + fresh.length, DAG_PORTIE) : portieMax();
+  var cap = scopeLesson ? Math.max(due.length + fresh.length, dagPortieCap()) : portieMax();
   var herhaal = due.slice(0, Math.max(0, cap - ruimteNieuw));
   if(scopeLesson) ruimteNieuw = Math.min(fresh.length, newAllowance());
   var nieuw = fresh.slice(0, ruimteNieuw);
@@ -5409,7 +5540,11 @@ function wWaaromHtml(){
 }
 function renderWord(){
   var el = document.getElementById("wCard");
-  if(!wQueue.length){ buildQueue(); }
+  // v19.92: binnen de dagles NIET bijvullen. De portie is de portie; liep hij leeg, dan gaan we door
+  // naar de grammatica. Zonder deze regel vulde de wachtrij zich opnieuw met de volgende lading
+  // herhalingen — bij een portie van 24 kaartjes deed een gemeten sessie er 77, en dan haal je de
+  // rest van je les niet meer. Wat overblijft is nog steeds due en komt morgen terug.
+  if(!wQueue.length && !(lesFlow && lesFlow.stap === "woorden")){ buildQueue(); }
   // v19.70: de straattaal van vandaag hoort bij de woordjes, niet bij Chispa.
   // v19.91: maar niet onder een lopende oefening. Dat was een tweede leskaart op hetzelfde
   // scherm, en dat is precies "teveel informatie". Hij verschijnt als de portie klaar is.
@@ -5662,6 +5797,16 @@ function pickSentence(){
   allowedSentIds().forEach(function(id){ allow[id] = true; });
   var pool = SENTENCES.filter(function(x){ return allow[x.id]; });
   if(!pool.length) pool = SENTENCES;
+  // v19.92: in de dagles gaan de zinnen van de les waar je nu aan werkt voor. Anders pakt hij uit alle
+  // ontgrendelde lessen door elkaar en komt een les zijn eigen zinnen nooit rond — precies waardoor
+  // het ✓-vinkje van een les buiten bereik bleef.
+  if(lesFlow && lesFlow.stap === "produceren"){
+    var les = huidigeLes();
+    if(les){
+      var eigenOpen = pool.filter(function(x){ return les.sents.indexOf(x.id) >= 0 && !S.done[x.id]; });
+      if(eigenOpen.length) pool = eigenOpen;
+    }
+  }
   // zinnen waar je eerder de mist mee inging, komen extra vaak terug (ook als ze al 'gehaald' zijn)
   var fouten = pool.filter(function(x){ var e = S.errors["zin:"+x.id]; return e && e.count > 0; });
   if(fouten.length && Math.random() < 0.4){
@@ -5702,7 +5847,7 @@ function renderSentence(fresh){
   var inFlowVertalen = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "vertalen");
   var el = document.getElementById("sCard");
   el.innerHTML = (inFlowVertalen ? lesFlowBannerHtml() : "")+
-    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+(6-lesFlow.vertalenTeGaan)+"/5" : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
+    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+((lesFlow.vertalenTotaal||5)-lesFlow.vertalenTeGaan+1)+"/"+(lesFlow.vertalenTotaal||5) : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
     "<p class='big'>"+zinPrompt(s)+"</p>"+
     "<div id='sBody'></div>";
   lesFlowWireBanner();
@@ -7331,9 +7476,17 @@ function renderQuizMenu(){
   });
 }
 
-function startQuiz(id){
+/* v19.92: een toetsje mag korter zijn dan de hele vragenlijst. Bij een dagles van 5 minuten kostten
+   tien vragen het grootste deel van je tijd. Met een limiet nemen we een steekproef, en dat is geen
+   willekeurige greep: quizVraagVolgorde() zet de vragen die je eerder fout deed vooraan, dus je krijgt
+   juist de vragen die iets meten. De score wordt teruggerekend naar de volle lengte — anders zou een
+   steekproef van 4 uit 10 nooit de 80% halen die een les nodig heeft, en zou een kort dagbudget je pad
+   blokkeren. */
+function startQuiz(id, limiet){
   var qz = QUIZZES.filter(function(x){ return x.id===id; })[0];
-  qState = {qz:qz, volgorde:quizVraagVolgorde(qz), i:0, score:0, locked:false};
+  var volgorde = quizVraagVolgorde(qz);
+  if(limiet && limiet >= 4 && limiet < volgorde.length) volgorde = volgorde.slice(0, limiet);
+  qState = {qz:qz, volgorde:volgorde, i:0, score:0, locked:false};
   document.getElementById("qMenu").classList.add("hidden");
   document.getElementById("qCard").classList.remove("hidden");
   renderQuestion();
@@ -7342,10 +7495,13 @@ function startQuiz(id){
 function renderQuestion(){
   var st = qState, qz = st.qz;
   var el = document.getElementById("qCard");
-  if(st.i >= qz.vragen.length){
+  var gesteld = st.volgorde.length;               // kan een steekproef zijn, zie startQuiz()
+  if(st.i >= gesteld){
+    var pct = st.score/gesteld;
+    // score terugrekenen naar de volle lengte, zodat een korte dagles je lesvoortgang niet blokkeert
+    var geschat = Math.round(pct * qz.vragen.length);
     var prev = S.quiz[qz.id];
-    if(prev===undefined || st.score>prev){ S.quiz[qz.id] = st.score; persist(); }
-    var pct = st.score/qz.vragen.length;
+    if(prev===undefined || geschat>prev){ S.quiz[qz.id] = geschat; persist(); }
     quizSrsBij(qz, pct); quizSpreid(); persist();
     if(pct === 1){ S.tapas = (S.tapas||0) + 2; persist(); confetti(["⭐️","🌮","🎉"], 20); }
     checkLessonComplete();
@@ -7356,14 +7512,14 @@ function renderQuestion(){
       lesFlow.quizzesTeDoen = (lesFlow.quizzesTeDoen||[]).filter(function(id){ return id !== qz.id; });
       el.innerHTML = lesFlowBannerHtml()+
         "<span class='kicker'>"+quizTitel(qz)+"</span>"+
-        "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
+        "<p class='big'>"+st.score+" / "+gesteld+"</p><p>"+msg+"</p>"+
         "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>";
       lesFlowWireBanner();
       document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
       return;
     }
     el.innerHTML = "<span class='kicker'>"+quizTitel(qz)+"</span>"+
-      "<p class='big'>"+st.score+" / "+qz.vragen.length+"</p><p>"+msg+"</p>"+
+      "<p class='big'>"+st.score+" / "+gesteld+"</p><p>"+msg+"</p>"+
       "<div class='row'><button class='primary' id='btnRetry'>"+ct("Opnieuw","Again")+"</button>"+
       "<button class='ghost' id='btnMenu'>"+ct("Terug naar toetsjes","Back to quizzes")+"</button></div>";
     document.getElementById("btnRetry").onclick = function(){ startQuiz(qz.id); };
@@ -7374,8 +7530,8 @@ function renderQuestion(){
   st.locked = false;
   var inFlowQuiz = !!(lesFlow && lesFlow.stap === "toetsjes");
   var html = (inFlowQuiz ? lesFlowBannerHtml() : "")+
-    "<span class='kicker'>"+quizTitel(qz)+ct(" · vraag "," · question ")+(st.i+1)+"/"+qz.vragen.length+"</span>"+
-    "<div class='progressbar'><div style='width:"+Math.round(100*st.i/qz.vragen.length)+"%'></div></div>"+
+    "<span class='kicker'>"+quizTitel(qz)+ct(" · vraag "," · question ")+(st.i+1)+"/"+gesteld+"</span>"+
+    "<div class='progressbar'><div style='width:"+Math.round(100*st.i/gesteld)+"%'></div></div>"+
     "<p class='big' style='font-size:1.2rem'>"+v.q+"</p>"+
     // 29 juli-fix: Stefans terechte punt (screenshot "enfrente" vs "al lado") - zonder de vertaling
     // vooraf zijn twee opties vaak allebei grammaticaal geldig Spaans (bv. "naast" én "tegenover" zijn
@@ -7408,7 +7564,7 @@ function answerQuestion(idx, btn){
   // niet meer herhalen, alleen nog de uitleg waarom het antwoord goed/fout is
   fb.innerHTML =
     "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+ct("Waarom:","Why:")+"</b> "+vraagWaarom(v)+"</div>"+
-    "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.qz.vragen.length ? ct("Volgende →","Next →") : ct("Uitslag →","Result →"))+"</button></div>";
+    "<div class='row'><button class='primary' id='btnNextQ'>"+(st.i+1 < st.volgorde.length ? ct("Volgende →","Next →") : ct("Uitslag →","Result →"))+"</button></div>";
   document.getElementById("btnNextQ").onclick = function(){ st.i++; renderQuestion(); };
 }
 
@@ -7477,7 +7633,8 @@ function renderBoekLectura(){
   var h = bState.h;
   var el = document.getElementById("lezenCard");
   var paras = h.tekst.split("\n\n").map(function(p){ return "<p>"+p+"</p>"; }).join("");
-  el.innerHTML = "<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
+  var inFlowBoek = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "boek");
+  el.innerHTML = (inFlowBoek ? lesFlowBannerHtml() : "")+"<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
     "<h2>"+h.titel+"</h2>"+
     "<div class='row' style='margin:6px 0 10px'><button class='ghost' id='btnBoekLuister'>🔊 "+ct("Luisteren","Listen")+"</button></div>"+
     paras+
@@ -7551,10 +7708,16 @@ function finishBoek(){
 }
 
 function closeBoek(){
+  // Let op de vraag "waren we aan het lezen?": show("lezen") begint zelf met een closeBoek() om schoon
+  // te beginnen, en zonder die controle zou het leesblok van de dagles zichzelf meteen overslaan.
+  var wasLezen = !!bState;
   boekStop();
   var lc = document.getElementById("lezenCard"); if(lc) lc.classList.add("hidden");
   var lm = document.getElementById("lezenMenu"); if(lm) lm.classList.remove("hidden");
   bState = null;
+  // v19.92: lezen is nu een stap in de dagles. Klaar met het hoofdstuk (of ertussenuit) betekent dus:
+  // door met de les, niet terug naar het boekenmenu.
+  if(wasLezen && lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "boek"){ lesFlowVolgende(); return; }
   renderBoekMenu();
 }
 
@@ -7566,17 +7729,53 @@ function closeBoek(){
 // bijgehouden in S.lesFlow (datum->true, dedupliceert vanzelf bij herhaling dezelfde dag) en levert
 // een variabele tapas-bonus voor Chispa op (variable-ratio beloning, motiverender dan een vast bedrag).
 var lesFlow = null; // {stap: null|"woorden"|"grammatica"|"toetsjes"|"produceren", quizzesTeDoen:[...ids], gramId, gekozenSpel, vertalenTeGaan}
-var PRODUCTIE_MODI = ["dictado","conj","hu","vertalen"];
 
-function lesFlowKiesSpel(){
+/* v19.92 — stap 4 was "één van vier spelletjes, willekeurig geroteerd". Daardoor zat lezen helemaal
+   niet in je dagles (het boek stond in een eigen tabje) en kon je drie dagen achter elkaar dezelfde
+   vorm krijgen. Stefan, 3 augustus: "ik wil iedere dag een afgestemde les met vocabulaire, grammatica
+   (lezen, luisteren en schrijven)". Dus kiest de les nu een vaardigheid op grond van waar je
+   achterloopt — dezelfde percentages die op je profielpagina staan — en pas daarbinnen een oefenvorm.
+   Hoeveel vaardigheden er op een dag passen volgt je minuten: bij 20 of meer alle drie, bij 10 twee,
+   bij 5 één, en dan rouleren ze zodat er geen een blijft liggen. */
+var VAARDIGHEDEN = ["luisteren", "schrijven", "lezen"];
+function vaardigheidAantal(){
+  var m = doelMinuten();
+  return m >= 20 ? 3 : (m >= 10 ? 2 : 1);
+}
+// Hoeveel toetsvragen passen er vandaag? Een kwart van de tijd is voor grammatica-uitleg plus toets;
+// bij 5 minuten zijn dat vier vragen, bij 20 of meer de hele lijst. Minstens vier, want onder dat
+// aantal zegt een steekproef niets over de regel.
+function toetsvragenPerDag(){ return Math.max(4, Math.round(doelMinuten() * 0.15 * 60 / 15)); }
+function vaardigheidTijd(){
+  // een kwart van je dag gaat naar de vaardigheid, verdeeld over de blokken van vandaag
+  return (doelMinuten() * 60 * 0.25) / vaardigheidAantal();
+}
+function lesFlowKiesVaardigheden(n){
+  var c = berekenCompetenties();
   var sp = S.lesFlowSpel || {};
-  var beste = null, besteDatum = null;
-  PRODUCTIE_MODI.forEach(function(m){
-    var d = sp[m] || "0000-00-00";
-    if(besteDatum === null || d < besteDatum){ besteDatum = d; beste = [m]; }
-    else if(d === besteDatum){ beste.push(m); }
+  var t = today(), gisteren = addDays(t, -1);
+  var lijst = VAARDIGHEDEN.map(function(v){
+    return {v:v, pct:(c[v] && typeof c[v].pct === "number") ? c[v].pct : 0, laatst:sp[v] || "0000-00-00"};
   });
-  return beste[Math.floor(Math.random()*beste.length)];
+  lijst.sort(function(a, b){
+    if(a.pct !== b.pct) return a.pct - b.pct;       // grootste achterstand eerst
+    return a.laatst < b.laatst ? -1 : 1;            // gelijkspel: wie het langst niet aan bod kwam
+  });
+  if(n >= lijst.length) return lijst.map(function(x){ return x.v; });
+  // past er maar één of twee? Dan gaan de vaardigheden voor die gisteren of vandaag niet aan bod
+  // kwamen; anders kies je bij een lage score elke dag dezelfde en blijft de rest liggen.
+  var vers = lijst.filter(function(x){ return x.laatst !== t && x.laatst !== gisteren; });
+  var bron = vers.length >= n ? vers : lijst.filter(function(x){ return x.laatst !== t; });
+  if(bron.length < n) bron = lijst;
+  return bron.slice(0, n).map(function(x){ return x.v; });
+}
+// Welk hoofdstuk lezen we? Het eerste ontgrendelde dat je nog niet deed; is alles gedaan, dan het
+// eerste, om terug te lezen.
+function lesFlowBoekHoofdstuk(){
+  var open = BOOK.filter(boekOntgrendeld);
+  if(!open.length) return null;
+  var nieuw = open.filter(function(h){ return !(S.boek[h.id] && S.boek[h.id].done); });
+  return nieuw.length ? nieuw[0] : open[0];
 }
 
 function lesFlowStapNaam(){
@@ -7584,7 +7783,13 @@ function lesFlowStapNaam(){
   if(lesFlow.stap === "woorden") return ct("Woordjes","Words");
   if(lesFlow.stap === "grammatica") return ct("Grammatica","Grammar");
   if(lesFlow.stap === "toetsjes") return ct("Toetsjes","Quizzes");
-  if(lesFlow.stap === "produceren") return ct("Oefenen","Practice");
+  if(lesFlow.stap === "produceren"){
+    var v = lesFlow.vaardigheid;
+    if(v === "lezen") return ct("Lezen","Reading");
+    if(v === "luisteren") return ct("Luisteren","Listening");
+    if(v === "schrijven") return ct("Schrijven","Writing");
+    return ct("Oefenen","Practice");
+  }
   return "";
 }
 function lesFlowStapNum(){
@@ -7662,10 +7867,9 @@ function lesFlowStart(){
   lesFlowVolgende();
 }
 
-function lesFlowGramId(){
-  // Welk grammatica-onderwerp hoort bij de les waar je nu bent? Eerst de eerste nog niet afgeronde
-  // ontgrendelde les, en binnen die les het onderwerp dat je het minst hebt gedaan. Zo komt de
-  // uitleg-stap van de dagles altijd over iets wat je nu daadwerkelijk aan het leren bent.
+// De les waar je nu daadwerkelijk aan werkt: de eerste ontgrendelde die nog niet af is. Eén plek,
+// want de dagles put er zijn grammatica, zijn toetsje en zijn zinnen uit.
+function huidigeLes(){
   var ls = tLessons(), les = null;
   for(var i = 0; i < ls.length; i++){
     if(ls[i].stub || !lessonUnlocked(i)) continue;
@@ -7673,6 +7877,14 @@ function lesFlowGramId(){
     var p = lessonProgress(ls[i]);
     if(p && !p.done) break;
   }
+  return les;
+}
+
+function lesFlowGramId(){
+  // Welk grammatica-onderwerp hoort bij de les waar je nu bent? Binnen die les het onderwerp dat je
+  // het minst hebt gedaan. Zo gaat de uitleg-stap altijd over iets wat je nu echt aan het leren bent.
+  var les = huidigeLes();
+  if(lesFlow) lesFlow.gramLes = les ? les.id : null;
   var kandidaten = [];
   ((les && les.spiek) || []).forEach(function(i){
     var o = gwOnderwerpVoorSpiek(i);
@@ -7695,6 +7907,24 @@ function lesFlowQuizId(){
   // grammatica-onderwerp dat je net in stappen hebt gelezen. Alleen als dat onderwerp geen eigen
   // toetsje heeft, valt hij terug op wat er toch al op herhaling stond.
   var t = today();
+  // v19.92, eerst dit: een toetsje van de les waar je aan werkt dat je nog NOOIT hebt gemaakt. De
+  // keuze liep alleen via het grammatica-onderwerp van vandaag, en niet elke spiekbriefkaart heeft een
+  // wizard-onderwerp — de twee indefinido-toetsjes van les 2 hangen aan zo'n kaart. Die kwamen dus
+  // nooit langs, en omdat de volgende les wacht tot elk toetsje één keer is gemaakt liep het pad daar
+  // alsnog op vast.
+  // Zoek in lesvolgorde het eerste toetsje van een ONTGRENDELDE les dat je nog nooit hebt gemaakt.
+  // Niet alleen in je huidige les: de volgende les gaat pas open als elk toetsje daarvan één keer is
+  // gemaakt, en als we alleen naar de huidige les kijken wacht dat tot die les helemaal áf is (inclusief
+  // alle 35 zinnen). Gemeten: daardoor stond de woordinname vanaf dag 12 weer op één woord per dag.
+  var lsAlle = tLessons(), i2, lq, j2, qid2;
+  for(i2 = 0; i2 < lsAlle.length; i2++){
+    if(lsAlle[i2].stub || !lessonUnlocked(i2)) continue;
+    lq = lsAlle[i2].quizzes || [];
+    for(j2 = 0; j2 < lq.length; j2++){
+      qid2 = lq[j2];
+      if(S.quiz[qid2] === undefined && QUIZZES.some(function(q){ return q.id === qid2; })) return qid2;
+    }
+  }
   var idx = -1;
   if(lesFlow && lesFlow.gramId && typeof gwOnderwerp === "function"){
     var o = gwOnderwerp(lesFlow.gramId);
@@ -7739,6 +7969,14 @@ function lesFlowVolgende(){
   }
   if(lesFlow.stap === "grammatica"){
     gwSess = null; // anders blijft de wizard het Grammatica-tabblad overnemen
+    // v19.92: hiermee is de spiekbrief van deze les gelezen. Dat vinkje kon je vroeger alleen zetten
+    // met de knop "Gelezen!" in de lesweergave, en de dagles kwam daar nooit langs — waardoor de les
+    // niet kon afgaan. Wie de uitleg in stappen doorloopt heeft hem gelezen; dat is waar het vinkje
+    // voor stond.
+    if(lesFlow.gramLes){
+      var stl = S.lessons[lesFlow.gramLes] || {};
+      if(!stl.spiek){ stl.spiek = true; S.lessons[lesFlow.gramLes] = stl; persist(); checkLessonComplete(); }
+    }
     lesFlow.stap = "toetsjes";
     // v19.49: precies één toetsje per dagles (dat van dit grammatica-onderwerp), niet de hele
     // herhaallijst achter elkaar. Anders is de dagles zo lang dat je er niet aan begint.
@@ -7746,34 +7984,56 @@ function lesFlowVolgende(){
     if(qid){
       lesFlow.quizzesTeDoen = [qid];
       show("toetsjes");
-      startQuiz(qid);
+      startQuiz(qid, toetsvragenPerDag());
       return;
     }
   }
   if(lesFlow.stap === "toetsjes"){
     if(lesFlow.quizzesTeDoen && lesFlow.quizzesTeDoen.length){
       show("toetsjes");
-      startQuiz(lesFlow.quizzesTeDoen[0]);
+      startQuiz(lesFlow.quizzesTeDoen[0], toetsvragenPerDag());
       return;
     }
     lesFlow.stap = "produceren";
-    lesFlow.gekozenSpel = lesFlowKiesSpel();
+    lesFlow.vaardigheidRij = lesFlowKiesVaardigheden(vaardigheidAantal());
+    lesFlow.vaardigheid = lesFlow.vaardigheidRij.shift();
     lesFlowOpenProductie();
     return;
   }
   if(lesFlow.stap === "produceren"){
+    // deze vaardigheid is vandaag aan bod geweest, ook als je hem oversloeg: anders krijg je morgen
+    // precies hetzelfde blok weer voorgeschoteld
+    if(lesFlow.vaardigheid) S.lesFlowSpel[lesFlow.vaardigheid] = today();
+    if(lesFlow.vaardigheidRij && lesFlow.vaardigheidRij.length){
+      lesFlow.vaardigheid = lesFlow.vaardigheidRij.shift();
+      lesFlowOpenProductie();
+      return;
+    }
     lesFlowKlaar();
     return;
   }
 }
 
+// De lengte van elk blok komt uit je tijdbudget: bij 30 minuten zeven zinnen dictado, bij 5 twee.
 function lesFlowOpenProductie(){
-  var m = lesFlow.gekozenSpel;
-  if(m === "dictado"){ funView = "dictado"; dIdx = null; dRonde = null; show("speeltuin"); return; }
-  if(m === "conj"){ funView = "conj"; conjIdx = null; conjRonde = null; show("speeltuin"); return; }
-  if(m === "hu"){ funView = "hu"; huIdx = null; huRonde = null; show("speeltuin"); return; }
-  // vertalen: geen aparte "ronde"-teller zoals de andere spellen, dus we tellen zelf 5 zinnen
-  lesFlow.vertalenTeGaan = 5;
+  var v = lesFlow.vaardigheid;
+  var tijd = vaardigheidTijd();
+  if(v === "lezen"){
+    var h = lesFlowBoekHoofdstuk();
+    if(h){ lesFlow.gekozenSpel = "boek"; show("lezen"); startBoek(h.id); return; }
+    // het boek gaat pas open na je eerste afgeronde les; tot die tijd een andere vaardigheid
+    v = lesFlow.vaardigheid = (lesFlow.vaardigheidRij || []).indexOf("luisteren") >= 0 ? "schrijven" : "luisteren";
+  }
+  if(v === "luisteren"){
+    lesFlow.gekozenSpel = "dictado";
+    funView = "dictado"; dIdx = null;
+    dictadoNieuweRonde();
+    dRonde.lengte = Math.max(2, Math.round(tijd / 30));   // ~30 sec per dictado-zin
+    show("speeltuin");
+    return;
+  }
+  lesFlow.gekozenSpel = "vertalen";
+  lesFlow.vertalenTeGaan = lesFlow.vertalenTotaal = Math.max(2, Math.round(tijd / 25)); // ~25 sec per zin
   show("vertalen");
 }
 
@@ -15159,9 +15419,12 @@ function renderPerfil(){
    onder je balken en nergens anders. */
 function doelBlokHtml(){
   var mi = doelMinuten();
+  // v19.92: 30 minuten erbij (Stefan doet 30, zijn moeder minder) en de tekst zegt nu wat het
+  // concreet oplevert, want dit knopje bepaalt vanaf nu echt de grootte van je dagportie.
   var mins = [{n:5, nl:"5 minuten", en:"5 minutes"},
               {n:10, nl:"10 minuten", en:"10 minutes"},
-              {n:20, nl:"20 minuten", en:"20 minutes"}];
+              {n:20, nl:"20 minuten", en:"20 minutes"},
+              {n:30, nl:"30 minuten", en:"30 minutes"}];
   var h = "<h2 style='margin:18px 0 2px'>"+ct("Jouw doel 🎯","Your goal 🎯")+"</h2>"+
     "<p class='muted' style='margin:0 0 6px'>"+
       ct("Hoeveel tijd wil je er per dag in stoppen? Dit bepaalt hoe groot je dagportie is.",
@@ -15170,8 +15433,8 @@ function doelBlokHtml(){
       return "<button class='ghost trackpick"+(m.n === mi ? " active" : "")+"' data-dmin='"+m.n+"'>"+ct(m.nl, m.en)+"</button>";
     }).join("")+"</div>"+
     "<p class='muted' style='margin:6px 0 0; font-size:.82rem'>"+
-      ct("Dat komt neer op ongeveer "+(mi * DOEL_MIN_XP)+" "+xpw()+" per dag; zo is het balkje bovenin gerekend. Een schatting, geen stopwatch.",
-         "That works out at roughly "+(mi * DOEL_MIN_XP)+" "+xpw()+" a day; that's how the bar at the top is calculated. An estimate, not a stopwatch.")+"</p>";
+      ct("Dat is een dagportie van ongeveer "+dagPortieCap()+" woordkaartjes, waarvan "+dagPortieNieuw()+" nieuw, plus grammatica en een vaardigheid. Ongeveer "+(mi * DOEL_MIN_XP)+" "+xpw()+"; een schatting, geen stopwatch.",
+         "That's a daily portion of about "+dagPortieCap()+" word cards, "+dagPortieNieuw()+" of them new, plus grammar and one skill. Roughly "+(mi * DOEL_MIN_XP)+" "+xpw()+"; an estimate, not a stopwatch.")+"</p>";
   var niv = (S && S.doelNiv) || null;
   var nivs = [{v:"", nl:"geen", en:"none"}, {v:"A1", nl:"A1 vol", en:"A1 full"}, {v:"A2", nl:"A2 vol", en:"A2 full"}];
   h += "<p class='muted' style='margin:14px 0 6px'>"+
@@ -15201,6 +15464,9 @@ function doelBlokWire(el){
     b.onclick = function(){
       S.doelMin = +b.getAttribute("data-dmin");
       S.doel = S.doelMin * DOEL_MIN_XP;     // de rest van de app rekent nog in punten
+      S.tempo = null;                       // v19.92: het tempo van vandaag is op de oude minuten
+                                            // gebaseerd; opnieuw laten uitrekenen, anders merk je een
+                                            // wijziging pas morgen (en juist in de vakantie wil je nu)
       persist(); syncUp(); updateGoalUI(); renderPerfil(); renderStats();
       toast(ct("Dagdoel: "+S.doelMin+" minuten per dag ✓",
                "Daily goal: "+S.doelMin+" minutes a day ✓"));

@@ -1,0 +1,320 @@
+/*
+ * content-lib.js — lezen, valideren en wegschrijven van de content in index.html.
+ *
+ * Waarom dit bestaat: de app is één HTML-bestand met de lesinhoud als JS-arrays erin. De avondrun
+ * (tools/curriculum.js) moet daar items aan toevoegen zonder ooit een hand-geschreven regel te
+ * herschrijven. Dus:
+ *   - lezen doen we door de array-literal uit te knippen op balans van blokhaken en te evalueren
+ *     (het is ons eigen bestand, geen invoer van buiten),
+ *   - schrijven doen we uitsluitend vóór de sluithaak van een array, plus het machine-blok
+ *     EXTRA_CONTENT. Nooit ertussen.
+ *
+ * Elke wijziging wordt na het schrijven opnieuw ingelezen en geteld. Klopt de telling niet exact,
+ * dan is er niets weggeschreven. Zelftest: node tools/content-lib.js --zelftest
+ */
+"use strict";
+const fs = require("fs");
+const path = require("path");
+
+const INDEX = path.join(__dirname, "..", "index.html");
+const VERSIE = path.join(__dirname, "..", "versie.txt");
+
+/* ---------- lezen ---------- */
+
+// Knipt `var NAAM = [ ... ];` uit op balans van [ en ], strings en commentaar overslaand.
+function vindArray(src, naam) {
+  const m = new RegExp("^var " + naam + " = \\[", "m").exec(src);
+  if (!m) throw new Error("array niet gevonden: " + naam);
+  const open = m.index + m[0].length - 1;
+  let diepte = 0, i = open, inStr = null, esc = false;
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (c === "\\") { esc = true; continue; }
+      if (c === inStr) inStr = null;
+      continue;
+    }
+    if (c === '"' || c === "'") { inStr = c; continue; }
+    if (c === "/" && src[i + 1] === "/") { i = src.indexOf("\n", i); if (i < 0) break; continue; }
+    if (c === "/" && src[i + 1] === "*") { i = src.indexOf("*/", i) + 1; continue; }
+    if (c === "[") diepte++;
+    else if (c === "]") { diepte--; if (diepte === 0) break; }
+  }
+  if (diepte !== 0) throw new Error("ongebalanceerde array: " + naam);
+  return { open, sluit: i, tekst: src.slice(open, i + 1) };
+}
+
+function leesArray(src, naam) {
+  const { tekst } = vindArray(src, naam);
+  // rng() wordt in de lessen gebruikt; voor de vier contentarrays niet, maar we geven hem mee zodat
+  // dezelfde functie ook lessenlijsten kan lezen.
+  const rng = (p, a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(p + i); return r; };
+  // eslint-disable-next-line no-new-func
+  return new Function("rng", "return " + tekst)(rng);
+}
+
+// De lessenlijst staat als toewijzing (TRACKS.a2.lessons = [...]), niet als var. Aparte lezer.
+function leesLessen(src) {
+  const m = /^TRACKS\.a2\.lessons = \[/m.exec(src);
+  if (!m) throw new Error("lessenlijst niet gevonden");
+  const open = m.index + m[0].length - 1;
+  let diepte = 0, i = open, inStr = null, esc = false;
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (inStr) { if (esc) { esc = false; continue; } if (c === "\\") { esc = true; continue; } if (c === inStr) inStr = null; continue; }
+    if (c === '"' || c === "'") { inStr = c; continue; }
+    if (c === "[") diepte++;
+    else if (c === "]") { diepte--; if (diepte === 0) break; }
+  }
+  const rng = (p, a, b) => { const r = []; for (let k = a; k <= b; k++) r.push(p + k); return r; };
+  // eslint-disable-next-line no-new-func
+  return new Function("rng", "return " + src.slice(open, i + 1))(rng);
+}
+
+function leesExtra(src) {
+  const m = /^var EXTRA_CONTENT = (\{[\s\S]*?\});$/m.exec(src);
+  if (!m) throw new Error("EXTRA_CONTENT-blok niet gevonden");
+  // eslint-disable-next-line no-new-func
+  return { waarde: new Function("return " + m[1])(), start: m.index, eind: m.index + m[0].length };
+}
+
+function inventaris() {
+  const src = fs.readFileSync(INDEX, "utf8");
+  const words = leesArray(src, "WORDS");
+  const sentences = leesArray(src, "SENTENCES");
+  const quizzes = leesArray(src, "QUIZZES");
+  const cheat = leesArray(src, "CHEATSHEET");
+  // v19.91 voegde K_WORDS toe: 244 kernwoorden met eigen k-ids die bij geen enkele les horen (de brede
+  // pool die de dagportie op niveau ordent). Ze doen niet mee in het lespad, maar hun ids moeten wel
+  // meegeteld worden bij de uniekheidscontrole.
+  let kern = [];
+  try { kern = leesArray(src, "K_WORDS"); } catch (e) { /* oudere versie zonder kernpool */ }
+  const lessen = leesLessen(src);
+  const extra = leesExtra(src).waarde;
+  // dezelfde samenvoeging als pasExtraContentToe() in de app
+  const perLes = lessen.map(l => {
+    const e = extra.lessen[l.id] || {};
+    return { id: l.id, num: l.num, titel: l.titel, niveau: l.niveau || "A2",
+             words: l.words.concat(e.words || []), sents: l.sents.concat(e.sents || []),
+             quizzes: l.quizzes.concat(e.quizzes || []), spiek: l.spiek.concat(e.spiek || []) };
+  }).concat(extra.nieuweLessen.map(l => ({ id:l.id, num:l.num, titel:l.titel, niveau:l.niveau || "B1",
+             words:l.words, sents:l.sents, quizzes:l.quizzes, spiek:l.spiek || [] })));
+  return { src, words, sentences, quizzes, cheat, kern, lessen, extra, perLes };
+}
+
+/* ---------- ids ---------- */
+
+function volgendeId(bestaande, prefix) {
+  let hoog = 0;
+  const re = new RegExp("^" + prefix + "(\\d+)$");
+  bestaande.forEach(x => { const m = re.exec(x.id || x); if (m) hoog = Math.max(hoog, +m[1]); });
+  return n => prefix + (hoog + n);
+}
+
+/* ---------- valideren ---------- */
+
+const NL_VELDEN = { woord: ["id", "es", "nl", "en", "tag"],
+                    zin: ["id", "lvl", "nl", "en", "es", "alt", "uitleg", "ue", "tag"],
+                    toets: ["id", "titel", "titelEn", "spiek", "vragen"] };
+
+function valideer(nieuw, inv) {
+  const fouten = [];
+  const bestaandeIds = new Set([].concat(
+    inv.words.map(w => w.id), (inv.kern || []).map(w => w.id),
+    inv.sentences.map(s => s.id), inv.quizzes.map(q => q.id)));
+  const gezien = new Set();
+
+  const eisVelden = (obj, soort, waar) => {
+    NL_VELDEN[soort].forEach(v => {
+      if (obj[v] === undefined || obj[v] === null || obj[v] === "") fouten.push(`${waar}: veld "${v}" ontbreekt`);
+    });
+  };
+  const eisUniek = (id, waar) => {
+    if (!id) return fouten.push(`${waar}: id ontbreekt`);
+    if (bestaandeIds.has(id)) fouten.push(`${waar}: id "${id}" bestaat al`);
+    if (gezien.has(id)) fouten.push(`${waar}: id "${id}" dubbel in deze levering`);
+    gezien.add(id);
+  };
+
+  (nieuw.words || []).forEach((w, i) => {
+    const waar = `woord ${i + 1} (${w.id})`;
+    eisUniek(w.id, waar); eisVelden(w, "woord", waar);
+    if (!/^w\d+$/.test(w.id || "")) fouten.push(`${waar}: id moet w<nummer> zijn`);
+    if (w.es && w.es.length > 60) fouten.push(`${waar}: es is verdacht lang`);
+  });
+
+  (nieuw.sentences || []).forEach((s, i) => {
+    const waar = `zin ${i + 1} (${s.id})`;
+    eisUniek(s.id, waar); eisVelden(s, "zin", waar);
+    if (!/^s\d+$/.test(s.id || "")) fouten.push(`${waar}: id moet s<nummer> zijn`);
+    if (!Array.isArray(s.alt) || !s.alt.length) fouten.push(`${waar}: alt moet minstens één variant hebben`);
+    else {
+      // Zelfde vergelijking als checkSentence() in de app: normaliseren én accenten strippen (de app
+      // rekent een antwoord met een missend accent goed). Strenger controleren dan de app zelf doet
+      // levert alleen valse afkeuringen op.
+      const norm = t => String(t).toLowerCase().trim().replace(/[¡!¿?.,;:]/g, "").replace(/\s+/g, " ");
+      const kaal = t => norm(t).normalize("NFD").replace(/[̀-ͯ]/g, "");
+      if (!s.alt.map(kaal).includes(kaal(s.es))) fouten.push(`${waar}: alt bevat het eigen antwoord niet (ook niet accentloos)`);
+      if (s.alt.some(a => a !== String(a).toLowerCase())) fouten.push(`${waar}: alt hoort in kleine letters`);
+    }
+    if (typeof s.lvl !== "number" || s.lvl < 1 || s.lvl > 5) fouten.push(`${waar}: lvl moet 1-5 zijn`);
+  });
+
+  (nieuw.quizzes || []).forEach((q, i) => {
+    const waar = `toetsje ${i + 1} (${q.id})`;
+    eisUniek(q.id, waar); eisVelden(q, "toets", waar);
+    if (!/^q-[a-z0-9-]+$/.test(q.id || "")) fouten.push(`${waar}: id moet q-<slug> zijn`);
+    if (!Array.isArray(q.spiek) || !q.spiek.length) fouten.push(`${waar}: spiek moet naar een spiekbriefkaart wijzen`);
+    else q.spiek.forEach(idx => {
+      if (typeof idx !== "number" || idx < 0 || idx >= inv.cheat.length + (nieuw.cheat || []).length)
+        fouten.push(`${waar}: spiek-index ${idx} bestaat niet`);
+    });
+    if (!Array.isArray(q.vragen) || q.vragen.length < 4) fouten.push(`${waar}: minstens 4 vragen`);
+    (q.vragen || []).forEach((v, j) => {
+      const w2 = `${waar} vraag ${j + 1}`;
+      if (!v.q) fouten.push(`${w2}: q ontbreekt`);
+      if (!Array.isArray(v.opts) || v.opts.length < 2) fouten.push(`${w2}: minstens 2 opties`);
+      else {
+        if (new Set(v.opts.map(String)).size !== v.opts.length) fouten.push(`${w2}: dubbele opties`);
+        if (typeof v.c !== "number" || v.c < 0 || v.c >= v.opts.length) fouten.push(`${w2}: c wijst niet naar een optie`);
+      }
+      if (!v.u) fouten.push(`${w2}: uitleg (u) ontbreekt`);
+      if (!v.ue) fouten.push(`${w2}: Engelse uitleg (ue) ontbreekt`);
+    });
+  });
+
+  (nieuw.cheat || []).forEach((c, i) => {
+    const waar = `spiekkaart ${i + 1}`;
+    ["titel", "titelEn", "html", "htmlEn"].forEach(v => { if (!c[v]) fouten.push(`${waar}: veld "${v}" ontbreekt`); });
+  });
+
+  // verwijzingen uit de lesindeling moeten bestaan
+  const alleWoordIds = new Set(inv.words.map(w => w.id).concat((nieuw.words || []).map(w => w.id)));
+  const alleZinIds = new Set(inv.sentences.map(s => s.id).concat((nieuw.sentences || []).map(s => s.id)));
+  const alleToetsIds = new Set(inv.quizzes.map(q => q.id).concat((nieuw.quizzes || []).map(q => q.id)));
+  const checkLes = (l, waar) => {
+    (l.words || []).forEach(id => { if (!alleWoordIds.has(id)) fouten.push(`${waar}: onbekend woord-id ${id}`); });
+    (l.sents || []).forEach(id => { if (!alleZinIds.has(id)) fouten.push(`${waar}: onbekend zin-id ${id}`); });
+    (l.quizzes || []).forEach(id => { if (!alleToetsIds.has(id)) fouten.push(`${waar}: onbekend toets-id ${id}`); });
+  };
+  Object.keys(nieuw.lessen || {}).forEach(lid => {
+    if (!inv.perLes.some(l => l.id === lid)) fouten.push(`lesindeling: les ${lid} bestaat niet`);
+    checkLes(nieuw.lessen[lid], `lesindeling ${lid}`);
+  });
+  (nieuw.nieuweLessen || []).forEach((l, i) => {
+    const waar = `nieuwe les ${i + 1} (${l.id})`;
+    if (!l.id || !/^[a-z0-9-]+$/.test(l.id)) fouten.push(`${waar}: ongeldig id`);
+    if (inv.perLes.some(x => x.id === l.id)) fouten.push(`${waar}: les-id bestaat al`);
+    ["titel", "doel", "doelEn"].forEach(v => { if (!l[v]) fouten.push(`${waar}: veld "${v}" ontbreekt`); });
+    if (!(l.words || []).length) fouten.push(`${waar}: geen woorden`);
+    if (!(l.sents || []).length) fouten.push(`${waar}: geen zinnen`);
+    checkLes(l, waar);
+  });
+
+  return fouten;
+}
+
+/* ---------- schrijven ---------- */
+
+function jsonRegel(obj) { return " " + JSON.stringify(obj); }
+
+function voegToeAanArray(src, naam, items) {
+  if (!items || !items.length) return src;
+  const { sluit } = vindArray(src, naam);
+  // laatste item krijgt een komma, nieuwe items komen elk op een eigen regel vóór de sluithaak
+  const voor = src.slice(0, sluit).replace(/\s*$/, "");
+  const blok = items.map(jsonRegel).join(",\n");
+  return voor + ",\n" + blok + "\n" + src.slice(sluit);
+}
+
+function schrijfExtra(src, extra) {
+  const { start, eind } = leesExtra(src);
+  const tekst = "var EXTRA_CONTENT = " + JSON.stringify(extra, null, 1) + ";";
+  return src.slice(0, start) + tekst + src.slice(eind);
+}
+
+function bumpVersie(src) {
+  const m = /^var APP_VERSIE = "v(\d+)\.(\d+)";$/m.exec(src);
+  if (!m) throw new Error("APP_VERSIE niet gevonden");
+  const nieuw = "v" + m[1] + "." + (+m[2] + 1);
+  return { src: src.replace(m[0], 'var APP_VERSIE = "' + nieuw + '";'), versie: nieuw };
+}
+
+// Schrijft alles weg en controleert daarna door opnieuw in te lezen. Klopt de telling niet, dan
+// blijft het bestand zoals het was.
+function pasToe(nieuw, opties) {
+  opties = opties || {};
+  const voor = inventaris();
+  const fouten = valideer(nieuw, voor);
+  if (fouten.length) return { ok: false, fouten };
+
+  let src = voor.src;
+  src = voegToeAanArray(src, "WORDS", nieuw.words);
+  src = voegToeAanArray(src, "SENTENCES", nieuw.sentences);
+  src = voegToeAanArray(src, "QUIZZES", nieuw.quizzes);
+  src = voegToeAanArray(src, "CHEATSHEET", nieuw.cheat);
+
+  const extra = JSON.parse(JSON.stringify(voor.extra));
+  Object.keys(nieuw.lessen || {}).forEach(lid => {
+    const e = extra.lessen[lid] || (extra.lessen[lid] = { words: [], sents: [], quizzes: [] });
+    ["words", "sents", "quizzes", "spiek"].forEach(k => {
+      if (!(nieuw.lessen[lid][k] || []).length) return;
+      e[k] = (e[k] || []).concat(nieuw.lessen[lid][k]);
+    });
+  });
+  (nieuw.nieuweLessen || []).forEach(l => extra.nieuweLessen.push(l));
+  src = schrijfExtra(src, extra);
+
+  const bump = bumpVersie(src);
+  src = bump.src;
+
+  if (opties.droog) return { ok: true, droog: true, versie: bump.versie, src };
+
+  fs.writeFileSync(INDEX, src);
+  fs.writeFileSync(VERSIE, bump.versie + "\n");
+
+  const na = inventaris();
+  const verwacht = {
+    words: voor.words.length + (nieuw.words || []).length,
+    sentences: voor.sentences.length + (nieuw.sentences || []).length,
+    quizzes: voor.quizzes.length + (nieuw.quizzes || []).length,
+    cheat: voor.cheat.length + (nieuw.cheat || []).length
+  };
+  const mis = Object.keys(verwacht).filter(k => na[k].length !== verwacht[k]);
+  if (mis.length) {
+    fs.writeFileSync(INDEX, voor.src);            // terugdraaien
+    return { ok: false, fouten: ["telling klopt niet na schrijven: " + mis.join(", ") + " — bestand teruggedraaid"] };
+  }
+  return { ok: true, versie: bump.versie, aantallen: verwacht };
+}
+
+module.exports = { INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
+                   valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie };
+
+/* ---------- zelftest ---------- */
+if (require.main === module && process.argv.includes("--zelftest")) {
+  const inv = inventaris();
+  console.log("gelezen:", inv.words.length, "leswoorden,", (inv.kern||[]).length, "kernwoorden,", inv.sentences.length, "zinnen,",
+              inv.quizzes.length, "toetsjes,", inv.cheat.length, "spiekkaarten,", inv.perLes.length, "lessen");
+  const idW = volgendeId(inv.words, "w"), idS = volgendeId(inv.sentences, "s");
+  const proef = {
+    words: [{ id: idW(1), es: "la prueba", nl: "de proef", en: "the test", tag: "zelftest" }],
+    sentences: [{ id: idS(1), lvl: 1, nl: "Dit is een proef.", en: "This is a test.", es: "Esta es una prueba.",
+                  alt: ["esta es una prueba"], uitleg: "Proef.", ue: "Test.", tag: "zelftest" }],
+    lessen: { [inv.perLes[0].id]: { words: [idW(1)], sents: [idS(1)] } }
+  };
+  const f = valideer(proef, inv);
+  console.log("validatie van een correcte proeflevering:", f.length ? "FOUT: " + f.join("; ") : "schoon ✓");
+  const stuk = JSON.parse(JSON.stringify(proef));
+  stuk.sentences[0].alt = ["iets anders"];
+  stuk.words[0].id = inv.words[0].id;
+  const f2 = valideer(stuk, inv);
+  console.log("validatie van een kapotte levering vindt", f2.length, "fouten:", f2.join(" | "));
+  const droog = pasToe(proef, { droog: true });
+  console.log("droge schrijfbeurt:", droog.ok ? "ok, wordt " + droog.versie : "MISLUKT: " + droog.fouten);
+  if (droog.ok) {
+    fs.writeFileSync("/tmp/vamos-droog.html", droog.src);
+    console.log("resultaat weggeschreven naar /tmp/vamos-droog.html (index.html is niet aangeraakt)");
+  }
+}

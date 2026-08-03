@@ -1,0 +1,539 @@
+#!/usr/bin/env node
+/*
+ * curriculum.js — de avondrun die het leerpad onderhoudt.
+ *
+ * Stefans doel (3 augustus): binnen drie maanden stevig A2, daarna door naar B1, met elke dag een
+ * afgestemde les. Twee dingen kunnen dat blokkeren: gaten (dingen die je blijft fout doen zonder dat
+ * er genoeg oefenmateriaal voor is) en een leeg pad (geen nieuwe woorden meer op de plank). Deze run
+ * kijkt elke nacht naar beide.
+ *
+ * Gekozen strategie (Stefan): eerst gaten dichten uit het foutenlog, en pas als er geen gaten meer
+ * zijn een nieuw thema. Aanvullen van bestaande lessen gaat direct live; een compleet nieuwe les
+ * (zeker op B1-niveau) komt als pull request, want dat is curriculum-uitbreiding en geen reparatie.
+ *
+ * Het foutenlog kent drie soorten fouten, en die vragen elk om ander materiaal:
+ *   type "zin"/"dictado" → een taalverschijnsel (tag "costar", "indefinido") → extra oefenzinnen
+ *   type "woord"         → losse woorden die niet blijven plakken → zinnen die díe woorden gebruiken
+ *   type "quiz"          → een grammaticaregel → een nieuw toetsje bij dezelfde spiekbriefkaart
+ * Ze door elkaar halen levert onzin op: "les6" is een woordgroep, geen grammaticaregel.
+ *
+ *   node tools/curriculum.js --analyse       alleen kijken en rapporteren (geen API-sleutel nodig)
+ *   node tools/curriculum.js --droog         hele run, maar niets wegschrijven
+ *   node tools/curriculum.js --stub          pijplijn testen met nepcontent (geen LLM)
+ *   node tools/curriculum.js                 echt uitvoeren
+ *   node tools/curriculum.js --nieuwe-les    het pad verlengen, ook als de voorraad nog niet krap is
+ *   node tools/curriculum.js --max 3         hoogstens 3 gaten aanpakken (default 2)
+ *
+ * Wat de run NOOIT doet: een hand-geschreven lesregel aanpassen. Zie content-lib.js.
+ */
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const lib = require("./content-lib");
+
+const LOGS = path.join(__dirname, "logs-latest.json");
+const PLAN = path.join(__dirname, "curriculum-laatste.json");
+const VOORRAAD_DREMPEL_DAGEN = 14;   // minder dan twee weken nieuwe woorden op de plank? pad verlengen
+const MAX_ZINNEN_PER_GAT = 4;        // kleine dagelijkse aanvullingen leveren betere content dan een dump
+
+const args = process.argv.slice(2);
+const heeft = v => args.includes(v);
+const getal = (v, d) => { const i = args.indexOf(v); return i >= 0 ? +args[i + 1] : d; };
+const OPT = { analyse: heeft("--analyse"), droog: heeft("--droog"), stub: heeft("--stub"),
+              nieuweLes: heeft("--nieuwe-les"), max: getal("--max", 2) };
+
+/* ================= 1. analyse ================= */
+
+function leesLogs() {
+  if (!fs.existsSync(LOGS)) return { logs: [], profielen: [] };
+  try { return JSON.parse(fs.readFileSync(LOGS, "utf8")); } catch (e) { return { logs: [], profielen: [] }; }
+}
+
+// Elke dagdoel-log stuurt de héle foutenmap mee, dus dezelfde fout staat in meerdere logregels.
+// We nemen per item de hoogste stand in plaats van alles op te tellen.
+function foutenSamenvatten(logboek) {
+  const perItem = {};
+  (logboek.logs || []).forEach(l => {
+    const f = (l.payload && l.payload.fouten) || {};
+    Object.keys(f).forEach(k => {
+      const e = f[k];
+      if (!e || !e.type) return;
+      const b = perItem[k];
+      if (!b || (e.count || 0) > b.count) perItem[k] = { id: e.id, type: e.type, tag: e.tag || "", count: e.count || 0 };
+    });
+  });
+  return Object.values(perItem);
+}
+
+function groepeer(items, sleutel) {
+  const uit = {};
+  items.forEach(it => {
+    const k = sleutel(it);
+    if (!k) return;
+    const g = uit[k] || (uit[k] = { sleutel: k, fouten: 0, items: [] });
+    g.fouten += it.count;
+    g.items.push(it);
+  });
+  return Object.values(uit);
+}
+
+function analyseer(logboek, inv) {
+  const fouten = foutenSamenvatten(logboek);
+  const zinnenPerTag = {};
+  inv.sentences.forEach(s => { zinnenPerTag[s.tag] = (zinnenPerTag[s.tag] || 0) + 1; });
+
+  // (a) taalverschijnselen: fouten op zinnen en dictado, gewogen tegen hoeveel oefenzinnen er al zijn
+  const zinGaten = groepeer(fouten.filter(f => f.type === "zin" || f.type === "dictado"), f => f.tag)
+    .map(g => {
+      const zinnen = zinnenPerTag[g.sleutel] || 0;
+      return { soort: "verschijnsel", tag: g.sleutel, fouten: g.fouten, items: g.items.length,
+               zinnen, score: g.fouten / Math.max(1, zinnen) };
+    })
+    .filter(g => g.fouten >= 2 && g.tag)
+    .sort((a, b) => b.score - a.score);
+
+  // (b) losse woorden die niet blijven plakken: die verdienen zinnen waarin ze voorkomen
+  const woordGaten = groepeer(fouten.filter(f => f.type === "woord"), f => f.tag)
+    .map(g => {
+      const woorden = g.items.map(i => inv.words.find(w => w.id === i.id)).filter(Boolean);
+      return { soort: "woorden", tag: g.sleutel, fouten: g.fouten, items: g.items.length, woorden,
+               zinnen: zinnenPerTag[g.sleutel] || 0, score: g.fouten / Math.max(1, g.items.length) };
+    })
+    .filter(g => g.woorden.length >= 2)
+    .sort((a, b) => b.fouten - a.fouten);
+
+  // (c) grammatica-toetsjes waar je op blijft struikelen: een nieuw toetsje bij dezelfde spiekkaart
+  const toetsGaten = groepeer(fouten.filter(f => f.type === "quiz"), f => f.tag)
+    .map(g => {
+      const qz = inv.quizzes.find(q => q.id === g.sleutel);
+      return { soort: "toets", tag: g.sleutel, fouten: g.fouten, items: g.items.length,
+               spiek: qz ? qz.spiek : null, titel: qz ? qz.titel : null, score: g.fouten / Math.max(1, g.items.length) };
+    })
+    .filter(g => g.spiek && g.spiek.length)
+    .sort((a, b) => b.fouten - a.fouten);
+
+  return { zinGaten, woordGaten, toetsGaten };
+}
+
+// Hoeveel dagen nieuwe woorden liggen er nog op de plank? De app stuurt geleerd/minuten mee in het
+// logboek (zie logServer), dus dit is een meting en geen aanname. Boekwoorden (tag boek-N) horen
+// bewust bij geen enkele les: die komen binnen zodra je een hoofdstuk uitleest.
+function voorraad(logboek, inv) {
+  const inPad = new Set();
+  inv.perLes.forEach(l => l.words.forEach(id => inPad.add(id)));
+  const boekWoorden = inv.words.filter(w => /^boek-\d+$/.test(w.tag || "")).length;
+  const totaal = inPad.size;
+  const perProfiel = {};
+  (logboek.logs || []).forEach(l => {
+    const p = l.payload || {};
+    if (p.geleerd === undefined) return;
+    const b = perProfiel[l.code];
+    if (!b || l.created_at > b.wanneer) {
+      perProfiel[l.code] = { geleerd: p.geleerd, minuten: p.minuten || 20, wanneer: l.created_at };
+    }
+  });
+  const rijen = Object.keys(perProfiel).map(code => {
+    const b = perProfiel[code];
+    const nieuwPerDag = Math.max(2, Math.round((b.minuten || 20) * 0.65)); // zelfde formule als maxNieuw()
+    const over = Math.max(0, totaal - b.geleerd);
+    return { code, geleerd: b.geleerd, minuten: b.minuten, nieuwPerDag, over, dagen: Math.floor(over / nieuwPerDag) };
+  }).sort((a, b) => a.dagen - b.dagen);
+  return { totaalInPad: totaal, boekWoorden, profielen: rijen, krapsteDagen: rijen.length ? rijen[0].dagen : null };
+}
+
+function rapport(inv, an, vrd) {
+  console.log("— inventaris —");
+  console.log(`  ${inv.words.length} leswoorden · ${(inv.kern || []).length} kernwoorden (buiten de lessen) · ` +
+              `${inv.sentences.length} zinnen · ${inv.quizzes.length} toetsjes · ${inv.cheat.length} spiekkaarten · ` +
+              `${inv.perLes.length} lessen`);
+  console.log(`  ${vrd.totaalInPad} woorden in het lespad, ${vrd.boekWoorden} via de boekhoofdstukken`);
+  console.log("— voorraad —");
+  if (!vrd.profielen.length) console.log("  nog geen profiel met voortgangsgegevens in het logboek (komt na de eerste les op de nieuwe versie)");
+  vrd.profielen.forEach(p => console.log(
+    `  ${p.code}: ${p.geleerd} geleerd · ${p.minuten} min/dag → ${p.nieuwPerDag} nieuw/dag → ${p.dagen} dagen voorraad`));
+  console.log("— gaten uit het foutenlog —");
+  const toon = (kop, rij, fmt) => {
+    console.log(`  ${kop}: ${rij.length ? "" : "geen"}`);
+    rij.slice(0, 6).forEach(g => console.log("    " + fmt(g)));
+  };
+  toon("taalverschijnselen", an.zinGaten, g => `${g.tag}: ${g.fouten} fouten · ${g.zinnen} oefenzinnen · score ${g.score.toFixed(1)}`);
+  toon("woorden die niet plakken", an.woordGaten, g => `${g.tag}: ${g.fouten} fouten over ${g.items} woorden (${g.woorden.slice(0,4).map(w=>w.es).join(", ")}…)`);
+  toon("grammatica-toetsjes", an.toetsGaten, g => `${g.tag} (${g.titel}): ${g.fouten} fouten · spiekkaart ${JSON.stringify(g.spiek)}`);
+}
+
+/* ================= 2. genereren ================= */
+
+function llm() {
+  try { return require("../server/llm.js"); }
+  catch (e) { console.error("server/llm.js niet te laden:", e.message); return null; }
+}
+
+function haalJson(tekst) {
+  if (!tekst) return null;
+  const schoon = String(tekst).replace(/^```(?:json)?/im, "").replace(/```\s*$/m, "").trim();
+  try { return JSON.parse(schoon); } catch (e) { /* verder proberen */ }
+  const eerste = schoon.search(/[[{]/);
+  const laatste = Math.max(schoon.lastIndexOf("]"), schoon.lastIndexOf("}"));
+  if (eerste < 0 || laatste <= eerste) return null;
+  try { return JSON.parse(schoon.slice(eerste, laatste + 1)); } catch (e) { return null; }
+}
+
+const VOORBEELD_ZIN = {
+  id: "s999", lvl: 2, nl: "Het kost me moeite om snel te praten.", en: "Speaking fast is hard for me.",
+  es: "Me cuesta hablar rápido.", alt: ["me cuesta hablar rapido"],
+  uitleg: "Bij costar is het onderwerp de activiteit (hablar), dus enkelvoud: cuesta.",
+  ue: "With costar the subject is the activity (hablar), so it is singular: cuesta.", tag: "costar"
+};
+const VOORBEELD_VRAAG = {
+  q: "Me ___ aprender los verbos.", nl: "Het kost me moeite om de werkwoorden te leren.",
+  ne: "It's hard for me to learn the verbs.", opts: ["cuesta", "cuestan"], c: 0,
+  u: "Aprender is een infinitief. Eén activiteit = enkelvoud = cuesta.",
+  ue: "Aprender is an infinitive. One activity = singular = cuesta."
+};
+
+const STIJL = `Stijl-eisen (belangrijk):
+- Alledaags, natuurlijk Spaans zoals in Spanje gesproken wordt. Geen letterlijk vertaald Nederlands.
+- A2-woordenschat, korte zinnen, geen literaire constructies.
+- "uitleg" legt in het Nederlands uit WAAROM het antwoord zo is: twee zinnen, concreet, met de vorm erin.
+  Geen verwijzingen naar regelnummers of naar "de spiekbrief".
+- "ue" is dezelfde uitleg in het Engels.
+- "alt" bevat het antwoord in kleine letters zonder accenten, plus varianten die net zo goed zijn.`;
+
+function promptZinnenVerschijnsel(gat, ids, inv) {
+  const bestaand = inv.sentences.filter(s => s.tag === gat.tag).slice(0, 8).map(s => `- ${s.es} — ${s.nl}`).join("\n");
+  return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
+
+Onderwerp (tag): "${gat.tag}". Hier gaat het structureel mis: ${gat.fouten} fouten, en er zijn maar
+${gat.zinnen} oefenzinnen voor. Maak ${ids.length} NIEUWE oefenzinnen die precies dit onderwerp toetsen.
+
+Bestaande zinnen (niet herhalen, wel dezelfde soort):
+${bestaand || "(nog geen)"}
+
+${STIJL}
+- Gebruik exact deze ids in deze volgorde: ${ids.join(", ")}
+- "tag" is exact "${gat.tag}".
+
+Antwoord met UITSLUITEND een JSON-array van objecten met exact deze velden:
+${JSON.stringify(VOORBEELD_ZIN)}`;
+}
+
+function promptZinnenWoorden(gat, ids) {
+  const lijst = gat.woorden.slice(0, ids.length * 2).map(w => `- ${w.es} (${w.nl})`).join("\n");
+  return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
+
+Deze woorden blijven niet plakken; de leerling maakt er steeds fouten mee:
+${lijst}
+
+Maak ${ids.length} NIEUWE oefenzinnen waarin deze woorden voorkomen — een woord in een zin blijft veel
+beter hangen dan een los kaartje. Verdeel de woorden over de zinnen, elk woord minstens één keer.
+
+${STIJL}
+- Gebruik exact deze ids in deze volgorde: ${ids.join(", ")}
+- "tag" is exact "${gat.tag}".
+
+Antwoord met UITSLUITEND een JSON-array van objecten met exact deze velden:
+${JSON.stringify(VOORBEELD_ZIN)}`;
+}
+
+function promptToets(gat, id, inv) {
+  const kaart = inv.cheat[gat.spiek[0]];
+  const oud = inv.quizzes.find(q => q.id === gat.tag);
+  const oudeVragen = oud ? oud.vragen.slice(0, 5).map(v => "- " + v.q).join("\n") : "";
+  const uitleg = kaart ? String(kaart.html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 1200) : "";
+  return `Je maakt een grammatica-toetsje voor een Nederlandstalige die Spaans leert (A2, AULA 2).
+
+De leerling struikelt herhaaldelijk over het toetsje "${gat.titel}" (${gat.fouten} fouten). Maak een
+NIEUW toetsje over dezelfde regel, met andere voorbeelden, zodat hij de regel opnieuw kan oefenen
+zonder de antwoorden al te kennen.
+
+De uitleg waar dit over gaat:
+${uitleg}
+
+Vragen die er al zijn (niet herhalen):
+${oudeVragen || "(geen)"}
+
+Eisen:
+- 8 vragen, meerkeuze met 2 of 3 opties, precies één goed antwoord ("c" is de index, 0-gebaseerd).
+- Bij elke vraag een Nederlandse vertaling ("nl") en Engelse ("ne") van de bedoelde zin, zodat de vraag
+  te maken is zonder gokken.
+- "u" legt in het Nederlands uit waarom het goede antwoord goed is; "ue" is dezelfde uitleg in het Engels.
+- Varieer de vormen; laat minstens twee vragen een valkuil bevatten die de leerling echt kan maken.
+- id is exact "${id}", titel Nederlands, titelEn Engels, spiek is exact ${JSON.stringify(gat.spiek)}.
+
+Antwoord met UITSLUITEND JSON:
+{"id":"${id}","titel":"...","titelEn":"...","spiek":${JSON.stringify(gat.spiek)},"vragen":[${JSON.stringify(VOORBEELD_VRAAG)}]}`;
+}
+
+function promptTegenlezerZinnen(items) {
+  return `Je bent corrector Spaans (Spanje, niveau A2/B1) voor een leerapp. Controleer per item:
+(1) is het Spaans correct en natuurlijk, (2) klopt de Nederlandse vertaling, (3) klopt de uitleg,
+(4) staat het antwoord (kleine letters, zonder accenten) in "alt".
+Wees streng op fouten, maar keur niets af om stijlvoorkeur.
+
+${JSON.stringify(items, null, 1)}
+
+Antwoord met UITSLUITEND JSON: {"oordelen":[{"id":"...","ok":true,"reden":""}]} — één oordeel per id,
+bij ok:false in "reden" één zin over wat er mis is.`;
+}
+
+function promptTegenlezerToets(qz) {
+  return `Je bent corrector Spaans (Spanje, A2/B1) voor een leerapp. Hieronder een grammatica-toetsje.
+Controleer per vraag: is het Spaans correct, is er precies één juist antwoord, wijst "c" naar dat
+antwoord, en klopt de uitleg? Keur het hele toetsje af zodra één vraag fout is.
+
+${JSON.stringify(qz, null, 1)}
+
+Antwoord met UITSLUITEND JSON: {"ok":true,"problemen":["..."]}`;
+}
+
+async function vraagModel(motor, prompt, maxTokens) {
+  const tekst = await motor.reason(prompt, { maxTokens: maxTokens || 4000, jsonMode: true });
+  return haalJson(tekst);
+}
+
+async function maakZinnen(gat, aantal, inv, alTeGaan, motor) {
+  const volgende = lib.volgendeId(inv.sentences.concat(alTeGaan), "s");
+  const ids = [];
+  for (let i = 1; i <= aantal; i++) ids.push(volgende(i));
+  if (OPT.stub) {
+    return ids.map((id, i) => ({
+      id, lvl: 1, nl: `Proefzin ${i + 1} (${gat.tag}).`, en: `Test sentence ${i + 1} (${gat.tag}).`,
+      es: `Esta es la frase de prueba número ${i + 1}.`, alt: [`esta es la frase de prueba numero ${i + 1}`],
+      uitleg: "Nepcontent uit --stub, alleen om de pijplijn te testen.",
+      ue: "Stub content, only to test the pipeline.", tag: gat.tag
+    }));
+  }
+  const prompt = gat.soort === "woorden" ? promptZinnenWoorden(gat, ids) : promptZinnenVerschijnsel(gat, ids, inv);
+  const rij = await vraagModel(motor, prompt);
+  if (!Array.isArray(rij)) { console.error(`    geen bruikbare JSON voor ${gat.tag}`); return []; }
+  // ids en tag dwingen we zelf af; daar mag het model zich niet in vergissen
+  return rij.slice(0, aantal).map((z, i) => Object.assign({}, z, { id: ids[i], tag: gat.tag }));
+}
+
+async function keurZinnen(items, motor) {
+  if (!items.length || OPT.stub) return items;
+  const uit = await vraagModel(motor, promptTegenlezerZinnen(items), 2500);
+  const oordelen = uit && Array.isArray(uit.oordelen) ? uit.oordelen : null;
+  if (!oordelen) { console.error("    tegenlezer gaf geen bruikbaar oordeel — levering afgekeurd"); return []; }
+  return items.filter(it => {
+    const o = oordelen.find(x => x.id === it.id);
+    if (!o) { console.error(`    ${it.id}: geen oordeel → afgekeurd`); return false; }
+    if (o.ok === false) { console.error(`    ${it.id}: afgekeurd — ${o.reden || "geen reden"}`); return false; }
+    return true;
+  });
+}
+
+async function maakToets(gat, inv, motor) {
+  const nr = inv.quizzes.filter(q => /-extra\d*$/.test(q.id)).length + 1;
+  const id = gat.tag + "-extra" + nr;
+  if (OPT.stub) {
+    return { id, titel: "Proeftoetsje", titelEn: "Stub quiz", spiek: gat.spiek,
+      vragen: [1, 2, 3, 4].map(i => ({ q: `Pregunta de prueba ${i} ___.`, nl: "Proefvraag.", ne: "Stub question.",
+        opts: ["uno", "dos"], c: 0, u: "Nepcontent uit --stub.", ue: "Stub content." })) };
+  }
+  const qz = await vraagModel(motor, promptToets(gat, id, inv), 5000);
+  if (!qz || !Array.isArray(qz.vragen)) { console.error(`    geen bruikbaar toetsje voor ${gat.tag}`); return null; }
+  qz.id = id; qz.spiek = gat.spiek;
+  const uit = await vraagModel(motor, promptTegenlezerToets(qz), 2000);
+  if (!uit || uit.ok !== true) {
+    console.error(`    toetsje afgekeurd: ${(uit && uit.problemen || ["geen oordeel"]).join("; ")}`);
+    return null;
+  }
+  return qz;
+}
+
+/* ================= 3. het pad verlengen ================= */
+
+function volgendNiveau(inv) {
+  // Zolang er A2-thema's uit AULA 2 ontbreken blijven we op A2; daarna gaat het pad door op B1.
+  const a2 = inv.perLes.filter(l => (l.niveau || "A2") === "A2").length;
+  return a2 >= 10 ? "B1" : "A2";
+}
+
+function promptNieuweLes(niveau, inv, ids) {
+  const bestaande = inv.perLes.map(l => `${l.num}. ${l.titel} — ${l.niveau || "A2"}`).join("\n");
+  return `Je breidt het leerpad van een Spaans-leerapp uit. De leerling is Nederlandstalig, volgt twee
+keer per week echte les (AULA-methode) en werkt in de app dagelijks aan woorden, grammatica, lezen,
+luisteren en schrijven.
+
+Bestaande lessen:
+${bestaande}
+
+Maak ÉÉN nieuwe les op niveau ${niveau}, die logisch volgt op het bovenstaande en nog niet aan bod is
+geweest. De les bestaat uit:
+- 14 woorden (los vocabulaire rond het thema)
+- 8 oefenzinnen
+- 1 grammatica-toetsje van 8 meerkeuzevragen over het grammaticapunt van deze les
+- 1 spiekbriefkaart: de uitleg van dat grammaticapunt, in het Nederlands, met HTML (<p>, <b>, <i>,
+  eventueel een kleine <table>). Zelfde toon als een goede docent: eerst de regel, dan de valkuil,
+  dan een ezelsbruggetje.
+
+${STIJL}
+
+Gebruik exact deze ids:
+- woorden: ${ids.words.join(", ")}
+- zinnen: ${ids.sents.join(", ")}
+- toetsje: ${ids.quiz}
+
+Antwoord met UITSLUITEND JSON in deze vorm:
+{"titel":"Spaanse titel","doel":"Nederlands lesdoel","doelEn":"English lesson goal",
+ "niveau":"${niveau}",
+ "words":[{"id":"${ids.words[0]}","es":"...","nl":"...","en":"...","tag":"<thema-slug>"}],
+ "sentences":[${JSON.stringify(VOORBEELD_ZIN)}],
+ "quiz":{"id":"${ids.quiz}","titel":"...","titelEn":"...","vragen":[${JSON.stringify(VOORBEELD_VRAAG)}]},
+ "cheat":{"titel":"...","titelEn":"...","html":"<p>…</p>","htmlEn":"<p>…</p>"}}`;
+}
+
+async function maakNieuweLes(inv, motor) {
+  const niveau = volgendNiveau(inv);
+  const vW = lib.volgendeId(inv.words, "w"), vS = lib.volgendeId(inv.sentences, "s");
+  const ids = { words: [], sents: [], quiz: "q-" + niveau.toLowerCase() + "-" + (inv.perLes.length + 1) };
+  for (let i = 1; i <= 14; i++) ids.words.push(vW(i));
+  for (let i = 1; i <= 8; i++) ids.sents.push(vS(i));
+  console.log(`  nieuwe les op niveau ${niveau} maken…`);
+  let les;
+  if (OPT.stub) {
+    les = { titel: "Lección de prueba", doel: "Proefles uit --stub", doelEn: "Stub lesson", niveau,
+      words: ids.words.map((id, i) => ({ id, es: "prueba" + (i + 1), nl: "proef" + (i + 1), en: "test" + (i + 1), tag: "stub" })),
+      sentences: ids.sents.map((id, i) => ({ id, lvl: 1, nl: "Proef " + (i + 1) + ".", en: "Test " + (i + 1) + ".",
+        es: "Prueba número " + (i + 1) + ".", alt: ["prueba numero " + (i + 1)], uitleg: "Stub.", ue: "Stub.", tag: "stub" })),
+      quiz: { id: ids.quiz, titel: "Proeftoets", titelEn: "Stub quiz",
+        vragen: [1, 2, 3, 4].map(i => ({ q: "Prueba " + i + " ___.", nl: "Proef.", ne: "Stub.", opts: ["a", "b"], c: 0, u: "Stub.", ue: "Stub." })) },
+      cheat: { titel: "Proefkaart", titelEn: "Stub card", html: "<p>Stub.</p>", htmlEn: "<p>Stub.</p>" } };
+  } else {
+    les = await vraagModel(motor, promptNieuweLes(niveau, inv, ids), 8000);
+    if (!les || !Array.isArray(les.words) || !Array.isArray(les.sentences)) {
+      console.error("    geen bruikbare les van het model"); return null;
+    }
+    les.words = les.words.slice(0, 14).map((w, i) => Object.assign({}, w, { id: ids.words[i] }));
+    les.sentences = les.sentences.slice(0, 8).map((s, i) => Object.assign({}, s, { id: ids.sents[i] }));
+    if (les.quiz) les.quiz.id = ids.quiz;
+    const keur = await keurZinnen(les.sentences, motor);
+    if (keur.length < les.sentences.length) {
+      console.error(`    ${les.sentences.length - keur.length} zinnen afgekeurd → les niet aangeboden`);
+      return null;
+    }
+    if (les.quiz) {
+      const uit = await vraagModel(motor, promptTegenlezerToets(les.quiz), 2000);
+      if (!uit || uit.ok !== true) { console.error("    toetsje van de nieuwe les afgekeurd"); return null; }
+    }
+  }
+  // de spiekkaart komt achter de bestaande, dus haar index is de huidige lengte
+  const spiekIdx = inv.cheat.length;
+  const lesId = (niveau === "B1" ? "b1-" : "a2-") + (inv.perLes.length + 1);
+  return {
+    words: les.words,
+    sentences: les.sentences,
+    quizzes: les.quiz ? [Object.assign({}, les.quiz, { spiek: [spiekIdx] })] : [],
+    cheat: les.cheat ? [les.cheat] : [],
+    nieuweLessen: [{
+      id: lesId, num: inv.perLes.length + 1, niveau, titel: les.titel, doel: les.doel, doelEn: les.doelEn,
+      spiek: [spiekIdx], words: les.words.map(w => w.id), sents: les.sentences.map(s => s.id),
+      quizzes: les.quiz ? [les.quiz.id] : []
+    }]
+  };
+}
+
+/* ================= 4. uitvoeren ================= */
+
+async function main() {
+  const inv = lib.inventaris();
+  const logboek = leesLogs();
+  const an = analyseer(logboek, inv);
+  const vrd = voorraad(logboek, inv);
+  rapport(inv, an, vrd);
+
+  // gaten op één stapel, zwaarste eerst; verschijnselen wegen zwaarder dan losse woorden omdat een
+  // regel die je niet snapt tientallen items blijft besmetten
+  const gaten = [].concat(an.zinGaten, an.woordGaten).sort((a, b) => b.score - a.score);
+  const padKrap = vrd.krapsteDagen !== null && vrd.krapsteDagen < VOORRAAD_DREMPEL_DAGEN;
+  const verlengen = OPT.nieuweLes || padKrap;
+
+  console.log("— besluit —");
+  if (gaten.length) console.log(`  ${Math.min(OPT.max, gaten.length)} gat(en) aanpakken: ` +
+    gaten.slice(0, OPT.max).map(g => `${g.tag} (${g.soort})`).join(", "));
+  if (an.toetsGaten.length) console.log(`  nieuw toetsje bij: ${an.toetsGaten[0].tag}`);
+  if (verlengen) console.log(`  pad verlengen met een nieuwe les op niveau ${volgendNiveau(inv)}` +
+    (padKrap ? ` (voorraad ${vrd.krapsteDagen} dagen < drempel ${VOORRAAD_DREMPEL_DAGEN})` : " (--nieuwe-les)"));
+  if (!gaten.length && !an.toetsGaten.length && !verlengen) console.log("  niets te doen");
+  if (OPT.analyse) return 0;
+
+  const motor = OPT.stub ? null : llm();
+  if (!motor && !OPT.stub) { console.error("geen LLM beschikbaar; stop"); return 1; }
+
+  /* --- deel 1: gaten dichten (gaat direct live) --- */
+  const reparatie = { sentences: [], quizzes: [], lessen: {} };
+  for (const gat of gaten.slice(0, OPT.max)) {
+    const aantal = gat.soort === "woorden"
+      ? Math.min(MAX_ZINNEN_PER_GAT, Math.max(2, Math.ceil(gat.woorden.length / 3)))
+      : Math.min(MAX_ZINNEN_PER_GAT, Math.max(2, Math.ceil(gat.zinnen * 0.5) || 2));
+    console.log(`  ${gat.tag}: ${aantal} zinnen maken…`);
+    const ruw = await maakZinnen(gat, aantal, inv, reparatie.sentences, motor);
+    const goed = await keurZinnen(ruw, motor);
+    if (!goed.length) { console.error(`    ${gat.tag}: niets overgebleven`); continue; }
+    const voorbeeld = inv.sentences.find(s => s.tag === gat.tag)
+      || inv.words.find(w => w.tag === gat.tag);
+    let les = null;
+    if (voorbeeld) les = inv.perLes.find(l => l.sents.includes(voorbeeld.id) || l.words.includes(voorbeeld.id));
+    const lesId = (les || inv.perLes[0]).id;
+    reparatie.sentences = reparatie.sentences.concat(goed);
+    const b = reparatie.lessen[lesId] = reparatie.lessen[lesId] || { sents: [] };
+    b.sents = (b.sents || []).concat(goed.map(z => z.id));
+    console.log(`    ${goed.length} zinnen goedgekeurd → les ${lesId}`);
+  }
+  if (an.toetsGaten.length) {
+    const gat = an.toetsGaten[0];
+    console.log(`  ${gat.tag}: nieuw toetsje maken…`);
+    const qz = await maakToets(gat, inv, motor);
+    if (qz) {
+      reparatie.quizzes.push(qz);
+      // NIET aan de les hangen: een extra toetsje in de lesindeling zou de eis voor het ontgrendelen
+      // van de volgende les verhogen. Via de spiekkaart komt hij vanzelf in de grammatica-herhaling
+      // (quizzenBijSpiek + checkLessonComplete in de app).
+      console.log(`    toetsje ${qz.id} goedgekeurd met ${qz.vragen.length} vragen`);
+    }
+  }
+
+  let versie = null;
+  if (reparatie.sentences.length || reparatie.quizzes.length) {
+    const res = lib.pasToe(reparatie, { droog: OPT.droog });
+    if (!res.ok) { console.error("AFGEKEURD:\n - " + res.fouten.join("\n - ")); return 1; }
+    versie = res.versie;
+    if (OPT.droog) fs.writeFileSync("/tmp/vamos-curriculum-droog.html", res.src);
+    console.log(`${OPT.droog ? "droog: zou toevoegen" : "toegevoegd"}: ` +
+      `${reparatie.sentences.length} zinnen, ${reparatie.quizzes.length} toetsjes → ${res.versie}`);
+  }
+
+  /* --- deel 2: het pad verlengen (komt als pull request) --- */
+  let nieuweLes = null;
+  if (verlengen) {
+    const inv2 = OPT.droog ? inv : lib.inventaris();   // na deel 1 opnieuw inlezen voor verse ids
+    nieuweLes = await maakNieuweLes(inv2, motor);
+    if (nieuweLes) {
+      const res = lib.pasToe(nieuweLes, { droog: true });   // altijd eerst droog: dit gaat via een PR
+      if (!res.ok) { console.error("nieuwe les AFGEKEURD:\n - " + res.fouten.join("\n - ")); nieuweLes = null; }
+      else {
+        fs.writeFileSync("/tmp/vamos-nieuwe-les.json", JSON.stringify(nieuweLes, null, 1));
+        console.log(`  nieuwe les klaar: "${nieuweLes.nieuweLessen[0].titel}" ` +
+          `(${nieuweLes.words.length} woorden, ${nieuweLes.sentences.length} zinnen) → /tmp/vamos-nieuwe-les.json`);
+        if (!OPT.droog) {
+          const echt = lib.pasToe(nieuweLes, {});
+          if (!echt.ok) { console.error("nieuwe les alsnog afgekeurd bij schrijven:\n - " + echt.fouten.join("\n - ")); nieuweLes = null; }
+          else { versie = echt.versie; console.log(`  nieuwe les weggeschreven → ${echt.versie} (zet dit in een pull request)`); }
+        }
+      }
+    }
+  }
+
+  if (!OPT.droog && (versie || nieuweLes)) {
+    fs.writeFileSync(PLAN, JSON.stringify({
+      wanneer: new Date().toISOString(), versie,
+      gaten: gaten.slice(0, OPT.max).map(g => ({ tag: g.tag, soort: g.soort, fouten: g.fouten })),
+      reparatie: { zinnen: reparatie.sentences.map(s => s.id), toetsjes: reparatie.quizzes.map(q => q.id) },
+      nieuweLes: nieuweLes ? nieuweLes.nieuweLessen[0] : null
+    }, null, 1));
+  }
+  return 0;
+}
+
+main().then(code => process.exit(code)).catch(e => { console.error(e); process.exit(1); });

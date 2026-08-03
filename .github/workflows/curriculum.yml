@@ -1,0 +1,130 @@
+# De avondrun: onderhoudt het leerpad. Draait ná het ophalen van het logboek (logboek.yml, 01:30 UTC),
+# zodat hij met verse foutgegevens werkt.
+#
+# Twee soorten uitkomst, bewust verschillend behandeld (keuze Stefan, 3 augustus):
+#   - gaten dichten (extra oefenzinnen, een extra grammatica-toetsje) → gaat direct live
+#   - een compleet nieuwe les, zeker op B1-niveau → komt als pull request, jij tikt op akkoord
+#
+# Benodigde secrets: minstens één LLM-sleutel (GEMINI_API_KEY, MISTRAL_API_KEY of ANTHROPIC_API_KEY).
+# Zonder sleutel stopt de run netjes na de analyse; er wordt dan niets gewijzigd.
+name: Avondrun curriculum
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC, een half uur na het logboek
+  workflow_dispatch:
+    inputs:
+      nieuwe_les:
+        description: "Ook een nieuwe les maken (ook als de voorraad nog niet krap is)"
+        type: boolean
+        default: false
+      droog:
+        description: "Alleen kijken, niets wegschrijven"
+        type: boolean
+        default: false
+
+# Twee runs door elkaar zouden dezelfde ids kunnen uitdelen; dus één tegelijk.
+concurrency:
+  group: curriculum
+  cancel-in-progress: false
+
+jobs:
+  curriculum:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Analyse (altijd, ook zonder sleutel)
+        run: node tools/curriculum.js --analyse
+
+      - name: Zelftest van de contentbibliotheek
+        run: node tools/content-lib.js --zelftest
+
+      - name: Run
+        id: run
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_LADDER: ${{ vars.LLM_LADDER }}
+        run: |
+          if [ -z "$GEMINI_API_KEY$MISTRAL_API_KEY$ANTHROPIC_API_KEY" ]; then
+            echo "geen LLM-sleutel ingesteld; alleen de analyse hierboven is gedraaid"
+            exit 0
+          fi
+          VLAGGEN=""
+          [ "${{ inputs.droog }}" = "true" ] && VLAGGEN="$VLAGGEN --droog"
+          [ "${{ inputs.nieuwe_les }}" = "true" ] && VLAGGEN="$VLAGGEN --nieuwe-les"
+          node tools/curriculum.js $VLAGGEN
+
+      # Een nieuwe les is curriculum-uitbreiding: die gaat langs Stefan. Herkenbaar doordat
+      # curriculum.js zijn plan wegschrijft met een gevuld "nieuweLes"-veld.
+      - name: Wat is er veranderd?
+        id: soort
+        run: |
+          if git diff --quiet; then echo "wat=niets" >> $GITHUB_OUTPUT; exit 0; fi
+          if [ -f tools/curriculum-laatste.json ] && \
+             node -e "process.exit(require('./tools/curriculum-laatste.json').nieuweLes ? 0 : 1)"; then
+            echo "wat=nieuwe-les" >> $GITHUB_OUTPUT
+            echo "titel=$(node -e "console.log(require('./tools/curriculum-laatste.json').nieuweLes.titel)")" >> $GITHUB_OUTPUT
+          else
+            echo "wat=reparatie" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Reparatie direct live
+        if: steps.soort.outputs.wat == 'reparatie'
+        run: |
+          git config user.name "curriculum-bot"
+          git config user.email "actions@users.noreply.github.com"
+          SAMENVATTING=$(node -e "
+            const p = require('./tools/curriculum-laatste.json');
+            const g = (p.gaten||[]).map(x => x.tag).join(', ');
+            const z = (p.reparatie.zinnen||[]).length, t = (p.reparatie.toetsjes||[]).length;
+            console.log(\`\${z} oefenzinnen\${t ? ' en ' + t + ' toetsje(s)' : ''} bij: \${g}\`);
+          ")
+          git add index.html versie.txt tools/curriculum-laatste.json
+          git commit -m "avondrun: $SAMENVATTING"
+          git push
+
+      - name: Nieuwe les als pull request
+        if: steps.soort.outputs.wat == 'nieuwe-les'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "curriculum-bot"
+          git config user.email "actions@users.noreply.github.com"
+          TAK="curriculum/les-$(date +%Y%m%d)"
+          git checkout -b "$TAK"
+          git add index.html versie.txt tools/curriculum-laatste.json
+          git commit -m "curriculum: nieuwe les \"${{ steps.soort.outputs.titel }}\""
+          git push -u origin "$TAK"
+          node -e "
+            const p = require('./tools/curriculum-laatste.json');
+            const l = p.nieuweLes;
+            console.log(\`## Nieuwe les: \${l.titel}
+
+Niveau **\${l.niveau}**, les \${l.num} in het pad.
+
+- \${l.words.length} woorden
+- \${l.sents.length} oefenzinnen
+- \${l.quizzes.length} grammatica-toetsje(s)
+- eigen spiekbriefkaart
+
+Gemaakt door de avondrun en nagelezen door een tweede model (Spaans, vertaling, uitleg, en of er
+precies één goed antwoord is). De machinecontroles staan in tools/content-lib.js: unieke ids,
+verplichte velden, geldige spiek-index, antwoordindex binnen bereik, en na het schrijven een
+hertelling van alle vier de contentlijsten.
+
+**Wat te doen:** lees de zinnen en de spiekbrief even door. Klopt het, dan mergen — de les staat
+achter je huidige lessen en gaat pas open als je die af hebt.\`);
+          " > /tmp/pr.md
+          gh pr create --title "Nieuwe les: ${{ steps.soort.outputs.titel }}" --body-file /tmp/pr.md --base main --head "$TAK"
+
+      - name: Niets veranderd
+        if: steps.soort.outputs.wat == 'niets'
+        run: echo "geen wijzigingen — geen gaten om te dichten en genoeg voorraad"
