@@ -1,0 +1,26 @@
+{
+ "wanneer": "2026-08-03T18:45:45.426Z",
+ "versie": "v19.93",
+ "gaten": [
+  {
+   "tag": "ser-estar",
+   "soort": "verschijnsel",
+   "fouten": 5
+  },
+  {
+   "tag": "les3",
+   "soort": "woorden",
+   "fouten": 39
+  }
+ ],
+ "reparatie": {
+  "zinnen": [
+   "s138",
+   "s139",
+   "s140",
+   "s141"
+  ],
+  "toetsjes": []
+ },
+ "nieuweLes": null
+}

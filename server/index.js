@@ -556,6 +556,29 @@ app.get("/api/maatje/:mcode", async (req, res) => {
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
+/* POST /api/admin/llm?key=ADMIN_KEY  {prompt, maxTokens, jsonMode}
+ * De avondrun (tools/curriculum.js) draait op GitHub Actions en heeft dus géén LLM-sleutels: die staan
+ * hier op Render. De ladder in llm.js staat hier ook al. In plaats van dezelfde sleutels op een tweede
+ * plek te zetten leent de nachtrun deze ingang, met de ADMIN_KEY die er voor het logboek al is.
+ * Eén sleutel, één plek waar hij ligt, en één plek waar het LLM-verkeer langsgaat (inclusief de
+ * bestaande rate-limiter en cooldowns van llm.js).
+ * Bewust geen open ingang: zonder ADMIN_KEY geen antwoord, en de prompt wordt begrensd zodat dit geen
+ * gratis LLM-doorgeefluik kan worden als de sleutel ooit uitlekt.
+ */
+app.post("/api/admin/llm", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  const { prompt, maxTokens, jsonMode } = req.body || {};
+  if (!prompt || typeof prompt !== "string") return bad(res, 400, "prompt verplicht");
+  if (prompt.length > 20000) return bad(res, 400, "prompt te lang");
+  try {
+    const txt = await vraagLadder("", prompt, Math.min(8000, maxTokens || 4000), !!jsonMode, "admin-llm");
+    ok(res, { tekst: txt });
+  } catch (e) {
+    console.error("admin-llm:", e.message);
+    bad(res, 502, "AI-fout");
+  }
+});
+
 // GET /api/admin/schoon?key=ADMIN_KEY — verwijder lege profielen (0 XP); echte apparaten syncen zichzelf gewoon opnieuw aan
 app.get("/api/admin/schoon", async (req, res) => {
   if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");

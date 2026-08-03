@@ -17,7 +17,7 @@
  *   type "quiz"          → een grammaticaregel → een nieuw toetsje bij dezelfde spiekbriefkaart
  * Ze door elkaar halen levert onzin op: "les6" is een woordgroep, geen grammaticaregel.
  *
- *   node tools/curriculum.js --analyse       alleen kijken en rapporteren (geen API-sleutel nodig)
+ *   node tools/curriculum.js --analyse       alleen kijken en rapporteren (geen sleutel nodig)
  *   node tools/curriculum.js --droog         hele run, maar niets wegschrijven
  *   node tools/curriculum.js --stub          pijplijn testen met nepcontent (geen LLM)
  *   node tools/curriculum.js                 echt uitvoeren
@@ -163,9 +163,48 @@ function rapport(inv, an, vrd) {
 
 /* ================= 2. genereren ================= */
 
+/* De ladder zit al in dit project — maar op de server, want daar liggen de sleutels (Render-env).
+   Deze run draait op GitHub Actions, een andere machine. Dezelfde sleutels op een tweede plek zetten is
+   vragen om een sleutel die niemand meer roteert, dus lenen we de server: POST /api/admin/llm met de
+   ADMIN_KEY die er voor het logboek al is. Draai je de run op je eigen machine mét sleutels in de
+   omgeving, dan pakt hij llm.js direct — dat is handig voor uitproberen zonder de server te storen. */
+const API = process.env.VAMOS_API || "https://espanol-qbm8.onrender.com";
+
+function ladderLokaal() {
+  const heeftSleutel = ["GEMINI_API_KEY", "GOOGLE_API_KEY", "MISTRAL_API_KEY", "ANTHROPIC_API_KEY",
+                        "OPENAI_API_KEY", "OPENROUTER_API_KEY"].some(k => process.env[k]);
+  if (!heeftSleutel) return null;
+  try {
+    const { reason } = require("../server/llm.js");
+    return { bron: "llm.js (sleutel in je omgeving)",
+             reason: (prompt, opts) => reason(prompt, opts).then(r => (r ? r.text : null)) };
+  } catch (e) { console.error("server/llm.js niet te laden:", e.message); return null; }
+}
+
+function ladderViaServer() {
+  const key = process.env.ADMIN_KEY;
+  if (!key) return null;
+  return {
+    bron: "server (" + API + "/api/admin/llm)",
+    reason: async (prompt, opts) => {
+      const r = await fetch(API + "/api/admin/llm?key=" + encodeURIComponent(key), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, maxTokens: (opts && opts.maxTokens) || 4000, jsonMode: !!(opts && opts.jsonMode) })
+      });
+      if (!r.ok) { console.error("  server gaf " + r.status + " op /api/admin/llm"); return null; }
+      const j = await r.json().catch(() => null);
+      return j && j.ok ? j.tekst : null;
+    }
+  };
+}
+
 function llm() {
-  try { return require("../server/llm.js"); }
-  catch (e) { console.error("server/llm.js niet te laden:", e.message); return null; }
+  const motor = ladderLokaal() || ladderViaServer();
+  if (motor) console.log("  taalmodel via: " + motor.bron);
+  else console.error("geen taalmodel bereikbaar: zet ADMIN_KEY (dan gaat het via de server) of een " +
+                     "LLM-sleutel in je omgeving");
+  return motor;
 }
 
 function haalJson(tekst) {
@@ -290,6 +329,8 @@ async function vraagModel(motor, prompt, maxTokens) {
   const tekst = await motor.reason(prompt, { maxTokens: maxTokens || 4000, jsonMode: true });
   return haalJson(tekst);
 }
+// (motor.reason geeft altijd tekst terug of null; llm.js' eigen {text}-envelop wordt hierboven
+//  al afgepeld, zodat beide bronnen zich hetzelfde gedragen)
 
 async function maakZinnen(gat, aantal, inv, alTeGaan, motor) {
   const volgende = lib.volgendeId(inv.sentences.concat(alTeGaan), "s");

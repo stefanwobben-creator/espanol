@@ -5,8 +5,10 @@
 #   - gaten dichten (extra oefenzinnen, een extra grammatica-toetsje) → gaat direct live
 #   - een compleet nieuwe les, zeker op B1-niveau → komt als pull request, jij tikt op akkoord
 #
-# Benodigde secrets: minstens één LLM-sleutel (GEMINI_API_KEY, MISTRAL_API_KEY of ANTHROPIC_API_KEY).
-# Zonder sleutel stopt de run netjes na de analyse; er wordt dan niets gewijzigd.
+# Benodigd secret: ADMIN_KEY — hetzelfde secret dat logboek.yml al gebruikt. De LLM-ladder en de
+# LLM-sleutels staan namelijk op de server (Render), niet hier; de run leent die via
+# POST /api/admin/llm. Zo staan de sleutels op één plek en hoeft er niets gedupliceerd te worden.
+# Ontbreekt ADMIN_KEY, dan stopt de run netjes na de analyse en wordt er niets gewijzigd.
 name: Avondrun curriculum
 on:
   schedule:
@@ -48,13 +50,10 @@ jobs:
       - name: Run
         id: run
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          LLM_LADDER: ${{ vars.LLM_LADDER }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
         run: |
-          if [ -z "$GEMINI_API_KEY$MISTRAL_API_KEY$ANTHROPIC_API_KEY" ]; then
-            echo "geen LLM-sleutel ingesteld; alleen de analyse hierboven is gedraaid"
+          if [ -z "$ADMIN_KEY" ]; then
+            echo "ADMIN_KEY-secret ontbreekt; alleen de analyse hierboven is gedraaid"
             exit 0
           fi
           VLAGGEN=""
