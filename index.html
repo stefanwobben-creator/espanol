@@ -927,7 +927,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.94";
+var APP_VERSIE = "v19.95";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3164,6 +3164,9 @@ function normaliseerState(s){
   if(s.doelNiv === undefined) s.doelNiv = null;
   if(s.doelMnd === undefined) s.doelMnd = null;
   if(s.doelDatum === undefined) s.doelDatum = null;
+  // v19.92: de muziekbeheerrol en het speeltuinfilter.
+  if(s.mbeheer === undefined) s.mbeheer = false;
+  if(s.speelAlles === undefined) s.speelAlles = false;
   return s;
 }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
@@ -3841,6 +3844,8 @@ function boot(){
   CHEATSHEET = tr.cheat; BATCH = tr.batch;
   store.key = p.key;
   S = normaliseerState(store.load()); // v19.56: dezelfde normalisatie als bij een pull van de server
+  // v19.92: ?beheer=chispa pas hier verzilveren, want hierboven kwam S vers uit de opslag.
+  if(pendingBeheer && S.mbeheer !== true){ S.mbeheer = true; pendingBeheer = false; }
   if(!S.lang) S.lang = p.lang || "nl"; // moedertaal per profiel, synct mee via S
   if(!S.mail && p.mail) S.mail = p.mail; // optioneel e-mailadres (voor herstel), synct mee
   // v19.92: bij aanmelden kies je minuten per dag, niet meer een aantal taco's. Die minuten sturen
@@ -8557,9 +8562,16 @@ var DAGSPELLEN = [
   {v:"corr",    e:"\ud83d\udd75\ufe0f", n:"El Corrector"}
 ];
 function dagSpelKeuze(){
+  // v19.92: alleen spellen aanbieden die vandaag ook echt iets kunnen tonen. Een knop op je
+  // dagscherm die uitkomt op "leer eerst wat meer woordjes" is een knop die je leert dat de
+  // knoppen hier niet betrouwbaar zijn.
+  var kan = DAGSPELLEN.filter(function(x){
+    try { return speelKlaar(x.v); } catch(e){ return true; }
+  });
+  if(!kan.length) kan = DAGSPELLEN;
   var h = dayHash("spel");
   var uit = [];
-  for(var i = 0; i < 3; i++) uit.push(DAGSPELLEN[(h + i * 2) % DAGSPELLEN.length]);
+  for(var i = 0; i < 3 && i < kan.length; i++) uit.push(kan[(h + i * 2) % kan.length]);
   return uit;
 }
 function dagSpeelHtml(){
@@ -10901,6 +10913,16 @@ function songOogstVoor(titel){
   }
   return null;
 }
+/* v19.92 - wie mag de liedjeslijst aanraken.
+   De lijst SONGS staat in de broncode; niemand kan hem via de app veranderen. Wat wel kon was
+   per bezoeker de video vervangen of een liedje wegstoppen, en dat zag eruit als beheer over
+   iets gedeelds. Dat halen we weg voor iedereen behalve de beheerder. Dit is geen beveiliging
+   (er valt niets te beveiligen, alles is lokaal), het is een rolverdeling die het scherm
+   eerlijk maakt over wat je er kunt. Aanzetten met ?beheer=chispa achter de URL, eenmalig;
+   het blijft in je profiel staan en reist dus mee met je sync-code. */
+function muziekBeheer(){
+  try { return S.mbeheer === true; } catch(e){ return false; }
+}
 function renderSongs(){
   document.getElementById("songView").classList.add("hidden");
   var el = document.getElementById("songList");
@@ -11008,10 +11030,21 @@ function openSong(sg, skipPush){
   if(sg.vragen && sg.vragen.length){
     html += "<div class='card'><h2>Snap je het lied?</h2><div id='songQuiz'></div></div>";
   }
-  html += "<div class='card'><span class='kicker'>Beheer</span>"+
-    "<div class='row'><button class='ghost' id='btnSongVideo'>🔁 Andere video</button>"+
-    "<button class='ghost' id='btnSongWeg'>🗑 "+(sg.eigen ? "Verwijder liedje" : "Verberg liedje")+"</button>"+
-    "<button class='ghost' id='btnSongTerug'>← Terug naar Música</button></div>"+
+  // v19.92: alleen je eigen toegevoegde liedje (of de beheerder) krijgt de knoppen die iets
+  // veranderen. De rest krijgt de terugknop, en een tekstlink om het liedje voor zichzelf weg
+  // te leggen. Dat laatste raakt niemand anders en is met een tik terug te draaien.
+  var magBeheren = !!(sg.eigen || muziekBeheer());
+  var terugKnop = "<button class='ghost' id='btnSongTerug'>← "+ct("Terug naar M\u00fasica","Back to M\u00fasica")+"</button>";
+  html += "<div class='card'><span class='kicker'>"+(magBeheren ? ct("Beheer","Manage") : ct("Dit liedje","This song"))+"</span>"+
+    (magBeheren
+      ? "<div class='row'><button class='ghost' id='btnSongVideo'>🔁 "+ct("Andere video","Other video")+"</button>"+
+        "<button class='ghost' id='btnSongWeg'>🗑 "+(sg.eigen ? ct("Verwijder liedje","Delete song") : ct("Verberg liedje","Hide song"))+"</button>"+
+        terugKnop+"</div>"
+      : "<div class='row'>"+terugKnop+"</div>"+
+        "<button class='mini' id='btnSongWeg'>"+ct("Dit liedje hoeft voor mij niet","I can do without this song")+"</button>"+
+        "<p class='muted' style='font-size:.85rem; margin:6px 0 0'>"+
+          ct("De liedjes in de lijst horen bij de app: je kunt ze niet aanpassen of weggooien. Zelf een lied toevoegen mag wel, onderaan M\u00fasica.",
+             "The songs in the list belong to the app: you cannot change or delete them. Adding a song of your own is fine, at the bottom of M\u00fasica.")+"</p>")+
     "<div id='songBeheerFb'></div></div>";
   el.innerHTML = html;
   document.getElementById("btnSongTerug").onclick = renderSongs;
@@ -15304,6 +15337,66 @@ var FUN_TXT = {
      }
 };
 function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[k]; }
+/* ================= v19.92: VERSCHIJNEN IN PLAATS VAN ONTGRENDELEN =================
+   Stefan vroeg of het slim is om functionaliteit achter niveaus te zetten. Twee van zijn drie
+   voorbeelden hebben dat al, en allebei op een betere grondslag dan een niveau: het Chispa-boek
+   opent hoofdstuk voor hoofdstuk op afgeronde lessen, en de Conjugador opent fase voor fase
+   (pretérito perfecto is fase 9) op wat je in die fase laat zien. Geen van beide kijkt naar je
+   CEFR-niveau, en dat is precies goed: dat getal mag hier nooit de leidende maat worden.
+
+   Wat nog niet klopte was de speeltuin. Tien spellen naast elkaar, waarvan er zes zonder
+   geleerde woorden of vrijgespeelde zinnen niets kunnen tonen. Je tikt, en je krijgt een toast
+   of een leeg scherm. Dat is erger dan een slot, want het beloofde wel iets.
+
+   Drie regels, en ze gelden alle drie bewust:
+   1. De eis is het materiaal dat het spel nodig heeft, niet je niveau. Een woordenzoeker heeft
+      woorden nodig; dat is geen oordeel over jou, dat is hoe een woordenzoeker werkt.
+   2. Er hangt geen slot aan en er staat geen niveau bij. Het spel staat er grijs onder met wat
+      het nodig heeft en hoe ver je bent. Verschijnen, niet ontgrendelen.
+   3. Wat je gisteren kon, neemt een update je niet af, en nieuwsgierigheid wordt nooit
+      geblokkeerd: één tik op "laat ze toch allemaal zien" en alles staat er. */
+var SPEEL_EIS = {
+  ws:      {soort:"w", n:12},
+  kruis:   {soort:"w", n:12},
+  mem:     {soort:"w", n:12},
+  corr:    {soort:"z", n:8},
+  hu:      {soort:"z", n:8},
+  dictado: {soort:"z", n:8}
+};
+function speelWoordN(){ try { return Object.keys(S.srs || {}).length; } catch(e){ return 999; } }
+function speelZinN(){ try { return allowedSentIds().length; } catch(e){ return 999; } }
+// Zelfde afspraak als conjOpenInit(): wie al aan het oefenen was, krijgt niets afgepakt.
+function speelOoitInit(){
+  if(S.speelOoit) return S.speelOoit;
+  S.speelOoit = {};
+  try {
+    if(Object.keys(S.srs || {}).length > 0){ for(var k in SPEEL_EIS) S.speelOoit[k] = true; }
+  } catch(e){}
+  try { persist(); } catch(e){}
+  return S.speelOoit;
+}
+function speelKlaar(v){
+  if(!SPEEL_EIS[v]) return true;
+  if(S.speelAlles) return true;
+  var ooit = speelOoitInit();
+  if(ooit && ooit[v]) return true;
+  return (SPEEL_EIS[v].soort === "w" ? speelWoordN() : speelZinN()) >= SPEEL_EIS[v].n;
+}
+function speelWacht(v){
+  var eis = SPEEL_EIS[v];
+  if(!eis) return "";
+  var nu = eis.soort === "w" ? speelWoordN() : speelZinN();
+  return eis.soort === "w"
+    ? ct("doet mee vanaf "+eis.n+" geleerde woordjes · nu "+nu,
+         "joins in from "+eis.n+" learned words · now "+nu)
+    : ct("doet mee vanaf "+eis.n+" vrijgespeelde zinnen · nu "+nu,
+         "joins in from "+eis.n+" unlocked sentences · now "+nu);
+}
+function speelGezien(v){
+  if(!SPEEL_EIS[v]) return;
+  S.speelOoit = speelOoitInit();
+  if(!S.speelOoit[v]){ S.speelOoit[v] = true; try { persist(); } catch(e){} }
+}
 var funView = null;
 
 function renderFun(){
@@ -15319,33 +15412,62 @@ function renderFun(){
   if(funView === "corr"){ renderFunCorrector(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
+  // v19.92: de spellen die nu iets kunnen tonen staan boven; de rest staat eronder in het grijs
+  // met de eis erbij. Zie de toelichting bij SPEEL_EIS.
+  var SPEELMENU = [
+    {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f", t:"Aventura",           s:fx("avS")},
+    {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",        t:"M\u00fasica",         s:fx("muS")},
+    {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",        t:fx("wsT"),            s:fx("wsS")},
+    {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",        t:"Crucigrama",         s:fx("krS")},
+    {v:"dictado", id:"ftDictado", e:"\ud83d\udd0a",        t:"Dictado",            s:fx("dicS")},
+    {v:"conj",    id:"ftConj",    e:"\ud83c\udfaf",        t:"Conjugador",         s:fx("cjS")},
+    {v:"hu",      id:"ftHu",      e:"\ud83e\udde9",        t:fx("huT"),            s:fx("huS")},
+    {v:"corr",    id:"ftCorr",    e:"\ud83d\udd75\ufe0f", t:fx("coT"),            s:fx("coS")},
+    {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",        t:"Memory \u00b7 Parejas", s:fx("meS")},
+    {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",        t:"Palabra Duel",       s:fx("duS")}
+  ];
+  var nuHtml = "", straksHtml = "";
+  SPEELMENU.forEach(function(g){
+    var kop = "<div class='lnum'>"+g.e+"</div><div class='lbody'><b>"+g.t+"</b><span>";
+    if(speelKlaar(g.v)){
+      nuHtml += "<div class='lesson' id='"+g.id+"'>"+kop+g.s+"</span></div><div class='lstatus'>\u25b6</div></div>";
+    } else {
+      straksHtml += "<div class='lesson' style='opacity:.5'>"+kop+speelWacht(g.v)+"</span></div><div class='lstatus'>\u00b7</div></div>";
+    }
+  });
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
-    "<div class='lesson' id='ftAvt'><div class='lnum'>\ud83d\uddfa\ufe0f</div><div class='lbody'><b>Aventura</b><span>" + fx("avS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftMusica'><div class='lnum'>\ud83c\udfb5</div><div class='lbody'><b>M\u00fasica</b><span>" + fx("muS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftWs'><div class='lnum'>\ud83d\udd0d</div><div class='lbody'><b>" + fx("wsT") + "</b><span>" + fx("wsS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftKruis'><div class='lnum'>\u270f\ufe0f</div><div class='lbody'><b>Crucigrama</b><span>" + fx("krS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftDictado'><div class='lnum'>\ud83d\udd0a</div><div class='lbody'><b>Dictado</b><span>" + fx("dicS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftConj'><div class='lnum'>\ud83c\udfaf</div><div class='lbody'><b>Conjugador</b><span>" + fx("cjS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftHu'><div class='lnum'>\ud83e\udde9</div><div class='lbody'><b>" + fx("huT") + "</b><span>" + fx("huS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftCorr'><div class='lnum'>\ud83d\udd75\ufe0f</div><div class='lbody'><b>" + fx("coT") + "</b><span>" + fx("coS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftMem'><div class='lnum'>\ud83c\udccf</div><div class='lbody'><b>Memory \u00b7 Parejas</b><span>" + fx("meS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
-    "<div class='lesson' id='ftDuel'><div class='lnum'>\u2694\ufe0f</div><div class='lbody'><b>Palabra Duel</b><span>" + fx("duS") + "</span></div><div class='lstatus'>\u25b6</div></div>"+
+    nuHtml+
+    (straksHtml
+      ? "<p class='muted' style='margin:14px 0 4px'><b>"+ct("Komt er straks bij","Joining in later")+"</b></p>"+
+        straksHtml+
+        "<button class='mini' id='speelAlles'>"+
+          ct("Laat ze toch allemaal zien","Show them all anyway")+"</button>"
+      : "")+
     // v19.57: dit was een zin die je vertelde dat je ergens anders op iets moest tikken. Nu staat
     // de knop er gewoon, en de zin legt alleen nog uit wat je deelt.
     "<div class='row' style='margin-top:12px'><button class='ghost' id='btnUitnodig'>"+
       (profLang()==="nl" ? "Nodig een vriend uit 🔗" : "Invite a friend 🔗")+"</button></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:6px'>" + fx("klassement") + "</p>";
   bindUitnodig("speeltuin");
-  document.getElementById("ftAvt").onclick = function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); };
-  document.getElementById("ftMusica").onclick = function(){ show("musica"); };
-  document.getElementById("ftWs").onclick = function(){ funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); };
-  document.getElementById("ftKruis").onclick = function(){ funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); };
-  document.getElementById("ftDictado").onclick = function(){ funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); };
-  document.getElementById("ftConj").onclick = function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); };
-  document.getElementById("ftHu").onclick = function(){ funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); };
-  document.getElementById("ftCorr").onclick = function(){ funView = "corr"; corrOpg = null; corrRonde = null; navPush({t:"fun", v:"corr"}); renderFun(); };
-  document.getElementById("ftMem").onclick = function(){ funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); };
-  document.getElementById("ftDuel").onclick = function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); };
+  function wire(id, fn){ var b = document.getElementById(id); if(b) b.onclick = fn; }
+  wire("ftAvt", function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); });
+  wire("ftMusica", function(){ show("musica"); });
+  wire("ftWs", function(){ speelGezien("ws"); funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); });
+  wire("ftKruis", function(){ speelGezien("kruis"); funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); });
+  wire("ftDictado", function(){ speelGezien("dictado"); funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); });
+  wire("ftConj", function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); });
+  wire("ftHu", function(){ speelGezien("hu"); funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); });
+  wire("ftCorr", function(){ speelGezien("corr"); funView = "corr"; corrOpg = null; corrRonde = null; navPush({t:"fun", v:"corr"}); renderFun(); });
+  wire("ftMem", function(){ speelGezien("mem"); funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); });
+  wire("ftDuel", function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); });
+  var sa = document.getElementById("speelAlles");
+  if(sa) sa.onclick = function(ev){
+    if(ev && ev.preventDefault) ev.preventDefault();
+    S.speelAlles = true;
+    try { persist(); } catch(e){}
+    renderFun();
+    return false;
+  };
 }
 
 /* ================= PROFIELPAGINA ================= */
@@ -15613,18 +15735,23 @@ function joinViaLink(gcode, poging){
 }
 var pendingGroep = null;
 var pendingDuel = null; // v19.57: een duel-uitnodiging is nu ook een link, niet alleen een code
+var pendingBeheer = false; // v19.92: de muziekbeheerrol, pas toepassen als S geladen is
 try{
   if(typeof location !== "undefined" && location.search){
     var gm = location.search.match(/[?&]groep=([a-z0-9]+)/i);
     if(gm) pendingGroep = gm[1].toLowerCase();
     var dm = location.search.match(/[?&]duel=([a-z0-9]+)/i);
     if(dm) pendingDuel = dm[1].toLowerCase();
+    // v19.92: eenmalig de muziekbeheerrol aanzetten. Staat in S, dus reist mee met je sync-code
+    // naar je andere apparaten en blijft daar staan.
+    var bm = location.search.match(/[?&]beheer=([a-z0-9]+)/i);
+    if(bm && bm[1].toLowerCase() === "chispa") pendingBeheer = true;
     // v19.58: de maatje-link is een eigen paginaatje (maatje.html), want een maatje hoort de app
     // niet te krijgen. Landt hij toch hier (oude link, verkeerd geplakt), dan sturen we hem door
     // in plaats van hem een profielformulier voor te schotelen dat hij niet nodig heeft.
     var mm = location.search.match(/[?&]maatje=([a-z0-9]+)/i);
     if(mm){ location.replace("maatje.html?m=" + mm[1].toLowerCase()); }
-    if((gm || dm) && window.history && history.replaceState) history.replaceState(null, "", location.pathname);
+    if((gm || dm || bm) && window.history && history.replaceState) history.replaceState(null, "", location.pathname);
   }
 }catch(e){}
 
