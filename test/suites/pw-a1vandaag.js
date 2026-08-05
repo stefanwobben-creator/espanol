@@ -40,6 +40,43 @@ async function nieuwProfiel(page) {
   const versie = await page.evaluate(() => APP_VERSIE);
   ok(minstens(versie, 'v19.99'), 'versie is minstens v19.99 (nu ' + versie + ')');
 
+  console.log('\n-- de balk telt alleen wat gecheckt is (v20.0) --');
+  const zonderVinkje = await page.evaluate(() => {
+    const map = pcicMap(), niv = pcicNiv();
+    let id = null;
+    for (const k in map) {
+      if ((map[k] || []).some((sleutel) => niv[sleutel] === 'A1') && !(S.srs || {})[k]) { id = k; break; }
+    }
+    if (!id) return { fout: 'geen ongeoefend A1-woord gevonden' };
+    S.srs = S.srs || {};
+    S.srs[id] = { box: stevigDrempel(), due: '2020-01-01' };   // bovenste doos, geen check
+    const zonder = voortgangTellers();
+    S.srs[id].k = 1;
+    const met = voortgangTellers();
+    delete S.srs[id];
+    return { zonder: zonder.dek.A1 || 0, met: met.dek.A1 || 0, bijna: zonder.bijna };
+  });
+  ok(!zonderVinkje.fout, 'er is een A1-woord om mee te testen');
+  ok(zonderVinkje.met === zonderVinkje.zonder + 1,
+    'hetzelfde woord telt wel mee mét het vinkje (' + zonderVinkje.zonder + ' -> ' + zonderVinkje.met + ')');
+
+  // v20.1: de balk verschijnt pas als er iets onderweg is en de staafjes pas vanaf twee dagen.
+  // Deze suite gaat over de plaatsing, dus zetten we die context eerst neer; dat de blokken
+  // wegblijven als de context er niet is, staat in pw-context.js.
+  await page.evaluate(() => {
+    const map = pcicMap(), niv = pcicNiv(), t = today();
+    let gezet = 0;
+    for (const k in map) {
+      if (gezet >= 2) break;
+      if ((map[k] || []).some((sleutel) => niv[sleutel] === 'A1') && !(S.srs || {})[k]) {
+        S.srs[k] = { box: 3, due: addDays(t, 3), n: 3 }; gezet++;
+      }
+    }
+    S.xp[t] = (S.xp[t] || 0) + 12;
+    S.xp[addDays(t, -1)] = 12;
+    try { persist(); } catch (e) {}
+  });
+
   console.log('\n-- de balk staat op Vandaag --');
   await page.evaluate(() => show('lessen'));
   await page.waitForTimeout(500);
@@ -88,6 +125,8 @@ async function nieuwProfiel(page) {
     const voor = document.getElementById('lijnKaart').innerText.match(/(\d+) van de/);
     // stevig = de bovenste box (vijf goede beurten over 25 dagen). Hier rechtstreeks gezet op een
     // woord waarvan de Cervantes-sleutel op A1 staat, want 25 dagen wachten kan een test niet.
+    // v20.0: de bovenste box telt alleen mee met k:1, het vinkje van de check die je niet zelf
+    // beoordeelt. Zonder dat vinkje is dit precies het geval dat de balk niet meer mag tellen.
     const map = pcicMap(), niv = pcicNiv();
     let id = null;
     for (const k in map) {
@@ -95,7 +134,7 @@ async function nieuwProfiel(page) {
     }
     if (!id) return { fout: 'geen ongeoefend A1-woord gevonden in de mapping' };
     S.srs = S.srs || {};
-    S.srs[id] = { box: stevigDrempel(), due: '2020-01-01' };
+    S.srs[id] = { box: stevigDrempel(), due: '2020-01-01', k: 1 };
     try { persist(); } catch (e) {}
     renderLessons();
     const nu = document.getElementById('lijnKaart').innerText.match(/(\d+) van de/);

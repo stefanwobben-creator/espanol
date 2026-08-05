@@ -1,6 +1,6 @@
 # De regressiekern
 
-35 browsersuites die samen de poort vormen. Groen betekent: dit mag live. Rood betekent: er gaat
+39 browsersuites die samen de poort vormen. Groen betekent: dit mag live. Rood betekent: er gaat
 niets naar buiten, niet met de hand en niet door een bot.
 
 ```
@@ -37,9 +37,94 @@ Wil je ooit tegen de echte server testen, dan is dat een eigen suite die dat exp
 Screenshots komen in `test/uitvoer/` terecht (genegeerd door git, in CI bewaard als artefact bij een
 rode run).
 
+## De laatste stap naar vast (v20.0)
+
+`pw-echtecheck.js` bewaakt het enige getal in de app dat moet bewijzen dat je iets leert: de
+A1-balk op Vandaag. Tot v19.99 liep die balk vol op een flashcard waarbij jij zelf op "wist ik"
+drukte. Dat is geen meting, dat is een mening over jezelf.
+
+Vanaf v20.0 komt een woord alleen in de bovenste doos na een check die je niet zelf beoordeelt:
+je ziet de vertaling in je eigen taal en kiest uit vier Spaanse mogelijkheden, zonder dat het
+antwoord ergens op het scherm staat. Het vinkje heet `st.k`. Alleen `wCheckAntwoord` en het
+Avontuur (daar typ je het woord) zetten het. Spellen kunnen het sowieso niet, want die zitten al
+vast op `SPEL_PLAFOND = 3`.
+
+Wat de suite dus vasthoudt, in volgorde: "wist ik" brengt je hoogstens naar de een-na-laatste doos,
+op die doos verschijnt de check in de productieve richting, goed zet het woord vast en laat de
+A1-teller precies één omhoog gaan, fout kost één doosje in plaats van de hele rij, en profielen van
+voor v20.0 krijgen hun vinkje cadeau in `normaliseerState` zodat niemands balk zakt door een
+verbetering.
+
+## Een blok verdient zijn plek (v20.1)
+
+`pw-context.js` bewaakt de regel die Vandaag klein houdt: een blok verschijnt op het moment dat het
+iets over jou zegt, en staat er tot die tijd niet. Geen instelling, geen knop om iets te verbergen.
+
+De aanleiding staat in de bevindingen van Stefans moeder: te veel informatie op het scherm, te veel
+knoppen waarvan de bedoeling onduidelijk is. De oorzaak was dat elk blok zichzelf tekende ook als
+het niets te melden had: een nieuwskaart met de mededeling dat er geen nieuws was, een basisbalk op
+0%, dertien lege staafjes met een knop naar cijfers die nog nergens over gingen, en drie chipjes met
+een nul erin. `dagRelevantie()` beantwoordt nu per blok de vraag of er iets te zeggen valt.
+
+De suite meet dat in twee richtingen, en die tweede is de belangrijkste: weglaten mag nooit
+verstoppen worden. Dag een is klein (alleen starten en spelen), en daarna wordt per blok de context
+neergezet die het verdient, waarna het er ook echt moet staan: iets in doos 3 laat de basisbalk
+verschijnen, twee dagen met punten laten de staafjes verschijnen, en elk chipje komt terug zodra er
+iets in staat. Ook ligt hier vast dat de basisbalk over jouw niveau gaat: `dagNiveau()` volgt
+`poortRang()`, dus wie de basis claimt ziet A2 met de noemer van A2, niet langer een hardgecodeerde
+A1.
+
+## Verder waar je was (v20.2)
+
+`pw-verder.js` bewaakt de tweede helft van dezelfde opdracht: waar in een oefening ben je nu. De les
+bestond tot v20.1 alleen in het geheugen van het tabblad (`lesFlow` was een gewone variabele), dus
+wie halverwege wegklikte begon de volgende keer weer bij stap 1. De stopknop beloofde "Klaar voor
+nu, je verliest niets" en maakte dat niet waar.
+
+`S.lesFlowNu` is nu het herstelpunt: de stap, plus wat die stap nodig heeft om zichzelf opnieuw te
+openen. `lesFlowVolgende()` is een schil om de stappenmachine die na elke overgang bewaart, dus er
+is één plek waar dat gebeurt in plaats van bij elke return. Herstellen loopt via `lesFlowHervat()`
+met een eigen opener per stap, want de stappenmachine valt door naar de volgende stap en zou je dus
+juist voorbij je eigen plek zetten.
+
+Twee grenzen liggen hier vast. Hervatten kan alleen binnen dezelfde dag: je dagportie is een dagding
+en de wachtrij van gisteren is geen "waar je was" maar een verlopen plan, dus `normaliseerState`
+gooit hem weg. En het dagscherm krijgt er geen blok bij: de startknop die er al staat wordt
+contextueel ("Verder waar je was, stap 2/4, Grammatica"), met opnieuw beginnen als tekstregel
+eronder. De suite telt daarom de knoppen in de kaart: precies één primaire knop, altijd. Twee
+knoppen naast elkaar zou de tweede bevinding van Stefans moeder terugbrengen.
+
+## De peiling (v20.3)
+
+`pw-peiling.js` bewaakt de opdracht erachter: de voortgangsbalk moet een bevestiging zijn, iets van
+"dit klopt ongeveer met het niveau waarvan ik zelf denk dat ik ben", en tegelijk moet er een stap in
+te zien zijn. Dat botst: een bevestiging is een toestand, een stap is een verschil. De oplossing is
+dat het getal boven de balk de toestand is (een schatting van je hele A1-woordenschat, dus inclusief
+wat je al kon voordat je de app opende) en dat de stap als streepje plus een zin in diezelfde balk
+zit. Geen tweede blok, want de regel uit v20.1 blijft staan: een blok verdient zijn plek.
+
+De schatting is een steekproef, en de suite rekent hem op de eenheid na. Twaalf woorden per peiling,
+vier keuzes, met een echte knop "geen idee" ernaast. Goed geraden wordt gecorrigeerd met
+`r - (g - r) / 3`, want bij vier opties gok je gemiddeld een op vier goed; "geen idee" telt daarom
+wel als niet gekend maar niet als gokfout. Rond het punt staat een Wilson-interval, en het punt zelf
+is gestratificeerd: wat hier bewezen is telt als telling, de rest krijgt het gemeten percentage.
+Onder de twintig antwoorden zwijgt de balk liever dan te raden.
+
+Drie dingen liggen hier hard vast. Een peiling is een meting en geen les: er gaat geen woord naar
+`S.srs`, er zijn geen punten en geen tapas, want een steekproef die zichzelf onderwijst meet zijn
+eigen antwoord. Elke Cervantes-sleutel wordt hoogstens een keer gepeild, ooit. En de balk gebruikt
+`balkNiveau()` in plaats van `dagNiveau()`: dagNiveau volgt `poortRang()` en die telt de
+niveauclaim mee, dus wie bij het instellen "A2" aanvinkt zou een balk zien die op zijn eigen
+verklaring rust. Een balk die op jouw eigen verklaring rust kan nooit een bevestiging zijn. De
+suite legt daarom vast dat `balkNiveau()` A1 blijft terwijl `dagNiveau()` A2 zegt.
+
+Waar de app niet kan meten, doet ze geen uitspraak. `PEIL_DEKKING` staat op 0,8: van A1 heeft de app
+356 van de 390 Cervantes-sleutels in huis, van A2 maar 55 van de 409. Over A2 zegt de balk dus
+niets, en dat is geen omissie maar het punt.
+
 ## Wat er niet in zit
 
-Er waren 66 suites. 34 daarvan staan hier, plus pw-a1vandaag die bij v19.99 is bijgeschreven. 32 staan er niet bij. Die 32 zijn niet weggegooid maar ook niet opgenomen:
+Er waren 66 suites. 34 daarvan staan hier, plus pw-a1vandaag (v19.99), pw-echtecheck (v20.0), pw-context (v20.1) en pw-verder (v20.2) die er later bij geschreven zijn. 32 staan er niet bij. Die 32 zijn niet weggegooid maar ook niet opgenomen:
 een testsuite die faalt op iets dat allang met opzet veranderd is, is geen alarm maar ruis, en ruis
 in een poort leidt binnen een week tot "ach, die is altijd rood". De schuld staat hieronder
 expliciet, zodat het een keuze blijft en geen vergeetput.

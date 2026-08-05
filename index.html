@@ -87,11 +87,15 @@
   .stat{background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center;}
   .stat b{display:block; font-size:1.5rem;}
   .boxrow{display:flex; align-items:center; gap:8px; margin:4px 0; font-size:.88rem;}
-  .boxrow .bar{flex:1; height:10px; background:var(--border); border-radius:99px; overflow:hidden;}
+  .boxrow .bar{flex:1; height:10px; background:var(--border); border-radius:99px; overflow:hidden; position:relative;}
   .boxrow .bar > div{height:100%; background:var(--accent);}
   /* v19.87: één balk, twee waarheden. Vol = stevig, licht = onderweg. */
   .boxrow .bar.duo{display:flex;}
   .boxrow .bar.duo > .marge{background:var(--accent); opacity:.34;}
+  /* v20.3: derde laag. Vol = hier bewezen, half = onderweg, licht = geschat uit de peiling. */
+  .boxrow .bar.duo > .schat{background:var(--accent); opacity:.15;}
+  /* en de streep waar je stond bij je eerste peiling: het beginpunt van je stap. */
+  .boxrow .bar .merk{position:absolute; top:0; width:2px; height:100%; background:var(--text); opacity:.45;}
   .warn{background:var(--amber-soft); color:var(--amber); border-radius:10px; padding:10px 14px; font-size:.88rem; margin-bottom:14px;}
   .goalline{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
   .goalbar{flex:1; height:9px; background:var(--border); border-radius:99px; overflow:hidden;}
@@ -949,7 +953,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.99";
+var APP_VERSIE = "v20.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3123,7 +3127,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
@@ -3160,6 +3164,20 @@ function normaliseerState(s){
   s.dagStats = s.dagStats || {};
   s.lesFlow = s.lesFlow || {};
   s.lesFlowSpel = s.lesFlowSpel || {};
+  /* v20.2: waar je in je les was. Tot nu toe bestond de les alleen in het geheugen van het
+     tabblad, dus wie halverwege wegklikte begon de volgende keer opnieuw. Dat is precies wat
+     "Klaar voor nu (je verliest niets)" beloofde en niet waarmaakte.
+     Alleen van vandaag: je dagportie is een dagding, en de wachtrij van gisteren hervatten is
+     geen "waar je was" maar een verlopen plan. */
+  if(s.lesFlowNu === undefined) s.lesFlowNu = null;
+  if(s.lesFlowNu && s.lesFlowNu.d !== today()) s.lesFlowNu = null;
+  /* v20.3: de peiling. items is per Cervantes-sleutel het laatste antwoord (1 goed, 0 fout,
+     -1 geen idee), log is de uitslag van elke afgeronde peiling. Beide groeien mee: de
+     schatting wordt scherper naarmate je vaker peilt, en log[0] is het beginpunt van je stap. */
+  s.peil = s.peil || {};
+  s.peil.items = s.peil.items || {};
+  if(!Array.isArray(s.peil.log)) s.peil.log = [];
+  if(typeof s.peil.laatst !== "string") s.peil.laatst = "";
   s.modusKeuze = s.modusKeuze || {};
   s.gramwiz = s.gramwiz || {};
   s.rincon = s.rincon || {};
@@ -3189,6 +3207,15 @@ function normaliseerState(s){
   // v19.92: de muziekbeheerrol en het speeltuinfilter.
   if(s.mbeheer === undefined) s.mbeheer = false;
   if(s.speelAlles === undefined) s.speelAlles = false;
+  /* v20.0: een woord komt alleen nog in de laatste doos na een check die je niet zelf beoordeelt
+     (st.k, zie wCheckAntwoord). Wie van voor v20.0 komt heeft die check nooit kunnen doen, dus
+     krijgt alles wat nu al vast staat het vinkje cadeau. Anders zakt je A1-balk door een
+     verbetering, en dat is de snelste manier om iemand te leren dat vooruitgang niets zegt. */
+  var vk, vst;
+  for(vk in s.srs){
+    vst = s.srs[vk];
+    if(vst && typeof vst === "object" && (vst.box || 0) >= stevigDrempel() && !vst.k) vst.k = 1;
+  }
   return s;
 }
 var S = defaultState(); // wordt vervangen zodra een profiel gekozen is
@@ -4428,7 +4455,9 @@ function voortgangTellers(){
     if(!st || typeof st !== "object") continue;
     geoefend++;
     b = st.box || 0;
-    if(b >= drempel){
+    // v20.0: de laatste doos telt pas als vast wanneer er een echte check onder ligt (st.k).
+    // Zonder die eis is dit getal een optelsom van hoe goed je over jezelf denkt.
+    if(b >= drempel && st.k){
       stevig++;
       ks = mp[id];
       if(ks) for(i = 0; i < ks.length; i++) keys[ks[i]] = 1;
@@ -5589,6 +5618,125 @@ function wWaaromHtml(){
     "You've had this one before. Seeing it again just before you forget is how it sticks.")+"</p>";
   return "";
 }
+/* ================= v20.0: DE LAATSTE STAP IS EEN ECHTE CHECK =================
+   De woordoefening is een flashcard: je ziet het woord, je draait hem om, en dan zeg jij of je het
+   wist. Prima om mee te oefenen, maar het betekent dat de A1-balk op Vandaag vol loopt met wat je
+   van jezelf vindt. Dat is precies de balk die moet bewijzen dat je iets leert, en dus de balk die
+   niet mag afhangen van een zelfbeoordeling.
+
+   Vanaf nu zet alleen een check die je niet zelf kunt beoordelen een woord in de laatste doos: je
+   ziet de vertaling in je eigen taal, je kiest uit vier Spaanse mogelijkheden, en het antwoord
+   staat nergens op het scherm. Goed is vast (st.k). Fout is een doos terug en vandaag nog een keer,
+   niet helemaal opnieuw: dit is de laatste stap, geen strafronde.
+
+   Deze richting is met opzet productief (jouw taal naar het Spaans, st.p). Herkennen is de
+   makkelijke kant; wat je wilt kunnen is het woord zelf terugvinden.
+   Waarom kiezen en niet typen: op een telefoon is typen met accenten een gevecht met je toetsenbord
+   in plaats van met het Spaans. Een keuze uit vier is zwakker dan typen (een op vier gokt zich
+   erdoor) maar oneindig veel sterker dan een knop waarop staat dat je het wist.
+   ============================================================================= */
+var wCheck = null; // {id, opties, gekozen, goed} voor het kaartje dat nu op het scherm staat
+
+function wCheckNodig(st){
+  if(!st || typeof st !== "object") return false;
+  if(st.k) return false;
+  return (st.box || 0) === stevigDrempel() - 1;
+}
+
+function wCheckOpties(w){
+  // afleiders het liefst uit dezelfde categorie: dan gaat de vraag over het woord en niet over
+  // welke van de vier er toevallig bij het onderwerp past.
+  var pool = WORDS.filter(function(x){ return x.id !== w.id && x.es !== w.es; });
+  var zelfde = pool.filter(function(x){ return x.tag === w.tag; });
+  var bron = zelfde.length >= 3 ? zelfde : pool;
+  var g = geschud(bron), gezien = {}, af = [], i;
+  for(i = 0; i < g.length && af.length < 3; i++){
+    if(gezien[g[i].es]) continue;
+    gezien[g[i].es] = 1;
+    af.push(g[i].es);
+  }
+  return geschud([w.es].concat(af));
+}
+
+function renderWordCheck(){
+  var el = document.getElementById("wCard");
+  var w = wCur;
+  if(!wCheck || wCheck.id !== w.id) wCheck = {id:w.id, opties:wCheckOpties(w), gekozen:null, goed:false};
+  var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
+  var html = (inFlow ? lesFlowBannerHtml() : "")+
+    "<span class='kicker'>"+ct("Laatste stap","Last step")+"</span>"+
+    wBalkHtml()+
+    "<p class='big'>"+wTrans(w)+"</p>"+
+    "<p class='muted'>"+ct("Hoe zeg je dat in het Spaans?","How do you say that in Spanish?")+"</p>"+
+    "<div style='display:flex; flex-direction:column; gap:8px' id='wCheckOpties'>"+
+      wCheck.opties.map(function(o){
+        var cls = "ghost";
+        if(wCheck.gekozen){
+          if(o === w.es) cls = "good";
+          else if(o === wCheck.gekozen) cls = "bad";
+        }
+        return "<button type='button' class='"+cls+"' data-wcheck=\""+o.replace(/"/g,"&quot;")+
+          "\" style='text-align:left'>"+o+"</button>";
+      }).join("")+
+    "</div>";
+  if(wCheck.gekozen){
+    html += "<p class='waarom'>"+(wCheck.goed
+      ? ct("Goed. <b class='es'>"+w.es+"</b> staat vanaf nu vast en telt mee in je A1-balk.",
+           "Correct. <b class='es'>"+w.es+"</b> is solid from now on and counts towards your A1 bar.")
+      : ct("Het was <b class='es'>"+w.es+"</b>. Dit woord gaat een doosje terug en komt zo nog een keer langs.",
+           "It was <b class='es'>"+w.es+"</b>. This word steps back one box and comes by again shortly."))+"</p>"+
+      "<div class='row'><button class='primary' id='btnWCheckVerder'>"+ct("Verder","Next")+"</button></div>";
+  } else {
+    html += "<p class='waarom'>"+
+      ct("Dit woord heb je vaak genoeg goed gehad. Vind je hem nu terug zonder dat het antwoord op het scherm staat, dan telt hij mee in je A1-balk.",
+         "You have had this word right often enough. Find it now without the answer on screen and it counts towards your A1 bar.")+"</p>";
+  }
+  html += wStopHtml();
+  el.innerHTML = html;
+  lesFlowWireBanner();
+  wStopWire();
+  el.querySelectorAll("[data-wcheck]").forEach(function(b){
+    b.onclick = function(){
+      if(wCheck && wCheck.gekozen) return;
+      wCheckAntwoord(b.getAttribute("data-wcheck"));
+    };
+  });
+  var bv = document.getElementById("btnWCheckVerder");
+  if(bv) bv.onclick = function(){ wCheck = null; renderWord(); };
+  updateBadge();
+}
+
+function wCheckAntwoord(keuze){
+  var w = wCur, t = today(), st = S.srs[w.id];
+  if(!st || typeof st !== "object") st = {box:0, due:t};
+  var goed = (keuze === w.es);
+  wCheck.gekozen = keuze;
+  wCheck.goed = goed;
+  st.n = (st.n||0) + 1;
+  st.p = (st.p||0) + 1;   // dit is produceren: van jouw taal naar het Spaans
+  if(st.sp) delete st.sp; // deze stap kwam van jou, niet van een spel
+  if(goed){
+    st.k = 1;
+    st.box = stevigDrempel();
+    st.due = addDays(t, INTERVALS[st.box]);
+    wQueue.shift();
+    delete wNetFout[w.id];
+    addXP(3); trackPoging(false);
+  } else {
+    st.box = Math.max(0, stevigDrempel() - 2);
+    st.due = addDays(t, INTERVALS[st.box]);
+    st.f = (st.f||0) + 1;
+    logError(w.id, "woord", w.tag, w.es);
+    wQueue.push(wQueue.shift()); // achteraan opnieuw, net als een gemist kaartje
+    wNetFout[w.id] = 1;
+    addXP(1);
+  }
+  S.srs[w.id] = st;
+  wSessionDone++;
+  persist(); updateBadge(); checkLessonComplete();
+  renderWordCheck();
+}
+
 function renderWord(){
   var el = document.getElementById("wCard");
   // v19.92: binnen de dagles NIET bijvullen. De portie is de portie; liep hij leeg, dan gaan we door
@@ -5669,6 +5817,9 @@ function renderWord(){
     updateBadge(); return;
   }
   wCur = wQueue[0]; wShown = false;
+  // v20.0: staat dit woord op het laatste zetje naar vast, dan is dit geen flashcard maar een check.
+  if(wCheckNodig(S.srs[wCur.id])){ renderWordCheck(); return; }
+  if(wCheck && wCheck.id !== wCur.id) wCheck = null;
   var isNew = !S.srs[wCur.id];
   var kort = UI_LANGS[profLang()].kort;
   var front = S.dir==="es-nl" ? wCur.es : wTrans(wCur);
@@ -5745,7 +5896,10 @@ function answerWord(good){
   // en snapshotSchrijf: zo blijven "werkt de app" en "werkt spelen" apart te lezen.
   if(st.sp) delete st.sp;
   if(good){
-    st.box = Math.min(st.box+1, INTERVALS.length-1);
+    // v20.0: de laatste doos hoort bij een check die je niet zelf beoordeelt. Zonder die check
+    // blijft een woord op de een-na-laatste staan, hoe vaak je ook "wist ik" zegt. Zodra hij daar
+    // staat biedt renderWord de check aan; zie wCheckNodig.
+    st.box = Math.min(st.box+1, st.k ? INTERVALS.length-1 : INTERVALS.length-2);
     st.due = addDays(t, INTERVALS[st.box]);
     wQueue.shift();
     delete wNetFout[wCur.id];
@@ -7829,13 +7983,16 @@ function lesFlowBoekHoofdstuk(){
   return nieuw.length ? nieuw[0] : open[0];
 }
 
-function lesFlowStapNaam(){
-  if(!lesFlow) return "";
-  if(lesFlow.stap === "woorden") return ct("Woordjes","Words");
-  if(lesFlow.stap === "grammatica") return ct("Grammatica","Grammar");
-  if(lesFlow.stap === "toetsjes") return ct("Toetsjes","Quizzes");
-  if(lesFlow.stap === "produceren"){
-    var v = lesFlow.vaardigheid;
+// v20.2: deze twee beschrijven nu ook een bewaarde les (S.lesFlowNu), zodat het dagscherm kan
+// zeggen waar je gebleven was zonder dat de les al draait.
+function lesFlowStapNaam(f){
+  f = f || lesFlow;
+  if(!f) return "";
+  if(f.stap === "woorden") return ct("Woordjes","Words");
+  if(f.stap === "grammatica") return ct("Grammatica","Grammar");
+  if(f.stap === "toetsjes") return ct("Toetsjes","Quizzes");
+  if(f.stap === "produceren"){
+    var v = f.vaardigheid;
     if(v === "lezen") return ct("Lezen","Reading");
     if(v === "luisteren") return ct("Luisteren","Listening");
     if(v === "schrijven") return ct("Schrijven","Writing");
@@ -7843,12 +8000,13 @@ function lesFlowStapNaam(){
   }
   return "";
 }
-function lesFlowStapNum(){
-  if(!lesFlow) return 0;
-  if(lesFlow.stap === "woorden") return 1;
-  if(lesFlow.stap === "grammatica") return 2;
-  if(lesFlow.stap === "toetsjes") return 3;
-  if(lesFlow.stap === "produceren") return 4;
+function lesFlowStapNum(f){
+  f = f || lesFlow;
+  if(!f) return 0;
+  if(f.stap === "woorden") return 1;
+  if(f.stap === "grammatica") return 2;
+  if(f.stap === "toetsjes") return 3;
+  if(f.stap === "produceren") return 4;
   return 0;
 }
 function lesFlowBannerHtml(){
@@ -7911,6 +8069,82 @@ function lesFlowChispaKlik(){
 function lesFlowWireBanner(){
   var bc = document.getElementById("btnLesFlowChispa");
   if(bc) bc.onclick = lesFlowChispaKlik;
+}
+
+/* ================= VERDER WAAR JE WAS (v20.2) =================
+   Stefan, 5 augustus: "Waar in een oefening is men nu." De les liep in vier stappen, maar bestond
+   alleen zolang het tabblad open bleef. Wie tussendoor wegklikte, de app sloot of op "Klaar voor
+   nu" tikte, kreeg de volgende keer stap 1 weer voorgeschoteld. Dat straft precies het gedrag dat
+   we willen: even vijf minuten doen en later nog even terugkomen.
+
+   Twee keuzes die het klein houden. Het herstelpunt is de stap, niet het losse kaartje: je begint
+   hoogstens één blok opnieuw en nooit de hele les, en er hoeft geen halve oefening in de opslag.
+   En het geldt alleen vandaag: morgen is er een nieuwe dagportie, dus dan is opnieuw beginnen het
+   juiste antwoord en niet een compromis.
+
+   Op het dagscherm komt er geen blok bij. De startknop die er al staat zegt wat er nu te doen is;
+   dat is dezelfde regel als v20.1, nu toegepast op een knop in plaats van op een kaart. */
+function lesFlowBewaar(){
+  if(!lesFlow || !lesFlow.stap){
+    if(S.lesFlowNu){ S.lesFlowNu = null; persist(); }
+    return;
+  }
+  S.lesFlowNu = {
+    d: today(),
+    stap: lesFlow.stap,
+    gramId: lesFlow.gramId || null,
+    gramLes: lesFlow.gramLes || null,
+    quizzesTeDoen: (lesFlow.quizzesTeDoen || []).slice(),
+    gekozenSpel: lesFlow.gekozenSpel || null,
+    vaardigheid: lesFlow.vaardigheid || null,
+    vaardigheidRij: (lesFlow.vaardigheidRij || []).slice(),
+    vertalenTeGaan: lesFlow.vertalenTeGaan || 0,
+    vertalenTotaal: lesFlow.vertalenTotaal || 0
+  };
+  persist();
+}
+function lesFlowHervatKan(){
+  var n = S.lesFlowNu;
+  return !!(n && n.d === today() && n.stap);
+}
+function lesFlowHervat(){
+  var n = S.lesFlowNu;
+  if(!lesFlowHervatKan()){ lesFlowStart(); return; }
+  lesFlow = {
+    stap: n.stap,
+    gramId: n.gramId || null,
+    gramLes: n.gramLes || null,
+    quizzesTeDoen: (n.quizzesTeDoen || []).slice(),
+    gekozenSpel: n.gekozenSpel || null,
+    vaardigheid: n.vaardigheid || null,
+    vaardigheidRij: (n.vaardigheidRij || []).slice(),
+    vertalenTeGaan: n.vertalenTeGaan || 0,
+    vertalenTotaal: n.vertalenTotaal || 0
+  };
+  if(lesFlow.stap === "woorden"){
+    buildQueue();
+    // niets meer te doen in deze stap (je deed de woordjes af en klikte daarna weg): dan is verder
+    // gaan hetzelfde als doorschuiven naar de volgende stap, niet opnieuw beginnen.
+    if(!wQueue.length){ lesFlowVolgende(); return; }
+    show("woorden");
+    lesFlowBewaar();
+    return;
+  }
+  if(lesFlow.stap === "grammatica"){
+    if(!lesFlow.gramId){ lesFlowVolgende(); return; }
+    show("spiekbrief");
+    gwStart(lesFlow.gramId);
+    lesFlowBewaar();
+    return;
+  }
+  if(lesFlow.stap === "toetsjes"){ lesFlowVolgende(); return; }
+  if(lesFlow.stap === "produceren"){
+    if(!lesFlow.vaardigheid){ lesFlowVolgende(); return; }
+    lesFlowOpenProductie();
+    lesFlowBewaar();
+    return;
+  }
+  lesFlowStart();
 }
 
 function lesFlowStart(){
@@ -7999,7 +8233,13 @@ function lesFlowQuizId(){
   return due.length ? due[0].id : null;
 }
 
+// v20.2: een schil om de stappenmachine heen, zodat elke overgang zichzelf bewaart. Zo staat de
+// bewaarcode op één plek in plaats van bij elke return in de kern eronder.
 function lesFlowVolgende(){
+  lesFlowVolgendeKern();
+  lesFlowBewaar();
+}
+function lesFlowVolgendeKern(){
   if(!lesFlow) return;
   if(lesFlow.stap === null){
     lesFlow.stap = "woorden";
@@ -8166,6 +8406,361 @@ function lesFlowKlaar(){
   // v19.60: einde les is de eerste natuurlijke grens. Staat het dagdoel-feest te wachten, dan komt
   // het hier bovenop, met de felicitatie er netjes onder als je hem wegtikt.
   dagFeestCheck();
+}
+
+
+/* ================= DE PEILING (v20.3) =================
+   Stefan: "ik moet het gevoel hebben dat ik echt een stap heb gemaakt met Spaans en de
+   voortgangsbalk moet een soort bevestiging zijn zo van dit klopt idd ongeveer met het niveau
+   waarvan ikzelf denk dat ik ben."
+
+   De balk telde tot nu toe alleen wat je hier hebt vastgezet. Dat is eerlijk, maar het is niet je
+   niveau: alles wat je al kende voordat je deze app opende telde als nul. Wie na drie weken op 6%
+   staat herkent zichzelf daar niet in, en dan bevestigt de balk niets. En omgekeerd: het niveau dat
+   je bij de start zelf opgaf is geen bevestiging, want dat kwam van jou.
+
+   Dus meten we de rest in plaats van hem te negeren of aan te nemen. Een peiling is een korte
+   steekproef uit de woorden van dit niveau die hier nog niet vaststaan. Twaalf stuks, herkennen
+   (Spaans naar Nederlands, zoals een echte woordenschattoets werkt), met "geen idee" als
+   volwaardige knop. Geen XP en geen doosjes: wat je hier antwoordt gaat nergens je oefenschema in,
+   want dan vervuil je precies de groep die je wilde meten.
+
+   Uit die steekproef volgt een schatting met een marge. De balk toont voortaan drie dingen in
+   dezelfde strook: wat je hier bewezen hebt, wat onderweg is, en het geschatte deel. Het getal
+   erboven is de schatting, want dat is de bevestiging waar het om gaat. Het streepje in de balk
+   staat waar je bij je eerste peiling stond, en het verschil daartussen is je stap.
+
+   Grenzen, expres: alleen niveaus waarvan deze app minstens 80% van de Cervantes-noemer in huis
+   heeft (vandaag is dat A1), en pas vanaf twintig antwoorden. Een schatting uit vier woorden is
+   geen schatting maar een gok met een percentage erachter. */
+var PEIL_ITEMS = 12;      // vragen per peiling
+var PEIL_MIN_N = 20;      // minder antwoorden dan dit: geen schatting, dan zwijgt de balk erover
+var PEIL_DEKKING = 0.8;   // zoveel van de noemer moet de app in huis hebben
+var PEIL_HERHAAL = 14;    // dagen tussen twee aanbiedingen
+var peilNu = null;        // de lopende peiling, alleen in het geheugen van dit tabblad
+
+var _peilKeys = null;
+// per niveau: sleutel -> de woord-ids die de app ervoor heeft. Zonder materiaal kun je niet vragen.
+function pcicKeysApp(){
+  if(_peilKeys) return _peilKeys;
+  var mp = pcicMap(), nv = pcicNiv(), uit = {}, i, w, ks, j, k, n;
+  for(i = 0; i < WORDS.length; i++){
+    w = WORDS[i]; ks = mp[w.id];
+    if(!ks) continue;
+    for(j = 0; j < ks.length; j++){
+      k = ks[j]; n = nv[k];
+      if(!n) continue;
+      if(!uit[n]) uit[n] = {};
+      if(!uit[n][k]) uit[n][k] = [];
+      uit[n][k].push(w.id);
+    }
+  }
+  _peilKeys = uit;
+  return uit;
+}
+// dezelfde twee groepen die voortgangTellers telt, maar dan als sleutelverzameling in plaats van
+// als getal, want de schatting moet weten welke sleutels al bewezen zijn.
+function dekKeysNu(){
+  var drempel = stevigDrempel(), mp = pcicMap(), vast = {}, opweg = {}, id, st, b, ks, i;
+  for(id in S.srs){
+    st = S.srs[id];
+    if(!st || typeof st !== "object") continue;
+    b = st.box || 0;
+    ks = mp[id];
+    if(!ks) continue;
+    for(i = 0; i < ks.length; i++){
+      if(b >= drempel && st.k) vast[ks[i]] = 1;
+      if(b >= 3) opweg[ks[i]] = 1;
+    }
+  }
+  return {vast:vast, opweg:opweg};
+}
+function peilMeetbaar(niv){
+  var noem = PCIC_NOEMER[niv] || 0;
+  if(!noem) return false;
+  var app = pcicKeysApp()[niv] || {};
+  return Object.keys(app).length / noem >= PEIL_DEKKING;
+}
+// Wilson-interval. Netter dan de schoolformule bij kleine steekproeven en bij kansen dicht bij 0
+// of 1, en dat is precies waar wij zitten.
+function wilsonBand(k, n){
+  if(!(n > 0)) return {lo:0, hi:1};
+  var z = 1.96, p = k / n, z2 = z * z, d = 1 + z2 / n;
+  var c = (p + z2 / (2 * n)) / d;
+  var m = z * Math.sqrt(Math.max(0, p * (1 - p) / n + z2 / (4 * n * n))) / d;
+  return {lo:Math.max(0, c - m), hi:Math.min(1, c + m)};
+}
+function peilRuw(niv){
+  if(!peilMeetbaar(niv)) return null;
+  var noem = PCIC_NOEMER[niv] || 0;
+  var app = pcicKeysApp()[niv] || {};
+  var dk = dekKeysNu(), vast = 0, opweg = 0, k;
+  for(k in app){
+    if(dk.vast[k]) vast++;
+    else if(dk.opweg[k]) opweg++;
+  }
+  /* Alleen antwoorden over sleutels die nu nog niet bewezen zijn tellen mee. Wat bewezen is zit al
+     in de telling; het ook nog eens via de steekproef laten meewegen is dubbeltellen. */
+  var it = (S.peil && S.peil.items) || {}, n = 0, g = 0, r = 0;
+  for(k in it){
+    if(!app[k] || dk.vast[k]) continue;
+    n++;
+    if(it[k].r === -1) continue;   // geen idee telt als niet gekend, maar niet als gokfout
+    g++;
+    if(it[k].r === 1) r++;
+  }
+  return {niv:niv, noem:noem, vast:vast, opweg:opweg, n:n, g:g, r:r};
+}
+function niveauSchatting(niv){
+  var ruw = peilRuw(niv);
+  if(!ruw || ruw.n < PEIL_MIN_N) return null;
+  /* Gokcorrectie. Bij vier opties levert blind gokken gemiddeld een kwart goed op, dus trekken we
+     van de goede antwoorden een derde van de foute af: het klassieke r - f/(k-1). Zonder die
+     correctie schat je jezelf structureel te hoog, en dan bevestigt de balk iets wat niet waar is. */
+  var gekend = Math.max(0, ruw.r - (ruw.g - ruw.r) / 3);
+  var band = wilsonBand(gekend, ruw.n);
+  var rest = Math.max(0, ruw.noem - ruw.vast);
+  var p = gekend / ruw.n;
+  return {
+    niv:ruw.niv, noem:ruw.noem, vast:ruw.vast, opweg:ruw.opweg, n:ruw.n, p:p, rest:rest,
+    punt:  Math.round(ruw.vast + p * rest),
+    onder: Math.round(ruw.vast + band.lo * rest),
+    boven: Math.round(ruw.vast + band.hi * rest)
+  };
+}
+/* Welk niveau staat er in de balk? Het laagste dat de app kan nameten en dat nog niet staat. Dat
+   is bewust iets anders dan dagNiveau(): die volgt poortRang(), en poortRang telt een niveau dat je
+   bij de start zelf hebt opgegeven als afgehandeld. Een balk die op jouw eigen verklaring rust kan
+   nooit een bevestiging zijn. Staat het laagste meetbare niveau eenmaal wel, dan valt de balk terug
+   op dagNiveau() en doet hij weer wat hij in v20.1 deed. */
+function peilNiveau(){
+  var i, n, sch, ruw;
+  for(i = 0; i < NIV_NAAM.length; i++){
+    n = NIV_NAAM[i];
+    if(!peilMeetbaar(n)) continue;
+    sch = null;
+    try { sch = niveauSchatting(n); } catch(e){ sch = null; }
+    if(sch){ if(sch.punt / sch.noem >= POORT_PCT) continue; return n; }
+    ruw = peilRuw(n);
+    if(ruw && ruw.vast / (ruw.noem || 1) >= POORT_PCT) continue;
+    return n;
+  }
+  return null;
+}
+function balkNiveau(){
+  var p = peilNiveau();
+  if(p) return p;
+  return dagNiveau();
+}
+// sleutels die we mogen vragen: er is materiaal voor, ze staan hier nog niet vast, en ze zijn nog
+// niet eerder gepeild (elke sleutel telt maar een keer mee, anders meet je jezelf dubbel).
+function peilKandidaten(niv){
+  var app = pcicKeysApp()[niv] || {}, dk = dekKeysNu(), it = (S.peil && S.peil.items) || {};
+  var uit = [], k;
+  for(k in app){
+    if(dk.vast[k]) continue;
+    if(it[k]) continue;
+    if(!app[k].length) continue;
+    uit.push(k);
+  }
+  return uit;
+}
+function peilDagenGeleden(iso){
+  if(!iso) return 9999;
+  var a = String(iso).split("-"), b = today().split("-");
+  if(a.length !== 3) return 9999;
+  var d1 = Date.UTC(+a[0], +a[1] - 1, +a[2]), d2 = Date.UTC(+b[0], +b[1] - 1, +b[2]);
+  return Math.round((d2 - d1) / 86400000);
+}
+/* Wanneer bieden we hem aan? Nooit op je eerste dag, want dan is een toets het eerste wat de app
+   van je vraagt. Pas nadat je een les hebt afgerond (dan weet je wat de app is), daarna hoogstens
+   eens per twee weken, en nooit twee keer op een dag. Zelfde regel als v20.1: een blok verdient
+   zijn plek pas als het iets te zeggen heeft. */
+function peilAanbod(){
+  var niv = peilNiveau();
+  if(!niv) return null;
+  if(!S.peil) return null;
+  if(S.peil.laatst === today()) return null;
+  if(peilKandidaten(niv).length < 4) return null;
+  var sch = null;
+  try { sch = niveauSchatting(niv); } catch(e){ sch = null; }
+  if(!sch){
+    if(!S.lesFlowEerste) return null;
+    return {niv:niv, eerste:!S.peil.laatst};
+  }
+  if(peilDagenGeleden(S.peil.laatst) < PEIL_HERHAAL) return null;
+  return {niv:niv, eerste:false};
+}
+function peilEerste(niv){
+  var lg = (S.peil && S.peil.log) || [], i;
+  for(i = 0; i < lg.length; i++){ if(lg[i].niv === niv) return lg[i]; }
+  return null;
+}
+// vier vertalingen, afleiders het liefst uit dezelfde categorie. Zelfde idee als wCheckOpties, maar
+// andersom: daar zoek je het Spaanse woord, hier de betekenis.
+function peilOpties(w){
+  var goed = wTrans(w);
+  var pool = WORDS.filter(function(x){ return x.id !== w.id && wTrans(x) !== goed; });
+  var zelfde = pool.filter(function(x){ return x.tag === w.tag; });
+  var bron = zelfde.length >= 3 ? zelfde : pool;
+  var g = geschud(bron), gezien = {}, af = [], i, v;
+  for(i = 0; i < g.length && af.length < 3; i++){
+    v = wTrans(g[i]);
+    if(gezien[v]) continue;
+    gezien[v] = 1;
+    af.push(v);
+  }
+  return geschud([goed].concat(af));
+}
+function peilWoordVoor(ids){
+  // liefst een woord dat je hier nog nooit gezien hebt; anders het eerste dat er is
+  var i, w, vrij = null, eerste = null;
+  for(i = 0; i < ids.length; i++){
+    w = WORDS.filter(function(x){ return x.id === ids[i]; })[0];
+    if(!w) continue;
+    if(!eerste) eerste = w;
+    if(!S.srs[w.id] && !vrij) vrij = w;
+  }
+  return vrij || eerste;
+}
+function peilStart(){
+  var niv = peilNiveau();
+  if(!niv) return;
+  var kand = geschud(peilKandidaten(niv));
+  var vragen = [], i, w;
+  for(i = 0; i < kand.length && vragen.length < PEIL_ITEMS; i++){
+    w = peilWoordVoor(pcicKeysApp()[niv][kand[i]]);
+    if(!w) continue;
+    vragen.push({key:kand[i], w:w, opties:peilOpties(w)});
+  }
+  if(vragen.length < 4){
+    toast(ct("Er zijn nu te weinig ongeziene woorden om iets te peilen.",
+             "There are too few unseen words to check right now."));
+    return;
+  }
+  peilNu = {niv:niv, i:0, vragen:vragen, bezig:false, gekozen:null, goed:false};
+  show("lessen");
+  peilRender();
+}
+function peilScherm(html){
+  var lv = document.getElementById("lessonView");
+  if(lv) lv.classList.add("hidden");
+  var el = document.getElementById("lessonList");
+  if(!el) return null;
+  el.classList.remove("hidden");
+  el.innerHTML = html;
+  return el;
+}
+function peilRender(){
+  if(!peilNu) return;
+  var v = peilNu.vragen[peilNu.i], nr = peilNu.i + 1, van = peilNu.vragen.length;
+  var goed = wTrans(v.w);
+  var knoppen = v.opties.map(function(o){
+    var cls = "ghost";
+    if(peilNu.gekozen){
+      if(o === goed) cls = "good";
+      else if(o === peilNu.gekozen) cls = "bad";
+    }
+    return "<button type='button' class='"+cls+"' data-peil=\"" + o.replace(/"/g, "&quot;") +
+      "\" style='text-align:left'>"+o+"</button>";
+  }).join("");
+  var el = peilScherm(
+    "<div class='card'><span class='kicker'>"+ct("Peiling","Level check")+" · "+peilNu.niv+"</span>"+
+    "<div class='boxrow'><span style='width:52px'>"+nr+"/"+van+"</span>"+
+      "<div class='bar'><div style='width:"+Math.round(100 * (nr - 1) / van)+"%'></div></div></div>"+
+    "<p class='big es' style='margin:10px 0 2px'>"+v.w.es+"</p>"+
+    "<p class='muted' style='margin:0 0 10px'>"+ct("Wat betekent dit?","What does this mean?")+"</p>"+
+    "<div style='display:flex; flex-direction:column; gap:8px' id='peilOpties'>"+knoppen+"</div>"+
+    "<button class='ghost' id='btnPeilGeen' style='margin-top:8px; width:100%'>"+
+      ct("Geen idee","No idea")+"</button>"+
+    "<p class='muted' style='margin:10px 0 0; font-size:.85rem'>"+
+      ct("Dit is een meting, geen les. Je punten en je doosjes veranderen er niet van.",
+         "This is a measurement, not a lesson. It does not change your points or your boxes.")+"</p>"+
+    "<div class='row' style='margin-top:8px'><button class='ghost' id='btnPeilStop'>"+
+      ct("Stoppen","Stop")+"</button></div></div>");
+  if(!el) return;
+  el.querySelectorAll("[data-peil]").forEach(function(b){
+    b.onclick = function(){ peilAntwoord(b.getAttribute("data-peil")); };
+  });
+  var bg = document.getElementById("btnPeilGeen");
+  if(bg) bg.onclick = function(){ peilAntwoord(null); };
+  var bs = document.getElementById("btnPeilStop");
+  if(bs) bs.onclick = function(){ peilStop(); };
+}
+function peilAntwoord(keuze){
+  if(!peilNu || peilNu.bezig) return;
+  var v = peilNu.vragen[peilNu.i], goed = (keuze !== null && keuze === wTrans(v.w));
+  peilNu.bezig = true;
+  peilNu.gekozen = (keuze === null ? "" : keuze);
+  peilNu.goed = goed;
+  // let op: hier gaat niets naar S.srs. De steekproef moet buiten je oefenschema blijven.
+  S.peil.items[v.key] = {r:(keuze === null ? -1 : (goed ? 1 : 0)), d:today(), niv:peilNu.niv};
+  persist();
+  peilRender();
+  setTimeout(function(){
+    if(!peilNu) return;
+    peilNu.bezig = false; peilNu.gekozen = null;
+    peilNu.i++;
+    if(peilNu.i >= peilNu.vragen.length) peilKlaar();
+    else peilRender();
+  }, 900);
+}
+function peilStop(){
+  peilNu = null;
+  renderLessons();
+}
+function peilKlaar(){
+  var niv = peilNu ? peilNu.niv : balkNiveau();
+  S.peil.laatst = today();
+  var sch = null;
+  try { sch = niveauSchatting(niv); } catch(e){ sch = null; }
+  if(sch){
+    S.peil.log.push({d:today(), niv:niv, punt:sch.punt, onder:sch.onder, boven:sch.boven,
+                     n:sch.n, vast:sch.vast});
+  }
+  persist();
+  peilNu = null;
+  peilUitslag(niv, sch);
+}
+function peilKalibratie(niv, sch){
+  if(!sch) return "";
+  var pct = Math.round(100 * sch.punt / sch.noem), drempel = Math.round(POORT_PCT * 100);
+  var c = S.claim, zei = (c && NIV_NAAM[c.niv]) || null;
+  var r = "";
+  if(pct >= drempel){
+    r = ct(niv+" staat: je herkent het grootste deel van deze woorden.",
+           niv+" is there: you recognise most of these words.");
+  } else if(pct >= 60){
+    r = ct("Je zit ruim in "+niv+", met nog ongeveer "+(sch.noem - sch.punt)+" woorden te gaan.",
+           "You are well into "+niv+", with roughly "+(sch.noem - sch.punt)+" words to go.");
+  } else {
+    r = ct("De basis van "+niv+" is nog in opbouw. Dat is precies waar oefenen het meeste oplevert.",
+           "The "+niv+" base is still being built. That is exactly where practice pays off most.");
+  }
+  if(zei && zei !== niv && pct < drempel){
+    r += " " + ct("Je gaf bij de start "+zei+" op; die woorden komen vast terug, maar "+niv+
+                  " is nog niet helemaal dicht.",
+                  "You said "+zei+" at the start; those words will come, but "+niv+
+                  " is not fully closed yet.");
+  } else if(zei && zei === niv && pct >= drempel){
+    r += " " + ct("Dat komt overeen met wat je zelf opgaf.", "That matches what you said yourself.");
+  }
+  return "<p class='muted' style='margin:0 0 10px; font-size:.88rem'>"+r+"</p>";
+}
+function peilUitslag(niv, sch){
+  var ruw = peilRuw(niv);
+  var tekort = ruw ? Math.max(0, PEIL_MIN_N - ruw.n) : PEIL_MIN_N;
+  show("lessen");
+  var el = peilScherm(
+    "<div class='card'><span class='kicker'>"+ct("Peiling klaar","Check complete")+" ✓</span>"+
+    (sch
+      ? dagBasisRegelHtml() + peilKalibratie(niv, sch)
+      : "<p style='margin:6px 0'>"+ct("Bedankt. Nog "+tekort+" antwoorden en de balk kan je niveau schatten.",
+                                      "Thanks. "+tekort+" more answers and the bar can estimate your level.")+"</p>")+
+    "<div class='row'><button class='primary' id='btnPeilTerug'>"+ct("Naar vandaag","Back to today")+"</button></div></div>");
+  if(!el) return;
+  var bt = document.getElementById("btnPeilTerug");
+  if(bt) bt.onclick = function(){ renderLessons(); };
 }
 
 /* ================= LESSEN: WEERGAVE ================= */
@@ -8402,10 +8997,9 @@ function ritmeCard(){
   var gedaanVandaag = !!S.lesFlow[t];
   var nieuw = newToday();
   var xp = S.xp[t] || 0;
-  // v19.64: `over` telt nog steeds wat er openstaat, maar wordt alleen nog gebruikt om te zien of je
-  // bíj bent. Het aantal zelf komt niet meer in beeld; quizDueCount() hoeft hier niet meer geteld.
-  var over = 0;
-  WORDS.forEach(function(w){ var st = S.srs[w.id]; if(st && st.due <= t) over++; });
+  // v19.64: of je bíj bent telt nog steeds, het aantal zelf komt niet meer in beeld.
+  // v20.1: dat tellen zit nu in dagRelevantie(), samen met de andere vragen over jouw context.
+  var rel = dagRelevantie();
   function chip(okk, txt){ return "<span class='chip"+(okk?" ok":"")+"'>"+(okk?"✓ ":"")+txt+"</span>"; }
   var dag2 = S.gestart === addDays(t, -1);
   // v19.60: heb je vandaag op "Klaar voor vandaag" getikt, dan is dit scherm rustig. Geen open
@@ -8419,6 +9013,24 @@ function ritmeCard(){
   // eind op je wacht: de beloning bij naam noemen vóórdat je begint is de helft van de viering.
   var groet = chispaGroet();
   var tapaHoy = tapaVolgende();
+  /* v20.2: er komt geen blok bij voor "verder waar je was". De knop die er al staat zegt wat er nu
+     te doen is. Twee knoppen naast elkaar zou precies de tweede bevinding van mijn moeder opleveren:
+     knoppen waarvan de bedoeling onduidelijk is. Opnieuw beginnen kan wel, als tekstregel eronder,
+     dezelfde vorm als "toch nog een les doen". */
+  var hervat = !afgesloten && lesFlowHervatKan();
+  var hStap = hervat ? lesFlowStapNum(S.lesFlowNu) : 0;
+  var hNaam = hervat ? lesFlowStapNaam(S.lesFlowNu) : "";
+  /* v20.1: elk chipje moet iets zeggen. "nieuwe woorden 0/5", "dagdoel 0/30" en een vinkje bij
+     "herhalingen bij" terwijl je nog nooit iets herhaald hebt, zijn drie regels die alleen maar
+     ruimte innemen op precies het scherm waar mijn moeder afhaakte. Ze komen terug op het moment
+     dat er iets in staat, en dan zijn ze ook meteen een schouderklopje.
+     v19.64 staat nog: "14 herhalingen open" komt nooit meer terug. Een getal dat groeit terwijl je
+     niets doet, straft wegblijven af en maakt terugkomen duurder naarmate je langer weg was. */
+  var chipsHtml = "";
+  if(rel.chipNieuw) chipsHtml += chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")");
+  if(rel.chipHerhaal) chipsHtml += chip(true, ct("herhalingen bij","reviews done"));
+  if(rel.chipDoel) chipsHtml += chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" "+xpw());
+  if(chipsHtml) chipsHtml = "<div class='ritme' style='margin-top:10px'>"+chipsHtml+"</div>";
   var portie = dagPortie();
   var portieTxt = (function(){
     var d = [];
@@ -8434,20 +9046,28 @@ function ritmeCard(){
     "<div class='lfrow'>"+
       "<button class='lfchispa' id='btnRitmeChispa' title='Chispa'>"+chispaMiniSvg()+"</button>"+
       "<div class='lfmid'>"+
-        "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓") : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : "🚦 "+ct("Start je les","Start your session"))+"</span>"+
-        "<p class='lfsay'><span class='es'>"+(afgesloten ? "Hasta mañana." : gedaanVandaag ? "¡Muy bien!" : groet.es)+"</span>"+
+        "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓")
+          : hervat ? "🚦 "+ct("Verder waar je was","Pick up where you left off")+" · "+ct("stap","step")+" "+hStap+"/4 · "+hNaam
+          : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : "🚦 "+ct("Start je les","Start your session"))+"</span>"+
+        "<p class='lfsay'><span class='es'>"+(afgesloten ? "Hasta mañana." : hervat ? "Seguimos donde lo dejamos." : gedaanVandaag ? "¡Muy bien!" : groet.es)+"</span>"+
           "<span class='nl'>"+(afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.")
+            : hervat ? ct("We gaan verder waar we gebleven waren.","We pick up where we left off.")
             : gedaanVandaag ? ct("Chispa is trots op je.","Chispa is proud of you.")
             : ct(groet.nl, groet.en))+"</span></p>"+
       "</div>"+
     "</div>"+
-    (afgesloten || gedaanVandaag ? "" :
-      "<p class='muted' style='margin:6px 0 0'>"+portieTxt+"</p>"+
+    (afgesloten || (gedaanVandaag && !hervat) ? "" :
+      "<p class='muted' style='margin:6px 0 0'>"+(hervat ? ct("Je stopte bij stap "+hStap+" van 4: "+hNaam+". De rest van je portie staat klaar.",
+                                                              "You stopped at step "+hStap+" of 4: "+hNaam+". The rest of your session is waiting.") : portieTxt)+"</p>"+
       "<p class='muted' style='margin:2px 0 0'>"+ct("Daarna mag je Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> geven.",
                                                     "Then you get to give Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b>.")+"</p>")+
     (afgesloten
       ? "<p class='muted' style='margin:8px 0 0'><span id='btnDagToch' style='text-decoration:underline; cursor:pointer'>"+ct("toch nog een les doen","do another session anyway")+"</span></p>"
-      : "<div class='row'><button class='primary' id='btnStartLesFlow'>"+(gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>")+
+      : "<div class='row'><button class='primary' id='btnStartLesFlow'>"+
+          (hervat ? ct("Verder waar je was →","Continue where you were →")
+            : gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>"+
+        (hervat ? "<p class='muted' style='margin:6px 0 0'><span id='btnLesOpnieuw' style='text-decoration:underline; cursor:pointer'>"+
+          ct("liever opnieuw beginnen","rather start over")+"</span></p>" : ""))+
     // v19.58: je eigen afspraak, elke dag terug te zien op de plek waar je hem uitvoert. Een
     // implementatie-intentie werkt doordat het moment de handeling oproept, dus moet het moment
     // in beeld staan en niet weggestopt in instellingen.
@@ -8455,17 +9075,9 @@ function ritmeCard(){
       ? "<p class='muted' style='margin:8px 0 0'>📌 "+(afgesloten ? ct("Morgen: ","Tomorrow: ") : ct("Jouw moment: ","Your moment: "))+"<b>"+momentTekst()+"</b> · "+
         "<span id='momentRegel' style='text-decoration:underline; cursor:pointer'>"+ct("wijzigen","change")+"</span></p>"
       : "")+
-    "<div class='ritme' style='margin-top:10px'>"+
-    chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")")+
-    // v19.64: dit chipje verschijnt alleen nog als je bíj bent. Het is een schouderklopje geworden
-    // in plaats van een saldo. "14 herhalingen open" en "3 grammatica-herhalingen open" zijn eruit:
-    // die getallen groeiden juist door terwijl je niets deed, dus ze straften wegblijven af en
-    // maakten terugkomen duurder naarmate je langer weg was. Zo'n rekening hoort niet op het scherm
-    // waar je je dag begint. De planning eronder loopt onveranderd door.
-    (over === 0 ? chip(true, ct("herhalingen bij","reviews done")) : "")+
-    chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" "+xpw()+"")+
-    "</div></div>";
+    chipsHtml+"</div>";
 }
+
 
 /* ================= HET DAGBORD (v19.69) =================
    Stefan: "op dagniveau wil je overzicht van je progressie, de krabbel van iemand, of iemands
@@ -8505,6 +9117,61 @@ function dagKrabbels(){
     return x && String(x.naar || "").toLowerCase() === mij;
   });
 }
+/* ================= v20.1: EEN BLOK VERDIENT ZIJN PLEK =================
+   Stefan, 5 augustus: "laten we voorzichtig zijn met dingen toevoegen. Eerder dingen weghalen en
+   veel meer contextueel werken (...) context koppelen aan relevantie."
+
+   Vandaag liet tot nu toe alles altijd zien, ook als er niets te zeggen viel: een kaart die meldt
+   dat er niets nieuws is, een balk op 0%, veertien staafjes waarvan er dertien leeg zijn, en drie
+   chipjes met nullen erin. Op dag een is dat vier blokken om een knop heen. Precies waar mijn
+   moeder op vastliep: te veel op het scherm, en knoppen waarvan onduidelijk is waarvoor ze zijn.
+
+   Vanaf nu bepaalt jouw context of een blok er staat. Geen instelling, geen knop om iets te
+   verbergen: een blok verschijnt op het moment dat het iets over jou zegt en is er tot die tijd
+   niet. Dat maakt dag een klein, en het maakt alles wat er wel staat de moeite van het lezen waard.
+
+   Alles wat hier verdwijnt staat nog gewoon op Profiel. Dit gaat over wat je ziet zonder erom te
+   vragen, niet over wat je kunt opzoeken.
+   ====================================================================== */
+// twee stille lezers: dagRelevantie mag nooit omvallen op een schatting die er nog niet is
+function peilSchattingStil(niv){ try { return niveauSchatting(niv); } catch(e){ return null; } }
+function peilAanbodStil(){ try { return peilAanbod(); } catch(e){ return null; } }
+function dagRelevantie(){
+  var t = today(), tel = voortgangTellers(), niv = balkNiveau();
+  var onderweg = Math.max((tel.dek && tel.dek[niv]) || 0, (tel.dekw && tel.dekw[niv]) || 0);
+  var open = 0, dagenMetXp = 0, i, d, st;
+  for(i = 0; i < WORDS.length; i++){ st = S.srs[WORDS[i].id]; if(st && st.due <= t) open++; }
+  for(i = 0; i < 14; i++){ d = addDays(t, -i); if(((S.xp && S.xp[d]) || 0) > 0) dagenMetXp++; }
+  return {
+    // een kaart die meldt dat er niets te melden is, is zelf de melding
+    nieuws: dagNieuwsRegels().length > 0,
+    // je basis verschijnt zodra er iets onderweg is. Doos 3 kost ongeveer een week, of staat er
+    // meteen als je je niveau geclaimd hebt. Daarvoor kan de balk niets anders tonen dan 0%, en
+    // een balk die dagenlang stil staat leert je vooral dat de balk niets zegt (zie v19.87).
+    // v20.3: en ook zodra er een schatting ligt of er een peiling aan te bieden is, want dan
+    // heeft de balk iets te zeggen wat je nergens anders ziet.
+    basis: onderweg > 0 || !!peilSchattingStil(niv) || !!peilAanbodStil(),
+    // een lijn heb je pas vanaf twee punten. Een staafje en dertien gaten is geen lijn.
+    lijn: dagenMetXp >= 2,
+    // deze drie stonden er ook als ze nul waren, en nul is geen bericht
+    chipNieuw: newToday() > 0,
+    chipHerhaal: open === 0 && tel.geoefend > 0,
+    chipDoel: ((S.xp && S.xp[t]) || 0) > 0,
+    niveau: niv
+  };
+}
+
+/* Waar gaat je basisbalk over? Tot v20.0 stond er A1, ook als je bij het opstarten verteld had dat
+   je verder was. poortRang() weet dat allang: het laagste niveau dat nog niet af is, met je claim
+   meegerekend. Dezelfde vraag stond dus al beantwoord in de app, alleen niet op dit scherm. */
+function dagNiveau(){
+  var r = 0;
+  try { r = poortRang(); } catch(e){ r = 0; }
+  if(!(r >= 0)) r = 0;
+  if(r >= NIV_NAAM.length) r = NIV_NAAM.length - 1;
+  return NIV_NAAM[r];
+}
+
 function dagNieuwsRegels(){
   var och = dagSnapOchtend();
   var nu = dagSnapNu();
@@ -8531,20 +9198,14 @@ function dagNieuwsRegels(){
 }
 function dagNieuwsHtml(){
   var r = dagNieuwsRegels();
-  var html = "<div class='card' id='nieuwsKaart'><span class='kicker'>"+ct("Nieuw voor jou","New for you")+"</span>";
-  if(r.length){
-    html += r.map(function(x){
+  // v20.1: geen nieuws is geen kaart. De vorige versie zette hier een blok neer met daarin de
+  // mededeling dat het blok leeg was, plus een aansporing om je les te doen. Die knop staat al
+  // twee centimeter hoger.
+  if(!r.length) return "";
+  return "<div class='card' id='nieuwsKaart'><span class='kicker'>"+ct("Nieuw voor jou","New for you")+"</span>"+
+    r.map(function(x){
       return "<div class='nwrij'"+(x.go?" data-nwgo='"+x.go+"'":"")+"><span class='nwe'>"+x.e+"</span><span>"+x.t+"</span></div>";
-    }).join("");
-  } else {
-    var gis = (S.xp && S.xp[addDays(today(),-1)]) || 0;
-    html += "<p class='muted' style='margin:6px 0 0'>"+
-      (gis > 0 ? ct("Nog niets nieuws vandaag. Gisteren haalde je "+gis+" "+xpw()+"; doe je les, dan staat hier zo weer wat.",
-                    "Nothing new yet today. Yesterday you got "+gis+" "+xpw()+"; do your lesson and something will show up here.")
-               : ct("Nog niets nieuws vandaag. Doe je les of geef Chispa een tapa, dan verandert dat.",
-                    "Nothing new yet today. Do your lesson or give Chispa a tapa and that will change."))+"</p>";
-  }
-  return html + "</div>";
+    }).join("")+"</div>";
 }
 /* jouw lijn: veertien dagen in één strook, geen tabel. De hoogte is je xp, de kleur zegt of je je
    dagdoel haalde. Eén klik en je staat bij de cijfers op Profiel. */
@@ -8564,13 +9225,20 @@ function dagLijnHtml(){
     return "<span class='"+cls+"'"+(i===13?" data-vandaag='1'":"")+" style='height:"+h+"px' title='"+a.d+" \u00b7 "+a.x+" "+xpw()+"'></span>";
   }).join("");
   var dg = dagenTotaal();
-  return "<div class='card' id='lijnKaart'>"+dagBasisRegelHtml()+
-    "<span class='kicker'>"+ct("Jouw lijn","Your line")+"</span>"+
-    "<div class='lijnstrook'>"+staven+"</div>"+
-    "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
-      ct("Laatste 14 dagen \u00b7 "+actief+" dagen geoefend \u00b7 dagdoel gehaald op "+gehaald,
-         "Last 14 days \u00b7 practised on "+actief+" days \u00b7 daily goal reached on "+gehaald)+
-      (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p>"+
+  // v20.1: de balk en de staafjes zijn twee aparte berichten en verschijnen apart. Zegt geen van
+  // beide iets, dan is er ook geen kaart, en geen knop naar cijfers die nog nergens over gaan.
+  var rel = dagRelevantie();
+  var basis = rel.basis ? dagBasisRegelHtml() : "";
+  if(!basis && !rel.lijn) return "";
+  return "<div class='card' id='lijnKaart'>"+basis+
+    (rel.lijn
+      ? "<span class='kicker'>"+ct("Jouw lijn","Your line")+"</span>"+
+        "<div class='lijnstrook'>"+staven+"</div>"+
+        "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
+          ct("Laatste 14 dagen \u00b7 "+actief+" dagen geoefend \u00b7 dagdoel gehaald op "+gehaald,
+             "Last 14 days \u00b7 practised on "+actief+" days \u00b7 daily goal reached on "+gehaald)+
+          (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p>"
+      : "")+
     "<div class='row' style='margin-top:8px'><button class='ghost' id='btnLijnMeer'>"+ct("Alle cijfers","All the numbers")+" \u2192</button></div></div>";
 }
 
@@ -8583,21 +9251,78 @@ function dagLijnHtml(){
    Bewust geen extra kaart erbij. Mijn moeder liep vast op te veel op één scherm; dit is
    twee regels in een kaart die er al stond, geen zesde blok. En bewust geen tempo of
    einddatum: dit is een teller van wat je kunt, geen belofte over wanneer je klaar bent. */
+/* v20.3: dezelfde strook, drie lagen. Vol is wat je hier bewezen hebt, half is wat onderweg is,
+   licht is wat de peiling erbij schat. Het getal boven de balk is de schatting en niet het bewezen
+   deel, want dat getal is de vraag die Stefan stelde: klopt dit ongeveer met waar ik denk te zijn.
+   Zonder peiling verandert er niets: dan staat hier exact de balk van v20.1. */
 function dagBasisRegelHtml(){
   var t = voortgangTellers();
-  var n = PCIC_NOEMER.A1 || 390;
-  var d = (t.dek && t.dek.A1) || 0;
-  var w = Math.max(d, (t.dekw && t.dekw.A1) || 0);
-  var pct = n ? Math.round(100 * d / n) : 0;
+  var niv = balkNiveau();
+  var n = PCIC_NOEMER[niv] || 390;
+  var d = (t.dek && t.dek[niv]) || 0;
+  var w = Math.max(d, (t.dekw && t.dekw[niv]) || 0);
+  var sch = null, aanbod = null;
+  try { sch = niveauSchatting(niv); } catch(e){ sch = null; }
+  try { aanbod = peilAanbod(); } catch(e){ aanbod = null; }
+  if(w <= 0 && !sch && !aanbod) return "";
+  var pctD = n ? Math.round(100 * d / n) : 0;
   var pctW = n ? Math.round(100 * (w - d) / n) : 0;
-  return "<span class='kicker'>"+ct("Je basis \u00b7 A1","Your base \u00b7 A1")+"</span>"+
-    "<div class='boxrow' id='dagBasisBalk'><span style='width:34px'>A1</span>"+
-      "<div class='bar duo'><div style='width:"+Math.min(100, pct)+"%'></div>"+
-        "<div class='marge' style='width:"+Math.min(100 - Math.min(100, pct), pctW)+"%'></div></div>"+
-      "<b style='width:44px; text-align:right'>"+pct+"%</b></div>"+
-    "<p class='muted' style='margin:0 0 12px; font-size:.85rem'>"+
-      ct("<b>"+d+"</b> van de "+n+" A1-woorden staan stevig"+(w > d ? ", <b>"+(w - d)+"</b> zijn onderweg" : "")+".",
-         "<b>"+d+"</b> of the "+n+" A1 words are solid"+(w > d ? ", <b>"+(w - d)+"</b> on the way" : "")+".")+"</p>";
+  var kop = pctD, pctS = 0, merk = "", regel, stap = "";
+  if(sch){
+    kop = Math.round(100 * sch.punt / n);
+    pctS = Math.max(0, kop - pctD - pctW);
+    var e0 = peilEerste(niv);
+    if(e0) merk = "<i class='merk' style='left:"+Math.max(0, Math.min(99, Math.round(100 * e0.punt / n)))+"%'></i>";
+    regel = ct("Je kent er naar schatting <b>"+sch.punt+"</b> van de "+n+" "+niv+"-woorden, ergens tussen "+
+                 sch.onder+" en "+sch.boven+". Daarvan staan er <b>"+d+"</b> hier vast.",
+               "You know an estimated <b>"+sch.punt+"</b> of the "+n+" "+niv+" words, somewhere between "+
+                 sch.onder+" and "+sch.boven+". <b>"+d+"</b> of those are solid here.");
+    stap = dagBasisStapHtml(niv, sch, d);
+  } else {
+    regel = ct("<b>"+d+"</b> van de "+n+" "+niv+"-woorden staan stevig"+(w > d ? ", <b>"+(w - d)+"</b> zijn onderweg" : "")+".",
+               "<b>"+d+"</b> of the "+n+" "+niv+" words are solid"+(w > d ? ", <b>"+(w - d)+"</b> on the way" : "")+".");
+  }
+  var bD = Math.min(100, pctD), bW = Math.min(100 - bD, pctW), bS = Math.min(100 - bD - bW, pctS);
+  return "<span class='kicker'>"+ct("Je basis \u00b7 "+niv,"Your base \u00b7 "+niv)+"</span>"+
+    "<div class='boxrow' id='dagBasisBalk'><span style='width:34px'>"+niv+"</span>"+
+      "<div class='bar duo'><div style='width:"+bD+"%'></div>"+
+        "<div class='marge' style='width:"+bW+"%'></div>"+
+        "<div class='schat' style='width:"+bS+"%'></div>"+merk+"</div>"+
+      "<b style='width:44px; text-align:right'>"+kop+"%</b></div>"+
+    "<p class='muted' style='margin:0 0 6px; font-size:.85rem'>"+regel+"</p>"+stap+
+    (aanbod ? dagPeilKnopHtml(aanbod) : "");
+}
+/* De stap. Niet als los blokje ergens anders op het scherm, maar als een zin onder dezelfde balk,
+   met het streepje als beginpunt. Twee dingen kunnen gegroeid zijn sinds je eerste peiling: wat je
+   hier hebt vastgezet (dat deed jij) en de schatting zelf (dat is wat je kent). Het eerste staat
+   vooraan, want dat is het bewijs waar Stefan om vroeg. Is er niets gegroeid, dan staat er niets:
+   een zin die meldt dat je stilstond helpt niemand vooruit. */
+function dagBasisStapHtml(niv, sch, d){
+  var e0 = peilEerste(niv);
+  if(!e0) return "";
+  var dv = d - (e0.vast || 0), dp = sch.punt - (e0.punt || 0);
+  if(dv <= 0 && dp < 5) return "";
+  var zin = "";
+  if(dv > 0){
+    zin = ct("Sinds je eerste peiling ("+datumUit(e0.d)+") heb je er <b>"+dv+"</b> zelf vastgezet",
+             "Since your first check ("+datumUit(e0.d)+") you locked in <b>"+dv+"</b> yourself");
+    zin += (dp >= 5
+      ? ct(", en de schatting ging van "+e0.punt+" naar "+sch.punt+".",
+           ", and the estimate went from "+e0.punt+" to "+sch.punt+".")
+      : ".");
+  } else {
+    zin = ct("Sinds je eerste peiling ("+datumUit(e0.d)+") ging de schatting van "+e0.punt+" naar <b>"+sch.punt+"</b>.",
+             "Since your first check ("+datumUit(e0.d)+") the estimate went from "+e0.punt+" to <b>"+sch.punt+"</b>.");
+  }
+  return "<p class='muted' style='margin:0 0 10px; font-size:.85rem'>"+zin+"</p>";
+}
+function dagPeilKnopHtml(a){
+  return "<button class='ghost' id='btnPeilStart' style='width:100%; margin:0 0 4px'>"+
+      (a.eerste ? ct("Klopt dit ongeveer? Doe de peiling","Does this look right? Take the check")
+                : ct("Peil je niveau opnieuw","Check your level again"))+"</button>"+
+    "<p class='muted' style='margin:0 0 12px; font-size:.8rem'>"+
+      ct(PEIL_ITEMS+" woorden, ongeveer een minuut. Telt niet mee voor je punten.",
+         PEIL_ITEMS+" words, about a minute. Does not count towards your points.")+"</p>";
 }
 /* vier spelletjes, recht erin. Aventura staat vast (dat is het grote spel), de andere drie
    wisselen per dag, zodat je niet elke ochtend dezelfde drie ziet. */
@@ -8649,6 +9374,8 @@ function dagBordWire(el){
   });
   var bl = document.getElementById("btnLijnMeer");
   if(bl) bl.onclick = function(){ show("perfil"); };
+  var bp = document.getElementById("btnPeilStart");
+  if(bp) bp.onclick = function(){ peilStart(); };
   el.querySelectorAll("[data-speel]").forEach(function(b){
     var v = b.getAttribute("data-speel");
     b.onclick = function(){ speelNaar(v); };
@@ -8685,7 +9412,10 @@ function renderLessons(){
   listEl.innerHTML = html;
   dagBordWire(listEl);
   var bsf = document.getElementById("btnStartLesFlow");
-  if(bsf) bsf.onclick = function(){ lesFlowStart(); };
+  // v20.2: dezelfde knop, twee betekenissen, en de app kiest welke. Nooit allebei tegelijk in beeld.
+  if(bsf) bsf.onclick = function(){ if(lesFlowHervatKan() && !dagKlaar()) lesFlowHervat(); else lesFlowStart(); };
+  var blo = document.getElementById("btnLesOpnieuw");
+  if(blo) blo.onclick = function(){ lesFlowStart(); };
   // v19.66: Chispa op de dagkaart is aanklikbaar, net als in de banner tijdens de les. Spel, geen keuze.
   var brc = document.getElementById("btnRitmeChispa");
   if(brc) brc.onclick = function(){
@@ -14072,6 +14802,9 @@ function avtSrsBij(w, goed){
   if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0) + 1; }
   st.n = (st.n||0) + 1;
   if(goed){
+    // v20.0: hier typ je het woord zelf, zonder het antwoord voor je. Dat is precies de check die
+    // de flashcard niet kan geven, dus die telt ook.
+    st.k = 1;
     st.box = Math.min(st.box + 1, INTERVALS.length - 1);
     st.due = addDays(t, INTERVALS[st.box]);
     addXP(2); trackPoging(false);

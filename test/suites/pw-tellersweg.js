@@ -90,13 +90,25 @@ const { chromium } = require('playwright');
   // --- 5. maar met die achterstand van dertig toont de ritmekaart geen enkel getal daarover ---
   await page.evaluate(() => { scopeLesson = null; show('lessen'); });
   await page.waitForTimeout(500);
-  const ritme = await page.locator('.ritme').first().innerText();
+  // v20.1: de chipjes staan er alleen nog als ze iets zeggen, dus met een vers profiel dat vandaag
+  // nog niets deed kan de hele rij ontbreken. Waar het hier om gaat blijft hetzelfde: nergens een
+  // saldo van wat je open hebt staan.
+  const ritme = await page.evaluate(() => {
+    const el = document.querySelector('.ritme');
+    return el ? el.innerText : '';
+  });
   ok(!/herhalingen open|reviews open/i.test(ritme), 'geen "N herhalingen open" op de ritmekaart ("' + ritme.replace(/\n/g, ' | ') + '")');
   ok(!/herhaling(en)? bij|reviews done/i.test(ritme), 'en met een achterstand ook geen vinkje dat je bij bent');
   ok(!/grammatica-herhaling|grammar review/i.test(ritme), 'geen "N grammatica-herhalingen open"');
   ok(!/🔁/.test(ritme), 'geen herhaal-icoon met een saldo erachter');
-  ok(/nieuwe woorden|new words/i.test(ritme), 'het chipje voor nieuwe woorden blijft wel staan');
-  ok(/dagdoel|daily goal/i.test(ritme), 'en het dagdoel ook');
+  // en het chipje voor het dagdoel komt terug zodra er iets in staat
+  const metDoel = await page.evaluate(() => {
+    S.xp[today()] = (S.xp[today()] || 0) + 5;
+    show('lessen');
+    const el = document.querySelector('.ritme');
+    return el ? el.innerText : '';
+  });
+  ok(/dagdoel|daily goal/i.test(metDoel), 'zodra je vandaag punten hebt staat het dagdoel er wel ("' + metDoel.replace(/\n/g, ' | ') + '")');
 
   // --- 6. ben je wél bij, dan verschijnt het schouderklopje ---
   const bij = await page.evaluate(() => {
