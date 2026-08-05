@@ -1,6 +1,6 @@
 # De regressiekern
 
-39 browsersuites die samen de poort vormen. Groen betekent: dit mag live. Rood betekent: er gaat
+40 browsersuites die samen de poort vormen. Groen betekent: dit mag live. Rood betekent: er gaat
 niets naar buiten, niet met de hand en niet door een bot.
 
 ```
@@ -121,6 +121,40 @@ suite legt daarom vast dat `balkNiveau()` A1 blijft terwijl `dagNiveau()` A2 zeg
 Waar de app niet kan meten, doet ze geen uitspraak. `PEIL_DEKKING` staat op 0,8: van A1 heeft de app
 356 van de 390 Cervantes-sleutels in huis, van A2 maar 55 van de 409. Over A2 zegt de balk dus
 niets, en dat is geen omissie maar het punt.
+
+## Op je beginscherm (v20.4)
+
+`pw-thuis.js` bewaakt de goedkoopste ingreep op de enige indicator die telt. Wat een webpagina van
+een app scheidt is niet de techniek erin maar de eerste tik: een app open je vanaf je beginscherm,
+een pagina moet je ergens vandaan halen. Die paar seconden staan elke dag tussen Stefan en het
+opnieuw opengaan, en opnieuw opengaan is het hele project.
+
+De app blijft één bestand, en dat maakt dit een puzzel in plaats van een standaardklus. Een gewone
+webapp krijgt een `manifest.webmanifest` en een map met pictogrammen. Hier kan dat niet: de deploy
+in `poort.yml` kopieert een expliciete lijst bestanden, en die lijst staat in een workflowbestand
+dat de token niet mag pushen. Dus staan de pictogrammen als base64 in de kop van het bestand zelf en
+wordt het manifest bij de start opgebouwd als `data:application/manifest+json,`-adres.
+
+Dat laatste is niet alleen een uitweg maar ook gewoon juister. `start_url` moet absoluut zijn, en
+vamos draait op twee domeinen plus localhost in de testpoort. Een hardgecodeerd adres zou op twee
+van de drie buiten scope vallen, en een browser weigert zo'n manifest zonder te klagen. Met de
+pagina al draaiend weet `manifestZetten()` het adres wel.
+
+De suite legt acht dingen vast: het pictogram zit in de kop, het manifest wijst naar dit adres met
+kloppende scope en drie iconen waarvan één maskable, de uitnodiging verschijnt pas vanaf dag drie,
+hij stopt na drie keer en "Niet nodig" doodt hem voorgoed, wie hem al geïnstalleerd heeft krijgt
+geen reclame voor installeren, app-modus maakt ruimte voor de inkeping, knoppen voelen als knoppen
+(geen tekstselectie, geen wachttijd van 300 ms, geen elastiek aan het eind van de pagina) en de app
+gedraagt zich verder precies hetzelfde.
+
+De rem op die uitnodiging is de kern van het ontwerp, niet een detail. Een balk die bij de eerste
+start om installatie bedelt is precies de ruis die bij zijn moeder is weggehaald ("te veel
+informatie op één scherm"). Wie na drie keer vragen niet hapt, wil het niet.
+
+Wat er bewust niet in zit is offline werken. Een service worker moet een `.js`-bestand op de wortel
+van hetzelfde domein zijn, anders klopt zijn scope niet, en dat is per definitie een tweede bestand
+in de deploylijst. Onder `audio/` zetten (de enige map die in zijn geheel meegaat) zou hem tot
+`/audio/` beperken en dus tot niets. Fase B, één regel in `poort.yml`.
 
 ## Wat er niet in zit
 
