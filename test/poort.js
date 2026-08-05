@@ -23,6 +23,9 @@ const SUITES = path.join(__dirname, 'suites');
 // en bij een rode run wil je ze juist wel kunnen bekijken. Dus draaien ze in een eigen uitvoermap,
 // die in CI als artefact wordt bewaard en lokaal in .gitignore staat.
 const WERK = path.join(__dirname, 'uitvoer');
+// Voor elke suite ingeladen: breekt elk verzoek af dat niet naar de eigen testserver gaat. Zie
+// geenserver.js voor waarom de poort anders rood wordt zodra de machine toevallig internet heeft.
+const AFSCHERMING = path.join(__dirname, 'geenserver.js');
 const POORT = 8321;
 const TIJD = 240000;
 const TEGELIJK = Number(process.env.TEGELIJK || 4);
@@ -85,7 +88,10 @@ function kies() {
     const t0 = Date.now();
     return new Promise((res) => {
       execFile('node', [path.join(SUITES, f)],
-        { cwd: WERK, timeout: TIJD, maxBuffer: 64 * 1024 * 1024, env: process.env },
+        { cwd: WERK, timeout: TIJD, maxBuffer: 64 * 1024 * 1024,
+          env: Object.assign({}, process.env, {
+            NODE_OPTIONS: ((process.env.NODE_OPTIONS || '') + ' --require ' + AFSCHERMING).trim()
+          }) },
         (err, so, se) => {
           const sec = Math.round((Date.now() - t0) / 1000);
           const groen = !err;

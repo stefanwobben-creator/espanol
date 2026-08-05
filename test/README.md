@@ -16,6 +16,24 @@ De suites vragen om `http://localhost:8321/espanol-stefan.html`. In deze repo he
 repo, zodat `audio/` en `versie.txt` er ook zijn. Er staat dus geen tweede kopie van de app op
 schijf: een kopie veroudert en dan test je stilletjes iets anders dan je publiceert.
 
+## De poort praat met niets buiten zichzelf
+
+`geenserver.js` wordt door `poort.js` voor elke suite ingeladen en breekt elk verzoek af dat niet
+naar `localhost:8321` gaat. Geen enkele suite hoeft daar iets voor te doen.
+
+Dat is er niet voor de netheid. De app belt bij het opstarten de familieserver op Render. In de
+sandbox waarin deze suites geschreven zijn kwam dat verzoek nooit aan, en die stilte staat in elke
+suite in de lijst met ruis die niet meetelt. Op een GitHub-runner is er wél internet: daar komt het
+verzoek echt aan, weigert Render het omdat `localhost:8321` niet in zijn CORS-lijst staat, en schrijft
+Chromium een zin in de console die in geen enkele ruislijst stond. Acht suites rood in alle vier de
+shards, terwijl er aan de app niets mankeerde.
+
+De les zit niet in die ene zin maar in de afhankelijkheid: de kleur van de poort hing af van of de
+machine internet had, of Render wakker was en wat er in zijn CORS-lijst stond. Zoiets wordt een keer
+rood op een moment dat er niets aan de hand is, en dan is de poort binnen een week een advies.
+
+Wil je ooit tegen de echte server testen, dan is dat een eigen suite die dat expliciet aanzet.
+
 Screenshots komen in `test/uitvoer/` terecht (genegeerd door git, in CI bewaard als artefact bij een
 rode run).
 
