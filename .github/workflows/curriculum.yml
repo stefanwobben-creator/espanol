@@ -5,6 +5,12 @@
 #   - gaten dichten (extra oefenzinnen, een extra grammatica-toetsje) → gaat direct live
 #   - een compleet nieuwe les, zeker op B1-niveau → komt als pull request, jij tikt op akkoord
 #
+# Sinds de poort bestaat (zie poort.yml) draait deze run de regressiekern twee keer: één keer vóór
+# hij iets schrijft, om te weten of main al groen was, en één keer over zijn eigen resultaat. Alleen
+# bij groen wordt er gepusht. De push zelf komt daarna nog een derde keer langs de poort, want
+# poort.yml draait op elke push naar main; dat is dubbelop maar het kost niets en het houdt de regel
+# simpel: er is precies één weg naar live.
+#
 # Benodigd secret: ADMIN_KEY — hetzelfde secret dat logboek.yml al gebruikt. De LLM-ladder en de
 # LLM-sleutels staan namelijk op de server (Render), niet hier; de run leent die via
 # POST /api/admin/llm. Zo staan de sleutels op één plek en hoeft er niets gedupliceerd te worden.
@@ -47,6 +53,19 @@ jobs:
       - name: Zelftest van de contentbibliotheek
         run: node tools/content-lib.js --zelftest
 
+      # De poort staat hier al klaar, nog vóór de bot iets schrijft. Zo weet je zeker dat een rode
+      # avondrun niet aan een al kapotte main ligt: was het hier al rood, dan is het niet zijn schuld.
+      - name: Playwright installeren
+        working-directory: test
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Poort vooraf (staat main groen?)
+        id: vooraf
+        continue-on-error: true
+        run: node test/poort.js
+
       - name: Run
         id: run
         env:
@@ -75,8 +94,30 @@ jobs:
             echo "wat=reparatie" >> $GITHUB_OUTPUT
           fi
 
+      # Hier zat het gat: de bot schreef in index.html en pushte, zonder dat er ooit een browser naar
+      # het resultaat had gekeken. Een stukgeschreven quiz stond dan tot de volgende ochtend live.
+      # Nu draait de regressiekern over de zojuist geschreven app. Rood betekent: niet pushen, wel
+      # de kapotte poging bewaren als artefact zodat je 's ochtends ziet wat hij probeerde.
+      - name: Poort achteraf (deugt wat de bot geschreven heeft?)
+        id: poort
+        if: steps.soort.outputs.wat != 'niets'
+        continue-on-error: true
+        run: |
+          node tools/syntaxcheck.js index.html
+          node test/poort.js
+
+      - name: Kapotte poging bewaren en stoppen
+        if: steps.soort.outputs.wat != 'niets' && steps.poort.outcome == 'failure'
+        run: |
+          mkdir -p /tmp/mislukt
+          cp index.html versie.txt /tmp/mislukt/ 2>/dev/null || true
+          cp -r test/uitvoer /tmp/mislukt/schermen 2>/dev/null || true
+          echo "De poort ging dicht op wat de avondrun schreef. Er is niets gepusht."
+          echo "Stond de poort vooraf al rood? ${{ steps.vooraf.outcome }}"
+          exit 1
+
       - name: Reparatie direct live
-        if: steps.soort.outputs.wat == 'reparatie'
+        if: steps.soort.outputs.wat == 'reparatie' && steps.poort.outcome == 'success'
         run: |
           git config user.name "curriculum-bot"
           git config user.email "actions@users.noreply.github.com"
@@ -91,7 +132,7 @@ jobs:
           git push
 
       - name: Nieuwe les als pull request
-        if: steps.soort.outputs.wat == 'nieuwe-les'
+        if: steps.soort.outputs.wat == 'nieuwe-les' && steps.poort.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

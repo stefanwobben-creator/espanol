@@ -1,2 +1,7 @@
-.github/
 .DS_Store
+
+# .github/ stond hier. Dat betekende dat elk workflowbestand onzichtbaar was voor git: de map bestond
+# lokaal, maar wat je aanpaste kwam nooit op GitHub aan en de wijziging deed dus niets. Weggehaald.
+
+test/uitvoer/
+test/node_modules/

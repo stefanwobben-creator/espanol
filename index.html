@@ -949,7 +949,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v19.98";
+var APP_VERSIE = "v19.99";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8564,13 +8564,40 @@ function dagLijnHtml(){
     return "<span class='"+cls+"'"+(i===13?" data-vandaag='1'":"")+" style='height:"+h+"px' title='"+a.d+" \u00b7 "+a.x+" "+xpw()+"'></span>";
   }).join("");
   var dg = dagenTotaal();
-  return "<div class='card' id='lijnKaart'><span class='kicker'>"+ct("Jouw lijn","Your line")+"</span>"+
+  return "<div class='card' id='lijnKaart'>"+dagBasisRegelHtml()+
+    "<span class='kicker'>"+ct("Jouw lijn","Your line")+"</span>"+
     "<div class='lijnstrook'>"+staven+"</div>"+
     "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
       ct("Laatste 14 dagen \u00b7 "+actief+" dagen geoefend \u00b7 dagdoel gehaald op "+gehaald,
          "Last 14 days \u00b7 practised on "+actief+" days \u00b7 daily goal reached on "+gehaald)+
       (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p>"+
     "<div class='row' style='margin-top:8px'><button class='ghost' id='btnLijnMeer'>"+ct("Alle cijfers","All the numbers")+" \u2192</button></div></div>";
+}
+
+/* v19.99. Stefans kritiek op Duolingo, letterlijk: "ik doe de habit maar ik leer niks."
+   Op Vandaag stond tot nu toe alleen de habit: veertien staafjes en een dagdoel. Het bewijs
+   dat er ook geleerd wordt, de A1-balk, stond op Profiel, en die zit sinds v19.98 achter Meer.
+   Dus stond het bewijs twee tikken verder weg dan de gewoonte. Nu staat de balk bovenin
+   dezelfde kaart, boven de staafjes: eerst wat je kunt, dan hoe vaak je kwam.
+
+   Bewust geen extra kaart erbij. Mijn moeder liep vast op te veel op één scherm; dit is
+   twee regels in een kaart die er al stond, geen zesde blok. En bewust geen tempo of
+   einddatum: dit is een teller van wat je kunt, geen belofte over wanneer je klaar bent. */
+function dagBasisRegelHtml(){
+  var t = voortgangTellers();
+  var n = PCIC_NOEMER.A1 || 390;
+  var d = (t.dek && t.dek.A1) || 0;
+  var w = Math.max(d, (t.dekw && t.dekw.A1) || 0);
+  var pct = n ? Math.round(100 * d / n) : 0;
+  var pctW = n ? Math.round(100 * (w - d) / n) : 0;
+  return "<span class='kicker'>"+ct("Je basis \u00b7 A1","Your base \u00b7 A1")+"</span>"+
+    "<div class='boxrow' id='dagBasisBalk'><span style='width:34px'>A1</span>"+
+      "<div class='bar duo'><div style='width:"+Math.min(100, pct)+"%'></div>"+
+        "<div class='marge' style='width:"+Math.min(100 - Math.min(100, pct), pctW)+"%'></div></div>"+
+      "<b style='width:44px; text-align:right'>"+pct+"%</b></div>"+
+    "<p class='muted' style='margin:0 0 12px; font-size:.85rem'>"+
+      ct("<b>"+d+"</b> van de "+n+" A1-woorden staan stevig"+(w > d ? ", <b>"+(w - d)+"</b> zijn onderweg" : "")+".",
+         "<b>"+d+"</b> of the "+n+" A1 words are solid"+(w > d ? ", <b>"+(w - d)+"</b> on the way" : "")+".")+"</p>";
 }
 /* vier spelletjes, recht erin. Aventura staat vast (dat is het grote spel), de andere drie
    wisselen per dag, zodat je niet elke ochtend dezelfde drie ziet. */

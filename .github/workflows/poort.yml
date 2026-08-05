@@ -1,0 +1,103 @@
+# De poort, en meteen erachter de deploy.
+#
+# Dit bestand is de kern van continuous deployment voor vamos: elke push naar main draait de
+# regressiekern in een echte browser, en alleen als die volledig groen is gaat de map naar
+# GitHub Pages. Er is geen tweede route naar live, ook niet voor de bots: curriculum.yml pusht
+# naar main en komt dus langs precies deze poort.
+#
+# Vier keer per dag deployen kan hiermee. De poort duurt ongeveer twee minuten (35 suites, in
+# vieren gehakt en parallel gedraaid: 9, 9, 9, 8); de deploy zelf een halve minuut.
+#
+# EENMALIG INSTELLEN, ANDERS DOET DE DEPLOY NIETS:
+#   Settings -> Pages -> Build and deployment -> Source: "GitHub Actions" (nu: "Deploy from a branch")
+# Zolang die op branch staat, publiceert GitHub main rechtstreeks en is de poort een advies in
+# plaats van een poort.
+#
+# Terugdraaien na een slechte deploy: Actions -> deze workflow -> de run van de vorige goede
+# versie -> "Re-run all jobs". Dat zet die versie terug live, zonder revert-commit.
+name: Poort
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Twee pushes vlak na elkaar: de oudste poort mag stoppen, de nieuwste telt.
+concurrency:
+  group: poort-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  poort:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false      # je wilt álle rode suites zien, niet alleen de eerste
+      matrix:
+        deel: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: De app is één bestand met één scriptblok; eerst maar eens kijken of dat parseert
+        run: node tools/syntaxcheck.js index.html
+
+      - name: Playwright installeren
+        working-directory: test
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Poort deel ${{ matrix.deel }} van 4
+        run: node test/poort.js --deel ${{ matrix.deel }}/4
+
+      - name: Schermafdrukken bewaren als er iets rood was
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schermen-deel-${{ matrix.deel }}
+          path: test/uitvoer/*.png
+          retention-days: 7
+          if-no-files-found: ignore
+
+  live:
+    # Alleen main gaat live. Een pull request krijgt wel de poort, geen publicatie.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: poort
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      # Expliciete lijst in plaats van "de hele map". Zo staat hier zwart op wit wat de site is,
+      # en gaan testcode, servercode en gereedschap niet mee naar buiten. Voeg je een bestand toe
+      # dat de app op runtime ophaalt, dan hoort het hier ook bij (de app haalt zelf op: versie.txt,
+      # audio/boek/*, audio/dictado/*).
+      - name: Publicatiemap samenstellen
+        run: |
+          mkdir -p _site
+          cp index.html maatje.html versie.txt CNAME .nojekyll _site/
+          cp -r audio _site/audio
+          echo "versie.txt  :: $(cat _site/versie.txt)"
+          echo "APP_VERSIE  :: $(grep -o 'APP_VERSIE *= *\"[^\"]*\"' _site/index.html | head -1)"
+          echo "commit      :: ${{ github.sha }}"
+          echo "omvang      :: $(du -sh _site | cut -f1)"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

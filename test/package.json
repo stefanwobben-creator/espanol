@@ -1,0 +1,11 @@
+{
+  "name": "vamos-poort",
+  "private": true,
+  "description": "De regressiekern van vamos. Losstaand van server/, want dit draait alleen in CI en lokaal.",
+  "scripts": {
+    "poort": "node poort.js"
+  },
+  "devDependencies": {
+    "playwright": "1.62.0"
+  }
+}
