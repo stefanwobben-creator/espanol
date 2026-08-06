@@ -222,6 +222,107 @@ const { chromium } = require('playwright');
   ok(extra.stap === 'produceren' && extra.extra === true, 'lesFlowExtra() zet het productieblok aan als keuze');
   ok(extra.v === 'luisteren', 'met precies de vaardigheid die je gekozen hebt');
 
+  /* ---------------- 7. de tweede lichting (v20.6) ----------------
+     Stefan: "maar 9 concepten is dat niet veel te weinig voor stevig a0- a1 en a2 niveau?"
+     Ja. Deze suite bewaakt dat het er nu drieentwintig zijn, dat elk concept ook echt werkt
+     (uitleg, begripsvraag, vier verse voorbeelden zonder uitzondering) en dat geen enkele
+     Corrector-regel nog in het niets verdwijnt. */
+  const lichting = await page.evaluate(() => {
+    const stuk = [];
+    GC_CONCEPTEN.forEach((c) => {
+      const o = gcVernieuw('concept-' + c.id);
+      const vr = (o && o.stappen[0].vragen) || [];
+      const heel = vr.length === 5 && vr.every((q) =>
+        q.o && q.o.length >= 2 && q.g >= 0 && q.g < q.o.length && q.o[q.g] && q.w &&
+        q.o.filter((x, i, a) => a.indexOf(x) === i).length === q.o.length);
+      const uitleg = !!(c.uitleg && c.uitlegEn && c.naam && c.naamEn && c.icon);
+      if (!heel || !uitleg) stuk.push(c.id + (heel ? '' : ' (vragen)') + (uitleg ? '' : ' (uitleg)'));
+    });
+    // een regel mag uitkomen bij een concept (met doosje) of bij een handgeschreven wizard;
+    // wat bij geen van beide uitkomt, verdwijnt in het niets en dat mag niet
+    const wees = CORR_REGELS.filter((r) => !gcConceptVoorCorr(r.id) && !r.gw).map((r) => r.id);
+    const ids = GC_CONCEPTEN.map((c) => c.id);
+    return {
+      aantal: GC_CONCEPTEN.length,
+      stuk: stuk,
+      wees: wees,
+      uniek: ids.filter((v, i, a) => a.indexOf(v) === i).length,
+      reflexivo: ids.indexOf('reflexivo') !== -1,
+      genero: ids.indexOf('genero') !== -1
+    };
+  });
+  ok(lichting.aantal >= 23, 'er zijn nu minstens drieentwintig concepten (' + lichting.aantal + ')');
+  ok(lichting.uniek === lichting.aantal, 'en geen enkel concept-id komt dubbel voor');
+  ok(lichting.stuk.length === 0, 'elk concept levert een begripsvraag plus vier bruikbare voorbeelden (' + lichting.stuk.join(', ') + ')');
+  ok(lichting.wees.length === 0, 'geen enkele Corrector-regel komt meer nergens uit (' + lichting.wees.join(', ') + ')');
+  ok(lichting.reflexivo === true, 'reflexivo heeft nu een eigen concept');
+  ok(lichting.genero === true, 'en el/la ook');
+
+  // duizend keer trekken: geen enkel patroon mag een vraag maken waarvan het juiste
+  // antwoord ook tussen de afleiders staat
+  const trekken = await page.evaluate(() => {
+    const fout = {};
+    for (let r = 0; r < 40; r++) {
+      GC_CONCEPTEN.forEach((c) => {
+        const vr = gcVernieuw('concept-' + c.id).stappen[0].vragen;
+        vr.forEach((q) => {
+          if (q.o.filter((x) => x === q.o[q.g]).length !== 1) fout[c.id] = (fout[c.id] || 0) + 1;
+        });
+      });
+    }
+    return Object.keys(fout);
+  });
+  ok(trekken.length === 0, 'veertig rondes lang blijft het juiste antwoord het enige juiste (' + trekken.join(', ') + ')');
+
+  /* ---------------- 8. los te lezen als grammatica ----------------
+     Stefan: "ook los kunnen lezen als grammatica." */
+  await page.evaluate(() => { gwSess = null; gcLeesId = null; scopeLesson = null; show('spiekbrief'); });
+  await page.waitForTimeout(300);
+  const lezen = await page.evaluate(() => {
+    const kaart = document.querySelector('#cheat [data-gclees]');
+    if (!kaart) return { kaart: false };
+    kaart.click();
+    const tekst = document.getElementById('cheat').innerText;
+    return {
+      kaart: true,
+      id: gcLeesId,
+      geenQuiz: gwSess === null,
+      uitleg: !!document.getElementById('gcLeesUitleg'),
+      lang: (document.getElementById('gcLeesUitleg') || {}).innerText.length,
+      oefenknop: !!document.getElementById('gcOefen'),
+      terug: !!document.getElementById('gcLeesTerug'),
+      bladeren: document.querySelectorAll('#cheat [data-gclees]').length,
+      tekst: tekst
+    };
+  });
+  ok(lezen.kaart === true, 'de Grammatica-tab toont conceptkaartjes');
+  ok(lezen.geenQuiz === true, 'klikken start niet meteen een toets: je krijgt eerst de uitleg');
+  ok(lezen.uitleg === true && lezen.lang > 120, 'en dat is echte uitleg, geen zin of twee (' + lezen.lang + ' tekens)');
+  ok(lezen.oefenknop === true, 'het oefenen zit een knop verderop');
+  ok(lezen.terug === true, 'en terug naar de lijst kan altijd');
+  ok(lezen.bladeren >= 1, 'je kunt doorbladeren naar een volgend onderwerp, als in een boekje');
+
+  const oefenen = await page.evaluate(() => {
+    document.getElementById('gcOefen').click();
+    return { id: gwSess ? gwSess.id : null, lees: gcLeesId, fase: gwSess ? gwSess.fase : null };
+  });
+  ok(/^concept-/.test(oefenen.id || ''), 'op oefenen drukken start alsnog de microles (' + oefenen.id + ')');
+  ok(oefenen.lees === null, 'en de leesmodus laat netjes los');
+
+  // de dagelijkse les blijft rechtstreeks naar het oefenen gaan
+  const inFlow = await page.evaluate(() => {
+    gwSess = null; gcLeesId = null;
+    S.gram = {};
+    corrSrsBij('reflexivo', false);
+    lesFlow = { stap: null, quizzesTeDoen: [] };
+    const id = lesFlowGramId();
+    gwStart(id);
+    return { id: id, sess: gwSess ? gwSess.id : null, lees: gcLeesId };
+  });
+  ok(inFlow.id === 'concept-reflexivo', 'een fout op reflexivo kiest nu ook echt die les (' + inFlow.id + ')');
+  ok(inFlow.sess === 'concept-reflexivo' && inFlow.lees === null, 'en in de dagelijkse les kom je nog steeds meteen in de oefening');
+  await page.evaluate(() => { gwSluit(); });
+
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|Failed to fetch|ERR_TUNNEL_CONNECTION_FAILED|net::/.test(e));
   ok(relevanteErrors.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + relevanteErrors.length + ' gevonden)');
   if (relevanteErrors.length) relevanteErrors.forEach((e) => console.log('  ->', e));

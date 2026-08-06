@@ -983,7 +983,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v20.5";
+var APP_VERSIE = "v20.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -17908,6 +17908,81 @@ var GC_CERRADO = [
    corr  = de Corrector-regels die op dit concept uitkomen (een fout daar vult dit doosje)
    spiek = de spiekbrief-indexen per track (zo vindt een toetsje zijn concept terug)
    wizard = de bestaande handgeschreven wizard met de diepe uitleg, als die er is */
+/* ================= DE TWEEDE LICHTING (v20.6) =================
+   Stefan, 6 augustus: "maar 9 concepten is dat niet veel te weinig voor stevig a0- a1 en a2 niveau?"
+
+   Ja. Negen was de proef dat de machine werkt, niet de dekking. Het Plan Curricular van het
+   Cervantes telt voor A1 en A2 samen 411 eindpunten, maar dat zijn geen 411 beslissingen. Ze
+   vallen in drie soorten: vormen die je moet kunnen maken (rijtjes, meervouden, uitgangen; die
+   horen bij de Conjugador en de toetsjes), beslissingen waar het Nederlands een woord heeft en
+   het Spaans twee (dat is deze machine), en constructies die je moet kunnen produceren (die
+   horen bij dictado, El Corrector en schrijven).
+
+   De echte beslissingen voor een Nederlandstalige tot en met A2 zijn er ongeveer veertig. Deze
+   lichting brengt er veertien bij, en sluit meteen de twee Corrector-regels die nergens
+   uitkwamen: reflexivo en predicado. Een fout daar verdween tot nu toe in het niets. */
+
+var GC_GEN_LA = [
+ {es:"canción", nl:"lied", en:"song", eind:"-ción"},
+ {es:"estación", nl:"station", en:"station", eind:"-ción"},
+ {es:"habitación", nl:"kamer", en:"room", eind:"-ción"},
+ {es:"televisión", nl:"televisie", en:"television", eind:"-sión"},
+ {es:"ciudad", nl:"stad", en:"city", eind:"-dad"},
+ {es:"universidad", nl:"universiteit", en:"university", eind:"-dad"},
+ {es:"libertad", nl:"vrijheid", en:"freedom", eind:"-tad"},
+ {es:"costumbre", nl:"gewoonte", en:"habit", eind:"-umbre"}
+];
+var GC_GEN_TRAP = [
+ {es:"problema", nl:"probleem", en:"problem"}, {es:"tema", nl:"onderwerp", en:"topic"},
+ {es:"mapa", nl:"kaart", en:"map"}, {es:"día", nl:"dag", en:"day"},
+ {es:"idioma", nl:"taal", en:"language"}, {es:"sofá", nl:"bank", en:"sofa"}
+];
+var GC_GEN_OR = [
+ {es:"color", nl:"kleur", en:"colour"}, {es:"calor", nl:"warmte", en:"heat"},
+ {es:"amor", nl:"liefde", en:"love"}, {es:"ordenador", nl:"computer", en:"computer"}
+];
+var GC_REFL = [
+ {inf:"levantarse", nl:"opstaan", en:"get up", yo:"levanto", tu:"levantas", el:"levanta", nos:"levantamos"},
+ {inf:"ducharse", nl:"douchen", en:"shower", yo:"ducho", tu:"duchas", el:"ducha", nos:"duchamos"},
+ {inf:"acostarse", nl:"naar bed gaan", en:"go to bed", yo:"acuesto", tu:"acuestas", el:"acuesta", nos:"acostamos"},
+ {inf:"llamarse", nl:"heten", en:"be called", yo:"llamo", tu:"llamas", el:"llama", nos:"llamamos"},
+ {inf:"despertarse", nl:"wakker worden", en:"wake up", yo:"despierto", tu:"despiertas", el:"despierta", nos:"despertamos"},
+ {inf:"sentirse", nl:"je voelen", en:"feel", yo:"siento", tu:"sientes", el:"siente", nos:"sentimos"}
+];
+var GC_ZAP = [
+ {inf:"querer", nl:"willen", en:"want", yo:"quiero", tu:"quieres", el:"quiere", nos:"queremos", ellos:"quieren"},
+ {inf:"poder", nl:"kunnen", en:"be able to", yo:"puedo", tu:"puedes", el:"puede", nos:"podemos", ellos:"pueden"},
+ {inf:"dormir", nl:"slapen", en:"sleep", yo:"duermo", tu:"duermes", el:"duerme", nos:"dormimos", ellos:"duermen"},
+ {inf:"empezar", nl:"beginnen", en:"start", yo:"empiezo", tu:"empiezas", el:"empieza", nos:"empezamos", ellos:"empiezan"},
+ {inf:"volver", nl:"terugkomen", en:"come back", yo:"vuelvo", tu:"vuelves", el:"vuelve", nos:"volvemos", ellos:"vuelven"},
+ {inf:"repetir", nl:"herhalen", en:"repeat", yo:"repito", tu:"repites", el:"repite", nos:"repetimos", ellos:"repiten"},
+ {inf:"pensar", nl:"denken", en:"think", yo:"pienso", tu:"piensas", el:"piensa", nos:"pensamos", ellos:"piensan"},
+ {inf:"servir", nl:"serveren", en:"serve", yo:"sirvo", tu:"sirves", el:"sirve", nos:"servimos", ellos:"sirven"}
+];
+
+/* De afleider bij een schoenwerkwoord mag geen willekeurig woord zijn: hij moet precies de vorm
+   zijn die je zou maken als je de klinkerwissel niet kende. Anders toets je woordherkenning. */
+function gcRegVorm(inf, pers){
+  var st = inf.slice(0, -2), t = inf.slice(-2);
+  var ar = t === "ar";
+  var e = {yo:"o", tu:(ar ? "as" : "es"), el:(ar ? "a" : "e"),
+           nos:(ar ? "amos" : (t === "er" ? "emos" : "imos")), ellos:(ar ? "an" : "en")};
+  return st + e[pers];
+}
+/* En andersom: de nosotros-vorm zoals hij eruit zou zien als de wissel wel doorzette. */
+function gcZapNosFout(z){
+  var t = z.inf.slice(-2);
+  return z.yo.slice(0, -1) + (t === "ar" ? "amos" : (t === "er" ? "emos" : "imos"));
+}
+function gcGerund(inf){
+  var st = inf.slice(0, -2);
+  return st + (inf.slice(-2) === "ar" ? "ando" : "iendo");
+}
+function gcGerundFout(inf){
+  var st = inf.slice(0, -2);
+  return st + (inf.slice(-2) === "ar" ? "iendo" : "ando");
+}
+
 var GC_CONCEPTEN = [
  {id:"muymucho", icon:"⚖️", naam:"Muy of mucho", naamEn:"Muy or mucho",
   corr:["muymucho"], spiek:{a0:[8]}, wizard:null,
@@ -18285,7 +18360,7 @@ var GC_CONCEPTEN = [
   ]},
 
  {id:"concordancia", icon:"🔗", naam:"Woorden die meetellen", naamEn:"Words that agree",
-  corr:["concordancia","lidwoord"], spiek:{a0:[1,9], a2:[7]}, wizard:null,
+  corr:["concordancia","predicado"], spiek:{a0:[9], a2:[7]}, wizard:null,
   uitleg:"<p>In het Spaans reizen lidwoord, zelfstandig naamwoord en bijvoeglijk naamwoord samen. Verandert er een, dan veranderen ze allemaal.</p>"+
     "<p><i>el libro rojo, los libros rojos, la casa roja, las casas rojas</i></p>"+
     "<p>Twee vragen, elke keer: is het mannelijk of vrouwelijk, en is het enkelvoud of meervoud. Daarna volgt de rest vanzelf.</p>"+
@@ -18330,6 +18405,677 @@ var GC_CONCEPTEN = [
              o:["el","la","los","las"], g:["el","la","los","las"].indexOf(goed),
              w:"Meervoud van "+s.es+" is "+mv+", en het lidwoord telt mee: "+goed+".",
              wEn:"The plural of "+s.es+" is "+mv+", and the article agrees: "+goed+"."}; }
+  ]},
+
+ {id:"genero", icon:"🔤", naam:"El of la", naamEn:"El or la",
+  corr:["lidwoord"], spiek:{a0:[1]}, wizard:null,
+  uitleg:"<p>El of la is geen kwestie van gevoel. Je kunt het bijna altijd aan de uitgang zien.</p>"+
+    "<p><b>la</b> bij -a, en bij -ción, -sión, -dad, -tad en -umbre. Die groep kent op dit niveau geen uitzonderingen.</p>"+
+    "<p><b>el</b> bij -o, en bij -or.</p>"+
+    "<p>De valkuil is een handjevol woorden dat uit het Grieks komt en op -ma of -a eindigt: <i>el problema, el tema, el idioma, el mapa, el día</i>. Die leer je los, en daarna is de rest gewoon regel.</p>"+
+    "<p>Leer een woord daarom nooit kaal. Niet casa maar <i>la casa</i>, want het lidwoord hoort erbij.</p>",
+  uitlegEn:"<p>El or la is not a matter of feel. You can nearly always see it in the ending.</p>"+
+    "<p><b>la</b> for -a, and for -ción, -sión, -dad, -tad and -umbre. At this level that group has no exceptions.</p>"+
+    "<p><b>el</b> for -o, and for -or.</p>"+
+    "<p>The trap is a handful of words of Greek origin ending in -ma or -a: <i>el problema, el tema, el idioma, el mapa, el día</i>. You learn those separately, and the rest is rule.</p>"+
+    "<p>So never learn a word bare. Not casa but <i>la casa</i>, because the article is part of it.</p>",
+  begrip:{v:"Waaraan zie je meestal of een woord el of la krijgt?",
+    vEn:"What usually tells you whether a word takes el or la?",
+    o:["Aan de uitgang van het woord","Aan of het levend is of een ding","Aan de klemtoon","Aan de eerste letter"],
+    oEn:["The ending of the word","Whether it is alive or a thing","The stress","The first letter"],
+    g:0,
+    w:"-ción, -sión, -dad, -tad en -umbre zijn altijd la. -o en -or zijn el. Alleen een klein groepje Griekse woorden op -ma is de uitzondering.",
+    wEn:"-ción, -sión, -dad, -tad and -umbre are always la. -o and -or are el. Only a small group of Greek words in -ma is the exception."},
+  patronen:[
+   function(){ var w = gcKies(GC_GEN_LA);
+     return {v:"___ "+w.es+" (de/het "+w.nl+")", vEn:"___ "+w.es+" (the "+w.en+")",
+             o:["el","la"], g:1,
+             w:w.eind+" is altijd vrouwelijk, dus la "+w.es+".",
+             wEn:w.eind+" is always feminine, so la "+w.es+"."}; },
+   function(){ var w = gcKies(GC_GEN_TRAP);
+     return {v:"___ "+w.es+" (de/het "+w.nl+")", vEn:"___ "+w.es+" (the "+w.en+")",
+             o:["el","la"], g:0,
+             w:w.es+" ziet er vrouwelijk uit maar komt uit het Grieks: el "+w.es+". Dit is er een om los te onthouden.",
+             wEn:w.es+" looks feminine but comes from Greek: el "+w.es+". This is one to memorise separately."}; },
+   function(){ var w = gcKies(GC_GEN_OR);
+     return {v:"___ "+w.es+" (de/het "+w.nl+")", vEn:"___ "+w.es+" (the "+w.en+")",
+             o:["el","la"], g:0,
+             w:"Woorden op -or zijn mannelijk: el "+w.es+".",
+             wEn:"Words in -or are masculine: el "+w.es+"."}; },
+   function(){ var s = gcKies(GC_SUST);
+     return {v:"___ "+s.es+" (de/het "+s.nl+")", vEn:"___ "+s.es+" (the "+s.en+")",
+             o:["el","la"], g:(s.g === "f" ? 1 : 0),
+             w:s.es+" eindigt op "+s.es.slice(-1)+", dus "+(s.g === "f" ? "la" : "el")+" "+s.es+".",
+             wEn:s.es+" ends in "+s.es.slice(-1)+", so "+(s.g === "f" ? "la" : "el")+" "+s.es+"."}; },
+   function(){ var s = gcKies(GC_SUST), mv = gcMv(s.es);
+     return {v:"___ "+mv+" (de "+s.nl+"en)", vEn:"___ "+mv+" (the "+s.en+"s)",
+             o:["los","las"], g:(s.g === "f" ? 1 : 0),
+             w:"In het meervoud verandert alleen het lidwoord mee: "+(s.g === "f" ? "las" : "los")+" "+mv+".",
+             wEn:"In the plural the article agrees too: "+(s.g === "f" ? "las" : "los")+" "+mv+"."}; }
+  ]},
+
+ {id:"reflexivo", icon:"🪥", naam:"Me, te of se", naamEn:"Me, te or se",
+  corr:["reflexivo"], spiek:{a0:[15]}, wizard:null,
+  uitleg:"<p>Bij een wederkerend werkwoord doe je iets bij jezelf, en dan hoort het voornaamwoord bij dezelfde persoon als het werkwoord. Daar gaat het mis: <i>se</i> hoort bij hij, zij of u, nooit bij ik.</p>"+
+    "<p><i>me levanto, te levantas, se levanta, nos levantamos, os levantáis, se levantan</i></p>"+
+    "<p>Er zit een tweede beslissing in. Doe je het bij jezelf of bij iemand anders?</p>"+
+    "<p><i>Me despierto a las siete.</i> is ik word om zeven uur wakker.<br><i>Despierto a mi hija a las siete.</i> is ik maak mijn dochter om zeven uur wakker.</p>"+
+    "<p>Laat je het voornaamwoord weg, dan komt de handeling dus bij een ander terecht.</p>",
+  uitlegEn:"<p>With a reflexive verb you do something to yourself, so the pronoun matches the person of the verb. That is where it goes wrong: <i>se</i> belongs to he, she or you formal, never to I.</p>"+
+    "<p><i>me levanto, te levantas, se levanta, nos levantamos, os levantáis, se levantan</i></p>"+
+    "<p>There is a second decision in it. Are you doing it to yourself or to someone else?</p>"+
+    "<p><i>Me despierto a las siete.</i> is I wake up at seven.<br><i>Despierto a mi hija a las siete.</i> is I wake my daughter at seven.</p>"+
+    "<p>Drop the pronoun and the action lands on someone else.</p>",
+  begrip:{v:"Waar hoort het voornaamwoord me, te of se bij?",
+    vEn:"What does the pronoun me, te or se match?",
+    o:["Bij de persoon van het werkwoord","Bij het geslacht van het onderwerp","Bij de tijd van het werkwoord","Bij het lijdend voorwerp"],
+    oEn:["The person of the verb","The gender of the subject","The tense of the verb","The direct object"],
+    g:0,
+    w:"Ik hoort bij me, jij bij te, hij, zij en u bij se. Se met een ik-vorm bestaat niet.",
+    wEn:"I goes with me, you with te, he, she and you formal with se. Se with an I-form does not exist."},
+  patronen:[
+   function(){ var r = gcKies(GC_REFL);
+     return {v:"___ "+r.yo+" temprano. (ik, "+r.nl+")", vEn:"___ "+r.yo+" temprano. (I, "+r.en+")",
+             o:["me","se","te"], g:0,
+             w:r.yo+" is een ik-vorm, en bij ik hoort me.",
+             wEn:r.yo+" is an I-form, and I goes with me."}; },
+   function(){ var r = gcKies(GC_REFL);
+     return {v:"¿A qué hora ___ "+r.tu+"? (jij, "+r.nl+")", vEn:"¿A qué hora ___ "+r.tu+"? (you, "+r.en+")",
+             o:["te","se","me"], g:0,
+             w:r.tu+" is een jij-vorm, en bij jij hoort te.",
+             wEn:r.tu+" is a you-form, and you goes with te."}; },
+   function(){ var r = gcKies(GC_REFL), p = gcKies(GC_PERS);
+     return {v:p.es+" ___ "+r.el+" tarde. ("+p.nl+", "+r.nl+")",
+             vEn:p.es+" ___ "+r.el+" tarde. ("+p.en+", "+r.en+")",
+             o:["se","me","te"], g:0,
+             w:r.el+" is een hij- of zij-vorm, en daar hoort se bij.",
+             wEn:r.el+" is a he or she form, and that takes se."}; },
+   function(){ var r = gcKies(GC_REFL);
+     return {v:"___ "+r.nos+" a las ocho. (wij, "+r.nl+")", vEn:"___ "+r.nos+" a las ocho. (we, "+r.en+")",
+             o:["nos","se","me"], g:0,
+             w:"Bij een wij-vorm hoort nos, niet se.",
+             wEn:"A we-form takes nos, not se."}; },
+   function(){ var eigen = Math.random() < 0.5;
+     if(eigen) return {v:"___ a las siete. (Ik word om zeven uur wakker.)",
+             vEn:"___ a las siete. (I wake up at seven.)",
+             o:["Me despierto","Despierto"], g:0,
+             w:"Je wordt zelf wakker, dus het voornaamwoord blijft staan: me despierto.",
+             wEn:"You wake up yourself, so the pronoun stays: me despierto."};
+     return {v:"___ a mi hija a las siete. (Ik maak mijn dochter om zeven uur wakker.)",
+             vEn:"___ a mi hija a las siete. (I wake my daughter at seven.)",
+             o:["Despierto","Me despierto"], g:0,
+             w:"De handeling komt bij een ander terecht, dus geen voornaamwoord: despierto a mi hija.",
+             wEn:"The action lands on someone else, so no pronoun: despierto a mi hija."}; }
+  ]},
+
+ {id:"demostrativo", icon:"👉", naam:"Este, ese of aquel", naamEn:"Este, ese or aquel",
+  corr:[], spiek:{a0:[11]}, wizard:null,
+  uitleg:"<p>Het Spaans heeft drie afstanden waar het Nederlands er twee heeft.</p>"+
+    "<p><b>este</b> is hier, bij mij: <i>este libro</i>.<br><b>ese</b> is daar, bij jou: <i>ese libro</i>.<br><b>aquel</b> is daarginds, ver van ons allebei: <i>aquel libro</i>.</p>"+
+    "<p>En daarna passen ze zich aan het woord erachter aan: <i>este, esta, estos, estas</i>, <i>ese, esa, esos, esas</i>, <i>aquel, aquella, aquellos, aquellas</i>.</p>"+
+    "<p>Je kiest dus twee keer: eerst de afstand, dan de vorm.</p>",
+  uitlegEn:"<p>Spanish has three distances where English has two.</p>"+
+    "<p><b>este</b> is here, next to me: <i>este libro</i>.<br><b>ese</b> is there, next to you: <i>ese libro</i>.<br><b>aquel</b> is over there, far from both of us: <i>aquel libro</i>.</p>"+
+    "<p>And then they agree with the word behind them: <i>este, esta, estos, estas</i>, <i>ese, esa, esos, esas</i>, <i>aquel, aquella, aquellos, aquellas</i>.</p>"+
+    "<p>So you choose twice: first the distance, then the form.</p>",
+  begrip:{v:"Waar hangt de keuze tussen este, ese en aquel van af?",
+    vEn:"What does the choice between este, ese and aquel depend on?",
+    o:["Van de afstand tot de spreker","Van of het bekend is","Van de tijd van het werkwoord","Alleen van het geslacht"],
+    oEn:["The distance from the speaker","Whether it is known","The tense of the verb","Only the gender"],
+    g:0,
+    w:"Bij mij is este, bij jou is ese, ver van ons allebei is aquel. Pas daarna kijk je naar de vorm.",
+    wEn:"Next to me is este, next to you is ese, far from both is aquel. Only then do you look at the form."},
+  patronen:[
+   function(){ var s = gcKies(GC_SUST);
+     return {v:"___ "+s.es+" que tengo en la mano. (dit/deze "+s.nl+" hier bij mij)",
+             vEn:"___ "+s.es+" que tengo en la mano. (this "+s.en+" here in my hand)",
+             o:["este","esta"], g:(s.g === "f" ? 1 : 0),
+             w:"Hier bij mij is este, en "+s.es+" is "+(s.g === "f" ? "vrouwelijk, dus esta" : "mannelijk, dus este")+".",
+             wEn:"Here with me is este, and "+s.es+" is "+(s.g === "f" ? "feminine, so esta" : "masculine, so este")+"."}; },
+   function(){ var s = gcKies(GC_SUST);
+     return {v:"___ "+s.es+" que tienes tú. (dat/die "+s.nl+" daar bij jou)",
+             vEn:"___ "+s.es+" que tienes tú. (that "+s.en+" there with you)",
+             o:["ese","esa"], g:(s.g === "f" ? 1 : 0),
+             w:"Bij jou is ese, en met "+s.es+" wordt dat "+(s.g === "f" ? "esa" : "ese")+".",
+             wEn:"Next to you is ese, and with "+s.es+" that becomes "+(s.g === "f" ? "esa" : "ese")+"."}; },
+   function(){ var s = gcKies(GC_SUST);
+     return {v:"___ "+s.es+" del final de la calle. (dat "+s.nl+" daarginds)",
+             vEn:"___ "+s.es+" del final de la calle. (that "+s.en+" way over there)",
+             o:["aquel","aquella"], g:(s.g === "f" ? 1 : 0),
+             w:"Ver van ons allebei is aquel, met "+s.es+" wordt dat "+(s.g === "f" ? "aquella" : "aquel")+".",
+             wEn:"Far from both of us is aquel, with "+s.es+" that becomes "+(s.g === "f" ? "aquella" : "aquel")+"."}; },
+   function(){ var s = gcKies(GC_SUST), mv = gcMv(s.es);
+     return {v:"___ "+mv+" de aquí. (deze "+s.nl+"en hier)", vEn:"___ "+mv+" de aquí. (these "+s.en+"s here)",
+             o:["estos","estas"], g:(s.g === "f" ? 1 : 0),
+             w:"Meervoud en hier bij mij: "+(s.g === "f" ? "estas" : "estos")+" "+mv+".",
+             wEn:"Plural and here with me: "+(s.g === "f" ? "estas" : "estos")+" "+mv+"."}; },
+   function(){ var s = gcKies(GC_SUST);
+     return {v:"Het "+s.nl+" ligt daar op jouw tafel. Welk woord kies je?",
+             vEn:"The "+s.en+" is over there on your table. Which word do you pick?",
+             o:["ese","este","aquel"], g:0,
+             w:"Bij jou, niet bij mij en niet ver weg: dat is ese.",
+             wEn:"Next to you, not next to me and not far away: that is ese."}; }
+  ]},
+
+ {id:"quecual", icon:"❓", naam:"Qué of cuál", naamEn:"Qué or cuál",
+  corr:[], spiek:{a0:[4]}, wizard:null,
+  uitleg:"<p>Allebei welk of wat, en het Nederlands helpt je hier niet.</p>"+
+    "<p><b>qué</b> vraagt naar een soort of een omschrijving, en staat direct voor een zelfstandig naamwoord: <i>¿Qué hora es? ¿Qué quieres? ¿Qué significa esto?</i></p>"+
+    "<p><b>cuál</b> vraagt om een keuze uit een groep die je allebei al kent: <i>¿Cuál prefieres? ¿Cuál de estos dos?</i></p>"+
+    "<p>De vaste val zit bij <i>es</i>. Vraag je naar iemands naam, nummer of favoriet, dan is het cuál en niet qué: <i>¿Cuál es tu nombre?</i>, <i>¿Cuál es tu color favorito?</i></p>",
+  uitlegEn:"<p>Both mean what or which, and English does not help you here.</p>"+
+    "<p><b>qué</b> asks for a kind or a definition, and goes straight before a noun: <i>¿Qué hora es? ¿Qué quieres? ¿Qué significa esto?</i></p>"+
+    "<p><b>cuál</b> asks for a choice out of a set you both already know: <i>¿Cuál prefieres? ¿Cuál de estos dos?</i></p>"+
+    "<p>The classic trap is with <i>es</i>. Asking for someone's name, number or favourite takes cuál, not qué: <i>¿Cuál es tu nombre?</i>, <i>¿Cuál es tu color favorito?</i></p>",
+  begrip:{v:"Wanneer gebruik je cuál en niet qué?",
+    vEn:"When do you use cuál and not qué?",
+    o:["Als je een keuze uit een bekende groep vraagt","Als het over personen gaat","Als de zin lang is","Als er een werkwoord volgt"],
+    oEn:["When you ask for a choice out of a known set","When it is about people","When the sentence is long","When a verb follows"],
+    g:0,
+    w:"Qué vraagt wat voor iets: een soort of een omschrijving. Cuál vraagt welke van deze: een keuze.",
+    wEn:"Qué asks what kind: a type or a definition. Cuál asks which of these: a choice."},
+  patronen:[
+   function(){ var z = gcKies([{es:"hora es", nl:"Hoe laat is het?", en:"What time is it?"},
+                               {es:"quieres tomar", nl:"Wat wil je drinken?", en:"What do you want to drink?"},
+                               {es:"significa esta palabra", nl:"Wat betekent dit woord?", en:"What does this word mean?"}]);
+     return {v:"¿___ "+z.es+"? ("+z.nl+")", vEn:"¿___ "+z.es+"? ("+z.en+")",
+             o:["qué","cuál"], g:0,
+             w:"Je vraagt naar een soort of een omschrijving, niet naar een keuze uit een groep: qué.",
+             wEn:"You are asking for a kind or a definition, not a choice out of a set: qué."}; },
+   function(){ var z = gcKies([{es:"tu número de teléfono", nl:"je telefoonnummer", en:"your phone number"},
+                               {es:"tu color favorito", nl:"je lievelingskleur", en:"your favourite colour"},
+                               {es:"tu apellido", nl:"je achternaam", en:"your surname"}]);
+     return {v:"¿___ es "+z.es+"? ("+z.nl+")", vEn:"¿___ es "+z.es+"? ("+z.en+")",
+             o:["cuál","qué"], g:0,
+             w:"Bij es plus een naam, nummer of favoriet is het altijd cuál. Qué es zou vragen wat het woord betekent.",
+             wEn:"With es plus a name, number or favourite it is always cuál. Qué es would ask what the word means."}; },
+   function(){ return {v:"¿___ de estos dos prefieres? (Welke van deze twee?)",
+             vEn:"¿___ de estos dos prefieres? (Which of these two?)",
+             o:["cuál","qué"], g:0,
+             w:"Er staat de plus een groep achter, en dan is het altijd cuál.",
+             wEn:"There is de plus a set behind it, and then it is always cuál."}; },
+   function(){ var s = gcKies(GC_SUST);
+     return {v:"¿___ "+s.es+" prefieres? (Welk "+s.nl+"?)", vEn:"¿___ "+s.es+" prefieres? (Which "+s.en+"?)",
+             o:["qué","cuál"], g:0,
+             w:"Direct voor een zelfstandig naamwoord staat qué. Cuál "+s.es+" hoor je in delen van Latijns-Amerika, in Spanje niet.",
+             wEn:"Straight before a noun you use qué. Cuál "+s.es+" is heard in parts of Latin America, not in Spain."}; },
+   function(){ return {v:"¿___ quieres, el rojo o el azul? (Welke wil je?)",
+             vEn:"¿___ quieres, el rojo o el azul? (Which one do you want?)",
+             o:["cuál","qué"], g:0,
+             w:"Je krijgt twee opties voorgelegd, dus een keuze uit een bekende groep: cuál.",
+             wEn:"You are offered two options, so a choice out of a known set: cuál."}; }
+  ]},
+
+ {id:"saberpoder", icon:"🔑", naam:"Saber of poder", naamEn:"Saber or poder",
+  corr:[], spiek:{a0:[20]}, wizard:null,
+  uitleg:"<p>Kunnen is in het Spaans twee verschillende dingen.</p>"+
+    "<p><b>saber</b> is een vaardigheid die je ooit geleerd hebt: zwemmen, fietsen, gitaarspelen, Spaans. <i>Sé nadar.</i></p>"+
+    "<p><b>poder</b> is of het nu mogelijk is of mag: tijd, toestemming, omstandigheden. <i>No puedo venir, trabajo.</i></p>"+
+    "<p>De test: kun je er heb leren van maken, dan is het saber. Kun je er is het mogelijk dat van maken, dan is het poder.</p>"+
+    "<p><i>Sé nadar pero hoy no puedo, está cerrada la piscina.</i> Allebei kunnen, in een zin.</p>",
+  uitlegEn:"<p>Can is two different things in Spanish.</p>"+
+    "<p><b>saber</b> is a skill you once learned: swimming, cycling, playing guitar, Spanish. <i>Sé nadar.</i></p>"+
+    "<p><b>poder</b> is whether it is possible or allowed right now: time, permission, circumstances. <i>No puedo venir, trabajo.</i></p>"+
+    "<p>The test: if you can turn it into I have learned to, it is saber. If you can turn it into it is possible that, it is poder.</p>"+
+    "<p><i>Sé nadar pero hoy no puedo, está cerrada la piscina.</i> Both cans, in one sentence.</p>",
+  begrip:{v:"Wat is het verschil tussen sé nadar en puedo nadar?",
+    vEn:"What is the difference between sé nadar and puedo nadar?",
+    o:["Sé nadar is ik heb leren zwemmen, puedo nadar is het kan nu","Er is geen verschil","Sé is formeler dan puedo","Puedo hoort bij de toekomst"],
+    oEn:["Sé nadar is I know how to swim, puedo nadar is I am able to right now","There is no difference","Sé is more formal than puedo","Puedo belongs to the future"],
+    g:0,
+    w:"Saber gaat over een geleerde vaardigheid, poder over mogelijkheid of toestemming op dit moment.",
+    wEn:"Saber is about a learned skill, poder about possibility or permission right now."},
+  patronen:[
+   function(){ var z = gcKies([{es:"nadar", nl:"zwemmen", en:"swim"}, {es:"conducir", nl:"autorijden", en:"drive"},
+                               {es:"tocar la guitarra", nl:"gitaarspelen", en:"play the guitar"}]);
+     return {v:"___ "+z.es+" desde los seis años. (ik kan "+z.nl+", geleerd)",
+             vEn:"___ "+z.es+" desde los seis años. (I can "+z.en+", learned it)",
+             o:["Sé","Puedo"], g:0,
+             w:"Een vaardigheid die je geleerd hebt, dus saber.",
+             wEn:"A skill you learned, so saber."}; },
+   function(){ return {v:"Hoy no ___ ir al gimnasio, no tengo tiempo. (ik kan niet)",
+             vEn:"Hoy no ___ ir al gimnasio, no tengo tiempo. (I can't)",
+             o:["puedo","sé"], g:0,
+             w:"Het gaat over of het nu uitkomt, niet over een vaardigheid: poder.",
+             wEn:"This is about whether it works out right now, not about a skill: poder."}; },
+   function(){ return {v:"¿___ hablar más despacio, por favor? (kun je)",
+             vEn:"¿___ hablar más despacio, por favor? (can you)",
+             o:["Puedes","Sabes"], g:0,
+             w:"Een verzoek gaat over wat nu mogelijk is: poder. Sabes hablar zou vragen of je het geleerd hebt.",
+             wEn:"A request is about what is possible now: poder. Sabes hablar would ask if you learned how."}; },
+   function(){ var p = gcKies(GC_PERS);
+     return {v:p.es+" ___ hablar tres idiomas. ("+p.nl+" kan drie talen)",
+             vEn:p.es+" ___ hablar tres idiomas. ("+p.en+" can speak three languages)",
+             o:["sabe","puede"], g:0,
+             w:"Een taal spreken is een geleerde vaardigheid, dus saber.",
+             wEn:"Speaking a language is a learned skill, so saber."}; },
+   function(){ return {v:"¿___ abrir la ventana? (mag ik)", vEn:"¿___ abrir la ventana? (may I)",
+             o:["Puedo","Sé"], g:0,
+             w:"Toestemming vragen gaat met poder. Sé abrir zou zeggen dat je geleerd hebt hoe een raam werkt.",
+             wEn:"Asking permission takes poder. Sé abrir would say you learned how a window works."}; }
+  ]},
+
+ {id:"apersonal", icon:"🧍", naam:"De persoonlijke a", naamEn:"The personal a",
+  corr:[], spiek:{}, wizard:null,
+  uitleg:"<p>Staat er een bepaald persoon als lijdend voorwerp achter het werkwoord, dan zet het Spaans er een <b>a</b> voor. Bij dingen niet.</p>"+
+    "<p><i>Veo a Ana.</i> maar <i>Veo la película.</i><br><i>Busco a mi hermano.</i> maar <i>Busco un piso.</i></p>"+
+    "<p>Deze a is geen voorzetsel dat je kunt vertalen. Hij zegt alleen: wat hier komt is een mens, geen ding. Nederlandstaligen laten hem daarom bijna altijd weg, want in het Nederlands staat er niets.</p>"+
+    "<p>Let op het woord bepaald. <i>Busco a mi hermano</i> gaat over een specifieke broer, <i>Busco un camarero</i> over wie dan ook die het baantje wil.</p>",
+  uitlegEn:"<p>If a specific person is the direct object of the verb, Spanish puts an <b>a</b> in front of it. Not for things.</p>"+
+    "<p><i>Veo a Ana.</i> but <i>Veo la película.</i><br><i>Busco a mi hermano.</i> but <i>Busco un piso.</i></p>"+
+    "<p>This a is not a preposition you can translate. It only says: what follows is a human being, not a thing. English speakers leave it out, because in English there is nothing there.</p>"+
+    "<p>Note the word specific. <i>Busco a mi hermano</i> is about one particular brother, <i>Busco un camarero</i> about whoever wants the job.</p>",
+  begrip:{v:"Wanneer zet je een a voor het lijdend voorwerp?",
+    vEn:"When do you put an a before the direct object?",
+    o:["Als het een bepaald persoon is","Altijd","Alleen na bepaalde werkwoorden","Alleen in het meervoud"],
+    oEn:["When it is a specific person","Always","Only after certain verbs","Only in the plural"],
+    g:0,
+    w:"Een bepaald persoon krijgt a, een ding niet. Veo a Ana, veo la película.",
+    wEn:"A specific person takes a, a thing does not. Veo a Ana, veo la película."},
+  patronen:[
+   function(){ var p = gcKies(GC_PERS);
+     return {v:"Veo ___ "+p.es+" en la calle. (Ik zie "+p.nl+" op straat.)",
+             vEn:"Veo ___ "+p.es+" en la calle. (I see "+p.en+" in the street.)",
+             o:["a","(niets)"], oEn:["a","(nothing)"], g:0,
+             w:p.es+" is een bepaald persoon, dus a "+p.es+".",
+             wEn:p.es+" is a specific person, so a "+p.es+"."}; },
+   function(){ var s = gcKies(GC_SUST), art = s.g === "f" ? "la" : "el";
+     return {v:"Veo ___ "+art+" "+s.es+". (Ik zie het "+s.nl+".)",
+             vEn:"Veo ___ "+art+" "+s.es+". (I see the "+s.en+".)",
+             o:["(niets)","a"], oEn:["(nothing)","a"], g:0,
+             w:"Een ding krijgt geen persoonlijke a: veo "+art+" "+s.es+".",
+             wEn:"A thing does not take the personal a: veo "+art+" "+s.es+"."}; },
+   function(){ return {v:"Busco ___ mi hermano. (Ik zoek mijn broer.)",
+             vEn:"Busco ___ mi hermano. (I am looking for my brother.)",
+             o:["a","(niets)"], oEn:["a","(nothing)"], g:0,
+             w:"Mijn broer is een bepaald persoon, dus busco a mi hermano.",
+             wEn:"My brother is a specific person, so busco a mi hermano."}; },
+   function(){ return {v:"Busco ___ un piso en el centro. (Ik zoek een appartement.)",
+             vEn:"Busco ___ un piso en el centro. (I am looking for a flat.)",
+             o:["(niets)","a"], oEn:["(nothing)","a"], g:0,
+             w:"Een appartement is een ding, dus geen a.",
+             wEn:"A flat is a thing, so no a."}; },
+   function(){ var p = gcKies(GC_PERS);
+     return {v:"Conozco ___ "+p.es+" desde hace años. (Ik ken "+p.nl+" al jaren.)",
+             vEn:"Conozco ___ "+p.es+" desde hace años. (I have known "+p.en+" for years.)",
+             o:["a","(niets)"], oEn:["a","(nothing)"], g:0,
+             w:"Conocer met een persoon vraagt altijd om de a.",
+             wEn:"Conocer with a person always takes the a."}; }
+  ]},
+
+ {id:"pronombre", icon:"🔁", naam:"Lo, la of le", naamEn:"Lo, la or le",
+  corr:[], spiek:{}, wizard:null,
+  uitleg:"<p>Twee vragen, twee soorten voornaamwoorden.</p>"+
+    "<p><b>lo, la, los, las</b> vervangen het lijdend voorwerp, dus het antwoord op wie of wat: <i>¿El libro? Lo tengo. ¿La carta? La escribo mañana.</i></p>"+
+    "<p><b>le, les</b> vervangen het meewerkend voorwerp, dus het antwoord op aan wie: <i>A María le doy un regalo. A mis padres les escribo.</i></p>"+
+    "<p>De test die bijna altijd werkt: kun je er in het Nederlands aan of voor bij zetten, dan is het le. Anders lo of la.</p>"+
+    "<p>Let op dat lo en la meebewegen met het geslacht van het ding, en le niet. Le is hetzelfde voor mannen en vrouwen.</p>",
+  uitlegEn:"<p>Two questions, two kinds of pronoun.</p>"+
+    "<p><b>lo, la, los, las</b> replace the direct object, the answer to who or what: <i>¿El libro? Lo tengo. ¿La carta? La escribo mañana.</i></p>"+
+    "<p><b>le, les</b> replace the indirect object, the answer to to whom: <i>A María le doy un regalo. A mis padres les escribo.</i></p>"+
+    "<p>The test that nearly always works: if you can put to or for in front of it in English, it is le. Otherwise lo or la.</p>"+
+    "<p>Note that lo and la follow the gender of the thing, and le does not. Le is the same for men and women.</p>",
+  begrip:{v:"Wat vervangt le?",
+    vEn:"What does le replace?",
+    o:["Aan wie iets gebeurt, het meewerkend voorwerp","Wie of wat, het lijdend voorwerp","Het onderwerp van de zin","Een plaats"],
+    oEn:["The one something happens to, the indirect object","Who or what, the direct object","The subject of the sentence","A place"],
+    g:0,
+    w:"Le staat voor aan wie. Lo en la staan voor wie of wat, en die bewegen mee met het geslacht.",
+    wEn:"Le stands for to whom. Lo and la stand for who or what, and they follow gender."},
+  patronen:[
+   function(){ return {v:"¿El libro? ___ tengo aquí. (Ik heb hem hier.)",
+             vEn:"¿El libro? ___ tengo aquí. (I have it here.)",
+             o:["Lo","La","Le"], g:0,
+             w:"El libro is het lijdend voorwerp en mannelijk, dus lo.",
+             wEn:"El libro is the direct object and masculine, so lo."}; },
+   function(){ return {v:"¿La carta? ___ escribo mañana. (Ik schrijf hem morgen.)",
+             vEn:"¿La carta? ___ escribo mañana. (I will write it tomorrow.)",
+             o:["La","Lo","Le"], g:0,
+             w:"La carta is het lijdend voorwerp en vrouwelijk, dus la.",
+             wEn:"La carta is the direct object and feminine, so la."}; },
+   function(){ return {v:"A María ___ doy un regalo. (Ik geef haar een cadeau.)",
+             vEn:"A María ___ doy un regalo. (I give her a present.)",
+             o:["le","la","lo"], g:0,
+             w:"Het cadeau is het lijdend voorwerp, María is aan wie: le.",
+             wEn:"The present is the direct object, María is to whom: le."}; },
+   function(){ return {v:"A mis padres ___ escribo cada semana. (Ik schrijf ze elke week.)",
+             vEn:"A mis padres ___ escribo cada semana. (I write to them every week.)",
+             o:["les","los","las"], g:0,
+             w:"Je schrijft aan hen, dus meewerkend voorwerp meervoud: les.",
+             wEn:"You write to them, so plural indirect object: les."}; },
+   function(){ return {v:"¿Ves a Pablo? Sí, ___ veo. (Ja, ik zie hem.)",
+             vEn:"¿Ves a Pablo? Sí, ___ veo. (Yes, I see him.)",
+             o:["lo","le","la"], g:0,
+             w:"Je ziet hem, dus lijdend voorwerp: lo veo. In Madrid hoor je ook le veo, maar lo is de standaard.",
+             wEn:"You see him, so direct object: lo veo. In Madrid you also hear le veo, but lo is the standard."}; }
+  ]},
+
+ {id:"comparar", icon:"📏", naam:"Más que of tan como", naamEn:"Más que or tan como",
+  corr:[], spiek:{a2:[8]}, wizard:null,
+  uitleg:"<p>Drie bouwsels, en welke je pakt hangt af van wat je vergelijkt.</p>"+
+    "<p>Ongelijk: <b>más</b> of <b>menos</b> ... <b>que</b>. <i>Ana es más alta que Pablo.</i></p>"+
+    "<p>Gelijk, bij een bijvoeglijk naamwoord of bijwoord: <b>tan</b> ... <b>como</b>. <i>Pablo es tan alto como Ana.</i></p>"+
+    "<p>Gelijk, bij een zelfstandig naamwoord: <b>tanto</b> ... <b>como</b>, en tanto past zich aan. <i>Tengo tantos libros como tú.</i></p>"+
+    "<p>Vier woorden hebben een eigen vergrotende trap en daar mag más niet bij: <b>mejor</b> (beter), <b>peor</b> (slechter), <b>mayor</b> (ouder), <b>menor</b> (jonger).</p>",
+  uitlegEn:"<p>Three structures, and which one you take depends on what you compare.</p>"+
+    "<p>Unequal: <b>más</b> or <b>menos</b> ... <b>que</b>. <i>Ana es más alta que Pablo.</i></p>"+
+    "<p>Equal, with an adjective or adverb: <b>tan</b> ... <b>como</b>. <i>Pablo es tan alto como Ana.</i></p>"+
+    "<p>Equal, with a noun: <b>tanto</b> ... <b>como</b>, and tanto agrees. <i>Tengo tantos libros como tú.</i></p>"+
+    "<p>Four words have their own comparative and refuse más: <b>mejor</b> (better), <b>peor</b> (worse), <b>mayor</b> (older), <b>menor</b> (younger).</p>",
+  begrip:{v:"Wanneer gebruik je tan en wanneer tanto?",
+    vEn:"When do you use tan and when tanto?",
+    o:["Tan bij een bijvoeglijk naamwoord of bijwoord, tanto bij een zelfstandig naamwoord","Tan in vragen, tanto in mededelingen","Tan bij personen, tanto bij dingen","Ze zijn uitwisselbaar"],
+    oEn:["Tan with an adjective or adverb, tanto with a noun","Tan in questions, tanto in statements","Tan for people, tanto for things","They are interchangeable"],
+    g:0,
+    w:"Tan alto como, maar tantos libros como. En tanto past zich aan in geslacht en getal, tan nooit.",
+    wEn:"Tan alto como, but tantos libros como. And tanto agrees in gender and number, tan never does."},
+  patronen:[
+   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER);
+     return {v:p.es+" es ___ "+gcAdj(a, p.g, "sg")+" que Pablo. ("+p.nl+" is "+a.nl+"er)",
+             vEn:p.es+" es ___ "+gcAdj(a, p.g, "sg")+" que Pablo. ("+p.en+" is more "+a.en+")",
+             o:["más","tan"], g:0,
+             w:"Er staat que achter, en que hoort bij más of menos. Tan vraagt om como.",
+             wEn:"There is que behind it, and que goes with más or menos. Tan asks for como."}; },
+   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER);
+     return {v:p.es+" es tan "+gcAdj(a, p.g, "sg")+" ___ Pablo. (net zo "+a.nl+" als)",
+             vEn:p.es+" es tan "+gcAdj(a, p.g, "sg")+" ___ Pablo. (just as "+a.en+" as)",
+             o:["como","que"], g:0,
+             w:"Tan hoort altijd bij como. Tan ... que bestaat niet in een vergelijking.",
+             wEn:"Tan always goes with como. Tan ... que does not exist in a comparison."}; },
+   function(){ var s = gcKies(GC_SUST), mv = gcMv(s.es), goed = s.g === "f" ? "tantas" : "tantos";
+     return {v:"Tengo ___ "+mv+" como tú. (net zoveel "+s.nl+"en als jij)",
+             vEn:"Tengo ___ "+mv+" como tú. (as many "+s.en+"s as you)",
+             o:["tantos","tantas","tan"], g:["tantos","tantas","tan"].indexOf(goed),
+             w:"Voor een zelfstandig naamwoord staat tanto, en die past zich aan: "+goed+" "+mv+". Tan kan hier niet.",
+             wEn:"Before a noun you use tanto, and it agrees: "+goed+" "+mv+". Tan is impossible here."}; },
+   function(){ return {v:"Este libro es ___ que el otro. (beter dan)",
+             vEn:"Este libro es ___ que el otro. (better than)",
+             o:["mejor","más bueno"], g:0,
+             w:"Bueno heeft een eigen vergrotende trap: mejor. Más bueno bestaat, maar betekent iets als braver.",
+             wEn:"Bueno has its own comparative: mejor. Más bueno exists but means something like more well-behaved."}; },
+   function(){ return {v:"Mi hermano es ___ que yo. (ouder dan)",
+             vEn:"Mi hermano es ___ que yo. (older than)",
+             o:["mayor","más viejo"], g:0,
+             w:"Bij leeftijd van personen is het mayor en menor. Más viejo klinkt als versleten.",
+             wEn:"For people's age it is mayor and menor. Más viejo sounds like worn out."}; }
+  ]},
+
+ {id:"zapato", icon:"👟", naam:"Wisselt de klinker mee?", naamEn:"Does the vowel change?",
+  corr:[], spiek:{a2:[3]}, wizard:null,
+  uitleg:"<p>Een grote groep werkwoorden wisselt een klinker in de stam: e wordt ie, o wordt ue, e wordt i. Maar niet overal.</p>"+
+    "<p>De wissel gebeurt in de vormen waar de klemtoon op de stam valt: yo, tú, él en ellos. Bij nosotros en vosotros ligt de klemtoon op de uitgang, en dan blijft de stam gewoon staan.</p>"+
+    "<p><i>quiero, quieres, quiere, <b>queremos</b>, <b>queréis</b>, quieren</i></p>"+
+    "<p>Zet je die zes onder elkaar, dan tekenen de vier gewisselde vormen de vorm van een schoen om de twee andere heen. Vandaar de bijnaam schoenwerkwoorden.</p>"+
+    "<p>Je hoeft dus niet zes vormen te onthouden, maar een vraag te beantwoorden: valt de klemtoon hier op de stam?</p>",
+  uitlegEn:"<p>A large group of verbs changes a vowel in the stem: e becomes ie, o becomes ue, e becomes i. But not everywhere.</p>"+
+    "<p>The change happens in the forms where the stress falls on the stem: yo, tú, él and ellos. With nosotros and vosotros the stress is on the ending, and the stem stays as it is.</p>"+
+    "<p><i>quiero, quieres, quiere, <b>queremos</b>, <b>queréis</b>, quieren</i></p>"+
+    "<p>Write those six under each other and the four changed forms draw the shape of a shoe around the other two. Hence the nickname boot verbs.</p>"+
+    "<p>So you do not memorise six forms, you answer one question: does the stress fall on the stem here?</p>",
+  begrip:{v:"Welke vormen wisselen de klinker niet mee?",
+    vEn:"Which forms do not change the vowel?",
+    o:["nosotros en vosotros","yo en tú","alleen ellos","de hele tegenwoordige tijd wisselt"],
+    oEn:["nosotros and vosotros","yo and tú","only ellos","the whole present tense changes"],
+    g:0,
+    w:"Bij nosotros en vosotros valt de klemtoon op de uitgang, en zonder klemtoon op de stam is er geen wissel.",
+    wEn:"With nosotros and vosotros the stress falls on the ending, and without stress on the stem there is no change."},
+  patronen:[
+   function(){ var z = gcKies(GC_ZAP), fout = gcRegVorm(z.inf, "yo");
+     if(fout === z.yo) return null;
+     return {v:"Yo ___ ("+z.inf+", "+z.nl+")", vEn:"Yo ___ ("+z.inf+", "+z.en+")",
+             o:[z.yo, fout], g:0,
+             w:"De klemtoon valt op de stam, dus de klinker wisselt: "+z.yo+".",
+             wEn:"The stress falls on the stem, so the vowel changes: "+z.yo+"."}; },
+   function(){ var z = gcKies(GC_ZAP), fout = gcZapNosFout(z);
+     if(fout === z.nos) return null;
+     return {v:"Nosotros ___ ("+z.inf+", "+z.nl+")", vEn:"Nosotros ___ ("+z.inf+", "+z.en+")",
+             o:[z.nos, fout], g:0,
+             w:"Bij nosotros ligt de klemtoon op de uitgang, dus de stam blijft staan: "+z.nos+".",
+             wEn:"With nosotros the stress is on the ending, so the stem stays: "+z.nos+"."}; },
+   function(){ var z = gcKies(GC_ZAP), fout = gcRegVorm(z.inf, "ellos");
+     if(fout === z.ellos) return null;
+     return {v:"Ellos ___ ("+z.inf+", "+z.nl+")", vEn:"Ellos ___ ("+z.inf+", "+z.en+")",
+             o:[z.ellos, fout], g:0,
+             w:"Ellos hoort bij de gewisselde groep: "+z.ellos+".",
+             wEn:"Ellos belongs to the changing group: "+z.ellos+"."}; },
+   function(){ var z = gcKies(GC_ZAP), fout = gcRegVorm(z.inf, "tu");
+     if(fout === z.tu) return null;
+     return {v:"¿Tú ___? ("+z.inf+", "+z.nl+")", vEn:"¿Tú ___? ("+z.inf+", "+z.en+")",
+             o:[z.tu, fout], g:0,
+             w:"Ook bij tú valt de klemtoon op de stam: "+z.tu+".",
+             wEn:"With tú the stress falls on the stem too: "+z.tu+"."}; },
+   function(){ var z = gcKies(GC_ZAP);
+     return {v:"In welke vorm van "+z.inf+" blijft de stam ongewijzigd?",
+             vEn:"In which form of "+z.inf+" does the stem stay unchanged?",
+             o:[z.nos, z.yo, z.ellos], g:0,
+             w:z.nos+" is de nosotros-vorm, en die valt buiten de schoen.",
+             wEn:z.nos+" is the nosotros form, and it falls outside the boot."}; }
+  ]},
+
+ {id:"tuusted", icon:"🎩", naam:"Tú of usted", naamEn:"Tú or usted",
+  corr:[], spiek:{a2:[13]}, wizard:null,
+  uitleg:"<p>Usted is u, maar het venijn zit in het werkwoord: <b>usted neemt de vorm van hij en zij</b>, niet die van jij.</p>"+
+    "<p><i>¿Cómo te llamas?</i> tegen een vriend, <i>¿Cómo se llama usted?</i> tegen een onbekende.<br><i>¿Hablas español?</i> tegen jij, <i>¿Habla usted español?</i> tegen u.</p>"+
+    "<p>Ook de bijbehorende woordjes schuiven mee: te wordt se, tu wordt su, ti wordt usted.</p>"+
+    "<p>Wanneer welk? In Spanje ga je snel over op tú, in veel van Latijns-Amerika duurt dat langer. Bij een onbekende die duidelijk ouder is, bij een ambtenaar, bij een arts: begin met usted en wacht tot de ander zegt dat je mag tutear.</p>",
+  uitlegEn:"<p>Usted means you formal, but the sting is in the verb: <b>usted takes the he and she form</b>, not the you form.</p>"+
+    "<p><i>¿Cómo te llamas?</i> to a friend, <i>¿Cómo se llama usted?</i> to a stranger.<br><i>¿Hablas español?</i> to tú, <i>¿Habla usted español?</i> to usted.</p>"+
+    "<p>The little words shift along too: te becomes se, tu becomes su, ti becomes usted.</p>"+
+    "<p>Which one when? In Spain you move to tú quickly, in much of Latin America it takes longer. With an older stranger, an official, a doctor: start with usted and wait until they tell you to tutear.</p>",
+  begrip:{v:"Welke werkwoordsvorm hoort bij usted?",
+    vEn:"Which verb form goes with usted?",
+    o:["Die van hij en zij","Die van jij","Een eigen vorm die alleen usted heeft","Die van jullie"],
+    oEn:["The he and she form","The you form","Its own form used only by usted","The you plural form"],
+    g:0,
+    w:"Usted habla, usted tiene, usted se llama. Precies dezelfde vorm als él en ella.",
+    wEn:"Usted habla, usted tiene, usted se llama. Exactly the same form as él and ella."},
+  patronen:[
+   function(){ return {v:"¿Cómo ___ usted? (Hoe heet u?)", vEn:"¿Cómo ___ usted? (What is your name, formal?)",
+             o:["se llama","te llamas"], g:0,
+             w:"Usted neemt de hij-vorm, en het voornaamwoord schuift mee van te naar se.",
+             wEn:"Usted takes the he-form, and the pronoun shifts from te to se."}; },
+   function(){ return {v:"¿___ usted español? (Spreekt u Spaans?)", vEn:"¿___ usted español? (Do you speak Spanish, formal?)",
+             o:["Habla","Hablas"], g:0,
+             w:"Habla is de vorm van él en ella, en die hoort bij usted.",
+             wEn:"Habla is the él and ella form, and that is what usted takes."}; },
+   function(){ return {v:"¿Cómo ___? (Hoe heet je? Tegen een vriend.)",
+             vEn:"¿Cómo ___? (What is your name? To a friend.)",
+             o:["te llamas","se llama"], g:0,
+             w:"Tegen een vriend gebruik je tú, en dan is het te llamas.",
+             wEn:"With a friend you use tú, and then it is te llamas."}; },
+   function(){ return {v:"Perdone, ¿___ la hora? (Heeft u de tijd?)",
+             vEn:"Perdone, ¿___ la hora? (Do you have the time, formal?)",
+             o:["tiene","tienes"], g:0,
+             w:"Perdone is de usted-vorm, dus het werkwoord blijft in dezelfde stijl: tiene.",
+             wEn:"Perdone is the usted form, so the verb stays in the same register: tiene."}; },
+   function(){ return {v:"Je meldt je bij de balie van een ziekenhuis. Wat gebruik je?",
+             vEn:"You report at a hospital reception desk. What do you use?",
+             o:["usted","tú"], g:0,
+             w:"Bij onbekenden in een formele situatie begin je met usted en wacht je tot de ander overschakelt.",
+             wEn:"With strangers in a formal setting you start with usted and wait for the other person to switch."}; }
+  ]},
+
+ {id:"negacion", icon:"🚫", naam:"De dubbele nee", naamEn:"The double no",
+  corr:[], spiek:{}, wizard:null,
+  uitleg:"<p>Twee ontkenningen in een zin zijn in het Spaans geen fout maar de regel.</p>"+
+    "<p>Staat het ontkennende woord <b>achter</b> het werkwoord, dan moet er <i>no</i> voor: <i>No tengo nada. No viene nadie. No voy nunca.</i></p>"+
+    "<p>Zet je datzelfde woord <b>voor</b> het werkwoord, dan verdwijnt de no: <i>Nadie viene. Nunca voy.</i></p>"+
+    "<p>Precies een van de twee, nooit allebei en nooit geen van beide. Nederlandstaligen laten de no meestal weg, omdat ik heb niets in het Nederlands klopt, en dan valt de Spaanse zin om.</p>",
+  uitlegEn:"<p>Two negatives in one sentence are not a mistake in Spanish, they are the rule.</p>"+
+    "<p>If the negative word comes <b>after</b> the verb, you need <i>no</i> in front: <i>No tengo nada. No viene nadie. No voy nunca.</i></p>"+
+    "<p>Put that same word <b>before</b> the verb and the no disappears: <i>Nadie viene. Nunca voy.</i></p>"+
+    "<p>Exactly one of the two, never both and never neither. English speakers drop the no, because I have nothing is correct in English, and then the Spanish sentence collapses.</p>",
+  begrip:{v:"Waarom staat er no in No tengo nada?",
+    vEn:"Why is there a no in No tengo nada?",
+    o:["Omdat nada achter het werkwoord staat","Omdat het beleefder klinkt","Om de ontkenning te versterken","Dat hoort er niet, het is een fout"],
+    oEn:["Because nada comes after the verb","Because it sounds more polite","To strengthen the negation","It should not be there, it is a mistake"],
+    g:0,
+    w:"Achter het werkwoord vraagt het ontkennende woord om no ervoor. Zet je nada vooraan, dan verdwijnt de no.",
+    wEn:"After the verb the negative word requires no in front. Move nada to the front and the no disappears."},
+  patronen:[
+   function(){ return {v:"___ tengo nada en la mochila. (Ik heb niets in mijn rugzak.)",
+             vEn:"___ tengo nada en la mochila. (I have nothing in my backpack.)",
+             o:["No","(niets)"], oEn:["No","(nothing)"], g:0,
+             w:"Nada staat achter het werkwoord, dus no is verplicht.",
+             wEn:"Nada comes after the verb, so no is required."}; },
+   function(){ return {v:"___ viene nadie a la fiesta. (Er komt niemand naar het feest.)",
+             vEn:"___ viene nadie a la fiesta. (Nobody is coming to the party.)",
+             o:["No","(niets)"], oEn:["No","(nothing)"], g:0,
+             w:"Nadie staat achter het werkwoord, dus no ervoor.",
+             wEn:"Nadie comes after the verb, so no goes in front."}; },
+   function(){ return {v:"Nunca ___ carne. (Ik eet nooit vlees.)",
+             vEn:"Nunca ___ carne. (I never eat meat.)",
+             o:["como","no como"], g:0,
+             w:"Nunca staat hier voor het werkwoord, en dan valt de no juist weg.",
+             wEn:"Here nunca comes before the verb, and then the no drops out."}; },
+   function(){ return {v:"No veo ___. (Ik zie niets.)", vEn:"No veo ___. (I see nothing.)",
+             o:["nada","algo"], g:0,
+             w:"Na no hoort het ontkennende woord: no veo nada. No veo algo bestaat niet.",
+             wEn:"After no you need the negative word: no veo nada. No veo algo does not exist."}; },
+   function(){ return {v:"Nadie ___ la respuesta. (Niemand weet het antwoord.)",
+             vEn:"Nadie ___ la respuesta. (Nobody knows the answer.)",
+             o:["sabe","no sabe"], g:0,
+             w:"Nadie staat vooraan, dus de no blijft weg: nadie sabe.",
+             wEn:"Nadie is at the front, so the no stays away: nadie sabe."}; }
+  ]},
+
+ {id:"pedirpreguntar", icon:"🙋", naam:"Pedir of preguntar", naamEn:"Pedir or preguntar",
+  corr:[], spiek:{a0:[16]}, wizard:null,
+  uitleg:"<p>Vragen is in het Spaans twee werkwoorden, en het Nederlands maakt dat verschil niet.</p>"+
+    "<p><b>pedir</b> is vragen om iets: je wilt iets krijgen. <i>Pido un café. Le pido ayuda.</i></p>"+
+    "<p><b>preguntar</b> is een vraag stellen: je wilt iets weten. <i>Le pregunto dónde está la estación.</i></p>"+
+    "<p>De snelle check: komt er een ding achter, dan pedir. Komt er een vraagzin achter, vaak met dónde, cuándo, cuánto of si, dan preguntar.</p>"+
+    "<p>In een restaurant is het dus altijd pedir: je bestelt, je vraagt niet naar informatie.</p>",
+  uitlegEn:"<p>To ask is two verbs in Spanish, and English does not make that split.</p>"+
+    "<p><b>pedir</b> is to ask for something: you want to receive it. <i>Pido un café. Le pido ayuda.</i></p>"+
+    "<p><b>preguntar</b> is to ask a question: you want to know something. <i>Le pregunto dónde está la estación.</i></p>"+
+    "<p>Quick check: if a thing follows, use pedir. If a question follows, often with dónde, cuándo, cuánto or si, use preguntar.</p>"+
+    "<p>So in a restaurant it is always pedir: you are ordering, not asking for information.</p>",
+  begrip:{v:"Wat is het verschil tussen pedir en preguntar?",
+    vEn:"What is the difference between pedir and preguntar?",
+    o:["Pedir is om iets vragen, preguntar is een vraag stellen","Pedir is beleefder","Preguntar hoort bij het verleden","Ze zijn uitwisselbaar"],
+    oEn:["Pedir is to ask for something, preguntar is to ask a question","Pedir is more polite","Preguntar belongs to the past","They are interchangeable"],
+    g:0,
+    w:"Wil je iets krijgen, dan pedir. Wil je iets weten, dan preguntar.",
+    wEn:"If you want to receive something, pedir. If you want to know something, preguntar."},
+  patronen:[
+   function(){ return {v:"En el bar ___ un café con leche. (Ik bestel een koffie.)",
+             vEn:"En el bar ___ un café con leche. (I order a coffee.)",
+             o:["pido","pregunto"], g:0,
+             w:"Je wilt de koffie krijgen, dus pedir.",
+             wEn:"You want to receive the coffee, so pedir."}; },
+   function(){ return {v:"Le ___ dónde está la estación. (Ik vraag hem waar het station is.)",
+             vEn:"Le ___ dónde está la estación. (I ask him where the station is.)",
+             o:["pregunto","pido"], g:0,
+             w:"Er volgt een vraag met dónde, dus preguntar.",
+             wEn:"A question with dónde follows, so preguntar."}; },
+   function(){ return {v:"¿Puedo ___ la cuenta? (Mag ik de rekening?)",
+             vEn:"¿Puedo ___ la cuenta? (Could I get the bill?)",
+             o:["pedir","preguntar"], g:0,
+             w:"De rekening is een ding dat je wilt krijgen: pedir.",
+             wEn:"The bill is a thing you want to receive: pedir."}; },
+   function(){ return {v:"El camarero me ___ si quiero postre. (De ober vraagt of ik toe wil.)",
+             vEn:"El camarero me ___ si quiero postre. (The waiter asks whether I want dessert.)",
+             o:["pregunta","pide"], g:0,
+             w:"Er volgt een si-vraag, dus preguntar. Hij wil iets weten, niet iets krijgen.",
+             wEn:"A si-question follows, so preguntar. He wants to know something, not to receive something."}; },
+   function(){ return {v:"Voy a ___ ayuda a mi vecino. (Ik ga mijn buurman om hulp vragen.)",
+             vEn:"Voy a ___ ayuda a mi vecino. (I am going to ask my neighbour for help.)",
+             o:["pedir","preguntar"], g:0,
+             w:"Hulp is iets dat je wilt krijgen, dus pedir ayuda.",
+             wEn:"Help is something you want to receive, so pedir ayuda."}; }
+  ]},
+
+ {id:"gerundio", icon:"⏱️", naam:"Presente of estar + gerundio", naamEn:"Presente or estar + gerundio",
+  corr:[], spiek:{a2:[11]}, wizard:null,
+  uitleg:"<p>Het Nederlands heeft geen aparte vorm voor ik ben aan het eten, en daarom slaan Nederlandstaligen deze meestal over.</p>"+
+    "<p><b>presente</b> is een gewoonte of iets algemeens: <i>Como a las dos.</i> Ik eet altijd om twee uur.</p>"+
+    "<p><b>estar + gerundio</b> is wat op dit moment bezig is: <i>Estoy comiendo.</i> Ik ben nu aan het eten.</p>"+
+    "<p>De vorm: -ar wordt -ando (hablando), -er en -ir worden -iendo (comiendo, viviendo).</p>"+
+    "<p>Signaalwoorden verklappen het meestal. <i>Ahora, ahora mismo, en este momento</i> trekken estar + gerundio. <i>Normalmente, siempre, todos los días</i> trekken de presente.</p>",
+  uitlegEn:"<p>Dutch has no separate progressive form, which is why Dutch speakers skip this one.</p>"+
+    "<p><b>presente</b> is a habit or something general: <i>Como a las dos.</i> I always eat at two.</p>"+
+    "<p><b>estar + gerundio</b> is what is going on right now: <i>Estoy comiendo.</i> I am eating right now.</p>"+
+    "<p>The form: -ar becomes -ando (hablando), -er and -ir become -iendo (comiendo, viviendo).</p>"+
+    "<p>Signal words usually give it away. <i>Ahora, ahora mismo, en este momento</i> pull estar + gerundio. <i>Normalmente, siempre, todos los días</i> pull the presente.</p>",
+  begrip:{v:"Wanneer gebruik je estar + gerundio?",
+    vEn:"When do you use estar + gerundio?",
+    o:["Voor wat op dit moment bezig is","Voor plannen in de toekomst","Voor gewoontes","Voor het verleden"],
+    oEn:["For what is going on right now","For plans in the future","For habits","For the past"],
+    g:0,
+    w:"Estar + gerundio is het moment zelf. Een gewoonte blijft gewoon presente, ook als het elke dag gebeurt.",
+    wEn:"Estar + gerundio is the moment itself. A habit stays in the presente, even if it happens every day."},
+  patronen:[
+   function(){ return {v:"Normalmente ___ a las dos. (Ik eet meestal om twee uur.)",
+             vEn:"Normalmente ___ a las dos. (I usually eat at two.)",
+             o:["como","estoy comiendo"], g:0,
+             w:"Normalmente wijst op een gewoonte, en een gewoonte staat in de presente.",
+             wEn:"Normalmente points at a habit, and a habit takes the presente."}; },
+   function(){ return {v:"Ahora mismo ___. (Ik ben nu aan het eten.)",
+             vEn:"Ahora mismo ___. (I am eating right now.)",
+             o:["estoy comiendo","como"], g:0,
+             w:"Ahora mismo is dit moment, dus estar + gerundio.",
+             wEn:"Ahora mismo is this very moment, so estar + gerundio."}; },
+   function(){ return {v:"Todos los días ___ español. (Ik studeer elke dag Spaans.)",
+             vEn:"Todos los días ___ español. (I study Spanish every day.)",
+             o:["estudio","estoy estudiando"], g:0,
+             w:"Elke dag is een gewoonte, en dat blijft de presente.",
+             wEn:"Every day is a habit, and that stays in the presente."}; },
+   function(){ var w = gcKies(GC_PAS), goed = gcGerund(w.inf), fout = gcGerundFout(w.inf);
+     return {v:"Estoy ___ ("+w.inf+", "+w.nl+")", vEn:"Estoy ___ ("+w.inf+", "+w.en+")",
+             o:[goed, fout], g:0,
+             w:w.inf+" eindigt op "+w.inf.slice(-2)+", dus het gerundio is "+goed+".",
+             wEn:w.inf+" ends in "+w.inf.slice(-2)+", so the gerundio is "+goed+"."}; },
+   function(){ var p = gcKies(GC_PERS);
+     return {v:"En este momento "+p.es+" ___ por teléfono. ("+p.nl+" is aan het bellen.)",
+             vEn:"En este momento "+p.es+" ___ por teléfono. ("+p.en+" is on the phone right now.)",
+             o:["está hablando","habla"], g:0,
+             w:"En este momento wijst op wat er nu bezig is, dus estar + gerundio.",
+             wEn:"En este momento points at what is going on now, so estar + gerundio."}; }
+  ]},
+
+ {id:"futuroir", icon:"🗓️", naam:"Plannen met ir a", naamEn:"Plans with ir a",
+  corr:[], spiek:{a2:[19]}, wizard:null,
+  uitleg:"<p>Een plan maak je in het Spaans bijna altijd met <b>ir a</b> plus het hele werkwoord, niet met de futuro. In gesproken Spaans is dit veruit de gewone manier om over morgen te praten.</p>"+
+    "<p><i>Mañana voy a estudiar. Este verano vamos a viajar a España.</i></p>"+
+    "<p>Er gaan drie dingen mis. Ten eerste is de <b>a</b> verplicht: voy estudiar bestaat niet. Ten tweede vervoeg je <b>alleen ir</b> (voy, vas, va, vamos, vais, van); het tweede werkwoord blijft in het hele werkwoord staan. Ten derde betekent vamos a plus werkwoord ook laten we, en dat verschil hoor je alleen aan de situatie.</p>",
+  uitlegEn:"<p>In Spanish you make a plan with <b>ir a</b> plus the infinitive, not with the futuro. In spoken Spanish this is by far the normal way to talk about tomorrow.</p>"+
+    "<p><i>Mañana voy a estudiar. Este verano vamos a viajar a España.</i></p>"+
+    "<p>Three things go wrong. First, the <b>a</b> is obligatory: voy estudiar does not exist. Second, you only conjugate <b>ir</b> (voy, vas, va, vamos, vais, van); the second verb stays in the infinitive. Third, vamos a plus a verb also means let us, and only the situation tells you which one it is.</p>",
+  begrip:{v:"Welk deel vervoeg je in voy a estudiar?",
+    vEn:"Which part do you conjugate in voy a estudiar?",
+    o:["Alleen ir","Alleen het tweede werkwoord","Allebei","Geen van beide"],
+    oEn:["Only ir","Only the second verb","Both","Neither"],
+    g:0,
+    w:"Ir draagt de persoon (voy, vas, va), het tweede werkwoord blijft in het hele werkwoord staan.",
+    wEn:"Ir carries the person (voy, vas, va), the second verb stays in the infinitive."},
+  patronen:[
+   function(){ return {v:"Mañana ___ a estudiar. (Ik ga morgen studeren.)",
+             vEn:"Mañana ___ a estudiar. (I am going to study tomorrow.)",
+             o:["voy","vas","va"], g:0,
+             w:"Ir draagt de persoon, en bij ik is dat voy.",
+             wEn:"Ir carries the person, and for I that is voy."}; },
+   function(){ return {v:"Mañana voy ___ estudiar. (Ik ga morgen studeren.)",
+             vEn:"Mañana voy ___ estudiar. (I am going to study tomorrow.)",
+             o:["a","(niets)","de"], oEn:["a","(nothing)","de"], g:0,
+             w:"De a is verplicht. Voy estudiar bestaat niet.",
+             wEn:"The a is obligatory. Voy estudiar does not exist."}; },
+   function(){ return {v:"Este verano vamos a ___. (Deze zomer gaan we reizen.)",
+             vEn:"Este verano vamos a ___. (This summer we are going to travel.)",
+             o:["viajar","viajamos"], g:0,
+             w:"Na ir a blijft het tweede werkwoord in het hele werkwoord staan: viajar.",
+             wEn:"After ir a the second verb stays in the infinitive: viajar."}; },
+   function(){ var p = gcKies(GC_PERS);
+     return {v:p.es+" ___ a trabajar mañana. ("+p.nl+" gaat morgen werken.)",
+             vEn:p.es+" ___ a trabajar mañana. ("+p.en+" is going to work tomorrow.)",
+             o:["va","van","vas"], g:0,
+             w:p.es+" is enkelvoud derde persoon, dus va a trabajar.",
+             wEn:p.es+" is third person singular, so va a trabajar."}; },
+   function(){ return {v:"Nosotros ___ a comer fuera. (Wij gaan buiten de deur eten.)",
+             vEn:"Nosotros ___ a comer fuera. (We are going to eat out.)",
+             o:["vamos","vais","van"], g:0,
+             w:"Bij nosotros hoort vamos.",
+             wEn:"Nosotros takes vamos."}; }
   ]}
 ];
 
@@ -19991,6 +20737,55 @@ function gwSluit(){
   gwSess = null;
   renderCheat();
 }
+/* v20.6, Stefan: "ook los kunnen lezen als grammatica."
+   Een concept was tot nu toe alleen een quiz: op een kaartje klikken betekende meteen een vraag.
+   Nu opent een kaartje eerst de uitleg als gewone grammatica, en zit het oefenen een knop verderop.
+   Wie door wil lezen bladert met vorige/volgende door alle concepten heen, als een boekje. De
+   dagelijkse les gaat nog steeds rechtstreeks naar het oefenen: daar heb je die keuze niet nodig. */
+var gcLeesId = null;
+function gcLeesOpen(id){
+  gcLeesId = (id || "").replace(/^concept-/, "");
+  gwSess = null;
+  navPush({t:"gclees", id:gcLeesId});
+  renderCheat();
+}
+function gcLeesSluit(){ gcLeesId = null; renderCheat(); }
+function gcLeesBuur(stap){
+  var i = -1;
+  GC_CONCEPTEN.forEach(function(c, k){ if(c.id === gcLeesId) i = k; });
+  if(i < 0) return null;
+  var j = i + stap;
+  return (j >= 0 && j < GC_CONCEPTEN.length) ? GC_CONCEPTEN[j] : null;
+}
+function gcLeesStatus(c){
+  var st = gramLees(c.id);
+  if(!st.goed && !st.fout) return ct("Nog niet geoefend.", "Not practised yet.");
+  var d = (st.due || 0) - today();
+  var wanneer = d <= 0 ? ct("staat vandaag klaar", "ready today")
+    : (d === 1 ? ct("komt morgen terug", "back tomorrow")
+               : ct("komt over " + d + " dagen terug", "back in " + d + " days"));
+  return ct("Doos ", "Box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1) + " \u00b7 " + wanneer +
+    (st.fout ? " \u00b7 " + st.fout + ct(" keer fout", " times wrong") : "");
+}
+function renderGcLees(){
+  var c = gcConcept(gcLeesId);
+  if(!c){ gcLeesId = null; return gwLijstHtml(); }
+  var vorige = gcLeesBuur(-1), volgende = gcLeesBuur(1);
+  return "<div class='card'>" +
+    "<span class='kicker'>" + ct("Grammatica", "Grammar") + " \u00b7 " + ct("lezen", "reading") + "</span>" +
+    "<h2>" + c.icon + " " + ct(c.naam, c.naamEn) + "</h2>" +
+    "<div class='gwuitleg' id='gcLeesUitleg'>" + ct(c.uitleg, c.uitlegEn) + "</div>" +
+    "<p class='muted' style='margin-top:10px'>" + gcLeesStatus(c) + "</p>" +
+    "<div class='row' style='margin-top:12px'>" +
+      "<button class='primary' id='gcOefen'>" + ct("Oefen dit \u2192", "Practise this \u2192") + "</button>" +
+      "<button class='ghost' id='gcLeesTerug'>" + ct("\u2190 Alle onderwerpen", "\u2190 All topics") + "</button>" +
+    "</div>" +
+    "<div class='row' style='margin-top:10px; flex-wrap:wrap'>" +
+      (vorige ? "<button type='button' class='ghost' data-gclees='" + vorige.id + "' style='font-size:.8rem'>\u2190 " + ct(vorige.naam, vorige.naamEn) + "</button>" : "") +
+      (volgende ? "<button type='button' class='ghost' data-gclees='" + volgende.id + "' style='font-size:.8rem'>" + ct(volgende.naam, volgende.naamEn) + " \u2192</button>" : "") +
+    "</div></div>";
+}
+
 function gwNaarToets(){
   gwSess.fase = "toets"; gwSess.vraag = 0; gwSess.gekozen = null;
   renderCheat();
@@ -20067,7 +20862,7 @@ function gcKaartHtml(o){
   if(st.fout && (st.box || 0) === 0) status = "<span style='color:var(--rood,#c0392b)'>" + ct("fout gegaan", "got this wrong") + "</span>";
   else if(!st.goed && !st.fout) status = ct("nog niet gedaan", "not done yet");
   else status = ct("doos ", "box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1);
-  return "<div class='lesson' data-gwstart='" + o.id + "'>" +
+  return "<div class='lesson' data-gclees='" + o.concept + "'>" +
     "<div class='lnum'>" + o.icon + "</div>" +
     "<div class='lbody'><b>" + gwTitel(o) + "</b><span>" + gwPitch(o) + "</span></div>" +
     "<div class='lstatus' style='font-size:.75rem; text-align:right'>" + status + "</div></div>";
@@ -20079,7 +20874,7 @@ function gwLijstHtml(){
   return "<div class='card'><h2>" + ct("Onder de knie krijgen", "Really nail it") + " \ud83e\udde0</h2>" +
     "<p class='muted'>" + ct("Elk onderwerp is opgeknipt in stappen: eerst een stukje uitleg, dan meteen de vragen die daarbij horen, en de hele spiekbrief zit eronder verstopt voor als je hem nodig hebt. Bedoeld om te herhalen, niet om \u00e9\u00e9n keer door te klikken.", "Every topic is cut into steps: a bit of explanation first, then the questions that go with it, with the full cheat sheet tucked away below if you need it. Made for repeating, not for clicking through once.") + "</p>" +
     (con.length
-      ? "<p style='margin:14px 0 4px'><b>" + ct("De keuzes", "The choices") + "</b> <span class='muted'>\u00b7 " + con.length + " \u00b7 " + ct("elke keer nieuwe voorbeelden, dus onthouden helpt niet", "fresh examples every time, so memorising won't help") + "</span></p>" + con.map(gcKaartHtml).join("")
+      ? "<p style='margin:14px 0 4px'><b>" + ct("De keuzes", "The choices") + "</b> <span class='muted'>\u00b7 " + con.length + " \u00b7 " + ct("eerst lezen, dan oefenen met elke keer nieuwe voorbeelden", "read first, then practise with fresh examples every time") + "</span></p>" + con.map(gcKaartHtml).join("")
       : "") +
     "<p style='margin:14px 0 4px'><b>" + ct("De diepe lessen", "The deep dives") + "</b> <span class='muted'>\u00b7 " + ct("meer stappen, meer valkuilen, apart geschreven", "more steps, more pitfalls, written by hand") + "</span></p>" +
     GRAMWIZ.map(gwKaartHtml).join("") +
@@ -20196,6 +20991,13 @@ function wireGramWiz(el){
   el.querySelectorAll("[data-gwstart]").forEach(function(d){
     d.onclick = function(){ gwStart(d.getAttribute("data-gwstart")); };
   });
+  el.querySelectorAll("[data-gclees]").forEach(function(d){
+    d.onclick = function(){ gcLeesOpen(d.getAttribute("data-gclees")); };
+  });
+  var lb;
+  lb = document.getElementById("gcOefen");
+  if(lb) lb.onclick = function(){ var id = gcLeesId; gcLeesId = null; gwStart("concept-" + id); };
+  lb = document.getElementById("gcLeesTerug"); if(lb) lb.onclick = gcLeesSluit;
   if(!gwSess) return;
   var b;
   b = document.getElementById("gwSluit"); if(b) b.onclick = (lesFlow && lesFlow.stap === "grammatica") ? lesFlowVolgende : gwSluit;
@@ -20308,6 +21110,12 @@ function renderCheat(){
   // de spiekbrieven als naslag en onderaan alle losse toetsjes.
   if(gwSess){
     el.innerHTML = renderGramWiz();
+    wireGramWiz(el);
+    jargonScan(el);
+    return;
+  }
+  if(gcLeesId){
+    el.innerHTML = renderGcLees();
     wireGramWiz(el);
     jargonScan(el);
     return;
@@ -20970,17 +21778,21 @@ function show(tabId, skipPush){
     window.addEventListener("popstate", function(e){
       var st = e.state;
       if(!activeProfile()) return;
-      if(!st){ gwSess = null; show("lessen", true); return; }
+      if(!st){ gwSess = null; gcLeesId = null; show("lessen", true); return; }
       if(st.t === "tab"){
         if(st.id === "speeltuin"){ funView = null; duelCur = null; }
-        if(st.id !== "spiekbrief"){ gwSess = null; }
+        if(st.id !== "spiekbrief"){ gwSess = null; gcLeesId = null; }
         scopeLesson = null;
         show(st.id, true);
+      } else if(st.t === "gclees"){
+        gwSess = null; gcLeesId = st.id;
+        show("spiekbrief", true);
       } else if(st.t === "gramwiz"){
         var gwo = gwOnderwerp(st.id);
         if(gwo){
           var gwv = gwVoortgang(st.id);
           gwSess = {id:st.id, stap:Math.min(gwv.stap, gwo.stappen.length - 1), fase:"uitleg", vraag:0, goed:0, fout:0, gekozen:null};
+          gcLeesId = null;
         }
         show("spiekbrief", true);
       } else if(st.t === "les"){
