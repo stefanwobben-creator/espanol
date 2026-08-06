@@ -323,6 +323,43 @@ const { chromium } = require('playwright');
   ok(inFlow.sess === 'concept-reflexivo' && inFlow.lees === null, 'en in de dagelijkse les kom je nog steeds meteen in de oefening');
   await page.evaluate(() => { gwSluit(); });
 
+  /* ---------------- 9. de tab opent kort (v20.7) ----------------
+     Stefan: "kwestie van hoe je de info presenteert, of beide kan of niet." Beide dus. */
+  const kort = await page.evaluate(() => {
+    gwSess = null; gcLeesId = null; S.gcAlles = false;
+    S.gram = {};
+    corrSrsBij('muymucho', false);
+    show('spiekbrief');
+    const zichtbaar = document.querySelectorAll('#cheat [data-gclees]').length;
+    const knop = document.getElementById('gcToggleAlles');
+    const label = knop ? knop.textContent : '';
+    const eerste = (document.querySelector('#cheat [data-gclees]') || {}).getAttribute
+      ? document.querySelector('#cheat [data-gclees]').getAttribute('data-gclees') : null;
+    return {
+      zichtbaar: zichtbaar,
+      knop: !!knop,
+      label: label,
+      eerste: eerste,
+      reden: document.getElementById('cheat').innerText,
+      totaal: GC_CONCEPTEN.length
+    };
+  });
+  ok(kort.zichtbaar <= 3, 'de Grammatica-tab opent met hoogstens drie conceptkaartjes (' + kort.zichtbaar + ')');
+  ok(kort.eerste === 'muymucho', 'en bovenaan staat de fout van net, niet het eerste concept uit de lijst');
+  ok(kort.knop === true && new RegExp(kort.totaal).test(kort.label), 'met een knop die zegt hoeveel er nog meer zijn (' + kort.label.trim() + ')');
+  ok(/nieuws|new/i.test(kort.reden), 'en er staat bij waarom juist deze drie er staan');
+
+  const uitgeklapt = await page.evaluate(() => {
+    document.getElementById('gcToggleAlles').click();
+    const n = document.querySelectorAll('#cheat [data-gclees]').length;
+    const bewaard = S.gcAlles;
+    document.getElementById('gcToggleAlles').click();
+    return { n: n, bewaard: bewaard, terug: document.querySelectorAll('#cheat [data-gclees]').length, uit: S.gcAlles };
+  });
+  ok(uitgeklapt.n === kort.totaal, 'de knop klapt alle onderwerpen uit (' + uitgeklapt.n + ')');
+  ok(uitgeklapt.bewaard === true && uitgeklapt.uit === false, 'en die keuze wordt onthouden, dus je hoeft hem niet elke dag opnieuw te maken');
+  ok(uitgeklapt.terug <= 3, 'terugklappen kan ook weer');
+
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|Failed to fetch|ERR_TUNNEL_CONNECTION_FAILED|net::/.test(e));
   ok(relevanteErrors.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + relevanteErrors.length + ' gevonden)');
   if (relevanteErrors.length) relevanteErrors.forEach((e) => console.log('  ->', e));

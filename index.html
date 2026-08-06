@@ -983,7 +983,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v20.6";
+var APP_VERSIE = "v20.7";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -20868,13 +20868,27 @@ function gcKaartHtml(o){
     "<div class='lstatus' style='font-size:.75rem; text-align:right'>" + status + "</div></div>";
 }
 
+function gcVandaagKaartjes(con){
+  var kies = {};
+  gcVandaagLijst().forEach(function(c){ kies["concept-" + c.id] = 1; });
+  return con.filter(function(o){ return kies[o.id]; }).map(gcKaartHtml).join("");
+}
+
 // De onderwerpkaartjes bovenaan de Grammatica-tab
 function gwLijstHtml(){
   var gen = gwGenLijst(), con = gcLijst();
   return "<div class='card'><h2>" + ct("Onder de knie krijgen", "Really nail it") + " \ud83e\udde0</h2>" +
     "<p class='muted'>" + ct("Elk onderwerp is opgeknipt in stappen: eerst een stukje uitleg, dan meteen de vragen die daarbij horen, en de hele spiekbrief zit eronder verstopt voor als je hem nodig hebt. Bedoeld om te herhalen, niet om \u00e9\u00e9n keer door te klikken.", "Every topic is cut into steps: a bit of explanation first, then the questions that go with it, with the full cheat sheet tucked away below if you need it. Made for repeating, not for clicking through once.") + "</p>" +
     (con.length
-      ? "<p style='margin:14px 0 4px'><b>" + ct("De keuzes", "The choices") + "</b> <span class='muted'>\u00b7 " + con.length + " \u00b7 " + ct("eerst lezen, dan oefenen met elke keer nieuwe voorbeelden", "read first, then practise with fresh examples every time") + "</span></p>" + con.map(gcKaartHtml).join("")
+      ? "<p style='margin:14px 0 4px'><b>" + ct("De keuzes", "The choices") + "</b> <span class='muted'>\u00b7 " + ct("eerst lezen, dan oefenen met elke keer nieuwe voorbeelden", "read first, then practise with fresh examples every time") + "</span></p>" +
+        (S.gcAlles
+          ? con.map(gcKaartHtml).join("") +
+            "<button type='button' class='ghost' id='gcToggleAlles' style='margin-top:8px; font-size:.85rem'>" +
+              ct("\u2190 Alleen wat vandaag telt", "\u2190 Just what matters today") + "</button>"
+          : "<p class='muted' style='margin:0 0 6px; font-size:.8rem'>" + gcVandaagReden() + "</p>" +
+            gcVandaagKaartjes(con) +
+            "<button type='button' class='ghost' id='gcToggleAlles' style='margin-top:8px; font-size:.85rem'>" +
+              ct("Alle " + con.length + " onderwerpen \u2192", "All " + con.length + " topics \u2192") + "</button>")
       : "") +
     "<p style='margin:14px 0 4px'><b>" + ct("De diepe lessen", "The deep dives") + "</b> <span class='muted'>\u00b7 " + ct("meer stappen, meer valkuilen, apart geschreven", "more steps, more pitfalls, written by hand") + "</span></p>" +
     GRAMWIZ.map(gwKaartHtml).join("") +
@@ -20882,6 +20896,44 @@ function gwLijstHtml(){
       ? "<p style='margin:18px 0 4px'><b>" + ct("Alle onderwerpen", "All topics") + "</b> <span class='muted'>\u00b7 " + gen.length + " \u00b7 " + ct("uit je eigen lessen, met de bijbehorende toetsvragen", "from your own lessons, with their matching quiz questions") + "</span></p>" + gen.map(gwKaartHtml).join("")
       : "") +
     "</div>";
+}
+
+/* v20.7, Stefan: "kwestie van hoe je de info presenteert, of beide kan of niet."
+   Beide kan. Drieentwintig kaartjes onder elkaar is precies de klacht van zijn moeder
+   ("te veel informatie op het scherm"), maar het complete overzicht laat wel zien hoe ver
+   je bent. Dus staat er standaard een korte lijst van hoogstens drie: wat fout ging, wat
+   vandaag terugkomt, en een nieuwe. De machine wist dat allang, die kennis lag ongebruikt.
+   De knop eronder klapt alles uit, en die keuze onthoudt de app. */
+function gcVandaagLijst(){
+  var t = today(), fout = [], due = [], nieuw = [];
+  GC_CONCEPTEN.forEach(function(c){
+    var st = gramLees(c.id);
+    if(!st.goed && !st.fout){ nieuw.push(c); return; }
+    if(st.fout && (st.box || 0) === 0){ fout.push({c:c, st:st}); return; }
+    if(!st.due || st.due <= t) due.push({c:c, st:st});
+  });
+  function opBox(a, b){ return (a.st.box || 0) - (b.st.box || 0); }
+  fout.sort(opBox); due.sort(opBox);
+  // twee plekken voor wat terug moet komen, en altijd een plek voor iets nieuws:
+  // anders zou een slechte week je nooit meer iets nieuws laten zien
+  var uit = fout.concat(due).slice(0, 2).map(function(x){ return x.c; });
+  if(nieuw.length) uit.push(nieuw[0]);
+  if(!uit.length) uit = GC_CONCEPTEN.slice(0, 3);
+  return uit;
+}
+function gcVandaagReden(){
+  var t = today(), fout = 0, terug = 0, nieuw = 0;
+  gcVandaagLijst().forEach(function(c){
+    var st = gramLees(c.id);
+    if(!st.goed && !st.fout) nieuw++;
+    else if(st.fout && (st.box || 0) === 0) fout++;
+    else terug++;
+  });
+  var d = [];
+  if(fout) d.push(ct("wat fout ging", "what went wrong"));
+  if(terug) d.push(ct("wat vandaag terugkomt", "what's due today"));
+  if(nieuw) d.push(ct("en iets nieuws", "and something new"));
+  return d.join(", ");
 }
 
 function gwStapNavHtml(o){
@@ -20998,6 +21050,8 @@ function wireGramWiz(el){
   lb = document.getElementById("gcOefen");
   if(lb) lb.onclick = function(){ var id = gcLeesId; gcLeesId = null; gwStart("concept-" + id); };
   lb = document.getElementById("gcLeesTerug"); if(lb) lb.onclick = gcLeesSluit;
+  lb = document.getElementById("gcToggleAlles");
+  if(lb) lb.onclick = function(){ S.gcAlles = !S.gcAlles; persist(); renderCheat(); };
   if(!gwSess) return;
   var b;
   b = document.getElementById("gwSluit"); if(b) b.onclick = (lesFlow && lesFlow.stap === "grammatica") ? lesFlowVolgende : gwSluit;
