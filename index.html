@@ -983,7 +983,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v20.4";
+var APP_VERSIE = "v20.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3157,7 +3157,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
+function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, gram:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
@@ -3187,6 +3187,7 @@ function normaliseerState(s){
   s.wear = s.wear || {};
   s.lessons = s.lessons || {};
   s.quizSrs = s.quizSrs || {};
+  s.gram = s.gram || {};
   s.boek = s.boek || {};
   s.comp = s.comp || {};
   s.comp.luisteren = s.comp.luisteren || {};
@@ -4460,7 +4461,10 @@ function tempoVandaag(){
   // v19.86: kom je minder dan vier keer per week terug, dan is de app te groot.
   // Dan wordt hij kleiner, zonder er iets van te zeggen op het moment zelf.
   if(herstelModus()){
-    S.tempo = {d:t, n:2, cap:6, pct:-1, herstel:1};
+    // v20.5: kleiner, maar nog steeds elke dag nieuwe woorden. Twee was zo weinig dat de dag
+    // alleen nog uit herhalen bestond, en herhalen alleen is geen reden om terug te komen.
+    var hn = dagPortieHerstel();
+    S.tempo = {d:t, n:hn, cap:hn + Math.max(3, Math.round(doelMinuten() * 0.4)), pct:-1, herstel:1};
     persist();
     return S.tempo;
   }
@@ -4468,8 +4472,11 @@ function tempoVandaag(){
   var k = leerKpi().recent;
   if(k.pog >= 40 && k.pct !== null){
     if(k.pct < 15){ nieuw = dagPortieNieuw() + 2; cap = dagPortieCap() + 6; }
-    else if(k.pct > 25){ nieuw = Math.max(1, Math.round(dagPortieNieuw() / 2)); }
+    else if(k.pct > 25){ nieuw = Math.round(dagPortieNieuw() / 2); }
   }
+  // v20.5: de vloer. Knijpen mag, uithongeren niet.
+  nieuw = Math.max(nieuw, dagPortieVloer());
+  cap = Math.max(cap, nieuw + 3);
   S.tempo = {d:t, n:Math.min(nieuw, MAX_NEW_PER_DAY), cap:cap, pct:(k.pct === null ? -1 : k.pct)};
   persist();
   return S.tempo;
@@ -4648,6 +4655,8 @@ function quizSrsBij(qz, pct){
     st.due = addDays(t, 2);
   }
   S.quizSrs[qz.id] = st;
+  // v20.5: een toets raakt meestal een of twee concepten; die krijgen dezelfde uitslag
+  gcConceptenVoorQuiz(qz).forEach(function(cid){ gramBij(cid, pct >= 0.8); });
   quizSpreid();
 }
 function quizDueList(){
@@ -5112,8 +5121,35 @@ function newAllowance(){ return Math.max(0, MAX_NEW_PER_DAY - newToday()); }
    De verhouding van 10 minuten (12 kaartjes, 4 nieuw) is de kalibratie die er al stond; die houden we
    aan en schalen hem lineair. Dus 5 → 6/2, 10 → 12/4, 20 → 24/8, 30 → 36/12. tempoVandaag() past het
    daarna nog aan op je foutpercentage en op herstelmodus, dus dit is de basis, niet het eindwoord. */
-function dagPortieCap(){ return Math.max(4, Math.round(doelMinuten() * 1.2)); }
-function dagPortieNieuw(){ return Math.max(1, Math.round(doelMinuten() * 0.4)); }
+/* v20.5 - Stefan, 6 augustus: "drie woordjes is denk ik weinig toch? moet altijd en deel
+   herhaling inzitten maar ook iedere dag nieuwe woordjes."
+
+   Hij had gelijk en de oorzaak zat niet waar ik eerst dacht. dagPortie() reserveert de ruimte voor
+   nieuwe woorden wel degelijk als eerste; herhalingen zijn daar de rest. Het lek zat een laag
+   hoger, in tempoVandaag(): bij meer dan 25 procent fout werd het aantal nieuwe woorden gehalveerd
+   (bij een doel van 10 minuten dus van 4 naar 2), en in herstelmodus stond het hard op 2. Precies
+   op de dagen dat je het meeste fout hebt, is dat wat je overhoudt.
+
+   Dat is verdedigbaar als je alleen naar de belasting kijkt, maar niet als je naar de reden kijkt
+   waarom iemand de app opent. Nieuwe woorden zijn de opbrengst; herhaling is de rekening. Een
+   regelaar die de opbrengst wegregelt en de rekening laat staan, regelt de verkeerde kant op.
+
+   Vanaf nu zijn het twee potten met elk hun eigen formule, en er ligt een vloer onder de nieuwe
+   woorden die de regelaar niet kan wegnemen. De regelaar mag nog wel knijpen, alleen niet tot nul:
+   bij 10 minuten is de bodem 4 in plaats van 2, en zelfs in herstelmodus krijg je er 3.
+
+     doel   nieuw   herhaal   samen    vloer   herstel
+      5       3        4        7        3        3
+     10       5        8       13        4        3
+     20      10       16       26        8        5
+     30      15       24       39       12        8 */
+function dagPortieNieuw(){ return Math.max(3, Math.round(doelMinuten() * 0.5)); }
+function dagPortieHerhaal(){ return Math.max(3, Math.round(doelMinuten() * 0.8)); }
+function dagPortieCap(){ return dagPortieNieuw() + dagPortieHerhaal(); }
+// de bodem die de tempo-regelaar niet mag onderschrijden
+function dagPortieVloer(){ return Math.max(3, Math.round(doelMinuten() * 0.4)); }
+// en de bodem in herstelmodus: kleiner mag, nul nooit
+function dagPortieHerstel(){ return Math.max(3, Math.round(doelMinuten() * 0.25)); }
 
 function bijnaGoedIds(){
   // woorden waar je de laatste twee dagen op struikelde
@@ -7454,6 +7490,9 @@ function corrSrsBij(id, goed){
     st.due = addDays(today(), 2);
   }
   S.corr[id] = st;
+  // v20.5: de fout gaat ook naar het concept, niet alleen naar de regel. Dit is precies wat
+  // Stefan vroeg toen hij muy/mucho fout had: "neem je dat nu mee in de micro grammatica lessen?"
+  gramBij(gcConceptVoorCorr(id), goed);
 }
 function corrDueRegels(){
   var t = today();
@@ -8200,12 +8239,26 @@ function lesFlowGramId(){
   // het minst hebt gedaan. Zo gaat de uitleg-stap altijd over iets wat je nu echt aan het leren bent.
   var les = huidigeLes();
   if(lesFlow) lesFlow.gramLes = les ? les.id : null;
+
+  // v20.5, in deze volgorde. Stefan: "alle fouten die maak moeten weer terug, mijn leermachine is".
+  // Dus eerst het concept waar je op struikelde en dat vandaag mag terugkomen. Dat is de enige
+  // reden waarom de les van vandaag anders is dan die van gisteren.
+  var fout = gramFoutTop();
+  if(fout) return "concept-" + fout.c.id;
+
+  // Daarna een concept uit de les van vandaag dat je hier nog nooit hebt gedaan. Nieuw voor je,
+  // en het hoort bij de woorden die je net hebt geleerd.
+  var vers = gramVersKandidaat(les);
+  if(vers) return "concept-" + vers.id;
+
   var kandidaten = [];
   ((les && les.spiek) || []).forEach(function(i){
     var o = gwOnderwerpVoorSpiek(i);
     if(o) kandidaten.push(o);
   });
-  if(!kandidaten.length) kandidaten = GRAMWIZ.concat(gwGenLijst());
+  // gcLijst() staat er nu bij: zonder dat waren de conceptlessen alleen bereikbaar via een fout,
+  // en de handgeschreven wizards die aan geen enkele spiekbrief hangen waren onbereikbaar.
+  if(!kandidaten.length) kandidaten = GRAMWIZ.concat(gcLijst()).concat(gwGenLijst());
   if(!kandidaten.length) return null;
   // nog niet afgerond eerst, daarna het minst herhaalde: herhalen is precies de bedoeling
   kandidaten.sort(function(a, b){
@@ -8315,10 +8368,18 @@ function lesFlowVolgendeKern(){
       startQuiz(lesFlow.quizzesTeDoen[0], toetsvragenPerDag());
       return;
     }
-    lesFlow.stap = "produceren";
-    lesFlow.vaardigheidRij = lesFlowKiesVaardigheden(vaardigheidAantal());
-    lesFlow.vaardigheid = lesFlow.vaardigheidRij.shift();
-    lesFlowOpenProductie();
+    // v20.5 - Stefan, 6 augustus: "daarna krijg ik dacht dictado en daarna lezen. ik merk dat ik
+    // afhaak als dit in de verplichte lijst is."
+    //
+    // Hier houdt de verplichte les op. Dictado, lezen en vertalen waren geen slechte oefeningen,
+    // ze stonden op de verkeerde plek: achter het punt waarop je al klaar was. Een blok dat je
+    // moet doen nadat je het gevoel hebt dat je klaar bent, is een blok waar je op afhaakt, en
+    // afhaken op het eind is duurder dan het lijkt: dat is het laatste wat je van de sessie
+    // onthoudt, en dus wat je je morgen herinnert.
+    //
+    // Vanaf nu komen ze terug als voorstel met een reden erbij (lesFlowVoorstellen), en dan is
+    // hetzelfde blok ineens iets wat je kiest. Zie lesFlowExtra() voor de opt-in.
+    lesFlowKlaar();
     return;
   }
   if(lesFlow.stap === "produceren"){
@@ -8358,6 +8419,108 @@ function lesFlowOpenProductie(){
   show("vertalen");
 }
 
+/* v20.5 - het productieblok als keuze in plaats van als verplichting. Dezelfde machinerie,
+   alleen begint hij nu bij "produceren" met een rij van precies een vaardigheid, zodat hij
+   erna netjes bij lesFlowKlaar() uitkomt. */
+function lesFlowExtra(v){
+  lesFlow = {stap:"produceren", extra:true, quizzesTeDoen:[], gekozenSpel:null,
+             vertalenTeGaan:0, vaardigheid:v, vaardigheidRij:[]};
+  lesFlowOpenProductie();
+  lesFlowBewaar();
+}
+
+/* Welke vaardigheid is vandaag nog niet aan bod geweest? De rotatie stond er al, alleen werd hij
+   vroeger door de flow zelf afgevinkt; nu vinkt alleen echt doen hem af. */
+function lesFlowVaardigheidOpen(){
+  var t = today();
+  var open = VAARDIGHEDEN.filter(function(v){ return S.lesFlowSpel[v] !== t; });
+  if(!open.length) return null;
+  if(open.indexOf("lezen") !== -1 && !lesFlowBoekHoofdstuk()){
+    open = open.filter(function(v){ return v !== "lezen"; });
+    if(!open.length) return null;
+  }
+  return open[0];
+}
+
+var VAARD_NAAM = {
+  luisteren: {icon:"\ud83d\udd0a", nl:"Dictado", en:"Dictado",
+    wnl:"Je hebt vandaag nog niets gehoord. Luisteren is de enige oefening waarbij je het woord moet herkennen zonder dat je het ziet staan, en dat is precies wat er in een gesprek gebeurt.",
+    wen:"You haven't heard anything today. Listening is the only exercise where you have to recognise a word without seeing it, which is exactly what happens in a conversation."},
+  schrijven: {icon:"\u270d\ufe0f", nl:"Zinnen vertalen", en:"Translate sentences",
+    wnl:"Je hebt vandaag nog niets zelf hoeven bouwen. Een woord herkennen is makkelijker dan het zelf opschrijven, en het verschil tussen die twee is waar je nu staat.",
+    wen:"You haven't had to build anything yourself today. Recognising a word is easier than writing it, and the gap between those two is where you are right now."},
+  lezen: {icon:"\ud83d\udcd6", nl:"Verder in je boek", en:"On with your book",
+    wnl:"Je boek staat open. Lezen is de enige plek waar de woorden van vandaag in een echt verhaal langskomen in plaats van op een kaartje.",
+    wen:"Your book is waiting. Reading is the only place where today's words show up inside a real story instead of on a card."}
+};
+
+/* v20.5 - Stefan: "als je klaar bent met je minimale, ja dan wil je een suggestie of meer
+   suggesties waarom een bepaald spel of oefening goed voor je is."
+
+   Het sleutelwoord daar is WAAROM. Een rij knoppen na afloop had de app al (dagSpeelHtml); wat
+   ontbrak was de reden. Zonder reden is elk voorstel even zwaar en kies je er dus geen, of de
+   bovenste. Hieronder komt elk voorstel uit data die op dat moment in S staat: een concept waar
+   je op struikelde, regels die op herhaling staan, een vaardigheid die vandaag niet aan bod kwam.
+   Hoogstens twee, want drie keuzes na afloop van je les is geen keuze meer maar een menu.
+
+   De volgorde is niet willekeurig: eerst wat het meeste oplevert, daarna iets wat gewoon leuk is.
+   Dat is letterlijk zijn eigen formulering ("doe ook nog even 5 min x want daar kun je nog het
+   meeste verbeteren, wil je dat of doe een leuk spelletje"). */
+function lesFlowWinst(){
+  var fout = gramFoutTop();
+  if(fout){
+    var c = fout.c, n = fout.st.fout;
+    return {icon:c.icon,
+      kop:ct("Nog een keer: " + c.naam, "One more go: " + c.naamEn),
+      waarom:ct("Hier ging je " + n + " keer de mist in. De voorbeelden worden opnieuw gemaakt, dus je kunt het antwoord niet onthouden: je moet de keuze echt maken.",
+                "You got this wrong " + n + " times. The examples are generated fresh, so you can't memorise the answer: you have to make the call."),
+      knop:ct("Vijf minuten, doen", "Five minutes, go"),
+      doe:function(){ show("spiekbrief"); gwStart("concept-" + c.id); }};
+  }
+  var cd = corrDueHaalbaar();
+  if(cd.length >= 3){
+    return {icon:"\ud83d\udd75\ufe0f",
+      kop:ct("El Corrector", "El Corrector"),
+      waarom:ct(cd.length + " regels staan op herhaling, waaronder " + corrRegelNaam(cd[0]) + ". Een fout die je hier maakt komt morgen terug in je grammatica, dus dit is de goedkoopste plek om hem te maken.",
+                cd.length + " rules are due, including " + corrRegelNaam(cd[0]) + ". A mistake you make here comes back in your grammar tomorrow, so this is the cheapest place to make it."),
+      knop:ct("Fouten zoeken", "Go hunting"),
+      doe:function(){ speelNaar("corr"); }};
+  }
+  var v = lesFlowVaardigheidOpen();
+  if(v){
+    var d = VAARD_NAAM[v];
+    return {icon:d.icon, kop:ct(d.nl, d.en), waarom:ct(d.wnl, d.wen),
+      knop:ct("Vijf minuten, doen", "Five minutes, go"),
+      doe:function(){ lesFlowExtra(v); }};
+  }
+  return null;
+}
+function lesFlowLeuk(uit){
+  var keus = dagSpelKeuze().filter(function(k){ return !uit || k.v !== uit; });
+  if(!keus.length) return null;
+  var k = keus[0];
+  return {icon:k.e, kop:k.n,
+    waarom:ct("Dezelfde woorden, maar je moet ze anders ophalen. Dat is waarom spelen blijft plakken: je geheugen leert het woord los van het kaartje waar je het op zag staan.",
+              "The same words, but you have to retrieve them differently. That's why playing sticks: your memory learns the word apart from the card you first saw it on."),
+    knop:ct("Even spelen", "Play a round"),
+    doe:function(){ speelNaar(k.v); }};
+}
+function lesFlowVoorstellen(){
+  var uit = [], w = lesFlowWinst();
+  if(w) uit.push(w);
+  var l = lesFlowLeuk(w && w.kop === "El Corrector" ? "corr" : null);
+  if(l) uit.push(l);
+  return uit;
+}
+function lesFlowVoorstelHtml(v, i){
+  return "<div class='card' style='margin-top:10px'>" +
+    "<span class='kicker'>" + (i === 0 ? ct("Hier win je het meeste", "This is where you gain most")
+                                       : ct("Of gewoon leuk", "Or just fun")) + "</span>" +
+    "<p style='margin:4px 0 2px; font-size:1.05rem'><b>" + v.icon + " " + v.kop + "</b></p>" +
+    "<p class='muted' style='margin:0 0 10px; font-size:.9rem'>" + v.waarom + "</p>" +
+    "<button class='ghost' data-voorstel='" + i + "'>" + v.knop + " \u2192</button></div>";
+}
+
 function lesFlowKlaarBonus(){
   // variabele beloning (variable-ratio, motiverender dan een vast bedrag): 1-3 basis, ~15% kans op
   // een extra "jackpot" van +3. Eerste opzet, kan later getuned worden op basis van hoe het aanvoelt.
@@ -8382,6 +8545,7 @@ function lesFlowKlaar(){
   show("lessen");
   var el = document.getElementById("lessonList");
   var tapaHoy = tapaVolgende();
+  var voorstellen = lesFlowVoorstellen();
   confetti(["🎉",tapaHoy.e,"✨","💃"], 30);
   el.innerHTML = "<div class='card celebrate'><span class='kicker'>"+ct("Les afgerond","Session complete")+" 🎉</span>"+
     "<p class='big' style='margin:6px 0'>"+ct("¡Muy bien! Chispa is blij met je.","¡Muy bien! Chispa is happy with you.")+"</p>"+
@@ -8397,17 +8561,22 @@ function lesFlowKlaar(){
     (eersteOoit ? "<p style='margin:8px 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
     // v19.60: staat het dagdoel er al op, dan is "nog een les" niet meer de hoofdknop. Doorgaan mag,
     // maar het hoort niet het eerste te zijn wat je ziet op het moment dat je klaar bent.
-    ((S.xp[t] || 0) >= dagdoel()
-      ? "<div class='row'><button class='primary' id='btnLesFlowTerug'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button>"+
-        "<button class='ghost' id='btnLesFlowNogEens'>"+ct("Toch nog een les","One more anyway")+"</button></div></div>"
-      : "<div class='row'><button class='primary' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button>"+
-        "<button class='ghost' id='btnLesFlowTerug'>"+ct("Naar het overzicht","Back to overview")+"</button></div></div>")+
+    // v20.5: de stopknop staat er nu altijd, altijd bovenaan de rij en altijd als primaire knop.
+    // Dat is de zesde bevinding van zijn moeder ("ze wilde stoppen maar zag niet hoe") en het is
+    // ook het eerlijke antwoord op de voorstellen hieronder: die zijn extra, dit is klaar.
+    "<div class='row'><button class='primary' id='btnLesFlowTerug'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button>"+
+    "<button class='ghost' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button></div></div>"+
+    voorstellen.map(lesFlowVoorstelHtml).join("")+
     // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
     // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
     // v19.58: hoogstens ÉÉN vraag onder de felicitatie, gekozen door samenKaartNu().
     samenKaartNu(false);
   document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
   document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
+  el.querySelectorAll("[data-voorstel]").forEach(function(b){
+    var v = voorstellen[parseInt(b.getAttribute("data-voorstel"), 10)];
+    if(v) b.onclick = function(){ v.doe(); };
+  });
   // v19.66 — het bord neerzetten. Eén keer per viering: daarna blijft de knop staan als bewijs dat
   // het gebeurd is (uitgegrijsd, met Chispa's gesmak erin), niet als knop die je nóg eens kunt
   // indrukken. Een viering die je kunt herhalen tot ze niets meer betekent is geen viering.
@@ -9057,7 +9226,7 @@ function ritmeCard(){
      v19.64 staat nog: "14 herhalingen open" komt nooit meer terug. Een getal dat groeit terwijl je
      niets doet, straft wegblijven af en maakt terugkomen duurder naarmate je langer weg was. */
   var chipsHtml = "";
-  if(rel.chipNieuw) chipsHtml += chip(nieuw >= MIN_NEW_PER_DAY, ct("nieuwe woorden ","new words ")+nieuw+"/"+MIN_NEW_PER_DAY+" (max "+MAX_NEW_PER_DAY+")");
+  if(rel.chipNieuw) chipsHtml += chip(nieuw >= dagPortieVloer(), ct("nieuwe woorden ","new words ")+nieuw+"/"+dagPortieVloer()+" (max "+MAX_NEW_PER_DAY+")");
   if(rel.chipHerhaal) chipsHtml += chip(true, ct("herhalingen bij","reviews done"));
   if(rel.chipDoel) chipsHtml += chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" "+xpw());
   if(chipsHtml) chipsHtml = "<div class='ritme' style='margin-top:10px'>"+chipsHtml+"</div>";
@@ -17604,6 +17773,717 @@ function renderFunDuel(){
    Bewuste keuze: dit vervangt geen lesstof en voegt niets toe aan bestaande lessen of toetsjes
    (dat zou lessen retroactief on-voltooid maken, zie de v19.21-beslissing). Het staat los bovenaan
    de Grammatica-tab, naast de spiekbrieven. */
+/* ================= DE LEERMACHINE (v20.5) =================
+   Stefan, 6 augustus: "ik merk dat ik nu meer de toetsjes automatisch invul omdat ik geleerd heb wat
+   een goede antwoord is (dat is ook zo bij babbel) ipv dat echt het grammaticale concept wordt
+   getest", en: "alle fouten die maak moeten weer terug, mijn leermachine is".
+
+   Twee dingen zaten daar structureel fout.
+
+   Eerst: de eenheid van leren was de VRAAG, niet de regel. Een toetsvraag is een vast object met
+   vaste opties in een vaste volgorde. Bij een eindige verzameling vaste vragen is het antwoord
+   onthouden goedkoper dan de regel begrijpen. Automatisch invullen is dus geen slordigheid van
+   Stefan, het is de goedkoopste route die het ontwerp zelf aanbiedt. Hieronder is een concept daarom
+   geen tekst maar een GENERATOR: de zin wordt op het moment zelf samengesteld uit een patroon plus
+   losse woorden, en de opties worden geschud. Je kunt geen item onthouden dat nog niet bestond.
+
+   Dat patroon is niet nieuw in deze app, het stond er al twee keer: cjMeerkeuzeOpties() maakt de
+   afleiders bij de Conjugador uit de echte vormen van het werkwoord, en CORR_REGELS.maak() bouwt de
+   fout in El Corrector zelf. Dat zijn precies de twee onderdelen die hij het leukst vindt.
+
+   Tweede: een concept had geen geheugen. S.gramwiz houdt {stap, klaar, rondes} bij, zonder doosje en
+   zonder datum, dus een onderwerp kwam nooit uit zichzelf terug. En "ser/estar" bestond als
+   spiekbrieftekst, als toets-id, als wizard-id en als Corrector-regel, waarbij die vier niets van
+   elkaar wisten. De app kon de vraag "snapt Stefan ser/estar" dus niet beantwoorden. S.gram is dat
+   ene antwoord: per concept een doosje met een vervaldatum, gevoed door alle bronnen tegelijk. Een
+   fout in El Corrector zet het concept op morgen, en de dagles pakt het daar op.
+
+   Een concept is bewust een BESLISSING en geen onderwerp. Bijna elk A1/A2-probleem voor een
+   Nederlandstalige is een tweekeuze waar het Nederlands maar een woord heeft: ser/estar, por/para,
+   muy/mucho, hay/estar, saber/conocer, gusta/gustan, perfecto/indefinido, indefinido/imperfecto.
+   Wie de beslissing kan maken kent het concept. Wie de tekst kan navertellen niet.
+
+   De vorm van een microles volgt Stefans eigen voorstel ("meer keuze voor begrip van de regel en dan
+   3-5 voorbeelden om te toetsen"): korte uitleg, dan eerst een vraag over de regel zelf, dan vier
+   gegenereerde voorbeelden die per patroon rouleren. Die rotatie is het punt. Vier keer hetzelfde
+   patroon leert je de oppervlakte, vier verschillende patronen dwingen de beslissing af. */
+
+var GC_VOORBEELDEN = 4;              // gegenereerde voorbeelden na de begripsvraag
+var GRAM_BOX = [0, 1, 3, 8, 21, 55]; // het doosje per concept, in dagen
+
+function gcKies(a){ return a[Math.floor(Math.random() * a.length)]; }
+function gcHoofd(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function gcMv(s){ return /[aeiou]$/.test(s) ? s + "s" : s + "es"; }
+function gcAdj(a, g, n){
+  var s = a.es;
+  if(!a.inv && g === "f") s = s.replace(/o$/, "a");
+  return n === "pl" ? gcMv(s) : s;
+}
+/* De volgorde van de opties is geen eigenschap van de vraag. Wie hem onthoudt, onthoudt niets. */
+function gcSchud(q){
+  var idx = geschud(q.o.map(function(_, i){ return i; }));
+  var o = idx.map(function(i){ return q.o[i]; });
+  var oEn = q.oEn ? idx.map(function(i){ return q.oEn[i]; }) : null;
+  q.g = idx.indexOf(q.g);
+  q.o = o;
+  if(oEn) q.oEn = oEn;
+  return q;
+}
+
+var GC_ADJ_SER = [
+ {es:"alto", nl:"lang", en:"tall"}, {es:"simpático", nl:"aardig", en:"nice"},
+ {es:"rubio", nl:"blond", en:"blond"}, {es:"delgado", nl:"slank", en:"slim"},
+ {es:"tímido", nl:"verlegen", en:"shy"}, {es:"generoso", nl:"gul", en:"generous"},
+ {es:"inteligente", nl:"slim", en:"clever", inv:1}, {es:"amable", nl:"vriendelijk", en:"kind", inv:1}
+];
+var GC_ADJ_ESTAR = [
+ {es:"cansado", nl:"moe", en:"tired"}, {es:"contento", nl:"blij", en:"happy"},
+ {es:"enfadado", nl:"boos", en:"angry"}, {es:"nervioso", nl:"zenuwachtig", en:"nervous"},
+ {es:"ocupado", nl:"druk", en:"busy"}, {es:"preocupado", nl:"bezorgd", en:"worried"},
+ {es:"resfriado", nl:"verkouden", en:"down with a cold"}, {es:"triste", nl:"verdrietig", en:"sad", inv:1}
+];
+var GC_ADV = [
+ {es:"bien", nl:"goed", en:"well"}, {es:"tarde", nl:"laat", en:"late"},
+ {es:"temprano", nl:"vroeg", en:"early"}, {es:"despacio", nl:"langzaam", en:"slowly"},
+ {es:"rápido", nl:"snel", en:"fast"}
+];
+var GC_SUST = [
+ {es:"libro", nl:"boek", en:"book", g:"m"}, {es:"coche", nl:"auto", en:"car", g:"m"},
+ {es:"piso", nl:"appartement", en:"flat", g:"m"}, {es:"perro", nl:"hond", en:"dog", g:"m"},
+ {es:"casa", nl:"huis", en:"house", g:"f"}, {es:"pregunta", nl:"vraag", en:"question", g:"f"},
+ {es:"ciudad", nl:"stad", en:"city", g:"f"}, {es:"mesa", nl:"tafel", en:"table", g:"f"}
+];
+var GC_MASS = [
+ {es:"trabajo", nl:"werk", en:"work", g:"m"}, {es:"tiempo", nl:"tijd", en:"time", g:"m"},
+ {es:"dinero", nl:"geld", en:"money", g:"m"}, {es:"miedo", nl:"angst", en:"fear", g:"m"},
+ {es:"suerte", nl:"geluk", en:"luck", g:"f"}, {es:"paciencia", nl:"geduld", en:"patience", g:"f"},
+ {es:"hambre", nl:"honger", en:"hunger", g:"f"}, {es:"sed", nl:"dorst", en:"thirst", g:"f"}
+];
+var GC_YO = [
+ {es:"trabajo", nl:"Ik werk", en:"I work"}, {es:"estudio", nl:"Ik studeer", en:"I study"},
+ {es:"viajo", nl:"Ik reis", en:"I travel"}, {es:"duermo", nl:"Ik slaap", en:"I sleep"},
+ {es:"leo", nl:"Ik lees", en:"I read"}, {es:"corro", nl:"Ik ren", en:"I run"}
+];
+var GC_PERS = [
+ {es:"Ana", nl:"Ana", en:"Ana", g:"f"}, {es:"Pablo", nl:"Pablo", en:"Pablo", g:"m"},
+ {es:"Marta", nl:"Marta", en:"Marta", g:"f"},
+ {es:"Mi hermano", nl:"Mijn broer", en:"My brother", g:"m"},
+ {es:"Mi vecina", nl:"Mijn buurvrouw", en:"My neighbour", g:"f"},
+ {es:"Mi jefe", nl:"Mijn baas", en:"My boss", g:"m"}
+];
+var GC_LUGAR = [
+ {es:"en la cocina", nl:"in de keuken", en:"in the kitchen"},
+ {es:"en el jardín", nl:"in de tuin", en:"in the garden"},
+ {es:"en Madrid", nl:"in Madrid", en:"in Madrid"},
+ {es:"en la oficina", nl:"op kantoor", en:"at the office"},
+ {es:"debajo de la mesa", nl:"onder de tafel", en:"under the table"}
+];
+var GC_PROF = [
+ {m:"médico", f:"médica", nl:"arts", en:"a doctor"}, {m:"profesor", f:"profesora", nl:"docent", en:"a teacher"},
+ {m:"cocinero", f:"cocinera", nl:"kok", en:"a cook"}, {m:"abogado", f:"abogada", nl:"advocaat", en:"a lawyer"}
+];
+var GC_PAS = [
+ {inf:"hablar", nl:"praten", en:"talk", part:"hablado", indef:"hablé", imp:"hablaba"},
+ {inf:"trabajar", nl:"werken", en:"work", part:"trabajado", indef:"trabajé", imp:"trabajaba"},
+ {inf:"estudiar", nl:"studeren", en:"study", part:"estudiado", indef:"estudié", imp:"estudiaba"},
+ {inf:"viajar", nl:"reizen", en:"travel", part:"viajado", indef:"viajé", imp:"viajaba"},
+ {inf:"comer", nl:"eten", en:"eat", part:"comido", indef:"comí", imp:"comía"},
+ {inf:"vivir", nl:"wonen", en:"live", part:"vivido", indef:"viví", imp:"vivía"}
+];
+var GC_ABIERTO = [
+ {es:"Hoy", nl:"Vandaag", en:"Today"}, {es:"Esta semana", nl:"Deze week", en:"This week"},
+ {es:"Este mes", nl:"Deze maand", en:"This month"}, {es:"Este año", nl:"Dit jaar", en:"This year"},
+ {es:"Nunca", nl:"Nooit", en:"Never"}
+];
+var GC_CERRADO = [
+ {es:"Ayer", nl:"Gisteren", en:"Yesterday"}, {es:"Anoche", nl:"Gisteravond", en:"Last night"},
+ {es:"La semana pasada", nl:"Vorige week", en:"Last week"},
+ {es:"El año pasado", nl:"Vorig jaar", en:"Last year"},
+ {es:"En 2019", nl:"In 2019", en:"In 2019"}
+];
+
+/* Elk concept: de beslissing in een uitleg, een vraag over de regel zelf, en patronen die zinnen
+   maken. Een patroon geeft {v, vEn, o, g, w, wEn} terug, precies de vorm die de wizard al kent, dus
+   hier is geen nieuwe rendercode voor nodig.
+   corr  = de Corrector-regels die op dit concept uitkomen (een fout daar vult dit doosje)
+   spiek = de spiekbrief-indexen per track (zo vindt een toetsje zijn concept terug)
+   wizard = de bestaande handgeschreven wizard met de diepe uitleg, als die er is */
+var GC_CONCEPTEN = [
+ {id:"muymucho", icon:"⚖️", naam:"Muy of mucho", naamEn:"Muy or mucho",
+  corr:["muymucho"], spiek:{a0:[8]}, wizard:null,
+  uitleg:"<p>Het Nederlands heeft hier een woord waar het Spaans er twee heeft. Heel en veel zijn allebei muy of mucho, en wat het wordt hangt niet af van wat je bedoelt maar van wat er direct achter staat.</p>"+
+    "<p><b>muy</b> staat voor een bijvoeglijk naamwoord of een bijwoord: <i>muy cansado</i>, <i>muy bien</i>. Muy verandert nooit van vorm.</p>"+
+    "<p><b>mucho</b> staat alleen, meestal na een werkwoord: <i>trabajo mucho</i>. Of hij staat voor een zelfstandig naamwoord, en dan past hij zich aan: <i>mucho trabajo</i>, <i>mucha suerte</i>, <i>muchos libros</i>.</p>"+
+    "<p>Kijk dus naar het woord erachter, niet naar de betekenis.</p>",
+  uitlegEn:"<p>Dutch has one word where Spanish has two. What you get does not depend on what you mean but on what comes right after it.</p>"+
+    "<p><b>muy</b> goes before an adjective or an adverb: <i>muy cansado</i>, <i>muy bien</i>. Muy never changes form.</p>"+
+    "<p><b>mucho</b> stands alone, usually after a verb: <i>trabajo mucho</i>. Or it goes before a noun, and then it agrees: <i>mucho trabajo</i>, <i>mucha suerte</i>, <i>muchos libros</i>.</p>"+
+    "<p>So look at the word behind it, not at the meaning.</p>",
+  begrip:{v:"Waar kijk je naar om te kiezen tussen muy en mucho?",
+    vEn:"What do you look at to choose between muy and mucho?",
+    o:["Naar het woord dat er direct achter staat","Naar hoe sterk je het bedoelt","Naar het onderwerp van de zin","Naar de tijd van het werkwoord"],
+    oEn:["At the word right behind it","At how strongly you mean it","At the subject of the sentence","At the tense of the verb"],
+    g:0,
+    w:"Bijvoeglijk naamwoord of bijwoord erachter: muy. Zelfstandig naamwoord of niets erachter: mucho.",
+    wEn:"Adjective or adverb behind it: muy. Noun or nothing behind it: mucho."},
+  patronen:[
+   function(){ var a = gcKies(GC_ADJ_ESTAR);
+     return {v:"Estoy ___ "+gcAdj(a,"m","sg")+". (Ik ben heel "+a.nl+".)",
+             vEn:"Estoy ___ "+gcAdj(a,"m","sg")+". (I am very "+a.en+".)",
+             o:["muy","mucho"], g:0,
+             w:"Er staat een bijvoeglijk naamwoord achter, dus muy. Mucho kan daar niet staan.",
+             wEn:"There is an adjective behind it, so muy. Mucho cannot go there."}; },
+   function(){ var v = gcKies(GC_YO);
+     return {v:v.es+" ___. ("+v.nl+" veel.)", vEn:v.es+" ___. ("+v.en+" a lot.)",
+             o:["muy","mucho"], g:1,
+             w:"Er staat niets achter: dan is het mucho. Muy kan nooit alleen staan.",
+             wEn:"Nothing behind it: that is mucho. Muy can never stand alone."}; },
+   function(){ var s = gcKies(GC_MASS), goed = s.g === "f" ? "mucha" : "mucho";
+     return {v:"Tengo ___ "+s.es+". (Ik heb veel "+s.nl+".)",
+             vEn:"Tengo ___ "+s.es+". (I have a lot of "+s.en+".)",
+             o:["mucho","mucha","muy"], g:["mucho","mucha","muy"].indexOf(goed),
+             w:"Voor een zelfstandig naamwoord past mucho zich aan: "+goed+" "+s.es+". Muy kan hier niet.",
+             wEn:"Before a noun mucho agrees: "+goed+" "+s.es+". Muy is impossible here."}; },
+   function(){ var a = gcKies(GC_ADV);
+     return {v:"Hablas español ___ "+a.es+". (Je spreekt heel "+a.nl+" Spaans.)",
+             vEn:"Hablas español ___ "+a.es+". (You speak Spanish very "+a.en+".)",
+             o:["muy","mucho"], g:0,
+             w:a.es+" is een bijwoord, en voor een bijwoord staat muy.",
+             wEn:a.es+" is an adverb, and muy goes before an adverb."}; },
+   function(){ var s = gcKies(GC_SUST), goed = s.g === "f" ? "muchas" : "muchos", mv = gcMv(s.es);
+     return {v:"Hay ___ "+mv+" aquí. (Hier zijn veel "+s.nl+"en.)",
+             vEn:"Hay ___ "+mv+" aquí. (There are many "+s.en+"s here.)",
+             o:["muchos","muchas","muy"], g:["muchos","muchas","muy"].indexOf(goed),
+             w:"Meervoud zelfstandig naamwoord, dus "+goed+". Muy staat nooit bij een zelfstandig naamwoord.",
+             wEn:"Plural noun, so "+goed+". Muy never goes with a noun."}; }
+  ]},
+
+ {id:"serestar", icon:"🪞", naam:"Ser of estar", naamEn:"Ser or estar",
+  corr:["serestar"], spiek:{a2:[1,24], a0:[2]}, wizard:"serestar",
+  uitleg:"<p>Zijn is in het Spaans twee werkwoorden, en het verschil is niet hoe lang iets duurt maar wat voor soort uitspraak je doet.</p>"+
+    "<p><b>ser</b> zegt wat iets of iemand IS: identiteit, beroep, herkomst, karakter, uiterlijk. <i>Ana es alta. Soy holandés. Es médica.</i></p>"+
+    "<p><b>estar</b> zegt hoe iets of iemand ER OP DIT MOMENT AAN TOE IS, en waar het is: toestand, stemming, plaats. <i>Ana está cansada. El libro está en la mesa.</i></p>"+
+    "<p>Vuistregel die bijna altijd werkt: gaat het over plaats of over een stemming, dan estar. Gaat het over wie of wat iemand is, dan ser.</p>",
+  uitlegEn:"<p>To be is two verbs in Spanish, and the difference is not how long something lasts but what kind of statement you are making.</p>"+
+    "<p><b>ser</b> says what something or someone IS: identity, job, origin, character, looks. <i>Ana es alta. Soy holandés. Es médica.</i></p>"+
+    "<p><b>estar</b> says how something or someone IS RIGHT NOW, and where it is: state, mood, place. <i>Ana está cansada. El libro está en la mesa.</i></p>"+
+    "<p>Rule of thumb that nearly always works: place or mood, then estar. Who or what someone is, then ser.</p>",
+  begrip:{v:"Wat is het echte verschil tussen ser en estar?",
+    vEn:"What is the real difference between ser and estar?",
+    o:["Ser is blijvend, estar is tijdelijk","Ser zegt wat iets is, estar zegt hoe het eraan toe is of waar het is","Ser is formeel, estar is spreektaal","Ser hoort bij personen, estar bij dingen"],
+    oEn:["Ser is permanent, estar is temporary","Ser says what something is, estar says how it is doing or where it is","Ser is formal, estar is colloquial","Ser is for people, estar for things"],
+    g:1,
+    w:"Blijvend versus tijdelijk klopt vaak toevallig, maar het is niet de regel: een dode is permanent dood en toch está muerto. Identiteit tegenover toestand en plaats is wel de regel.",
+    wEn:"Permanent versus temporary is often accidentally right, but it is not the rule: being dead is permanent and still it is está muerto. Identity versus state and place is the rule."},
+  patronen:[
+   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER);
+     return {v:p.es+" ___ "+gcAdj(a, p.g, "sg")+". ("+p.nl+" is "+a.nl+".)",
+             vEn:p.es+" ___ "+gcAdj(a, p.g, "sg")+". ("+p.en+" is "+a.en+".)",
+             o:["es","está"], g:0,
+             w:a.es+" is karakter of uiterlijk, dus wat iemand is: ser.",
+             wEn:a.es+" is character or looks, so what someone is: ser."}; },
+   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_ESTAR);
+     return {v:p.es+" ___ "+gcAdj(a, p.g, "sg")+" hoy. ("+p.nl+" is vandaag "+a.nl+".)",
+             vEn:p.es+" ___ "+gcAdj(a, p.g, "sg")+" hoy. ("+p.en+" is "+a.en+" today.)",
+             o:["es","está"], g:1,
+             w:a.es+" is een toestand van dit moment, dus estar.",
+             wEn:a.es+" is a state right now, so estar."}; },
+   function(){ var p = gcKies(GC_PERS), l = gcKies(GC_LUGAR);
+     return {v:p.es+" ___ "+l.es+". ("+p.nl+" is "+l.nl+".)",
+             vEn:p.es+" ___ "+l.es+". ("+p.en+" is "+l.en+".)",
+             o:["es","está"], g:1,
+             w:"Plaats gaat altijd met estar, ook als iemand daar zijn leven lang zit.",
+             wEn:"Place always takes estar, even if someone stays there for life."}; },
+   function(){ var p = gcKies(GC_PERS), b = gcKies(GC_PROF), vorm = p.g === "f" ? b.f : b.m;
+     return {v:p.es+" ___ "+vorm+". ("+p.nl+" is "+b.nl+".)",
+             vEn:p.es+" ___ "+vorm+". ("+p.en+" is "+b.en+".)",
+             o:["es","está"], g:0,
+             w:"Een beroep zegt wat iemand is, dus ser.",
+             wEn:"A job says what someone is, so ser."}; },
+   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "La" : "El";
+     return {v:art+" "+s.es+" ___ "+l.es+". (Het "+s.nl+" is "+l.nl+".)",
+             vEn:art+" "+s.es+" ___ "+l.es+". (The "+s.en+" is "+l.en+".)",
+             o:["es","está"], g:1,
+             w:"Waar iets zich bevindt: estar.",
+             wEn:"Where something is located: estar."}; }
+  ]},
+
+ {id:"porpara", icon:"🎯", naam:"Por of para", naamEn:"Por or para",
+  corr:["porpara"], spiek:{}, wizard:"porpara",
+  uitleg:"<p>Beide worden vaak vertaald met voor, en daar gaat het mis. Zet ze naast elkaar als richting tegenover oorzaak.</p>"+
+    "<p><b>para</b> wijst vooruit: het doel, de bestemming, de ontvanger, de deadline. <i>Salgo para Madrid. Es para ti. Estudio para aprender. Es para el lunes.</i></p>"+
+    "<p><b>por</b> wijst achteruit of ergens doorheen: de reden, de oorzaak, de ruil, de route, de duur. <i>Gracias por tu ayuda. No salgo por la lluvia. Paseo por el parque. Por dos horas.</i></p>"+
+    "<p>Test: kun je waarvoor vragen, dan para. Kun je waardoor of waarom vragen, dan por.</p>",
+  uitlegEn:"<p>Both are often translated as for, and that is where it goes wrong. Line them up as direction versus cause.</p>"+
+    "<p><b>para</b> points forward: goal, destination, recipient, deadline. <i>Salgo para Madrid. Es para ti. Estudio para aprender. Es para el lunes.</i></p>"+
+    "<p><b>por</b> points backwards or through: reason, cause, exchange, route, duration. <i>Gracias por tu ayuda. No salgo por la lluvia. Paseo por el parque. Por dos horas.</i></p>"+
+    "<p>Test: if you can ask what for, then para. If you can ask because of what, then por.</p>",
+  begrip:{v:"Welke vraag hoort bij para?",
+    vEn:"Which question belongs to para?",
+    o:["Waarvoor? Met welk doel?","Waardoor? Om welke reden?","Waarmee?","Wanneer precies?"],
+    oEn:["What for? With what goal?","Because of what? For what reason?","With what?","When exactly?"],
+    g:0,
+    w:"Para kijkt vooruit naar een doel of bestemming, por kijkt terug naar een oorzaak of gaat ergens doorheen.",
+    wEn:"Para looks ahead to a goal or destination, por looks back at a cause or goes through something."},
+  patronen:[
+   function(){ var d = gcKies([{es:"Madrid",nl:"Madrid",en:"Madrid"},{es:"Sevilla",nl:"Sevilla",en:"Seville"},{es:"la playa",nl:"het strand",en:"the beach"},{es:"el aeropuerto",nl:"het vliegveld",en:"the airport"}]);
+     return {v:"Salgo ___ "+d.es+". (Ik vertrek naar "+d.nl+".)",
+             vEn:"Salgo ___ "+d.es+". (I am leaving for "+d.en+".)",
+             o:["por","para"], g:1,
+             w:"Bestemming, dus para. Salgo por Madrid zou betekenen dat je erdoorheen loopt.",
+             wEn:"Destination, so para. Salgo por Madrid would mean you walk through it."}; },
+   function(){ var r = gcKies([{es:"tu ayuda",nl:"je hulp",en:"your help"},{es:"el regalo",nl:"het cadeau",en:"the present"},{es:"la cena",nl:"het eten",en:"dinner"},{es:"todo",nl:"alles",en:"everything"}]);
+     return {v:"Gracias ___ "+r.es+". (Bedankt voor "+r.nl+".)",
+             vEn:"Gracias ___ "+r.es+". (Thanks for "+r.en+".)",
+             o:["por","para"], g:0,
+             w:"Je bedankt om een reden, en een reden is por. Gracias para bestaat niet.",
+             wEn:"You thank for a reason, and a reason is por. Gracias para does not exist."}; },
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"Estudio ___ "+w.inf+" mejor. (Ik studeer om beter te "+w.nl+".)",
+             vEn:"Estudio ___ "+w.inf+" mejor. (I study in order to "+w.en+" better.)",
+             o:["por","para"], g:1,
+             w:"Doel van de handeling: para plus infinitief. Dat is de vaste vorm voor om te.",
+             wEn:"Goal of the action: para plus infinitive. That is the fixed form for in order to."}; },
+   function(){ var c = gcKies([{es:"la lluvia",nl:"de regen",en:"the rain"},{es:"el trabajo",nl:"het werk",en:"work"},{es:"el frío",nl:"de kou",en:"the cold"}]);
+     return {v:"No salgo ___ "+c.es+". (Ik ga niet weg vanwege "+c.nl+".)",
+             vEn:"No salgo ___ "+c.es+". (I am not going out because of "+c.en+".)",
+             o:["por","para"], g:0,
+             w:"Oorzaak, dus por. Para zou een doel maken van iets wat je juist tegenhoudt.",
+             wEn:"Cause, so por. Para would turn the thing stopping you into a goal."}; },
+   function(){ var p = gcKies(GC_PERS);
+     return {v:"Este libro es ___ "+p.es.toLowerCase().replace(/^mi /,"mi ")+". (Dit boek is voor "+p.nl.toLowerCase()+".)",
+             vEn:"Este libro es ___ "+p.es.toLowerCase()+". (This book is for "+p.en.toLowerCase()+".)",
+             o:["por","para"], g:1,
+             w:"Ontvanger: para. Por zou hier reden of ruil betekenen.",
+             wEn:"Recipient: para. Por would mean reason or exchange here."}; }
+  ]},
+
+ {id:"hayestar", icon:"📍", naam:"Hay of está", naamEn:"Hay or está",
+  corr:["haber"], spiek:{a0:[7], a2:[10]}, wizard:null,
+  uitleg:"<p>Er is en er staat zijn in het Spaans twee verschillende dingen, en de keuze hangt af van het lidwoord.</p>"+
+    "<p><b>hay</b> gebruik je als je iets INTRODUCEERT: het bestaat, de ander weet er nog niets van. Daarachter staat un, una, dos, muchos of niets. <i>Hay una farmacia en la plaza.</i> Hay verandert nooit, ook niet in het meervoud.</p>"+
+    "<p><b>está</b> of <b>están</b> gebruik je als het ding al bekend is en je zegt WAAR het is. Daarachter staat el, la, mi, este of een naam. <i>La farmacia está en la plaza.</i></p>"+
+    "<p>Kijk dus naar het lidwoord: onbepaald hoort bij hay, bepaald hoort bij estar.</p>",
+  uitlegEn:"<p>There is and it is located are two different things in Spanish, and the article decides.</p>"+
+    "<p><b>hay</b> INTRODUCES something: it exists, the other person does not know about it yet. Behind it comes un, una, dos, muchos or nothing. <i>Hay una farmacia en la plaza.</i> Hay never changes, not even in the plural.</p>"+
+    "<p><b>está</b> or <b>están</b> is for something already known, saying WHERE it is. Behind it comes el, la, mi, este or a name. <i>La farmacia está en la plaza.</i></p>"+
+    "<p>So look at the article: indefinite goes with hay, definite goes with estar.</p>",
+  begrip:{v:"Waaraan zie je of je hay of está moet gebruiken?",
+    vEn:"How do you see whether you need hay or está?",
+    o:["Aan het lidwoord: onbepaald hoort bij hay, bepaald bij está","Aan het aantal dingen","Aan of het ding kan bewegen","Aan of de zin een vraag is"],
+    oEn:["At the article: indefinite goes with hay, definite with está","At how many things there are","At whether the thing can move","At whether the sentence is a question"],
+    g:0,
+    w:"Hay introduceert iets nieuws (un, una, dos, muchos), está zegt waar iets bekends staat (el, la, mi).",
+    wEn:"Hay introduces something new (un, una, dos, muchos), está says where something known is (el, la, mi)."},
+  patronen:[
+   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "una" : "un";
+     return {v:l.es+" ___ "+art+" "+s.es+". ("+gcHoofd(l.nl)+" is een "+s.nl+".)",
+             vEn:l.es+" ___ "+art+" "+s.es+". (There is a "+s.en+" "+l.en+".)",
+             o:["hay","está","están"], g:0,
+             w:"Onbepaald lidwoord ("+art+"), dus hay. Je introduceert het ding.",
+             wEn:"Indefinite article ("+art+"), so hay. You are introducing the thing."}; },
+   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "La" : "El";
+     return {v:art+" "+s.es+" ___ "+l.es+". (Het "+s.nl+" staat "+l.nl+".)",
+             vEn:art+" "+s.es+" ___ "+l.es+". (The "+s.en+" is "+l.en+".)",
+             o:["hay","está","están"], g:1,
+             w:"Bepaald lidwoord ("+art.toLowerCase()+"), enkelvoud: está.",
+             wEn:"Definite article ("+art.toLowerCase()+"), singular: está."}; },
+   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "Las" : "Los", mv = gcMv(s.es);
+     return {v:art+" "+mv+" ___ "+l.es+". (De "+s.nl+"en staan "+l.nl+".)",
+             vEn:art+" "+mv+" ___ "+l.es+". (The "+s.en+"s are "+l.en+".)",
+             o:["hay","está","están"], g:2,
+             w:"Bepaald en meervoud, dus están. Alleen estar telt mee met het aantal, hay nooit.",
+             wEn:"Definite and plural, so están. Only estar agrees in number, hay never does."}; },
+   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), mv = gcMv(s.es);
+     return {v:l.es+" ___ muchos "+mv+". ("+gcHoofd(l.nl)+" zijn veel "+s.nl+"en.)",
+             vEn:l.es+" ___ muchos "+mv+". (There are many "+s.en+"s "+l.en+".)",
+             o:["hay","está","están"], g:0,
+             w:"Muchos is onbepaald, en hay blijft hay ook bij meervoud.",
+             wEn:"Muchos is indefinite, and hay stays hay even in the plural."}; },
+   function(){ var p = gcKies(GC_PERS), l = gcKies(GC_LUGAR);
+     return {v:p.es+" ___ "+l.es+". ("+p.nl+" is "+l.nl+".)",
+             vEn:p.es+" ___ "+l.es+". ("+p.en+" is "+l.en+".)",
+             o:["hay","está","están"], g:1,
+             w:"Een naam of mi is per definitie bekend, dus nooit hay.",
+             wEn:"A name or mi is by definition known, so never hay."}; }
+  ]},
+
+ {id:"perfindef", icon:"⏳", naam:"Perfecto of indefinido", naamEn:"Perfect or preterite",
+  corr:["perfindef"], spiek:{a2:[0,5,27], a0:[21]}, wizard:"perfindef",
+  uitleg:"<p>De regel is niet hoe lang geleden iets was. De vraag is of het tijdvak waarin het gebeurde nog loopt.</p>"+
+    "<p>Loopt het vak nog (hoy, esta semana, este año, nunca, en je leven tot nu toe)? Dan <b>perfecto</b>: <i>he hablado</i>.</p>"+
+    "<p>Is het vak dicht (ayer, anoche, la semana pasada, en 2019)? Dan <b>indefinido</b>: <i>hablé</i>.</p>"+
+    "<p>Daarom kan hetzelfde moment allebei zijn: om elf uur zeg je <i>esta mañana he tomado café</i>, s avonds <i>esta mañana tomé café</i>.</p>",
+  uitlegEn:"<p>The rule is not how long ago something was. The question is whether the time frame it happened in is still running.</p>"+
+    "<p>Still running (hoy, esta semana, este año, nunca, your life so far)? Then <b>perfect</b>: <i>he hablado</i>.</p>"+
+    "<p>Closed (ayer, anoche, la semana pasada, en 2019)? Then <b>preterite</b>: <i>hablé</i>.</p>"+
+    "<p>So the same moment can be either: at eleven you say <i>esta mañana he tomado café</i>, in the evening <i>esta mañana tomé café</i>.</p>",
+  begrip:{v:"Wat bepaalt de keuze tussen he hablado en hablé?",
+    vEn:"What decides between he hablado and hablé?",
+    o:["Of het tijdvak waarin het gebeurde nog loopt","Hoe lang geleden het was","Of de handeling zelf af is","Of je het zelf hebt meegemaakt"],
+    oEn:["Whether the time frame it happened in is still running","How long ago it was","Whether the action itself is finished","Whether you experienced it yourself"],
+    g:0,
+    w:"Het gaat om het vak, niet om de afstand. Iets van twaalf uur geleden kan perfecto zijn en iets van drie uur geleden indefinido.",
+    wEn:"It is about the frame, not the distance. Something twelve hours ago can be perfect and something three hours ago preterite."},
+  patronen:[
+   function(){ var m = gcKies(GC_ABIERTO), w = gcKies(GC_PAS);
+     return {v:m.es+" ___ mucho. ("+m.nl+" heb ik veel ge"+w.nl.replace(/en$/,"")+"t.)",
+             vEn:m.es+" ___ mucho. ("+m.en+" I "+w.en+"ed a lot.)",
+             o:["he "+w.part, w.indef], g:0,
+             w:m.es+" is een vak dat nog loopt, dus perfecto: he "+w.part+".",
+             wEn:m.es+" is a frame that is still running, so perfect: he "+w.part+"."}; },
+   function(){ var m = gcKies(GC_CERRADO), w = gcKies(GC_PAS);
+     return {v:m.es+" ___ mucho. ("+m.nl+" heb ik veel ge"+w.nl.replace(/en$/,"")+"t.)",
+             vEn:m.es+" ___ mucho. ("+m.en+" I "+w.en+"ed a lot.)",
+             o:["he "+w.part, w.indef], g:1,
+             w:m.es+" is een dicht vak, dus indefinido: "+w.indef+". "+m.es+" he ... is altijd fout.",
+             wEn:m.es+" is a closed frame, so preterite: "+w.indef+". "+m.es+" he ... is always wrong."}; },
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"Nunca ___ en Perú. (Ik ben nooit in Peru geweest om te "+w.nl+".)",
+             vEn:"Nunca ___ en Perú. (I have never "+w.en+"ed in Peru.)",
+             o:["he "+w.part, w.indef], g:0,
+             w:"Nunca gaat over je leven tot nu toe, en dat vak loopt nog. Dus perfecto.",
+             wEn:"Nunca is about your life so far, and that frame is still open. So perfect."}; },
+   function(){ var w = gcKies(GC_PAS), j = gcKies(["2015","2018","2020","2021"]);
+     return {v:"En "+j+" ___ en Madrid. (In "+j+" heb ik in Madrid ge"+w.nl.replace(/en$/,"")+"d.)",
+             vEn:"En "+j+" ___ en Madrid. (In "+j+" I "+w.en+"ed in Madrid.)",
+             o:["he "+w.part, w.indef], g:1,
+             w:"Een jaartal in het verleden is een dicht vak: indefinido.",
+             wEn:"A year in the past is a closed frame: preterite."}; }
+  ]},
+
+ {id:"indefimperf", icon:"🎬", naam:"Indefinido of imperfecto", naamEn:"Preterite or imperfect",
+  corr:[], spiek:{a2:[14,15,16,26]}, wizard:null,
+  uitleg:"<p>Allebei verleden tijd, maar ze doen iets anders in een verhaal. Denk aan een film.</p>"+
+    "<p><b>indefinido</b> is wat er GEBEURT: de gebeurtenissen die het verhaal vooruit duwen, een voor een, af. <i>Llegué, abrí la puerta y vi a Marta.</i></p>"+
+    "<p><b>imperfecto</b> is het DECOR: hoe het eruitzag, hoe laat het was, hoe je je voelde, en wat je vroeger altijd deed. <i>Era tarde, llovía y estaba cansado.</i></p>"+
+    "<p>Signalen voor imperfecto: de niño, antes, siempre, todos los días, mientras. Signalen voor indefinido: ayer, de repente, un día, en 2019.</p>",
+  uitlegEn:"<p>Both are past tenses, but they do different jobs in a story. Think of a film.</p>"+
+    "<p><b>preterite</b> is what HAPPENS: the events that push the story forward, one by one, finished. <i>Llegué, abrí la puerta y vi a Marta.</i></p>"+
+    "<p><b>imperfect</b> is the SET: what it looked like, what time it was, how you felt, and what you used to do. <i>Era tarde, llovía y estaba cansado.</i></p>"+
+    "<p>Imperfect signals: de niño, antes, siempre, todos los días, mientras. Preterite signals: ayer, de repente, un día, en 2019.</p>",
+  begrip:{v:"Wat doet het imperfecto in een verhaal?",
+    vEn:"What does the imperfect do in a story?",
+    o:["Het zet het decor: hoe het was, en wat je altijd deed","Het vertelt wat er daarna gebeurde","Het maakt de zin beleefder","Het zegt dat iets heel lang geleden was"],
+    oEn:["It sets the scene: how things were, and what you used to do","It tells what happened next","It makes the sentence more polite","It says something was very long ago"],
+    g:0,
+    w:"Indefinido duwt het verhaal vooruit, imperfecto beschrijft de omstandigheden eromheen. Dezelfde gebeurtenis kan allebei, afhankelijk van welke rol hij speelt.",
+    wEn:"The preterite pushes the story forward, the imperfect describes the circumstances around it. The same event can be either, depending on the role it plays."},
+  patronen:[
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"De niño ___ en Sevilla. (Als kind "+w.nl.replace(/r$/,"")+"de ik in Sevilla.)",
+             vEn:"De niño ___ en Sevilla. (As a child I used to "+w.en+" in Seville.)",
+             o:[w.indef, w.imp], g:1,
+             w:"De niño gaat over hoe het vroeger altijd was, dus imperfecto: "+w.imp+".",
+             wEn:"De niño is about how things always were, so imperfect: "+w.imp+"."}; },
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"Ayer ___ tres horas. (Gisteren heb ik drie uur ge"+w.nl.replace(/en$/,"")+"t.)",
+             vEn:"Ayer ___ tres horas. (Yesterday I "+w.en+"ed for three hours.)",
+             o:[w.indef, w.imp], g:0,
+             w:"Een afgeronde gebeurtenis op een afgesloten moment: indefinido.",
+             wEn:"A finished event at a closed moment: preterite."}; },
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"Todos los días ___ con mi abuela. (Elke dag "+w.nl.replace(/r$/,"")+"de ik met mijn oma.)",
+             vEn:"Todos los días ___ con mi abuela. (Every day I would "+w.en+" with my grandmother.)",
+             o:[w.indef, w.imp], g:1,
+             w:"Todos los días is een gewoonte, en gewoontes staan in het imperfecto.",
+             wEn:"Todos los días is a habit, and habits go in the imperfect."}; },
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"Un día ___ algo increíble. (Op een dag "+w.nl.replace(/r$/,"")+"de ik iets ongelooflijks.)",
+             vEn:"Un día ___ something incredible. (One day I "+w.en+"ed something incredible.)",
+             o:[w.indef, w.imp], g:0,
+             w:"Un día kondigt een gebeurtenis aan die het verhaal vooruit duwt: indefinido.",
+             wEn:"Un día announces an event that pushes the story forward: preterite."}; }
+  ]},
+
+ {id:"saberconocer", icon:"🧠", naam:"Saber of conocer", naamEn:"Saber or conocer",
+  corr:[], spiek:{}, wizard:null,
+  uitleg:"<p>Weten en kennen zijn in het Nederlands al twee woorden, alleen lopen ze niet gelijk met het Spaans.</p>"+
+    "<p><b>saber</b> gaat over informatie en vaardigheden: een feit, een antwoord, of iets kunnen. <i>Sé dónde está. Sé nadar. No sé nada.</i></p>"+
+    "<p><b>conocer</b> gaat over bekend zijn met iets of iemand door ervaring: personen, plaatsen, boeken, steden. <i>Conozco a Marta. Conozco Madrid.</i></p>"+
+    "<p>Vuistregel: kun je er een infinitief of een bijzin met dónde, qué of que achter zetten, dan saber. Staat er een persoon of een plaats, dan conocer.</p>",
+  uitlegEn:"<p>Saber and conocer both translate as to know, but they split the job differently.</p>"+
+    "<p><b>saber</b> is about information and skills: a fact, an answer, or being able to do something. <i>Sé dónde está. Sé nadar. No sé nada.</i></p>"+
+    "<p><b>conocer</b> is about being familiar with someone or something through experience: people, places, books, cities. <i>Conozco a Marta. Conozco Madrid.</i></p>"+
+    "<p>Rule of thumb: if an infinitive or a clause with dónde, qué or que follows, then saber. If a person or a place follows, then conocer.</p>",
+  begrip:{v:"Wanneer gebruik je conocer en niet saber?",
+    vEn:"When do you use conocer and not saber?",
+    o:["Bij personen en plaatsen die je uit ervaring kent","Bij alles wat je zeker weet","Bij dingen uit het verleden","Bij beleefde vragen"],
+    oEn:["For people and places you know from experience","For anything you are sure about","For things in the past","For polite questions"],
+    g:0,
+    w:"Saber gaat over feiten en kunnen, conocer over vertrouwd zijn met iemand of iets. Sé a Marta bestaat niet.",
+    wEn:"Saber is facts and ability, conocer is familiarity. Sé a Marta does not exist."},
+  patronen:[
+   function(){ var p = gcKies(GC_PERS);
+     return {v:"___ a "+p.es.replace(/^Mi /,"mi ")+". (Ik ken "+p.nl.toLowerCase()+".)",
+             vEn:"___ a "+p.es.replace(/^Mi /,"mi ")+". (I know "+p.en.toLowerCase()+".)",
+             o:["Sé","Conozco"], g:1,
+             w:"Een persoon ken je uit ervaring: conocer. En let op de a die bij personen hoort.",
+             wEn:"You know a person from experience: conocer. Note the personal a."}; },
+   function(){ var v = gcKies([{es:"nadar",nl:"zwemmen",en:"swim"},{es:"cocinar",nl:"koken",en:"cook"},{es:"conducir",nl:"autorijden",en:"drive"},{es:"bailar",nl:"dansen",en:"dansen"}]);
+     return {v:"___ "+v.es+". (Ik kan "+v.nl+".)",
+             vEn:"___ "+v.es+". (I can "+v.en+".)",
+             o:["Sé","Conozco"], g:0,
+             w:"Een vaardigheid, dus saber plus infinitief. Conocer kan nooit een infinitief krijgen.",
+             wEn:"A skill, so saber plus infinitive. Conocer can never take an infinitive."}; },
+   function(){ var c = gcKies([{es:"Madrid",nl:"Madrid",en:"Madrid"},{es:"Barcelona",nl:"Barcelona",en:"Barcelona"},{es:"este barrio",nl:"deze wijk",en:"this neighbourhood"},{es:"ese restaurante",nl:"dat restaurant",en:"that restaurant"}]);
+     return {v:"___ "+c.es+" muy bien. (Ik ken "+c.nl+" heel goed.)",
+             vEn:"___ "+c.es+" very well. (I know "+c.en+" very well.)",
+             o:["Sé","Conozco"], g:1,
+             w:"Een plaats ken je door er te zijn geweest: conocer.",
+             wEn:"You know a place by having been there: conocer."}; },
+   function(){ var v = gcKies([{es:"dónde está",nl:"waar het is",en:"where it is"},{es:"qué hora es",nl:"hoe laat het is",en:"what time it is"},{es:"cómo se llama",nl:"hoe hij heet",en:"what his name is"}]);
+     return {v:"No ___ "+v.es+". (Ik weet niet "+v.nl+".)",
+             vEn:"No ___ "+v.es+". (I do not know "+v.en+".)",
+             o:["sé","conozco"], g:0,
+             w:"Informatie in een bijzin, dus saber.",
+             wEn:"Information in a clause, so saber."}; }
+  ]},
+
+ {id:"gustar", icon:"❤️", naam:"Gusta of gustan", naamEn:"Gusta or gustan",
+  corr:["gustar"], spiek:{a0:[13], a2:[2]}, wizard:null,
+  uitleg:"<p>Gustar werkt omgekeerd aan het Nederlands. Niet jij bent het onderwerp, maar het ding dat je leuk vindt. Letterlijk: het bevalt mij.</p>"+
+    "<p>Daardoor telt het werkwoord mee met het DING, niet met jou. Een ding of een activiteit: <b>gusta</b>. Meerdere dingen: <b>gustan</b>.</p>"+
+    "<p><i>Me gusta el libro. Me gustan los libros. Me gusta viajar.</i></p>"+
+    "<p>Me, te, le, nos, os, les zegt wie het bevalt. Dat deel verandert wel met de persoon, gusta of gustan niet.</p>",
+  uitlegEn:"<p>Gustar works the other way round. You are not the subject, the thing you like is. Literally: it pleases me.</p>"+
+    "<p>So the verb agrees with the THING, not with you. One thing or an activity: <b>gusta</b>. Several things: <b>gustan</b>.</p>"+
+    "<p><i>Me gusta el libro. Me gustan los libros. Me gusta viajar.</i></p>"+
+    "<p>Me, te, le, nos, os, les says who is pleased. That part changes with the person, gusta or gustan does not.</p>",
+  begrip:{v:"Waar telt gustar mee: met jou of met het ding?",
+    vEn:"What does gustar agree with: you or the thing?",
+    o:["Met het ding dat je leuk vindt","Met de persoon die het leuk vindt","Met allebei","Met de tijd van de zin"],
+    oEn:["With the thing you like","With the person who likes it","With both","With the tense"],
+    g:0,
+    w:"Het ding is het onderwerp. Daarom is het me gustan los libros en niet me gusto.",
+    wEn:"The thing is the subject. That is why it is me gustan los libros, not me gusto."},
+  patronen:[
+   function(){ var s = gcKies(GC_SUST), art = s.g === "f" ? "la" : "el";
+     return {v:"Me ___ "+art+" "+s.es+". (Ik vind het "+s.nl+" leuk.)",
+             vEn:"Me ___ "+art+" "+s.es+". (I like the "+s.en+".)",
+             o:["gusta","gustan"], g:0,
+             w:"Een ding in het enkelvoud, dus gusta.",
+             wEn:"One thing, singular, so gusta."}; },
+   function(){ var s = gcKies(GC_SUST), art = s.g === "f" ? "las" : "los", mv = gcMv(s.es);
+     return {v:"Me ___ "+art+" "+mv+". (Ik vind "+s.nl+"en leuk.)",
+             vEn:"Me ___ "+art+" "+mv+". (I like "+s.en+"s.)",
+             o:["gusta","gustan"], g:1,
+             w:"Meervoud, dus gustan. Het werkwoord telt mee met het ding, niet met jou.",
+             wEn:"Plural, so gustan. The verb agrees with the thing, not with you."}; },
+   function(){ var w = gcKies(GC_PAS);
+     return {v:"Nos ___ "+w.inf+". (Wij vinden "+w.nl+" leuk.)",
+             vEn:"Nos ___ "+w.inf+". (We like to "+w.en+".)",
+             o:["gusta","gustan"], g:0,
+             w:"Een infinitief telt als een ding, dus altijd gusta. Ook bij twee infinitieven achter elkaar.",
+             wEn:"An infinitive counts as one thing, so always gusta. Even with two infinitives in a row."}; },
+   function(){ var s = gcKies(GC_SUST), art = s.g === "f" ? "las" : "los", mv = gcMv(s.es);
+     return {v:"A Marta le ___ "+art+" "+mv+". (Marta vindt "+s.nl+"en leuk.)",
+             vEn:"A Marta le ___ "+art+" "+mv+". (Marta likes "+s.en+"s.)",
+             o:["gusta","gustan"], g:1,
+             w:"Le zegt wie het bevalt, maar het meervoud van het ding bepaalt gustan.",
+             wEn:"Le says who is pleased, but the plural thing decides gustan."}; }
+  ]},
+
+ {id:"concordancia", icon:"🔗", naam:"Woorden die meetellen", naamEn:"Words that agree",
+  corr:["concordancia","lidwoord"], spiek:{a0:[1,9], a2:[7]}, wizard:null,
+  uitleg:"<p>In het Spaans reizen lidwoord, zelfstandig naamwoord en bijvoeglijk naamwoord samen. Verandert er een, dan veranderen ze allemaal.</p>"+
+    "<p><i>el libro rojo, los libros rojos, la casa roja, las casas rojas</i></p>"+
+    "<p>Twee vragen, elke keer: is het mannelijk of vrouwelijk, en is het enkelvoud of meervoud. Daarna volgt de rest vanzelf.</p>"+
+    "<p>Bijvoeglijke naamwoorden op -e of op een medeklinker (grande, amable, fácil) doen niet mee met geslacht, alleen met aantal.</p>",
+  uitlegEn:"<p>In Spanish the article, the noun and the adjective travel together. Change one and they all change.</p>"+
+    "<p><i>el libro rojo, los libros rojos, la casa roja, las casas rojas</i></p>"+
+    "<p>Two questions, every time: masculine or feminine, singular or plural. The rest follows.</p>"+
+    "<p>Adjectives ending in -e or a consonant (grande, amable, fácil) do not change for gender, only for number.</p>",
+  begrip:{v:"Waarmee telt een bijvoeglijk naamwoord mee?",
+    vEn:"What does an adjective agree with?",
+    o:["Met het zelfstandig naamwoord waar het bij hoort","Met het onderwerp van de zin","Met het werkwoord","Met de spreker"],
+    oEn:["With the noun it belongs to","With the subject of the sentence","With the verb","With the speaker"],
+    g:0,
+    w:"Geslacht en aantal komen van het zelfstandig naamwoord. Het lidwoord doet precies hetzelfde.",
+    wEn:"Gender and number come from the noun. The article does exactly the same."},
+  patronen:[
+   function(){ var s = gcKies(GC_SUST), a = gcKies(GC_ADJ_SER.filter(function(x){ return !x.inv; })),
+                   art = s.g === "f" ? "La" : "El", goed = gcAdj(a, s.g, "sg");
+     return {v:art+" "+s.es+" es ___. (Het "+s.nl+" is "+a.nl+".)",
+             vEn:art+" "+s.es+" es ___. (The "+s.en+" is "+a.en+".)",
+             o:[gcAdj(a,"m","sg"), gcAdj(a,"f","sg"), gcAdj(a,"m","pl"), gcAdj(a,"f","pl")],
+             g:[gcAdj(a,"m","sg"), gcAdj(a,"f","sg"), gcAdj(a,"m","pl"), gcAdj(a,"f","pl")].indexOf(goed),
+             w:s.es+" is "+(s.g === "f" ? "vrouwelijk" : "mannelijk")+" enkelvoud, dus "+goed+".",
+             wEn:s.es+" is "+(s.g === "f" ? "feminine" : "masculine")+" singular, so "+goed+"."}; },
+   function(){ var s = gcKies(GC_SUST), a = gcKies(GC_ADJ_SER.filter(function(x){ return !x.inv; })),
+                   art = s.g === "f" ? "Las" : "Los", mv = gcMv(s.es), goed = gcAdj(a, s.g, "pl");
+     return {v:art+" "+mv+" son ___. (De "+s.nl+"en zijn "+a.nl+".)",
+             vEn:art+" "+mv+" son ___. (The "+s.en+"s are "+a.en+".)",
+             o:[gcAdj(a,"m","sg"), gcAdj(a,"f","sg"), gcAdj(a,"m","pl"), gcAdj(a,"f","pl")],
+             g:[gcAdj(a,"m","sg"), gcAdj(a,"f","sg"), gcAdj(a,"m","pl"), gcAdj(a,"f","pl")].indexOf(goed),
+             w:mv+" is "+(s.g === "f" ? "vrouwelijk" : "mannelijk")+" meervoud, dus "+goed+".",
+             wEn:mv+" is "+(s.g === "f" ? "feminine" : "masculine")+" plural, so "+goed+"."}; },
+   function(){ var s = gcKies(GC_SUST), goed = s.g === "f" ? "la" : "el";
+     return {v:"Busco ___ "+s.es+". (Ik zoek het "+s.nl+".)",
+             vEn:"Busco ___ "+s.es+". (I am looking for the "+s.en+".)",
+             o:["el","la","los","las"], g:["el","la","los","las"].indexOf(goed),
+             w:s.es+" is "+(s.g === "f" ? "vrouwelijk" : "mannelijk")+" enkelvoud: "+goed+" "+s.es+".",
+             wEn:s.es+" is "+(s.g === "f" ? "feminine" : "masculine")+" singular: "+goed+" "+s.es+"."}; },
+   function(){ var s = gcKies(GC_SUST), mv = gcMv(s.es), goed = s.g === "f" ? "las" : "los";
+     return {v:"Busco ___ "+mv+". (Ik zoek de "+s.nl+"en.)",
+             vEn:"Busco ___ "+mv+". (I am looking for the "+s.en+"s.)",
+             o:["el","la","los","las"], g:["el","la","los","las"].indexOf(goed),
+             w:"Meervoud van "+s.es+" is "+mv+", en het lidwoord telt mee: "+goed+".",
+             wEn:"The plural of "+s.es+" is "+mv+", and the article agrees: "+goed+"."}; }
+  ]}
+];
+
+function gcConcept(id){
+  for(var i = 0; i < GC_CONCEPTEN.length; i++){ if(GC_CONCEPTEN[i].id === id) return GC_CONCEPTEN[i]; }
+  return null;
+}
+function gcConceptVoorCorr(regelId){
+  for(var i = 0; i < GC_CONCEPTEN.length; i++){
+    if((GC_CONCEPTEN[i].corr || []).indexOf(regelId) !== -1) return GC_CONCEPTEN[i].id;
+  }
+  return null;
+}
+function gcConceptenVoorQuiz(qz){
+  // een toetsje draagt zijn eigen spiekbrief-indexen bij zich, en daarmee vindt hij zijn concept
+  if(!qz || !qz.spiek || !qz.spiek.length) return [];
+  var tk = (typeof gwTrackKey === "function") ? gwTrackKey() : "a2", uit = [];
+  GC_CONCEPTEN.forEach(function(c){
+    var lijst = (c.spiek && c.spiek[tk]) || [];
+    for(var i = 0; i < qz.spiek.length; i++){
+      if(lijst.indexOf(qz.spiek[i]) !== -1){ uit.push(c.id); return; }
+    }
+  });
+  return uit;
+}
+function gcConceptenVoorSpiek(i){
+  var tk = (typeof gwTrackKey === "function") ? gwTrackKey() : "a2";
+  return GC_CONCEPTEN.filter(function(c){
+    var lijst = (c.spiek && c.spiek[tk]) || [];
+    return lijst.indexOf(i) !== -1;
+  });
+}
+
+/* ---- het geheugen per concept ---- */
+function gramLees(cid){
+  return (S.gram && S.gram[cid]) || {box:0, due:"", goed:0, fout:0, laatst:""};
+}
+function gramBij(cid, goed){
+  if(!cid) return;
+  S.gram = S.gram || {};
+  var st = S.gram[cid] || {box:0, due:"", goed:0, fout:0, laatst:""};
+  if(goed){
+    st.goed++;
+    st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
+    st.due = addDays(today(), GRAM_BOX[st.box]);
+  } else {
+    // Stefan: "alle fouten die maak moeten weer terug". Niet over een week, morgen.
+    st.fout++;
+    st.box = 0;
+    st.due = addDays(today(), 1);
+    st.laatst = today();
+  }
+  S.gram[cid] = st;
+}
+function gramAangeraakt(cid){
+  var st = gramLees(cid);
+  return (st.goed || 0) + (st.fout || 0) > 0;
+}
+/* Het concept waar je op struikelde en dat vandaag mag terugkomen. Laagste doosje eerst, en bij
+   gelijke stand de verste fout eerst, want die is het langst blijven liggen. */
+function gramFoutTop(){
+  var t = today(), uit = [];
+  GC_CONCEPTEN.forEach(function(c){
+    var st = gramLees(c.id);
+    if(!st.fout) return;
+    // Een fout staat op doosje nul tot je hem een keer goed hebt gedaan. Zolang dat niet gebeurd is,
+    // telt de wachttijd niet: hij mag vandaag nog terugkomen. Anders zou de fout die je net maakte
+    // pas morgen aan bod komen, en dat is precies de dag dat je hem al vergeten bent.
+    if((st.box || 0) > 0 && st.due && st.due > t) return;
+    uit.push({c:c, st:st});
+  });
+  if(!uit.length) return null;
+  uit.sort(function(a, b){
+    if((a.st.box || 0) !== (b.st.box || 0)) return (a.st.box || 0) - (b.st.box || 0);
+    return (a.st.laatst || "") < (b.st.laatst || "") ? -1 : 1;
+  });
+  return uit[0];
+}
+/* Een concept dat bij je huidige les hoort en dat je hier nog nooit hebt gedaan. */
+function gramVersKandidaat(les){
+  var tk = (typeof gwTrackKey === "function") ? gwTrackKey() : "a2";
+  var idxs = (les && les.spiek) || [], uit = null;
+  GC_CONCEPTEN.forEach(function(c){
+    if(uit) return;
+    if(gramAangeraakt(c.id)) return;
+    var lijst = (c.spiek && c.spiek[tk]) || [];
+    for(var i = 0; i < idxs.length; i++){ if(lijst.indexOf(idxs[i]) !== -1){ uit = c; return; } }
+  });
+  return uit;
+}
+/* Elk concept dat vandaag op herhaling staat, ongeacht of het ooit fout ging. */
+function gramDueTop(){
+  var t = today(), uit = [];
+  GC_CONCEPTEN.forEach(function(c){
+    var st = gramLees(c.id);
+    if(st.due && st.due > t) return;
+    uit.push({c:c, st:st});
+  });
+  uit.sort(function(a, b){ return (a.st.box || 0) - (b.st.box || 0); });
+  return uit.length ? uit[0] : null;
+}
+
+/* ---- van concept naar microles ---- */
+function gcMaakVragen(c, n){
+  // roteer over de patronen: vier keer hetzelfde patroon leert de oppervlakte, vier verschillende
+  // patronen dwingen de beslissing af. Dat is het hele idee van minimale paren.
+  var uit = [], gezien = {}, ronde = 0, poging = 0, start = Math.floor(Math.random() * c.patronen.length);
+  while(uit.length < n && poging < n * 25){
+    poging++;
+    var p = c.patronen[(start + ronde) % c.patronen.length];
+    var q = null;
+    try { q = p(); } catch(e){ q = null; }
+    if(!q || gezien[q.v]) continue;
+    gezien[q.v] = 1;
+    ronde++;
+    uit.push(gcSchud(q));
+  }
+  return uit;
+}
+function gcBouw(id){
+  var c = gcConcept(id);
+  if(!c) return null;
+  var begrip = gcSchud({v:c.begrip.v, vEn:c.begrip.vEn, o:c.begrip.o.slice(), oEn:c.begrip.oEn ? c.begrip.oEn.slice() : null,
+                        g:c.begrip.g, w:c.begrip.w, wEn:c.begrip.wEn});
+  var vragen = [begrip].concat(gcMaakVragen(c, GC_VOORBEELDEN));
+  var st = gramLees(c.id);
+  var pitch = st.fout ? "Hier ging je " + st.fout + (st.fout === 1 ? " keer" : " keer") + " de mist in. Nieuwe voorbeelden."
+                      : "De beslissing, en dan " + GC_VOORBEELDEN + " verse voorbeelden.";
+  var pitchEn = st.fout ? "You slipped up here " + st.fout + (st.fout === 1 ? " time" : " times") + ". Fresh examples."
+                        : "The decision, then " + GC_VOORBEELDEN + " fresh examples.";
+  return {id:"concept-" + c.id, concept:c.id, icon:c.icon,
+    titel:c.naam, titelEn:c.naamEn, pitch:pitch, pitchEn:pitchEn,
+    stappen:[{kop:c.naam, kopEn:c.naamEn,
+      uitleg:c.uitleg, uitlegEn:c.uitlegEn,
+      vragen:vragen}]};
+}
+/* De vragen worden bij elke start opnieuw gemaakt, maar BINNEN een sessie moet het object stil
+   blijven staan: gwKies() en gwVolgende() halen het onderwerp opnieuw op, en zonder cache zou de
+   vraag onder je handen veranderen. */
+var gcCache = {};
+function gcOnderwerp(id){
+  var key = id + "|" + profLang();
+  if(!gcCache[key]) gcCache[key] = gcBouw(id.replace(/^concept-/, ""));
+  return gcCache[key];
+}
+function gcVernieuw(id){
+  delete gcCache[id + "|" + profLang()];
+  return gcOnderwerp(id);
+}
+function gcLijst(){
+  return GC_CONCEPTEN.map(function(c){ return gcOnderwerp("concept-" + c.id); }).filter(Boolean);
+}
+/* ================= EINDE LEERMACHINE ================= */
+
 var GRAMWIZ = [
  {id:"perfindef", icon:"\u23f3", drill:"indefinido", spiek:{a2:[0,5,27]},
   titel:"Perfecto vs. indefinido", titelEn:"Perfect vs. preterite",
@@ -19079,6 +19959,7 @@ function gwOnderwerp(id){
   // handgeschreven wizards eerst, daarna de automatisch opgeknipte spiekbrief-onderwerpen
   var hand = GRAMWIZ.filter(function(o){ return o.id === id; })[0];
   if(hand) return hand;
+  if(/^concept-/.test(id || "")) return gcOnderwerp(id);
   var m = /^spiek-(a2|a0)-(\d+)$/.exec(id || "");
   if(m && m[1] === gwTrackKey()) return gwVanSpiek(parseInt(m[2], 10));
   return null;
@@ -19095,6 +19976,9 @@ function gwOpties(q){ return (profLang() === "nl" || !q.oEn) ? q.o : q.oEn; }
 function gwWaarom(q){ return ct(q.w, q.wEn || q.w); }
 
 function gwStart(id, stap){
+  // v20.5: een conceptles wordt bij elke start opnieuw gegenereerd. Je kunt geen antwoord
+  // onthouden van een vraag die nog niet bestond.
+  if(/^concept-/.test(id || "")) gcVernieuw(id);
   var o = gwOnderwerp(id);
   if(!o) return;
   var v = gwVoortgang(id);
@@ -19127,6 +20011,7 @@ function gwKies(i){
     // iets mee kan doen; trackPoging(true) zit al in logError()
     logError(gwSess.id + "-" + gwSess.stap + "-" + gwSess.vraag, "gramwiz", gwSess.id, gwOpties(q)[i]);
   }
+  if(o.concept) gramBij(o.concept, i === q.g);
   persist();
   renderCheat();
 }
@@ -19174,11 +20059,28 @@ function gwKaartHtml(o){
     "<div class='lstatus' style='font-size:.75rem; text-align:right'>" + status + "</div></div>";
 }
 
+// Een conceptkaartje toont geen stappen (het is er maar een) maar de stand van je doosje.
+// Dat is het enige getal dat hier iets betekent: wanneer komt dit terug.
+function gcKaartHtml(o){
+  var st = gramLees(o.concept);
+  var status;
+  if(st.fout && (st.box || 0) === 0) status = "<span style='color:var(--rood,#c0392b)'>" + ct("fout gegaan", "got this wrong") + "</span>";
+  else if(!st.goed && !st.fout) status = ct("nog niet gedaan", "not done yet");
+  else status = ct("doos ", "box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1);
+  return "<div class='lesson' data-gwstart='" + o.id + "'>" +
+    "<div class='lnum'>" + o.icon + "</div>" +
+    "<div class='lbody'><b>" + gwTitel(o) + "</b><span>" + gwPitch(o) + "</span></div>" +
+    "<div class='lstatus' style='font-size:.75rem; text-align:right'>" + status + "</div></div>";
+}
+
 // De onderwerpkaartjes bovenaan de Grammatica-tab
 function gwLijstHtml(){
-  var gen = gwGenLijst();
+  var gen = gwGenLijst(), con = gcLijst();
   return "<div class='card'><h2>" + ct("Onder de knie krijgen", "Really nail it") + " \ud83e\udde0</h2>" +
     "<p class='muted'>" + ct("Elk onderwerp is opgeknipt in stappen: eerst een stukje uitleg, dan meteen de vragen die daarbij horen, en de hele spiekbrief zit eronder verstopt voor als je hem nodig hebt. Bedoeld om te herhalen, niet om \u00e9\u00e9n keer door te klikken.", "Every topic is cut into steps: a bit of explanation first, then the questions that go with it, with the full cheat sheet tucked away below if you need it. Made for repeating, not for clicking through once.") + "</p>" +
+    (con.length
+      ? "<p style='margin:14px 0 4px'><b>" + ct("De keuzes", "The choices") + "</b> <span class='muted'>\u00b7 " + con.length + " \u00b7 " + ct("elke keer nieuwe voorbeelden, dus onthouden helpt niet", "fresh examples every time, so memorising won't help") + "</span></p>" + con.map(gcKaartHtml).join("")
+      : "") +
     "<p style='margin:14px 0 4px'><b>" + ct("De diepe lessen", "The deep dives") + "</b> <span class='muted'>\u00b7 " + ct("meer stappen, meer valkuilen, apart geschreven", "more steps, more pitfalls, written by hand") + "</span></p>" +
     GRAMWIZ.map(gwKaartHtml).join("") +
     (gen.length

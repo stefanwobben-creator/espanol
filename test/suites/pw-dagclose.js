@@ -143,21 +143,27 @@ const { chromium } = require('playwright');
   ok(alGezet.picks === 0, 'wie zijn moment al heeft, krijgt de vraag niet nog een keer');
   ok(/koffie|coffee/.test(alGezet.tekst), 'in plaats daarvan staat zijn eigen moment er als herinnering');
 
-  // ---------- 8. einde les: de hoofdknop draait om bij een gehaald dagdoel ----------
+  // ---------- 8. einde les: stoppen kan altijd, en het is altijd de hoofdknop ----------
+  // v20.5: dit stond hier andersom. Onder het dagdoel wás "nog een les" de primaire knop, en dan
+  // is de uitweg een grijze knop ernaast. Dat is precies de zesde bevinding van zijn moeder: ze
+  // wilde stoppen en zag niet hoe. Sinds v20.5 staat "klaar voor vandaag" er altijd, altijd
+  // vooraan en altijd als primaire knop; doorgaan mag, maar het hoeft niet.
   const knoppen = await page.evaluate(() => {
     function meten(xp) {
       S.dag = {}; S.ritme = { wanneer: 'stil' }; S.xp = {}; S.xp[today()] = xp;
       S.lesFlow = {}; lesFlow = { stap: 'produceren' };
       lesFlowKlaar();
       const p = document.querySelector('#lessonList .card .row button.primary');
+      const g = document.querySelector('#lessonList .card .row button.ghost');
       const feest = document.getElementById('feestWrap');
       if (feest && feest.remove) feest.remove();
-      return p ? p.textContent : '';
+      return { primair: p ? p.textContent : '', ghost: g ? g.textContent : '' };
     }
     return { onder: meten(0), boven: meten(dagdoel() + 10) };
   });
-  ok(/Nog een les|another session/.test(knoppen.onder), 'onder het dagdoel blijft "nog een les" de hoofdknop');
-  ok(/Klaar voor vandaag|Done for today/.test(knoppen.boven), 'boven het dagdoel is "klaar voor vandaag" de hoofdknop');
+  ok(/Klaar voor vandaag|Done for today/.test(knoppen.onder.primair), 'onder het dagdoel is stoppen al de hoofdknop');
+  ok(/Klaar voor vandaag|Done for today/.test(knoppen.boven.primair), 'boven het dagdoel is stoppen de hoofdknop');
+  ok(/Nog een les|another session/.test(knoppen.onder.ghost), 'doorgaan blijft bereikbaar, maar als tweede keus');
 
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED/.test(e));
   ok(relevanteErrors.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + relevanteErrors.length + ' gevonden)');
