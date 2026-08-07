@@ -93,6 +93,8 @@ const { chromium } = require('playwright');
   ok(await page.locator('#dInput').count() === 0, 'er is geen invoerveld: je kunt niets afkijken');
   ok(await page.locator('#btnDicNormal').count() === 1, 'luisteren normaal blijft beschikbaar');
   ok(await page.locator('#btnDicLento').count() === 1, 'luisteren lento blijft beschikbaar');
+  ok(await page.locator('#dModus .dmod').count() === 2, 'de moduskeuze typen/tegels staat op het scherm');
+  ok(await page.locator('#btnFunTerug').count() === 0, 'de losse Speeltuin-knop is weg (v21.0)');
 
   // aantikken zet een tegel in de rij, nog eens aantikken haalt hem eruit
   await page.click('#dSleepBank .dtegel:not(.weg)');
@@ -126,11 +128,64 @@ const { chromium } = require('playwright');
   ok(goed.done === false, 'de zin telt niet als afgerond: die eer is voor het typen');
   ok(goed.getypt === goed.voor.getypt, 'S.dicGetypt blijft staan, sleepwerk tilt de noemer niet op');
   ok(goed.sleepGoed >= 1, 'S.dicSleepGoed telt apart mee voor de KPI');
-  ok(await page.locator('#btnDSleepTyp').count() === 1, 'er staat een knop die je naar het typen stuurt');
+  // zelf voor tegels gekozen (naFout is false): dan is de zin klaar en hoef je niet ook nog te typen
+  ok(await page.locator('#btnDSleepTyp').count() === 0, 'zelfgekozen tegels sturen je niet alsnog naar het typen');
+  ok(await page.locator('#btnDicNext').count() === 1, 'je gaat door naar de volgende zin');
 
+  // maar kwamen de tegels na een misser, dan blijft de doorgeef naar het typen wel staan
+  const redding = await page.evaluate(() => {
+    show('speeltuin'); funView = 'dictado';
+    dSleepGedaanId = null;
+    dicSleepZet(dIdx, true);
+    dSleep.rij = [];
+    dicSleepTegels(dSleep.zin.es).forEach(function (w) {
+      for (var i = 0; i < dSleep.bank.length; i++) {
+        if (dSleep.bank[i].woord === w && dSleep.rij.indexOf(i) === -1) { dSleep.rij.push(i); break; }
+      }
+    });
+    dicSleepCheck();
+    return dSleep.klaar;
+  });
+  ok(redding === true, 'ook na een misser wordt de juiste volgorde herkend');
+  ok(await page.locator('#btnDSleepTyp').count() === 1, 'na een misser stuurt de app je wel naar het typen');
   await page.click('#btnDSleepTyp');
   await page.waitForTimeout(300);
-  ok(await page.locator('#dInput').count() === 1, 'na goed leggen sta je bij dezelfde zin te typen');
+  ok(await page.locator('#dInput').count() === 1, 'en dan sta je bij dezelfde zin te typen');
+  ok(await page.locator('#btnDicSkip').count() === 0, 'de skip-knop bestaat niet meer (v21.0)');
+
+  // ---- zwaarte en plafond: een beginner krijgt geen negen woorden met een jaartal ----
+  const niveau = await page.evaluate(() => {
+    S.dicGetypt = 0;
+    const frida = SENTENCES.filter(z => /mil novecientos/.test(z.es))[0];
+    const kort = { es: 'El café está frío.' };
+    return {
+      plafondNul: dicPlafond(),
+      zwaarFrida: frida ? dicZwaarte(frida) : null,
+      zwaarKort: dicZwaarte(kort),
+      plafondLater: (function () { S.dicGetypt = 20; const p = dicPlafond(); S.dicGetypt = 0; return p; })()
+    };
+  });
+  ok(niveau.plafondNul === 6, 'het plafond staat bij nul getypte zinnen op 6');
+  ok(niveau.zwaarKort < niveau.plafondNul, 'een korte zin past onder het plafond (' + niveau.zwaarKort + ')');
+  ok(niveau.zwaarFrida === null || niveau.zwaarFrida > niveau.plafondNul,
+     'de jaartalzin van Frida is te zwaar voor een beginner (' + niveau.zwaarFrida + ')');
+  ok(niveau.plafondLater > niveau.plafondNul, 'het plafond groeit mee met wat je typt (' + niveau.plafondLater + ')');
+
+  const gekozen = await page.evaluate(() => {
+    S.dicGetypt = 50; S.dicModus = 'tegels';
+    const a = dicModusNu();
+    S.dicModus = 'typen';
+    const b = dicModusNu();
+    delete S.dicModus;
+    const c = dicModusNu();
+    S.dicGetypt = 0;
+    const d = dicModusNu();
+    return { a: a, b: b, c: c, d: d };
+  });
+  ok(gekozen.a === 'tegels', 'een eigen keuze voor tegels wint van de automaat');
+  ok(gekozen.b === 'typen', 'een eigen keuze voor typen wint ook als je nog niets deed');
+  ok(gekozen.c === 'typen', 'zonder keuze en met ervaring: typen');
+  ok(gekozen.d === 'tegels', 'zonder keuze en zonder ervaring: tegels');
 
   // ---- 5. een afleider aantikken is een conceptfout en zet het doosje terug op nul ----
   const doos = await page.evaluate(() => {
@@ -159,7 +214,7 @@ const { chromium } = require('playwright');
     return { klaar: dSleep.klaar };
   });
   ok(tweemaal.klaar === true, 'na twee missers stopt de opgave');
-  ok(await page.locator('#btnDSleepTyp').count() === 1, 'ook na twee missers word je naar het typen gestuurd');
+  ok(await page.locator('#btnDicNext').count() === 1, 'na twee missers gaat het antwoord aan en ga je door');
 
   // ---- 7. de knop na een misser verschijnt alleen na een echte misser ----
   const bron = await page.content();

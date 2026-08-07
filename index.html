@@ -81,6 +81,8 @@
   .feedback.ok{background:var(--green-soft); color:var(--green);}
   .feedback.bijna{background:var(--amber-soft); color:var(--amber);}
   .feedback.fout{background:var(--red-soft); color:var(--red);}
+  .dmod{padding:7px 12px; font-size:.92rem; min-width:0;}
+  .dmod.aan{border-color:var(--accent); color:var(--accent); font-weight:700;}
   .dsleep-rij{min-height:52px; display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;
        padding:10px; margin-top:10px; border-radius:10px; border:1.5px dashed var(--border); background:var(--bg);}
   .dsleep-rij.leeg::before{content:attr(data-leeg); color:var(--muted); font-size:.9rem; align-self:center;}
@@ -993,7 +995,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v20.9";
+var APP_VERSIE = "v21.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6423,6 +6425,61 @@ function dicSleepAfleiders(tegels){
   return geschud(kandidaten).slice(0, DIC_SLEEP_AFLEIDERS);
 }
 
+/* Zwaarte van een zin, zodat een beginner geen negen woorden met een jaartal krijgt (Stefan,
+   7 aug: "de zinnen aanpassen a/h niveau van de leerling"). Woorden wegen het zwaarst, accenten
+   half mee omdat je ze moet horen en zetten, en een jaartal of getal telt als twee woorden extra:
+   "mil novecientos siete" is één begrip maar drie stukken werk. */
+function dicZwaarte(z){
+  var es = String((z && z.es) || "");
+  if(!es) return 99;
+  var woorden = es.trim().split(/\s+/).length;
+  var accenten = (es.match(/[áéíóúüñ]/gi) || []).length;
+  var getal = (/\d/.test(es) || /\b(mil|cientos|ciento)\b/i.test(es)) ? 2 : 0;
+  return woorden + accenten * 0.5 + getal;
+}
+/* Het plafond groeit mee met wat je écht getypt hebt, niet met wat je gespeeld hebt. Bij nul staat
+   het op zes, dus korte zinnen; elke getypte zin schuift het een half punt op. */
+function dicPlafond(){
+  return Math.min(30, 6 + (S.dicGetypt || 0) * 0.5);
+}
+// "typen" of "tegels". Niets gekozen: je eerste drie zinnen krijgen tegels, daarna typen.
+function dicModusNu(){
+  if(S.dicModus === "typen" || S.dicModus === "tegels") return S.dicModus;
+  return (S.dicGetypt || 0) < DIC_SLEEP_EERSTE ? "tegels" : "typen";
+}
+function dicModusHtml(){
+  var m = dicModusNu();
+  return "<div class='row' id='dModus' style='gap:6px; margin-top:8px'>" +
+    "<button type='button' class='ghost dmod" + (m === "typen" ? " aan" : "") + "' data-dm='typen'>⌨️ " +
+      ct("Typen","Type") + "</button>" +
+    "<button type='button' class='ghost dmod" + (m === "tegels" ? " aan" : "") + "' data-dm='tegels'>🧩 " +
+      ct("Tegels","Tiles") + "</button>" +
+    "<span class='muted' style='font-size:.82rem; align-self:center'>" +
+      (m === "typen" ? ct("5 taco's","5 tacos") : ct("1 taco, telt niet mee voor je niveau","1 taco, doesn't count towards your level")) +
+    "</span></div>";
+}
+function wireDicModus(el, zin){
+  var rij = el.querySelector("#dModus");
+  if(!rij) return;
+  rij.querySelectorAll(".dmod").forEach(function(b){
+    b.onclick = function(){
+      var m = b.getAttribute("data-dm");
+      if(m === dicModusNu()) return;
+      S.dicModus = m; persist();
+      if(m === "tegels"){ dSleepGedaanId = null; dicSleepZet(zin, false); renderFunDictadoSleep(); }
+      else { dSleep = null; dSleepGedaanId = null; renderFunDictado(); }
+    };
+  });
+}
+function dicVolgendeKnopHtml(){
+  return "<div class='row' style='margin-top:8px'><button class='primary' id='btnDicNext'>" +
+    ct("Volgende zin →","Next sentence →") + "</button></div>";
+}
+function wireDicVolgende(){
+  var b = document.getElementById("btnDicNext");
+  if(b) b.onclick = function(){ dictadoVolgende(); };
+}
+
 var dSleep = null;
 var dSleepGedaanId = null;   // deze zin heeft zijn tegels gehad; nu is typen aan de beurt
 function dicSleepZet(zin, naFout){
@@ -6441,7 +6498,7 @@ function dicSleepNodig(zin){
   // Nooit twee keer achter elkaar voor dezelfde zin: de tegels geven je altijd terug aan het typen,
   // anders sta je in een lus waar je nooit een letter tikt.
   if(dSleepGedaanId && zin && dSleepGedaanId === zin.id) return false;
-  return (S.dicGetypt || 0) < DIC_SLEEP_EERSTE;
+  return dicModusNu() === "tegels";
 }
 function dicSleepZinnetje(){
   return dSleep.rij.map(function(i){ return dSleep.bank[i].woord; }).join(" ");
@@ -6468,20 +6525,20 @@ function renderFunDictadoSleep(){
            "Listen and tap the words in the right order. Some words don't belong.")) + "</p>" +
     "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>" +
     "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>" +
+    (dSleep.naFout ? "" : dicModusHtml()) +
     "<div class='dsleep-rij" + (dSleep.rij.length ? "" : " leeg") + "' id='dSleepRij' data-leeg='" +
       ct("Tik hieronder een woord aan","Tap a word below") + "'>" + rijHtml + "</div>" +
     "<div class='dsleep-bank' id='dSleepBank'>" + bankHtml + "</div>" +
     "<div class='row' style='margin-top:10px'><button class='primary' id='btnDSleepCheck'>" +
       ct("Controleer","Check") + "</button>" +
-    "<button class='ghost' id='btnDSleepWis'>" + ct("Wissen","Clear") + "</button>" +
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>" +
+    "<button class='ghost' id='btnDSleepWis'>" + ct("Wissen","Clear") + "</button></div>" +
     "<div id='dFeedback'></div>";
   lesFlowWireBanner();
   document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(zin, DIC_RATE_NORMAL); };
   document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(zin, DIC_RATE_LENTO); };
   document.getElementById("btnDSleepCheck").onclick = dicSleepCheck;
   document.getElementById("btnDSleepWis").onclick = function(){ dSleep.rij = []; renderFunDictadoSleep(); };
-  document.getElementById("btnFunTerug").onclick = function(){ dicSleepUit(); funView = null; renderFun(); };
+  if(!dSleep.naFout) wireDicModus(el, zin);
   el.querySelectorAll("[data-dbank]").forEach(function(b){
     b.onclick = function(){
       var i = parseInt(b.getAttribute("data-dbank"), 10);
@@ -6509,14 +6566,29 @@ function dicSleepCheck(){
     dSleep.klaar = true;
     S.dicSleepGoed = (S.dicSleepGoed || 0) + 1;
     addXP(1); persist();
-    // De echte woorden die je goed zette, tellen als bewijs voor hun concept.
-    fb.innerHTML = "<div class='feedback ok'>¡Eso es! ✓ (+1 " + xpw() + ")</div>" +
-      "<p class='muted'>" + ct("En nu dezelfde zin zelf typen. Dat is waar het om ging.",
-                               "Now type that same sentence yourself. That was the point.") + "</p>" +
-      "<div class='row' style='margin-top:6px'><button class='primary' id='btnDSleepTyp'>" +
-      ct("Nu zelf typen →", "Now type it →") + "</button></div>";
-    var bt = document.getElementById("btnDSleepTyp");
-    if(bt) bt.onclick = function(){ dicSleepUit(); renderFunDictado(); };
+    var kop = "<div class='feedback ok'>¡Eso es! ✓ (+1 " + xpw(1) + ")</div>";
+    if(dSleep.naFout){
+      // Je vroeg de tegels niet, ze kwamen omdat je net miste. Dan is het punt dat je alsnog over
+      // de lat komt die je net niet haalde, dus gaat deze zin terug naar het typen.
+      fb.innerHTML = kop +
+        "<p class='muted'>" + ct("En nu dezelfde zin zelf typen. Dat is waar het om ging.",
+                                 "Now type that same sentence yourself. That was the point.") + "</p>" +
+        "<div class='row' style='margin-top:6px'><button class='primary' id='btnDSleepTyp'>" +
+        ct("Nu zelf typen →", "Now type it →") + "</button></div>";
+      var bt = document.getElementById("btnDSleepTyp");
+      if(bt) bt.onclick = function(){ dicSleepUit(); renderFunDictado(); };
+      return;
+    }
+    // Zelf voor tegels gekozen: dan is de zin klaar. Hij telt mee voor je rondescore, maar niet
+    // voor je niveau, en levert 1 taco op in plaats van 5. Die scheve verhouding is de functie.
+    dRonde.goed++; dRonde.streak++;
+    if(dRonde.streak > dRonde.besteStreak) dRonde.besteStreak = dRonde.streak;
+    persist();
+    var kickerEl2 = document.getElementById("dKicker");
+    if(kickerEl2) kickerEl2.textContent = dictadoKickerTekst();
+    fb.innerHTML = kop + "<div class='uitleg'>" + ct("Vertaling: ","Translation: ") + zinPrompt(zin) + "</div>" +
+      dicVolgendeKnopHtml();
+    wireDicVolgende();
     return;
   }
   // Een afleider in de rij is een echte conceptfout en gaat terug naar doosje nul.
@@ -6526,12 +6598,10 @@ function dicSleepCheck(){
   if(dSleep.pogingen >= 2){
     dSleep.klaar = true;
     logError(zin.id, "dictado", zin.tag, dicSleepZinnetje());
+    dRonde.streak = 0;
     fb.innerHTML = "<div class='feedback fout'>" + ct("Nog niet. Zo hoort het: ", "Not yet. This is it: ") +
-      "<b>" + zin.es + "</b></div>" +
-      "<div class='row' style='margin-top:6px'><button class='primary' id='btnDSleepTyp'>" +
-      ct("Nu zelf typen →", "Now type it →") + "</button></div>";
-    var bt2 = document.getElementById("btnDSleepTyp");
-    if(bt2) bt2.onclick = function(){ dicSleepUit(); renderFunDictado(); };
+      "<b>" + zin.es + "</b></div>" + dicVolgendeKnopHtml();
+    wireDicVolgende();
     return;
   }
   fb.innerHTML = "<div class='feedback bijna'>" +
@@ -6547,6 +6617,12 @@ function pickDictado(){
   allowedSentIds().forEach(function(id){ allow[id] = true; });
   var pool = SENTENCES.filter(function(x){ return allow[x.id]; });
   if(!pool.length) pool = SENTENCES;
+  // Op niveau snijden. Blijft er te weinig over, dan pakken we gewoon de lichtste vijf: liever een
+  // te makkelijke zin dan een lege oefening.
+  var plafond = dicPlafond();
+  var licht = pool.filter(function(x){ return dicZwaarte(x) <= plafond; });
+  if(licht.length >= 3) pool = licht;
+  else pool = pool.slice().sort(function(a,b){ return dicZwaarte(a) - dicZwaarte(b); }).slice(0, 5);
   var fouten = pool.filter(function(x){ var e = S.errors["dictado:"+x.id]; return e && e.count > 0; });
   if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
   var gedaan = pool.filter(function(x){ return !!S.done[x.id]; });
@@ -6578,7 +6654,7 @@ function renderFunDictado(){
   if(dRonde.n >= dRonde.lengte){ renderDictadoRondeKlaar(); return; }
   if(!dIdx) dIdx = pickDictado();
   var s = dIdx;
-  // De eerste drie zinnen ooit beginnen met tegels; daarna alleen als redding na een misser.
+  // Tegels: je eigen keuze, of automatisch bij je eerste drie zinnen. Nooit twee keer dezelfde zin.
   if(!dSleep && dicSleepNodig(s)){ dicSleepZet(s, false); }
   if(dSleep && dSleep.zin && dSleep.zin.id === s.id && !dSleep.klaar){ renderFunDictadoSleep(); return; }
   var inFlowDicR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
@@ -6587,11 +6663,10 @@ function renderFunDictado(){
     "<p class='muted'>" + fx("dicIntro") + "</p>"+
     "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
     "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>"+
+    dicModusHtml()+
     "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
     accentToetsenHtml("dAccent")+
-    "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button>"+
-    "<button class='ghost' id='btnDicSkip'>" + fx("dicSkip") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
+    "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button></div>"+
     "<div id='dFeedback'></div>";
   el.innerHTML = html;
   lesFlowWireBanner();
@@ -6601,8 +6676,7 @@ function renderFunDictado(){
   document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s, DIC_RATE_NORMAL); };
   document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(s, DIC_RATE_LENTO); };
   document.getElementById("btnDicCheck").onclick = checkDictado;
-  document.getElementById("btnDicSkip").onclick = function(){ dictadoVolgende(); };
-  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
+  wireDicModus(el, s);
   inp.focus();
   setTimeout(function(){ dictadoSpreek(s, DIC_RATE_NORMAL); }, 250);
 }
@@ -6710,6 +6784,7 @@ function checkDictado(){
     html += "<div class='row' style='margin-top:6px'><button class='primary' id='btnDicSleep'>🧩 " +
       ct("Zet de woorden op volgorde","Put the words in order") + "</button></div>";
   }
+  html += dicVolgendeKnopHtml();
   fb.innerHTML = html;
   persist();
   checkLessonComplete();
@@ -6717,6 +6792,7 @@ function checkDictado(){
   if(bg) bg.onclick = dictadoGok;
   var bs = document.getElementById("btnDicSleep");
   if(bs) bs.onclick = function(){ dicSleepZet(s, true); renderFunDictadoSleep(); };
+  wireDicVolgende();
 }
 
 /* ================= CONJUGADOR (sprint: vervoeg het werkwoord, presente) ================= */
@@ -12735,6 +12811,9 @@ function buildNav(){
     b.onclick = function(){
       var id = b.getAttribute("data-tab");
       if(id === "__meer"){ meerModal(); return; }
+      // v21.0: de losse terugknop in de spelkaarten is weg, dus deze knop moet de lijst tonen en
+      // niet het spel waar je in zat. Twee wegen naar hetzelfde scherm was precies wat verwarde.
+      if(id === "speeltuin"){ funView = null; if(typeof dicSleepUit === "function") dicSleepUit(); }
       scopeLesson = null; show(id);
     };
   });
