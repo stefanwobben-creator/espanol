@@ -1292,5 +1292,159 @@
       "hash": "41517ca572611aeb",
       "tekens": 30
     }
+  },
+  "dialogo-a": {
+    "e1-1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "bf68d2bfb191223d",
+      "tekens": 39
+    },
+    "e1-3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0a8e0b266aa8ec6c",
+      "tekens": 31
+    },
+    "e2-1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "59761de09d7532c7",
+      "tekens": 31
+    },
+    "e2-3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b443921e47503814",
+      "tekens": 14
+    },
+    "e3-1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "c20f94c44cf66b13",
+      "tekens": 26
+    },
+    "e3-4": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7d38860e24c8cd62",
+      "tekens": 22
+    },
+    "e4-1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6c0b806052dd6c1b",
+      "tekens": 24
+    },
+    "e4-3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d739c7280fcc6d21",
+      "tekens": 35
+    },
+    "e5-1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f11d307095cea5ff",
+      "tekens": 45
+    },
+    "e5-3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cad9c7b01a3efeb5",
+      "tekens": 28
+    },
+    "e6-1": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "bdfbe1a6a5591b44",
+      "tekens": 20
+    },
+    "e6-3": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "e13af53d21d56218",
+      "tekens": 55
+    }
+  },
+  "dialogo-b": {
+    "e1-2": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "33ad20e9598d9416",
+      "tekens": 48
+    },
+    "e1-4": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "00ef8a340866b417",
+      "tekens": 34
+    },
+    "e2-2": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "b80d665e95c9172d",
+      "tekens": 35
+    },
+    "e2-4": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "8b255e0ce49823f7",
+      "tekens": 37
+    },
+    "e3-2": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "8e5f7c31b335bc99",
+      "tekens": 34
+    },
+    "e3-3": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "9a8559d946ebb6d3",
+      "tekens": 30
+    },
+    "e3-5": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "a8b724fd8439b7a5",
+      "tekens": 15
+    },
+    "e4-2": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "51987af459123825",
+      "tekens": 55
+    },
+    "e4-4": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "a55565d3a6dfea5e",
+      "tekens": 17
+    },
+    "e5-2": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "ba8f37039b8435bd",
+      "tekens": 58
+    },
+    "e5-4": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "704c17199145cc3b",
+      "tekens": 52
+    },
+    "e6-2": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "060e7268fb264f1f",
+      "tekens": 24
+    },
+    "e6-4": {
+      "voice": "OjrdP8Z2fWjVyt0scrL7",
+      "model": "eleven_multilingual_v2",
+      "hash": "160f0d7edbdc63ac",
+      "tekens": 57
+    }
   }
 }
