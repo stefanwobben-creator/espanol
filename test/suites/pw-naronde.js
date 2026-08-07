@@ -36,6 +36,7 @@ const { chromium } = require('playwright');
   // ---- 1. na een afgeronde ronde staat er één voorstel ----
   await page.evaluate(() => {
     S.speelAlles = true; lesFlow = null;
+    S.rvDrill = 1; // v21.8: het eindscherm van de drill, want daar hangt het voorstel aan
     show('speeltuin'); funView = 'conj';
     conjugadorNieuweRonde();
     conjRonde.n = conjRonde.lengte; conjRonde.goed = conjRonde.lengte;

@@ -34,6 +34,7 @@ const { chromium } = require('playwright');
   await page.evaluate(() => {
     S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.conj = 'makkelijk';
     S.conjTiempo = 'presente'; persist();
+    S.rvDrill = 1; // v21.8: de voordeur van Conjugador is nu het puzzelspel; deze suite test de drill
     funView = 'conj'; conjIdx = null; conjRonde = null; cjMk = null; show('speeltuin');
   });
   await page.waitForTimeout(400);

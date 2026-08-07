@@ -1033,7 +1033,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.7";
+var APP_VERSIE = "v21.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7206,7 +7206,236 @@ function conjugadorVolgende(){
   cjMk = null;
   renderFunConjugador();
 }
+/* ================= ROMPECABEZAS DE VERBOS (v21.8) =================
+   Stefan: "een spel om werkwoorden te leren, maar dus echt een spel."
+
+   De Conjugador was een rijtjesdrill tegen de klok: je vult in wat gevraagd wordt, sneller of
+   langzamer, en er zit geen enkele beslissing in. Dit is wel een spel, omdat het drie dingen heeft
+   die die drill niet had: je kiest welke combinatie je maakt, je kunt een zet verspillen, en je
+   speelt tegen je eigen beste score.
+
+   Waarom uitgerekend werkwoorden zich hiervoor lenen: Spaanse vervoeging is geen tabel maar een
+   systeem, stam plus uitgang. Wie dat doorheeft kan werkwoorden vervoegen die hij nooit geleerd
+   heeft. Rijtjes stampen leert je precies dat niet.
+
+   En het mooiste: de scheidsrechter hoeft niet met de hand geschreven te worden. VERBOS bevat de
+   volledige presente van elk werkwoord, dus of "pued" + "emos" bestaat is gewoon op te zoeken. Het
+   spel weet daardoor ook wat je wél had moeten maken, en dat is precies de les: bij nosotros valt
+   de klemtoon weg en is het podemos, niet puedemos. */
+var RV_UITGANG = {
+  ar: ["o","as","a","amos","áis","an"],
+  er: ["o","es","e","emos","éis","en"],
+  ir: ["o","es","e","imos","ís","en"]
+};
+var RV_PERSOON = ["yo","tú","él/ella","nosotros","vosotros","ellos/ellas"];
+var RV_ZETTEN = 6;
+var rvIndexCache = null;
+function rvOntleed(v){
+  var t = (v.inf || "").slice(-2), u = RV_UITGANG[t];
+  if(!u || !v.presente) return null;
+  var uit = [];
+  for(var i = 0; i < 6; i++){
+    var f = v.presente[i], e = u[i];
+    // Werkwoorden als ser en ir hebben vormen die niet op hun uitgang eindigen (soy, voy). Die zijn
+    // niet in stam plus uitgang te knippen en horen dus niet in dit spel; die leer je uit je hoofd.
+    if(!f || f.length <= e.length || f.slice(-e.length) !== e) return null;
+    uit.push({stam: f.slice(0, f.length - e.length), uitgang: e, persoon: i, vorm: f, inf: v.inf});
+  }
+  return uit;
+}
+function rvIndex(){
+  if(rvIndexCache) return rvIndexCache;
+  var stammen = {}, geldig = {}, perVerb = {};
+  VERBOS.forEach(function(v){
+    var d = rvOntleed(v);
+    if(!d) return;
+    var eigen = {};
+    d.forEach(function(x){
+      eigen[x.stam] = 1;
+      geldig[x.vorm] = {inf: v.inf, persoon: x.persoon, stam: x.stam, uitgang: x.uitgang};
+    });
+    perVerb[v.inf] = {verb: v, delen: d, stammen: Object.keys(eigen)};
+    Object.keys(eigen).forEach(function(st){
+      if(!stammen[st]) stammen[st] = {stam: st, inf: v.inf, wissel: false};
+    });
+  });
+  // Een werkwoord met meer dan één stam is een wisselwerkwoord (poder, querer, pedir). Dat zijn de
+  // interessante kaarten, dus die leveren extra punten op.
+  Object.keys(perVerb).forEach(function(inf){
+    if(perVerb[inf].stammen.length > 1){
+      perVerb[inf].stammen.forEach(function(st){ if(stammen[st]) stammen[st].wissel = true; });
+    }
+  });
+  rvIndexCache = {stammen: stammen, geldig: geldig, perVerb: perVerb};
+  return rvIndexCache;
+}
+function rvGloss(inf){
+  var v = VERBOS.filter(function(x){ return x.inf === inf; })[0];
+  if(!v) return "";
+  return profLang() === "nl" ? (v.nl || "") : (v.en || v.nl || "");
+}
+/* Een deal die te winnen is. We kiezen drie werkwoorden, nemen daar de stammen van, en zoeken er
+   uitgangen bij die met minstens één van die stammen een echte vorm maken. Eén uitgang die dat niet
+   doet mag erbij: zonder val is er niets te kiezen. */
+function rvDeel(){
+  var ix = rvIndex();
+  var infs = geschud(Object.keys(ix.perVerb)).slice(0, 3);
+  var stamLijst = [];
+  infs.forEach(function(inf){
+    ix.perVerb[inf].stammen.forEach(function(st){ stamLijst.push(ix.stammen[st]); });
+  });
+  stamLijst = geschud(stamLijst).slice(0, 5);
+  var kanMet = {};
+  stamLijst.forEach(function(sk){
+    Object.keys(ix.geldig).forEach(function(vorm){
+      var g = ix.geldig[vorm];
+      if(g.stam === sk.stam) kanMet[g.uitgang] = 1;
+    });
+  });
+  var goede = geschud(Object.keys(kanMet));
+  var alle = [];
+  Object.keys(RV_UITGANG).forEach(function(t){ RV_UITGANG[t].forEach(function(e){ if(alle.indexOf(e) === -1) alle.push(e); }); });
+  var vallen = geschud(alle.filter(function(e){ return !kanMet[e]; }));
+  var uitgangen = goede.slice(0, RV_ZETTEN - 1).concat(vallen.slice(0, 1));
+  while(uitgangen.length < RV_ZETTEN && goede.length > uitgangen.length) uitgangen.push(goede[uitgangen.length]);
+  return {stammen: stamLijst, uitgangen: geschud(uitgangen).slice(0, RV_ZETTEN)};
+}
+var rvSpel = null;
+function rvNieuweRonde(){
+  var d = rvDeel();
+  rvSpel = {stammen: d.stammen, uitgangen: d.uitgangen.map(function(e){ return {e: e, op: false}; }),
+            gemaakt: [], punten: 0, kiesStam: null, laatste: null, klaar: false};
+}
+function rvNogTeWinnen(){
+  var ix = rvIndex(), n = 0;
+  rvSpel.uitgangen.forEach(function(u){
+    if(u.op) return;
+    rvSpel.stammen.forEach(function(sk){
+      var g = ix.geldig[sk.stam + u.e];
+      if(g && g.stam === sk.stam) n++;
+    });
+  });
+  return n;
+}
+function rvZet(stamIdx, uitgangIdx){
+  var ix = rvIndex();
+  var sk = rvSpel.stammen[stamIdx], u = rvSpel.uitgangen[uitgangIdx];
+  if(!sk || !u || u.op) return;
+  u.op = true;
+  var vorm = sk.stam + u.e;
+  var g = ix.geldig[vorm];
+  if(g && g.stam === sk.stam){
+    var punten = 2 + (sk.wissel ? 2 : 0);
+    rvSpel.punten += punten;
+    rvSpel.gemaakt.push({vorm: vorm, inf: g.inf, persoon: g.persoon, punten: punten});
+    rvSpel.laatste = {goed: true, vorm: vorm, inf: g.inf, persoon: g.persoon, punten: punten};
+    addXP(1);
+  } else {
+    // Wat had het wél moeten zijn? De uitgang verraadt de persoon, dus de juiste vorm van dit
+    // werkwoord is op te zoeken. Dat is de hele les: puedemos bestaat niet, podemos wel.
+    var juist = null, persoon = null;
+    var pv = ix.perVerb[sk.inf];
+    if(pv){
+      pv.delen.forEach(function(x){ if(x.uitgang === u.e){ juist = x.vorm; persoon = x.persoon; } });
+    }
+    rvSpel.laatste = {goed: false, poging: vorm, inf: sk.inf, juist: juist, persoon: persoon};
+  }
+  if(!rvSpel.uitgangen.some(function(x){ return !x.op; })) rvSpel.klaar = true;
+  rvSpel.kiesStam = null;
+  var best = S.rvBest || 0;
+  if(rvSpel.klaar && rvSpel.punten > best){ S.rvBest = rvSpel.punten; }
+  persist();
+}
+function rvFeedbackHtml(){
+  var l = rvSpel.laatste;
+  if(!l) return "";
+  if(l.goed){
+    return "<div class='feedback ok'>¡" + l.vorm + "! ✓ +" + l.punten + " " +
+      ct("punten","points") + " · <b>" + RV_PERSOON[l.persoon] + "</b> " +
+      ct("van","of") + " " + l.inf + " (" + rvGloss(l.inf) + ")</div>";
+  }
+  return "<div class='feedback fout'>" + ct("Die bestaat niet: ","No such form: ") + "<b>" + l.poging + "</b>" +
+    (l.juist ? ". " + ct("Bij ","At ") + "<b>" + RV_PERSOON[l.persoon] + "</b> " +
+      ct("is het ","it is ") + "<b>" + l.juist + "</b>." : "") + "</div>";
+}
+function renderFunRompecabezas(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!rvSpel) rvNieuweRonde();
+  var inFlow = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "conj");
+  if(rvSpel.klaar){
+    if(inFlow){ S.lesFlowSpel.conj = today(); persist(); }
+    var best = S.rvBest || 0;
+    el.innerHTML = (inFlow ? lesFlowBannerHtml() : "") + "<h2>Rompecabezas 🧩</h2>" +
+      "<div class='feedback " + (rvSpel.punten >= 10 ? "ok" : rvSpel.punten >= 6 ? "bijna" : "fout") + "'>" +
+        rvSpel.punten + " " + ct("punten","points") +
+        (rvSpel.punten >= best && rvSpel.punten > 0 ? " · " + ct("nieuw record!","new record!") : " · " + ct("record: ","best: ") + best) +
+      "</div>" +
+      (rvSpel.gemaakt.length
+        ? "<p class='muted' style='margin:10px 2px 4px'>" + ct("Wat je maakte:","What you built:") + "</p>" +
+          rvSpel.gemaakt.map(function(g){
+            return "<div class='zoekrij'><span class='zb'><b>" + g.vorm + "</b><span>" +
+              RV_PERSOON[g.persoon] + " " + ct("van","of") + " " + g.inf + " · " + rvGloss(g.inf) + "</span></span>" +
+              "<span class='zoekmee'>+" + g.punten + "</span></div>";
+          }).join("")
+        : "<p class='muted'>" + ct("Geen enkele vorm gemaakt. Volgende keer beter.","No forms built. Next time.") + "</p>") +
+      (inFlow ? "<div class='row' style='margin-top:10px'><button class='primary' id='btnLesFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
+              : "<div class='row' style='margin-top:10px'><button class='primary' id='btnRvNieuw'>" + ct("Nog een potje","Another round") + "</button>" +
+                "<button class='ghost' id='btnRvDrill'>" + ct("Oude oefenmodus","Old drill mode") + "</button></div>" + naRondeHtml());
+    lesFlowWireBanner();
+    if(inFlow){ document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); }; return; }
+    document.getElementById("btnRvNieuw").onclick = function(){ rvNieuweRonde(); renderFunRompecabezas(); };
+    document.getElementById("btnRvDrill").onclick = function(){ S.rvDrill = 1; persist(); conjRonde = null; conjIdx = null; renderFunConjugadorDrill(); };
+    naRondeWire();
+    return;
+  }
+  var over = rvSpel.uitgangen.filter(function(u){ return !u.op; }).length;
+  el.innerHTML = (inFlow ? lesFlowBannerHtml() : "") + "<h2>Rompecabezas 🧩</h2>" +
+    "<span class='kicker'>" + rvSpel.punten + " " + ct("punten","points") + " · " + over + " " +
+      ct("zetten over","moves left") + "</span>" +
+    "<p class='muted'>" + ct("Bouw echte vormen: kies een stam, kies een uitgang. Elke uitgang kun je één keer gebruiken, ook als hij misgaat.",
+                             "Build real forms: pick a stem, pick an ending. Each ending can be used once, even if it misses.") + "</p>" +
+    "<div class='dsleep-bank'>" + rvSpel.stammen.map(function(sk, i){
+      return "<button type='button' class='dtegel" + (rvSpel.kiesStam === i ? " op" : "") + "' data-rvs='" + i + "'>" +
+        sk.stam + "<span style='opacity:.45'>-</span>" + (sk.wissel ? " <span style='font-size:.75em'>★</span>" : "") + "</button>";
+    }).join("") + "</div>" +
+    "<div class='dsleep-bank' style='margin-top:10px'>" + rvSpel.uitgangen.map(function(u, i){
+      return "<button type='button' class='dtegel" + (u.op ? " weg" : "") + "' data-rvu='" + i + "'" + (u.op ? " tabindex='-1'" : "") + ">" +
+        "<span style='opacity:.45'>-</span>" + u.e + "</button>";
+    }).join("") + "</div>" +
+    "<p class='muted' style='font-size:.82rem; margin-top:8px'>★ " +
+      ct("wisselwerkwoord: dubbele punten","stem-changing verb: double points") + "</p>" +
+    "<div id='rvFeedback'>" + rvFeedbackHtml() + "</div>";
+  lesFlowWireBanner();
+  el.querySelectorAll("[data-rvs]").forEach(function(b){
+    b.onclick = function(){
+      rvSpel.kiesStam = parseInt(b.getAttribute("data-rvs"), 10);
+      renderFunRompecabezas();
+    };
+  });
+  el.querySelectorAll("[data-rvu]").forEach(function(b){
+    b.onclick = function(){
+      var i = parseInt(b.getAttribute("data-rvu"), 10);
+      if(rvSpel.uitgangen[i].op) return;
+      if(rvSpel.kiesStam === null){
+        var fb = document.getElementById("rvFeedback");
+        if(fb) fb.innerHTML = "<div class='feedback bijna'>" + ct("Kies eerst een stam hierboven.","Pick a stem above first.") + "</div>";
+        return;
+      }
+      rvZet(rvSpel.kiesStam, i);
+      renderFunRompecabezas();
+    };
+  });
+}
+
+/* De oude drill blijft staan voor indefinido, perfecto en subjuntivo: het puzzelspel kan die
+   tijden nog niet, want VERBOS bevat alleen de volledige presente en zonder die tabel is er geen
+   scheidsrechter. Wie de drill wil, komt er via de knop op het eindscherm van de puzzel. */
 function renderFunConjugador(){
+  if(!S.rvDrill) return renderFunRompecabezas();
+  return renderFunConjugadorDrill();
+}
+function renderFunConjugadorDrill(){
   var el = document.getElementById("funCard");
   if(!el) return;
   if(!conjRonde) conjugadorNieuweRonde();
@@ -7350,6 +7579,7 @@ function renderConjugadorRondeKlaar(){
     (bonus > 0 ? "<p class='muted'>+" + bonus + " 🫒 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
     (inFlowCj ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
       : "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
+        "<button class='ghost' id='btnRvTerug'>🧩 " + ct("Terug naar het spel","Back to the game") + "</button>"+
         "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>") + naRondeHtml();
   el.innerHTML = html;
   lesFlowWireBanner();
@@ -7358,7 +7588,9 @@ function renderConjugadorRondeKlaar(){
     document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
     return;
   }
-  document.getElementById("btnCjNieuweRonde").onclick = function(){ conjugadorNieuweRonde(); renderFunConjugador(); };
+  document.getElementById("btnCjNieuweRonde").onclick = function(){ conjugadorNieuweRonde(); renderFunConjugadorDrill(); };
+  var brt = document.getElementById("btnRvTerug");
+  if(brt) brt.onclick = function(){ S.rvDrill = 0; persist(); rvNieuweRonde(); renderFunRompecabezas(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
 }
 function checkConjugador(){
@@ -9698,7 +9930,7 @@ var DAGSPELLEN = [
   {v:"ws",      e:"\ud83d\udd0d", n:"Sopa de letras"},
   {v:"kruis",   e:"\u270f\ufe0f", n:"Crucigrama"},
   {v:"audi",    e:"\ud83d\udc42", n:"Escuchar"},
-  {v:"conj",    e:"\ud83c\udfaf", n:"Conjugador"},
+  {v:"conj",    e:"\ud83e\udde9", n:"Rompecabezas"},
   {v:"mem",     e:"\ud83c\udccf", n:"Memory"},
   {v:"corr",    e:"\ud83d\udd75\ufe0f", n:"El Corrector"}
 ];
@@ -12661,8 +12893,9 @@ function oefenItems(){
      s:ct("Het verhaal van Chispa, hoofdstuk voor hoofdstuk.","Chispa's story, chapter by chapter.")},
     {id:"corr", soort:"fun", ico:"🕵️", t:"El Corrector",
      s:ct("Zoek de fout in een Spaanse zin.","Find the mistake in a Spanish sentence.")},
-    {id:"conj", soort:"fun", ico:"🎯", t:"Conjugador",
-     s:ct("Werkwoorden vervoegen, tegen de klok.","Conjugating verbs, against the clock.")},
+    {id:"conj", soort:"fun", ico:"🧩", t:"Rompecabezas",
+     s:ct("Bouw werkwoorden uit stam en uitgang. Hoeveel echte vormen haal je uit zes zetten?",
+          "Build verbs from stem and ending. How many real forms can you make in six moves?")},
     {id:"spiekbrief", soort:"tab", ico:"📐", t:ct("Grammatica","Grammar"),
      s:ct("Regels opzoeken en oefenen, zonder ze uit je hoofd te leren.","Look up the rules and practise them, no memorising.")}
   ];
@@ -21699,6 +21932,11 @@ function wireGramWiz(el){
   b = document.getElementById("gwNaarDrill"); if(b) b.onclick = function(){
     var o = gwOnderwerp(gwSess.id);
     var drill = (o && o.drill) || "presente";
+    /* v21.8: de voordeur van de Conjugador is nu het puzzelspel, en dat kan alleen presente. Deze
+       knop belooft een specifieke tijd, dus die moet in de drill uitkomen en niet in een spel dat
+       die tijd niet kent. Een knop die subjuntivo belooft en je op het presente laat landen is een
+       loze belofte, en dat was precies de reden dat deze doorsteek ooit is gebouwd. */
+    S.rvDrill = 1;
     S.conjTiempo = drill;
     // v19.68: de wizard belooft een tijd, dus de Conjugador moet die tijd ook echt geven. Zit de
     // bijbehorende fase nog op slot, dan gaat hij hier open. De app heeft je zelf op deze knop laten

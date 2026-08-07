@@ -192,6 +192,7 @@ const { chromium } = require('playwright');
   // ---------- 7. de fasekaart op het scherm ----------
   const scherm = await page.evaluate(() => {
     S.conjOpen = 1; S.conjFase = 'er'; S.conjLaatste = { er: [1, 1, 1, 1, 0] };
+    S.rvDrill = 1; // v21.8: deze suite test de drill, niet het nieuwe puzzelspel
     funView = 'conj';
     show('speeltuin');
     renderFun();
