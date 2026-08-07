@@ -1002,7 +1002,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.3";
+var APP_VERSIE = "v21.4";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4437,8 +4437,8 @@ function stevigDrempel(){ return INTERVALS.length - 1; }
    dus per definitie niets opleveren op het scherm dat er voor Stefan het meest
    toe doet.
 
-   Wat nu meetelt: spellen waarin je het Spaans zelf produceert (Dictado typen,
-   Husselen bouwen). Wat niet: herkennen (Sopa, Memory) en oordelen (El
+   Wat nu meetelt: spellen waarin je het Spaans zelf produceert (Vertalen typen).
+   Wat niet: herkennen (Sopa, Memory, tegels leggen) en oordelen (El
    Corrector), want een woord aanwijzen is geen woord kennen.
 
    Het plafond is box 3. Dat is geen willekeurig getal: box 3 is precies waar de
@@ -5142,8 +5142,8 @@ function doneLessonCount(){
    Tweelaags model (Stefans keuze na Babbel-vergelijking): boven de bekende oefeningen hangen we de vier
    officieel geteste CEFR-vaardigheden (Lezen/Luisteren/Schrijven/Spreken), NIET als eigen niveau-claim
    (zie renderCompetenties(): expliciet geen "je zit op A2"-tekst), puur als voortgangsmeter per vaardigheid.
-   S.done is bewust GEDEELD tussen Vertalen/Dictado/Zinnen husselen (zie checkSentence/checkDictado/
-   checkHusselen: alle drie lezen én schrijven S.done) — dat is prima voor de oefeningen zelf (spaced
+   S.done wordt sinds v21.4 alleen nog door Vertalen gezet (zie checkSentence); Dictado en Zinnen
+   husselen zijn opgeheven. Dat is prima voor de oefening zelf (spaced
    repetition werkt track-overstijgend), maar te grof om Luisteren en Schrijven apart te meten. Vandaar
    S.comp: een aparte, additieve boekhouding náást S.done, puur voor deze voortgangsmeting. */
 function compMark(kind, id){
@@ -5173,7 +5173,7 @@ function berekenCompetenties(){
   var toetsjesPct = pct(quizTeller, QUIZZES.length);
   var schrijven = { pct: Math.round((productiePct + toetsjesPct) / 2),
     teller: productieTeller, noemer: schrijfNoemer,
-    bron: [ct("Vertalen","Translating"), ct("Zinnen husselen","Sentence scramble"), ct("Toetsjes","Quizzes"),
+    bron: [ct("Vertalen (typen)","Translating (typing)"), ct("Toetsjes","Quizzes"),
            ct("Conjugador (telt mee als onderliggend bewijs, niet los gemeten)","Conjugador (counts as supporting evidence, not measured separately)")] };
   var spreken = { pct: null, bron: [ct("Nog geen spreekoefening in de app (backlog)","No speaking practice in the app yet (backlog)")] };
   return { lezen: lezen, luisteren: luisteren, schrijven: schrijven, spreken: spreken };
@@ -5821,8 +5821,11 @@ function jergaGezien(){
   return j;
 }
 function jergaHoor(){
+  /* De enige plek waar de browserstem blijft. Van de straattaal-uitdrukkingen bestaat geen opname,
+     dus hier is de keuze niet "ElevenLabs of browser" maar "browser of stilte". Zinnen en het boek
+     hebben wel allemaal een opname en gebruiken hem sinds v21.4 zonder terugval. */
   var j = jergaVandaag();
-  if(typeof dictadoSpreekTTS === "function") dictadoSpreekTTS(j.es, 0.9);
+  if(typeof spreekTTS === "function") spreekTTS(j.es, 0.9);
 }
 // Alles staat er meteen op: uitdrukking, letterlijk, betekenis, voorbeeld. Geen tussenstap, geen knop.
 // v19.79. Stefan over de mini-Chispa die hier stond: "dit wil je niet zien hier. dat kan helemaal
@@ -6257,8 +6260,9 @@ function moeilijkModusHtml(rowId, modus, metTegels){
      zou maken ligt als afleider naast het goede woord. Bij losse woorden en bij de Conjugador
      bestaat die tussentrede niet, dus daar blijft het bij twee knoppen. */
   return "<div class='row' id='"+rowId+"' style='gap:6px; margin:2px 0 10px'>"+
-    "<button type='button' class='"+(modus==="makkelijk"?"primary":"ghost")+" modus-toets' data-m='makkelijk' style='padding:6px 13px; font-size:0.85rem'>🟢 "+ct("Makkelijk","Easy")+"</button>"+
-    (metTegels ? "<button type='button' class='"+(modus==="tegels"?"primary":"ghost")+" modus-toets' data-m='tegels' style='padding:6px 13px; font-size:0.85rem'>🧩 "+ct("Tegels","Tiles")+"</button>" : "")+
+    (metTegels
+      ? "<button type='button' class='"+(modus==="tegels"?"primary":"ghost")+" modus-toets' data-m='tegels' style='padding:6px 13px; font-size:0.85rem'>🧩 "+ct("Tegels","Tiles")+"</button>"
+      : "<button type='button' class='"+(modus==="makkelijk"?"primary":"ghost")+" modus-toets' data-m='makkelijk' style='padding:6px 13px; font-size:0.85rem'>🟢 "+ct("Makkelijk","Easy")+"</button>")+
     "<button type='button' class='"+(modus==="moeilijk"?"primary":"ghost")+" modus-toets' data-m='moeilijk' style='padding:6px 13px; font-size:0.85rem'>🔴 "+ct("Moeilijk","Hard")+"</button>"+
     "</div>";
 }
@@ -6276,6 +6280,33 @@ function geschud(arr){
   return a;
 }
 
+/* ================= BROWSERSTEM (alleen nog voor straattaal) =================
+   Stefan, 7 aug: "ik zou alleen maar die willen gebruiken en niet speechsynthesis." Dat kan overal
+   waar een opname bestaat, en dat is sinds vandaag elke zin en elk boekhoofdstuk. Alleen de jerga
+   heeft er geen, dus staat deze functie er nog voor dat ene geval. */
+function spreekTTSStemKlaar(cb){
+  try{
+    var vs = speechSynthesis.getVoices();
+    if(vs && vs.length){ cb(vs); return; }
+    speechSynthesis.onvoiceschanged = function(){ cb(speechSynthesis.getVoices() || []); };
+    setTimeout(function(){ cb(speechSynthesis.getVoices() || []); }, 400);
+  }catch(e){ cb([]); }
+}
+function spreekTTS(tekst, rate){
+  try{
+    speechSynthesis.cancel();
+    spreekTTSStemKlaar(function(vs){
+      var u = new SpeechSynthesisUtterance(tekst);
+      u.lang = "es-ES";
+      u.rate = rate || 0.9;
+      var es = (vs || []).filter(function(v){ return /^es(-|_|$)/i.test(v.lang || ""); });
+      if(es.length) u.voice = es[0];
+      speechSynthesis.speak(u);
+    });
+    return true;
+  }catch(e){ return false; }
+}
+
 /* ================= VERTALEN ================= */
 function norm(s){
   return s.toLowerCase().trim()
@@ -6289,27 +6320,30 @@ function stripAcc(s){
 var sIdx = null;
 var sModusOverride = null; // (historisch) per-item override; sinds 29 juli wint S.modusKeuze.zin als die gezet is
 function sAdaptiefModus(s){
-  if(!S.done[s.id]) return "makkelijk";
+  /* v21.4: de makkelijke stand was meerkeuze tussen vier hele zinnen, en die kun je vaak raden op
+     lengte alleen. Vervangen door tegels: elk woord moet je aanraken en de fout die je zou maken
+     ligt als afleider naast het goede woord. Een oude opgeslagen keuze "makkelijk" leest hier
+     vanzelf als "tegels", zodat niemand op een verdwenen stand blijft staan. */
+  if(!S.done[s.id]) return "tegels";
   var fout = S.errors["zin:"+s.id];
-  if(fout && fout.count > 0) return "makkelijk";
+  if(fout && fout.count > 0) return "tegels";
   return "moeilijk";
 }
-function sHuidigeModus(s){ return (S.modusKeuze && S.modusKeuze.zin) || sModusOverride || sAdaptiefModus(s); }
-function sMeerkeuzeOpties(s){
-  var pool = SENTENCES.filter(function(x){ return x.id !== s.id && x.lvl === s.lvl; });
-  if(pool.length < 3) pool = SENTENCES.filter(function(x){ return x.id !== s.id; });
-  var geschudPool = geschud(pool), gezien = {}, afleiders = [];
-  for(var i=0;i<geschudPool.length && afleiders.length<3;i++){
-    var es = geschudPool[i].es;
-    if(es !== s.es && !gezien[es]){ gezien[es] = true; afleiders.push(es); }
-  }
-  return geschud([s.es].concat(afleiders));
+function sHuidigeModus(s){
+  var m = (S.modusKeuze && S.modusKeuze.zin) || sModusOverride || sAdaptiefModus(s);
+  return m === "makkelijk" ? "tegels" : m;
 }
 function pickSentence(){
   var allow = {};
   allowedSentIds().forEach(function(id){ allow[id] = true; });
   var pool = SENTENCES.filter(function(x){ return allow[x.id]; });
   if(!pool.length) pool = SENTENCES;
+  /* v21.4: op niveau snijden. Dit zat tot nu toe alleen in dictado; met dictado weg zou de
+     lengteregeling verdwijnen en krijgt een beginner weer negen woorden met een jaartal. */
+  var plafond = dicPlafond();
+  var licht = pool.filter(function(x){ return dicZwaarte(x) <= plafond; });
+  if(licht.length >= 3) pool = licht;
+  else pool = pool.slice().sort(function(a, b){ return dicZwaarte(a) - dicZwaarte(b); }).slice(0, 5);
   // v19.92: in de dagles gaan de zinnen van de les waar je nu aan werkt voor. Anders pakt hij uit alle
   // ontgrendelde lessen door elkaar en komt een les zijn eigen zinnen nooit rond — precies waardoor
   // het ✓-vinkje van een les buiten bereik bleef.
@@ -6350,6 +6384,29 @@ function bestDiff(given, s){
     if(best === null || m < best.m) best = {m:m, len:aTok.length, html:html.join(" ")};
   });
   return best;
+}
+
+/* Zwaarte van een zin, zodat een beginner geen negen woorden met een jaartal krijgt. Woorden wegen
+   het zwaarst, accenten half mee omdat je ze moet horen en zetten, en een jaartal of getal telt als
+   twee woorden extra: "mil novecientos siete" is een begrip maar drie stukken werk.
+   Stond tot v21.3 bij dictado; nu stuurt hij de zinkeuze in Vertalen aan. */
+function dicZwaarte(z){
+  var es = String((z && z.es) || "");
+  if(!es) return 99;
+  var woorden = es.trim().split(/\s+/).length;
+  var accenten = (es.match(/[áéíóúüñ]/gi) || []).length;
+  var getal = (/\d/.test(es) || /\b(mil|cientos|ciento)\b/i.test(es)) ? 2 : 0;
+  return woorden + accenten * 0.5 + getal;
+}
+/* Het plafond groeit mee met wat je echt getypt hebt, niet met wat je gespeeld hebt. Tegels leggen
+   telt dus niet mee: dat is herkennen. S.getypt erft de oude dictado-teller, zodat wie al aan het
+   oefenen was zijn plafond niet kwijtraakt. */
+function getyptN(){
+  if(typeof S.getypt !== "number") S.getypt = S.dicGetypt || 0;
+  return S.getypt;
+}
+function dicPlafond(){
+  return Math.min(30, 6 + getyptN() * 0.5);
 }
 
 /* ================= TEGELS BIJ VERTALEN (v21.3) =================
@@ -6461,13 +6518,6 @@ function renderSentenceBody(){
   if(modus === "tegels"){
     if(!zTegel || zTegel.id !== s.id) zinTegelsZet(s);
     html += zinTegelsHtml() + "<input type='hidden' id='sInput' value=''>" + "<div id='sFeedback'></div>";
-  } else if(modus === "makkelijk"){
-    var opties = sMeerkeuzeOpties(s);
-    html += "<div style='display:flex; flex-direction:column; gap:8px' id='sOpties'>"+
-      opties.map(function(o){ return "<button type='button' class='ghost sOptie' data-v=\""+o.replace(/"/g,"&quot;")+"\" style='text-align:left'>"+o+"</button>"; }).join("")+
-      "</div>"+
-      "<input type='hidden' id='sInput' value=''>"+
-      "<div id='sFeedback'></div>";
   } else {
     html += "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='"+ct("Typ de Spaanse zin...","Type the Spanish sentence...")+"'>"+
       accentToetsenHtml("sAccent")+
@@ -6478,14 +6528,6 @@ function renderSentenceBody(){
   wireMoeilijkToggle("sModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = m; sModusOverride = m; zTegel = null; persist(); renderSentenceBody(); });
   if(modus === "tegels"){
     zinTegelsWire(el);
-  } else if(modus === "makkelijk"){
-    document.querySelectorAll("#sOpties .sOptie").forEach(function(b){
-      b.onclick = function(){
-        document.querySelectorAll("#sOpties .sOptie").forEach(function(x){ x.disabled = true; });
-        document.getElementById("sInput").value = b.getAttribute("data-v");
-        checkSentence();
-      };
-    });
   } else {
     wireAccentToetsen("sAccent", "sInput");
     var inp = document.getElementById("sInput");
@@ -6510,10 +6552,10 @@ function checkSentence(){
        tegels zitten ertussen (elk woord moet je aanraken, met afleiders ernaast), zelf typen is
        het enige echte productiebewijs. Daarom telt alleen typen mee voor je schrijfvaardigheid:
        een zin leggen bewijst dat je hem herkent, niet dat je hem kunt maken. */
-    var xpExact = modus === "makkelijk" ? 2 : (modus === "tegels" ? 3 : 5);
+    var xpExact = modus === "tegels" ? 3 : 5;
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" "+xpw()+")</div>";
     S.done[s.id] = true; gehaald = true; addXP(xpExact);
-    if(modus === "moeilijk") compMark("schrijven", s.id);
+    if(modus === "moeilijk"){ compMark("schrijven", s.id); S.getypt = getyptN() + 1; }
     trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
@@ -6585,83 +6627,13 @@ function checkSentence(){
   };
 }
 
-/* ================= DICTADO (luister & typ, browser text-to-speech) ================= */
-var dIdx = null;
-var DIC_RATE_NORMAL = 0.82, DIC_RATE_LENTO = 0.55, DIC_RONDE_LEN = 8;
-var dRonde = null; // {n, lengte, goed, streak, besteStreak, beloond}
-var dGokt = false; // al een tapa ingezet op de huidige zin?
-function dictadoStemKlaar(cb){
-  if(!window.speechSynthesis){ cb(null); return; }
-  var vs = speechSynthesis.getVoices();
-  if(vs && vs.length){ cb(vs); return; }
-  var deed = false;
-  speechSynthesis.onvoiceschanged = function(){ if(deed) return; deed = true; cb(speechSynthesis.getVoices()); };
-  setTimeout(function(){ if(deed) return; deed = true; cb(speechSynthesis.getVoices()); }, 600);
-}
-// Kwaliteit van browser-stemmen loopt sterk uiteen. Monica (es-ES) is getest als verreweg de beste
-// klinkende stem, dus die krijgt voorrang; anders scoren we op bekende signalen van betere stemmen
-// zodat we niet zomaar de eerste/meest robotachtige es-stem pakken.
-function dictadoStemScore(v){
-  var s = 0;
-  if(/google/i.test(v.name)) s += 3;
-  if(/enhanced|premium|natural|neural|wavenet/i.test(v.name)) s += 4;
-  if(v.lang && v.lang.toLowerCase() === "es-es") s += 2;
-  if(v.localService === false) s += 1;
-  return s;
-}
-function dictadoEsStemmen(vs){
-  return (vs || []).filter(function(v){ return /^es/i.test(v.lang); });
-}
-function dictadoBesteStem(esStemmen){
-  if(!esStemmen.length) return null;
-  // macOS/Safari noemt de stem "Mónica" (mét accent) — niet-geankerd en accent-tolerant zoeken,
-  // anders mist de match en valt hij terug op de heuristiek i.p.v. de gewenste stem.
-  var monica = esStemmen.filter(function(v){ return /\bm[oó]nica\b/i.test(v.name); })[0];
-  if(monica) return monica;
-  return esStemmen.slice().sort(function(a,b){ return dictadoStemScore(b) - dictadoStemScore(a); })[0];
-}
-// Web Speech API blijft de fallback: robuust maar robotachtig (afhankelijk van OS/browser-stemmen).
-function dictadoSpreekTTS(tekst, rate){
-  if(!window.speechSynthesis) return false;
-  try{
-    speechSynthesis.cancel();
-    dictadoStemKlaar(function(vs){
-      var u = new SpeechSynthesisUtterance(tekst);
-      u.lang = "es-ES"; u.rate = rate || DIC_RATE_NORMAL; u.pitch = 1;
-      var v = dictadoBesteStem(dictadoEsStemmen(vs));
-      if(v) u.voice = v;
-      speechSynthesis.speak(u);
-    });
-    return true;
-  }catch(e){ return false; }
-}
-// Eerste keus: echte, voorgegenereerde audio (audio/dictado/<id>.mp3, via ElevenLabs — zie
-// tools/generate-dictado-audio.js). Klinkt op elk apparaat hetzelfde en veel vloeiender dan
-// browser-TTS. Bestaat een bestand nog niet (bv. net toegevoegde zin), dan valt dit terug op
-// dictadoSpreekTTS() zonder dat de gebruiker iets van de fallback merkt.
-var dictadoAudioEl = null;
-function dictadoSpreek(zin, rate){
-  try{
-    if(dictadoAudioEl){ dictadoAudioEl.pause(); }
-    var a = new Audio("audio/dictado/" + zin.id + ".mp3");
-    dictadoAudioEl = a;
-    a.playbackRate = rate || DIC_RATE_NORMAL;
-    var teruggevallen = false;
-    function valTerug(){ if(teruggevallen) return; teruggevallen = true; dictadoSpreekTTS(zin.es, rate); }
-    a.addEventListener("error", valTerug);
-    var p = a.play();
-    if(p && p.catch) p.catch(valTerug);
-    return true;
-  }catch(e){ return dictadoSpreekTTS(zin.es, rate); }
-}
-/* ================= DICTADO - SLEEPVARIANT (v20.9) =================
+/* ================= TEGELS: BROKKEN EN AFLEIDERS =================
    Woordtegels zijn geen modus die je kunt kiezen, maar een redding: je komt er alleen in
    na een misser of als je je eerste drie zinnen nog moet doen, en je gaat er altijd uit
    via het typen van diezelfde zin. Anders wordt de makkelijke stand de vaste stand en
    leer je niets, precies Stefans kritiek op de woordbank van Duolingo.
    Tweede maatregel daartegen: de afleiders komen uit de conceptmachine, dus de fout die
    je zou maken ligt als tegel naast het goede woord. Eliminatie werkt dan niet. */
-var DIC_SLEEP_EERSTE = 3;   // de eerste drie zinnen ooit beginnen met tegels
 var DIC_SLEEP_AFLEIDERS = 3;
 
 // Brokken blijven bij elkaar: los "me" en "gusta" slepen traint losse woorden, "me gusta"
@@ -6740,372 +6712,6 @@ function dicSleepAfleiders(tegels){
    7 aug: "de zinnen aanpassen a/h niveau van de leerling"). Woorden wegen het zwaarst, accenten
    half mee omdat je ze moet horen en zetten, en een jaartal of getal telt als twee woorden extra:
    "mil novecientos siete" is één begrip maar drie stukken werk. */
-function dicZwaarte(z){
-  var es = String((z && z.es) || "");
-  if(!es) return 99;
-  var woorden = es.trim().split(/\s+/).length;
-  var accenten = (es.match(/[áéíóúüñ]/gi) || []).length;
-  var getal = (/\d/.test(es) || /\b(mil|cientos|ciento)\b/i.test(es)) ? 2 : 0;
-  return woorden + accenten * 0.5 + getal;
-}
-/* Het plafond groeit mee met wat je écht getypt hebt, niet met wat je gespeeld hebt. Bij nul staat
-   het op zes, dus korte zinnen; elke getypte zin schuift het een half punt op. */
-function dicPlafond(){
-  return Math.min(30, 6 + (S.dicGetypt || 0) * 0.5);
-}
-// "typen" of "tegels". Niets gekozen: je eerste drie zinnen krijgen tegels, daarna typen.
-function dicModusNu(){
-  if(S.dicModus === "typen" || S.dicModus === "tegels") return S.dicModus;
-  return (S.dicGetypt || 0) < DIC_SLEEP_EERSTE ? "tegels" : "typen";
-}
-function dicModusHtml(){
-  var m = dicModusNu();
-  return "<div class='row' id='dModus' style='gap:6px; margin-top:8px'>" +
-    "<button type='button' class='ghost dmod" + (m === "typen" ? " aan" : "") + "' data-dm='typen'>⌨️ " +
-      ct("Typen","Type") + "</button>" +
-    "<button type='button' class='ghost dmod" + (m === "tegels" ? " aan" : "") + "' data-dm='tegels'>🧩 " +
-      ct("Tegels","Tiles") + "</button>" +
-    "<span class='muted' style='font-size:.82rem; align-self:center'>" +
-      (m === "typen" ? ct("5 taco's","5 tacos") : ct("1 taco, telt niet mee voor je niveau","1 taco, doesn't count towards your level")) +
-    "</span></div>";
-}
-function wireDicModus(el, zin){
-  var rij = el.querySelector("#dModus");
-  if(!rij) return;
-  rij.querySelectorAll(".dmod").forEach(function(b){
-    b.onclick = function(){
-      var m = b.getAttribute("data-dm");
-      if(m === dicModusNu()) return;
-      S.dicModus = m; persist();
-      if(m === "tegels"){ dSleepGedaanId = null; dicSleepZet(zin, false); renderFunDictadoSleep(); }
-      else { dSleep = null; dSleepGedaanId = null; renderFunDictado(); }
-    };
-  });
-}
-function dicVolgendeKnopHtml(){
-  return "<div class='row' style='margin-top:8px'><button class='primary' id='btnDicNext'>" +
-    ct("Volgende zin →","Next sentence →") + "</button></div>";
-}
-function wireDicVolgende(){
-  var b = document.getElementById("btnDicNext");
-  if(b) b.onclick = function(){ dictadoVolgende(); };
-}
-
-var dSleep = null;
-var dSleepGedaanId = null;   // deze zin heeft zijn tegels gehad; nu is typen aan de beurt
-function dicSleepZet(zin, naFout){
-  var tegels = dicSleepTegels(zin.es);
-  var afl = dicSleepAfleiders(tegels);
-  var bank = geschud(tegels.map(function(w){ return {woord:w, cid:"", echt:true}; })
-             .concat(afl.map(function(a){ return {woord:a.woord, cid:a.cid, echt:false}; })));
-  dSleep = {zin:zin, bank:bank, rij:[], naFout:!!naFout, pogingen:0, klaar:false};
-  S.dicSleepAan = (S.dicSleepAan || 0) + 1; persist();
-}
-function dicSleepUit(){
-  if(dSleep && dSleep.zin) dSleepGedaanId = dSleep.zin.id;
-  dSleep = null;
-}
-function dicSleepNodig(zin){
-  // Nooit twee keer achter elkaar voor dezelfde zin: de tegels geven je altijd terug aan het typen,
-  // anders sta je in een lus waar je nooit een letter tikt.
-  if(dSleepGedaanId && zin && dSleepGedaanId === zin.id) return false;
-  return dicModusNu() === "tegels";
-}
-function dicSleepZinnetje(){
-  return dSleep.rij.map(function(i){ return dSleep.bank[i].woord; }).join(" ");
-}
-function renderFunDictadoSleep(){
-  var el = document.getElementById("funCard");
-  if(!el || !dSleep) return;
-  var zin = dSleep.zin;
-  var inFlow = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
-  var rijHtml = dSleep.rij.map(function(i, pos){
-    return "<button type='button' class='dtegel op' data-drij='" + pos + "'>" + dSleep.bank[i].woord + "</button>";
-  }).join("");
-  var bankHtml = dSleep.bank.map(function(t, i){
-    var gebruikt = dSleep.rij.indexOf(i) !== -1;
-    return "<button type='button' class='dtegel" + (gebruikt ? " weg" : "") + "' data-dbank='" + i + "'" +
-           (gebruikt ? " tabindex='-1'" : "") + ">" + t.woord + "</button>";
-  }).join("");
-  el.innerHTML = (inFlow ? lesFlowBannerHtml() : "") + "<h2>Dictado 🔊</h2>" +
-    "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>" +
-    "<p class='muted'>" + (dSleep.naFout
-      ? ct("Even makkelijker: luister en tik de woorden in de goede volgorde.",
-           "Let's make it easier: listen and tap the words in the right order.")
-      : ct("Luister en tik de woorden in de goede volgorde. Er liggen woorden bij die er niet in horen.",
-           "Listen and tap the words in the right order. Some words don't belong.")) + "</p>" +
-    "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>" +
-    "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>" +
-    (dSleep.naFout ? "" : dicModusHtml()) +
-    "<div class='dsleep-rij" + (dSleep.rij.length ? "" : " leeg") + "' id='dSleepRij' data-leeg='" +
-      ct("Tik hieronder een woord aan","Tap a word below") + "'>" + rijHtml + "</div>" +
-    "<div class='dsleep-bank' id='dSleepBank'>" + bankHtml + "</div>" +
-    "<div class='row' style='margin-top:10px'><button class='primary' id='btnDSleepCheck'>" +
-      ct("Controleer","Check") + "</button>" +
-    "<button class='ghost' id='btnDSleepWis'>" + ct("Wissen","Clear") + "</button></div>" +
-    "<div id='dFeedback'></div>";
-  lesFlowWireBanner();
-  document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(zin, DIC_RATE_NORMAL); };
-  document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(zin, DIC_RATE_LENTO); };
-  document.getElementById("btnDSleepCheck").onclick = dicSleepCheck;
-  document.getElementById("btnDSleepWis").onclick = function(){ dSleep.rij = []; renderFunDictadoSleep(); };
-  if(!dSleep.naFout) wireDicModus(el, zin);
-  el.querySelectorAll("[data-dbank]").forEach(function(b){
-    b.onclick = function(){
-      var i = parseInt(b.getAttribute("data-dbank"), 10);
-      if(dSleep.rij.indexOf(i) !== -1) return;
-      dSleep.rij.push(i); renderFunDictadoSleep();
-    };
-  });
-  el.querySelectorAll("[data-drij]").forEach(function(b){
-    b.onclick = function(){
-      var pos = parseInt(b.getAttribute("data-drij"), 10);
-      dSleep.rij.splice(pos, 1); renderFunDictadoSleep();
-    };
-  });
-  if(!dSleep.pogingen) setTimeout(function(){ dictadoSpreek(zin, DIC_RATE_NORMAL); }, 250);
-}
-function dicSleepCheck(){
-  if(!dSleep || !dSleep.rij.length) return;
-  var zin = dSleep.zin;
-  var gegeven = norm(dicSleepZinnetje());
-  var goeden = [norm(zin.es)].concat((zin.alt || []).map(norm));
-  var raak = goeden.indexOf(gegeven) !== -1 || goeden.map(stripAcc).indexOf(stripAcc(gegeven)) !== -1;
-  var fb = document.getElementById("dFeedback");
-  dSleep.pogingen++;
-  if(raak){
-    dSleep.klaar = true;
-    S.dicSleepGoed = (S.dicSleepGoed || 0) + 1;
-    addXP(1); persist();
-    var kop = "<div class='feedback ok'>¡Eso es! ✓ (+1 " + xpw(1) + ")</div>";
-    if(dSleep.naFout){
-      // Je vroeg de tegels niet, ze kwamen omdat je net miste. Dan is het punt dat je alsnog over
-      // de lat komt die je net niet haalde, dus gaat deze zin terug naar het typen.
-      fb.innerHTML = kop +
-        "<p class='muted'>" + ct("En nu dezelfde zin zelf typen. Dat is waar het om ging.",
-                                 "Now type that same sentence yourself. That was the point.") + "</p>" +
-        "<div class='row' style='margin-top:6px'><button class='primary' id='btnDSleepTyp'>" +
-        ct("Nu zelf typen →", "Now type it →") + "</button></div>";
-      var bt = document.getElementById("btnDSleepTyp");
-      if(bt) bt.onclick = function(){ dicSleepUit(); renderFunDictado(); };
-      return;
-    }
-    // Zelf voor tegels gekozen: dan is de zin klaar. Hij telt mee voor je rondescore, maar niet
-    // voor je niveau, en levert 1 taco op in plaats van 5. Die scheve verhouding is de functie.
-    dRonde.goed++; dRonde.streak++;
-    if(dRonde.streak > dRonde.besteStreak) dRonde.besteStreak = dRonde.streak;
-    persist();
-    var kickerEl2 = document.getElementById("dKicker");
-    if(kickerEl2) kickerEl2.textContent = dictadoKickerTekst();
-    fb.innerHTML = kop + "<div class='uitleg'>" + ct("Vertaling: ","Translation: ") + zinPrompt(zin) + "</div>" +
-      dicVolgendeKnopHtml();
-    wireDicVolgende();
-    return;
-  }
-  // Een afleider in de rij is een echte conceptfout en gaat terug naar doosje nul.
-  var misTegels = dSleep.rij.filter(function(i){ return !dSleep.bank[i].echt; });
-  misTegels.forEach(function(i){ if(dSleep.bank[i].cid) gramBij(dSleep.bank[i].cid, false); });
-  if(misTegels.length) persist();
-  if(dSleep.pogingen >= 2){
-    dSleep.klaar = true;
-    logError(zin.id, "dictado", zin.tag, dicSleepZinnetje());
-    dRonde.streak = 0;
-    fb.innerHTML = "<div class='feedback fout'>" + ct("Nog niet. Zo hoort het: ", "Not yet. This is it: ") +
-      "<b>" + zin.es + "</b></div>" + dicVolgendeKnopHtml();
-    wireDicVolgende();
-    return;
-  }
-  fb.innerHTML = "<div class='feedback bijna'>" +
-    (misTegels.length
-      ? ct("Er zit een woord bij dat er niet in hoort. Luister nog eens.",
-           "There's a word in there that doesn't belong. Listen again.")
-      : ct("De woorden kloppen, de volgorde nog niet. Luister nog eens.",
-           "Right words, wrong order. Listen again.")) + "</div>";
-  dictadoSpreek(zin, DIC_RATE_LENTO);
-}
-function pickDictado(){
-  var allow = {};
-  allowedSentIds().forEach(function(id){ allow[id] = true; });
-  var pool = SENTENCES.filter(function(x){ return allow[x.id]; });
-  if(!pool.length) pool = SENTENCES;
-  // Op niveau snijden. Blijft er te weinig over, dan pakken we gewoon de lichtste vijf: liever een
-  // te makkelijke zin dan een lege oefening.
-  var plafond = dicPlafond();
-  var licht = pool.filter(function(x){ return dicZwaarte(x) <= plafond; });
-  if(licht.length >= 3) pool = licht;
-  else pool = pool.slice().sort(function(a,b){ return dicZwaarte(a) - dicZwaarte(b); }).slice(0, 5);
-  var fouten = pool.filter(function(x){ var e = S.errors["dictado:"+x.id]; return e && e.count > 0; });
-  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
-  var gedaan = pool.filter(function(x){ return !!S.done[x.id]; });
-  var use = gedaan.length >= 4 ? gedaan : pool;
-  return use[Math.floor(Math.random()*use.length)];
-}
-function dictadoNieuweRonde(){
-  dRonde = {n:0, lengte:DIC_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
-  dIdx = pickDictado();
-  dGokt = false;
-  dicSleepUit();
-  dSleepGedaanId = null;
-}
-function dictadoKickerTekst(){
-  return ct("Zin ","Sentence ") + (dRonde.n+1) + "/" + dRonde.lengte + (dRonde.streak > 0 ? " · 🔥 " + dRonde.streak : "");
-}
-function dictadoVolgende(){
-  dRonde.n++;
-  dGokt = false;
-  dicSleepUit();
-  dSleepGedaanId = null;
-  dIdx = dRonde.n < dRonde.lengte ? pickDictado() : null;
-  renderFunDictado();
-}
-function renderFunDictado(){
-  var el = document.getElementById("funCard");
-  if(!el) return;
-  if(!dRonde) dictadoNieuweRonde();
-  if(dRonde.n >= dRonde.lengte){ renderDictadoRondeKlaar(); return; }
-  if(!dIdx) dIdx = pickDictado();
-  var s = dIdx;
-  // Tegels: je eigen keuze, of automatisch bij je eerste drie zinnen. Nooit twee keer dezelfde zin.
-  if(!dSleep && dicSleepNodig(s)){ dicSleepZet(s, false); }
-  if(dSleep && dSleep.zin && dSleep.zin.id === s.id && !dSleep.klaar){ renderFunDictadoSleep(); return; }
-  var inFlowDicR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
-  var html = (inFlowDicR ? lesFlowBannerHtml() : "")+"<h2>Dictado 🔊</h2>"+
-    "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>"+
-    "<p class='muted'>" + fx("dicIntro") + "</p>"+
-    "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>"+
-    "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>"+
-    dicModusHtml()+
-    "<input type='text' id='dInput' autocomplete='off' autocapitalize='off' placeholder='"+fx("dicPlaceholder")+"'>"+
-    accentToetsenHtml("dAccent")+
-    "<div class='row'><button class='primary' id='btnDicCheck'>" + ct("Controleer","Check") + "</button></div>"+
-    "<div id='dFeedback'></div>";
-  el.innerHTML = html;
-  lesFlowWireBanner();
-  wireAccentToetsen("dAccent", "dInput");
-  var inp = document.getElementById("dInput");
-  inp.addEventListener("keydown", function(e){ if(e.key==="Enter") checkDictado(); });
-  document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(s, DIC_RATE_NORMAL); };
-  document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(s, DIC_RATE_LENTO); };
-  document.getElementById("btnDicCheck").onclick = checkDictado;
-  wireDicModus(el, s);
-  inp.focus();
-  setTimeout(function(){ dictadoSpreek(s, DIC_RATE_NORMAL); }, 250);
-}
-function renderDictadoRondeKlaar(){
-  var el = document.getElementById("funCard");
-  if(!el) return;
-  var perfect = dRonde.goed === dRonde.lengte;
-  var goedGenoeg = dRonde.goed >= Math.ceil(dRonde.lengte * 0.75);
-  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
-  if(bonus > 0 && !dRonde.beloond){
-    S.tapas = (S.tapas||0) + bonus; dRonde.beloond = true; persist();
-    if(perfect) confetti(["🌮","🔥","🎉"], 24);
-  }
-  var inFlowDic = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
-  if(inFlowDic){ S.lesFlowSpel.dictado = today(); persist(); }
-  var html = (inFlowDic ? lesFlowBannerHtml() : "")+"<h2>Dictado 🔊</h2>"+
-    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
-      ct("Ronde klaar: ","Round done: ") + dRonde.goed + "/" + dRonde.lengte +
-      (dRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + dRonde.besteStreak : "") +
-    "</div>"+
-    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🫒 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
-    (inFlowDic ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
-      : "<div class='row'><button class='primary' id='btnDicNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
-  el.innerHTML = html;
-  lesFlowWireBanner();
-  if(inFlowDic){
-    document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
-    return;
-  }
-  document.getElementById("btnDicNieuweRonde").onclick = function(){ dictadoNieuweRonde(); renderFunDictado(); };
-  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
-}
-function dictadoGok(){
-  if((S.tapas||0) < 1 || dGokt) return;
-  S.tapas--; dGokt = true; persist();
-  var fb = document.getElementById("dFeedback");
-  if(fb) fb.innerHTML = "<p class='muted'>🎲 " + ct("Herkansing! Nog een keer luisteren (nu lento) en typen.","Retry! Listen once more (now lento) and type.") + "</p>";
-  var ii = document.getElementById("dInput");
-  if(ii){ ii.value=""; ii.focus(); }
-  dictadoSpreek(dIdx, DIC_RATE_LENTO);
-}
-function checkDictado(){
-  var s = dIdx;
-  var inpEl = document.getElementById("dInput");
-  var given = norm((inpEl && inpEl.value) || "");
-  if(!given) return;
-  var misteHelemaal = false;
-  // Losse teller van echt getypte dictados. Hij stuurt de eerste-drie-regel aan en hij is de
-  // eerlijke noemer: sleepwerk mag dit getal nooit optillen.
-  S.dicGetypt = (S.dicGetypt || 0) + 1;
-  var fb = document.getElementById("dFeedback");
-  var answers = [norm(s.es)].concat((s.alt||[]).map(norm));
-  var exact = answers.indexOf(given) !== -1;
-  var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
-  var goedBeantwoord = exact || loose;
-  var html = "";
-  if(exact){
-    html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 "+xpw()+")</div>";
-    S.done[s.id] = true; addXP(5); compMark("schrijven", s.id); trackPoging(false);
-    spelZinSrs(s);
-  } else if(loose){
-    html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
-    S.done[s.id] = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
-    spelZinSrs(s);
-  } else {
-    var d = bestDiff(given, s);
-    if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
-      html = "<div class='feedback bijna'>"+ct("Zó dichtbij! Dit hoorde je: ","So close! What you should've heard: ")+"<b>"+d.html+"</b> (+2 "+xpw()+")</div>";
-      addXP(2);
-      logError(s.id, "dictado", s.tag, given);
-    } else {
-      html = "<div class='feedback fout'>"+ct("Nog niet. Je hoorde: ","Not yet. You heard: ")+"<b>"+d.html+"</b></div>";
-      logError(s.id, "dictado", s.tag, given); addXP(1);
-      misteHelemaal = true;
-    }
-  }
-  // ronde-boekhouding: een herkansing (dGokt) telt niet nogmaals mee voor de rondescore/streak,
-  // die is al bij de eerste (foute) poging verwerkt — maar wint wél apart tapas terug bij succes.
-  if(goedBeantwoord && dGokt){
-    S.tapas = (S.tapas||0) + 2; persist();
-    html += "<div class='feedback ok' style='margin-top:4px'>🎲 " + ct("Gewonnen! +2 🫒 tapas terug","Won! +2 🫒 tapas back") + "</div>";
-  } else if(goedBeantwoord && !dGokt){
-    dRonde.goed++; dRonde.streak++;
-    if(dRonde.streak > dRonde.besteStreak) dRonde.besteStreak = dRonde.streak;
-    if(dRonde.streak % 3 === 0){
-      S.tapas = (S.tapas||0) + 1; persist();
-      html += "<div class='feedback ok' style='margin-top:4px'>🔥 " + dRonde.streak + ct(" op een rij! +1 🫒 tapa"," in a row! +1 🫒 tapa") + "</div>";
-    }
-  } else if(!goedBeantwoord && !dGokt){
-    dRonde.streak = 0;
-  }
-  // live bijwerken zonder de kaart te herbouwen (anders verdwijnt het invoerveld, zie v19.6-fix)
-  var kickerEl = document.getElementById("dKicker");
-  if(kickerEl) kickerEl.textContent = dictadoKickerTekst();
-  html += "<div class='uitleg'>"+ct("Vertaling: ","Translation: ")+zinPrompt(s)+"</div>";
-  // geen aparte knoppenrij hier: Luister normal/lento, Controleer en Volgende zin staan al vast
-  // in het scherm erboven, dus opnieuw tonen is overbodig (feedback Stefan) — behalve de gok-knop,
-  // die is nieuw en dus niet elders al zichtbaar.
-  if(!goedBeantwoord && !dGokt && (S.tapas||0) >= 1){
-    html += "<div class='row' style='margin-top:6px'><button class='ghost' id='btnDicGok'>🎲 " + ct("Zet 1 🫒 in voor een herkansing","Stake 1 🫒 for a retry") + "</button></div>";
-  }
-  // Alleen na een echte misser, niet na "bijna": dan is tegels leggen te makkelijk en leer je niets.
-  if(misteHelemaal && !(dSleep && dSleep.zin && dSleep.zin.id === s.id)){
-    html += "<div class='row' style='margin-top:6px'><button class='primary' id='btnDicSleep'>🧩 " +
-      ct("Zet de woorden op volgorde","Put the words in order") + "</button></div>";
-  }
-  html += dicVolgendeKnopHtml();
-  fb.innerHTML = html;
-  persist();
-  checkLessonComplete();
-  var bg = document.getElementById("btnDicGok");
-  if(bg) bg.onclick = dictadoGok;
-  var bs = document.getElementById("btnDicSleep");
-  if(bs) bs.onclick = function(){ dicSleepZet(s, true); renderFunDictadoSleep(); };
-  wireDicVolgende();
-}
-
 /* ================= CONJUGADOR (sprint: vervoeg het werkwoord, presente) ================= */
 var VERBOS = [
   // regelmatige voorbeelden (-ar/-er/-ir)
@@ -7727,171 +7333,6 @@ function checkConjugador(){
   // opnieuw renderen zodat de gekozen optie gemarkeerd staat en de doorgaan-knop opvalt
   if(document.getElementById("cjBody")) renderConjugadorBody();
 }
-
-/* ================= ZINNEN HUSSELEN (woordvolgorde-scramble met eigen SENTENCES) ================= */
-var HU_RONDE_LEN = 8;
-var huIdx = null;      // huidige zin (SENTENCES-item)
-var huRonde = null;    // {n, lengte, goed, streak, besteStreak, beloond}
-var huBank = null;     // [{w, used}] geschudde woorden
-var huGebouwd = null;  // [index in huBank], in de volgorde die de speler tikte
-function husselenTokens(zin){ return zin.split(/\s+/); }
-function shuffleArr(arr){
-  var a = arr.slice();
-  for(var i=a.length-1; i>0; i--){ var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
-  return a;
-}
-function pickHusselen(){
-  var allow = {};
-  allowedSentIds().forEach(function(id){ allow[id] = true; });
-  var pool = SENTENCES.filter(function(x){ return allow[x.id] && husselenTokens(x.es).length >= 3; });
-  if(!pool.length) pool = SENTENCES.filter(function(x){ return husselenTokens(x.es).length >= 3; });
-  if(!pool.length) pool = SENTENCES;
-  var fouten = pool.filter(function(x){ var e = S.errors["husselen:"+x.id]; return e && e.count > 0; });
-  if(fouten.length && Math.random() < 0.35){ return fouten[Math.floor(Math.random()*fouten.length)]; }
-  var gedaan = pool.filter(function(x){ return !!S.done[x.id]; });
-  var use = gedaan.length >= 4 ? gedaan : pool;
-  return use[Math.floor(Math.random()*use.length)];
-}
-function husselenNieuweOpgave(){
-  huIdx = pickHusselen();
-  var tokens = husselenTokens(huIdx.es);
-  var geschud = shuffleArr(tokens), pogingen = 0;
-  // niet toevallig de oorspronkelijke volgorde teruggeven
-  while(tokens.length > 1 && geschud.join(" ") === tokens.join(" ") && pogingen < 10){ geschud = shuffleArr(tokens); pogingen++; }
-  huBank = geschud.map(function(w){ return {w:w, used:false}; });
-  huGebouwd = [];
-}
-function husselenNieuweRonde(){
-  huRonde = {n:0, lengte:HU_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
-  husselenNieuweOpgave();
-}
-function husselenKickerTekst(){
-  return ct("Zin ","Sentence ") + (huRonde.n+1) + "/" + huRonde.lengte + (huRonde.streak > 0 ? " · 🔥 " + huRonde.streak : "");
-}
-function husselenVolgende(){
-  huRonde.n++;
-  if(huRonde.n < huRonde.lengte) husselenNieuweOpgave(); else huIdx = null;
-  renderFunHusselen();
-}
-function renderFunHusselen(){
-  var el = document.getElementById("funCard");
-  if(!el) return;
-  if(!huRonde) husselenNieuweRonde();
-  if(huRonde.n >= huRonde.lengte){ renderHusselenRondeKlaar(); return; }
-  if(!huIdx) husselenNieuweOpgave();
-  var s = huIdx;
-  var inFlowHuR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "hu");
-  var html = (inFlowHuR ? lesFlowBannerHtml() : "")+"<h2>" + fx("huT") + " 🧩</h2>"+
-    "<span class='kicker' id='huKicker'>" + husselenKickerTekst() + "</span>"+
-    "<p class='muted'>" + fx("huIntro") + "</p>"+
-    "<p class='big' style='margin:8px 0; font-size:1.1rem'>" + zinPrompt(s) + "</p>"+
-    "<div id='huGebouwdRij' style='min-height:44px; border:1px dashed #999; border-radius:8px; padding:6px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:6px'>"+
-      (huGebouwd.length ? huGebouwd.map(function(idx,pos){ return "<button class='ghost hu-tile' data-pos='"+pos+"' data-mode='gebouwd'>"+huBank[idx].w+"</button>"; }).join("") :
-        "<span class='muted' style='font-size:.85rem'>" + fx("huLeeg") + "</span>")+
-    "</div>"+
-    "<div id='huBankRij' style='display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px'>"+
-      huBank.map(function(t,idx){ return t.used ? "" : "<button class='ghost hu-tile' data-idx='"+idx+"' data-mode='bank'>"+t.w+"</button>"; }).join("")+
-    "</div>"+
-    "<div class='row'><button class='primary' id='btnHuCheck'"+(huGebouwd.length===huBank.length?"":" disabled")+">" + ct("Controleer","Check") + "</button>"+
-    "<button class='ghost' id='btnHuReset'>" + ct("Opnieuw","Reset") + "</button>"+
-    "<button class='ghost' id='btnHuSkip'>" + fx("huSkip") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>"+
-    "<div id='huFeedback'></div>";
-  el.innerHTML = html;
-  lesFlowWireBanner();
-  el.querySelectorAll(".hu-tile").forEach(function(b){
-    b.onclick = function(){
-      if(b.getAttribute("data-mode") === "bank"){
-        var idx = +b.getAttribute("data-idx");
-        huBank[idx].used = true;
-        huGebouwd.push(idx);
-      } else {
-        var pos = +b.getAttribute("data-pos");
-        var idx2 = huGebouwd[pos];
-        huBank[idx2].used = false;
-        huGebouwd.splice(pos, 1);
-      }
-      renderFunHusselen();
-    };
-  });
-  var bc = document.getElementById("btnHuCheck");
-  if(bc) bc.onclick = checkHusselen;
-  document.getElementById("btnHuReset").onclick = function(){
-    huGebouwd.forEach(function(idx){ huBank[idx].used = false; });
-    huGebouwd = [];
-    renderFunHusselen();
-  };
-  document.getElementById("btnHuSkip").onclick = function(){ husselenVolgende(); };
-  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
-}
-function renderHusselenRondeKlaar(){
-  var el = document.getElementById("funCard");
-  if(!el) return;
-  var perfect = huRonde.goed === huRonde.lengte;
-  var goedGenoeg = huRonde.goed >= Math.ceil(huRonde.lengte * 0.75);
-  var bonus = perfect ? 3 : (goedGenoeg ? 1 : 0);
-  if(bonus > 0 && !huRonde.beloond){
-    S.tapas = (S.tapas||0) + bonus; huRonde.beloond = true; persist();
-    if(perfect) confetti(["🧩","🔥","🎉"], 24);
-  }
-  var inFlowHu = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "hu");
-  if(inFlowHu){ S.lesFlowSpel.hu = today(); persist(); }
-  var html = (inFlowHu ? lesFlowBannerHtml() : "")+"<h2>" + fx("huT") + " 🧩</h2>"+
-    "<div class='feedback " + (perfect ? "ok" : goedGenoeg ? "bijna" : "fout") + "'>" +
-      ct("Ronde klaar: ","Round done: ") + huRonde.goed + "/" + huRonde.lengte +
-      (huRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + huRonde.besteStreak : "") +
-    "</div>"+
-    (bonus > 0 ? "<p class='muted'>+" + bonus + " 🫒 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
-    (inFlowHu ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
-      : "<div class='row'><button class='primary' id='btnHuNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
-  el.innerHTML = html;
-  lesFlowWireBanner();
-  if(inFlowHu){
-    document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
-    return;
-  }
-  document.getElementById("btnHuNieuweRonde").onclick = function(){ husselenNieuweRonde(); renderFunHusselen(); };
-  document.getElementById("btnFunTerug").onclick = function(){ funView=null; renderFun(); };
-}
-function checkHusselen(){
-  var s = huIdx;
-  if(huGebouwd.length !== huBank.length) return;
-  var built = huGebouwd.map(function(idx){ return huBank[idx].w; }).join(" ");
-  var fb = document.getElementById("huFeedback");
-  var goedBeantwoord = norm(built) === norm(s.es);
-  var html = "";
-  if(goedBeantwoord){
-    html = "<div class='feedback ok'>¡Perfecto! ✓ (+4 "+xpw()+")</div>";
-    S.done[s.id] = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
-    spelZinSrs(s);
-  } else {
-    html = "<div class='feedback fout'>"+ct("Nog niet. De juiste volgorde is: ","Not yet. The correct order is: ")+"<b>"+s.es+"</b></div>";
-    logError(s.id, "husselen", s.tag, built); addXP(1);
-  }
-  if(goedBeantwoord){
-    huRonde.goed++; huRonde.streak++;
-    if(huRonde.streak > huRonde.besteStreak) huRonde.besteStreak = huRonde.streak;
-    if(huRonde.streak % 3 === 0){
-      S.tapas = (S.tapas||0) + 1; persist();
-      html += "<div class='feedback ok' style='margin-top:4px'>🔥 " + huRonde.streak + ct(" op een rij! +1 🫒 tapa"," in a row! +1 🫒 tapa") + "</div>";
-    }
-  } else {
-    huRonde.streak = 0;
-  }
-  var kickerEl = document.getElementById("huKicker");
-  if(kickerEl) kickerEl.textContent = husselenKickerTekst();
-  html += "<div class='uitleg'>"+ct("Waarom: ","Why: ")+zinUitleg(s)+"</div>"+
-    "<div class='row' style='margin-top:6px'><button class='primary' id='btnHuVolgende'>" + fx("huSkip") + " →</button></div>";
-  fb.innerHTML = html;
-  persist();
-  checkLessonComplete();
-  var bv = document.getElementById("btnHuVolgende");
-  if(bv) bv.onclick = function(){ husselenVolgende(); };
-  var bc = document.getElementById("btnHuCheck"); if(bc) bc.disabled = true;
-  var br = document.getElementById("btnHuReset"); if(br) br.disabled = true;
-}
-
 
 /* ================= EL CORRECTOR (v19.88) =================
    Het grammaticaspel. De app kon grammatica uitleggen (GRAMWIZ) en overhoren
@@ -8526,12 +7967,12 @@ function boekSpreek(h){
     var a = new Audio("audio/boek/" + h.id + ".mp3");
     boekAudioEl = a;
     var teruggevallen = false;
-    function valTerug(){ if(teruggevallen) return; teruggevallen = true; dictadoSpreekTTS(h.tekst.replace(/\n\n/g, " "), 1); }
+    function valTerug(){ if(teruggevallen) return; teruggevallen = true; }
     a.addEventListener("error", valTerug);
     var p = a.play();
     if(p && p.catch) p.catch(valTerug);
     return true;
-  }catch(e){ return dictadoSpreekTTS(h.tekst.replace(/\n\n/g, " "), 1); }
+  }catch(e){ return false; }
 }
 function boekStop(){
   if(boekAudioEl){ try{ boekAudioEl.pause(); }catch(e){} boekAudioEl = null; }
@@ -9042,10 +8483,10 @@ function lesFlowOpenProductie(){
     v = lesFlow.vaardigheid = (lesFlow.vaardigheidRij || []).indexOf("luisteren") >= 0 ? "schrijven" : "luisteren";
   }
   if(v === "luisteren"){
-    lesFlow.gekozenSpel = "dictado";
-    funView = "dictado"; dIdx = null;
-    dictadoNieuweRonde();
-    dRonde.lengte = Math.max(2, Math.round(tijd / 30));   // ~30 sec per dictado-zin
+    /* v21.4: het luisterblok was dictado, en dat traint transcriberen in plaats van begrijpen.
+       Nu gaat het naar Escuchar: een gesprek horen en zeggen waar het over ging. */
+    lesFlow.gekozenSpel = "audi";
+    funView = "audi"; audStop(); audNieuw();
     show("speeltuin");
     return;
   }
@@ -9078,9 +8519,9 @@ function lesFlowVaardigheidOpen(){
 }
 
 var VAARD_NAAM = {
-  luisteren: {icon:"\ud83d\udd0a", nl:"Dictado", en:"Dictado",
-    wnl:"Je hebt vandaag nog niets gehoord. Luisteren is de enige oefening waarbij je het woord moet herkennen zonder dat je het ziet staan, en dat is precies wat er in een gesprek gebeurt.",
-    wen:"You haven't heard anything today. Listening is the only exercise where you have to recognise a word without seeing it, which is exactly what happens in a conversation."},
+  luisteren: {icon:"\ud83d\udc42", nl:"Escuchar", en:"Escuchar",
+    wnl:"Je hebt vandaag nog niets gehoord. Luisteren is de enige oefening waarbij je moet begrijpen wat er gezegd wordt zonder dat je het ziet staan, en dat is precies wat er in een gesprek gebeurt.",
+    wen:"You haven't heard anything today. Listening is the only exercise where you have to understand what is said without seeing it, which is exactly what happens in a conversation."},
   schrijven: {icon:"\u270d\ufe0f", nl:"Zinnen vertalen", en:"Translate sentences",
     wnl:"Je hebt vandaag nog niets zelf hoeven bouwen. Een woord herkennen is makkelijker dan het zelf opschrijven, en het verschil tussen die twee is waar je nu staat.",
     wen:"You haven't had to build anything yourself today. Recognising a word is easier than writing it, and the gap between those two is where you are right now."},
@@ -10163,9 +9604,8 @@ function dagPeilKnopHtml(a){
 var DAGSPELLEN = [
   {v:"ws",      e:"\ud83d\udd0d", n:"Sopa de letras"},
   {v:"kruis",   e:"\u270f\ufe0f", n:"Crucigrama"},
-  {v:"dictado", e:"\ud83d\udd0a", n:"Dictado"},
+  {v:"audi",    e:"\ud83d\udc42", n:"Escuchar"},
   {v:"conj",    e:"\ud83c\udfaf", n:"Conjugador"},
-  {v:"hu",      e:"\ud83e\udde9", n:"Husselen"},
   {v:"mem",     e:"\ud83c\udccf", n:"Memory"},
   {v:"corr",    e:"\ud83d\udd75\ufe0f", n:"El Corrector"}
 ];
@@ -17194,9 +16634,7 @@ var SPEEL_EIS = {
   audi:    {soort:"w", n:20},
   kruis:   {soort:"w", n:12},
   mem:     {soort:"w", n:12},
-  corr:    {soort:"z", n:8},
-  hu:      {soort:"z", n:8},
-  dictado: {soort:"z", n:8}
+  corr:    {soort:"z", n:8}
 };
 function speelWoordN(){ try { return Object.keys(S.srs || {}).length; } catch(e){ return 999; } }
 function speelZinN(){ try { return allowedSentIds().length; } catch(e){ return 999; } }
@@ -17337,14 +16775,18 @@ function renderFunAudicion(){
     html += "<div class='feedback " + (audGoed === sc.vragen.length ? "ok" : audGoed ? "bijna" : "fout") + "'>" +
       audGoed + "/" + sc.vragen.length + ct(" goed"," correct") +
       (audGehoord > 1 ? " · " + audGehoord + ct(" keer geluisterd"," listens") : "") + "</div>" +
-      "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudNieuw'>" +
-        ct("Volgende scene →","Next scene →") + "</button></div>";
+      (lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "audi"
+        ? "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
+        : "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudNieuw'>" +
+          ct("Volgende scene →","Next scene →") + "</button></div>");
   }
   el.innerHTML = html;
   var bp = document.getElementById("btnAudSpeel");
   if(bp) bp.onclick = function(){ audGehoord++; audSpeel(); };
   var bn = document.getElementById("btnAudNieuw");
   if(bn) bn.onclick = function(){ audStop(); audNieuw(); renderFunAudicion(); };
+  var bf = document.getElementById("btnAudFlowDoor");
+  if(bf) bf.onclick = function(){ audStop(); persist(); lesFlowVolgende(); };
   el.querySelectorAll("[data-aherhaal]").forEach(function(b){
     b.onclick = function(){ audGehoord++; audSpeel(+b.getAttribute("data-aherhaal")); };
   });
@@ -17384,6 +16826,10 @@ function audAntwoord(i, knop){
 }
 function audAfronden(){
   var sc = audSc;
+  if(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "audi"){
+    S.lesFlowSpel = S.lesFlowSpel || {};
+    S.lesFlowSpel.luisteren = today();
+  }
   S.audDone = S.audDone || {};
   S.audLuister = S.audLuister || {};
   S.audLuister[sc.id] = (S.audLuister[sc.id] || 0) + audGehoord;
@@ -17405,10 +16851,8 @@ function renderFun(){
   if(funView === "ws"){ renderFunWs(); return; }
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "kruis"){ renderFunKruisLos(); return; }
-  if(funView === "dictado"){ renderFunDictado(); return; }
   if(funView === "audi"){ renderFunAudicion(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
-  if(funView === "hu"){ renderFunHusselen(); return; }
   if(funView === "corr"){ renderFunCorrector(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
@@ -17419,10 +16863,8 @@ function renderFun(){
     {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",        t:"M\u00fasica",         s:fx("muS")},
     {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",        t:fx("wsT"),            s:fx("wsS")},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",        t:"Crucigrama",         s:fx("krS")},
-    {v:"dictado", id:"ftDictado", e:"\ud83d\udd0a",        t:"Dictado",            s:fx("dicS")},
     {v:"audi",    id:"ftAudi",    e:"\ud83d\udc42",        t:"Escuchar",           s:ct("Luister een gesprek en zeg waar het over ging","Listen to a conversation and say what it was about")},
     {v:"conj",    id:"ftConj",    e:"\ud83c\udfaf",        t:"Conjugador",         s:fx("cjS")},
-    {v:"hu",      id:"ftHu",      e:"\ud83e\udde9",        t:fx("huT"),            s:fx("huS")},
     {v:"corr",    id:"ftCorr",    e:"\ud83d\udd75\ufe0f", t:fx("coT"),            s:fx("coS")},
     {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",        t:"Memory \u00b7 Parejas", s:fx("meS")},
     {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",        t:"Palabra Duel",       s:fx("duS")}
@@ -17455,10 +16897,8 @@ function renderFun(){
   wire("ftMusica", function(){ show("musica"); });
   wire("ftWs", function(){ speelGezien("ws"); funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); });
   wire("ftKruis", function(){ speelGezien("kruis"); funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); });
-  wire("ftDictado", function(){ speelGezien("dictado"); funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); });
   wire("ftAudi", function(){ speelGezien("audi"); funView = "audi"; audStop(); audSc = null; navPush({t:"fun", v:"audi"}); renderFun(); });
   wire("ftConj", function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); });
-  wire("ftHu", function(){ speelGezien("hu"); funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); });
   wire("ftCorr", function(){ speelGezien("corr"); funView = "corr"; corrOpg = null; corrRonde = null; navPush({t:"fun", v:"corr"}); renderFun(); });
   wire("ftMem", function(){ speelGezien("mem"); funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); });
   wire("ftDuel", function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); });

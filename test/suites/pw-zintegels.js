@@ -36,14 +36,22 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(400);
 
   // ---- 1. drie treden, en alleen bij zinnen ----
-  ok(await page.locator('#sModus .modus-toets').count() === 3, 'Vertalen heeft drie treden');
+  // v21.4: de meerkeuze tussen vier hele zinnen is weg, want die kon je raden op lengte. Er blijven
+  // twee treden over: tegels leggen en zelf typen.
+  ok(await page.locator('#sModus .modus-toets').count() === 2, 'Vertalen heeft twee treden');
   const treden = await page.evaluate(() => Array.from(document.querySelectorAll('#sModus .modus-toets')).map(b => b.getAttribute('data-m')));
-  ok(treden.join(',') === 'makkelijk,tegels,moeilijk', 'de tegelstand staat tussen makkelijk en moeilijk (' + treden.join(',') + ')');
-  const woordRij = await page.evaluate(() => {
-    const h = moeilijkModusHtml('x', 'makkelijk');
-    return (h.match(/data-m=/g) || []).length;
+  ok(treden.join(',') === 'tegels,moeilijk', 'de treden zijn tegels en typen (' + treden.join(',') + ')');
+  const woordRij = await page.evaluate(() => moeilijkModusHtml('x', 'makkelijk'));
+  ok(/data-m='makkelijk'/.test(woordRij), 'zonder de tegelvlag blijft makkelijk bestaan (woordjes, Conjugador)');
+  ok(!/data-m='tegels'/.test(woordRij), 'en komt de tegelstand daar niet opdagen');
+  // een oude opgeslagen keuze mag niet op een verdwenen stand blijven staan
+  const oud = await page.evaluate(() => {
+    S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = 'makkelijk';
+    const m = sHuidigeModus(sIdx);
+    delete S.modusKeuze.zin;
+    return m;
   });
-  ok(woordRij === 2, 'zonder de derde parameter blijven het er twee (woordjes, Conjugador)');
+  ok(oud === 'tegels', 'een oude keuze "makkelijk" leest nu als tegels (' + oud + ')');
 
   // ---- 2. de tegelstand rendert, met afleiders en zonder invoerveld ----
   await page.evaluate(() => {
