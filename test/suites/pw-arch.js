@@ -132,7 +132,8 @@ const { chromium } = require('playwright');
 
   // --- 7. Het woordenboek zoekt nog steeds, en rendert gedebounced ---
   // het woordenboek zit achter de zwevende knop, niet achter een tab (zie ook pw-diclock.js)
-  await page.click('#dicFab');
+  // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
+  await page.evaluate(() => dicModal());
   await page.waitForTimeout(400);
   const teller = await page.evaluate(() => {
     window.__dicN = 0;

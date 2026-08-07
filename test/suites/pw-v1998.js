@@ -99,19 +99,21 @@ async function nieuwProfiel(page) {
   console.log('  bedekt ::', bedekt.length ? bedekt.join(' | ') : 'niets');
   ok(bedekt.length === 0, 'geen enkele knop op negen schermen ligt onder de balk');
 
-  console.log('\n-- de boekknop staat in de kop, niet meer over het scherm --');
+  console.log('\n-- de zoekknop staat in de kop, niet meer over het scherm --');
   const fab = await page.evaluate(() => {
     const f = document.getElementById('dicFab');
     const bs = getComputedStyle(f);
     return { pos: bs.position, inKop: !!f.closest('header'), zichtbaar: f.offsetParent !== null, br: Math.round(f.getBoundingClientRect().width) };
   });
-  ok(fab.pos !== 'fixed', 'de boekknop hangt niet meer vast aan het scherm');
+  ok(fab.pos !== 'fixed', 'de zoekknop hangt niet meer vast aan het scherm');
   ok(fab.inKop, 'hij staat in de kop');
   ok(fab.zichtbaar, 'en hij is gewoon zichtbaar');
-  ok(fab.br >= 32 && fab.br <= 46, 'hij heeft kopformaat (' + fab.br + 'px)');
+  // v21.6: was een rond boekicoontje van 38px, is nu een pil met het woord "Zoek" erin, dus breder.
+  ok(fab.br >= 32 && fab.br <= 140, 'hij heeft kopformaat (' + fab.br + 'px)');
   await page.click('#dicFab'); await page.waitForTimeout(400);
-  ok(await page.evaluate(() => { const w = document.getElementById('dicWrap'); return !!w && !w.classList.contains('hidden'); }), 'hij opent nog steeds het woordenboek');
-  await page.evaluate(() => dicSluit());
+  ok(await page.evaluate(() => { const w = document.getElementById('zoekWrap'); return !!w && !w.classList.contains('hidden'); }), 'hij opent het zoekveld');
+  ok(await page.evaluate(() => { const v = document.getElementById('zoekVeld'); return !!v && document.activeElement === v; }), 'met de cursor er meteen in');
+  await page.evaluate(() => zoekSluit());
 
   console.log('\n-- Meer: elke tab is bereikbaar en elke regel legt zichzelf uit --');
   await page.click("#nav button[data-tab='__meer']"); await page.waitForTimeout(400);
@@ -185,7 +187,7 @@ async function nieuwProfiel(page) {
     fab: document.getElementById('dicFab').classList.contains('hidden')
   }));
   ok(prof.nav, 'geen tabbalk op het profielscherm');
-  ok(prof.fab, 'geen boekknop op het profielscherm');
+  ok(prof.fab, 'geen zoekknop op het profielscherm');
 
   console.log('\nPAGE ERRORS:', errs);
   ok(errs.length === 0, 'geen js-fouten');

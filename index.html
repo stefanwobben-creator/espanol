@@ -528,6 +528,27 @@
           background:var(--accent); color:#fff; font-size:1.1rem; cursor:pointer;
           display:flex; align-items:center; justify-content:center;}
   .dicfab:active{transform:scale(.94);}
+  /* v21.6: hier stond een boekje. Stefan wist zelf niet dat dat het woordenboek was, en hij heeft
+     het gebouwd. Een veld met een vergrootglas hoeft niemand uit te leggen. Het is geen echt
+     invoerveld maar een knop die eruitziet als een zoekbalk: zo kost hij geen extra rij hoogte en
+     springt het toetsenbord niet op als je hem per ongeluk raakt. */
+  .zoekpil{display:flex; align-items:center; gap:6px; flex:0 0 auto; cursor:pointer;
+           height:34px; padding:0 12px; border-radius:99px; border:1.5px solid var(--border);
+           background:var(--card); color:var(--muted); font-size:.85rem; font-weight:600;
+           font-family:inherit;}
+  .zoekpil:active{transform:scale(.97);}
+  .zoekrij{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+           border:1px solid var(--border); background:var(--card); border-radius:12px;
+           padding:10px 12px; margin-bottom:6px; cursor:pointer; font-family:inherit; font-size:.95rem;}
+  .zoekrij .zi{font-size:1.1rem; flex:0 0 auto;}
+  .zoekrij .zb{flex:1; min-width:0;}
+  .zoekrij .zb b{display:block; color:var(--ink);}
+  .zoekrij .zb span{display:block; color:var(--muted); font-size:.85rem;}
+  .zoekkop{margin:14px 2px 6px; font-size:.8rem; font-weight:800; letter-spacing:.04em;
+           text-transform:uppercase; color:var(--muted);}
+  .zoekmee{border:none; background:var(--green-soft); color:var(--green); font-weight:700;
+           border-radius:9px; padding:6px 10px; font-size:.8rem; cursor:pointer; flex:0 0 auto;
+           font-family:inherit;}
   @keyframes eschop{0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)}}
   @keyframes avtzweef{0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)}}
   .avtzweefg{animation:avtzweef 1.6s ease-in-out infinite;}
@@ -695,7 +716,7 @@
          De herhalingen lopen onder water gewoon door; ze worden voortaan in porties aangeboden in
          plaats van als saldo getoond. Wat hier overblijft is Chispa. -->
     <div style="display:flex; align-items:center; gap:10px;">
-      <button id="dicFab" class="dicfab hidden" title="Woordenboek">📖</button>
+      <button id="dicFab" class="zoekpil hidden" title="Zoeken"><span>🔍</span><span id="zoekPilTxt">Zoek</span></button>
       <span id="miniPet" title="Chispa"></span>
     </div>
   </header>
@@ -1010,7 +1031,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.5";
+var APP_VERSIE = "v21.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4206,7 +4227,9 @@ function boot(){
   document.getElementById("goalLine").classList.remove("hidden");
   document.getElementById("nav").classList.remove("hidden");
   var fb = document.getElementById("dicFab");
-  if(fb){ fb.classList.remove("hidden"); fb.onclick = dicModal; }
+  if(fb){ fb.classList.remove("hidden"); fb.onclick = zoekOpen; }
+  var zt = document.getElementById("zoekPilTxt");
+  if(zt) zt.textContent = ct("Zoek","Search");
   var ft = document.getElementById("appFooter");
   if(ft) ft.classList.remove("hidden");
   var fv = document.getElementById("footVer");
@@ -6713,7 +6736,26 @@ function dicSleepAfleiders(tegels){
       });
     });
   });
-  return geschud(kandidaten).slice(0, DIC_SLEEP_AFLEIDERS);
+  var uit = geschud(kandidaten).slice(0, DIC_SLEEP_AFLEIDERS);
+  /* Korte zinnen bevatten soms geen enkel woord waar een conceptpaar bij hoort ("Vivo en Madrid").
+     Dan zou de opgave nul afleiders krijgen en is hij op te lossen zonder te luisteren of te lezen:
+     alle tegels moeten er toch in. Daarom in dat geval een echt Spaans woord uit een andere zin,
+     lang genoeg om niet als hulpwoordje weg te vallen. Geen verzinsel, wel een verkeerde keuze. */
+  if(!uit.length){
+    var bron = (typeof SENTENCES !== "undefined" ? SENTENCES : []).concat(typeof B_SENTENCES !== "undefined" ? B_SENTENCES : []);
+    var pot = [];
+    geschud(bron).slice(0, 40).forEach(function(z){
+      String(z.es || "").split(/\s+/).forEach(function(w){
+        var schoon = dicSleepSchoon(w);
+        if(schoon.length < 4) return;
+        if(aanwezig[schoon.toLowerCase()]) return;
+        if(pot.some(function(p){ return p.toLowerCase() === schoon.toLowerCase(); })) return;
+        pot.push(schoon);
+      });
+    });
+    if(pot.length) uit = [{woord: geschud(pot)[0], cid: ""}];
+  }
+  return uit;
 }
 
 /* Zwaarte van een zin, zodat een beginner geen negen woorden met een jaartal krijgt (Stefan,
@@ -13751,6 +13793,223 @@ b169:"I can swim very well.",b170:"I can't go out today.",b171:"Can you drive?",
 
 
 var dicOpen = null, dicZoek = "", dicZoekTimer = null;
+/* ================= ZOEKEN (v21.6) =================
+   Een veld over alles: woorden, zinnen, grammaticaconcepten, hoofdstukken, liedjes en luisterscenes.
+   Geen AI erachter, met opzet. Alles staat al in dit bestand, dus een opzoeking is instant, kost
+   niets en werkt in de trein. "Slim" zit hem hier in de rangschikking en de groepering, niet in een
+   model: exacte treffer eerst, dan wat ermee begint, dan wat het bevat. Geen fuzzy matching, want
+   een woordenboek dat gokt is erger dan een woordenboek dat niets vindt.
+
+   Woorden staan altijd bovenaan, ook als een zin toevallig beter scoort. Wie iets opzoekt, zoekt in
+   verreweg de meeste gevallen een woord. */
+var zoekQ = "", zoekTimer = null, zoekIndexCache = null;
+
+function zoekPlat(t){ return stripAcc(String(t || "").toLowerCase()).replace(/[¡!¿?.,;:"]/g, "").trim(); }
+
+function zoekIndex(){
+  if(zoekIndexCache) return zoekIndexCache;
+  var uit = [];
+  /* Een zelfstandig naamwoord staat in de app met zijn lidwoord ("la casa"), en dat is goed: je moet
+     el of la meeleren. Maar niemand typt "la casa" in een zoekveld. Daarom indexeren we ook de kale
+     vorm, en het stuk voor een schuine streep of haakje ("viudo / viuda", "el extranjero (m)").
+     Zonder dit wint "casarse" van "la casa" bij het zoeken op casa, en dat is precies verkeerd om. */
+  function kaal(t){
+    return String(t || "")
+      .replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, "")
+      .split(/[\/(]/)[0];
+  }
+  function woord(w){
+    uit.push({soort:"woord", id:w.id, es:w.es, nl:wTrans(w), ico:"🔤",
+              zoek:[w.es, kaal(w.es), w.nl, kaal(w.nl), w.en || ""].map(zoekPlat)});
+  }
+  (typeof WORDS !== "undefined" ? WORDS : []).forEach(woord);
+  (typeof B_WORDS !== "undefined" ? B_WORDS : []).forEach(woord);
+  (typeof K_WORDS !== "undefined" ? K_WORDS : []).forEach(woord);
+  function zin(z){
+    uit.push({soort:"zin", id:z.id, es:z.es, nl:(profLang() === "nl" ? z.nl : (z.en || z.nl)), ico:"✍️",
+              zoek:[z.es, z.nl, z.en || ""].map(zoekPlat)});
+  }
+  (typeof SENTENCES !== "undefined" ? SENTENCES : []).forEach(zin);
+  (typeof B_SENTENCES !== "undefined" ? B_SENTENCES : []).forEach(zin);
+  (typeof GC_CONCEPTEN !== "undefined" ? GC_CONCEPTEN : []).forEach(function(c){
+    var naam = profLang() === "nl" ? c.naam : (c.naamEn || c.naam);
+    uit.push({soort:"concept", id:c.id, es:naam, nl:ct("grammaticaconcept","grammar concept"),
+              ico:c.icon || "📐", zoek:[c.id, c.naam, c.naamEn || "", (c.corr || []).join(" ")].map(zoekPlat)});
+  });
+  (typeof BOOK !== "undefined" ? BOOK : []).forEach(function(h){
+    uit.push({soort:"verhaal", id:h.id, es:h.titel, nl:ct("hoofdstuk ","chapter ") + h.num, ico:"📖",
+              zoek:[h.titel, h.tekst || ""].map(zoekPlat)});
+  });
+  (typeof SONGS !== "undefined" ? SONGS : []).forEach(function(g){
+    uit.push({soort:"lied", id:g.id, es:g.titel, nl:g.artiest || "", ico:"🎵",
+              zoek:[g.titel, g.artiest || ""].map(zoekPlat)});
+  });
+  (typeof AUDICIONES !== "undefined" ? AUDICIONES : []).forEach(function(sc){
+    uit.push({soort:"scene", id:sc.id, es:(profLang() === "nl" ? sc.titel : sc.titelEn), nl:"Escuchar", ico:"👂",
+              zoek:[sc.titel, sc.titelEn || ""].concat(sc.lineas.map(function(l){ return l.es; })).map(zoekPlat)});
+  });
+  /* Ontdubbelen. SENTENCES krijgt bij het wisselen van track B_SENTENCES erbij geplakt (zie
+     setTrack), en bij de woorden bestaat dezelfde overlap. Zonder deze stap zie je "la casa" twee
+     keer in je uitslag, en dan lijkt het zoekveld stuk terwijl de data klopt. Eerst op id, daarna op
+     inhoud, want twee verschillende ids met precies dezelfde vertaling zijn voor de zoeker één ding. */
+  var gezienId = {}, gezienTekst = {}, schoon = [];
+  uit.forEach(function(it){
+    var sleutelId = it.soort + ":" + it.id;
+    if(gezienId[sleutelId]) return;
+    var sleutelTekst = it.soort + ":" + zoekPlat(it.es) + "|" + zoekPlat(it.nl);
+    if(gezienTekst[sleutelTekst]) return;
+    gezienId[sleutelId] = 1; gezienTekst[sleutelTekst] = 1;
+    schoon.push(it);
+  });
+  zoekIndexCache = schoon;
+  return schoon;
+}
+/* 3 = exact, 2 = begint ermee, 1 = bevat. Nul betekent: niet tonen. */
+function zoekScore(item, q){
+  var beste = 0;
+  for(var i = 0; i < item.zoek.length; i++){
+    var v = item.zoek[i];
+    if(!v) continue;
+    if(v === q) return 3;
+    if(v.indexOf(q) === 0) beste = Math.max(beste, 2);
+    else if(v.indexOf(q) !== -1) beste = Math.max(beste, 1);
+  }
+  return beste;
+}
+var ZOEK_GROEPEN = [
+  {soort:"woord",    kop:function(){ return ct("Woorden","Words"); }},
+  {soort:"zin",      kop:function(){ return ct("Zinnen","Sentences"); }},
+  {soort:"concept",  kop:function(){ return ct("Grammatica","Grammar"); }},
+  {soort:"scene",    kop:function(){ return ct("Luisteren","Listening"); }},
+  {soort:"verhaal",  kop:function(){ return ct("Verhaal","Story"); }},
+  {soort:"lied",     kop:function(){ return ct("Muziek","Music"); }}
+];
+var ZOEK_PER_GROEP = 5;
+function zoekResultaten(q){
+  var plat = zoekPlat(q);
+  if(plat.length < 2) return [];
+  var treffers = [];
+  zoekIndex().forEach(function(it){
+    var sc = zoekScore(it, plat);
+    if(sc) treffers.push({it:it, sc:sc});
+  });
+  return ZOEK_GROEPEN.map(function(g){
+    var rijen = treffers.filter(function(t){ return t.it.soort === g.soort; })
+      .sort(function(a, b){
+        if(a.sc !== b.sc) return b.sc - a.sc;
+        return a.it.es.length - b.it.es.length;
+      });
+    return {soort:g.soort, kop:g.kop(), rijen:rijen.map(function(t){ return t.it; }), totaal:rijen.length};
+  }).filter(function(g){ return g.rijen.length; });
+}
+function zoekOpen(){
+  var wrap = document.getElementById("zoekWrap");
+  if(!wrap){
+    wrap = document.createElement("div");
+    wrap.id = "zoekWrap"; wrap.className = "dicwrap";
+    wrap.innerHTML = "<div class='dicpanel'><div class='dictop'>" +
+      "<span class='kicker' id='zoekKop'></span>" +
+      "<button class='ghost' id='btnZoekDicht'></button></div>" +
+      "<input type='text' id='zoekVeld' autocomplete='off' autocapitalize='off'>" +
+      "<div id='zoekUit'></div></div>";
+    document.body.appendChild(wrap);
+    wrap.onclick = function(e){ if(e && e.target === wrap) zoekSluit(); };
+    document.getElementById("btnZoekDicht").onclick = zoekSluit;
+    var veld = document.getElementById("zoekVeld");
+    veld.addEventListener("input", function(){
+      zoekQ = veld.value;
+      clearTimeout(zoekTimer);
+      zoekTimer = setTimeout(zoekTeken, 120);
+    });
+  }
+  document.getElementById("zoekKop").textContent = ct("Zoeken","Search");
+  document.getElementById("btnZoekDicht").textContent = "✕ " + ct("Sluiten","Close");
+  var v = document.getElementById("zoekVeld");
+  v.placeholder = ct("Woord, zin of regel...","Word, sentence or rule...");
+  v.value = zoekQ;
+  wrap.classList.remove("hidden");
+  zoekTeken();
+  setTimeout(function(){ v.focus(); }, 60);
+}
+function zoekSluit(){
+  var w = document.getElementById("zoekWrap");
+  if(w) w.classList.add("hidden");
+}
+function zoekTeken(){
+  var uit = document.getElementById("zoekUit");
+  if(!uit) return;
+  var plat = zoekPlat(zoekQ);
+  if(plat.length < 2){
+    uit.innerHTML = "<p class='muted' style='margin:12px 2px'>" +
+      ct("Typ twee letters of meer. Nederlands of Spaans, allebei goed.",
+         "Type two letters or more. Dutch or Spanish, either works.") + "</p>" +
+      "<button class='ghost' id='btnNaarWb'>📖 " + ct("Blader door het woordenboek","Browse the dictionary") + "</button>";
+    var bw = document.getElementById("btnNaarWb");
+    if(bw) bw.onclick = function(){ zoekSluit(); dicModal(); };
+    return;
+  }
+  var groepen = zoekResultaten(zoekQ);
+  if(!groepen.length){
+    uit.innerHTML = "<p class='muted' style='margin:12px 2px'>" +
+      ct("Niets gevonden voor \"" + zoekQ + "\".","Nothing found for \"" + zoekQ + "\".") + "</p>";
+    return;
+  }
+  uit.innerHTML = groepen.map(function(g){
+    return "<div class='zoekkop'>" + g.kop + (g.totaal > ZOEK_PER_GROEP ? " · " + g.totaal : "") + "</div>" +
+      g.rijen.slice(0, ZOEK_PER_GROEP).map(function(it){
+        var mee = it.soort === "woord" && !(S.srs || {})[it.id];
+        return "<div class='zoekrij' data-zs='" + it.soort + "' data-zi='" + it.id + "'>" +
+          "<span class='zi'>" + it.ico + "</span>" +
+          "<span class='zb'><b>" + it.es + "</b><span>" + (it.nl || "") + "</span></span>" +
+          (mee ? "<button type='button' class='zoekmee' data-zmee='" + it.id + "'>+ " + ct("leren","learn") + "</button>" : "") +
+          "</div>";
+      }).join("");
+  }).join("");
+  uit.querySelectorAll("[data-zmee]").forEach(function(b){
+    b.onclick = function(e){
+      e.stopPropagation();
+      zoekNeemMee(b.getAttribute("data-zmee"));
+      b.textContent = "✓ " + ct("staat erin","added");
+      b.disabled = true;
+    };
+  });
+  uit.querySelectorAll("[data-zs]").forEach(function(r){
+    r.onclick = function(){ zoekGaNaar(r.getAttribute("data-zs"), r.getAttribute("data-zi")); };
+  });
+}
+/* Iets opzoeken is het sterkste signaal van belangstelling dat de app krijgt: sterker dan een
+   oefening die de app zelf voorstelde, want die koos jij niet. Daarom mag een opgezocht woord met
+   een tik in je rotatie. Het telt niet mee voor je niveau, het staat alleen vanaf morgen klaar. */
+function zoekNeemMee(id){
+  S.srs = S.srs || {};
+  if(S.srs[id]) return;
+  S.srs[id] = {box:0, due:today(), n:0, zelf:1};
+  persist();
+  try{ updateBadge(); }catch(e){}
+}
+function zoekGaNaar(soort, id){
+  zoekSluit();
+  if(soort === "woord"){ dicModal(); return; }
+  if(soort === "zin"){
+    var z = (SENTENCES.concat(B_SENTENCES)).filter(function(x){ return x.id === id; })[0];
+    if(!z) return;
+    sIdx = z; sModusOverride = null; zTegel = null;
+    show("vertalen"); renderSentence(false);
+    return;
+  }
+  if(soort === "concept"){ show("spiekbrief"); gcLeesOpen(id); return; }
+  if(soort === "verhaal"){ show("lezen"); startBoek(id); return; }
+  if(soort === "lied"){ show("musica"); return; }
+  if(soort === "scene"){
+    var sc = AUDICIONES.filter(function(x){ return x.id === id; })[0];
+    if(!sc) return;
+    audStop(); audSc = sc; audStap = 0; audGoed = 0; audGehoord = 0; audAnt = []; audGeenAudio = false;
+    funView = "audi"; navPush({t:"fun", v:"audi"});
+    show("speeltuin", true); renderFun();
+    return;
+  }
+}
+
 function dicModal(){
   var wrap = document.getElementById("dicWrap");
   if(!wrap){

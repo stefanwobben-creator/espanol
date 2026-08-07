@@ -42,7 +42,8 @@ const { chromium } = require('playwright');
   ok(!!boek13, 'er bestaat minstens 1 woord met tag boek-13 (voorwaarde voor deze test)');
 
   if (boek13) {
-    await page.click('#dicFab');
+    // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
+  await page.evaluate(() => dicModal());
     await page.waitForTimeout(200);
     await page.fill('#dicZoek', boek13.es);
     await page.waitForTimeout(200);

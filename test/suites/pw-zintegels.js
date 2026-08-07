@@ -66,7 +66,15 @@ const { chromium } = require('playwright');
     echt: zTegel.bank.filter(t => t.echt).length,
     nep: zTegel.bank.filter(t => !t.echt).length
   }));
+  // Er ligt er altijd minstens een: zonder afleider zijn alle tegels goed en is de opgave op te
+  // lossen zonder te lezen. Levert de conceptmachine er geen (korte zin zonder conceptwoord), dan
+  // valt hij terug op een echt Spaans woord uit een andere zin.
   ok(afl.nep >= 1 && afl.nep <= 3, 'er liggen 1 tot 3 afleiders bij (' + afl.nep + ' van ' + afl.bank + ')');
+  const kort = await page.evaluate(() => {
+    const t = dicSleepTegels('Vivo en Madrid');
+    return dicSleepAfleiders(t).length;
+  });
+  ok(kort >= 1, 'ook een korte zin zonder conceptwoord krijgt een afleider (' + kort + ')');
   ok(afl.echt === afl.bank - afl.nep, 'de rest zijn de echte woorden van de zin');
 
   // aantikken en weer weghalen

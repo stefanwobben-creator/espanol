@@ -42,7 +42,8 @@ const { chromium } = require('playwright');
   ok(dataCheck.missing === 0, 'geen enkel FREQ-woord mist een FREQ_EN-gloss');
 
   // woordenboek openen en zoeken op een woord ver voorbij de oude top-1000-grens (rang 2501)
-  await page.click('#dicFab');
+  // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
+  await page.evaluate(() => dicModal());
   await page.waitForTimeout(200);
   await page.fill('#dicZoek', 'salgamos');
   await page.waitForTimeout(200);

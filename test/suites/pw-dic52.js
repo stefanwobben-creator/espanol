@@ -60,7 +60,8 @@ const { chromium } = require('playwright');
   ok(data.indexLen === 4219, 'de zoekindex is even lang als de woordenlijst');
 
   // --- 2. het aantal staat ook echt in de UI ---
-  await page.click('#dicFab');
+  // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
+  await page.evaluate(() => dicModal());
   await page.waitForTimeout(250);
   const intro = await page.locator('#dicCard').innerText();
   ok(/4[.,]219/.test(intro), 'de woordenboekkaart noemt het nieuwe aantal van 4.219 woorden');

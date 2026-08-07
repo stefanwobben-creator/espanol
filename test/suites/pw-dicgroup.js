@@ -37,7 +37,8 @@ const { chromium } = require('playwright');
   // hoofdstuk 11 hier kunstmatig ontgrendelen zodat de oorspronkelijke test-intentie overeind blijft
   await page.evaluate(() => { for (let i = 0; i < 8; i++) { S.lessons['__test_boekunlock_' + i] = { done: true }; } });
 
-  await page.click('#dicFab');
+  // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
+  await page.evaluate(() => dicModal());
   await page.waitForTimeout(200);
   await page.fill('#dicZoek', 'antiguo');
   await page.waitForTimeout(200);
