@@ -1002,7 +1002,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.2";
+var APP_VERSIE = "v21.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6251,9 +6251,14 @@ function wireAccentToetsen(rowId, inputId){
 // Sinds 29 juli (Stefans feedback "waarom wisselt dit vanzelf?"): een expliciete klik op de toggle
 // wordt opgeslagen in S.modusKeuze (per oefenvorm) en blijft daarna gewoon staan, over items,
 // sessies en apparaten heen. Wie terug wil naar adaptief kiest gewoon opnieuw wanneer het uitkomt.
-function moeilijkModusHtml(rowId, modus){
+function moeilijkModusHtml(rowId, modus, metTegels){
+  /* v21.3: bij zinnen komt er een trede tussen. Meerkeuze tussen vier hele zinnen kun je vaak
+     raden op lengte; tegels leggen kan dat niet, want elk woord moet je aanraken en de fout die je
+     zou maken ligt als afleider naast het goede woord. Bij losse woorden en bij de Conjugador
+     bestaat die tussentrede niet, dus daar blijft het bij twee knoppen. */
   return "<div class='row' id='"+rowId+"' style='gap:6px; margin:2px 0 10px'>"+
     "<button type='button' class='"+(modus==="makkelijk"?"primary":"ghost")+" modus-toets' data-m='makkelijk' style='padding:6px 13px; font-size:0.85rem'>🟢 "+ct("Makkelijk","Easy")+"</button>"+
+    (metTegels ? "<button type='button' class='"+(modus==="tegels"?"primary":"ghost")+" modus-toets' data-m='tegels' style='padding:6px 13px; font-size:0.85rem'>🧩 "+ct("Tegels","Tiles")+"</button>" : "")+
     "<button type='button' class='"+(modus==="moeilijk"?"primary":"ghost")+" modus-toets' data-m='moeilijk' style='padding:6px 13px; font-size:0.85rem'>🔴 "+ct("Moeilijk","Hard")+"</button>"+
     "</div>";
 }
@@ -6347,6 +6352,91 @@ function bestDiff(given, s){
   return best;
 }
 
+/* ================= TEGELS BIJ VERTALEN (v21.3) =================
+   Dezelfde handeling als bij dictado, maar met de Nederlandse zin als prompt in plaats van geluid.
+   Het antwoord gaat via het gewone verborgen invoerveld naar checkSentence(), zodat scores, SRS,
+   foutenlog en feedback exact hetzelfde blijven werken. Een tweede controlemachine ernaast zou een
+   tweede plek zijn waar fouten kunnen ontstaan. */
+var zTegel = null;
+function zinTegelsZet(zin){
+  var stukken = dicSleepTegels(zin.es);
+  var afl = dicSleepAfleiders(stukken);
+  zTegel = {
+    id: zin.id,
+    bank: geschud(stukken.map(function(w){ return {woord:w, cid:"", echt:true}; })
+          .concat(afl.map(function(a){ return {woord:a.woord, cid:a.cid, echt:false}; }))),
+    rij: []
+  };
+}
+function zinTegelsHtml(){
+  var rijHtml = zTegel.rij.map(function(i, pos){
+    return "<button type='button' class='dtegel op' data-zrij='" + pos + "'>" + zTegel.bank[i].woord + "</button>";
+  }).join("");
+  var bankHtml = zTegel.bank.map(function(t, i){
+    var gebruikt = zTegel.rij.indexOf(i) !== -1;
+    return "<button type='button' class='dtegel" + (gebruikt ? " weg" : "") + "' data-zbank='" + i + "'" +
+           (gebruikt ? " tabindex='-1'" : "") + ">" + t.woord + "</button>";
+  }).join("");
+  return "<div class='dsleep-rij" + (zTegel.rij.length ? "" : " leeg") + "' data-leeg='" +
+      ct("Tik hieronder een woord aan","Tap a word below") + "'>" + rijHtml + "</div>" +
+    "<div class='dsleep-bank'>" + bankHtml + "</div>" +
+    "<div class='row' style='margin-top:10px'><button class='primary' id='btnZTegelCheck'>" +
+      ct("Controleer","Check") + "</button>" +
+    "<button class='ghost' id='btnZTegelWis'>" + ct("Wissen","Clear") + "</button></div>";
+}
+function zinTegelsWire(el){
+  el.querySelectorAll("[data-zbank]").forEach(function(b){
+    b.onclick = function(){
+      var i = parseInt(b.getAttribute("data-zbank"), 10);
+      if(zTegel.rij.indexOf(i) !== -1) return;
+      zTegel.rij.push(i); renderSentenceBody();
+    };
+  });
+  el.querySelectorAll("[data-zrij]").forEach(function(b){
+    b.onclick = function(){
+      zTegel.rij.splice(parseInt(b.getAttribute("data-zrij"), 10), 1); renderSentenceBody();
+    };
+  });
+  var bw = document.getElementById("btnZTegelWis");
+  if(bw) bw.onclick = function(){ zTegel.rij = []; renderSentenceBody(); };
+  var bc = document.getElementById("btnZTegelCheck");
+  if(bc) bc.onclick = function(){
+    if(!zTegel.rij.length) return;
+    // Een afleider aantikken is een echte conceptfout en zet dat doosje terug op nul.
+    zTegel.rij.forEach(function(i){
+      var t = zTegel.bank[i];
+      if(!t.echt && t.cid) gramBij(t.cid, false);
+    });
+    document.getElementById("sInput").value = zTegel.rij.map(function(i){ return zTegel.bank[i].woord; }).join(" ");
+    checkSentence();
+  };
+}
+/* Horen hoe de zin klinkt, op het moment dat je hem net zelf gemaakt hebt. Geen oefening, geen
+   stand, geen keuze: een knopje dat de opname hergebruikt die er toch al ligt. Spreken is de enige
+   competentie die nog volledig leeg staat, en dit is het goedkoopste stapje die kant op. */
+var zinAudioEl = null;
+function zinSpreek(zin, rate){
+  try{
+    if(zinAudioEl) zinAudioEl.pause();
+    var a = new Audio("audio/dictado/" + zin.id + ".mp3");
+    zinAudioEl = a;
+    a.playbackRate = rate || 1;
+    var p = a.play();
+    if(p && p.catch) p.catch(function(){});
+  }catch(e){}
+}
+function zinLuisterKnopHtml(){
+  return "<button type='button' class='ghost' id='btnZinLuister' style='padding:5px 11px; font-size:.85rem; min-width:0'>🔊 " +
+    ct("Hoor hem","Hear it") + "</button>" +
+    "<button type='button' class='ghost' id='btnZinLuisterLento' style='padding:5px 11px; font-size:.85rem; min-width:0'>🐢</button>";
+}
+function zinLuisterWire(zin){
+  var b1 = document.getElementById("btnZinLuister");
+  if(b1) b1.onclick = function(){ zinSpreek(zin, 1); };
+  var b2 = document.getElementById("btnZinLuisterLento");
+  if(b2) b2.onclick = function(){ zinSpreek(zin, 0.75); };
+}
+
 function renderSentence(fresh){
   if(fresh || sIdx===null){ sIdx = pickSentence(); sModusOverride = null; }
   var s = sIdx;
@@ -6367,8 +6457,11 @@ function renderSentenceBody(){
   var modus = sHuidigeModus(s);
   var el = document.getElementById("sBody");
   if(!el) return;
-  var html = moeilijkModusHtml("sModus", modus);
-  if(modus === "makkelijk"){
+  var html = moeilijkModusHtml("sModus", modus, true);
+  if(modus === "tegels"){
+    if(!zTegel || zTegel.id !== s.id) zinTegelsZet(s);
+    html += zinTegelsHtml() + "<input type='hidden' id='sInput' value=''>" + "<div id='sFeedback'></div>";
+  } else if(modus === "makkelijk"){
     var opties = sMeerkeuzeOpties(s);
     html += "<div style='display:flex; flex-direction:column; gap:8px' id='sOpties'>"+
       opties.map(function(o){ return "<button type='button' class='ghost sOptie' data-v=\""+o.replace(/"/g,"&quot;")+"\" style='text-align:left'>"+o+"</button>"; }).join("")+
@@ -6382,8 +6475,10 @@ function renderSentenceBody(){
       "<div id='sFeedback'></div>";
   }
   el.innerHTML = html;
-  wireMoeilijkToggle("sModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = m; sModusOverride = m; persist(); renderSentenceBody(); });
-  if(modus === "makkelijk"){
+  wireMoeilijkToggle("sModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = m; sModusOverride = m; zTegel = null; persist(); renderSentenceBody(); });
+  if(modus === "tegels"){
+    zinTegelsWire(el);
+  } else if(modus === "makkelijk"){
     document.querySelectorAll("#sOpties .sOptie").forEach(function(b){
       b.onclick = function(){
         document.querySelectorAll("#sOpties .sOptie").forEach(function(x){ x.disabled = true; });
@@ -6411,10 +6506,15 @@ function checkSentence(){
   var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
   var html = "", gehaald = false, retryable = false;
   if(exact){
-    // makkelijk (meerkeuze) telt als lichter bewijs dan zelf typen, dus minder XP
-    var xpExact = modus === "makkelijk" ? 2 : 5;
+    /* Drie treden, drie prijzen. Meerkeuze is het lichtste bewijs (je kunt raden op lengte),
+       tegels zitten ertussen (elk woord moet je aanraken, met afleiders ernaast), zelf typen is
+       het enige echte productiebewijs. Daarom telt alleen typen mee voor je schrijfvaardigheid:
+       een zin leggen bewijst dat je hem herkent, niet dat je hem kunt maken. */
+    var xpExact = modus === "makkelijk" ? 2 : (modus === "tegels" ? 3 : 5);
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" "+xpw()+")</div>";
-    S.done[s.id] = true; gehaald = true; addXP(xpExact); compMark("schrijven", s.id); trackPoging(false);
+    S.done[s.id] = true; gehaald = true; addXP(xpExact);
+    if(modus === "moeilijk") compMark("schrijven", s.id);
+    trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
     S.done[s.id] = true; gehaald = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
@@ -6431,6 +6531,9 @@ function checkSentence(){
     }
   }
   html += "<div class='uitleg'><b>"+ct("Waarom:","Why:")+"</b> "+zinUitleg(s)+"</div>";
+  // De juiste zin staat nu in beeld. Dit is het enige moment waarop horen hoe hij klinkt iets
+  // toevoegt: je weet wat er staat en wat het betekent, dus je hoort de uitspraak en niet een raadsel.
+  html += "<div class='row' style='margin-top:6px'>"+ct("<span class='muted' style='font-size:.85rem; align-self:center'>Zo klinkt hij:</span>","<span class='muted' style='font-size:.85rem; align-self:center'>This is how it sounds:</span>")+zinLuisterKnopHtml()+"</div>";
   html += "<div class='row'>"+
     (retryable ? "<button class='primary' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
                  "<button class='ghost' id='btnAiCheck'>🤖 "+ct("Is mijn variant ook goed?","Is my version also correct?")+"</button>"+
@@ -6440,6 +6543,7 @@ function checkSentence(){
   fb.innerHTML = html;
   persist();
   if(gehaald){ checkLessonComplete(); }
+  zinLuisterWire(s);
   var rauw = document.getElementById("sInput") ? document.getElementById("sInput").value : "";
   var bn = document.getElementById("btnNext");
   if(bn) bn.onclick = function(){

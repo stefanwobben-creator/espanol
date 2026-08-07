@@ -71,12 +71,25 @@ const { chromium } = require('playwright');
   const resultaat = await page.evaluate((id) => {
     const s = SENTENCES.find(x => x.id === id);
     sIdx = s;
+    // v21.3: schrijfvaardigheid komt alleen nog uit de typestand. Meerkeuze en tegels bewijzen dat
+    // je de zin herkent, niet dat je hem kunt maken, dus die markeren niets meer. Deze test typt de
+    // zin, dus hij hoort in de typestand te staan.
+    S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = 'moeilijk'; sModusOverride = 'moeilijk';
     document.getElementById('sInput').value = s.es;
     checkSentence();
-    return { done: !!S.done[s.id], comp: !!(S.comp && S.comp.schrijven && S.comp.schrijven[s.id]) };
+    const comp = !!(S.comp && S.comp.schrijven && S.comp.schrijven[s.id]);
+    // en tegenproef: dezelfde zin via de makkelijke stand markeert niet
+    const s2 = SENTENCES.find(x => x.id !== id && x.tag === s.tag) || s;
+    sIdx = s2; S.modusKeuze.zin = 'makkelijk'; sModusOverride = 'makkelijk';
+    renderSentenceBody();
+    document.getElementById('sInput').value = s2.es;
+    checkSentence();
+    return { done: !!S.done[s.id], comp: comp,
+             makkelijkMarkeert: !!(S.comp && S.comp.schrijven && S.comp.schrijven[s2.id]) };
   }, info.eersteId);
   ok(resultaat.done, 'een jaartal-zin (' + info.eersteId + ': "' + info.eersteEs + '") werkt gewoon door checkSentence() heen, net als elke andere zin');
   ok(resultaat.comp, 'checkSentence() markeert S.comp.schrijven voor een jaartal-zin, zoals voor elke andere zin');
+  ok(resultaat.makkelijkMarkeert === false, 'de makkelijke stand markeert geen schrijfvaardigheid (v21.3)');
   const schrijvenNa = await page.evaluate(() => berekenCompetenties().schrijven.pct);
   ok(schrijvenNa >= 0, 'berekenCompetenties() blijft geldig na een jaartal-zin (' + schrijvenNa + '%)');
 
