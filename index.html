@@ -995,7 +995,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.0";
+var APP_VERSIE = "v21.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1783,6 +1783,14 @@ var B_WORDS = [
 var B_SENTENCES = [
  {id:"bs1", lvl:1, nl:"Hallo, ik heet Ana.", en:"Hello, my name is Ana.", es:"Hola, me llamo Ana.", alt:["hola me llamo ana"],
   uitleg:"Me llamo = letterlijk 'ik noem mij'. Zo stel je je voor.", ue:"Me llamo = literally 'I call myself'. That's how you introduce yourself.", tag:"basis"},
+ /* v21.1: drie drillzinnen op Ilona's eigen foutclusters. Ze zijn kort gehouden (vier woorden,
+    geen accenten die je moet raden) omdat ze bedoeld zijn voor iemand die net begint. */
+ {id:"bs70", lvl:1, nl:"Zij heet Marta.", en:"Her name is Marta.", es:"Ella se llama Marta.", alt:["ella se llama marta","se llama marta"],
+  uitleg:"Llamarse verandert mee met wie je bedoelt: ik heet = me llamo, jij heet = te llamas, zij heet = se llama. Het werkwoord blijft, het woordje ervoor wisselt.", ue:"Llamarse changes with who you mean: I am called = me llamo, you = te llamas, she = se llama. The verb stays, the little word in front changes.", tag:"basis"},
+ {id:"bs71", lvl:1, nl:"Mijn oma is weduwe.", en:"My grandmother is a widow.", es:"Mi abuela es viuda.", alt:["mi abuela es viuda"],
+  uitleg:"Viudo voor een man, viuda voor een vrouw. Abuela is vrouwelijk, dus viuda met een a. Let ook op: geen 'una' ervoor, in het Spaans zeg je gewoon es viuda.", ue:"Viudo for a man, viuda for a woman. Abuela is feminine, so viuda with an a. Also note: no 'una' in front, in Spanish you just say es viuda.", tag:"basis"},
+ {id:"bs72", lvl:1, nl:"Mijn buurman is buitenlander.", en:"My neighbour is a foreigner.", es:"Mi vecino es extranjero.", alt:["mi vecino es extranjero"],
+  uitleg:"Extranjero voor een man, extranjera voor een vrouw. En net als bij viuda: geen lidwoord voor een beroep of herkomst, dus es extranjero en niet es un extranjero.", ue:"Extranjero for a man, extranjera for a woman. And like viuda: no article before a profession or origin, so es extranjero, not es un extranjero.", tag:"basis"},
  {id:"bs2", lvl:1, nl:"Ik ben twaalf jaar.", en:"I am twelve years old.", es:"Tengo doce años.", alt:["tengo doce años","tengo 12 años","tengo doce anos"],
   uitleg:"Verrassing: in het Spaans HEB je jaren (tener), je bent ze niet. Tengo = ik heb.", ue:"Surprise: in Spanish you HAVE years (tener), you aren't them. Tengo = I have.", tag:"tener"},
  {id:"bs3", lvl:1, nl:"Ik woon in Nederland.", en:"I live in the Netherlands.", es:"Vivo en los Países Bajos.", alt:["vivo en los países bajos","vivo en los paises bajos","vivo en holanda"],
@@ -2825,6 +2833,21 @@ var EXTRA_CONTENT = {
     "s144"
    ],
    "quizzes": []
+  },
+  "a0-0": {
+   "words": [],
+   "sents": [
+    "bs70"
+   ],
+   "quizzes": []
+  },
+  "a0-1": {
+   "words": [],
+   "sents": [
+    "bs71",
+    "bs72"
+   ],
+   "quizzes": []
   }
  },
  "nieuweLessen": []
@@ -2832,7 +2855,11 @@ var EXTRA_CONTENT = {
 
 function pasExtraContentToe(){
   var ls = TRACKS.a2.lessons;
-  ls.forEach(function(l){
+  /* v21.1: hier stond alleen het A2-pad, waardoor de A0-track geen enkele drillzin kon krijgen.
+     Ilona is een echte gebruiker en had negen fouten tegenover nul oefenzinnen. Lesnummers botsen
+     niet tussen de tracks (a2-* tegenover a0-*), dus dezelfde map kan beide bedienen. */
+  var alle = ls.concat(TRACKS.beginner.lessons || []);
+  alle.forEach(function(l){
     var e = EXTRA_CONTENT.lessen[l.id];
     if(!e) return;
     l.words = l.words.concat(e.words || []);
