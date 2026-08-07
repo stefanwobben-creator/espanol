@@ -118,6 +118,10 @@ const { chromium } = require('playwright');
   await page.evaluate(() => {
     const d = document.createElement('div');
     d.id = 'jrgProef';
+    // v21.5: dit proefblokje hing onderaan de body en kwam daardoor achter de vaste onderbalk
+    // terecht, die sinds de vijfde navigatieplek net iets anders uitpakt. Het is een synthetisch
+    // blokje voor deze test, dus zetten we het bovenaan en vrij van alles.
+    d.style.cssText = 'position:fixed; top:8px; left:8px; right:8px; z-index:9999; background:#fff; padding:8px';
     d.innerHTML = '<p>De gerundio en de subjuntivo.</p>';
     document.body.appendChild(d);
     jargonScan(d);

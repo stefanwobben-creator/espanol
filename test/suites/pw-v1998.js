@@ -55,11 +55,12 @@ async function nieuwProfiel(page) {
   console.log('  ', JSON.stringify(nav.knoppen));
   ok(nav.pos === 'fixed', 'de balk hangt vast aan het scherm');
   ok(nav.onder === 0, 'hij staat tegen de onderrand (afstand ' + nav.onder + 'px)');
-  ok(nav.knoppen.length === 4, 'precies vier vakken');
+  // v21.5: er is een vijfde plek bijgekomen, Oefenen, tussen Woordjes en Spelen.
+  ok(nav.knoppen.length === 5, 'precies vijf vakken');
   ok(!nav.scroll, 'er valt niets weg te schuiven, dus niets kan zich verstoppen');
   ok(nav.knoppen.every((k) => k.hoog >= 44), 'elk vak is minstens 44px hoog (duimmaat)');
   ok(nav.knoppen.every((k) => /[A-Za-zÀ-ÿ]{3,}/.test(k.tekst)), 'elk vak heeft een woord, niet alleen een plaatje');
-  ok(nav.knoppen.map((k) => k.tab).join(',') === 'lessen,woorden,speeltuin,__meer', 'de volgorde is Vandaag, Woordjes, Spelen, Meer');
+  ok(nav.knoppen.map((k) => k.tab).join(',') === 'lessen,woorden,oefenen,speeltuin,__meer', 'de volgorde is Vandaag, Woordjes, Oefenen, Spelen, Meer');
   ok(!/[—–]|--/.test(nav.knoppen.map((k) => k.tekst).join(' ')), 'geen streepjes in de balk');
 
   console.log('\n-- de balk blijft staan als je scrollt --');
@@ -127,7 +128,9 @@ async function nieuwProfiel(page) {
     };
   });
   console.log('  ', meer.rijen.map((r) => r.id).join(','));
-  const bereikbaar = meer.rijen.map((r) => r.id).concat(['lessen', 'woorden', 'speeltuin']);
+  // wat via Oefenen te bereiken is telt net zo goed mee als wat in de balk of onder Meer staat
+  const viaOefenen = await page.evaluate(() => oefenItems().map((o) => o.id));
+  const bereikbaar = meer.rijen.map((r) => r.id).concat(['lessen', 'woorden', 'oefenen', 'speeltuin']).concat(viaOefenen);
   const alleTabs = await page.evaluate(() => TABS.filter((t) => ['steun', 'privacy', 'toetsjes'].indexOf(t.id) === -1).map((t) => t.id));
   ok(alleTabs.every((t) => bereikbaar.indexOf(t) !== -1), 'elke tab is via de balk of via Meer te bereiken');
   ok(meer.rijen.every((r) => r.kop.length > 1 && r.uit.length > 15), 'elke regel heeft een naam en een uitleg');
@@ -135,13 +138,14 @@ async function nieuwProfiel(page) {
   ok(!/[—–]|--/.test(JSON.stringify(meer)), 'geen streepjes in het Meer-blad');
 
   console.log('\n-- Meer brengt je er ook echt heen en licht dan op --');
-  await page.click("[data-meer='spiekbrief']"); await page.waitForTimeout(500);
+  // spiekbrief is naar Oefenen verhuisd, dus hier nemen we cursus als proef op de som
+  await page.click("[data-meer='cursus']"); await page.waitForTimeout(500);
   const na = await page.evaluate(() => ({
-    open: !document.getElementById('tab-spiekbrief').classList.contains('hidden'),
+    open: !document.getElementById('tab-cursus').classList.contains('hidden'),
     blad: document.getElementById('meerWrap').classList.contains('hidden'),
     actief: Array.prototype.filter.call(document.querySelectorAll('#nav button'), (b) => b.classList.contains('active')).map((b) => b.getAttribute('data-tab'))
   }));
-  ok(na.open, 'Grammatica staat open');
+  ok(na.open, 'Cursus staat open');
   ok(na.blad, 'het blad is dicht');
   ok(na.actief.join(',') === '__meer', 'Meer licht op, en alleen Meer');
 

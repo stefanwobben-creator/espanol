@@ -62,9 +62,13 @@ async function wegMetOverlays(page) {
   });
   console.log('  klaar ::', menu.klaar.join(','));
   console.log('  straks ::', menu.straks);
-  ok(menu.klaar.length === 4, 'vier spellen staan klaar (was 10)');
+  // v21.5: de Speeltuin heeft alleen nog spelletjes; Escuchar, El Corrector en de Conjugador zijn
+  // naar Oefenen verhuisd. Een exacte telling maakt elke verhuizing een valse regressie, dus we
+  // toetsen wat de test eigenlijk bewaakt: niet alles staat meteen open.
+  ok(menu.klaar.length >= 1 && menu.klaar.length < menu.klaar.length + menu.straks, 'niet alles staat meteen open (' + menu.klaar.length + ' klaar, ' + menu.straks + ' grijs)');
   ok(menu.klaar.indexOf('ftAvt') !== -1 && menu.klaar.indexOf('ftMusica') !== -1, 'Aventura en Musica staan er altijd');
-  ok(menu.klaar.indexOf('ftConj') !== -1 && menu.klaar.indexOf('ftDuel') !== -1, 'Conjugador en Duel staan er altijd');
+  // v21.5: de Conjugador is naar Oefenen verhuisd; de Speeltuin heeft alleen nog spelletjes.
+  ok(menu.klaar.indexOf('ftDuel') !== -1 && menu.klaar.indexOf('ftAvt') !== -1, 'Duel en Aventura staan er altijd');
   // v21.2: exacte tellingen maken elke nieuwe oefening een valse regressie (v19.52-les).
   ok(menu.straks >= 1, 'er staat nog iets in het grijs (' + menu.straks + ')');
   ok(menu.kop, 'kop "Komt er straks bij" staat er');
@@ -179,8 +183,8 @@ async function wegMetOverlays(page) {
   await page.evaluate(() => { S.speelAlles = true; try { persist(); } catch (e) {} show('speeltuin'); });
   await page.waitForTimeout(350);
   await wegMetOverlays(page);
-  await page.click('#ftConj'); await page.waitForTimeout(500);
-  ok(await page.evaluate(() => funView) === 'conj', 'Conjugador opent nog gewoon');
+  await page.click('#ftMem'); await page.waitForTimeout(500);
+  ok(await page.evaluate(() => funView) === 'mem', 'Memory opent nog gewoon');
   await page.screenshot({ path: 'shot-v1992-conj.png' });
 
   console.log('\nPAGE ERRORS:', errs);

@@ -39,14 +39,18 @@
      lenen van de labels, en een label zonder woord is precies de knop waarvan je niet weet wat hij
      doet. */
   nav#nav{position:fixed; left:0; right:0; bottom:0; z-index:95; margin:0;
-          display:grid; grid-template-columns:repeat(4,1fr);
+          /* v21.5: vijf plekken in plaats van vier. Hardgecodeerd op vier liet de vijfde knop op een
+             telefoon naar een tweede regel vallen, en dan staat je onderbalk ineens twee rijen hoog
+             over de inhoud heen. auto-fit telt zelf hoeveel er zijn. */
+          display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
           background:var(--card); border-top:1px solid var(--border);
           box-shadow:0 -2px 14px rgba(0,0,0,.07);
           padding:5px 4px calc(5px + env(safe-area-inset-bottom, 0px));}
   nav#nav button{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
                  border:none; background:none; color:var(--muted); cursor:pointer;
-                 padding:5px 2px; min-height:50px; border-radius:12px;
-                 font-size:.7rem; font-weight:700; letter-spacing:-.01em;}
+                 padding:5px 1px; min-height:50px; border-radius:12px; min-width:0;
+                 font-size:.66rem; font-weight:700; letter-spacing:-.02em;}
+  nav#nav button > span:last-child{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   nav#nav button .navico{font-size:1.3rem; line-height:1;}
   nav#nav button.active{color:var(--accent);}
   nav#nav button:active{background:var(--bg);}
@@ -947,6 +951,10 @@
   </section>
 
   <!-- SPEELTUIN -->
+  <section id="tab-oefenen" class="hidden">
+    <div class="card" id="oefenCard"></div>
+  </section>
+
   <section id="tab-speeltuin" class="hidden">
     <div class="card" id="funCard"></div>
   </section>
@@ -1002,7 +1010,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.4";
+var APP_VERSIE = "v21.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -12428,6 +12436,7 @@ var TXT = {
   spiekbrief:{nl:"Grammatica",en:"Grammar",fr:"Grammaire",de:"Grammatik"},
   meer:{nl:"Meer",en:"More",fr:"Plus",de:"Mehr"},
   spelen:{nl:"Spelen",en:"Play",fr:"Jouer",de:"Spielen"},
+  oefenen:{nl:"Oefenen",en:"Practise",fr:"S'entraîner",de:"Üben"},
   chispa:{nl:"Chispa",en:"Chispa",fr:"Chispa",de:"Chispa"},
   musica:{nl:"Música",en:"Música",fr:"Música",de:"Música"},
   perfil:{nl:"Profiel",en:"Profile",fr:"Profil",de:"Profil"},
@@ -12487,12 +12496,22 @@ function voetnootTaal(){
 // v19.98: vier vaste plekken onderaan. Vandaag is de dagcyclus, Woordjes en Spelen zijn de twee
 // dingen die je uit jezelf opent, en achter Meer zit al het overige met een zin erbij die zegt wat
 // het is. buildNav() blijft het taalhaakje: hij hangt aan boot() en init() en hertekent alles.
+/* v21.5. Stefan: "lessen, dat zijn de oefeningen, die zitten nu ook onder speeltuin" en "speeltuin
+   maar daar spelletjes van". Klopte allebei: Vertalen, je belangrijkste oefening, zat verstopt achter
+   het hamburgermenu, en Escuchar, El Corrector en de Conjugador stonden tussen Memory en het
+   kruiswoord. De regel eronder is in een zin uit te leggen: wat je onder Oefenen doet telt mee voor
+   je niveau, wat je onder Spelen doet niet. */
 var NAV_HOOFD = [
   {id:"lessen", ico:"\u2600\uFE0F"},
   {id:"woorden", ico:"\uD83D\uDD24"},
+  {id:"oefenen", ico:"\u270D\uFE0F", txt:"oefenen"},
   {id:"speeltuin", ico:"\uD83C\uDFB2", txt:"spelen"},
   {id:"__meer", ico:"\u2630", txt:"meer"}
 ];
+/* Oefeningen die in de speeltuinkaart renderen (funView). Ze horen bij Oefenen, dus moet de balk
+   Oefenen laten oplichten en niet Spelen, ook al staan ze technisch in hetzelfde scherm. */
+var OEFEN_FUNVIEWS = ["audi", "corr", "conj"];
+var OEFEN_TABS = ["vertalen", "lezen", "spiekbrief", "oefenen"];
 
 // Alles wat niet in de balk past. De tweede regel is geen decoratie: mijn moeder wist bij de helft
 // van de knoppen niet wat ze deden, en een naam alleen lost dat niet op.
@@ -12500,12 +12519,6 @@ function meerItems(){
   return [
     {id:"cursus", ico:"\uD83D\uDDFA\uFE0F", uit:ct("Je leerlijn: welke les je waar bent gebleven.",
       "Your course: which lesson you left off at.")},
-    {id:"vertalen", ico:"\u270D\uFE0F", uit:ct("Zinnen maken, van het Nederlands naar het Spaans.",
-      "Building sentences, from English into Spanish.")},
-    {id:"lezen", ico:"\uD83D\uDCD6", uit:ct("Het verhaal van Chispa, hoofdstuk voor hoofdstuk.",
-      "Chispa's story, chapter by chapter.")},
-    {id:"spiekbrief", ico:"\uD83D\uDCD0", uit:ct("Regels opzoeken en oefenen, zonder dat je ze uit je hoofd hoeft te kennen.",
-      "Look up the rules and practise them, no memorising needed.")},
     {id:"musica", ico:"\uD83C\uDFB5", uit:ct("Liedjes met vragen erbij.", "Songs with questions alongside.")},
     {id:"chispa", ico:"\uD83E\uDD8E", uit:ct("Hoe het met je axolotl gaat.", "How your axolotl is doing.")},
     {id:"perfil", ico:"\uD83D\uDC64", uit:ct("Je voortgang, je instellingen en wisselen van profiel.",
@@ -12547,6 +12560,62 @@ function meerModal(){
     b.onclick = function(){ meerSluit(); scopeLesson = null; show(b.getAttribute("data-meer")); };
   });
   wrap.classList.remove("hidden");
+}
+
+/* ================= OEFENEN (v21.5) =================
+   Een menu, geen scherm met eigen inhoud: elke rij brengt je naar de oefening zelf. Drie ervan zijn
+   een eigen tabblad, drie renderen in de speeltuinkaart via funView. Dat verschil is techniek en
+   hoort de gebruiker niet te zien, dus licht in beide gevallen Oefenen op in de balk. */
+function oefenItems(){
+  return [
+    {id:"vertalen", soort:"tab", ico:"✍️", t:ct("Zinnen maken","Build sentences"),
+     s:ct("Van het Nederlands naar het Spaans, met tegels of zelf typen.","From Dutch into Spanish, with tiles or by typing.")},
+    {id:"audi", soort:"fun", ico:"👂", t:"Escuchar",
+     s:ct("Luister een gesprek en zeg waar het over ging.","Listen to a conversation and say what it was about.")},
+    {id:"lezen", soort:"tab", ico:"📖", t:ct("Lezen","Reading"),
+     s:ct("Het verhaal van Chispa, hoofdstuk voor hoofdstuk.","Chispa's story, chapter by chapter.")},
+    {id:"corr", soort:"fun", ico:"🕵️", t:"El Corrector",
+     s:ct("Zoek de fout in een Spaanse zin.","Find the mistake in a Spanish sentence.")},
+    {id:"conj", soort:"fun", ico:"🎯", t:"Conjugador",
+     s:ct("Werkwoorden vervoegen, tegen de klok.","Conjugating verbs, against the clock.")},
+    {id:"spiekbrief", soort:"tab", ico:"📐", t:ct("Grammatica","Grammar"),
+     s:ct("Regels opzoeken en oefenen, zonder ze uit je hoofd te leren.","Look up the rules and practise them, no memorising.")}
+  ];
+}
+function renderOefenen(){
+  var el = document.getElementById("oefenCard");
+  if(!el) return;
+  /* Dezelfde afspraak als in de Speeltuin: wat vandaag nog niets kan tonen staat in het grijs met de
+     eis erbij, en niet verstopt. Grijs betekent "dit past nu nog niet bij je en dit is waarom". */
+  var nu = "", straks = "";
+  oefenItems().forEach(function(o){
+    var kop = "<div class='lnum'>" + o.ico + "</div><div class='lbody'><b>" + o.t + "</b><span>";
+    if(speelKlaar(o.id)){
+      nu += "<div class='lesson' data-oef='" + o.id + "'>" + kop + o.s + "</span></div><div class='lstatus'>▶</div></div>";
+    } else {
+      straks += "<div class='lesson' style='opacity:.5'>" + kop + speelWacht(o.id) + "</span></div><div class='lstatus'>·</div></div>";
+    }
+  });
+  el.innerHTML = "<h2>" + tt("oefenen") + "</h2>" +
+    "<p class='muted'>" + ct("Alles hier telt mee voor je niveau.","Everything here counts towards your level.") + "</p>" +
+    nu + (straks ? "<p class='muted' style='margin:14px 0 4px'><b>" +
+      ct("Komt er straks bij","Joining in later") + "</b></p>" + straks : "");
+  el.querySelectorAll("[data-oef]").forEach(function(r){
+    r.onclick = function(){
+      var id = r.getAttribute("data-oef");
+      var o = oefenItems().filter(function(x){ return x.id === id; })[0];
+      if(!o) return;
+      if(o.soort === "tab"){ scopeLesson = null; show(o.id); return; }
+      speelGezien(o.id);
+      funView = o.id;
+      if(id === "audi"){ audStop(); audSc = null; }
+      if(id === "corr"){ corrOpg = null; corrRonde = null; }
+      if(id === "conj"){ conjIdx = null; conjRonde = null; }
+      navPush({t:"fun", v:o.id});
+      show("speeltuin", true);
+      renderFun();
+    };
+  });
 }
 
 function buildNav(){
@@ -16863,9 +16932,6 @@ function renderFun(){
     {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",        t:"M\u00fasica",         s:fx("muS")},
     {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",        t:fx("wsT"),            s:fx("wsS")},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",        t:"Crucigrama",         s:fx("krS")},
-    {v:"audi",    id:"ftAudi",    e:"\ud83d\udc42",        t:"Escuchar",           s:ct("Luister een gesprek en zeg waar het over ging","Listen to a conversation and say what it was about")},
-    {v:"conj",    id:"ftConj",    e:"\ud83c\udfaf",        t:"Conjugador",         s:fx("cjS")},
-    {v:"corr",    id:"ftCorr",    e:"\ud83d\udd75\ufe0f", t:fx("coT"),            s:fx("coS")},
     {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",        t:"Memory \u00b7 Parejas", s:fx("meS")},
     {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",        t:"Palabra Duel",       s:fx("duS")}
   ];
@@ -16897,9 +16963,6 @@ function renderFun(){
   wire("ftMusica", function(){ show("musica"); });
   wire("ftWs", function(){ speelGezien("ws"); funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); });
   wire("ftKruis", function(){ speelGezien("kruis"); funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); });
-  wire("ftAudi", function(){ speelGezien("audi"); funView = "audi"; audStop(); audSc = null; navPush({t:"fun", v:"audi"}); renderFun(); });
-  wire("ftConj", function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); });
-  wire("ftCorr", function(){ speelGezien("corr"); funView = "corr"; corrOpg = null; corrRonde = null; navPush({t:"fun", v:"corr"}); renderFun(); });
   wire("ftMem", function(){ speelGezien("mem"); funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); });
   wire("ftDuel", function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); });
   var sa = document.getElementById("speelAlles");
@@ -21882,6 +21945,7 @@ var TABS = [
   {id:"steun", label:"Steun", nav:false},
   {id:"privacy", label:"Privacy", nav:false},
   {id:"musica", label:"Música", nav:false},
+  {id:"oefenen", label:"Oefenen", nav:false},
   {id:"speeltuin", label:"Speeltuin"},
   {id:"spiekbrief", label:"Grammatica"}
 ];
@@ -21976,12 +22040,17 @@ function show(tabId, skipPush){
   });
   // v19.98: de vier vakken lichten op bij hun eigen tab; alles wat achter Meer zit laat Meer oplichten,
   // zodat je op elk scherm ziet via welke deur je binnenkwam.
-  var inMeer = ["cursus","vertalen","lezen","spiekbrief","musica","chispa","perfil"].indexOf(tabId) !== -1;
+  var inMeer = ["cursus","musica","chispa","perfil"].indexOf(tabId) !== -1;
+  // Oefenen licht op zodra je in een oefening zit, ook als die technisch in de speeltuinkaart woont.
+  var inOefen = OEFEN_TABS.indexOf(tabId) !== -1 ||
+                (tabId === "speeltuin" && OEFEN_FUNVIEWS.indexOf(funView) !== -1);
   document.querySelectorAll("#nav button").forEach(function(b){
     var id = b.getAttribute("data-tab");
-    b.classList.toggle("active", id === "__meer" ? inMeer : id === tabId);
+    var aan = id === "__meer" ? inMeer : (id === "oefenen" ? inOefen : (id === tabId && !inOefen));
+    b.classList.toggle("active", aan);
   });
   if(tabId==="lessen"){ renderLessons(); }
+  if(tabId==="oefenen"){ funView = null; renderOefenen(); }
   if(tabId==="woorden"){ buildQueue(); renderWord(); }
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
