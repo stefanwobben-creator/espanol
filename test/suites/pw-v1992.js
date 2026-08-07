@@ -65,7 +65,8 @@ async function wegMetOverlays(page) {
   ok(menu.klaar.length === 4, 'vier spellen staan klaar (was 10)');
   ok(menu.klaar.indexOf('ftAvt') !== -1 && menu.klaar.indexOf('ftMusica') !== -1, 'Aventura en Musica staan er altijd');
   ok(menu.klaar.indexOf('ftConj') !== -1 && menu.klaar.indexOf('ftDuel') !== -1, 'Conjugador en Duel staan er altijd');
-  ok(menu.straks === 6, 'zes spellen staan in het grijs');
+  // v21.2: exacte tellingen maken elke nieuwe oefening een valse regressie (v19.52-les).
+  ok(menu.straks >= 6, 'minstens zes spellen staan in het grijs (' + menu.straks + ')');
   ok(menu.kop, 'kop "Komt er straks bij" staat er');
   ok(menu.alles, 'de escape-link staat er');
   ok(/nu 0/.test(menu.tekst), 'de wachtregel toont een levende teller');
@@ -80,7 +81,7 @@ async function wegMetOverlays(page) {
     kop: /Komt er straks bij/.test(document.getElementById('funCard').innerHTML),
     s: S.speelAlles
   }));
-  ok(na.n === 10, 'na de tik staan alle tien spellen er');
+  ok(na.n === menu.klaar.length + menu.straks, 'na de tik staan alle spellen er (' + na.n + ')');
   ok(!na.kop, 'het grijze blok is weg');
   ok(na.s === true, 'de keuze is opgeslagen in S.speelAlles');
 

@@ -81,6 +81,13 @@
   .feedback.ok{background:var(--green-soft); color:var(--green);}
   .feedback.bijna{background:var(--amber-soft); color:var(--amber);}
   .feedback.fout{background:var(--red-soft); color:var(--red);}
+  .aud-regels{margin-top:12px; display:flex; flex-direction:column; gap:6px;}
+  .aud-regel{display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:9px;
+       border:1.5px solid var(--border); background:var(--card); font-size:.95rem;}
+  .aud-regel.nu{border-color:var(--accent); background:var(--bg);}
+  .aud-luidspreker{border:none; background:none; padding:0; font-size:1rem; cursor:pointer; line-height:1;}
+  .aud-wie{font-weight:700; color:var(--muted); min-width:1.1em;}
+  .aud-tekst{flex:1;}
   .dmod{padding:7px 12px; font-size:.92rem; min-width:0;}
   .dmod.aan{border-color:var(--accent); color:var(--accent); font-weight:700;}
   .dsleep-rij{min-height:52px; display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;
@@ -995,7 +1002,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.1";
+var APP_VERSIE = "v21.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2885,6 +2892,175 @@ pasExtraContentToe();
    (tag "boek-N"), niet in dit object zelf — zie boekWoorden(). Begripsvragen zijn multiple
    choice (opts/c, zelfde patroon als QUIZZES) zodat ze meetellen voor tapas/XP; de
    reflectievraag is open en wordt NIET gescoord. */
+/* ================= ESCUCHAR: luisteren met begripsvragen (v21.2) =================
+   Dictado traint transcriberen: klanken omzetten in letters. Dat is geen begrijpen; je kunt een
+   Spaanse zin foutloos overtikken zonder te weten wat er staat. Deze oefening meet wel begrip.
+
+   Vier regels die de vragen bruikbaar houden:
+   1. De vraag staat in het Nederlands, anders test je stiekem ook lezen.
+   2. Afleiders blijven binnen de scene en verschillen op precies een betekenisdragend punt
+      (wie, hoeveel, wanneer, wel of niet), nooit op onderwerp.
+   3. Minstens een vraag per scene staat niet letterlijk in de tekst.
+   4. Nooit vragen waar het zich afspeelt: dat staat al boven de oefening.
+
+   Audio: per regel, niet per scene. ElevenLabs doet een stem per aanroep, dus een dialoog moet toch
+   in stukken. Dat levert twee dingen op die je anders niet had: je kunt tonen welke regel klinkt, en
+   wie vastloopt kan een losse zin herhalen in plaats van de hele scene. Bestanden staan in
+   audio/dialogo-a/<id>-<n>.mp3 en audio/dialogo-b/<id>-<n>.mp3, elk met hun eigen vaste stem. */
+var AUDICIONES = [
+ {id:"e1", nivel:"a0", tema:"tienda", titel:"In de winkel", titelEn:"At the shop",
+  lineas:[
+   {v:"a", es:"Buenos días. ¿Cuánto cuesta este bolso?"},
+   {v:"b", es:"Cuarenta euros. Pero hoy hay descuento: treinta."},
+   {v:"a", es:"Vale. ¿Puedo pagar con tarjeta?"},
+   {v:"b", es:"Claro. La tarjeta aquí, por favor."}
+  ],
+  vragen:[
+   {q:"Hoeveel betaalt ze uiteindelijk?", qEn:"How much does she end up paying?",
+    opts:["Dertig euro","Veertig euro","Dertien euro","Zeventig euro"],
+    optsEn:["Thirty euros","Forty euros","Thirteen euros","Seventy euros"], c:0,
+    waarom:"Cuarenta is veertig, treinta is dertig. De vraagprijs was veertig, met korting dertig.",
+    waaromEn:"Cuarenta is forty, treinta is thirty. The asking price was forty, with the discount thirty."},
+   {q:"Hoe wil ze betalen?", qEn:"How does she want to pay?",
+    opts:["Met kaart","Contant","Later","Ze betaalt niet"],
+    optsEn:["By card","In cash","Later","She doesn't pay"], c:0,
+    waarom:"Pagar con tarjeta = met de kaart betalen.", waaromEn:"Pagar con tarjeta = to pay by card."},
+   {q:"Waarom is het goedkoper dan de vraagprijs?", qEn:"Why is it cheaper than the asking price?",
+    opts:["Er is vandaag korting","Ze praat de prijs omlaag","De tas is beschadigd","Ze komt hier vaker"],
+    optsEn:["There's a discount today","She talks the price down","The bag is damaged","She's a regular here"], c:0,
+    waarom:"Hoy hay descuento: vandaag is er korting. Dat zegt de verkoper zelf.",
+    waaromEn:"Hoy hay descuento: there's a discount today. The seller says so."}
+  ]},
+ {id:"e2", nivel:"a0", tema:"restaurante", titel:"In het restaurant", titelEn:"At the restaurant",
+  lineas:[
+   {v:"a", es:"Buenas tardes. ¿Qué va a tomar?"},
+   {v:"b", es:"Para mí la sopa, y un agua sin gas."},
+   {v:"a", es:"¿Y de segundo?"},
+   {v:"b", es:"Nada más, gracias. Tengo poca hambre."}
+  ],
+  vragen:[
+   {q:"Wat wil hij drinken?", qEn:"What does he want to drink?",
+    opts:["Water zonder bubbels","Water met bubbels","Wijn","Bier"],
+    optsEn:["Still water","Sparkling water","Wine","Beer"], c:0,
+    waarom:"Sin gas = zonder koolzuur. Con gas zou met bubbels zijn.",
+    waaromEn:"Sin gas = without bubbles. Con gas would be sparkling."},
+   {q:"Neemt hij een hoofdgerecht?", qEn:"Is he having a main course?",
+    opts:["Nee, hij heeft weinig honger","Ja, hij neemt de vis van de dag","Ja, hij neemt vlees met patat","Hij wil er nog even over nadenken"],
+    optsEn:["No, he isn't very hungry","Yes, he takes the fish of the day","Yes, he takes meat with fries","He wants to think about it a bit"], c:0,
+    waarom:"Nada más = niets meer. En tengo poca hambre = ik heb weinig honger.",
+    waaromEn:"Nada más = nothing more. And tengo poca hambre = I'm not very hungry."},
+   {q:"Wie is de eerste spreker?", qEn:"Who is the first speaker?",
+    opts:["De ober","De kok","Een vriend","Iemand aan de telefoon"],
+    optsEn:["The waiter","The cook","A friend","Someone on the phone"], c:0,
+    waarom:"Hij vraagt wat je gaat nemen en informeert naar het tweede gerecht. Dat doet de ober.",
+    waaromEn:"He asks what you'll have and about the second course. That's the waiter."}
+  ]},
+ {id:"e3", nivel:"a1", tema:"medico", titel:"Bij de dokter", titelEn:"At the doctor's",
+  lineas:[
+   {v:"a", es:"Buenos días. ¿Qué le pasa?"},
+   {v:"b", es:"Me duele la cabeza desde el lunes."},
+   {v:"b", es:"Y por la noche no duermo bien."},
+   {v:"a", es:"¿Toma alguna pastilla?"},
+   {v:"b", es:"No, todavía no."}
+  ],
+  vragen:[
+   {q:"Waar heeft ze last van?", qEn:"What's bothering her?",
+    opts:["Hoofdpijn","Buikpijn","Keelpijn","Koorts"],
+    optsEn:["A headache","A stomach ache","A sore throat","A fever"], c:0,
+    waarom:"Me duele la cabeza = mijn hoofd doet pijn.",
+    waaromEn:"Me duele la cabeza = my head hurts."},
+   {q:"Sinds wanneer?", qEn:"Since when?",
+    opts:["Sinds maandag","Sinds gisteren","Sinds een maand","Sinds vanochtend"],
+    optsEn:["Since Monday","Since yesterday","For a month","Since this morning"], c:0,
+    waarom:"Desde el lunes = sinds maandag. Desde geeft het beginpunt aan.",
+    waaromEn:"Desde el lunes = since Monday. Desde marks the starting point."},
+   {q:"Slikt ze al iets?", qEn:"Is she taking anything yet?",
+    opts:["Nee, nog niet","Ja, elke dag","Ja, alleen 's nachts","Dat zegt ze niet"],
+    optsEn:["No, not yet","Yes, every day","Yes, only at night","She doesn't say"], c:0,
+    waarom:"Todavía no = nog niet. Dus ze is er nog niet aan begonnen.",
+    waaromEn:"Todavía no = not yet. So she hasn't started."}
+  ]},
+ {id:"e4", nivel:"a0", tema:"encuentro", titel:"Een ontmoeting", titelEn:"Meeting someone",
+  lineas:[
+   {v:"a", es:"¡Hola! ¿Eres nueva aquí?"},
+   {v:"b", es:"Sí, vivo aquí desde la semana pasada. Soy de Ámsterdam."},
+   {v:"a", es:"¡Qué bien! Yo me llamo Rosa. ¿Y tú?"},
+   {v:"b", es:"Marta. Encantada."}
+  ],
+  vragen:[
+   {q:"Waar komt Marta vandaan?", qEn:"Where is Marta from?",
+    opts:["Uit Amsterdam","Uit Madrid","Uit Rosario","Dat zegt ze niet"],
+    optsEn:["From Amsterdam","From Madrid","From Rosario","She doesn't say"], c:0,
+    waarom:"Soy de Ámsterdam. Soy de + plaats geeft je herkomst aan.",
+    waaromEn:"Soy de Ámsterdam. Soy de + place gives your origin."},
+   {q:"Hoe lang woont ze er al?", qEn:"How long has she lived there?",
+    opts:["Sinds vorige week","Al een jaar","Sinds vandaag","Sinds de zomer"],
+    optsEn:["Since last week","For a year","Since today","Since the summer"], c:0,
+    waarom:"Desde la semana pasada = sinds vorige week.",
+    waaromEn:"Desde la semana pasada = since last week."},
+   {q:"Kenden ze elkaar al?", qEn:"Did they already know each other?",
+    opts:["Nee, ze stellen zich net voor","Ja, ze werken bij hetzelfde bedrijf","Ja, ze wonen in dezelfde straat","Ja, ze zaten samen op school"],
+    optsEn:["No, they're just introducing themselves","Yes, they work at the same company","Yes, they live on the same street","Yes, they were at school together"], c:0,
+    waarom:"Rosa vraagt of ze nieuw is en zegt daarna pas haar eigen naam. Dat doe je bij een eerste kennismaking.",
+    waaromEn:"Rosa asks if she's new and only then gives her own name. That's a first meeting."}
+  ]},
+ {id:"e5", nivel:"a1", tema:"cultura", titel:"Las Fallas", titelEn:"Las Fallas",
+  lineas:[
+   {v:"a", es:"En marzo voy a Valencia. ¿Conoces las Fallas?"},
+   {v:"b", es:"Claro. Construyen figuras enormes de madera en las calles."},
+   {v:"a", es:"¿Y qué pasa con las figuras?"},
+   {v:"b", es:"La última noche las queman todas. Solo se salva una."}
+  ],
+  vragen:[
+   {q:"Wat gebeurt er met de figuren?", qEn:"What happens to the figures?",
+    opts:["Ze worden verbrand","Ze worden verkocht","Ze gaan naar een museum","Ze blijven een jaar staan"],
+    optsEn:["They're burned","They're sold","They go to a museum","They stay up for a year"], c:0,
+    waarom:"Quemar = verbranden. Las queman todas: ze verbranden ze allemaal.",
+    waaromEn:"Quemar = to burn. Las queman todas: they burn all of them."},
+   {q:"Hoeveel figuren blijven er bewaard?", qEn:"How many figures are saved?",
+    opts:["Eén","Geen enkele","Allemaal","De tien mooiste"],
+    optsEn:["One","None","All of them","The ten best"], c:0,
+    waarom:"Solo se salva una = er wordt er maar één gered. Dat is de winnaar, die gaat naar het museum.",
+    waaromEn:"Solo se salva una = only one is saved. That's the winner, and it goes to the museum."},
+   {q:"Wanneer is het feest?", qEn:"When is the festival?",
+    opts:["In maart","In juli","Met kerst","In september"],
+    optsEn:["In March","In July","At Christmas","In September"], c:0,
+    waarom:"Hij zegt en marzo voy a Valencia en vraagt in dezelfde adem naar de Fallas.",
+    waaromEn:"He says en marzo voy a Valencia and asks about the Fallas in the same breath."}
+  ]},
+ {id:"e6", nivel:"a1", tema:"cultura", titel:"Waarom zo laat eten", titelEn:"Why eat so late",
+  lineas:[
+   {v:"a", es:"¿A qué hora cenamos?"},
+   {v:"b", es:"Aquí se cena a las diez."},
+   {v:"a", es:"¿A las diez de la noche? En mi país cenamos a las seis."},
+   {v:"b", es:"Por eso comemos algo a media tarde. Se llama la merienda."}
+  ],
+  vragen:[
+   {q:"Hoe laat wordt er hier gegeten?", qEn:"What time do they eat here?",
+    opts:["Om tien uur 's avonds","Om zes uur 's avonds","Om acht uur 's avonds","Om twaalf uur 's nachts"],
+    optsEn:["At ten in the evening","At six in the evening","At eight in the evening","At twelve at night"], c:0,
+    waarom:"Se cena a las diez. Diez is tien, seis is zes.",
+    waaromEn:"Se cena a las diez. Diez is ten, seis is six."},
+   {q:"Wat is la merienda?", qEn:"What is la merienda?",
+    opts:["Iets kleins halverwege de middag","Het ontbijt met koffie en toast","Het warme hoofdgerecht 's avonds","Een feestdag in het voorjaar"],
+    optsEn:["A small bite mid-afternoon","Breakfast with coffee and toast","The hot main course in the evening","A public holiday in the spring"], c:0,
+    waarom:"Comemos algo a media tarde: iets eten halverwege de middag.",
+    waaromEn:"Comemos algo a media tarde: eating something mid-afternoon."},
+   {q:"Waarom bestaat de merienda?", qEn:"Why does la merienda exist?",
+    opts:["Omdat het avondeten zo laat is","Omdat de lunch klein is","Omdat kinderen vroeg slapen","Omdat de winkels dicht zijn"],
+    optsEn:["Because dinner is so late","Because lunch is small","Because children sleep early","Because the shops are shut"], c:0,
+    waarom:"Por eso = daarom. Hij noemt de merienda als gevolg van dat late avondeten.",
+    waaromEn:"Por eso = that's why. He gives la merienda as a consequence of that late dinner."}
+  ]}
+];
+function audZwaarte(sc){
+  var woorden = sc.lineas.reduce(function(n, l){ return n + l.es.trim().split(/\s+/).length; }, 0);
+  return sc.lineas.length * 2 + woorden * 0.2;
+}
+function audPlafond(){
+  return Math.min(30, 10 + Object.keys(S.audDone || {}).length * 2);
+}
+
 var BOOK = [
  {id:"boek-1", num:1, deel:"La Costa", titel:"El huevo que no sabía", drempel:0,
   tekst:"En la playa de La Costa, entre las piedras y el agua azul, hay un huevo pequeño y redondo.\n\n"+
@@ -4980,9 +5156,13 @@ function berekenCompetenties(){
   var boekDone = BOOK.filter(function(h){ return S.boek[h.id] && S.boek[h.id].done; }).length;
   var lezen = { pct: pct(boekDone, BOOK.length), teller: boekDone, noemer: BOOK.length,
     bron: [ct("Lezen (Chispa-boek)","Reading (the Chispa book)")] };
+  /* v21.2: luisteren komt niet langer uit Dictado. Een zin foutloos overtikken bewijst dat je de
+     klanken kunt spellen, niet dat je hem begreep; dat hoort bij schrijven en staat daar nu ook.
+     Luisteren komt uit Escuchar, waar je een gesprek hoort en vragen over de inhoud beantwoordt.
+     Gevolg: dit percentage zakt eenmalig. Dat is een correctie, geen achteruitgang. */
   var luisterTeller = Object.keys(S.comp.luisteren || {}).length;
-  var luisteren = { pct: pct(luisterTeller, SENTENCES.length), teller: luisterTeller, noemer: SENTENCES.length,
-    bron: ["Dictado"] };
+  var luisteren = { pct: pct(luisterTeller, AUDICIONES.length), teller: luisterTeller, noemer: AUDICIONES.length,
+    bron: ["Escuchar"] };
   // Schrijven-noemer: sinds 29 juli (v19.42) is de losse Jaartallen-oefening opgeheven en zijn de 15
   // jaartallen gewone SENTENCES-items geworden (s110-s124) - ze zitten dus al in SENTENCES.length,
   // geen aparte term meer nodig.
@@ -6763,11 +6943,11 @@ function checkDictado(){
   var html = "";
   if(exact){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+5 "+xpw()+")</div>";
-    S.done[s.id] = true; addXP(5); compMark("luisteren", s.id); trackPoging(false);
+    S.done[s.id] = true; addXP(5); compMark("schrijven", s.id); trackPoging(false);
     spelZinSrs(s);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
-    S.done[s.id] = true; addXP(4); compMark("luisteren", s.id); trackPoging(false);
+    S.done[s.id] = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
     spelZinSrs(s);
   } else {
     var d = bestDiff(given, s);
@@ -16907,6 +17087,7 @@ function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[
       geblokkeerd: één tik op "laat ze toch allemaal zien" en alles staat er. */
 var SPEEL_EIS = {
   ws:      {soort:"w", n:12},
+  audi:    {soort:"w", n:20},
   kruis:   {soort:"w", n:12},
   mem:     {soort:"w", n:12},
   corr:    {soort:"z", n:8},
@@ -16949,6 +17130,170 @@ function speelGezien(v){
 }
 var funView = null;
 
+/* ================= ESCUCHAR: de motor ================= */
+var audSc = null, audStap = 0, audGoed = 0, audGehoord = 0, audAnt = [], audGeenAudio = false;
+var audAudioEl = null, audRegel = -1;
+
+function audLijst(){
+  var plafond = audPlafond();
+  var pool = AUDICIONES.filter(function(sc){ return audZwaarte(sc) <= plafond; });
+  if(pool.length < 2) pool = AUDICIONES.slice().sort(function(a,b){ return audZwaarte(a) - audZwaarte(b); }).slice(0, 3);
+  return pool;
+}
+function audKies(){
+  var pool = audLijst();
+  var vers = pool.filter(function(sc){ return !(S.audDone || {})[sc.id]; });
+  var uit = vers.length ? vers : pool;
+  return uit[Math.floor(Math.random() * uit.length)];
+}
+function audNieuw(){
+  audSc = audKies(); audStap = 0; audGoed = 0; audGehoord = 0; audAnt = []; audGeenAudio = false; audRegel = -1;
+}
+function audStop(){
+  try{ if(audAudioEl){ audAudioEl.pause(); audAudioEl.onended = null; } }catch(e){}
+  audAudioEl = null; audRegel = -1;
+}
+/* Regel voor regel afspelen. Ontbreekt er een bestand, dan valt de oefening niet stil maar schakelt
+   hij over op de tekst, duidelijk gemarkeerd. Zo'n ronde telt dan niet mee als luisterbewijs: je
+   hebt hem gelezen, niet gehoord. */
+function audSpeel(vanaf){
+  if(!audSc) return;
+  audStop();
+  var i = typeof vanaf === "number" ? vanaf : 0;
+  var laatste = typeof vanaf === "number" ? vanaf : audSc.lineas.length - 1;
+  function volgende(){
+    if(i > laatste){ audRegel = -1; audTeken(); return; }
+    // Twee sprekers, twee stemmen, dus twee mappen: audio/dialogo-a en audio/dialogo-b. Het manifest
+    // van audio-lib houdt de stem per groep bij en een groep is een map, dus zo hoeft daar niets aan.
+    var a = new Audio("audio/dialogo-" + audSc.lineas[i].v + "/" + audSc.id + "-" + (i + 1) + ".mp3");
+    audAudioEl = a;
+    audRegel = i;
+    audTeken();
+    a.onended = function(){ i++; volgende(); };
+    function mis(){
+      if(audGeenAudio) return;
+      audGeenAudio = true; audRegel = -1; audStop(); renderFunAudicion();
+    }
+    a.addEventListener("error", mis);
+    var p = a.play();
+    if(p && p.catch) p.catch(mis);
+  }
+  if(!audGehoord) audGehoord = 1;
+  volgende();
+}
+function audTeken(){
+  var wrap = document.getElementById("escRegels");
+  if(!wrap) return;
+  wrap.querySelectorAll("[data-aregel]").forEach(function(el){
+    el.classList.toggle("nu", +el.getAttribute("data-aregel") === audRegel);
+  });
+}
+function audRegelsHtml(toon){
+  return "<div id='escRegels' class='aud-regels'>" + audSc.lineas.map(function(l, i){
+    return "<div class='aud-regel' data-aregel='" + i + "'>" +
+      "<button type='button' class='aud-luidspreker' data-aherhaal='" + i + "' title='" +
+        ct("Deze zin nog eens","This line again") + "'>🔈</button>" +
+      "<span class='aud-wie'>" + (l.v === "a" ? "A" : "B") + "</span>" +
+      "<span class='aud-tekst'>" + (toon ? l.es : "· · ·") + "</span></div>";
+  }).join("") + "</div>";
+}
+function renderFunAudicion(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!audSc) audNieuw();
+  var sc = audSc;
+  var klaar = audStap >= sc.vragen.length;
+  var html = "<h2>Escuchar 👂</h2>" +
+    "<span class='kicker'>" + (profLang() === "nl" ? sc.titel : sc.titelEn) +
+      (klaar ? "" : " · " + ct("vraag ","question ") + (audStap + 1) + "/" + sc.vragen.length) + "</span>";
+
+  if(audGeenAudio){
+    html += "<div class='feedback bijna'>" + ct(
+      "De opname van deze scene staat er nog niet. Je leest hem nu, dus deze ronde telt niet mee voor luisteren.",
+      "The recording for this scene isn't there yet. You're reading it, so this round doesn't count as listening.") + "</div>";
+  } else {
+    html += "<p class='muted'>" + ct("Luister naar het gesprek en beantwoord de vragen. Zo vaak herhalen als je wilt.",
+                                     "Listen to the conversation and answer the questions. Repeat as often as you like.") + "</p>" +
+      "<div class='row'><button class='primary' id='btnAudSpeel'>🔊 " + ct("Afspelen","Play") + "</button></div>";
+  }
+  // De tekst komt pas in beeld als alle vragen gedaan zijn. Ervoor is dit een leesoefening met geluid.
+  html += audRegelsHtml(klaar || audGeenAudio);
+
+  if(!klaar){
+    var v = sc.vragen[audStap];
+    var vraag = profLang() === "nl" ? v.q : v.qEn;
+    var opties = profLang() === "nl" ? v.opts : v.optsEn;
+    var volgorde = v._orde || (v._orde = geschud(opties.map(function(_, i){ return i; })));
+    html += "<p class='big' style='margin:12px 0 4px; font-size:1.05rem'>" + vraag + "</p>" +
+      volgorde.map(function(i){
+        return "<button type='button' class='opt audOpt' data-ai='" + i + "'>" + opties[i] + "</button>";
+      }).join("");
+    html += "<div id='audFeedback'></div>";
+  } else {
+    html += "<div class='feedback " + (audGoed === sc.vragen.length ? "ok" : audGoed ? "bijna" : "fout") + "'>" +
+      audGoed + "/" + sc.vragen.length + ct(" goed"," correct") +
+      (audGehoord > 1 ? " · " + audGehoord + ct(" keer geluisterd"," listens") : "") + "</div>" +
+      "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudNieuw'>" +
+        ct("Volgende scene →","Next scene →") + "</button></div>";
+  }
+  el.innerHTML = html;
+  var bp = document.getElementById("btnAudSpeel");
+  if(bp) bp.onclick = function(){ audGehoord++; audSpeel(); };
+  var bn = document.getElementById("btnAudNieuw");
+  if(bn) bn.onclick = function(){ audStop(); audNieuw(); renderFunAudicion(); };
+  el.querySelectorAll("[data-aherhaal]").forEach(function(b){
+    b.onclick = function(){ audGehoord++; audSpeel(+b.getAttribute("data-aherhaal")); };
+  });
+  el.querySelectorAll(".audOpt").forEach(function(b){
+    b.onclick = function(){ audAntwoord(+b.getAttribute("data-ai"), b); };
+  });
+}
+function audAntwoord(i, knop){
+  var sc = audSc, v = sc.vragen[audStap];
+  if(audAnt.length > audStap) return;
+  var goed = i === v.c;
+  audAnt.push(i);
+  if(goed){ audGoed++; addXP(2); }
+  var el = document.getElementById("funCard");
+  el.querySelectorAll(".audOpt").forEach(function(b){
+    var bi = +b.getAttribute("data-ai");
+    if(bi === v.c) b.classList.add("correct");
+    else if(b === knop) b.classList.add("wrong");
+    b.onclick = null;
+  });
+  var fb = document.getElementById("audFeedback");
+  if(fb){
+    fb.innerHTML = "<div class='feedback " + (goed ? "ok" : "fout") + "'>" +
+        (goed ? "¡Sí! ✓ (+2 " + xpw() + ")" : ct("Nog niet.","Not quite.")) + "</div>" +
+      "<div class='uitleg'>" + (profLang() === "nl" ? v.waarom : v.waaromEn) + "</div>" +
+      "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudDoor'>" +
+        (audStap + 1 >= sc.vragen.length ? ct("Naar het transcript →","To the transcript →") : ct("Volgende vraag →","Next question →")) +
+      "</button></div>";
+    var bd = document.getElementById("btnAudDoor");
+    if(bd) bd.onclick = function(){
+      audStap++;
+      if(audStap >= sc.vragen.length) audAfronden();
+      renderFunAudicion();
+    };
+  }
+  persist();
+}
+function audAfronden(){
+  var sc = audSc;
+  S.audDone = S.audDone || {};
+  S.audLuister = S.audLuister || {};
+  S.audLuister[sc.id] = (S.audLuister[sc.id] || 0) + audGehoord;
+  if(audGoed === sc.vragen.length){
+    S.audDone[sc.id] = true;
+    // Alleen echt geluisterd telt als luisterbewijs. Gelezen omdat de opname ontbrak, telt niet.
+    if(!audGeenAudio) compMark("luisteren", sc.id);
+    S.tapas = (S.tapas || 0) + 1;
+    confetti(["👂","🎧","🎉"], 16);
+  }
+  persist();
+  checkLessonComplete();
+}
+
 function renderFun(){
   var el = document.getElementById("funCard");
   if(!el) return;
@@ -16957,6 +17302,7 @@ function renderFun(){
   if(funView === "mem"){ renderFunMem(); return; }
   if(funView === "kruis"){ renderFunKruisLos(); return; }
   if(funView === "dictado"){ renderFunDictado(); return; }
+  if(funView === "audi"){ renderFunAudicion(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
   if(funView === "hu"){ renderFunHusselen(); return; }
   if(funView === "corr"){ renderFunCorrector(); return; }
@@ -16970,6 +17316,7 @@ function renderFun(){
     {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",        t:fx("wsT"),            s:fx("wsS")},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",        t:"Crucigrama",         s:fx("krS")},
     {v:"dictado", id:"ftDictado", e:"\ud83d\udd0a",        t:"Dictado",            s:fx("dicS")},
+    {v:"audi",    id:"ftAudi",    e:"\ud83d\udc42",        t:"Escuchar",           s:ct("Luister een gesprek en zeg waar het over ging","Listen to a conversation and say what it was about")},
     {v:"conj",    id:"ftConj",    e:"\ud83c\udfaf",        t:"Conjugador",         s:fx("cjS")},
     {v:"hu",      id:"ftHu",      e:"\ud83e\udde9",        t:fx("huT"),            s:fx("huS")},
     {v:"corr",    id:"ftCorr",    e:"\ud83d\udd75\ufe0f", t:fx("coT"),            s:fx("coS")},
@@ -17005,6 +17352,7 @@ function renderFun(){
   wire("ftWs", function(){ speelGezien("ws"); funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); });
   wire("ftKruis", function(){ speelGezien("kruis"); funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); });
   wire("ftDictado", function(){ speelGezien("dictado"); funView = "dictado"; dIdx = null; dRonde = null; navPush({t:"fun", v:"dictado"}); renderFun(); });
+  wire("ftAudi", function(){ speelGezien("audi"); funView = "audi"; audStop(); audSc = null; navPush({t:"fun", v:"audi"}); renderFun(); });
   wire("ftConj", function(){ funView = "conj"; conjIdx = null; conjRonde = null; navPush({t:"fun", v:"conj"}); renderFun(); });
   wire("ftHu", function(){ speelGezien("hu"); funView = "hu"; huIdx = null; huRonde = null; navPush({t:"fun", v:"hu"}); renderFun(); });
   wire("ftCorr", function(){ speelGezien("corr"); funView = "corr"; corrOpg = null; corrRonde = null; navPush({t:"fun", v:"corr"}); renderFun(); });

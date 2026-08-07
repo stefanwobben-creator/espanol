@@ -67,6 +67,23 @@ function leesHoofdstukken(){
   });
 }
 
+/* Alle regels van alle luisterscenes, per spreker gesplitst. Elke regel is een eigen bestand:
+   ElevenLabs doet een stem per aanroep, dus een dialoog moet toch in stukken. Dat kost precies
+   evenveel tekens en levert twee dingen op die je anders niet had: de app kan tonen welke regel
+   klinkt, en wie vastloopt kan een losse zin herhalen in plaats van de hele scene.
+   Geeft { "dialogo-a": [...], "dialogo-b": [...] }, met id "<scene>-<regelnummer>". */
+function leesDialogos(){
+  const scenes = leesArrayLiteral(leesAppBron(), "AUDICIONES");
+  const uit = { "dialogo-a": [], "dialogo-b": [] };
+  scenes.forEach(function(sc){
+    sc.lineas.forEach(function(l, i){
+      const groep = l.v === "b" ? "dialogo-b" : "dialogo-a";
+      uit[groep].push({ id: sc.id + "-" + (i + 1), tekst: l.es, label: sc.titel + ": " + l.es.slice(0, 34) });
+    });
+  });
+  return uit;
+}
+
 // ---------------------------------------------------------------- manifest
 
 function hashVan(tekst){
@@ -115,13 +132,28 @@ function leesOpties(argv){
    Dit moest per groep, niet per run. Anders zou het gecombineerde generate-audio.js bij elke
    volgende run de ene groep als "andere stem" zien en 'm opnieuw inspreken, en dan betaal je elke
    keer voor het heen en weer wisselen. */
-const GROEP_ENV = { dictado: "ELEVENLABS_VOICE_DICTADO", boek: "ELEVENLABS_VOICE_BOEK" };
+const GROEP_ENV = {
+  dictado: "ELEVENLABS_VOICE_DICTADO",
+  boek: "ELEVENLABS_VOICE_BOEK",
+  /* v21.2: de luisterscenes zijn dialogen, dus twee sprekers. Met een stem klinken die hetzelfde en
+     is een dialoog juist moeilijker te volgen dan hij hoort te zijn. Twee groepen, twee mappen:
+     audio/dialogo-a en audio/dialogo-b, precies zoals de app ze zoekt. */
+  "dialogo-a": "ELEVENLABS_VOICE_DIALOGO_A",
+  "dialogo-b": "ELEVENLABS_VOICE_DIALOGO_B"
+};
+// Elke groep die dit bestand kent. Het is niet de lijst die een run verwerkt: welke groepen een run
+// aanraakt, geeft het aanroepende script mee aan leesConfig().
+const ALLE_GROEPEN = Object.keys(GROEP_ENV);
 
 // De oefening wil voorspelbaar en rustig zijn, het verhaal mag leven. Dit zijn geen kosten, alleen
 // instellingen die met de tekst meegaan.
 const GROEP_STEMINSTELLING = {
   dictado: { stability: 0.65, similarity_boost: 0.8 },
-  boek:    { stability: 0.4,  similarity_boost: 0.75 }
+  boek:    { stability: 0.4,  similarity_boost: 0.75 },
+  // Een gesprek mag iets losser klinken dan een dicteeroefening, maar niet zo los als een verteller:
+  // je moet er nog steeds elk woord uit kunnen halen.
+  "dialogo-a": { stability: 0.55, similarity_boost: 0.8 },
+  "dialogo-b": { stability: 0.55, similarity_boost: 0.8 }
 };
 
 function stemVoor(groep, cfg){
@@ -155,7 +187,7 @@ function leesConfig(opties, groepen){
     model: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2"
   };
 
-  ["dictado", "boek"].forEach(function(g){
+  ALLE_GROEPEN.forEach(function(g){
     const uitEnv = process.env[GROEP_ENV[g]] || basis || "";
     const vast = vastgelegdeStem(g, man);
     c.vast[g] = vast;
@@ -247,7 +279,7 @@ async function spreekUit(cfg, tekst, stem, instelling){
  */
 async function controleerVooraf(cfg, groepen){
   const paren = [];
-  (groepen || ["dictado", "boek"]).forEach(function(g){
+  (groepen || ALLE_GROEPEN).forEach(function(g){
     const s = stemVoor(g, cfg);
     if(!s) return;
     // twee groepen met dezelfde stem hoeven maar één proef
@@ -462,4 +494,4 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesOpties, leesConfig, controleerVooraf, verwerk, slotwoord, stemVoor, MANIFEST_PAD };
+module.exports = { leesZinnen, leesHoofdstukken, leesDialogos, leesOpties, leesConfig, controleerVooraf, verwerk, slotwoord, stemVoor, ALLE_GROEPEN, MANIFEST_PAD };
