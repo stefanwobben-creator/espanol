@@ -544,6 +544,16 @@
   .zoekrij .zb{flex:1; min-width:0;}
   .zoekrij .zb b{display:block; color:var(--ink);}
   .zoekrij .zb span{display:block; color:var(--muted); font-size:.85rem;}
+  .lt-woord{text-align:center; font-size:1.6rem; font-weight:800; letter-spacing:.12em;
+            min-height:2.1rem; margin:10px 0 6px; color:var(--accent);}
+  .lt-letter{font-size:1.15rem; font-weight:800; min-width:44px; text-align:center;}
+  .lt-lijst{margin-top:14px; display:flex; flex-direction:column; gap:4px;}
+  .lt-rij{display:flex; gap:10px; align-items:baseline; padding:6px 10px; border-radius:9px;
+          background:var(--bg); font-size:.92rem;}
+  .lt-rij.gev{background:var(--green-soft);}
+  .lt-rij .lt-es{font-weight:800; letter-spacing:.1em; min-width:5.5em; color:var(--ink);}
+  .lt-rij.gev .lt-es{color:var(--green); letter-spacing:normal;}
+  .lt-rij .lt-nl{color:var(--muted); flex:1;}
   .cl-balkbox{height:6px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:8px;}
   .cl-balk{height:100%; width:100%; background:var(--accent); transition:width .1s linear;}
   .cl-bakken{display:flex; gap:10px; margin-top:6px;}
@@ -1042,7 +1052,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.0";
+var APP_VERSIE = "v22.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7550,6 +7560,171 @@ function clDansHtml(){
   if(!clSpel.dans) return "";
   return "<div class='cl-dans'>" + (typeof petSVG === "function" ? petSVG() : "💃") + "</div>";
 }
+/* ================= LETRAS (v22.1) =================
+   Stefan: "die snelheid game is leuk maar nog wel te intensief. ik bedoel iets nog meer casual zoals
+   woordzoeker, iets wat speels en ontspannend is."
+
+   Dit is het tegenovergestelde van Clasificador: geen klok, geen levens, geen game over. Je krijgt
+   zeven letters en een lijstje open plekken met de Nederlandse betekenis erbij. Tik letters aan tot
+   er een woord staat; klopt het, dan valt hij vanzelf op zijn plek. Je kunt stoppen wanneer je wilt
+   en er gaat nooit iets kapot.
+
+   Pedagogisch is dit trouwens geen tijdverdrijf: je haalt een Spaans woord op vanuit de betekenis,
+   met de letters als steun. Dat is productieve recall met een sterke hint, en dat is precies de
+   trede tussen herkennen en zelf schrijven waar je verder nergens komt.
+
+   De woordenlijst is jouw eigen materiaal: de frequentielijst plus alles wat in de app geleerd
+   wordt. Geen extra content nodig, en de scheidsrechter is opnieuw gewoon de data. */
+var LT_MIN = 3, LT_MAX_DOELEN = 10;
+var ltWbCache = null, ltSpel = null;
+
+function ltPlat(w){
+  return stripAcc(String(w || "").toLowerCase()).replace(/[^a-z]/g, "");
+}
+function ltSig(w){ return ltPlat(w).split("").sort().join(""); }
+function ltPast(sig, basis){
+  // past sig binnen basis? Elke letter minstens zo vaak beschikbaar.
+  var b = basis.split(""), i, p;
+  for(i = 0; i < sig.length; i++){
+    p = b.indexOf(sig[i]);
+    if(p === -1) return false;
+    b.splice(p, 1);
+  }
+  return true;
+}
+function ltWoordenboek(){
+  if(ltWbCache) return ltWbCache;
+  var uit = {}, zien = {};
+  function voeg(es, nl){
+    if(!es || !nl) return;
+    if(/\s/.test(es)) return;                 // alleen losse woorden
+    if(/[ñÑ]/.test(es)) return;               // ñ verdwijnt bij het platslaan; laat die er dan uit
+    var plat = ltPlat(es);
+    if(plat.length < LT_MIN || plat.length > 8) return;
+    if(zien[plat]) return;
+    zien[plat] = 1;
+    uit[plat] = {es: es, nl: nl, sig: ltSig(es)};
+  }
+  (typeof FREQ !== "undefined" ? FREQ : []).forEach(function(r){ voeg(r[0], r[1]); });
+  [typeof WORDS !== "undefined" ? WORDS : [], typeof B_WORDS !== "undefined" ? B_WORDS : [],
+   typeof K_WORDS !== "undefined" ? K_WORDS : []].forEach(function(lijst){
+    lijst.forEach(function(w){
+      var es = String(w.es || "").replace(/^(el|la|los|las|un|una)\s+/i, "").split(/[\/(]/)[0].trim();
+      voeg(es, wTrans(w));
+    });
+  });
+  ltWbCache = uit;
+  return uit;
+}
+function ltDeel(){
+  var wb = ltWoordenboek();
+  var sleutels = Object.keys(wb);
+  var basisKandidaten = geschud(sleutels.filter(function(k){ return k.length === 6 || k.length === 7; }));
+  for(var i = 0; i < Math.min(120, basisKandidaten.length); i++){
+    var basis = basisKandidaten[i], bsig = ltSig(basis);
+    var doelen = [];
+    for(var j = 0; j < sleutels.length; j++){
+      var k = sleutels[j];
+      if(k.length < LT_MIN || k.length > basis.length) continue;
+      if(!ltPast(wb[k].sig, bsig)) continue;
+      doelen.push(wb[k]);
+      if(doelen.length > 26) break;
+    }
+    if(doelen.length >= 5 && doelen.length <= 26){
+      // korte woorden eerst: dat geeft snel een succesje en houdt het lijstje leesbaar
+      doelen.sort(function(a, b){ return ltPlat(a.es).length - ltPlat(b.es).length; });
+      if(doelen.length > LT_MAX_DOELEN){
+        var langste = doelen.filter(function(d){ return ltPlat(d.es).length === basis.length; });
+        doelen = doelen.slice(0, LT_MAX_DOELEN - langste.length).concat(langste);
+      }
+      return {basis: basis, letters: geschud(basis.split("")), doelen: doelen};
+    }
+  }
+  return null;
+}
+function ltNieuw(){
+  var d = ltDeel();
+  if(!d){ ltSpel = null; return; }
+  ltSpel = {letters: d.letters, gekozen: [], doelen: d.doelen, gevonden: {}, melding: ""};
+}
+function ltHuidig(){
+  return ltSpel.gekozen.map(function(i){ return ltSpel.letters[i]; }).join("");
+}
+function ltCheck(){
+  var w = ltHuidig();
+  if(w.length < LT_MIN) return;
+  var raak = ltSpel.doelen.filter(function(d){ return ltPlat(d.es) === w; })[0];
+  if(raak && !ltSpel.gevonden[ltPlat(raak.es)]){
+    ltSpel.gevonden[ltPlat(raak.es)] = 1;
+    ltSpel.gekozen = [];
+    ltSpel.melding = "";
+    addXP(1);
+    clPiep(700, 0.09, "sine");
+    if(Object.keys(ltSpel.gevonden).length === ltSpel.doelen.length){
+      S.ltRondes = (S.ltRondes || 0) + 1;
+      try { confetti(["🔤","✨","🎉"], 18); } catch(e){}
+      clPiep(920, 0.16, "triangle");
+    }
+    persist();
+    renderFunLetras();
+  }
+}
+function ltTik(i){
+  if(ltSpel.gekozen.indexOf(i) !== -1) return;
+  ltSpel.gekozen.push(i);
+  ltCheck();
+  renderFunLetras();
+}
+function renderFunLetras(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!ltSpel) ltNieuw();
+  if(!ltSpel){
+    el.innerHTML = "<h2>Letras 🔤</h2><p class='muted'>" +
+      ct("Geen puzzel te maken op dit moment.","No puzzle available right now.") + "</p>";
+    return;
+  }
+  var klaar = Object.keys(ltSpel.gevonden).length === ltSpel.doelen.length;
+  var huidig = ltHuidig();
+  el.innerHTML = "<h2>Letras 🔤</h2>" +
+    "<span class='kicker'>" + Object.keys(ltSpel.gevonden).length + "/" + ltSpel.doelen.length + " " +
+      ct("gevonden","found") + "</span>" +
+    "<p class='muted'>" + ct("Tik letters aan tot er een woord staat. Geen klok, geen levens: stop wanneer je wilt.",
+                             "Tap letters until a word appears. No clock, no lives: stop whenever you like.") + "</p>" +
+    "<div class='lt-woord'>" + (huidig || "&nbsp;") + "</div>" +
+    "<div class='dsleep-bank' style='justify-content:center'>" + ltSpel.letters.map(function(L, i){
+      var op = ltSpel.gekozen.indexOf(i) !== -1;
+      return "<button type='button' class='dtegel lt-letter" + (op ? " weg" : "") + "' data-ltl='" + i + "'" +
+        (op ? " tabindex='-1'" : "") + ">" + L.toUpperCase() + "</button>";
+    }).join("") + "</div>" +
+    "<div class='row' style='margin-top:8px; justify-content:center'>" +
+      "<button class='ghost' id='btnLtWis'>" + ct("Wissen","Clear") + "</button>" +
+      "<button class='ghost' id='btnLtSchud'>🔀</button>" +
+    "</div>" +
+    "<div class='lt-lijst'>" + ltSpel.doelen.map(function(d){
+      var plat = ltPlat(d.es), gev = !!ltSpel.gevonden[plat];
+      return "<div class='lt-rij" + (gev ? " gev" : "") + "'>" +
+        "<span class='lt-es'>" + (gev ? d.es : plat.replace(/./g, "·")) + "</span>" +
+        "<span class='lt-nl'>" + d.nl + "</span></div>";
+    }).join("") + "</div>" +
+    (klaar
+      ? "<div class='feedback ok' style='margin-top:10px'>" + ct("Alles gevonden! 🎉","All found! 🎉") + "</div>" +
+        "<div class='row' style='margin-top:8px'><button class='primary' id='btnLtNieuw'>" + ct("Nieuwe puzzel","New puzzle") + "</button>" +
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>" + naRondeHtml()
+      : "<div class='row' style='margin-top:10px'><button class='ghost' id='btnLtNieuw'>" + ct("Andere puzzel","Another puzzle") + "</button>" +
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
+  el.querySelectorAll("[data-ltl]").forEach(function(b){
+    b.onclick = function(){ ltTik(parseInt(b.getAttribute("data-ltl"), 10)); };
+  });
+  document.getElementById("btnLtWis").onclick = function(){ ltSpel.gekozen = []; renderFunLetras(); };
+  document.getElementById("btnLtSchud").onclick = function(){
+    ltSpel.letters = geschud(ltSpel.letters); ltSpel.gekozen = []; renderFunLetras();
+  };
+  document.getElementById("btnLtNieuw").onclick = function(){ ltNieuw(); renderFunLetras(); };
+  document.getElementById("btnFunTerug").onclick = function(){ ltSpel = null; funView = null; renderFun(); };
+  if(klaar) naRondeWire();
+}
+
 function renderFunClasificador(){
   var el = document.getElementById("funCard");
   if(!el) return;
@@ -9753,19 +9928,13 @@ function dagFeestKaart(){
       "<div><b>"+st+"</b><span>"+ct(st===1?"dag erbij geweest":"dagen erbij geweest", st===1?"day showed up":"days showed up")+"</span></div>"+
       "<div><b>🫒 "+(S.tapas||0)+"</b><span>tapas</span></div>"+
     "</div>"+
-    "<div class='feestmorgen' id='feestMorgen'>"+
-      (heeftMoment
-        ? "<span class='kicker'>"+ct("Morgen","Tomorrow")+"</span>"+
-          "<p style='margin:4px 0 0'>📌 <b>"+momentTekst()+"</b></p>"+
-          "<p class='feestklein' style='margin:4px 0 0'><span id='feestWijzig'>"+ct("ander moment kiezen","pick another moment")+"</span></p>"
-        : "<span class='kicker'>"+ct("Nog één ding 📌","One more thing 📌")+"</span>"+
-          "<p style='margin:4px 0 6px; font-weight:700'>"+ct("Wanneer doe je hem morgen?","When will you do it tomorrow?")+"</p>"+
-          MOMENTEN.map(function(m){
-            return "<button class='ghost trackpick feestpick' data-moment='"+m.id+"' style='display:block; width:100%; text-align:left; margin:4px 0'>"+
-              m.e+" "+ct(m.nl, m.en)+"</button>";
-          }).join("")+
-          "<input type='text' id='feestAnders' class='hidden' autocomplete='off' placeholder='"+ct("Bijvoorbeeld: na het avondeten","For example: after dinner")+"'>")+
-    "</div>"+
+    // v22.1: hier stond "Wanneer doe je hem morgen?". Een goede gewoontetechniek op een plek waar
+    // hij niet hoort: je hebt net iets afgerond en krijgt dan een planningsvraag. Wie zijn moment al
+    // had ingevuld ziet hem nog wel, want dat is dan zijn eigen afspraak en geen nieuwe vraag.
+    (heeftMoment
+      ? "<div class='feestmorgen' id='feestMorgen'><span class='kicker'>"+ct("Morgen","Tomorrow")+"</span>"+
+        "<p style='margin:4px 0 0'>📌 <b>"+momentTekst()+"</b></p></div>"
+      : "")+
     "<div class='row'><button class='primary' id='btnFeestKlaar'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button></div>"+
     "<p class='feestklein'><span id='btnFeestDoor'>"+ct("toch nog even door","keep going anyway")+"</span></p>"+
     "</div></div>";
@@ -10175,6 +10344,7 @@ var DAGSPELLEN = [
   {v:"kruis",   e:"\u270f\ufe0f", n:"Crucigrama"},
   {v:"audi",    e:"\ud83d\udc42", n:"Escuchar"},
   {v:"conj",    e:"\ud83e\udde9", n:"Rompecabezas"},
+  {v:"letras",  e:"\ud83d\udd24", n:"Letras"},
   {v:"clas",    e:"\u26a1", n:"Clasificador"},
   {v:"mem",     e:"\ud83c\udccf", n:"Memory"},
   {v:"corr",    e:"\ud83d\udd75\ufe0f", n:"El Corrector"}
@@ -17482,6 +17652,7 @@ var SPEEL_EIS = {
   ws:      {soort:"w", n:12},
   audi:    {soort:"w", n:20},
   clas:    {soort:"w", n:25},
+  letras:  {soort:"w", n:10},
   kruis:   {soort:"w", n:12},
   mem:     {soort:"w", n:12},
   corr:    {soort:"z", n:8}
@@ -17706,6 +17877,7 @@ function renderFun(){
   if(funView === "kruis"){ renderFunKruisLos(); return; }
   if(funView === "audi"){ renderFunAudicion(); return; }
   if(funView === "clas"){ renderFunClasificador(); return; }
+  if(funView === "letras"){ renderFunLetras(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
   if(funView === "corr"){ renderFunCorrector(); return; }
   if(funView === "avt"){ renderFunAvt(); return; }
@@ -17717,6 +17889,7 @@ function renderFun(){
     {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",        t:"M\u00fasica",         s:fx("muS")},
     {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",        t:fx("wsT"),            s:fx("wsS")},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",        t:"Crucigrama",         s:fx("krS")},
+    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",        t:"Letras",             s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock.")},
     {v:"clas",    id:"ftClas",    e:"\u26a1",              t:"Clasificador",       s:ct("Links of rechts, en het gaat steeds sneller","Left or right, and it keeps speeding up")},
     {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",        t:"Memory \u00b7 Parejas", s:fx("meS")},
     {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",        t:"Palabra Duel",       s:fx("duS")}
@@ -17749,6 +17922,7 @@ function renderFun(){
   wire("ftMusica", function(){ show("musica"); });
   wire("ftWs", function(){ speelGezien("ws"); funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); });
   wire("ftKruis", function(){ speelGezien("kruis"); funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); });
+  wire("ftLetras", function(){ speelGezien("letras"); funView = "letras"; ltSpel = null; navPush({t:"fun", v:"letras"}); renderFun(); });
   wire("ftClas", function(){ speelGezien("clas"); funView = "clas"; clNieuwSpel(); navPush({t:"fun", v:"clas"}); renderFun(); });
   wire("ftMem", function(){ speelGezien("mem"); funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); });
   wire("ftDuel", function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); });
@@ -18406,7 +18580,10 @@ function bindMaatje(bron){
 /* Hoogstens ÉÉN vraag tegelijk, in deze volgorde. Twee kaarten onder elkaar veranderen een
    beloningsscherm in een takenlijst, en dan wordt alles weggeklikt in plaats van één ding gelezen. */
 function samenKaartNu(compact){
-  if(momentOpen || momentMoment()) return momentKaart();
+  /* v22.1. Stefan: "de wanneer doe je de les is leuk en klopt in habit change maar in deze app
+     voelt die uit de context." Klopt: een implementatie-intentie werkt als hij bij een besluit hoort
+     dat je net genomen hebt, niet als losse vraag na een oefening. Weg dus. De functies eronder
+     blijven staan omdat momentTekst() nog wordt gelezen door wie hem ooit heeft ingevuld. */
   if(maatjeStuurMoment()) return maatjeStuurKaart();
   if(uitnodigMoment(2)) return uitnodigKaart(compact);
   if(maatjeStap || maatjeMoment()) return maatjeKaart();

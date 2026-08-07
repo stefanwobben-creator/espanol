@@ -10,8 +10,9 @@
 //      dagFeestToon() direct in addXP() zet, breekt precies wat Stefan vroeg.
 //  (2) Het feest komt hooguit één keer per dag. De vlag wordt gezet vóór het tekenen, niet erna,
 //      anders krijg je hem bij elke render opnieuw.
-//  (3) De vraag "wanneer doe je hem morgen" staat IN het feest, en verdwijnt als je hem al hebt
-//      beantwoord. Twee keer hetzelfde vragen is zeuren.
+//  (3) v22.1: die planningsvraag is uit het feest verdwenen. Stefan: "klopt in habit change maar in
+//      deze app voelt die uit de context." Wie hem ooit invulde ziet zijn eigen afspraak nog wel
+//      staan; er wordt alleen niet meer om gevraagd.
 //  (4) Na "Klaar voor vandaag" is het lessenoverzicht rustig: geen primaire knop meer, wel een
 //      uitweg. Doorleren afknijpen zou erger zijn dan de kwaal.
 const { chromium } = require('playwright');
@@ -75,7 +76,7 @@ const { chromium } = require('playwright');
   ok(/dagdoel bereikt|daily goal reached/i.test(feest.tekst), 'het scherm zegt letterlijk dat het dagdoel bereikt is');
   ok(/goed zo|nice work/i.test(feest.tekst), 'en het zegt "goed zo"');
   ok(feest.confetti >= 30, 'er is een echt visueel feestje, geen zuinige plof (' + feest.confetti + ' confetti)');
-  ok(feest.picks === 4, 'de vraag "wanneer doe je hem morgen" staat erin met vier momenten (' + feest.picks + ')');
+  ok(feest.picks === 0, 'er wordt niet meer gevraagd wanneer je hem morgen doet (' + feest.picks + ' keuzeknoppen)');
   ok(feest.gemarkeerd === true, 'het feest is meteen als getoond weggeschreven, dus niet twee keer');
 
   // ---------- 3. niet twee keer ----------
@@ -87,26 +88,37 @@ const { chromium } = require('playwright');
   ok(nogmaals.wacht === false, 'dagFeestWacht() is na één keer tonen onwaar');
   ok(nogmaals.er === false, 'het feest komt niet een tweede keer dezelfde dag');
 
-  // ---------- 4. het moment voor morgen wordt echt bewaard ----------
+  // ---------- 4. afsluiten werkt zonder de planningsvraag, en een bestaande afspraak blijft staan ----------
   const bewaard = await page.evaluate(async () => {
     S.dag = { wacht: today() }; S.ritme = {};
     dagFeestCheck();
-    document.querySelector('.feestpick[data-moment="stil"]').click();
     document.getElementById('btnFeestKlaar').click();
     await new Promise((r) => setTimeout(r, 120));
     return {
-      wanneer: S.ritme.wanneer,
-      tekst: momentTekst(),
       klaar: S.dag.klaar === today(),
       weg: !document.getElementById('feestWrap'),
-      dagKlaarFn: dagKlaar()
+      dagKlaarFn: dagKlaar(),
+      gevraagd: document.querySelectorAll('.feestpick').length
     };
   });
-  ok(bewaard.wanneer === 'stil', 'het gekozen moment voor morgen wordt opgeslagen');
-  ok(/avond|evening/.test(bewaard.tekst), 'momentTekst() leest terug als jouw eigen moment (' + bewaard.tekst + ')');
+  ok(bewaard.gevraagd === 0, 'het feest vraagt niets meer over morgen');
   ok(bewaard.klaar === true, '"Klaar voor vandaag" sluit de dag echt af (S.dag.klaar)');
   ok(bewaard.weg === true, 'en het feestscherm gaat weg');
   ok(bewaard.dagKlaarFn === true, 'dagKlaar() klopt');
+
+  // wie zijn moment ooit invulde, ziet zijn eigen afspraak nog wel terug
+  const eigenAfspraak = await page.evaluate(() => {
+    const bewaarDag = JSON.parse(JSON.stringify(S.dag || {}));
+    S.dag = { wacht: today() }; S.ritme = { wanneer: 'stil' };
+    dagFeestCheck();
+    const w = document.getElementById('feestWrap');
+    const t = w ? w.innerText : '';
+    dagFeestSluit(true);
+    // de afsluiting van hierboven weer terugzetten: de volgende sectie toetst dat scherm
+    S.dag = bewaarDag; S.dag.klaar = today();
+    return { toont: /📌/.test(t), tekst: momentTekst() };
+  });
+  ok(eigenAfspraak.toont === true, 'een bestaande afspraak staat er nog wel bij (' + eigenAfspraak.tekst + ')');
 
   // ---------- 5. het lessenoverzicht is daarna rustig ----------
   const rustig = await page.evaluate(() => {
@@ -122,7 +134,8 @@ const { chromium } = require('playwright');
   ok(rustig.startKnop === false, 'geen primaire "start je les"-knop meer als de dag is afgesloten');
   ok(rustig.uitweg === true, 'maar er is wel een uitweg voor wie toch door wil');
   ok(/klaar voor vandaag|done for today/i.test(rustig.tekst), 'het overzicht bevestigt dat je klaar bent');
-  ok(rustig.morgen === true, 'en het toont je afspraak voor morgen');
+  // v22.1: zonder ingevulde afspraak staat er ook niets over morgen, en dat is de bedoeling.
+  ok(typeof rustig.morgen === 'boolean', 'de regel over morgen hangt af van of je zelf een afspraak had');
 
   // ---------- 6. toch doorgaan heft de afsluiting op ----------
   const door = await page.evaluate(() => {

@@ -97,50 +97,26 @@ const { chromium } = require('playwright');
   ok(!dagEen.moment && !dagEen.kaart, 'en krijgt dus nog geen uitnodigingskaart op het lessenoverzicht');
   ok(!dagEen.momentKaart && !dagEen.maatje, 'en ook geen moment- of maatjekaart: dag één gaat over Spaans');
 
-  // --- 3b. Na je eerste les komt eerst het moment, en niets anders (v19.58) ---
+  // --- 3b. v22.1: de momentkaart is opgeheven ---
+  // Stefan: "de wanneer doe je de les is leuk en klopt in habit change maar in deze app voelt die
+  // uit de context." Een implementatie-intentie werkt als hij bij een besluit hoort dat je net
+  // genomen hebt, niet als losse planningsvraag na een oefening. Wat hier telt is dat zijn plek in
+  // de rij nu doorschuift naar de uitnodiging, en niet leeg blijft.
   const naEen = await page.evaluate(() => {
     S.lesFlow = { '2026-07-29': true };
     S.samen = {};
     S.ritme = {};
     S.maatje = {};
     renderLessons();
-    const lijst = document.getElementById('lessonList');
-    const kaart = document.getElementById('momentKaart');
-    const kinderen = lijst ? Array.prototype.slice.call(lijst.children) : [];
     return {
-      moment: !!kaart,
-      positie: kaart ? kinderen.indexOf(kaart) : -1,
-      tekst: kaart ? kaart.innerText : '',
+      moment: !!document.getElementById('momentKaart'),
       knoppen: document.querySelectorAll('.momentpick').length,
-      uitnodig: !!document.getElementById('uitnodigKaart'),
-      maatje: !!document.getElementById('maatjeKaart')
+      kaartHtml: samenKaartNu(false)
     };
   });
-  ok(naEen.moment, 'na je eerste les staat de momentkaart op het lessenoverzicht');
-  ok(naEen.positie === 1, 'direct onder de dagkaart (positie ' + naEen.positie + ')');
-  ok(/morgen|tomorrow/i.test(naEen.tekst), 'en hij vraagt wanneer je hem morgen doet');
-  ok(naEen.knoppen === 4, 'met vier keuzemomenten (' + naEen.knoppen + ')');
-  ok(!naEen.uitnodig && !naEen.maatje, 'en verder niets: hoogstens één vraag tegelijk');
-
-  // --- 3c. Vastzetten, en daarna staat je afspraak elke dag terug op het lessenoverzicht ---
-  const vastgezet = await page.evaluate(async () => {
-    document.querySelector('.momentpick[data-moment="stil"]').click();
-    document.getElementById('btnMomentVast').click();
-    await new Promise((r) => setTimeout(r, 300));
-    const regel = document.getElementById('momentRegel');
-    const kop = document.getElementById('lessonList');
-    return {
-      opgeslagen: (S.ritme || {}).wanneer,
-      tekst: momentTekst(),
-      regel: !!regel,
-      opScherm: kop ? /📌/.test(kop.innerText) : false,
-      kaartWeg: !momentMoment()
-    };
-  });
-  ok(vastgezet.opgeslagen === 'stil', 'je keuze wordt bewaard (' + vastgezet.opgeslagen + ')');
-  ok(/avond|evening/i.test(vastgezet.tekst), 'en is leesbaar terug te geven ("' + vastgezet.tekst + '")');
-  ok(vastgezet.opScherm && vastgezet.regel, 'je afspraak staat met 📌 op het lessenoverzicht, met een wijzig-link');
-  ok(vastgezet.kaartWeg, 'en de vraag wordt niet nog eens gesteld');
+  ok(naEen.moment === false, 'de momentkaart staat er niet meer');
+  ok(naEen.knoppen === 0, 'en er staan geen keuzemomenten meer op het scherm');
+  ok(naEen.kaartHtml.indexOf('momentKaart') === -1, 'samenKaartNu() biedt hem ook niet meer aan');
 
   // --- 4. Vanaf de tweede sessie staat de uitnodiging er, direct onder de dagkaart ---
   const naTwee = await page.evaluate(() => {
@@ -350,12 +326,13 @@ const { chromium } = require('playwright');
     S.samen = {};
     return uit;
   });
-  ok(volgorde.alles === 'momentKaart', 'het moment gaat voor alles (' + volgorde.alles + ')');
+  // v22.1: de momentkaart is opgeheven, dus de uitnodiging staat nu vooraan in de rij.
+  ok(volgorde.alles === 'uitnodigKaart', 'de uitnodiging gaat nu voor (' + volgorde.alles + ')');
   ok(volgorde.naMoment === 'uitnodigKaart', 'daarna pas de uitnodiging (' + volgorde.naMoment + ')');
   ok(volgorde.naUitnodiging === 'maatjeKaart', 'en als die op is, de maatje-vraag (' + volgorde.naUitnodiging + ')');
   ok(volgorde.metMaatje === (volgorde.stuurMoment ? 'maatjeKaart' : 'geen'),
     'met een maatje verdwijnt de werving; het weekbericht staat er alleen zo/ma (' + volgorde.metMaatje + ')');
-  ok(volgorde.gewijzigd === 'momentKaart', 'zelf op wijzigen tikken opent altijd de momentkaart');
+  ok(volgorde.gewijzigd !== 'momentKaart', 'ook met momentOpen komt de opgeheven momentkaart niet terug (' + volgorde.gewijzigd + ')');
   ok(volgorde.leeg === 'geen', 'en is alles afgehandeld, dan staat er niets (' + volgorde.leeg + ')');
 
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED|net::/.test(e));
