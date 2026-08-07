@@ -1042,7 +1042,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.9";
+var APP_VERSIE = "v22.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4316,7 +4316,9 @@ function addXP(n){
     // natuurlijke grens (einde les of terug op het lessenoverzicht). Onderbreken tijdens een
     // oefening is precies wat je niet wilt bij iets dat "af" moet voelen.
     S.dag.wacht = t;
-    logServer("dagdoel", {streak:S.streak.count, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
+    // v22.0: gram erbij. Dat doosjesbestand is het scherpste beeld van wat je nog niet kunt, en de
+    // nachtelijke taak kon het tot nu toe niet zien.
+    logServer("dagdoel", {streak:S.streak.count, fouten:S.errors, gram:S.gram, quizScores:S.quiz, txp:S.txp});
   }
   // v19.77: de kleren die op tacos opengaan. Stil openzetten zou de moeite weggooien: dit is
   // precies zo'n moment waarvan Fogg zegt dat je het moet vieren, en het is bovendien het enige
@@ -4975,11 +4977,33 @@ function quizVraagVolgorde(qz){
   return out;
 }
 
+/* De foutenkaart ging tot nu toe alleen mee in twee logregels: als je je dagdoel haalde en als je
+   een les afrondde. Speelde je een kwartier zonder een van die twee te halen, dan stond alles wel op
+   de server maar zag de nachtelijke contenttaak er niets van, want die leest alleen de logs. Nu
+   stuurt elke fout zelf een opname mee, hoogstens één per half uur. Dat is genoeg om de lus te
+   sluiten en weinig genoeg om je logboek niet te laten ontploffen. */
+var LOG_OPNAME_MS = 30 * 60 * 1000;
+function logOpnameMisschien(){
+  try{
+    var nu = Date.now();
+    if(S.logOpname && (nu - S.logOpname) < LOG_OPNAME_MS) return;
+    S.logOpname = nu;
+    logServer("opname", {fouten:S.errors, gram:S.gram, quizScores:S.quiz, txp:S.txp});
+  }catch(e){}
+}
 function logError(id, type, tag, extra){
+  /* v22.0. Het veld laatst bevatte twee verschillende dingen: bij een woord of zin wat je typte
+     ("la mujer"), bij El Corrector een datum. En bijnaGoedIds() vergeleek dat met een datum. In
+     JavaScript is "la mujer" >= "2026-08-05" gewoon waar, want letters sorteren na cijfers, dus gold
+     élk woord waar je ooit een fout op maakte als "gisteren fout gegaan". Die voorrangslijst was
+     daarmee geen selectie maar je complete foutenhistorie.
+     Vanaf nu: laatst blijft je invoer, dag is de datum. Oude regels hebben geen dag en tellen dus
+     als oud, wat klopt, want we weten van die regels niet wanneer ze ontstonden. */
   var k = type+":"+id;
-  if(!S.errors[k]) S.errors[k] = {id:id, type:type, tag:tag, count:0, laatst:""};
+  if(!S.errors[k]) S.errors[k] = {id:id, type:type, tag:tag, count:0, laatst:"", dag:""};
   S.errors[k].count++;
   S.errors[k].laatst = extra || today();
+  S.errors[k].dag = today();
   trackPoging(true);
   // allereerste fout van dit profiel = hét kwetsbare moment; growth-mindset-boodschap
   // (onderzoek 29 juli: dit soort coach-copy gaf bij Duolingo +7,2% dag-14-retentie)
@@ -4989,6 +5013,7 @@ function logError(id, type, tag, extra){
     if(totaal === 1) toast(ct("Je eerste fout: mooi zo, nú gaat je brein echt aan het werk. Dit komt vanzelf terug tot het zit.","Your first mistake — great, this is when your brain really gets to work. It'll come back until it sticks."));
     S.eersteFoutGehad = true;
   }
+  logOpnameMisschien();
   persist();
 }
 
@@ -5335,7 +5360,7 @@ function checkLessonComplete(){
       persist();
       confetti(["🎉","🌮","⭐️","💃","✨"], 36);
       toast("¡LECCIÓN "+l.num+" COMPLETADA! 🎉 +5 tapas"+(beloond ? ct(" én Chispa verdient de "," and Chispa earns the ")+beloond.naam.toLowerCase()+" "+beloond.emoji : ""));
-      logServer("les-af", {les:l.id, titel:l.titel, fouten:S.errors, quizScores:S.quiz, txp:S.txp});
+      logServer("les-af", {les:l.id, titel:l.titel, fouten:S.errors, gram:S.gram, quizScores:S.quiz, txp:S.txp});
     }
   }
 }
@@ -5436,7 +5461,8 @@ function bijnaGoedIds(){
   for(var k in S.errors){
     if(k.indexOf("woord:") !== 0) continue;
     var e = S.errors[k];
-    if(e && e.laatst && e.laatst >= grens) uit[k.slice(6)] = true;
+    // v22.0: op dag, niet op laatst. Zie de toelichting bij logError().
+    if(e && e.dag && e.dag >= grens) uit[k.slice(6)] = true;
   }
   return uit;
 }
@@ -7348,6 +7374,8 @@ function rvZet(stamIdx, uitgangIdx){
       pv.delen.forEach(function(x){ if(x.uitgang === u.e){ juist = x.vorm; persoon = x.persoon; } });
     }
     rvSpel.laatste = {goed: false, poging: vorm, inf: sk.inf, juist: juist, persoon: persoon};
+    // v22.0: "puedemos" is precies het soort fout waar een drillzin op geschreven kan worden.
+    logError(sk.inf, "verbo", sk.inf, vorm);
   }
   if(!rvSpel.uitgangen.some(function(x){ return !x.op; })) rvSpel.klaar = true;
   rvSpel.kiesStam = null;
@@ -7462,6 +7490,10 @@ function clMis(gekozen){
   gramBij(clSpel.c.id, false);
   clSpel.laatste = {goed:false, juist:clSpel.bakken[clSpel.item.g], w:profLang() === "nl" ? clSpel.item.w : (clSpel.item.wEn || clSpel.item.w),
                     gekozen:gekozen === null ? null : clSpel.bakken[gekozen]};
+  /* v22.0: ook naar het foutenlogboek, niet alleen naar het Leitner-doosje. Anders ziet je
+     nachtbot niet dat je hier struikelt en schrijft hij er geen drillzin op. */
+  logError(clSpel.c.id, "concept", clSpel.c.id,
+           gekozen === null ? ct("tijd op","timed out") : clSpel.bakken[gekozen]);
   clPiep(160, 0.18, "square");
   if(clSpel.levens <= 0){ clKlaar(); return; }
   persist();
@@ -17619,6 +17651,8 @@ function audAntwoord(i, knop){
   var goed = i === v.c;
   audAnt.push(i);
   if(goed){ audGoed++; addXP(2); }
+  // v22.0: een misser bij het luisteren is net zo goed voer voor de leermachine als een typefout.
+  else logError(sc.id, "escucha", sc.tema || "escucha", (profLang() === "nl" ? v.opts : v.optsEn)[i]);
   var el = document.getElementById("funCard");
   el.querySelectorAll(".audOpt").forEach(function(b){
     var bi = +b.getAttribute("data-ai");
