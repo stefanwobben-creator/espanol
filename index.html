@@ -81,6 +81,16 @@
   .feedback.ok{background:var(--green-soft); color:var(--green);}
   .feedback.bijna{background:var(--amber-soft); color:var(--amber);}
   .feedback.fout{background:var(--red-soft); color:var(--red);}
+  .dsleep-rij{min-height:52px; display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;
+       padding:10px; margin-top:10px; border-radius:10px; border:1.5px dashed var(--border); background:var(--bg);}
+  .dsleep-rij.leeg::before{content:attr(data-leeg); color:var(--muted); font-size:.9rem; align-self:center;}
+  .dsleep-bank{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .dtegel{padding:9px 13px; border-radius:9px; border:1.5px solid var(--border); background:var(--card);
+       color:var(--ink); font-size:1rem; font-family:inherit; cursor:pointer; line-height:1.2;}
+  .dtegel:active{transform:translateY(1px);}
+  .dtegel.op{border-color:var(--accent); background:var(--card);}
+  .dtegel.weg{visibility:hidden;}
+  .dtegel.mis{border-color:var(--red); background:var(--red-soft); color:var(--red);}
   .uitleg{background:var(--bg); border:1px dashed var(--border); border-radius:10px; padding:12px 14px;
           margin-top:10px; font-size:.92rem;}
   .opt{display:block; width:100%; text-align:left; margin-top:8px; padding:12px 14px; border-radius:10px;
@@ -983,7 +993,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v20.8";
+var APP_VERSIE = "v20.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6331,6 +6341,207 @@ function dictadoSpreek(zin, rate){
     return true;
   }catch(e){ return dictadoSpreekTTS(zin.es, rate); }
 }
+/* ================= DICTADO - SLEEPVARIANT (v20.9) =================
+   Woordtegels zijn geen modus die je kunt kiezen, maar een redding: je komt er alleen in
+   na een misser of als je je eerste drie zinnen nog moet doen, en je gaat er altijd uit
+   via het typen van diezelfde zin. Anders wordt de makkelijke stand de vaste stand en
+   leer je niets, precies Stefans kritiek op de woordbank van Duolingo.
+   Tweede maatregel daartegen: de afleiders komen uit de conceptmachine, dus de fout die
+   je zou maken ligt als tegel naast het goede woord. Eliminatie werkt dan niet. */
+var DIC_SLEEP_EERSTE = 3;   // de eerste drie zinnen ooit beginnen met tegels
+var DIC_SLEEP_AFLEIDERS = 3;
+
+// Brokken blijven bij elkaar: los "me" en "gusta" slepen traint losse woorden, "me gusta"
+// als een tegel traint hoe het Spaans daadwerkelijk aan elkaar plakt.
+var DIC_SLEEP_BROKKEN = [
+  "me gusta","te gusta","le gusta","nos gusta","les gusta","me gustan","le gustan",
+  "hay que","tengo que","tienes que","tiene que","acabo de","voy a","vamos a","va a",
+  "me llamo","te llamas","se llama","se parece a","por favor","muy bien","está bien",
+  "hace frío","hace calor","todos los días","por la mañana","por la tarde","por la noche",
+  "a la","a las","a los","de la","de las","de los","al lado de"
+];
+
+// Elke regel: het juiste woord, de fout die daar echt bij hoort, en het concept dat meetelt.
+var DIC_SLEEP_PAREN = [
+  {cid:"serestar", p:[["es","está"],["está","es"],["son","están"],["están","son"],
+                      ["soy","estoy"],["estoy","soy"],["eres","estás"],["estás","eres"],
+                      ["era","estaba"],["estaba","era"]]},
+  {cid:"porpara", p:[["por","para"],["para","por"]]},
+  {cid:"genero",  p:[["el","la"],["la","el"],["los","las"],["las","los"],
+                     ["un","una"],["una","un"],["unos","unas"],["unas","unos"]]},
+  {cid:"muymucho", p:[["muy","mucho"],["mucho","muy"],["mucha","muy"],["muchos","muy"]]},
+  {cid:"hayestar", p:[["hay","está"]]},
+  {cid:"demostrativo", p:[["este","ese"],["ese","este"],["esta","esa"],["esa","esta"],
+                          ["estos","esos"],["estas","esas"]]},
+  {cid:"pronombre", p:[["lo","le"],["le","lo"]]},
+  {cid:"quecual", p:[["qué","cuál"],["cuál","qué"],["que","cual"]]},
+  {cid:"saberpoder", p:[["sé","puedo"],["puedo","sé"],["sabe","puede"],["puede","sabe"]]},
+  {cid:"negacion", p:[["nada","algo"],["nunca","siempre"],["nadie","alguien"]]},
+  {cid:"comparar", p:[["más","menos"],["tan","tanto"],["tanto","tan"]]},
+  {cid:"reflexivo", p:[["se","le"],["me","mi"],["te","tu"]]},
+  {cid:"gerundio", p:[["comiendo","comido"],["vistiendo","vestido"],["hablando","hablado"]]},
+  // Geen concept, wel Stefans grootste verse cluster: Nederlands "in" bij jaartallen.
+  {cid:"", p:[["en","in"]]}
+];
+
+function dicSleepSchoon(w){
+  return w.replace(/[¡!¿?.,;:"]/g, "").trim();
+}
+// Zin naar tegels: eerst kijken of er een brok van drie, twee of één woord past.
+function dicSleepTegels(es){
+  var ruw = String(es || "").split(/\s+/).map(dicSleepSchoon).filter(function(w){ return !!w; });
+  var uit = [], i = 0;
+  while(i < ruw.length){
+    var gepakt = 0;
+    for(var lang = 3; lang >= 2 && !gepakt; lang--){
+      if(i + lang > ruw.length) continue;
+      var kandidaat = ruw.slice(i, i + lang).join(" ");
+      if(DIC_SLEEP_BROKKEN.indexOf(kandidaat.toLowerCase()) !== -1){ uit.push(kandidaat); gepakt = lang; }
+    }
+    if(!gepakt){ uit.push(ruw[i]); gepakt = 1; }
+    i += gepakt;
+  }
+  return uit;
+}
+// Afleiders uit de conceptmachine. Staat de tegenhanger al in de zin, dan slaan we hem over:
+// twee identieke tegels maken de opgave dubbelzinnig in plaats van scherp.
+function dicSleepAfleiders(tegels){
+  var aanwezig = {};
+  tegels.forEach(function(t){ aanwezig[t.toLowerCase()] = true; });
+  var kandidaten = [];
+  tegels.forEach(function(t){
+    var laag = t.toLowerCase();
+    DIC_SLEEP_PAREN.forEach(function(groep){
+      groep.p.forEach(function(paar){
+        if(paar[0] !== laag) return;
+        if(aanwezig[paar[1].toLowerCase()]) return;
+        if(kandidaten.some(function(k){ return k.woord.toLowerCase() === paar[1].toLowerCase(); })) return;
+        kandidaten.push({woord: paar[1], cid: groep.cid});
+      });
+    });
+  });
+  return geschud(kandidaten).slice(0, DIC_SLEEP_AFLEIDERS);
+}
+
+var dSleep = null;
+var dSleepGedaanId = null;   // deze zin heeft zijn tegels gehad; nu is typen aan de beurt
+function dicSleepZet(zin, naFout){
+  var tegels = dicSleepTegels(zin.es);
+  var afl = dicSleepAfleiders(tegels);
+  var bank = geschud(tegels.map(function(w){ return {woord:w, cid:"", echt:true}; })
+             .concat(afl.map(function(a){ return {woord:a.woord, cid:a.cid, echt:false}; })));
+  dSleep = {zin:zin, bank:bank, rij:[], naFout:!!naFout, pogingen:0, klaar:false};
+  S.dicSleepAan = (S.dicSleepAan || 0) + 1; persist();
+}
+function dicSleepUit(){
+  if(dSleep && dSleep.zin) dSleepGedaanId = dSleep.zin.id;
+  dSleep = null;
+}
+function dicSleepNodig(zin){
+  // Nooit twee keer achter elkaar voor dezelfde zin: de tegels geven je altijd terug aan het typen,
+  // anders sta je in een lus waar je nooit een letter tikt.
+  if(dSleepGedaanId && zin && dSleepGedaanId === zin.id) return false;
+  return (S.dicGetypt || 0) < DIC_SLEEP_EERSTE;
+}
+function dicSleepZinnetje(){
+  return dSleep.rij.map(function(i){ return dSleep.bank[i].woord; }).join(" ");
+}
+function renderFunDictadoSleep(){
+  var el = document.getElementById("funCard");
+  if(!el || !dSleep) return;
+  var zin = dSleep.zin;
+  var inFlow = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
+  var rijHtml = dSleep.rij.map(function(i, pos){
+    return "<button type='button' class='dtegel op' data-drij='" + pos + "'>" + dSleep.bank[i].woord + "</button>";
+  }).join("");
+  var bankHtml = dSleep.bank.map(function(t, i){
+    var gebruikt = dSleep.rij.indexOf(i) !== -1;
+    return "<button type='button' class='dtegel" + (gebruikt ? " weg" : "") + "' data-dbank='" + i + "'" +
+           (gebruikt ? " tabindex='-1'" : "") + ">" + t.woord + "</button>";
+  }).join("");
+  el.innerHTML = (inFlow ? lesFlowBannerHtml() : "") + "<h2>Dictado 🔊</h2>" +
+    "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>" +
+    "<p class='muted'>" + (dSleep.naFout
+      ? ct("Even makkelijker: luister en tik de woorden in de goede volgorde.",
+           "Let's make it easier: listen and tap the words in the right order.")
+      : ct("Luister en tik de woorden in de goede volgorde. Er liggen woorden bij die er niet in horen.",
+           "Listen and tap the words in the right order. Some words don't belong.")) + "</p>" +
+    "<div class='row'><button class='primary' id='btnDicNormal'>🔊 " + fx("dicNormal") + "</button>" +
+    "<button class='ghost' id='btnDicLento'>🐢 " + fx("dicLento") + "</button></div>" +
+    "<div class='dsleep-rij" + (dSleep.rij.length ? "" : " leeg") + "' id='dSleepRij' data-leeg='" +
+      ct("Tik hieronder een woord aan","Tap a word below") + "'>" + rijHtml + "</div>" +
+    "<div class='dsleep-bank' id='dSleepBank'>" + bankHtml + "</div>" +
+    "<div class='row' style='margin-top:10px'><button class='primary' id='btnDSleepCheck'>" +
+      ct("Controleer","Check") + "</button>" +
+    "<button class='ghost' id='btnDSleepWis'>" + ct("Wissen","Clear") + "</button>" +
+    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>" +
+    "<div id='dFeedback'></div>";
+  lesFlowWireBanner();
+  document.getElementById("btnDicNormal").onclick = function(){ dictadoSpreek(zin, DIC_RATE_NORMAL); };
+  document.getElementById("btnDicLento").onclick = function(){ dictadoSpreek(zin, DIC_RATE_LENTO); };
+  document.getElementById("btnDSleepCheck").onclick = dicSleepCheck;
+  document.getElementById("btnDSleepWis").onclick = function(){ dSleep.rij = []; renderFunDictadoSleep(); };
+  document.getElementById("btnFunTerug").onclick = function(){ dicSleepUit(); funView = null; renderFun(); };
+  el.querySelectorAll("[data-dbank]").forEach(function(b){
+    b.onclick = function(){
+      var i = parseInt(b.getAttribute("data-dbank"), 10);
+      if(dSleep.rij.indexOf(i) !== -1) return;
+      dSleep.rij.push(i); renderFunDictadoSleep();
+    };
+  });
+  el.querySelectorAll("[data-drij]").forEach(function(b){
+    b.onclick = function(){
+      var pos = parseInt(b.getAttribute("data-drij"), 10);
+      dSleep.rij.splice(pos, 1); renderFunDictadoSleep();
+    };
+  });
+  if(!dSleep.pogingen) setTimeout(function(){ dictadoSpreek(zin, DIC_RATE_NORMAL); }, 250);
+}
+function dicSleepCheck(){
+  if(!dSleep || !dSleep.rij.length) return;
+  var zin = dSleep.zin;
+  var gegeven = norm(dicSleepZinnetje());
+  var goeden = [norm(zin.es)].concat((zin.alt || []).map(norm));
+  var raak = goeden.indexOf(gegeven) !== -1 || goeden.map(stripAcc).indexOf(stripAcc(gegeven)) !== -1;
+  var fb = document.getElementById("dFeedback");
+  dSleep.pogingen++;
+  if(raak){
+    dSleep.klaar = true;
+    S.dicSleepGoed = (S.dicSleepGoed || 0) + 1;
+    addXP(1); persist();
+    // De echte woorden die je goed zette, tellen als bewijs voor hun concept.
+    fb.innerHTML = "<div class='feedback ok'>¡Eso es! ✓ (+1 " + xpw() + ")</div>" +
+      "<p class='muted'>" + ct("En nu dezelfde zin zelf typen. Dat is waar het om ging.",
+                               "Now type that same sentence yourself. That was the point.") + "</p>" +
+      "<div class='row' style='margin-top:6px'><button class='primary' id='btnDSleepTyp'>" +
+      ct("Nu zelf typen →", "Now type it →") + "</button></div>";
+    var bt = document.getElementById("btnDSleepTyp");
+    if(bt) bt.onclick = function(){ dicSleepUit(); renderFunDictado(); };
+    return;
+  }
+  // Een afleider in de rij is een echte conceptfout en gaat terug naar doosje nul.
+  var misTegels = dSleep.rij.filter(function(i){ return !dSleep.bank[i].echt; });
+  misTegels.forEach(function(i){ if(dSleep.bank[i].cid) gramBij(dSleep.bank[i].cid, false); });
+  if(misTegels.length) persist();
+  if(dSleep.pogingen >= 2){
+    dSleep.klaar = true;
+    logError(zin.id, "dictado", zin.tag, dicSleepZinnetje());
+    fb.innerHTML = "<div class='feedback fout'>" + ct("Nog niet. Zo hoort het: ", "Not yet. This is it: ") +
+      "<b>" + zin.es + "</b></div>" +
+      "<div class='row' style='margin-top:6px'><button class='primary' id='btnDSleepTyp'>" +
+      ct("Nu zelf typen →", "Now type it →") + "</button></div>";
+    var bt2 = document.getElementById("btnDSleepTyp");
+    if(bt2) bt2.onclick = function(){ dicSleepUit(); renderFunDictado(); };
+    return;
+  }
+  fb.innerHTML = "<div class='feedback bijna'>" +
+    (misTegels.length
+      ? ct("Er zit een woord bij dat er niet in hoort. Luister nog eens.",
+           "There's a word in there that doesn't belong. Listen again.")
+      : ct("De woorden kloppen, de volgorde nog niet. Luister nog eens.",
+           "Right words, wrong order. Listen again.")) + "</div>";
+  dictadoSpreek(zin, DIC_RATE_LENTO);
+}
 function pickDictado(){
   var allow = {};
   allowedSentIds().forEach(function(id){ allow[id] = true; });
@@ -6346,6 +6557,8 @@ function dictadoNieuweRonde(){
   dRonde = {n:0, lengte:DIC_RONDE_LEN, goed:0, streak:0, besteStreak:0, beloond:false};
   dIdx = pickDictado();
   dGokt = false;
+  dicSleepUit();
+  dSleepGedaanId = null;
 }
 function dictadoKickerTekst(){
   return ct("Zin ","Sentence ") + (dRonde.n+1) + "/" + dRonde.lengte + (dRonde.streak > 0 ? " · 🔥 " + dRonde.streak : "");
@@ -6353,6 +6566,8 @@ function dictadoKickerTekst(){
 function dictadoVolgende(){
   dRonde.n++;
   dGokt = false;
+  dicSleepUit();
+  dSleepGedaanId = null;
   dIdx = dRonde.n < dRonde.lengte ? pickDictado() : null;
   renderFunDictado();
 }
@@ -6363,6 +6578,9 @@ function renderFunDictado(){
   if(dRonde.n >= dRonde.lengte){ renderDictadoRondeKlaar(); return; }
   if(!dIdx) dIdx = pickDictado();
   var s = dIdx;
+  // De eerste drie zinnen ooit beginnen met tegels; daarna alleen als redding na een misser.
+  if(!dSleep && dicSleepNodig(s)){ dicSleepZet(s, false); }
+  if(dSleep && dSleep.zin && dSleep.zin.id === s.id && !dSleep.klaar){ renderFunDictadoSleep(); return; }
   var inFlowDicR = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "dictado");
   var html = (inFlowDicR ? lesFlowBannerHtml() : "")+"<h2>Dictado 🔊</h2>"+
     "<span class='kicker' id='dKicker'>" + dictadoKickerTekst() + "</span>"+
@@ -6432,6 +6650,10 @@ function checkDictado(){
   var inpEl = document.getElementById("dInput");
   var given = norm((inpEl && inpEl.value) || "");
   if(!given) return;
+  var misteHelemaal = false;
+  // Losse teller van echt getypte dictados. Hij stuurt de eerste-drie-regel aan en hij is de
+  // eerlijke noemer: sleepwerk mag dit getal nooit optillen.
+  S.dicGetypt = (S.dicGetypt || 0) + 1;
   var fb = document.getElementById("dFeedback");
   var answers = [norm(s.es)].concat((s.alt||[]).map(norm));
   var exact = answers.indexOf(given) !== -1;
@@ -6455,6 +6677,7 @@ function checkDictado(){
     } else {
       html = "<div class='feedback fout'>"+ct("Nog niet. Je hoorde: ","Not yet. You heard: ")+"<b>"+d.html+"</b></div>";
       logError(s.id, "dictado", s.tag, given); addXP(1);
+      misteHelemaal = true;
     }
   }
   // ronde-boekhouding: een herkansing (dGokt) telt niet nogmaals mee voor de rondescore/streak,
@@ -6482,11 +6705,18 @@ function checkDictado(){
   if(!goedBeantwoord && !dGokt && (S.tapas||0) >= 1){
     html += "<div class='row' style='margin-top:6px'><button class='ghost' id='btnDicGok'>🎲 " + ct("Zet 1 🫒 in voor een herkansing","Stake 1 🫒 for a retry") + "</button></div>";
   }
+  // Alleen na een echte misser, niet na "bijna": dan is tegels leggen te makkelijk en leer je niets.
+  if(misteHelemaal && !(dSleep && dSleep.zin && dSleep.zin.id === s.id)){
+    html += "<div class='row' style='margin-top:6px'><button class='primary' id='btnDicSleep'>🧩 " +
+      ct("Zet de woorden op volgorde","Put the words in order") + "</button></div>";
+  }
   fb.innerHTML = html;
   persist();
   checkLessonComplete();
   var bg = document.getElementById("btnDicGok");
   if(bg) bg.onclick = dictadoGok;
+  var bs = document.getElementById("btnDicSleep");
+  if(bs) bs.onclick = function(){ dicSleepZet(s, true); renderFunDictadoSleep(); };
 }
 
 /* ================= CONJUGADOR (sprint: vervoeg het werkwoord, presente) ================= */
