@@ -61,7 +61,9 @@ const { chromium } = require('playwright');
       eersteEs: zinnen[0] && zinnen[0].es
     };
   });
-  ok(info.aantal === 15, 'er zijn 15 jaartal-zinnen als gewone SENTENCES (' + info.aantal + ')');
+  // Minstens de 15 zinnen uit de v19.42-migratie; de nachtrun mag er drillzinnen bij hangen
+  // (v20.8: s142), dus een exacte telling zou elke contentgroei als valse regressie aanmerken.
+  ok(info.aantal >= 15, 'er zijn minstens 15 jaartal-zinnen als gewone SENTENCES (' + info.aantal + ')');
   ok(info.inLes, 'alle jaartal-zinnen zitten in les a2-2s sents-array');
 
   await page.evaluate(() => show('vertalen'));
