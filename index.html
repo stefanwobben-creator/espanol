@@ -544,6 +544,8 @@
   .zoekrij .zb{flex:1; min-width:0;}
   .zoekrij .zb b{display:block; color:var(--ink);}
   .zoekrij .zb span{display:block; color:var(--muted); font-size:.85rem;}
+  .naronde{margin-top:14px; padding:12px 14px; border-radius:12px; border:1px dashed var(--border);
+           background:var(--bg);}
   .zoekkop{margin:14px 2px 6px; font-size:.8rem; font-weight:800; letter-spacing:.04em;
            text-transform:uppercase; color:var(--muted);}
   .zoekmee{border:none; background:var(--green-soft); color:var(--green); font-weight:700;
@@ -1031,7 +1033,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v21.6";
+var APP_VERSIE = "v21.7";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7293,6 +7295,41 @@ function renderConjugadorBody(){
   }
   jargonScan(el);
 }
+/* ================= EN NU? (v21.7) =================
+   Stefan: "als ik klaar ben krijg ik geen suggesties van doe ook dit." Die suggesties bestonden wel,
+   maar op precies een plek: het einde van de begeleide dagles. Wie de app opent en zelf iets doet,
+   eindigde in het niets. Dat is het moment waarop je doorgaat of afhaakt, dus daar hoort hij.
+
+   Eén voorstel, niet twee: aan het eind van een ronde is een keuzemenu een obstakel. Welke, dat
+   bepaalt dezelfde machine als in de dagles: eerst waar je het meeste wint, anders iets leuks.
+   En we tellen of erop geklikt wordt. Doet niemand dat, dan is het geen suggestie maar een drempel
+   tussen jou en de afsluitknop, en dat zie je alleen als je het meet. */
+var naRondeCur = null;
+function naRondeHtml(){
+  // In de dagles niet: die heeft zijn eigen afsluiting en twee voorstellen tegelijk is te veel.
+  if(lesFlow) return "";
+  var v = null;
+  try{ v = lesFlowWinst() || lesFlowLeuk(); }catch(e){ v = null; }
+  naRondeCur = v;
+  if(!v) return "";
+  S.voorstelGezien = (S.voorstelGezien || 0) + 1;
+  return "<div class='naronde'><span class='kicker'>" + ct("En nu?","And now?") + "</span>" +
+    "<p style='margin:4px 0 2px'><b>" + v.icon + " " + v.kop + "</b></p>" +
+    "<p class='muted' style='margin:0 0 10px; font-size:.88rem'>" + v.waarom + "</p>" +
+    "<button class='ghost' id='btnNaRonde'>" + v.knop + " →</button></div>";
+}
+function naRondeWire(){
+  var b = document.getElementById("btnNaRonde");
+  if(!b || !naRondeCur) return;
+  b.onclick = function(){
+    S.voorstelKlik = (S.voorstelKlik || 0) + 1;
+    persist();
+    var doe = naRondeCur.doe;
+    naRondeCur = null;
+    if(doe) doe();
+  };
+}
+
 function renderConjugadorRondeKlaar(){
   var el = document.getElementById("funCard");
   if(!el) return;
@@ -7313,9 +7350,10 @@ function renderConjugadorRondeKlaar(){
     (bonus > 0 ? "<p class='muted'>+" + bonus + " 🫒 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
     (inFlowCj ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
       : "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>") + naRondeHtml();
   el.innerHTML = html;
   lesFlowWireBanner();
+  naRondeWire();
   if(inFlowCj){
     document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
     return;
@@ -7631,13 +7669,17 @@ function corrDueHaalbaar(){
   var haalbaar = corrBereikbaar();
   return corrDueRegels().filter(function(r){ return haalbaar.indexOf(r.id) !== -1; });
 }
+/* v21.7: hier werd drie keer een schudfunctie aangeroepen die niet bestaat (de oude naam uit een
+   eerdere versie). Elke aanroep van El Corrector gooide daardoor een ReferenceError en het spel
+   opende helemaal niet. De juiste naam is geschud(). Gevonden doordat het nieuwe "En nu?"-voorstel
+   naar El Corrector wees en de test erop omviel; er was geen enkele suite die dit spel opende. */
 function corrRegelVolgorde(){
   var haalbaar = corrBereikbaar();
   var pool = CORR_REGELS.filter(function(r){ return haalbaar.indexOf(r.id) !== -1; });
   if(!pool.length) pool = CORR_REGELS;
   var dueIds = corrDueRegels().map(function(r){ return r.id; });
-  var due = shuffleArr(pool.filter(function(r){ return dueIds.indexOf(r.id) !== -1; }));
-  var rest = shuffleArr(pool.filter(function(r){ return dueIds.indexOf(r.id) === -1; }));
+  var due = geschud(pool.filter(function(r){ return dueIds.indexOf(r.id) !== -1; }));
+  var rest = geschud(pool.filter(function(r){ return dueIds.indexOf(r.id) === -1; }));
   return due.concat(rest);
 }
 /* Welke regels zijn in jouw zinnenboek überhaupt te oefenen? Wie op A0 zit
@@ -7686,7 +7728,7 @@ function corrNieuweOpgave(){
   var pool = SENTENCES.filter(function(x){ return allow[x.id] && x.es.split(/\s+/).length >= 3; });
   if(pool.length < 4) pool = SENTENCES.filter(function(x){ return x.es.split(/\s+/).length >= 3; });
   if(!pool.length) pool = SENTENCES;
-  var volgorde = corrRegelVolgorde(), zinnen = shuffleArr(pool), r, z, k, keuze;
+  var volgorde = corrRegelVolgorde(), zinnen = geschud(pool), r, z, k, keuze;
   for(r = 0; r < volgorde.length; r++){
     for(z = 0; z < zinnen.length; z++){
       k = corrKandidaten(zinnen[z], volgorde[r]);
@@ -7823,7 +7865,8 @@ function renderCorrRondeKlaar(){
     "<p class='muted'>"+ct(stevig+" van de "+haalbaar+" grammaticaregels staan stevig. Een regel die je goed doet komt later terug, een regel die misgaat over twee dagen.",
        stevig+" of the "+haalbaar+" grammar rules are solid. A rule you get right comes back later, one you miss comes back in two days.")+"</p>"+
     "<div class='row'><button class='primary' id='btnCorrNieuweRonde'>"+ct("Nieuwe ronde","New round")+"</button>"+
-      "<button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>";
+      "<button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>" + naRondeHtml();
+  naRondeWire();
   document.getElementById("btnCorrNieuweRonde").onclick = function(){ corrNieuweRonde(); renderFunCorrector(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
 }
@@ -17106,7 +17149,7 @@ function renderFunAudicion(){
       (lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "audi"
         ? "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
         : "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudNieuw'>" +
-          ct("Volgende scene →","Next scene →") + "</button></div>");
+          ct("Volgende scene →","Next scene →") + "</button></div>" + naRondeHtml());
   }
   el.innerHTML = html;
   var bp = document.getElementById("btnAudSpeel");
@@ -17115,6 +17158,7 @@ function renderFunAudicion(){
   if(bn) bn.onclick = function(){ audStop(); audNieuw(); renderFunAudicion(); };
   var bf = document.getElementById("btnAudFlowDoor");
   if(bf) bf.onclick = function(){ audStop(); persist(); lesFlowVolgende(); };
+  naRondeWire();
   el.querySelectorAll("[data-aherhaal]").forEach(function(b){
     b.onclick = function(){ audGehoord++; audSpeel(+b.getAttribute("data-aherhaal")); };
   });
@@ -21537,9 +21581,24 @@ function renderGramWiz(){
   var voet = "</div>";
 
   if(gwSess.fase === "uitleg"){
+    /* v21.7. Stefan: "moeten die nog kleiner?" Ja, maar alleen in de dagles. Een stap van de
+       handgeschreven wizards is drie alinea's plus een uitklapstuk over regionale varianten: prima
+       grammaticaboek, slechte dagles van tien minuten. In de flow tonen we daarom de eerste alinea,
+       met de rest een tik verderop; in de leesmodus onder Grammatica blijft alles gewoon staan.
+       Zelfde tekst, twee snelheden. */
+    var volleUitleg = ct(stap.uitleg, stap.uitlegEn);
+    var uitlegHtml = volleUitleg;
+    if(inFlow){
+      var knip = volleUitleg.indexOf("</p>");
+      if(knip !== -1 && knip + 4 < volleUitleg.length){
+        uitlegHtml = volleUitleg.slice(0, knip + 4) +
+          "<details class='gwdiep'><summary>\u2795 " + ct("Meer uitleg","More explanation") + "</summary>" +
+          "<div class='inner'>" + volleUitleg.slice(knip + 4) + "</div></details>";
+      }
+    }
     return kop +
-      "<div class='gwuitleg'>"+ct(stap.uitleg, stap.uitlegEn)+"</div>"+
-      (stap.diep ? "<details class='gwdiep'><summary>\u2139\ufe0f "+ct(stap.diepKop, stap.diepKopEn)+"</summary><div class='inner'>"+ct(stap.diep, stap.diepEn)+"</div></details>" : "")+
+      "<div class='gwuitleg'>"+uitlegHtml+"</div>"+
+      (stap.diep && !inFlow ? "<details class='gwdiep'><summary>\u2139\ufe0f "+ct(stap.diepKop, stap.diepKopEn)+"</summary><div class='inner'>"+ct(stap.diep, stap.diepEn)+"</div></details>" : "")+
       "<div class='row' style='margin-top:12px'>"+
         "<button class='primary' id='gwNaarToets'>"+ct("Toets me \u2192","Quiz me \u2192")+"</button>"+
         "<button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button>"+
