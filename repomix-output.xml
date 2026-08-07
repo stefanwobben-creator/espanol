@@ -1,0 +1,1236 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: index.html, tools/**, audio/**, repomix-output.xml
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.claude/
+  settings.local.json
+server/
+  index.js
+  llm.js
+  package.json
+  README.md
+.gitignore
+.nojekyll
+CNAME
+maatje.html
+README.md
+versie.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".claude/settings.local.json">
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Read(//Users/stefanwobben/.cache/**)",
+      "Bash(npm ls *)",
+      "Bash(mkdir -p /tmp/vamostest)",
+      "Read(//tmp/**)",
+      "Bash(npm init *)",
+      "Bash(npm i *)",
+      "Bash(node run.js)",
+      "Bash(node run2.js)",
+      "Bash(:)",
+      "Bash(node run3.js)",
+      "Bash(node run4.js)",
+      "Bash(node run5.js)",
+      "Bash(node inv.js)",
+      "Bash(node run6.js)",
+      "Bash(node dag.js 5 20)",
+      "Bash(node dag.js 8 20)",
+      "Bash(node dag.js 10 20)",
+      "Bash(node dag.js 6 20)",
+      "Bash(awk 'NR>=2160 && NR<=2200' index.html)",
+      "Bash(awk 'NR>=2111 && NR<=2135 && /^\\\\];/{print NR\": \"$0}' index.html)",
+      "Bash(node tools/content-lib.js --zelftest)",
+      "Bash(node tools/curriculum.js --analyse)",
+      "Bash(node *)",
+      "Bash(cp index.html /tmp/index-backup.html)",
+      "Bash(cp versie.txt /tmp/versie-backup.txt)",
+      "Bash(cp /tmp/index-backup.html index.html)",
+      "Bash(cp /tmp/versie-backup.txt versie.txt)",
+      "Bash(git check-ignore *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git branch *)",
+      "Bash(git reset *)",
+      "Bash(awk 'NR>2380 && NR<2460 && /^\\\\];/{print NR\": \"$0; exit}' index.html)",
+      "Bash(sed -n '/^TRACKS.beginner.lessons = \\\\[/,/^\\\\];/p' index.html)",
+      "Bash(curl -s \"https://espanol.stefanwobben.nl/versie.txt?x=$\\(date +%s\\)\")",
+      "Bash(curl -s \"https://espanol.stefanwobben.nl/index.html?x=$\\(date +%s\\)\")",
+      "Bash(gh run *)",
+      "Bash(gh api *)",
+      "Bash(xargs -I{} gh api \"{}/check-runs\" --jq '.check_runs[] | {name, conclusion, id}')",
+      "Bash(curl -s \"https://vamos.stefanwobben.nl/versie.txt?x=$\\(date +%s\\)\")",
+      "Bash(curl -s \"https://vamos.stefanwobben.nl/index.html?x=$\\(date +%s\\)\")",
+      "Bash(gh workflow *)",
+      "Bash(curl -s \"https://vamos.stefanwobben.nl/index.html?x=$\\(date +%s\\)\" -o /tmp/live-index.html)",
+      "Bash(awk '{print $5\" bytes\"}')",
+      "Bash(curl -s -o /dev/null -w \"health: %{http_code}\\\\n\" \"https://espanol-qbm8.onrender.com/health\")",
+      "Bash(curl -s -X POST -H \"Content-Type: application/json\" -d '{\"prompt\":\"test\"}' -w \"\\\\nzonder sleutel: %{http_code}\\\\n\" \"https://espanol-qbm8.onrender.com/api/admin/llm?key=fout\")"
+    ]
+  }
+}
+</file>
+
+<file path="server/llm.js">
+/*
+ * LLM-redenering via een getrapte ladder — goedkoop eerst, duur als vangnet.
+ * Node-port van Stefans Python-ladder. Eén ingang: reason(prompt, opts).
+ *
+ * Env:
+ *   GEMINI_API_KEY (of GOOGLE_API_KEY), MISTRAL_API_KEY, ANTHROPIC_API_KEY,
+ *   optioneel OPENAI_API_KEY / OPENROUTER_API_KEY
+ *   LLM_LADDER            — "vendor:model,vendor:model" (leeg = default)
+ *   LLM_MAX_PER_MINUTE    — default 10 (0 = geen limiet)
+ *   LLM_TIER_COOLDOWN_S   — default 1800
+ *
+ * Ontwerpregels (zoals het origineel):
+ * - Fail-closed: geen werkende trede → null; caller valt terug op eigen heuristiek.
+ * - Geen sleutel = trede overslaan.
+ * - Rate-limit/quota → trede in cooldown, door naar de volgende.
+ * - Throttle: glijdend-venster begrenzer over alle calls heen.
+ */
+
+const DEFAULT_LADDER = "gemini:gemini-2.5-flash-lite,mistral:mistral-small-latest,gemini:gemini-2.5-flash,anthropic:claude-haiku-4-5";
+const RATE_MARKERS = ["429", "resource_exhausted", "rate limit", "quota", "exhausted"];
+const HTTP_TIMEOUT_MS = 30000;
+
+const OPENAI_COMPAT = {
+  mistral:    { base: "https://api.mistral.ai/v1",    env: "MISTRAL_API_KEY" },
+  openai:     { base: "https://api.openai.com/v1",    env: "OPENAI_API_KEY" },
+  openrouter: { base: "https://openrouter.ai/api/v1", env: "OPENROUTER_API_KEY" },
+};
+
+class RateLimitErr extends Error {}
+
+function isRateLimit(msg) {
+  const s = String(msg || "").toLowerCase();
+  return RATE_MARKERS.some((m) => s.includes(m));
+}
+
+// ── throttle: glijdend venster ────────────────────────────────────────────────
+const calls = [];
+function maxPerMinute() {
+  const n = parseInt(process.env.LLM_MAX_PER_MINUTE || "10", 10);
+  return Number.isFinite(n) ? n : 10;
+}
+async function acquire() {
+  const max = maxPerMinute();
+  if (max <= 0) return;
+  for (;;) {
+    const now = Date.now();
+    while (calls.length && calls[0] <= now - 60000) calls.shift();
+    if (calls.length < max) { calls.push(now); return; }
+    const wait = calls[0] + 60000 - now;
+    await new Promise((r) => setTimeout(r, Math.max(wait, 50)));
+  }
+}
+
+// ── cooldown per trede ────────────────────────────────────────────────────────
+const cooldown = new Map(); // tier -> until (ms epoch)
+function cooldownMs() {
+  const s = parseFloat(process.env.LLM_TIER_COOLDOWN_S || "1800");
+  return (Number.isFinite(s) ? s : 1800) * 1000;
+}
+function inCooldown(tier) {
+  const until = cooldown.get(tier);
+  if (!until) return false;
+  if (Date.now() >= until) { cooldown.delete(tier); return false; }
+  return true;
+}
+function setCooldown(tier) { cooldown.set(tier, Date.now() + cooldownMs()); }
+
+// ── fetch met timeout ─────────────────────────────────────────────────────────
+async function jfetch(url, init) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { ...init, signal: ctl.signal });
+    const text = await r.text();
+    if (!r.ok) {
+      if (r.status === 429 || isRateLimit(text)) throw new RateLimitErr("HTTP " + r.status);
+      throw new Error("HTTP " + r.status + ": " + text.slice(0, 200));
+    }
+    return JSON.parse(text);
+  } finally { clearTimeout(t); }
+}
+
+// ── vendor-treden ─────────────────────────────────────────────────────────────
+async function tryGemini(model, prompt, { maxTokens, jsonMode }) {
+  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!key) return null;
+  const gen = { maxOutputTokens: maxTokens };
+  if (jsonMode) {
+    gen.responseMimeType = "application/json";
+    gen.thinkingConfig = { thinkingBudget: 0 }; // denk-tokens niet van het output-plafond laten snoepen
+  }
+  const data = await jfetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + key,
+    { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: gen }) }
+  );
+  const parts = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+  const text = (parts || []).map((p) => p.text || "").join("").trim();
+  return text || null;
+}
+
+async function tryOpenAICompat(vendor, model, prompt, { maxTokens, jsonMode }) {
+  const reg = OPENAI_COMPAT[vendor];
+  const key = process.env[reg.env];
+  if (!key) return null;
+  if (!model) return null; // pure config vendor zonder model → overslaan
+  const payload = { model, messages: [{ role: "user", content: prompt }], max_tokens: maxTokens };
+  if (jsonMode) payload.response_format = { type: "json_object" };
+  const data = await jfetch(reg.base + "/chat/completions", {
+    method: "POST",
+    headers: { authorization: "Bearer " + key, "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || "").trim();
+  return text || null;
+}
+
+async function tryAnthropic(model, prompt, { maxTokens }) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const data = await jfetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
+  });
+  const text = ((data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("")).trim();
+  return text || null;
+}
+
+const DEFAULT_MODELS = { gemini: "gemini-2.5-flash-lite", mistral: "mistral-small-latest", anthropic: "claude-haiku-4-5" };
+
+function parseLadder(raw) {
+  return raw.split(",").map((s) => s.trim()).filter(Boolean).map((spec) => {
+    const i = spec.indexOf(":");
+    if (i === -1) return { vendor: spec.toLowerCase(), model: null };
+    return { vendor: spec.slice(0, i).trim().toLowerCase(), model: spec.slice(i + 1).trim() || null };
+  });
+}
+
+function hasKey(vendor) {
+  if (vendor === "gemini") return !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+  if (vendor === "anthropic") return !!process.env.ANTHROPIC_API_KEY;
+  const reg = OPENAI_COMPAT[vendor];
+  return reg ? !!process.env[reg.env] : false;
+}
+
+async function callTier(vendor, model, prompt, opts) {
+  const m = model || DEFAULT_MODELS[vendor] || null;
+  if (vendor === "gemini") return tryGemini(m, prompt, opts);
+  if (vendor === "anthropic") return tryAnthropic(m, prompt, opts);
+  if (OPENAI_COMPAT[vendor]) return tryOpenAICompat(vendor, m, prompt, opts);
+  console.warn("llm: onbekende vendor in ladder:", vendor);
+  return null;
+}
+
+/**
+ * reason(prompt, {maxTokens=400, jsonMode=false, ladder=null, callSite="onbekend"})
+ * → {text, tier} of null (fail-closed).
+ */
+async function reason(prompt, opts) {
+  const o = { maxTokens: 400, jsonMode: false, ladder: null, callSite: "onbekend", ...(opts || {}) };
+  await acquire();
+  const steps = parseLadder(o.ladder || process.env.LLM_LADDER || DEFAULT_LADDER);
+  const outcomes = [];
+  for (const { vendor, model } of steps) {
+    const tier = vendor + ":" + (model || "default");
+    if (inCooldown(tier)) { outcomes.push(tier + "=cooldown"); continue; }
+    if (!hasKey(vendor)) { outcomes.push(tier + "=geen sleutel"); continue; }
+    try {
+      const text = await callTier(vendor, model, prompt, o);
+      if (text) {
+        console.log("llm [" + o.callSite + "] prompt=" + prompt.length + " tekens → " + tier);
+        return { text, tier };
+      }
+      outcomes.push(tier + "=lege respons");
+    } catch (e) {
+      if (e instanceof RateLimitErr || isRateLimit(e.message)) {
+        setCooldown(tier);
+        outcomes.push(tier + "=429/cooldown");
+      } else {
+        console.warn("llm-trede " + tier + " faalde:", e.message);
+        outcomes.push(tier + "=fout");
+      }
+    }
+  }
+  console.warn("llm [" + o.callSite + "]: alle tredes uitgeput — " + (outcomes.join("; ") || "geen tredes"));
+  return null;
+}
+
+module.exports = { reason };
+</file>
+
+<file path="server/package.json">
+{
+  "name": "espanol-api",
+  "version": "1.0.0",
+  "description": "API voor de ¡Vamos! Spaans-leerapp: profielsync, foutenlogs en AI-feedback",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
+</file>
+
+<file path=".nojekyll">
+
+</file>
+
+<file path="CNAME">
+vamos.stefanwobben.nl
+</file>
+
+<file path="README.md">
+# ¡Vamos! · Spaans oefenen
+
+Persoonlijke Spaans-leerapp: woordjes met spaced repetition, vertaalzinnetjes, grammatica-toetsjes, spiekbrief, dagdoel en streak. Meerdere profielen met elk een eigen leerpad (niveautest ingebouwd).
+
+De app is één zelfstandig HTML-bestand en draait via GitHub Pages. Voortgang wordt lokaal in de browser bewaard.
+</file>
+
+<file path="server/README.md">
+# ¡Vamos! API
+
+Backend voor de Spaans-leerapp: profielsync (Neon/Postgres), foutenlogs en AI-feedback via de Anthropic API.
+
+Deploy op Render: New Web Service → deze repo → Root Directory `server` → Build `npm install` → Start `npm start`.
+Env vars: DATABASE_URL (Neon), ANTHROPIC_API_KEY, ADMIN_KEY (zelf verzinnen), ALLOWED_ORIGIN (https://vamos.stefanwobben.nl).
+
+De LLM-ladder (llm.js) staat hier omdat de sleutels hier staan. `POST /api/admin/llm?key=ADMIN_KEY`
+is de ingang die de nachtelijke curriculum-taak gebruikt: die draait op GitHub Actions en heeft dus
+zelf geen sleutels. Zo ligt elke sleutel op één plek.
+</file>
+
+<file path=".gitignore">
+.github/
+.DS_Store
+</file>
+
+<file path="maatje.html">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¡Vamos! · meekijken</title>
+<!--
+  DE MAATJE-PAGINA (v19.58)
+
+  Waarom dit een eigen bestandje is en geen scherm in de app:
+  een maatje is iemand die MEEKIJKT en zelf geen Spaans leert. Zijn moeder, zijn partner, een
+  collega. Zet je die in de app, dan krijgt hij een profielformulier, een niveaukeuze en een
+  dagdoel voor zijn neus terwijl hij alleen maar even wilde zien hoe het gaat. Dat is de snelste
+  manier om te zorgen dat hij niet nog een keer kijkt. Deze pagina heeft geen account, geen
+  opslag, geen navigatie en geen knop die iets verandert: hij haalt vijf getallen op en tekent ze.
+
+  Waarom dit werkt (voor zover iets hier werkt): in de STEP UP-trial (Patel e.a., JAMA Internal
+  Medicine 2019, n=602) werden competitie, samenwerking en "support" naast elkaar gelegd bij het
+  volhouden van dagelijkse stappen. Support was precies dit: één zelfgekozen persoon die wekelijks
+  een kort rapportje kreeg en zelf nergens aan meedeed. Alle drie de vormen hielpen tijdens de
+  looptijd; alleen support hield ná afloop nog stand.
+
+  Twee dingen die deze pagina bewust NIET doet:
+  - Voornemens tonen. Harkin e.a. (Psychological Bulletin 2016, 138 studies, d=0,40) vinden het
+    effect voor het bijhouden van GEDANE voortgang. Gollwitzer (2009) geeft het zwakkere maar
+    consistente signaal dat aangekondigde voornemens juist averechts kunnen werken. Dus wel "4 van
+    de 7 dagen gehaald", nooit "wil er 5 halen".
+  - Iets terugsturen. Geen duimpje, geen berichtje, geen "por een aanmoediging". Zodra het maatje
+    iets moet doen, is het geen support meer maar een tweede taak, en dan haakt hij af. De
+    aanmoediging komt maar op één plek vandaan: het echte gesprek dat de leerling toch al had.
+
+  De link (mcode) is een eigen token en NOOIT de sync-code van de leerling. Met een sync-code geeft
+  GET /api/state/:code de hele state weg (voortgang, e-mail, alles). Zie server/index.js.
+-->
+<style>
+  :root{
+    --bg:#faf6ef; --card:#ffffff; --ink:#2d2a26; --muted:#8a8378;
+    --accent:#d4552b; --accent-soft:#fbe8df; --green:#2e7d4f; --green-soft:#e3f2e8;
+    --amber:#b7791f; --amber-soft:#fdf3e0; --border:#e8e1d4; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg); color:var(--ink); line-height:1.55; padding-bottom:40px;}
+  .wrap{max-width:520px; margin:0 auto; padding:16px;}
+  header{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:8px 0 14px;}
+  header h1{font-size:1.35rem; margin:0; letter-spacing:-0.02em;}
+  header h1 span{color:var(--accent);}
+  .badge{background:var(--accent-soft); color:var(--accent); font-weight:600; font-size:.78rem;
+         padding:4px 10px; border-radius:999px; white-space:nowrap;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+        padding:18px; margin-bottom:14px;}
+  .muted{color:var(--muted); font-size:.88rem;}
+  .big{font-size:1.4rem; font-weight:700; margin:10px 0;}
+  .kicker{display:inline-block; font-size:.72rem; font-weight:700; text-transform:uppercase;
+          letter-spacing:.04em; color:var(--muted);}
+  .uitleg{background:var(--bg); border:1px dashed var(--border); border-radius:10px; padding:12px 14px;
+          margin-top:10px; font-size:.92rem;}
+  .statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
+  .stat{background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .stat b{display:block; font-size:1.35rem; line-height:1.2;}
+  .stat span{font-size:.8rem; color:var(--muted);}
+  .week{display:flex; gap:6px; justify-content:space-between; margin:14px 0 4px;}
+  .dag{flex:1; text-align:center;}
+  .bol{width:100%; aspect-ratio:1; max-width:38px; margin:0 auto; border-radius:50%;
+       border:2px solid var(--border); background:var(--card); display:flex; align-items:center;
+       justify-content:center; font-size:.9rem; color:var(--muted);}
+  .bol.vol{background:var(--green-soft); border-color:var(--green); color:var(--green); font-weight:700;}
+  .bol.iets{background:var(--amber-soft); border-color:var(--amber); color:var(--amber);}
+  .dag small{display:block; font-size:.7rem; color:var(--muted); margin-top:4px;}
+  .pet{width:110px; margin:0 auto; display:block;}
+  a{color:var(--accent);}
+  .voet{text-align:center; font-size:.85rem; color:var(--muted); margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>¡<span>Vamos</span>!</h1>
+    <span class="badge" id="badge">meekijken</span>
+  </header>
+  <div id="inhoud">
+    <div class="card"><p class="muted" id="laden">Even ophalen…</p></div>
+  </div>
+</div>
+<script>
+var API = "https://espanol-qbm8.onrender.com";
+// De taal van het maatje is onbekend (hij heeft hier geen profiel en dat houden we zo). Nederlands
+// tenzij de browser duidelijk iets anders zegt.
+var NL = (navigator.language || "nl").toLowerCase().indexOf("nl") === 0;
+function t(nl, en){ return NL ? nl : en; }
+function esc(s){ return String(s == null ? "" : s).replace(/[<>&"]/g, function(c){
+  return ({"<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;"})[c]; }); }
+
+// Chispa in rust: dezelfde axolotl als in de app, maar statisch en zonder accessoires. Hij staat
+// hier omdat een pagina met alleen getallen op een rapportcijfer lijkt, en dit geen rapport is.
+function chispa(){
+  return "<svg class='pet' viewBox='0 0 200 180'>"+
+    "<ellipse cx='100' cy='166' rx='50' ry='11' fill='#00000010'/>"+
+    "<g stroke='#f0a0c0' stroke-width='6' stroke-linecap='round'>"+
+    "<path d='M56 78 q-14 -4 -20 4'/><path d='M56 96 q-14 2 -20 10'/>"+
+    "<path d='M144 78 q14 -4 20 4'/><path d='M144 96 q14 2 20 10'/></g>"+
+    "<circle cx='26' cy='82' r='4' fill='#f6bcd6'/><circle cx='26' cy='106' r='4' fill='#f6bcd6'/>"+
+    "<circle cx='174' cy='82' r='4' fill='#f6bcd6'/><circle cx='174' cy='106' r='4' fill='#f6bcd6'/>"+
+    "<circle cx='100' cy='104' r='62' fill='#ffe3ee' stroke='#f5b8ce' stroke-width='3'/>"+
+    "<ellipse cx='82' cy='165' rx='7' ry='6' fill='#f5b8ce'/><ellipse cx='118' cy='165' rx='7' ry='6' fill='#f5b8ce'/>"+
+    "<circle cx='78' cy='96' r='10' fill='#2d2a26'/><circle cx='122' cy='96' r='10' fill='#2d2a26'/>"+
+    "<circle cx='81' cy='93' r='3.4' fill='#fff'/><circle cx='125' cy='93' r='3.4' fill='#fff'/>"+
+    "<ellipse cx='70' cy='112' rx='8' ry='5' fill='#f7b7cd'/><ellipse cx='130' cy='112' rx='8' ry='5' fill='#f7b7cd'/>"+
+    "<path d='M88 108 Q100 118 112 108' stroke='#2d2a26' stroke-width='3' fill='none' stroke-linecap='round'/>"+
+    "</svg>";
+}
+
+function toonFout(tekst){
+  document.getElementById("inhoud").innerHTML =
+    "<div class='card'><span class='kicker'>"+t("Meekijken","Following along")+"</span>"+
+    "<p class='big' style='font-size:1.1rem'>"+esc(tekst)+"</p>"+
+    "<p class='muted'>"+t("Vraag degene die je uitnodigde om een nieuwe link.",
+                          "Ask the person who invited you for a new link.")+"</p></div>";
+}
+
+function weekRij(w){
+  var namen = NL ? ["ma","di","wo","do","vr","za","zo"] : ["mon","tue","wed","thu","fri","sat","sun"];
+  var d = (w && w.dagelijks) || [];
+  var uit = "<div class='week'>";
+  for(var i = 0; i < 7; i++){
+    var v = d[i];
+    var cls = v === true ? "bol vol" : (v ? "bol iets" : "bol");
+    var teken = v === true ? "✓" : (v ? "·" : "");
+    uit += "<div class='dag'><div class='"+cls+"'>"+teken+"</div><small>"+namen[i]+"</small></div>";
+  }
+  return uit + "</div>";
+}
+
+// Vergelijken met vorige week, maar zonder oordeel: geen "helaas", geen pijl omlaag in het rood.
+// Een maatje dat de app namens de app teleurgesteld ziet doen, gaat de leerling niet aanmoedigen.
+function vergelijk(nu, vorig){
+  if(!vorig || (!vorig.dagen && !vorig.lessen)) return "";
+  if(nu.dagen > vorig.dagen) return t("Meer dagen dan vorige week ("+vorig.dagen+"). Zeg er iets van.",
+                                      "More days than last week ("+vorig.dagen+"). Say something about it.");
+  if(nu.dagen === vorig.dagen) return t("Net zoveel dagen als vorige week ("+vorig.dagen+"). Volhouden is het hele punt.",
+                                        "Same number of days as last week ("+vorig.dagen+"). Keeping it up is the whole point.");
+  return t("Wat minder dan vorige week ("+vorig.dagen+"). Een drukke week overkomt iedereen.",
+           "A bit less than last week ("+vorig.dagen+"). Everyone has a busy week.");
+}
+
+function toon(d){
+  var naam = esc(d.leerling || t("Iemand","Someone"));
+  var w = d.week || {dagen:0, lessen:0, dagelijks:[]};
+  document.getElementById("badge").textContent = t("meekijken","following along");
+  document.getElementById("inhoud").innerHTML =
+    "<div class='card'>"+
+      "<span class='kicker'>"+t("De week van","This week for")+" "+naam+"</span>"+
+      chispa()+
+      "<p class='big' style='text-align:center; margin:6px 0'>"+w.dagen+"/7 "+
+        t("dagen doel gehaald","days on goal")+"</p>"+
+      weekRij(w)+
+      "<p class='muted' style='text-align:center; margin:10px 0 0'>"+esc(vergelijk(w, d.vorige))+"</p>"+
+      "<div class='statgrid'>"+
+        "<div class='stat'><b>🔥 "+(d.streak || 0)+"</b><span>"+t("dagen op rij","day streak")+"</span></div>"+
+        "<div class='stat'><b>"+(w.lessen || 0)+"</b><span>"+t("lessen deze week","sessions this week")+"</span></div>"+
+        "<div class='stat'><b>"+(d.woorden || 0)+"</b><span>"+t("woorden geleerd","words learned")+"</span></div>"+
+        "<div class='stat'><b>"+(d.vorige ? d.vorige.dagen : 0)+"/7</b><span>"+t("vorige week","last week")+"</span></div>"+
+      "</div>"+
+      "<div class='uitleg'>"+t(
+        "Je hoeft hier niets te doen. Deze pagina blijft werken, dus je kunt hem bewaren en er af en toe even naar kijken. Het helpt het meest als je er gewoon iets over zegt als je "+naam+" spreekt.",
+        "There's nothing for you to do here. This page keeps working, so you can bookmark it and check in now and then. It helps most if you simply mention it next time you speak to "+naam+".")+"</div>"+
+      "<p class='muted' style='margin:10px 0 0'>"+t(
+        "Je ziet alleen deze cijfers: geen fouten, geen antwoorden, geen persoonlijke gegevens.",
+        "You only see these numbers: no mistakes, no answers, no personal details.")+"</p>"+
+    "</div>"+
+    "<p class='voet'>"+t("Zelf ook eens kijken? ","Curious yourself? ")+
+      "<a href='https://vamos.stefanwobben.nl/'>¡Vamos!</a></p>";
+}
+
+(function(){
+  var m = (location.search.match(/[?&]m=([a-z0-9]+)/i) || [])[1];
+  if(!m){ toonFout(t("Deze link is niet compleet.","This link is incomplete.")); return; }
+  fetch(API + "/api/maatje/" + encodeURIComponent(m.toLowerCase()))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){ toonFout((d && d.error) || t("Deze link bestaat niet (meer).","This link doesn't exist (anymore).")); return; }
+      toon(d);
+    })
+    .catch(function(){
+      // Render slaapt na inactiviteit; de eerste aanvraag kan daardoor lang duren of falen.
+      toonFout(t("De server reageert even niet. Probeer het over een minuutje nog eens.",
+                 "The server isn't responding. Try again in a minute."));
+    });
+})();
+</script>
+</body>
+</html>
+</file>
+
+<file path="server/index.js">
+/*
+ * ¡Vamos! API — profielsync, foutenlogs en AI-feedback
+ *
+ * Omgevingsvariabelen (in Render instellen):
+ *   DATABASE_URL      — Neon connection string (postgresql://...)
+ *   ANTHROPIC_API_KEY — sleutel van console.anthropic.com (voor /api/ai/*)
+ *   ADMIN_KEY         — zelfverzonnen lang wachtwoord; nodig om alle logs uit te lezen
+ *   ALLOWED_ORIGIN    — standaard https://vamos.stefanwobben.nl
+ */
+const express = require("express");
+const { Pool } = require("pg");
+const { reason } = require("./llm");
+
+const app = express();
+app.use(express.json({ limit: "512kb" }));
+
+const ORIGIN = process.env.ALLOWED_ORIGIN || "https://vamos.stefanwobben.nl";
+app.use((req, res, next) => {
+  const o = req.headers.origin || "";
+  // sta het live-domein toe, plus lokaal testen vanaf file:// (origin "null")
+  if (o === ORIGIN || o === "null" || o.endsWith(".stefanwobben.nl")) {
+    res.setHeader("Access-Control-Allow-Origin", o === "null" ? "*" : o);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 5,
+});
+
+async function init() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS profiles (
+      code       text PRIMARY KEY,
+      name       text NOT NULL,
+      track      text NOT NULL,
+      state      jsonb NOT NULL DEFAULT '{}'::jsonb,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS logs (
+      id         bigserial PRIMARY KEY,
+      code       text NOT NULL,
+      kind       text NOT NULL DEFAULT 'sessie',
+      payload    jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS logs_created ON logs (created_at DESC);
+    CREATE TABLE IF NOT EXISTS groups (
+      gcode      text PRIMARY KEY,
+      naam       text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS group_members (
+      gcode      text NOT NULL,
+      pcode      text NOT NULL,
+      joined_at  timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (gcode, pcode)
+    );
+    CREATE TABLE IF NOT EXISTS krabbels (
+      van        text NOT NULL,
+      naar       text NOT NULL,
+      sleutel    text NOT NULL,
+      dag        date NOT NULL DEFAULT current_date,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (van, naar, dag)
+    );
+    /* v19.58 — een maatje is iemand die MEEKIJKT en zelf niet leert. Bewust een eigen token en
+       geen hergebruik van de sync-code: met een sync-code geeft GET /api/state/:code de hele
+       state weg (voortgang, e-mail, alles), en dat is precies wat je je moeder niet stuurt.
+       Deze mcode opent alleen GET /api/maatje/:mcode, en dat geeft vijf getallen terug. */
+    CREATE TABLE IF NOT EXISTS maatjes (
+      mcode      text PRIMARY KEY,
+      pcode      text NOT NULL,
+      naam       text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS maatjes_pcode ON maatjes (pcode);
+    CREATE TABLE IF NOT EXISTS duels (
+      id         text PRIMARY KEY,
+      rounds     int NOT NULL DEFAULT 5,
+      letters    jsonb NOT NULL,
+      players    jsonb NOT NULL DEFAULT '[]'::jsonb,
+      moves      jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+}
+
+/* ---- Palabra Duel ---- */
+const LETTER_SCORE = { a:1,e:1,o:1,i:1,s:1,n:1,r:1,u:1,l:1,t:1,d:2,g:2,c:3,b:3,m:3,p:3,f:4,h:4,v:4,y:4,q:5,j:8,x:8,z:10,"ñ":8 };
+function duelLetters(rounds) {
+  const vowels = "aaaeeeeooiiu";
+  const cons = "nnrrssllttddccmmbbppgg" + "fhvyjqzñx";
+  const out = [];
+  for (let r = 0; r < rounds; r++) {
+    const set = [];
+    for (let i = 0; i < 3; i++) set.push(vowels[Math.floor(Math.random() * vowels.length)]);
+    for (let i = 0; i < 4; i++) set.push(cons[Math.floor(Math.random() * cons.length)]);
+    set.sort(() => Math.random() - 0.5);
+    out.push(set);
+  }
+  return out;
+}
+function canMake(word, letters) {
+  const pool = {};
+  letters.forEach((l) => { pool[l] = (pool[l] || 0) + 1; });
+  for (const ch of word) {
+    if (!pool[ch]) return false;
+    pool[ch]--;
+  }
+  return true;
+}
+function wordScore(word) {
+  let s = 0;
+  for (const ch of word) s += LETTER_SCORE[ch] || 1;
+  return s + (word.length >= 6 ? 5 : 0); // bonus voor lange woorden
+}
+
+// POST /api/duel/nieuw {speler}
+app.post("/api/duel/nieuw", async (req, res) => {
+  const { speler } = req.body || {};
+  if (!speler) return bad(res, 400, "speler verplicht");
+  const id = Math.random().toString(36).slice(2, 8);
+  const letters = duelLetters(5);
+  try {
+    await pool.query("INSERT INTO duels (id, rounds, letters, players) VALUES ($1,5,$2,$3)",
+      [id, JSON.stringify(letters), JSON.stringify([String(speler).slice(0, 30)])]);
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    ok(res, { duel: r.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/duel/join {id, speler}
+app.post("/api/duel/join", async (req, res) => {
+  const { id, speler } = req.body || {};
+  if (!id || !speler) return bad(res, 400, "id en speler verplicht");
+  try {
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
+    const duel = r.rows[0];
+    const players = duel.players;
+    if (!players.includes(speler)) {
+      if (players.length >= 2) return bad(res, 409, "duel zit al vol");
+      players.push(String(speler).slice(0, 30));
+      await pool.query("UPDATE duels SET players=$2, updated_at=now() WHERE id=$1", [id, JSON.stringify(players)]);
+      duel.players = players;
+    }
+    ok(res, { duel });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/duel/:id
+app.get("/api/duel/:id", async (req, res) => {
+  try {
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [req.params.id]);
+    if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
+    ok(res, { duel: r.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/duel/zet {id, speler, ronde, woord} of {id, speler, ronde, pas:true}
+app.post("/api/duel/zet", async (req, res) => {
+  const { id, speler, ronde, woord, pas } = req.body || {};
+  if (!id || !speler || typeof ronde !== "number" || (!woord && !pas)) return bad(res, 400, "id/speler/ronde/woord verplicht");
+  const w = pas ? "" : String(woord).toLowerCase().trim().normalize("NFC");
+  if (!pas && (w.length < 2 || w.length > 7 || !/^[a-zñ]+$/.test(w))) return bad(res, 400, "ongeldig woord (2-7 letters)");
+  try {
+    const r = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    if (!r.rows.length) return bad(res, 404, "duel niet gevonden");
+    const duel = r.rows[0];
+    if (!duel.players.includes(speler)) return bad(res, 403, "je doet niet mee aan dit duel");
+    if (ronde < 0 || ronde >= duel.rounds) return bad(res, 400, "ongeldige ronde");
+    const moves = duel.moves || {};
+    if (moves[ronde] && moves[ronde][speler]) return bad(res, 409, "je hebt deze ronde al gespeeld");
+    if (pas) {
+      moves[ronde] = moves[ronde] || {};
+      moves[ronde][speler] = { woord: "–", punten: 0, betekenis: "gepast" };
+      await pool.query("UPDATE duels SET moves=$2, updated_at=now() WHERE id=$1", [id, JSON.stringify(moves)]);
+      const rp = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+      return ok(res, { geldig: true, punten: 0, betekenis: "gepast", duel: rp.rows[0] });
+    }
+    if (!canMake(w, duel.letters[ronde])) return bad(res, 400, "dat woord past niet in de letters van deze ronde");
+    // Spaanse geldigheid via de LLM-ladder (fail-closed)
+    const ai = await reason(
+      "Je bent scheidsrechter in een Spaans woordspel. Antwoord UITSLUITEND met geldige JSON {\"geldig\": true/false, \"betekenis\": \"NL-vertaling of korte reden\"}. " +
+      "geldig=true alleen als dit een bestaand Spaans woord is (zelfstandig naamwoord, werkwoordsvorm, bijvoeglijk naamwoord, enz. — vervoegingen tellen mee). Eigennamen en afkortingen tellen niet.\n\nWoord: \"" + w + "\"",
+      { maxTokens: 150, jsonMode: true, callSite: "duel-woord" }
+    );
+    if (!ai) return bad(res, 503, "de scheidsrechter (AI) is even niet bereikbaar, probeer zo opnieuw");
+    const m = ai.text.match(/\{[\s\S]*\}/);
+    if (!m) return bad(res, 502, "onleesbaar AI-antwoord");
+    const parsed = JSON.parse(m[0]);
+    if (!parsed.geldig) {
+      return ok(res, { geldig: false, betekenis: String(parsed.betekenis || "").slice(0, 200) });
+    }
+    const punten = wordScore(w);
+    moves[ronde] = moves[ronde] || {};
+    moves[ronde][speler] = { woord: w, punten, betekenis: String(parsed.betekenis || "").slice(0, 200) };
+    await pool.query("UPDATE duels SET moves=$2, updated_at=now() WHERE id=$1", [id, JSON.stringify(moves)]);
+    const r2 = await pool.query("SELECT * FROM duels WHERE id=$1", [id]);
+    ok(res, { geldig: true, punten, betekenis: String(parsed.betekenis || "").slice(0, 200), duel: r2.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+const ok = (res, data) => res.json({ ok: true, ...data });
+const bad = (res, code, msg) => res.status(code).json({ ok: false, error: msg });
+
+// ---- gezondheid ----
+app.get("/health", (_req, res) => ok(res, { tijd: new Date().toISOString() }));
+
+// ---- profielsync ----
+// POST /api/sync  {code, name, track, state}
+// Upsert op code. 'code' is de geheime profielcode die de app genereert.
+app.post("/api/sync", async (req, res) => {
+  const { code, name, track, state } = req.body || {};
+  if (!code || typeof code !== "string" || code.length < 8) return bad(res, 400, "ongeldige code");
+  if (!name || !track || typeof state !== "object") return bad(res, 400, "name/track/state verplicht");
+  try {
+    const r = await pool.query(
+      `INSERT INTO profiles (code, name, track, state, updated_at)
+       VALUES ($1,$2,$3,$4, now())
+       ON CONFLICT (code) DO UPDATE SET name=$2, track=$3, state=$4, updated_at=now()
+       RETURNING updated_at`,
+      [code, String(name).slice(0, 60), String(track).slice(0, 20), state]
+    );
+    ok(res, { updated_at: r.rows[0].updated_at });
+  } catch (e) {
+    console.error(e);
+    bad(res, 500, "database-fout");
+  }
+});
+
+// GET /api/state/:code -> {state, name, track, updated_at}
+app.get("/api/state/:code", async (req, res) => {
+  try {
+    const r = await pool.query("SELECT name, track, state, updated_at FROM profiles WHERE code=$1", [req.params.code]);
+    if (!r.rows.length) return bad(res, 404, "onbekende code");
+    // groepslidmaatschappen meesturen, zodat elk apparaat je groepen kent
+    const g = await pool.query(
+      "SELECT gr.gcode, gr.naam FROM group_members m JOIN groups gr ON gr.gcode = m.gcode WHERE m.pcode=$1",
+      [req.params.code]);
+    ok(res, { ...r.rows[0], groepen: g.rows });
+  } catch (e) {
+    console.error(e);
+    bad(res, 500, "database-fout");
+  }
+});
+
+// ---- foutenlogs ----
+// POST /api/log {code, kind, payload}
+app.post("/api/log", async (req, res) => {
+  const { code, kind, payload } = req.body || {};
+  if (!code || typeof payload !== "object") return bad(res, 400, "code/payload verplicht");
+  try {
+    await pool.query("INSERT INTO logs (code, kind, payload) VALUES ($1,$2,$3)", [
+      code, String(kind || "sessie").slice(0, 30), payload,
+    ]);
+    ok(res, {});
+  } catch (e) {
+    console.error(e);
+    bad(res, 500, "database-fout");
+  }
+});
+
+// GET /api/logs?key=ADMIN_KEY&dagen=8 — voor de wekelijkse onderhoudstaak
+app.get("/api/logs", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  const dagen = Math.min(60, parseInt(req.query.dagen, 10) || 8);
+  try {
+    const logs = await pool.query(
+      "SELECT code, kind, payload, created_at FROM logs WHERE created_at > now() - ($1 || ' days')::interval ORDER BY created_at DESC LIMIT 500",
+      [dagen]
+    );
+    const profs = await pool.query("SELECT code, name, track, updated_at FROM profiles ORDER BY updated_at DESC");
+    ok(res, { logs: logs.rows, profielen: profs.rows });
+  } catch (e) {
+    console.error(e);
+    bad(res, 500, "database-fout");
+  }
+});
+
+/* ---- Krabbels: een schouderklopje bij een familielid, uitsluitend in het Spaans ----
+ * v19.49 (Stefan: "bij de familie zou je een krabbel acher kunnen latne met een hyes banaan bij
+ * een familie/teamlid, maar alleen in het spaans"). De client stuurt alleen een sleutel; de tekst
+ * staat hier. Vrije tekst kan er dus niet in, en daarmee is "alleen in het Spaans" gegarandeerd
+ * door de vorm van de API in plaats van door goed gedrag van de client.
+ * Eén krabbel per paar per dag: opnieuw sturen overschrijft, dus je kunt niet spammen.
+ */
+const KRABBEL_TEKST = {
+  hola: "¡Hola!",
+  choca: "¡Choca esos cinco!",
+  platano: "¡Un plátano para ti!",
+  crack: "¡Eres un crack!",
+  sigue: "¡Sigue así!",
+  vamos: "¡Vamos, vamos!",
+  ole: "¡Olé!",
+  taco: "¡Te invito a un taco!",
+  campeon: "¡Campeón!",
+  abrazo: "¡Un abrazo!",
+};
+function familiaNamen() {
+  return String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona,martina")
+    .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+app.post("/api/krabbel", async (req, res) => {
+  try {
+    const van = String((req.body && req.body.van) || "").trim().toLowerCase();
+    const naar = String((req.body && req.body.naar) || "").trim().toLowerCase();
+    const sleutel = String((req.body && req.body.sleutel) || "").trim().toLowerCase();
+    if (!KRABBEL_TEKST[sleutel]) return bad(res, 400, "onbekende krabbel");
+    if (!van || !naar || van === naar) return bad(res, 400, "van/naar ongeldig");
+    const namen = familiaNamen();
+    if (namen.indexOf(van) === -1 || namen.indexOf(naar) === -1) return bad(res, 403, "alleen binnen de familie");
+    await pool.query(
+      `INSERT INTO krabbels (van, naar, sleutel, dag) VALUES ($1, $2, $3, current_date)
+       ON CONFLICT (van, naar, dag) DO UPDATE SET sleutel = EXCLUDED.sleutel, created_at = now()`,
+      [van, naar, sleutel]);
+    ok(res, { tekst: KRABBEL_TEKST[sleutel] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/familia — scorebord van ALLEEN de familie (FAMILIA_NAMEN env, default stefan/elise/ilona/martina).
+// Vroeger toonde dit alle profielen; sinds de app openbaar deelbaar is, is dat expres dichtgezet.
+app.get("/api/familia", async (_req, res) => {
+  try {
+    const namen = String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona,martina")
+      .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const r = await pool.query(
+      "SELECT name, track, state, updated_at FROM profiles WHERE lower(name) = ANY($1) ORDER BY updated_at DESC",
+      [namen]);
+    const spelers = r.rows.map((row) => {
+      const st = row.state || {};
+      let lessen = 0;
+      if (st.lessons) for (const k in st.lessons) { if (st.lessons[k] && st.lessons[k].done) lessen++; }
+      // streak alleen tellen als hij nog actueel is (vandaag of gisteren gehaald)
+      const vandaag = new Date().toISOString().slice(0, 10);
+      const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const sd = st.streak || {};
+      const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
+      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, laatstActief: row.updated_at };
+    });
+    // ontdubbel op naam: hetzelfde gezinslid op twee apparaten telt één keer (hoogste score wint)
+    const perNaam = {};
+    spelers.forEach((s) => {
+      const k = s.naam.toLowerCase();
+      if (!perNaam[k] || s.txp > perNaam[k].txp) perNaam[k] = s;
+    });
+    const lijst = Object.values(perNaam).sort((a, b) => b.txp - a.txp);
+    // krabbels van vandaag meesturen: het klassement en de schouderklopjes horen bij elkaar
+    let krabbels = [];
+    try {
+      const kr = await pool.query(
+        "SELECT van, naar, sleutel FROM krabbels WHERE dag = current_date ORDER BY created_at");
+      krabbels = kr.rows;
+    } catch (e2) { console.error(e2); }
+    ok(res, { spelers: lijst, krabbels });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* ---- Herstel: voortgang terugvinden via e-mail (max 5 pogingen per IP per uur) ---- */
+const herstelPogingen = new Map(); // ip -> [timestamps]
+app.post("/api/herstel", async (req, res) => {
+  const { mail } = req.body || {};
+  const schoon = String(mail || "").trim().toLowerCase();
+  if (!schoon || !schoon.includes("@")) return bad(res, 400, "vul een geldig e-mailadres in");
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?";
+  const nu = Date.now();
+  const lijst = (herstelPogingen.get(ip) || []).filter((t) => t > nu - 3600000);
+  if (lijst.length >= 5) return bad(res, 429, "te veel pogingen, probeer het over een uur nog eens");
+  lijst.push(nu); herstelPogingen.set(ip, lijst);
+  try {
+    const r = await pool.query(
+      "SELECT code, name, track FROM profiles WHERE lower(state->>'mail') = $1 ORDER BY updated_at DESC LIMIT 5", [schoon]);
+    ok(res, { profielen: r.rows.map((x) => ({ naam: x.name, code: x.code, track: x.track })) });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* ---- Groepen: eigen klassementen naast de familie ---- */
+// POST /api/groep/nieuw {naam, code} — code = sync-code van de maker
+app.post("/api/groep/nieuw", async (req, res) => {
+  const { naam, code } = req.body || {};
+  const schoon = String(naam || "").trim().slice(0, 40);
+  if (!schoon || !code) return bad(res, 400, "naam en code verplicht");
+  try {
+    const p = await pool.query("SELECT code FROM profiles WHERE code=$1", [String(code)]);
+    if (!p.rows.length) return bad(res, 404, "profiel onbekend, oefen eerst even zodat je sync-code bestaat");
+    const gcode = "g" + Math.random().toString(36).slice(2, 7);
+    await pool.query("INSERT INTO groups (gcode, naam) VALUES ($1,$2)", [gcode, schoon]);
+    await pool.query("INSERT INTO group_members (gcode, pcode) VALUES ($1,$2) ON CONFLICT DO NOTHING", [gcode, String(code)]);
+    ok(res, { groep: { gcode, naam: schoon } });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/groep/join {gcode, code}
+app.post("/api/groep/join", async (req, res) => {
+  const { gcode, code } = req.body || {};
+  if (!gcode || !code) return bad(res, 400, "gcode en code verplicht");
+  try {
+    const g = await pool.query("SELECT gcode, naam FROM groups WHERE gcode=$1", [String(gcode).toLowerCase().trim()]);
+    if (!g.rows.length) return bad(res, 404, "groep niet gevonden, check de code");
+    const p = await pool.query("SELECT code FROM profiles WHERE code=$1", [String(code)]);
+    if (!p.rows.length) return bad(res, 404, "profiel onbekend, oefen eerst even zodat je sync-code bestaat");
+    await pool.query("INSERT INTO group_members (gcode, pcode) VALUES ($1,$2) ON CONFLICT DO NOTHING", [g.rows[0].gcode, String(code)]);
+    ok(res, { groep: g.rows[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/groep/weg {gcode, code} — groep verlaten
+app.post("/api/groep/weg", async (req, res) => {
+  const { gcode, code } = req.body || {};
+  if (!gcode || !code) return bad(res, 400, "gcode en code verplicht");
+  try {
+    await pool.query("DELETE FROM group_members WHERE gcode=$1 AND pcode=$2", [String(gcode), String(code)]);
+    ok(res, {});
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// week-hulpjes: maandag t/m zondag, in UTC
+function weekDates(offsetWeeks) {
+  const now = new Date();
+  const dag = (now.getUTCDay() + 6) % 7; // 0 = maandag
+  const maandag = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dag + offsetWeeks * 7);
+  const out = [];
+  for (let i = 0; i < 7; i++) out.push(new Date(maandag + i * 86400000).toISOString().slice(0, 10));
+  return out;
+}
+function sumXp(state, dates) {
+  const xp = (state && state.xp) || {};
+  return dates.reduce((s, d) => s + (xp[d] || 0), 0);
+}
+
+// GET /api/groep/:gcode — naam + klassement (met week-race en winnaar van vorige week)
+app.get("/api/groep/:gcode", async (req, res) => {
+  try {
+    const g = await pool.query("SELECT gcode, naam FROM groups WHERE gcode=$1", [String(req.params.gcode).toLowerCase().trim()]);
+    if (!g.rows.length) return bad(res, 404, "groep niet gevonden");
+    const r = await pool.query(
+      "SELECT p.name, p.track, p.state, p.updated_at FROM group_members m JOIN profiles p ON p.code = m.pcode WHERE m.gcode=$1",
+      [g.rows[0].gcode]);
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const dezeWeek = weekDates(0);
+    const vorigeWeekDagen = weekDates(-1);
+    // eerlijke race: winnaar is wie het vaakst zijn EIGEN dagdoel haalt (relaxed 10 telt even zwaar als fanatiek 60)
+    function dagenGehaald(st, dates) {
+      const doel = (st && st.doel) || 30;
+      const xp = (st && st.xp) || {};
+      return dates.reduce((s, d) => s + ((xp[d] || 0) >= doel ? 1 : 0), 0);
+    }
+    // "Start je les"-flow-voltooiingen deze week: st.lesFlow is een datum->true map (client-side
+    // gededupliceerd, dus een dag met meerdere herhalingen telt hier gewoon 1x mee).
+    function lesDagenTellen(st, dates) {
+      const lf = (st && st.lesFlow) || {};
+      return dates.reduce((s, d) => s + (lf[d] ? 1 : 0), 0);
+    }
+    const spelers = r.rows.map((row) => {
+      const st = row.state || {};
+      let lessen = 0;
+      if (st.lessons) for (const k in st.lessons) { if (st.lessons[k] && st.lessons[k].done) lessen++; }
+      const sd = st.streak || {};
+      const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
+      const doel = st.doel || 30;
+      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, doel,
+        weekXp: sumXp(st, dezeWeek), weekDagen: dagenGehaald(st, dezeWeek), weekLessen: lesDagenTellen(st, dezeWeek),
+        vorigeXp: sumXp(st, vorigeWeekDagen), vorigeDagen: dagenGehaald(st, vorigeWeekDagen) };
+    }).sort((a, b) => (b.weekDagen - a.weekDagen) || (b.weekXp / (a.doel * 7) - a.weekXp / (b.doel * 7)) || (b.txp - a.txp));
+    // winnaar vorige week: meeste dagen eigen doel gehaald; tiebreak: % van eigen weekdoel
+    let vorigeWeek = null;
+    const top = [...spelers].sort((a, b) =>
+      (b.vorigeDagen - a.vorigeDagen) || (b.vorigeXp / (b.doel * 7) - a.vorigeXp / (a.doel * 7)))[0];
+    if (top && top.vorigeXp > 0) vorigeWeek = { winnaar: top.naam, xp: top.vorigeXp, dagen: top.vorigeDagen, week: vorigeWeekDagen[0] };
+    ok(res, { groep: g.rows[0], spelers, vorigeWeek, week: dezeWeek[0] });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* ================= MAATJE (v19.58) =================
+   Eén iemand die meekijkt en zelf niet meeleert. Rust op de STEP UP-trial (Patel e.a., JAMA
+   Internal Medicine 2019, n=602): van de drie sociale vormen daar was juist de "support"-arm,
+   één aangewezen persoon die wekelijks een rapportje kreeg en zelf nergens aan meedeed, de enige
+   die ná afloop nog stand hield. En het is de enige sociale mechaniek die geen tweede gebruiker
+   van deze app nodig heeft, wat met een handvol gebruikers nogal uitmaakt.
+
+   Twee ontwerpregels zitten hier in de code, niet in de tekst:
+   1. Een eigen token (mcode), niet de sync-code. Zie de opmerking bij de tabel.
+   2. Dit eindpunt geeft alleen GEDANE DINGEN terug, geen voornemens. Harkin e.a. (Psychological
+      Bulletin 2016, meta-analyse van 138 studies) vindt d=0,40 voor het bijhouden van voortgang,
+      sterker bij publieke rapportage; het zwakkere maar consistente signaal uit Gollwitzer (2009)
+      wijst dezelfde kant op voor het aankondigen van plannen: doe dat niet. Dus wel "4 van de 7
+      dagen gehaald", nooit "wil 5 dagen per week". */
+
+// POST /api/maatje/nieuw {code, naam} — koppel (of vervang) het maatje van dit profiel
+app.post("/api/maatje/nieuw", async (req, res) => {
+  const { code, naam } = req.body || {};
+  if (!code) return bad(res, 400, "code verplicht");
+  const schoon = String(naam || "").trim().slice(0, 40);
+  try {
+    const p = await pool.query("SELECT code FROM profiles WHERE code=$1", [String(code)]);
+    if (!p.rows.length) return bad(res, 404, "profiel onbekend, oefen eerst even zodat je sync-code bestaat");
+    // hoogstens één maatje per profiel: een nieuwe koppeling maakt de oude link meteen dood
+    await pool.query("DELETE FROM maatjes WHERE pcode=$1", [String(code)]);
+    const mcode = "m" + Math.random().toString(36).slice(2, 9);
+    await pool.query("INSERT INTO maatjes (mcode, pcode, naam) VALUES ($1,$2,$3)", [mcode, String(code), schoon]);
+    ok(res, { maatje: { mcode, naam: schoon } });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// POST /api/maatje/weg {code} — maatje loskoppelen; de link werkt daarna niet meer
+app.post("/api/maatje/weg", async (req, res) => {
+  const { code } = req.body || {};
+  if (!code) return bad(res, 400, "code verplicht");
+  try {
+    await pool.query("DELETE FROM maatjes WHERE pcode=$1", [String(code)]);
+    ok(res, {});
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// GET /api/maatje/:mcode — het weekbericht. Bewust smal: naam, en vijf getallen. Geen state.
+app.get("/api/maatje/:mcode", async (req, res) => {
+  try {
+    const m = await pool.query("SELECT mcode, pcode, naam FROM maatjes WHERE mcode=$1",
+      [String(req.params.mcode).toLowerCase().trim()]);
+    if (!m.rows.length) return bad(res, 404, "deze link bestaat niet (meer)");
+    const r = await pool.query("SELECT name, state FROM profiles WHERE code=$1", [m.rows[0].pcode]);
+    if (!r.rows.length) return bad(res, 404, "profiel niet gevonden");
+    const st = r.rows[0].state || {};
+    const xp = st.xp || {};
+    const lf = st.lesFlow || {};
+    const doel = st.doel || 30;
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const sd = st.streak || {};
+    function week(offset) {
+      const dates = weekDates(offset);
+      return {
+        start: dates[0],
+        dagen: dates.reduce((s, d) => s + ((xp[d] || 0) >= doel ? 1 : 0), 0),
+        lessen: dates.reduce((s, d) => s + (lf[d] ? 1 : 0), 0),
+        // per dag: false = niets gedaan, true = dagdoel gehaald, "iets" = wel geoefend, doel niet gehaald
+        dagelijks: dates.map((d) => ((xp[d] || 0) >= doel ? true : ((xp[d] || 0) > 0 ? "iets" : false)))
+      };
+    }
+    ok(res, {
+      leerling: r.rows[0].name,
+      maatje: m.rows[0].naam,
+      streak: (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0,
+      woorden: Object.keys(st.srs || {}).length,
+      week: week(0),
+      vorige: week(-1)
+    });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* POST /api/admin/llm?key=ADMIN_KEY  {prompt, maxTokens, jsonMode}
+ * De avondrun (tools/curriculum.js) draait op GitHub Actions en heeft dus géén LLM-sleutels: die staan
+ * hier op Render. De ladder in llm.js staat hier ook al. In plaats van dezelfde sleutels op een tweede
+ * plek te zetten leent de nachtrun deze ingang, met de ADMIN_KEY die er voor het logboek al is.
+ * Eén sleutel, één plek waar hij ligt, en één plek waar het LLM-verkeer langsgaat (inclusief de
+ * bestaande rate-limiter en cooldowns van llm.js).
+ * Bewust geen open ingang: zonder ADMIN_KEY geen antwoord, en de prompt wordt begrensd zodat dit geen
+ * gratis LLM-doorgeefluik kan worden als de sleutel ooit uitlekt.
+ */
+app.post("/api/admin/llm", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  const { prompt, maxTokens, jsonMode } = req.body || {};
+  if (!prompt || typeof prompt !== "string") return bad(res, 400, "prompt verplicht");
+  if (prompt.length > 20000) return bad(res, 400, "prompt te lang");
+  try {
+    const txt = await vraagLadder("", prompt, Math.min(8000, maxTokens || 4000), !!jsonMode, "admin-llm");
+    ok(res, { tekst: txt });
+  } catch (e) {
+    console.error("admin-llm:", e.message);
+    bad(res, 502, "AI-fout");
+  }
+});
+
+// GET /api/admin/schoon?key=ADMIN_KEY — verwijder lege profielen (0 XP); echte apparaten syncen zichzelf gewoon opnieuw aan
+app.get("/api/admin/schoon", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  try {
+    const r = await pool.query("DELETE FROM profiles WHERE COALESCE((state->>'txp')::int, 0) = 0 RETURNING name, code");
+    ok(res, { verwijderd: r.rows.length, profielen: r.rows.map((x) => x.name) });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+// ---- AI-feedback via de LLM-ladder (goedkoop eerst, duur als vangnet) ----
+async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
+  const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite });
+  if (!res) throw new Error("alle LLM-tredes uitgeput");
+  return res.text;
+}
+
+// POST /api/ai/check {nl, verwacht, gegeven}
+// Beoordeelt of een afwijkende vertaling tóch goed Spaans is.
+app.post("/api/ai/check", async (req, res) => {
+  const { nl, verwacht, gegeven } = req.body || {};
+  if (!nl || !gegeven) return bad(res, 400, "nl en gegeven verplicht");
+  try {
+    const txt = await vraagLadder(
+      "Je beoordeelt antwoorden in een Spaanse leerapp voor Nederlandstaligen (niveau A0-A2). " +
+      "Antwoord UITSLUITEND met geldige JSON: {\"goed\": true/false, \"uitleg\": \"korte uitleg in het Nederlands (max 2 zinnen)\"}. " +
+      "Wees streng op grammatica maar accepteer natuurlijke alternatieven (andere woordvolgorde, synoniemen, weglaten van onderwerp). " +
+      "Kleine accentfouten: goed=true maar benoem ze in de uitleg.",
+      "Nederlandse zin: \"" + nl + "\"\nModelantwoord: \"" + (verwacht || "-") + "\"\nAntwoord van de leerling: \"" + gegeven + "\"\nIs het antwoord van de leerling correct Spaans voor deze zin?",
+      250, true, "ai-check"
+    );
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) return bad(res, 502, "onleesbaar AI-antwoord");
+    const parsed = JSON.parse(m[0]);
+    ok(res, { goed: !!parsed.goed, uitleg: String(parsed.uitleg || "").slice(0, 500) });
+  } catch (e) {
+    console.error(e);
+    bad(res, 502, "AI-fout");
+  }
+});
+
+// POST /api/ai/zin {woord, zin}
+// Schrijfoefening: beoordeel of de leerling het woord goed gebruikt in een eigen zin.
+app.post("/api/ai/zin", async (req, res) => {
+  const { woord, zin } = req.body || {};
+  if (!woord || !zin) return bad(res, 400, "woord en zin verplicht");
+  try {
+    const txt = await vraagLadder(
+      "Je beoordeelt een schrijfoefening in een Spaanse leerapp voor Nederlandstaligen (A0-A2). De leerling moest een eigen " +
+      "Spaanse zin maken met een doelwoord. Antwoord UITSLUITEND met geldige JSON: " +
+      "{\"goed\": true/false, \"uitleg\": \"korte reactie in het Nederlands, max 2 zinnen, warm en concreet\"}. " +
+      "goed=true als het doelwoord correct gebruikt is en de zin begrijpelijk Spaans is (kleine fouten mogen, benoem ze in de uitleg). " +
+      "goed=false alleen als het doelwoord verkeerd gebruikt is of de zin geen begrijpelijk Spaans is.",
+      "Doelwoord: \"" + woord + "\"\nZin van de leerling: \"" + zin + "\"",
+      250, true, "ai-zin"
+    );
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) return bad(res, 502, "onleesbaar AI-antwoord");
+    const parsed = JSON.parse(m[0]);
+    ok(res, { goed: !!parsed.goed, uitleg: String(parsed.uitleg || "").slice(0, 500) });
+  } catch (e) {
+    console.error(e);
+    bad(res, 502, "AI-fout");
+  }
+});
+
+// POST /api/ai/uitleg {vraag, context}
+// "Leg uit waarom"-knop: korte NL-uitleg over een grammaticapunt.
+app.post("/api/ai/uitleg", async (req, res) => {
+  const { vraag, context } = req.body || {};
+  if (!vraag) return bad(res, 400, "vraag verplicht");
+  try {
+    const txt = await vraagLadder(
+      "Je bent een geduldige Spaanse-taaldocent voor Nederlandstaligen (A0-A2). Antwoord in eenvoudig Nederlands, " +
+      "maximaal 120 woorden, met één concreet voorbeeld. Geen opsommingstekens, gewoon lopende tekst.",
+      (context ? "Context uit de oefening: " + context + "\n\n" : "") + "Vraag van de leerling: " + vraag,
+      350, false, "ai-uitleg"
+    );
+    ok(res, { uitleg: txt.slice(0, 1200) });
+  } catch (e) {
+    console.error(e);
+    bad(res, 502, "AI-fout");
+  }
+});
+
+const port = process.env.PORT || 10000;
+init()
+  .then(() => app.listen(port, () => console.log("¡Vamos! API draait op poort " + port)))
+  .catch((e) => { console.error("init faalde:", e); process.exit(1); });
+</file>
+
+<file path="versie.txt">
+v19.93
+</file>
+
+</files>
