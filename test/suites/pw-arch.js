@@ -72,9 +72,13 @@ const { chromium } = require('playwright');
   ok(norm.rommel, 'ook bij totale rommel als invoer');
 
   // --- 2. Bestaande waarden blijven staan ---
+  // v22.10: hier stond comp.luisteren:{a:1} als willekeurige vulwaarde. Sinds de opruiming geldt daar
+  // een regel (alleen echte luisterscenes), dus de vulwaarde moet er ook een zijn. De vraag die deze
+  // test stelt verandert niet: blijft staan wat er stond. Zie pw-cijferbugs.js voor de opruiming zelf.
   const behoud = await page.evaluate(() => {
-    const s = normaliseerState({ txp: 1234, srs: { w1: { box: 4 } }, comp: { luisteren: { a: 1 } }, dir: 'nl-es' });
-    return { txp: s.txp, box: s.srs.w1.box, luist: s.comp.luisteren.a, schrijf: !!s.comp.schrijven, dir: s.dir };
+    const echt = AUDICIONES[0].id;
+    const s = normaliseerState({ txp: 1234, srs: { w1: { box: 4 } }, comp: { luisteren: { [echt]: 1 } }, dir: 'nl-es' });
+    return { txp: s.txp, box: s.srs.w1.box, luist: s.comp.luisteren[echt], schrijf: !!s.comp.schrijven, dir: s.dir };
   });
   ok(behoud.txp === 1234 && behoud.box === 4 && behoud.luist === 1, 'bestaande waarden worden niet overschreven');
   ok(behoud.schrijf, 'maar een half ingevulde S.comp wordt wel compleet gemaakt');

@@ -55,6 +55,29 @@ const { chromium } = require('playwright');
   });
   ok(alles.pct === 100 && alles.teller === alles.noemer, 'alle scenes gedaan is nog steeds gewoon 100%');
 
+  // ---- 1b. en ze worden ook echt uit je profiel gegooid, niet alleen bij het rekenen genegeerd ----
+  const opgeruimd = await page.evaluate(() => {
+    const vuil = { compOpgeruimd: 0, comp: { luisteren: {}, schrijven: { s1: true } } };
+    for (let i = 1; i <= 50; i++) vuil.comp.luisteren['s' + i] = true;
+    vuil.comp.luisteren[AUDICIONES[0].id] = true;
+    const schoon = normaliseerState(vuil);
+    return {
+      over: Object.keys(schoon.comp.luisteren),
+      vlag: schoon.compOpgeruimd,
+      schrijvenIntact: Object.keys(schoon.comp.schrijven).length
+    };
+  });
+  ok(opgeruimd.over.length === 1, 'de vijftig oude sleutels zijn echt weg uit de state: ' + opgeruimd.over.length + ' over');
+  ok(opgeruimd.over[0] && /^esc|^aud|.+/.test(opgeruimd.over[0]), 'de echte luisterscene staat er nog: ' + opgeruimd.over[0]);
+  ok(opgeruimd.vlag === 1, 'en er staat een vlag, zodat dit niet elke keer opnieuw hoeft');
+  ok(opgeruimd.schrijvenIntact === 1, 'comp.schrijven wordt niet aangeraakt: daar is de geldige verzameling niet bekend');
+
+  const tweedeKeer = await page.evaluate(() => {
+    const al = { compOpgeruimd: 1, comp: { luisteren: { s99: true }, schrijven: {} } };
+    return Object.keys(normaliseerState(al).comp.luisteren).length;
+  });
+  ok(tweedeKeer === 1, 'een profiel dat al opgeruimd is wordt niet nog eens doorgespit');
+
   // ---- 2. de tempozin belooft geen maximum meer dat niet begrenst ----
   const zin = await page.evaluate(() => {
     const t = today();

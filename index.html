@@ -3535,6 +3535,24 @@ function normaliseerState(s){
   s.comp = s.comp || {};
   s.comp.luisteren = s.comp.luisteren || {};
   s.comp.schrijven = s.comp.schrijven || {};
+  /* v22.10: eenmalig opruimen. Tot v21.2 schreef Dictado zijn zin-ids in comp.luisteren; sinds die
+     versie hoort daar alleen een luisterscene in te staan. berekenCompetenties() filtert ze er al
+     uit bij het rekenen, maar dan blijven ze wel in je profiel staan en synchroniseren ze elke keer
+     mee. Dus hier gaan ze er echt uit, één keer, bij het laden.
+
+     Twee redenen om alleen deze sleutel op te ruimen en niet "alles wat niet meer bestaat": voor
+     luisteren is de geldige verzameling exact bekend (AUDICIONES), en bij schrijven niet, want die
+     telt zinnen uit het actieve track terwijl een profiel van track kan wisselen. Een opruiming die
+     gokt, gooit voortgang weg. */
+  if(!s.compOpgeruimd && typeof AUDICIONES !== "undefined"){
+    var geldig = {}, weg = 0;
+    AUDICIONES.forEach(function(sc){ geldig[sc.id] = 1; });
+    Object.keys(s.comp.luisteren).forEach(function(sleutel){
+      if(!geldig[sleutel]){ delete s.comp.luisteren[sleutel]; weg++; }
+    });
+    s.compOpgeruimd = 1;
+    if(weg) console.log("opgeruimd: " + weg + " oude luister-sleutels van voor v21.2");
+  }
   s.dagStats = s.dagStats || {};
   s.lesFlow = s.lesFlow || {};
   s.lesFlowSpel = s.lesFlowSpel || {};
