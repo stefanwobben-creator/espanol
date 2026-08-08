@@ -186,6 +186,15 @@ function rapport(inv, an, vrd) {
    omgeving, dan pakt hij llm.js direct — dat is handig voor uitproberen zonder de server te storen. */
 const API = process.env.VAMOS_API || "https://espanol-qbm8.onrender.com";
 
+/* De ladder van de app staat op "goedkoop eerst, duur als vangnet", en dat klopt daar: elke actie van
+   een leerling gaat er langs. Voor deze run klopt het niet. Hij doet tien aanroepen per etmaal en
+   schrijft materiaal dat maanden blijft staan, dus hier gaat het beste model voorop en is goedkoop
+   het vangnet. Een trede met een onbekende modelnaam levert een fout op en de ladder zakt door naar
+   de volgende, dus deze lijst kan niet stuk; hij kan hoogstens duurder of goedkoper uitpakken.
+   Overschrijven kan met AVONDRUN_LADDER, leegmaken zet hem terug op de gewone ladder van de app. */
+const ZWARE_LADDER = process.env.AVONDRUN_LADDER !== undefined ? process.env.AVONDRUN_LADDER :
+  "anthropic:claude-sonnet-4-5,gemini:gemini-2.5-pro,gemini:gemini-2.5-flash,anthropic:claude-haiku-4-5";
+
 /* De reden waarom de ladder niet antwoordde. Stond eerst alleen in de logregels van een groene run,
    waar niemand hem las; nu gaat hij mee in de hartslag en in de exit. */
 let LADDERFOUT = null;
@@ -197,7 +206,8 @@ function ladderLokaal() {
   try {
     const { reason } = require("../server/llm.js");
     return { bron: "llm.js (sleutel in je omgeving)",
-             reason: (prompt, opts) => reason(prompt, opts).then(r => (r ? r.text : null)) };
+             reason: (prompt, opts) => reason(prompt, Object.assign({ ladder: ZWARE_LADDER || null }, opts))
+               .then(r => (r ? r.text : null)) };
   } catch (e) { console.error("server/llm.js niet te laden:", e.message); return null; }
 }
 
@@ -210,7 +220,8 @@ function ladderViaServer() {
       const r = await fetch(API + "/api/admin/llm?key=" + encodeURIComponent(key), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, maxTokens: (opts && opts.maxTokens) || 4000, jsonMode: !!(opts && opts.jsonMode) })
+        body: JSON.stringify({ prompt, maxTokens: (opts && opts.maxTokens) || 4000, jsonMode: !!(opts && opts.jsonMode),
+                               ladder: ZWARE_LADDER || undefined })
       });
       if (!r.ok) { LADDERFOUT = "server gaf " + r.status + " op /api/admin/llm"; console.error("  " + LADDERFOUT); return null; }
       const j = await r.json().catch(() => null);
@@ -558,7 +569,7 @@ async function main() {
 
   const motor = OPT.stub ? null : llm();
   if (!motor && !OPT.stub) { HART.staat.reden = "geen taalmodel bereikbaar"; console.error("geen LLM beschikbaar; stop"); return 1; }
-  if (motor) HART.staat.ladder = motor.bron;
+  if (motor) HART.staat.ladder = motor.bron + (ZWARE_LADDER ? " · " + ZWARE_LADDER.split(",")[0] + " voorop" : "");
   if (motor && !(await ladderProef(motor))) {
     HART.staat.reden = "ladder onbereikbaar" + (LADDERFOUT ? ": " + LADDERFOUT : "");
     return 1;

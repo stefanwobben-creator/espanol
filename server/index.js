@@ -567,11 +567,16 @@ app.get("/api/maatje/:mcode", async (req, res) => {
  */
 app.post("/api/admin/llm", async (req, res) => {
   if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
-  const { prompt, maxTokens, jsonMode } = req.body || {};
+  const { prompt, maxTokens, jsonMode, ladder } = req.body || {};
   if (!prompt || typeof prompt !== "string") return bad(res, 400, "prompt verplicht");
   if (prompt.length > 20000) return bad(res, 400, "prompt te lang");
+  // Eigen ladder toegestaan op deze ingang, en alleen hier. De app draait op de goedkope ladder omdat
+  // daar elke leerlingactie langskomt; de avondrun doet tien aanroepen per etmaal en mag het beste
+  // model vragen. Achter de ADMIN_KEY, dus dit is geen open ingang naar dure modellen.
+  if (ladder !== undefined && (typeof ladder !== "string" || ladder.length > 300))
+    return bad(res, 400, "ladder moet een korte tekst zijn");
   try {
-    const txt = await vraagLadder("", prompt, Math.min(8000, maxTokens || 4000), !!jsonMode, "admin-llm");
+    const txt = await vraagLadder("", prompt, Math.min(8000, maxTokens || 4000), !!jsonMode, "admin-llm", ladder || null);
     ok(res, { tekst: txt });
   } catch (e) {
     console.error("admin-llm:", e.message);
@@ -589,8 +594,9 @@ app.get("/api/admin/schoon", async (req, res) => {
 });
 
 // ---- AI-feedback via de LLM-ladder (goedkoop eerst, duur als vangnet) ----
-async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
-  const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite });
+async function vraagLadder(system, user, maxTokens, jsonMode, callSite, ladder) {
+  const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite,
+                                                     ladder: ladder || null });
   if (!res) throw new Error("alle LLM-tredes uitgeput");
   return res.text;
 }
