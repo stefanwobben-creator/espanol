@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.2";
+var APP_VERSIE = "v23.3";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9826,10 +9826,29 @@ function peilNiveau(){
   }
   return null;
 }
+/* v23.3. Heeft de peiling een niveau afgesloten (schatting boven de poortdrempel), dan hoort de
+   balk daar nooit meer op te staan. peilNiveau() deed dat al, maar sloeg niveaus over die zelf niet
+   meetbaar zijn (te weinig woorden van dat niveau in de app om een steekproef op te doen), en viel
+   dan helemaal terug op dagNiveau(). Die kijkt alleen naar wat hier bewezen is, en dat is precies het
+   getal dat 25 dagen achterloopt. Gevolg: Stefans peiling zei "A1 ken je al" en de balk bleef A1
+   tonen, want A2 was nog niet peilbaar.
+   Nu: het laagste niveau dat de peiling NIET heeft afgesloten, ook als het nog niet peilbaar is. */
+function peilAf(niv){
+  var sch = null;
+  try { sch = niveauSchatting(niv); } catch(e){ sch = null; }
+  if(sch) return sch.punt / (sch.noem || 1) >= POORT_PCT;
+  var ruw = null;
+  try { ruw = peilRuw(niv); } catch(e){ ruw = null; }
+  return !!(ruw && ruw.vast / (ruw.noem || 1) >= POORT_PCT);
+}
 function balkNiveau(){
-  var p = peilNiveau();
-  if(p) return p;
-  return dagNiveau();
+  for(var i = 0; i < NIV_NAAM.length; i++){
+    if(!peilAf(NIV_NAAM[i])) return NIV_NAAM[i];
+  }
+  /* Bewust niet terugvallen op dagNiveau() als de peiling wél iets zegt: die leest ook je eigen
+     claim uit de onboarding mee, en een claim is geen bewijs. Alleen als er nergens een peiling
+     ligt, is dat het enige wat we hebben. */
+  return peilNiveau() || dagNiveau();
 }
 // sleutels die we mogen vragen: er is materiaal voor, ze staan hier nog niet vast, en ze zijn nog
 // niet eerder gepeild (elke sleutel telt maar een keer mee, anders meet je jezelf dubbel).

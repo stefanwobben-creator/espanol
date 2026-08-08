@@ -149,6 +149,21 @@ async function beantwoord(page, aantal) {
   await page.evaluate(() => { S.peil.items = {}; S.peil.log = []; S.peil.laatst = ''; niveauClaim(0); });
   const nivs = await page.evaluate(() => ({ dag: dagNiveau(), balk: balkNiveau() }));
   ok(nivs.balk === 'A1', 'balkNiveau() blijft A1 zolang A1 niet bewezen is (' + nivs.balk + ')');
+
+  /* v23.3: en andersom. Zegt de peiling dat A1 al vol zit, dan hoort de balk door te schuiven naar
+     A2, ook als A2 zelf nog niet peilbaar is. Dat was de bug: peilNiveau() sloeg een niet-peilbaar
+     niveau over en viel terug op dagNiveau(), en die kijkt alleen naar wat hier bewezen is. Gevolg:
+     een peiling die zei "A1 ken je al" liet de balk gewoon op A1 staan. */
+  const doorgeschoven = await page.evaluate(() => {
+    const app = pcicKeysApp()['A1'];
+    const ks = Object.keys(app);
+    S.peil.items = {};
+    for (let i = 0; i < 40; i++) S.peil.items[ks[i]] = { r: 1, d: today(), niv: 'A1' };
+    return { af: peilAf('A1'), balk: balkNiveau() };
+  });
+  ok(doorgeschoven.af === true, 'een peiling die A1 volmaakt, sluit A1 af');
+  ok(doorgeschoven.balk === 'A2', 'en dan staat de balk op A2, ook al is A2 nog niet peilbaar (' + doorgeschoven.balk + ')');
+  await page.evaluate(() => { S.peil.items = {}; S.peil.log = []; S.peil.laatst = ''; });
   ok(nivs.dag === 'A2', 'terwijl dagNiveau() de claim wel volgt (' + nivs.dag + '), dus dit is echt een ander getal');
   await page.evaluate(() => { niveauClaimTerug(); });
 
