@@ -1,0 +1,18 @@
+{
+ "wanneer": "2026-08-08T08:58:25.301Z",
+ "gelukt": false,
+ "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm)",
+ "voorraadDagen": 0,
+ "beloofd": {
+  "gaten": 2,
+  "toetsje": 1,
+  "nieuweLes": 1
+ },
+ "geleverd": {
+  "zinnen": 0,
+  "toetsjes": 0,
+  "nieuweLes": 0
+ },
+ "versie": null,
+ "reden": "het besluit vroeg om 4 stuk(ken) werk en er is niets van weggeschreven"
+}
