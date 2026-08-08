@@ -7,6 +7,7 @@
 //  - je staat er zelf tussen, maar je kunt niet op jezelf reageren
 //  - een naam uit een ander profiel gaat als HTML het scherm op en moet dus ontsmet worden
 //  - er is geen enkel getal dat van twee mensen tegelijk is: geen ranglijst, geen winnaar
+//  - en sinds v22.8 geldt dat ook voor de groepkaart: de week-race is daar opgeheven
 const { chromium } = require('playwright');
 
 (async () => {
@@ -106,6 +107,22 @@ const { chromium } = require('playwright');
   // zonder groep is er geen muur
   const zonder = await page.evaluate(() => { S.groepen = []; return muurHtml(); });
   ok(zonder === '', 'zonder groep staat er niets, ook geen lege kaart');
+
+  // ---- v22.8: de week-race is opgeheven ----
+  const race = await page.evaluate(() => {
+    const voor = JSON.stringify(S.weekOnthuld || null);
+    checkWeekWinnaar();
+    return {
+      reveal: typeof toonWinnaarReveal,
+      onthuld: JSON.stringify(S.weekOnthuld || null) === voor,
+      introNl: GROEP_TXT.nl.intro,
+      introEn: GROEP_TXT.en.intro
+    };
+  });
+  ok(race.reveal === 'undefined', 'het onthullingsscherm van de weekwinnaar bestaat niet meer');
+  ok(race.onthuld, 'checkWeekWinnaar() doet niets meer, ook niet stiekem');
+  ok(!/klassement/i.test(race.introNl), 'de groepstekst belooft geen klassement meer');
+  ok(!/leaderboard/i.test(race.introEn), 'ook niet in het Engels');
 
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
 

@@ -1082,7 +1082,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.7";
+var APP_VERSIE = "v22.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -11499,6 +11499,9 @@ function petSVGFase(lvl, mood, w){
       "<circle cx='" + fx + "' cy='" + (fy2 + 6) + "' r='6' fill='#e85a8a'/><circle cx='" + (fx - 8) + "' cy='" + fy2 + "' r='6' fill='#e85a8a'/>" +
       "<circle cx='" + fx + "' cy='" + fy2 + "' r='5' fill='#ffd54d'/></g>";
   }
+  // v22.8: overblijfsel van de week-race. Wie hem deze week won houdt zijn krans tot zondag en
+  // daarna is hij vanzelf weg, want S.weekWin wordt niet meer gezet. Bewust niet weggehaald:
+  // iemand die hem nu draagt hem midden in de week afpakken is onnodig zuur.
   var lauwer = (typeof weekIdNu === "function" && S.weekWin === weekIdNu())
     ? "<g><path d='M" + (100 - v.W * 0.72) + " " + (v.oogY - 12) + " q-8 -22 12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>" +
       "<path d='M" + (100 + v.W * 0.72) + " " + (v.oogY - 12) + " q8 -22 -12 -34' stroke='#8faf4a' stroke-width='5' fill='none' stroke-linecap='round'/>" +
@@ -19005,59 +19008,22 @@ function weekIdNu(){
   var dag = (d.getDay() + 6) % 7; // 0 = maandag
   return addDays(t, -dag);
 }
-function checkWeekWinnaar(){
-  var wk = weekIdNu();
-  S.weekOnthuld = S.weekOnthuld || {};
-  var lijst = (S.groepen || []).slice(0, 3);
-  for(var i = 0; i < lijst.length; i++){
-    (function(g){
-      if(S.weekOnthuld[g.gcode] === wk) return;
-      api("/api/groep/" + g.gcode).then(function(res){
-        if(!res || !res.ok) return;
-        S.weekOnthuld[g.gcode] = wk; persist();
-        if(!res.vorigeWeek || !res.vorigeWeek.winnaar) return;
-        var ik = activeProfile();
-        var benIk = ik && res.vorigeWeek.winnaar.toLowerCase() === ik.name.toLowerCase();
-        if(benIk && S.weekWin !== wk){
-          S.weekWin = wk;
-          S.tapas = (S.tapas || 0) + 5;
-          persist();
-        }
-        toonWinnaarReveal(g.naam, res.vorigeWeek.winnaar, res.vorigeWeek.xp, benIk, res.vorigeWeek.dagen);
-      });
-    })(lijst[i]);
-    break; // maximaal één onthulling per keer opstarten
-  }
-}
-function toonWinnaarReveal(groepNaam, winnaar, xp, benIk, dagen){
-  var nl = profLang() === "nl";
-  var wrap = document.createElement("div");
-  wrap.className = "tourwrap"; wrap.id = "winWrap";
-  wrap.innerHTML = "<div class='tourcard'>"+
-    "<p style='font-size:2.4rem; margin:0'>🏆</p>"+
-    "<h3>"+groepNaam+"</h3>"+
-    "<p>"+(nl ? "De winnaar van vorige week is..." : "Last week's winner is...")+"</p>"+
-    "<p id='winNaam' style='font-size:1.5rem; font-weight:800; margin:6px 0; min-height:1.5em'>&nbsp;</p>"+
-    "<p class='muted' id='winSub'></p>"+
-    "<div class='row center'><button class='primary' id='btnWinOk'>¡Olé! 🎉</button></div></div>";
-  if(document.body && document.body.appendChild) document.body.appendChild(wrap);
-  var ok2 = document.getElementById("btnWinOk");
-  if(ok2) ok2.onclick = function(){ if(wrap.remove) wrap.remove(); else wrap.innerHTML = ""; };
-  setTimeout(function(){
-    var el = document.getElementById("winNaam");
-    if(el) el.textContent = "🥇 " + winnaar;
-    var sub = document.getElementById("winSub");
-    var pres = (dagen !== undefined ? (profLang()==="nl" ? dagen+"/7 dagen het eigen doel gehaald · " : dagen+"/7 days own goal hit · ") : "") + xp + " "+xpw()+"";
-    var el2 = document.getElementById("winNaam");
-    if(el2) el2.textContent = "🥇 " + winnaar + " · " + pres.split(" · ")[0];
-    if(sub) sub.textContent = benIk
-      ? (nl ? "¡Eres tú! +5 tapas én een gouden lauwerkrans voor Chispa, een week lang. 👑" : "It's you! +5 tapas and a golden laurel wreath for Chispa, for a whole week. 👑")
-      : (nl ? "¡Felicidades, " + winnaar + "! Deze week nieuwe ronde, nieuwe kansen." : "¡Felicidades, " + winnaar + "! New week, new chances.");
-    confetti(["🏆","🎉","⭐️"], 24);
-  }, 1400);
-}
+/* v22.8. Hier stond de weekonthulling: elke maandag een scherm met confetti en de naam van wie het
+   vaakst zijn dagdoel haalde, plus vijf tapas als je het zelf was. Weg, en dat is geen bezuiniging.
+
+   Twee redenen. De eerste is Stefans: een race tussen twee mensen op verschillende niveaus kan niet
+   eerlijk zijn, hoe je hem ook weegt, en het "eigen dagdoel" als noemer verplaatst dat probleem
+   alleen. De tweede is erger: wie op maandag als laatste eindigt, krijgt daar een scherm over te
+   zien voordat hij iets heeft kunnen doen. Dat is precies de motor die deze app niet moet gebruiken.
+
+   De muur doet wat dit probeerde te doen, maar dan zonder vergelijking: wat iemand nu kan, met een
+   dansje erop als je het zag. De functie blijft leeg staan zodat de aanroepers niets hoeven te weten. */
+function checkWeekWinnaar(){ /* v22.8: de week-race is opgeheven, zie de muur */ }
+/* v22.8: hier stond toonWinnaarReveal(), het onthullingsscherm met confetti en de naam van
+   de weekwinnaar. Met de race weg heeft niemand het meer aangeroepen, en dode code die naar
+   een opgeheven functie verwijst is precies wat een volgende verbouwing laat struikelen. */
 var GROEP_TXT = {
- nl:{kop:"Groepen 👥", intro:"Start een groep met je klasgenoten, collega's, leerlingen of vrienden. Iedereen met de groepscode kan meedoen; elke groep heeft een eigen klassement.",
+ nl:{kop:"Groepen 👥", intro:"Start een groep met je klasgenoten, collega's, leerlingen of vrienden. Iedereen met de groepscode kan meedoen; wat jullie leren komt op elkaars muur te staan.",
      mijn:"Jouw groepen", code:"code", nieuwKop:"Nieuwe groep", naamPh:"Naam van de groep (bijv. Clase de martes)", startKnop:"Start groep",
      meedoenKop:"Meedoen met een groep", codePh:"Groepscode (bijv. gx7k2p)", meedoenKnop:"Meedoen",
      deelCode:"Deel deze groepscode met wie mee mag doen:", deelnemers:"deelnemers", deelnemer:"deelnemer",
@@ -19065,7 +19031,7 @@ var GROEP_TXT = {
      kopieer:"Kopieer uitnodigingslink 🔗", verlaat:"Groep verlaten", terug:"← Mijn groepen",
      les:"les", lessen:"lessen", niveauLbl:"Niveau", taalLbl:"Moedertaal",
      mailLbl:"Herstel-e-mail (om je voortgang terug te vinden als je je sync-code kwijt bent):", mailKnop:"Bewaar e-mail"},
- en:{kop:"Groups 👥", intro:"Start a group with your classmates, colleagues, students or friends. Anyone with the group code can join; every group has its own leaderboard.",
+ en:{kop:"Groups 👥", intro:"Start a group with your classmates, colleagues, students or friends. Anyone with the group code can join; what you learn shows up on each other's wall.",
      mijn:"Your groups", code:"code", nieuwKop:"New group", naamPh:"Group name (e.g. Tuesday class)", startKnop:"Start group",
      meedoenKop:"Join a group", codePh:"Group code (e.g. gx7k2p)", meedoenKnop:"Join",
      deelCode:"Share this group code with whoever may join:", deelnemers:"members", deelnemer:"member",
@@ -19081,7 +19047,7 @@ function renderGroepen(){
   if(groepCur){
     el.innerHTML = "<h2>"+groepCur.naam+" 👥</h2>"+
       "<p class='muted'>"+gt("deelCode")+" <b style='font-size:1.1rem'>"+groepCur.gcode+"</b></p>"+
-      "<p class='muted' id='grStatus'>Klassement ophalen...</p><div id='grLijst'></div>"+
+      "<p class='muted' id='grStatus'>"+ct("Even ophalen…","Loading…")+"</p><div id='grLijst'></div>"+
       "<p class='muted'>"+gt("deelLink")+"</p>"+
       "<p style='word-break:break-all; font-size:.85rem'><b>"+groepLink(groepCur)+"</b></p>"+
       "<div class='row'><button class='primary' id='btnGrKopieer'>"+gt("kopieer")+"</button></div>"+
@@ -19108,21 +19074,23 @@ function renderGroepen(){
       // v19.57: zodra je hier ooit een tweede naam ziet, ben je niet meer alleen en stopt de app
       // met vragen of je iemand wil uitnodigen. v19.58: en dán pas komen de tapas.
       samenAangekomen(res.spelers);
-      var medailles = ["🥇","🥈","🥉"];
-      var vorigeWin = res.vorigeWeek ? res.vorigeWeek.winnaar : null;
+      /* v22.8: geen klassement meer maar een ledenlijst. Op alfabet, want elke andere volgorde is
+         een rangschikking en dan sluipt de race er langs de achterdeur weer in. Wat er per persoon
+         staat is wat hij KAN (woorden, lessen), in dezelfde taal als de muur, en dat is een
+         persoonlijk feit en geen positie. Geen medailles, geen trofee, geen dagen op een rij. */
       var kopje = "<p class='muted' style='margin:4px 0'>"+(profLang()==="nl"
-        ? "De week-race: wie haalt het vaakst zijn éigen dagdoel (ma t/m zo)? Zo maakt iedereen kans, van relaxed tot fanatiek. Vorige winnaar draagt de 🏆."
-        : "The weekly race: who hits their ówn daily goal most often (Mon-Sun)? That way everyone stands a chance, from relaxed to serious. Last week's winner wears the 🏆.")+"</p>";
-      lijst.innerHTML = kopje + res.spelers.map(function(sp, i){
+        ? "Wat iedereen intussen kan. Wie wat leerde zie je op je beginscherm, op de muur."
+        : "What everyone can do by now. Who learned what shows up on your home screen, on the wall.")+"</p>";
+      var opAlfabet = res.spelers.slice().sort(function(a, b){
+        return String(a.naam).toLowerCase() < String(b.naam).toLowerCase() ? -1 : 1;
+      });
+      lijst.innerHTML = kopje + opAlfabet.map(function(sp){
         var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
-        var trofee = (vorigeWin && sp.naam === vorigeWin) ? " 🏆" : "";
-        var hoofd = (sp.weekDagen !== undefined)
-          ? "<b>"+sp.weekDagen+"/7</b> "+(profLang()==="nl"?"dagen doel ✓":"days goal ✓")+
-            (sp.weekLessen !== undefined ? " <span class='muted'>· "+sp.weekLessen+"/7 "+(profLang()==="nl"?"lessen":"sessions")+"</span>" : "")+
-            " <span class='muted'>· "+(sp.weekXp||0)+" "+xpw()+" · 🔥 "+sp.streak+"</span>"
-          : "<b>"+sp.txp+" "+xpw()+"</b> · 🔥 "+sp.streak;
-        return "<div class='duelrow'><span>"+(medailles[i]||"·")+" <b>"+sp.naam+trofee+"</b> <span class='muted'>· "+lvl+"</span></span>"+
-          "<span>"+hoofd+"</span></div>";
+        var kan = [];
+        if(sp.woorden !== undefined) kan.push("<b>"+sp.woorden+"</b> "+(profLang()==="nl"?"woorden":"words"));
+        if(sp.lessen) kan.push(sp.lessen+" "+(profLang()==="nl"?(sp.lessen===1?"les":"lessen"):(sp.lessen===1?"lesson":"lessons")));
+        return "<div class='duelrow'><span><b>"+muurEsc(sp.naam)+"</b> <span class='muted'>· "+lvl+"</span></span>"+
+          "<span class='muted'>"+(kan.join(" · ") || "&nbsp;")+"</span></div>";
       }).join("");
     });
     return;
