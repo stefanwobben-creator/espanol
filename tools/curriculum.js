@@ -34,6 +34,21 @@ const lib = require("./content-lib");
 const LOGS = path.join(__dirname, "logs-latest.json");
 const PLAN = path.join(__dirname, "curriculum-laatste.json");
 const HART_PAD = path.join(__dirname, "avondrun-hart.json");   // elke nacht een regel, ook als er niets kwam
+
+/* Wat de run vannacht deed, in een bestand. Zonder dit is de enige manier om te zien of de avondrun
+   ooit iets heeft geleverd: commits van de bot tellen. Dat is geen meting, dat is archeologie. */
+const HART = { staat: { wanneer: null, gelukt: false, ladder: null, voorraadDagen: null,
+                        beloofd: null, geleverd: null, versie: null, klachten: [],
+                        reden: "de run is niet afgemaakt" } };
+
+/* Elke klacht ging naar stderr en daarmee naar een log dat niemand opent. Nu komt hij er ook in het
+   bestand te staan, zonder dat er ergens anders in dit script iets voor hoeft te veranderen. */
+const stderrEcht = console.error.bind(console);
+console.error = function () {
+  const regel = Array.prototype.map.call(arguments, a => (a && a.stack) ? a.message : String(a)).join(" ").trim();
+  if (regel && HART.staat.klachten.length < 40) HART.staat.klachten.push(regel);
+  stderrEcht.apply(console, arguments);
+};
 const VOORRAAD_DREMPEL_DAGEN = 14;   // minder dan twee weken nieuwe woorden op de plank? pad verlengen
 const MAX_ZINNEN_PER_GAT = 4;        // kleine dagelijkse aanvullingen leveren betere content dan een dump
 
@@ -269,8 +284,8 @@ ${STIJL}
 - Gebruik exact deze ids in deze volgorde: ${ids.join(", ")}
 - "tag" is exact "${gat.tag}".
 
-Antwoord met UITSLUITEND een JSON-array van objecten met exact deze velden:
-${JSON.stringify(VOORBEELD_ZIN)}`;
+Antwoord met UITSLUITEND JSON: een object met precies een sleutel "zinnen", met daarin de lijst.
+{"zinnen":[${JSON.stringify(VOORBEELD_ZIN)}]}`;
 }
 
 function promptZinnenWoorden(gat, ids) {
@@ -287,8 +302,8 @@ ${STIJL}
 - Gebruik exact deze ids in deze volgorde: ${ids.join(", ")}
 - "tag" is exact "${gat.tag}".
 
-Antwoord met UITSLUITEND een JSON-array van objecten met exact deze velden:
-${JSON.stringify(VOORBEELD_ZIN)}`;
+Antwoord met UITSLUITEND JSON: een object met precies een sleutel "zinnen", met daarin de lijst.
+{"zinnen":[${JSON.stringify(VOORBEELD_ZIN)}]}`;
 }
 
 function promptToets(gat, id, inv) {
@@ -310,6 +325,8 @@ ${oudeVragen || "(geen)"}
 
 Eisen:
 - 8 vragen, meerkeuze met 2 of 3 opties, precies één goed antwoord ("c" is de index, 0-gebaseerd).
+- De opties van een vraag moeten onderling VERSCHILLEN. Twee keer hetzelfde woord in "opts" maakt de
+  vraag onbeantwoordbaar. Dit is de fout die hier het vaakst gemaakt wordt, dus loop je vragen na.
 - Bij elke vraag een Nederlandse vertaling ("nl") en Engelse ("ne") van de bedoelde zin, zodat de vraag
   te maken is zonder gokken.
 - "u" legt in het Nederlands uit waarom het goede antwoord goed is; "ue" is dezelfde uitleg in het Engels.
@@ -344,7 +361,11 @@ Antwoord met UITSLUITEND JSON: {"ok":true,"problemen":["..."]}`;
 
 async function vraagModel(motor, prompt, maxTokens) {
   const tekst = await motor.reason(prompt, { maxTokens: maxTokens || 4000, jsonMode: true });
-  return haalJson(tekst);
+  const j = haalJson(tekst);
+  // "geen bruikbare JSON" zonder te zeggen wat er dan wel kwam, kost een nacht om uit te zoeken.
+  if (j === null) console.error("    niets bruikbaars uit het model; eerste 160 tekens: " +
+    (tekst === null || tekst === undefined ? "(niets teruggekregen)" : JSON.stringify(String(tekst).slice(0, 160))));
+  return j;
 }
 // (motor.reason geeft altijd tekst terug of null; llm.js' eigen {text}-envelop wordt hierboven
 //  al afgepeld, zodat beide bronnen zich hetzelfde gedragen)
@@ -362,8 +383,10 @@ async function maakZinnen(gat, aantal, inv, alTeGaan, motor) {
     }));
   }
   const prompt = gat.soort === "woorden" ? promptZinnenWoorden(gat, ids) : promptZinnenVerschijnsel(gat, ids, inv);
-  const rij = await vraagModel(motor, prompt);
-  if (!Array.isArray(rij)) { console.error(`    geen bruikbare JSON voor ${gat.tag}`); return []; }
+  const antw = await vraagModel(motor, prompt);
+  // Zowel {zinnen:[...]} als een kale array wordt geaccepteerd: het model mag zich hier niet in vergissen.
+  const rij = Array.isArray(antw) ? antw : (antw && Array.isArray(antw.zinnen) ? antw.zinnen : null);
+  if (!rij) { console.error(`    geen bruikbare JSON voor ${gat.tag}`); return []; }
   // ids en tag dwingen we zelf af; daar mag het model zich niet in vergissen
   return rij.slice(0, aantal).map((z, i) => Object.assign({}, z, { id: ids[i], tag: gat.tag }));
 }
@@ -389,15 +412,24 @@ async function maakToets(gat, inv, motor) {
       vragen: [1, 2, 3, 4].map(i => ({ q: `Pregunta de prueba ${i} ___.`, nl: "Proefvraag.", ne: "Stub question.",
         opts: ["uno", "dos"], c: 0, u: "Nepcontent uit --stub.", ue: "Stub content." })) };
   }
-  const qz = await vraagModel(motor, promptToets(gat, id, inv), 5000);
-  if (!qz || !Array.isArray(qz.vragen)) { console.error(`    geen bruikbaar toetsje voor ${gat.tag}`); return null; }
-  qz.id = id; qz.spiek = gat.spiek;
-  const uit = await vraagModel(motor, promptTegenlezerToets(qz), 2000);
-  if (!uit || uit.ok !== true) {
-    console.error(`    toetsje afgekeurd: ${(uit && uit.problemen || ["geen oordeel"]).join("; ")}`);
-    return null;
+  /* De corrector had gelijk toen hij dit toetsje afkeurde (drie keer "comía" tussen de opties), maar
+     een terecht bezwaar was ook meteen het einde van de nacht. Nu krijgt het model zijn eigen bezwaar
+     terug en mag het er nog een keer overheen. Twee pogingen, daarna is het klaar. */
+  let bezwaren = null;
+  for (let poging = 1; poging <= 2; poging++) {
+    const extra = bezwaren
+      ? "\n\nJe vorige poging is afgekeurd door de corrector. Herstel precies dit en lever opnieuw:\n- " +
+        bezwaren.join("\n- ")
+      : "";
+    const qz = await vraagModel(motor, promptToets(gat, id, inv) + extra, 5000);
+    if (!qz || !Array.isArray(qz.vragen)) { console.error(`    geen bruikbaar toetsje voor ${gat.tag} (poging ${poging})`); continue; }
+    qz.id = id; qz.spiek = gat.spiek;
+    const uit = await vraagModel(motor, promptTegenlezerToets(qz), 2000);
+    if (uit && uit.ok === true) return qz;
+    bezwaren = (uit && uit.problemen) || ["de corrector gaf geen bruikbaar oordeel"];
+    console.error(`    toetsje afgekeurd (poging ${poging}): ${bezwaren.join("; ")}`);
   }
-  return qz;
+  return null;
 }
 
 /* ================= 3. het pad verlengen ================= */
@@ -466,11 +498,14 @@ async function maakNieuweLes(inv, motor) {
     les.words = les.words.slice(0, 14).map((w, i) => Object.assign({}, w, { id: ids.words[i] }));
     les.sentences = les.sentences.slice(0, 8).map((s, i) => Object.assign({}, s, { id: ids.sents[i] }));
     if (les.quiz) les.quiz.id = ids.quiz;
+    /* Alles of niets was hier te streng: een hele B1-les met acht zinnen ging de prullenbak in omdat
+       de corrector bij een ervan een verkeerde tag zag. Nu vallen de afgekeurde zinnen eruit en gaat de
+       les door zolang er genoeg overblijft. Jij leest hem toch nog na, het gaat als pull request. */
     const keur = await keurZinnen(les.sentences, motor);
-    if (keur.length < les.sentences.length) {
-      console.error(`    ${les.sentences.length - keur.length} zinnen afgekeurd → les niet aangeboden`);
-      return null;
-    }
+    if (keur.length < les.sentences.length)
+      console.error(`    ${les.sentences.length - keur.length} van de ${les.sentences.length} zinnen afgekeurd, de rest gaat door`);
+    if (keur.length < 6) { console.error("    te weinig zinnen over → les niet aangeboden"); return null; }
+    les.sentences = keur;
     if (les.quiz) {
       const uit = await vraagModel(motor, promptTegenlezerToets(les.quiz), 2000);
       if (!uit || uit.ok !== true) { console.error("    toetsje van de nieuwe les afgekeurd"); return null; }
@@ -624,11 +659,7 @@ async function main() {
 }
 
 /* Precies een plek waar de hartslag wordt weggeschreven, en die ligt buiten main, zodat ook een
-   klapper er nog in komt. Zonder dit bestand is de enige manier om te zien of de avondrun ooit iets
-   heeft gedaan: door de commits van de bot te tellen. Dat is geen meting, dat is archeologie. */
-const HART = { staat: { wanneer: null, gelukt: false, ladder: null, voorraadDagen: null,
-                        beloofd: null, geleverd: null, versie: null, reden: "de run is niet afgemaakt" } };
-
+   klapper er nog in komt. */
 function hartslag(gelukt) {
   HART.staat.gelukt = !!gelukt;
   HART.staat.wanneer = new Date().toISOString();
