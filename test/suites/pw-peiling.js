@@ -228,7 +228,7 @@ async function beantwoord(page, aantal) {
   }));
   ok(uit.log === 1, 'nu staat er wel een uitslag in het logboek (' + uit.log + ')');
   ok(uit.eerste && uit.eerste.niv === 'A1' && uit.eerste.punt > 0, 'met het geschatte aantal erin (' + (uit.eerste && uit.eerste.punt) + ')');
-  ok(/naar schatting/i.test(uit.tekst), 'het slotscherm toont dezelfde balk als het dagscherm');
+  ok(/geschat al gekend|estimated already known/i.test(uit.tekst), 'het slotscherm toont dezelfde balk als het dagscherm');
   ok(!/—|–|--/.test(uit.tekst), 'geen streepjes op het slotscherm');
 
   await dagOpnieuw(page);
@@ -249,9 +249,14 @@ async function beantwoord(page, aantal) {
   ok(kop === opweg, 'de kop is geen percentage meer maar wat je actief bijhoudt (' + bal.kop + ' vs ' + opweg + ')');
   ok(/geschat al gekend|estimated already known/i.test(bal.tekst), 'de schatting staat in de legenda, met een naam erbij');
   ok(/bewezen vast|proven solid/i.test(bal.tekst), 'en het bewezen deel staat er als eigen laag naast');
-  ok(new RegExp('naar schatting ' + schat.punt + ' van de 390', 'i').test(bal.tekst), 'de zin eronder noemt hetzelfde getal');
-  ok(new RegExp('tussen ' + schat.onder + ' en ' + schat.boven, 'i').test(bal.tekst), 'en de marge eromheen (' + schat.onder + '-' + schat.boven + ')');
-  ok(/Daarvan staan er 0 hier vast/i.test(bal.tekst), 'en wat je hier zelf hebt vastgezet');
+  /* v23.2: de zin "je kent er naar schatting X van de 390, daarvan staan er Y vast" is weg. Dat was
+     hetzelfde getal als in de legenda, alleen als totaal in plaats van als restant, en daardoor leek
+     de schatting twee verschillende dingen te zijn. De legenda draagt het nu alleen, dus daar wordt
+     het ook gecontroleerd: de schatting min wat al in de andere lagen zit. */
+  ok(!/naar schatting/i.test(bal.tekst), 'de dubbele zin met hetzelfde getal is weg');
+  const rest = schat.punt - opweg;
+  ok(new RegExp('\\b' + rest + '\\b').test(bal.tekst), 'de legenda noemt de schatting als restant (' + rest + ')');
+  ok(/geschat al gekend|estimated already known/i.test(bal.tekst), 'met een naam erbij, zodat je ziet welk stuk het is');
   ok(!bal.knop, 'binnen veertien dagen wordt er geen nieuwe peiling gevraagd');
 
   console.log('\n-- de stap staat in dezelfde balk --');

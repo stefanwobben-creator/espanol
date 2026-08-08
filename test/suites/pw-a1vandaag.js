@@ -109,8 +109,10 @@ async function nieuwProfiel(page) {
     return { dek: t.dek.A1 || 0, noemer: PCIC_NOEMER.A1, tekst: tekst.replace(/\s+/g, ' ') };
   });
   ok(cijfers.noemer === 390, 'de noemer is de 390 A1-eenheden van het Cervantes');
-  ok(cijfers.tekst.indexOf(' van de ' + cijfers.noemer + ' A1-woorden staan stevig') !== -1,
-    'de zin noemt de noemer erbij: ' + cijfers.tekst.slice(0, 90));
+  // v23.2: de zin met het bewezen aantal erin is weg (dat getal staat in de legenda). Wat deze test
+  // bewaakt blijft hetzelfde: de noemer moet zichtbaar zijn, anders is de legenda maatloos.
+  ok(cijfers.tekst.indexOf('van de ' + cijfers.noemer + ' A1-woorden') !== -1,
+    'de noemer staat erbij: ' + cijfers.tekst.slice(0, 90));
   ok(cijfers.tekst.indexOf(String(cijfers.dek)) !== -1,
     'de teller in de zin (' + cijfers.dek + ') komt uit voortgangTellers, niet uit een eigen sommetje');
 
@@ -122,7 +124,7 @@ async function nieuwProfiel(page) {
 
   console.log('\n-- hij verandert mee als je iets leert --');
   const na = await page.evaluate(() => {
-    const voor = document.getElementById('lijnKaart').innerText.match(/(\d+) van de/);
+    const voor = document.getElementById('lijnKaart').innerText.match(/(\d+) (?:bewezen vast|proven solid)/);
     // stevig = de bovenste box (vijf goede beurten over 25 dagen). Hier rechtstreeks gezet op een
     // woord waarvan de Cervantes-sleutel op A1 staat, want 25 dagen wachten kan een test niet.
     // v20.0: de bovenste box telt alleen mee met k:1, het vinkje van de check die je niet zelf
@@ -137,7 +139,7 @@ async function nieuwProfiel(page) {
     S.srs[id] = { box: stevigDrempel(), due: '2020-01-01', k: 1 };
     try { persist(); } catch (e) {}
     renderLessons();
-    const nu = document.getElementById('lijnKaart').innerText.match(/(\d+) van de/);
+    const nu = document.getElementById('lijnKaart').innerText.match(/(\d+) (?:bewezen vast|proven solid)/);
     return { voor: voor ? Number(voor[1]) : -1, nu: nu ? Number(nu[1]) : -1 };
   });
   console.log('   ', JSON.stringify(na));

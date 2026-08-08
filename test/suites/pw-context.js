@@ -117,7 +117,8 @@ async function dagFoto(page) {
   ok(naBasis.basis, 'de balk staat er nu wel');
   ok(naBasis.lijn, 'en dus ook de kaart eromheen');
   ok(!naBasis.strook, 'maar de staafjes nog niet: één blok tegelijk, elk om zijn eigen reden');
-  ok(naBasis.tekst.indexOf('van de 390 A1-woorden staan stevig') !== -1,
+  // v23.2: zie pw-a1vandaag. De noemer moet zichtbaar zijn, de rest staat in de legenda.
+  ok(naBasis.tekst.indexOf('van de 390 A1-woorden') !== -1,
     'de zin noemt jouw niveau en de noemer erbij');
   ok(/onderweg/.test(naBasis.tekst), 'en wat er onderweg is telt zichtbaar mee');
 

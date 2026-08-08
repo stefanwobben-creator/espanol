@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.1";
+var APP_VERSIE = "v23.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10504,13 +10504,16 @@ function dagLijnHtml(){
   var basis = rel.basis ? dagBasisRegelHtml() : "";
   if(!basis && !rel.lijn) return "";
   return "<div class='card' id='lijnKaart'>"+basis+
+    /* v23.2: de veertien staafjes gaan onder een vouw. Ze meten hoe vaak je kwam, niet wat je kunt,
+       en dit blok gaat over de vraag "waar sta ik". Niet weg, wel weg van je eerste blik. */
     (rel.lijn
-      ? "<span class='kicker'>"+ct("Jouw lijn","Your line")+"</span>"+
+      ? "<details style='margin-top:10px'><summary class='muted' style='cursor:pointer; font-size:.85rem'>"+
+          ct("Jouw lijn","Your line")+"</summary>"+
         "<div class='lijnstrook'>"+staven+"</div>"+
         "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
           ct("Laatste 14 dagen \u00b7 "+actief+" dagen geoefend \u00b7 dagdoel gehaald op "+gehaald,
              "Last 14 days \u00b7 practised on "+actief+" days \u00b7 daily goal reached on "+gehaald)+
-          (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p>"
+          (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p></details>"
       : "")+
     "<div class='row' style='margin-top:8px'><button class='ghost' id='btnLijnMeer'>"+ct("Alle cijfers","All the numbers")+" \u2192</button></div></div>";
 }
@@ -10582,10 +10585,22 @@ function dagBasisRegelHtml(){
     "<div class='vgLegenda'>"+
       "<span><i class='vgDot vgOnderweg'></i><b>"+lgOnderweg+"</b> "+ct("onderweg","on the way")+"</span>"+
       "<span><i class='vgDot vgVast'></i><b>"+d+"</b> "+ct("bewezen vast","proven solid")+"</span>"+
-      (sch ? "<span><i class='vgDot vgSchat'></i><b>"+lgSchat+"</b> "+ct("geschat al gekend","estimated already known")+"</span>" : "")+
-      "<span><i class='vgDot vgRest'></i><b>"+lgRest+"</b> "+ct("nog niet gezien","not seen yet")+"</span>"+
+      (sch && lgSchat > 0 ? "<span><i class='vgDot vgSchat'></i><b>"+lgSchat+"</b> "+ct("geschat al gekend","estimated already known")+"</span>" : "")+
+      /* v23.2. Hier stond altijd "0 nog niet gezien" zodra de schatting de balk volmaakte, en dat
+         beweert iets onwaars: dat je alle woorden van dit niveau al hebt gezien. Een laag met nul
+         erin is geen informatie maar een bewering. Weg als hij leeg is. */
+      (lgRest > 0 ? "<span><i class='vgDot vgRest'></i><b>"+lgRest+"</b> "+ct("nog niet gezien","not seen yet")+"</span>" : "")+
     "</div>"+
-    "<p class='muted' style='margin:6px 0; font-size:.83rem'>"+regel+"</p>"+stap+
+    /* v23.2. Hier stond de zin "Je kent er naar schatting 390 van de 390, daarvan staan er 1 vast".
+       Dat is precies hetzelfde getal als in de legenda, alleen als totaal in plaats van als restant,
+       en daardoor leek 390 iets anders te zijn dan de 341 ernaast. Twee vormen van één getal naast
+       elkaar is de fout die we op dit scherm aan het repareren waren; ik had hem opnieuw gemaakt
+       door de legenda toe te voegen zonder de zin weg te halen. De legenda blijft, de zin gaat. */
+    /* De noemer moet wel ergens staan, anders is de legenda een rij losse getallen zonder maat.
+       Eén regel, alleen de noemer, geen enkel getal dat hierboven al staat. */
+    "<p class='muted' style='margin:5px 0 0; font-size:.8rem'>"+
+      ct("van de "+n+" "+niv+"-woorden", "of the "+n+" "+niv+" words")+"</p>"+
+    stap+
     (aanbod ? dagPeilKnopHtml(aanbod) : "");
 }
 /* De stap. Niet als los blokje ergens anders op het scherm, maar als een zin onder dezelfde balk,
