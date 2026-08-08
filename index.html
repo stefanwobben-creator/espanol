@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.4";
+var APP_VERSIE = "v23.5";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15239,9 +15239,22 @@ function zoekNeemMee(id){
   persist();
   try{ updateBadge(); }catch(e){}
 }
+/* Waar het woordenboek een aangetikt woord kan tonen, doet het dat ook: zoekveld gevuld, rij open.
+   Zo niet (een boekwoord dat nog op slot staat), dan blijft het bij de kale lijst, want een filter dat
+   "niets gevonden" zegt over een woord dat je net zag staan, is een grotere fout dan een stap extra. */
+function dicToonWoord(id){
+  var w = null;
+  try {
+    w = dicZichtbareWoorden().filter(function(x){ return x.id === id; })[0] || null;
+  } catch(e){ w = null; }
+  if(!w) return false;
+  dicZoek = w.es;
+  dicOpen = w.es;
+  return true;
+}
 function zoekGaNaar(soort, id){
   zoekSluit();
-  if(soort === "woord"){ dicModal(); return; }
+  if(soort === "woord"){ dicToonWoord(id); dicModal(); return; }
   if(soort === "zin"){
     var z = (SENTENCES.concat(B_SENTENCES)).filter(function(x){ return x.id === id; })[0];
     if(!z) return;
