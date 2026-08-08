@@ -587,6 +587,16 @@
   .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
   .dicbody{padding:2px 0 12px; font-size:.92rem;}
   .dicbody p{margin:4px 0;}
+  /* de inhaalslag (v23.8) */
+  .swRij{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 12px;}
+  .swChip{display:flex; flex-direction:column; align-items:flex-start; gap:1px; text-align:left;
+    border:1px solid var(--lijn, #e6ded0); background:var(--kaart, #fffdf8); border-radius:12px;
+    padding:6px 10px; cursor:pointer; font-size:.86rem; line-height:1.2;}
+  .swChip span{font-size:.76rem; color:var(--muted);}
+  .swChip.uit{background:#f7e4e4; border-color:#e0b4b4; opacity:.75;}
+  .swChip.uit b{text-decoration:line-through;}
+  .swVoet{position:sticky; bottom:0; background:var(--kaart, #fffdf8); padding:10px 0 2px;
+    border-top:1px solid var(--lijn, #e6ded0); margin-top:8px;}
   .dicletter{margin:14px 0 0; font-weight:800; color:var(--muted); font-size:.8rem; letter-spacing:.08em;}
   .dicstip{font-size:.6rem; vertical-align:middle; margin-left:4px;}
   .dicwrap{position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:96; display:flex; align-items:center; justify-content:center; padding:14px;}
@@ -1094,7 +1104,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.7";
+var APP_VERSIE = "v23.8";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3749,6 +3759,35 @@ function oogstBij(){
   var o = S.oogst[dag] = S.oogst[dag] || {w: 0, z: 0};
   o.w += dw; o.z += dz;
   return o;
+}
+
+/* ================= DE INHAALSLAG (v23.8) ================= */
+var SWEEP_SPREIDING = 60;   // over hoeveel dagen de gezaaide woorden terugkomen
+var SWEEP_BOX = 3;          // doosje drie: hij komt terug en moet zich dan bewijzen
+var sweepUit = null;        // welke woorden tijdens het invullen op "ken ik niet" staan
+
+/* Boekwoorden doen niet mee: die horen bij een hoofdstuk dat je nog moet vrijspelen, en ze in één
+   lijst zetten verklapt het verhaal. Woorden die je al oefent ook niet: daar is de rotatie al mee
+   bezig en die mag een eenmalige inschatting niet overschrijven. */
+function sweepKandidaten(){
+  return (typeof WORDS !== "undefined" ? WORDS : []).filter(function(w){
+    if(S.srs && S.srs[w.id]) return false;
+    if(w.tag && w.tag.indexOf("boek-") === 0) return false;
+    return true;
+  });
+}
+function sweepGedaan(){ return !!(S && S.sweep && S.sweep.dag); }
+
+function sweepBewaar(uit){
+  var t = today(), i = 0, ken = 0, niet = 0;
+  sweepKandidaten().forEach(function(w){
+    if(uit && uit[w.id]){ niet++; return; }
+    S.srs[w.id] = {box: SWEEP_BOX, due: addDays(t, 1 + (i % SWEEP_SPREIDING)), n: 0, claim: 1};
+    ken++; i++;
+  });
+  S.sweep = {dag: t, ken: ken, niet: niet, goed: 0, fout: 0};
+  persist();
+  return S.sweep;
 }
 
 function persist(){ mijlpaalCheck(); oogstBij(); store.save(S); scheduleSync(); }
@@ -6523,6 +6562,14 @@ function answerWord(good){
   // v19.91: dit woord kreeg zijn laatste stap van jou, niet van een spel. Zie spelSrsBij
   // en snapshotSchrijf: zo blijven "werkt de app" en "werkt spelen" apart te lezen.
   if(st.sp) delete st.sp;
+  /* v23.8: dit woord kwam uit de inhaalslag en is nu voor het eerst echt nagekeken. De vlag gaat weg
+     en de uitslag wordt geteld, zodat je later weet hoe vaak jouw "die ken ik wel" klopte. Eén keer
+     per woord: de vlag bestaat daarna niet meer. */
+  if(st.claim){
+    delete st.claim;
+    S.sweep = S.sweep || {};
+    if(good) S.sweep.goed = (S.sweep.goed || 0) + 1; else S.sweep.fout = (S.sweep.fout || 0) + 1;
+  }
   if(good){
     // v20.0: de laatste doos hoort bij een check die je niet zelf beoordeelt. Zonder die check
     // blijft een woord op de een-na-laatste staan, hoe vaak je ook "wist ik" zegt. Zodra hij daar
@@ -15678,6 +15725,136 @@ function renderDic(){
   });
 }
 
+/* ================= HET INHAALSCHERM (v23.8) ================= */
+function sweepEsc(t){
+  return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function sweepModal(){
+  var wrap = document.getElementById("sweepWrap");
+  if(!wrap){
+    wrap = document.createElement("div");
+    wrap.id = "sweepWrap"; wrap.className = "dicwrap";
+    wrap.innerHTML = "<div class='dicpanel'><div class='dictop'>"+
+      "<span class='kicker' id='sweepKop'></span><button class='ghost' id='btnSweepDicht'></button></div>"+
+      "<div id='sweepCard'></div></div>";
+    document.body.appendChild(wrap);
+    var bx = document.getElementById("btnSweepDicht");
+    if(bx) bx.onclick = sweepSluit;
+  }
+  document.getElementById("sweepKop").textContent = ct("De inhaalslag","Catching up");
+  document.getElementById("btnSweepDicht").textContent = "\u2715 " + ct("Sluiten","Close");
+  wrap.classList.remove("hidden");
+  sweepUit = sweepUit || {};
+  sweepTeken();
+}
+function sweepSluit(){
+  var w = document.getElementById("sweepWrap");
+  if(w) w.classList.add("hidden");
+}
+function sweepTeken(){
+  var el = document.getElementById("sweepCard");
+  if(!el) return;
+  var lijst = sweepKandidaten();
+  var uit = 0;
+  lijst.forEach(function(w){ if(sweepUit[w.id]) uit++; });
+  var ken = lijst.length - uit;
+  var perDag = Math.ceil(ken / SWEEP_SPREIDING);
+
+  var html = "<p class='muted' style='margin:2px 0 10px; line-height:1.5'>"+
+    ct("Hieronder staan de "+lijst.length+" woorden die je nog niet oefent. Ze staan allemaal op <b>ken ik</b>. "+
+       "Tik aan wat je <b>niet</b> kent. Wat je laat staan komt de komende twee maanden een keer langs om zich te bewijzen; "+
+       "het telt pas als je het dan ook echt goed hebt.",
+       "Below are the "+lijst.length+" words you're not practising yet. They're all set to <b>I know this</b>. "+
+       "Tap the ones you <b>don't</b> know. Whatever you leave comes back once over the next two months to prove itself; "+
+       "it only counts once you actually get it right.")+"</p>";
+
+  var tag = null;
+  lijst.forEach(function(w){
+    if(w.tag !== tag){
+      // elke groep sluit netjes af voordat de volgende begint, anders nestelen de rijen in elkaar
+      if(tag !== null) html += "</div>";
+      tag = w.tag;
+      html += "<p class='dicletter'>"+sweepEsc(tag || ct("overig","other"))+"</p><div class='swRij'>";
+    }
+    html += "<button type='button' class='swChip"+(sweepUit[w.id] ? " uit" : "")+"' data-sw='"+sweepEsc(w.id)+"'>"+
+      "<b class='es'>"+sweepEsc(w.es)+"</b><span>"+sweepEsc(wTrans(w))+"</span></button>";
+  });
+
+  if(tag !== null) html += "</div>";
+  html += "<div class='swVoet'>"+
+    "<p style='margin:0 0 8px'><b>"+ken+"</b> "+ct("zeg je te kennen","you say you know")+
+      " \u00b7 <b>"+uit+"</b> "+ct("niet","not")+"</p>"+
+    "<p class='muted' style='margin:0 0 10px; font-size:.84rem'>"+
+      ct("Die "+ken+" komen verspreid over "+SWEEP_SPREIDING+" dagen terug, ongeveer "+perDag+" per dag bovenop je les.",
+         "Those "+ken+" come back spread over "+SWEEP_SPREIDING+" days, roughly "+perDag+" a day on top of your lesson.")+"</p>"+
+    "<button class='good' id='btnSweepKlaar'>"+ct("Klaar, zet ze klaar","Done, queue them up")+"</button></div>";
+
+  el.innerHTML = html;
+  el.querySelectorAll("[data-sw]").forEach(function(b){
+    b.onclick = function(){
+      var id = b.getAttribute("data-sw");
+      if(sweepUit[id]) delete sweepUit[id]; else sweepUit[id] = 1;
+      b.classList.toggle("uit");
+      var t = el.querySelector(".swVoet");
+      if(t){
+        // alleen de voet hertekenen: het hele scherm opnieuw opbouwen kost bij zeshonderd knoppen
+        // merkbaar tijd, en dan hapert het tikken zelf
+        var l = sweepKandidaten(), n = 0;
+        l.forEach(function(w){ if(sweepUit[w.id]) n++; });
+        var k = l.length - n;
+        t.querySelector("p").innerHTML = "<b>"+k+"</b> "+ct("zeg je te kennen","you say you know")+
+          " \u00b7 <b>"+n+"</b> "+ct("niet","not");
+      }
+    };
+  });
+  var kl = document.getElementById("btnSweepKlaar");
+  if(kl) kl.onclick = function(){
+    var r = sweepBewaar(sweepUit);
+    sweepUit = null;
+    sweepSluit();
+    try { renderPerfil(); } catch(e){}
+    try { toast(ct(r.ken+" woorden staan klaar","+ "+r.ken+" words queued")); } catch(e){}
+  };
+}
+
+/* Op je profiel: één keer een uitnodiging, daarna een uitslag. */
+function sweepBlokHtml(){
+  if(sweepGedaan()){
+    var sw = S.sweep, gedaan = (sw.goed || 0) + (sw.fout || 0);
+    var html = "<h2>"+ct("De inhaalslag","Catching up")+"</h2>"+
+      "<p class='muted' style='margin:6px 0'>"+
+        ct("Op "+sw.dag+" zei je van <b>"+sw.ken+"</b> woorden dat je ze kende, en van <b>"+(sw.niet||0)+"</b> van niet. "+
+           "Die eerste groep komt verspreid langs om zich te bewijzen.",
+           "On "+sw.dag+" you said you knew <b>"+sw.ken+"</b> words and didn't know <b>"+(sw.niet||0)+"</b>. "+
+           "The first group comes back spread out, to prove itself.")+"</p>";
+    if(gedaan >= 10){
+      var pct = Math.round(100 * (sw.goed || 0) / gedaan);
+      html += "<p class='muted' style='margin:6px 0'>"+
+        ct("Van de "+gedaan+" al nagekeken woorden had je er <b>"+pct+"%</b> goed. Dat is niet je niveau, dat is hoe goed je jezelf inschat.",
+           "Of the "+gedaan+" checked so far you got <b>"+pct+"%</b> right. That's not your level, that's how well you judge yourself.")+"</p>";
+    } else {
+      html += "<p class='muted' style='margin:6px 0; font-size:.84rem'>"+
+        ct("Na tien nagekeken woorden staat hier hoe vaak je inschatting klopte. Nu: "+gedaan+".",
+           "After ten checked words this shows how often your judgement was right. So far: "+gedaan+".")+"</p>";
+    }
+    return "<div class='card'>"+html+"</div>";
+  }
+  var n = sweepKandidaten().length;
+  if(n < 20) return "";
+  return "<div class='card'><h2>"+ct("De inhaalslag","Catching up")+"</h2>"+
+    "<p class='muted' style='margin:6px 0 10px'>"+
+      ct("Je oefent "+n+" woorden nog niet, terwijl je er een hoop van waarschijnlijk gewoon kent. "+
+         "Loop ze één keer door en zeg wat je <b>niet</b> kent; de rest komt verspreid over "+SWEEP_SPREIDING+" dagen langs om zich te bewijzen.",
+         "There are "+n+" words you're not practising, and you probably already know plenty of them. "+
+         "Go through them once and say what you <b>don't</b> know; the rest comes back over "+SWEEP_SPREIDING+" days to prove itself.")+"</p>"+
+    "<button class='good' id='btnSweepStart'>"+ct("Beginnen","Start")+"</button></div>";
+}
+function sweepBlokWire(el){
+  var b = el.querySelector ? el.querySelector("#btnSweepStart") : null;
+  if(b) b.onclick = function(){ sweepUit = {}; sweepModal(); };
+}
+
 /* ================= CHISPA-SPRITE (gebruikt door de spellen) ================= */
 /* v19.79: deze sprite was roze ingemetseld. Dat viel op zodra je Chispa oranje maakte: in de
    spellen en in de lesbanner liep dan ineens een ander dier rond. Hij haalt zijn kleur nu uit
@@ -18595,6 +18772,8 @@ function renderPerfil(){
     "<div class='row'><button class='ghost' id='btnMailBewaar'>"+gt("mailKnop")+"</button></div>";
   el.innerHTML += doelBlokHtml();
   doelBlokWire(el);
+  el.innerHTML += sweepBlokHtml();
+  sweepBlokWire(el);
   var bm = document.getElementById("btnMailBewaar");
   if(bm) bm.onclick = function(){
     var mi = document.getElementById("perfilMail");
