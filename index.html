@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.0";
+var APP_VERSIE = "v23.1";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -22950,18 +22950,21 @@ function basisHtml(actief14){
          "("+portieMax()+" words, "+nieuwPerDag()+" of them new) so a session takes a couple of minutes. "+
          "Come back more often and it grows back on its own.")+"</p>";
   }
-  return "<h2>"+ct("Je basis 🧱","Your base 🧱")+"</h2>"+
-    "<p class='muted' style='margin:6px 0 8px'>"+
-      // v19.90: hier stond wat donker en licht betekenen, maar niet meer waaraan je
-      // dat kunt afmeten. Die definitie stond sinds v19.87 in de app en hoort er te
-      // blijven: zonder de maatstaf is "onderweg" een gevoel in plaats van een grens.
-      ct("De twee niveaus die samen de basis vormen. Donker is stevig (vijf goede beurten over 25 dagen), licht is onderweg (herhaalinterval van een week of langer).",
-         "The two levels that together make up the base. Dark is solid (five correct turns across 25 days), light is on the way (review interval of a week or more).")+"</p>"+
-    nivBalkHtml("A1", t)+nivBalkHtml("A2", t)+
-    (pctW > 0 ? "<p class='muted' style='margin:2px 0 0; font-size:.82rem'>"+
-       ct("De lichte strook is je marge: die staat klaar om stevig te worden. Een woord kan pas na 25 dagen stevig heten, dus in het begin is dat de strook die beweegt. Dictado en Husselen duwen woorden in deze strook; stevig verdien je in de woordtrainer.",
-          "The light band is your margin: those are queued to become solid. A word can only count as solid after 25 days, so early on that's the band that moves. Dictado and Husselen push words into this band; solid is earned in the word trainer.")+"</p>" : "")+
-    "<p class='muted' style='margin:8px 0 0'>"+poortTxt+"</p>"+
+  /* v23.1. Hier stonden twee balken (A1 en A2), allebei op 0%, met een alinea over wat donker en
+     licht betekenen. Op Vandaag stond intussen hetzelfde verhaal met een aantal als kop. Twee
+     schermen, twee sommen, geen manier om te zien dat ze over hetzelfde gingen.
+
+     Nu roept dit scherm dagBasisRegelHtml() aan: precies het blok van Vandaag, met dezelfde kop,
+     dezelfde balk en dezelfde legenda. Eén implementatie. De niveaubalken per niveau staan een
+     regel lager, onder een vouw, want daar horen ze: dat is verdieping en geen antwoord op "waar
+     sta ik". De uitleg over donker en licht is overbodig geworden; de legenda zegt het nu bij de
+     balk zelf, met getallen erbij. */
+  return "<h2>"+ct("Waar je staat","Where you are")+"</h2>"+
+    dagBasisRegelHtml()+
+    "<details style='margin-top:10px'><summary class='muted' style='cursor:pointer; font-size:.86rem'>"+
+      ct("Per niveau","Per level")+"</summary>"+
+      nivBalkHtml("A1", t)+nivBalkHtml("A2", t)+
+      "<p class='muted' style='margin:6px 0 0; font-size:.82rem'>"+poortTxt+"</p></details>"+
     "<div class='statgrid' style='margin-top:10px'>"+
       // v19.86b, Stefan: "ik vind de indicator belangrijker dan de doelstelling."
       // Dus staat het terugkomcijfer vooraan, in zijn eenheid: keer per week.
