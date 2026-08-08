@@ -323,6 +323,7 @@ function muurVelden(st) {
     mijlpalen: (st && st.mijlpalen) || {},
     wear: (st && st.wear) || {},
     baile: (st && st.baile) || null,
+    petKleur: (st && st.petKleur) || null,   // v22.7: de muur tekent haar in haar eigen kleur
     bailes: (st && st.bailes) || [],
     // v22.6: de kleine dag naast de grote grenzen. Alleen vandaag en gisteren, want verder terug
     // kijkt de muur niet en de rest is dode last in een antwoord dat elk bezoek wordt opgehaald.
