@@ -63,9 +63,13 @@ const { chromium } = require('playwright');
   // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
   await page.evaluate(() => dicModal());
   await page.waitForTimeout(250);
+  // v23.6: dit stond in een alinea van vier zinnen boven het zoekveld. Stefan: "deze tekst kan korter".
+  // Het getal is niet weg, het staat nu in het zoekveld zelf, op de plek waar het pas telt.
   const intro = await page.locator('#dicCard').innerText();
-  ok(/4[.,]219/.test(intro), 'de woordenboekkaart noemt het nieuwe aantal van 4.219 woorden');
-  ok(!/frequentietop|frequency top/i.test(intro), 'de intro gebruikt geen jargon als "frequentietop" meer');
+  const plaats = await page.locator('#dicZoek').getAttribute('placeholder');
+  ok(/(buiten de lessen|beyond the lessons)/.test(plaats || ''),
+     'het zoekveld zegt dat het verder reikt dan de lessen: "' + plaats + '"');
+  ok(!/frequentietop|frequency top/i.test(intro + (plaats || '')), 'er staat geen jargon als "frequentietop"');
 
   // helper: alle rijen, in schermvolgorde, met hun sleutel en zichtbare tekst
   async function alleRijen() {

@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.5";
+var APP_VERSIE = "v23.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4466,7 +4466,9 @@ function boot(){
   document.getElementById("goalLine").classList.remove("hidden");
   document.getElementById("nav").classList.remove("hidden");
   var fb = document.getElementById("dicFab");
-  if(fb){ fb.classList.remove("hidden"); fb.onclick = zoekOpen; }
+  // v23.6: hier stond zoekOpen, en dat was een tweede zoekscherm naast het woordenboek. Nu opent de
+  // pil het woordenboek zelf, met een leeg veld, zodat je meteen op de plek bent waar het antwoord staat.
+  if(fb){ fb.classList.remove("hidden"); fb.onclick = function(){ dicZoek = ""; dicOpen = null; dicAutoQ = null; dicModal(); }; }
   var zt = document.getElementById("zoekPilTxt");
   if(zt) zt.textContent = ct("Zoek","Search");
   var ft = document.getElementById("appFooter");
@@ -15044,7 +15046,7 @@ b169:"I can swim very well.",b170:"I can't go out today.",b171:"Can you drive?",
 };
 
 
-var dicOpen = null, dicZoek = "", dicZoekTimer = null;
+var dicOpen = null, dicZoek = "", dicZoekTimer = null, dicAutoQ = null;
 /* ================= ZOEKEN (v21.6) =================
    Een veld over alles: woorden, zinnen, grammaticaconcepten, hoofdstukken, liedjes en luisterscenes.
    Geen AI erachter, met opzet. Alles staat al in dit bestand, dus een opzoeking is instant, kost
@@ -15154,80 +15156,14 @@ function zoekResultaten(q){
     return {soort:g.soort, kop:g.kop(), rijen:rijen.map(function(t){ return t.it; }), totaal:rijen.length};
   }).filter(function(g){ return g.rijen.length; });
 }
-function zoekOpen(){
-  var wrap = document.getElementById("zoekWrap");
-  if(!wrap){
-    wrap = document.createElement("div");
-    wrap.id = "zoekWrap"; wrap.className = "dicwrap";
-    wrap.innerHTML = "<div class='dicpanel'><div class='dictop'>" +
-      "<span class='kicker' id='zoekKop'></span>" +
-      "<button class='ghost' id='btnZoekDicht'></button></div>" +
-      "<input type='text' id='zoekVeld' autocomplete='off' autocapitalize='off'>" +
-      "<div id='zoekUit'></div></div>";
-    document.body.appendChild(wrap);
-    wrap.onclick = function(e){ if(e && e.target === wrap) zoekSluit(); };
-    document.getElementById("btnZoekDicht").onclick = zoekSluit;
-    var veld = document.getElementById("zoekVeld");
-    veld.addEventListener("input", function(){
-      zoekQ = veld.value;
-      clearTimeout(zoekTimer);
-      zoekTimer = setTimeout(zoekTeken, 120);
-    });
-  }
-  document.getElementById("zoekKop").textContent = ct("Zoeken","Search");
-  document.getElementById("btnZoekDicht").textContent = "✕ " + ct("Sluiten","Close");
-  var v = document.getElementById("zoekVeld");
-  v.placeholder = ct("Woord, zin of regel...","Word, sentence or rule...");
-  v.value = zoekQ;
-  wrap.classList.remove("hidden");
-  zoekTeken();
-  setTimeout(function(){ v.focus(); }, 60);
-}
+/* v23.6: hier stonden zoekOpen() en zoekTeken(): een eigen venster dat treffers groepeerde in
+   WOORDEN, ZINNEN, GRAMMATICA en VERHAAL, met per treffer een kaartje dat je moest aantikken om
+   ergens te komen. Stefan: "deze hele weergave wil ik niet." Het woordenboek deed hetzelfde werk en
+   liet de betekenis er meteen bij zien, dus dat is wat er overblijft. zoekIndex() en zoekResultaten()
+   blijven: het woordenboek gebruikt ze nu voor alles wat geen woord is. */
 function zoekSluit(){
   var w = document.getElementById("zoekWrap");
   if(w) w.classList.add("hidden");
-}
-function zoekTeken(){
-  var uit = document.getElementById("zoekUit");
-  if(!uit) return;
-  var plat = zoekPlat(zoekQ);
-  if(plat.length < 2){
-    uit.innerHTML = "<p class='muted' style='margin:12px 2px'>" +
-      ct("Typ twee letters of meer. Nederlands of Spaans, allebei goed.",
-         "Type two letters or more. Dutch or Spanish, either works.") + "</p>" +
-      "<button class='ghost' id='btnNaarWb'>📖 " + ct("Blader door het woordenboek","Browse the dictionary") + "</button>";
-    var bw = document.getElementById("btnNaarWb");
-    if(bw) bw.onclick = function(){ zoekSluit(); dicModal(); };
-    return;
-  }
-  var groepen = zoekResultaten(zoekQ);
-  if(!groepen.length){
-    uit.innerHTML = "<p class='muted' style='margin:12px 2px'>" +
-      ct("Niets gevonden voor \"" + zoekQ + "\".","Nothing found for \"" + zoekQ + "\".") + "</p>";
-    return;
-  }
-  uit.innerHTML = groepen.map(function(g){
-    return "<div class='zoekkop'>" + g.kop + (g.totaal > ZOEK_PER_GROEP ? " · " + g.totaal : "") + "</div>" +
-      g.rijen.slice(0, ZOEK_PER_GROEP).map(function(it){
-        var mee = it.soort === "woord" && !(S.srs || {})[it.id];
-        return "<div class='zoekrij' data-zs='" + it.soort + "' data-zi='" + it.id + "'>" +
-          "<span class='zi'>" + it.ico + "</span>" +
-          "<span class='zb'><b>" + it.es + "</b><span>" + (it.nl || "") + "</span></span>" +
-          (mee ? "<button type='button' class='zoekmee' data-zmee='" + it.id + "'>+ " + ct("leren","learn") + "</button>" : "") +
-          "</div>";
-      }).join("");
-  }).join("");
-  uit.querySelectorAll("[data-zmee]").forEach(function(b){
-    b.onclick = function(e){
-      e.stopPropagation();
-      zoekNeemMee(b.getAttribute("data-zmee"));
-      b.textContent = "✓ " + ct("staat erin","added");
-      b.disabled = true;
-    };
-  });
-  uit.querySelectorAll("[data-zs]").forEach(function(r){
-    r.onclick = function(){ zoekGaNaar(r.getAttribute("data-zs"), r.getAttribute("data-zi")); };
-  });
 }
 /* Iets opzoeken is het sterkste signaal van belangstelling dat de app krijgt: sterker dan een
    oefening die de app zelf voorstelde, want die koos jij niet. Daarom mag een opgezocht woord met
@@ -15254,6 +15190,7 @@ function dicToonWoord(id){
 }
 function zoekGaNaar(soort, id){
   zoekSluit();
+  dicSluit();
   if(soort === "woord"){ dicToonWoord(id); dicModal(); return; }
   if(soort === "zin"){
     var z = (SENTENCES.concat(B_SENTENCES)).filter(function(x){ return x.id === id; })[0];
@@ -15513,12 +15450,24 @@ function renderDic(){
   }).slice();
   lijst.sort(function(a, b){ var ka = dicSortKey(a), kb = dicSortKey(b); return ka < kb ? -1 : (ka > kb ? 1 : 0); });
   var groepen = dicGroups(lijst);
+  /* v23.6: is er precies één woord dat past, dan is er niets te kiezen en klapt hij open. Anders zou
+     je moeten tikken op de enige rij die er staat, en dat is de tik die Stefan wegwilde.
+     dicAutoQ onthoudt voor welke zoekterm dat al gedaan is, zodat je hem daarna weer dicht kunt
+     klappen zonder dat hij bij de volgende render terugspringt. */
+  if(!q){ dicAutoQ = null; }
+  else if(groepen.length === 1 && dicAutoQ !== q){ dicOpen = groepen[0].es; dicAutoQ = q; }
   var freqN = (typeof FREQ !== "undefined") ? FREQ.length : 0;
-  var html = "<h2>"+ct("Jouw woordenboek","Your dictionary")+" 📖</h2>"+
-    "<p class='muted'>"+ct("Alle "+alleGroepen.length+" leswoorden op alfabet, je hebt er al <b>"+geleerd+"</b> gehad. ","All "+alleGroepen.length+" lesson words in alphabetical order; you've seen <b>"+geleerd+"</b> so far. ")+
-    "⚪ "+ct("nog niet gehad","not seen yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+". "+ct("Tik op een woord voor meer.","Tap a word for more.")+
-    (freqN ? ct(" Zoek je iets wat nog in geen les zit? De zoekbalk kent <b>"+freqN.toLocaleString("nl-NL")+"</b> Spaanse woorden erbij (eten, huis, lichaam, reizen, werk, natuur) en herkent vervoegingen (probeer maar: <i>comiste</i>)."," Looking for something no lesson covers yet? The search bar knows <b>"+freqN.toLocaleString("en-GB")+"</b> extra Spanish words (food, home, body, travel, work, nature) and recognises conjugated forms (try it: <i>comiste</i>).") : "")+"</p>"+
-    "<input type='text' id='dicZoek' placeholder='"+ct("Zoek een woord of vervoeging...","Search a word or conjugated form...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+  /* v23.6: de kop zei "Jouw woordenboek" terwijl er twee regels hoger al WOORDENBOEK stond, en de
+     alinea eronder legde vier dingen tegelijk uit. Wat overblijft is één regel: wat er in de lijst
+     staat en wat de bolletjes betekenen. Bij een zoekterm valt ook die weg, want wie typt is niet
+     aan het bladeren. */
+  var html = (q ? "" :
+    "<p class='muted' style='margin:2px 0 8px'>"+
+      ct(alleGroepen.length+" woorden uit je lessen, <b>"+geleerd+"</b> gehad. ",
+         alleGroepen.length+" words from your lessons, <b>"+geleerd+"</b> seen. ")+
+      "⚪ "+ct("nog niet","not yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+
+    "</p>")+
+    "<input type='text' id='dicZoek' placeholder='"+ct("Zoek een woord of vervoeging"+(freqN ? ", ook buiten de lessen" : "")+"...","Search a word or conjugated form"+(freqN ? ", also beyond the lessons" : "")+"...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
   // vervoegings-herkenning: "comiste" → comer (indefinido, tú)
   if(q && q.length >= 3){
     var vormen = vormAnalyse(dicZoek);
@@ -15559,9 +15508,16 @@ function renderDic(){
       if(gl && glossen.indexOf(gl) === -1) glossen.push(gl);
     });
     var kort = glossen.length ? glossen[0] + (glossen.length > 1 ? " …" : "") : "";
+    /* v23.6: deze knop zat in het verdwenen zoekvenster. Iets opzoeken is het sterkste signaal van
+       belangstelling dat de app krijgt, sterker dan een oefening die de app zelf voorstelde, dus dat
+       woord mag met een tik in je rotatie. Alleen bij zoeken, want in de alfabetische lijst zou hij
+       zevenhonderd keer op je scherm staan. */
+    var meeId = (!beste && q) ? g.items[0].id : null;
     html += "<div class='dicrow' data-dic=\""+dicKey+"\">"+
       "<div class='dichead'><span><b class='es'>"+g.es+"</b>"+(kort ? " <span class='muted'>· "+kort+"</span>" : "")+"</span>"+
-      "<span class='muted' style='font-size:.78rem'><span class='dicstip'>"+stip+"</span> "+(open ? "▾" : "▸")+"</span></div>";
+      "<span class='muted' style='font-size:.78rem'>"+
+        (meeId ? "<button type='button' class='zoekmee' data-dmee='"+meeId+"'>+ "+ct("leren","learn")+"</button> " : "")+
+        "<span class='dicstip'>"+stip+"</span> "+(open ? "▾" : "▸")+"</span></div>";
     if(open){
       html += "<div class='dicbody'>";
       // dezelfde vertaling+thema maar 2x (bv. boekwoordenschat in zowel A2- als A0-woordpool): 1x tonen.
@@ -15641,7 +15597,33 @@ function renderDic(){
         (q && o.song ? "<div class='dicbody' style='padding-top:0'><p class='muted' style='margin:2px 0'>🎵 "+o.song.titel+" · "+o.song.artiest+"</p></div>" : "")+"</div>";
     });
   }
-  if(q && !lijst.length && !freqHits.length && !songHits.length && !(q.length >= 3 && vormAnalyse(dicZoek).length)){
+  /* v23.6: zinnen, grammatica, luisterscenes, verhalen en liedjes vond het oude zoekvenster wel en
+     het woordenboek niet. Ze mogen niet verdwijnen, maar ze mogen ook niet boven de betekenis staan:
+     wie een woord opzoekt, zoekt in verreweg de meeste gevallen dat woord. Dus onderaan, dichtgevouwen. */
+  var andere = [];
+  if(q && q.length >= 2){
+    try {
+      andere = zoekResultaten(dicZoek).filter(function(g){ return g.soort !== "woord"; });
+    } catch(e){ andere = []; }
+  }
+  if(andere.length){
+    var totaalAnder = 0;
+    andere.forEach(function(g){ totaalAnder += g.rijen.length; });
+    html += "<details style='margin:14px 0 4px'><summary class='muted' style='cursor:pointer; font-size:.86rem'>"+
+      ct("Ook gevonden in zinnen, grammatica en verhalen","Also found in sentences, grammar and stories")+
+      " · "+totaalAnder+"</summary>";
+    andere.forEach(function(g){
+      html += "<p class='dicletter'>"+g.kop+"</p>";
+      g.rijen.slice(0, 4).forEach(function(it){
+        html += "<div class='dicrow' data-oz='"+it.soort+"' data-oi='"+it.id+"'>"+
+          "<div class='dichead'><span>"+it.ico+" <b class='es'>"+it.es+"</b>"+
+          (it.nl ? " <span class='muted'>· "+it.nl+"</span>" : "")+"</span>"+
+          "<span class='muted' style='font-size:.78rem'>›</span></div></div>";
+      });
+    });
+    html += "</details>";
+  }
+  if(q && !lijst.length && !freqHits.length && !songHits.length && !andere.length && !(q.length >= 3 && vormAnalyse(dicZoek).length)){
     html += "<p class='muted'>"+ct("Niets gevonden voor","Nothing found for")+" \""+dicZoek+"\".</p>";
   }
   el.innerHTML = html;
@@ -15670,6 +15652,18 @@ function renderDic(){
       if(id === null) return;   // liedrijen hebben geen sleutel; die mogen niet stil iets anders dichtklappen
       dicOpen = dicOpen === id ? null : id;
       renderDic();
+    };
+  });
+  el.querySelectorAll("[data-oz]").forEach(function(r){
+    var hd = r.querySelector ? r.querySelector(".dichead") : null;
+    if(hd) hd.onclick = function(){ zoekGaNaar(r.getAttribute("data-oz"), r.getAttribute("data-oi")); };
+  });
+  el.querySelectorAll("button[data-dmee]").forEach(function(b){
+    b.onclick = function(e){
+      e.stopPropagation();
+      zoekNeemMee(b.getAttribute("data-dmee"));
+      b.textContent = "✓ "+ct("staat erin","added");
+      b.disabled = true;
     };
   });
   el.querySelectorAll("button[data-vormen]").forEach(function(b){

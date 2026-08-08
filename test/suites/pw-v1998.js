@@ -111,9 +111,11 @@ async function nieuwProfiel(page) {
   // v21.6: was een rond boekicoontje van 38px, is nu een pil met het woord "Zoek" erin, dus breder.
   ok(fab.br >= 32 && fab.br <= 140, 'hij heeft kopformaat (' + fab.br + 'px)');
   await page.click('#dicFab'); await page.waitForTimeout(400);
-  ok(await page.evaluate(() => { const w = document.getElementById('zoekWrap'); return !!w && !w.classList.contains('hidden'); }), 'hij opent het zoekveld');
-  ok(await page.evaluate(() => { const v = document.getElementById('zoekVeld'); return !!v && document.activeElement === v; }), 'met de cursor er meteen in');
-  await page.evaluate(() => zoekSluit());
+  // v23.6: de pil opende een eigen zoekvenster naast het woordenboek. Dat venster is weg; de pil opent
+  // nu het woordenboek zelf, waar de betekenis meteen bij de treffer staat.
+  ok(await page.evaluate(() => { const w = document.getElementById('dicWrap'); return !!w && !w.classList.contains('hidden'); }), 'hij opent het woordenboek');
+  ok(await page.evaluate(() => { const v = document.getElementById('dicZoek'); return !!v && document.activeElement === v; }), 'met de cursor er meteen in');
+  await page.evaluate(() => dicSluit());
 
   console.log('\n-- Meer: elke tab is bereikbaar en elke regel legt zichzelf uit --');
   await page.click("#nav button[data-tab='__meer']"); await page.waitForTimeout(400);

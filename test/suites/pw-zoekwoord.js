@@ -1,13 +1,13 @@
-// v23.5: een woord aantikken in het zoekveld opent dat woord, niet de lijst van 705.
+// v23.5 en v23.6: van zoekterm naar betekenis, zonder tussenscherm.
 //
-// Stefan, met twee schermafbeeldingen naast elkaar: "kijk het resultaat van het eerste en klik ik dan
-// kom ik op resultaat van het tweede, die extra stap is niet nodig toch."
+// v23.5 was de verkeerde reparatie. Stefan liet twee schermafbeeldingen zien: een zoekvenster met de
+// treffer als kaartje onder een kopje WOORDEN, en het woordenboek met datzelfde woord opengeklapt.
+// "deze hele weergave wil ik niet" bij de eerste, "ik wil alleen deze" bij de tweede. Ik had de omweg
+// korter gemaakt terwijl de omweg zelf het probleem was.
 //
-// zoekGaNaar("woord", id) riep dicModal() aan en gebruikte de id nergens. Je had het woord al
-// gevonden en al aangetikt, en stond daarna weer in een alfabetische lijst.
-//
-// Deze suite loopt de weg die hij liep: zoekveld open, woord typen, treffer aantikken, en dan moet de
-// uitleg er staan. Plus de randgevallen die de reparatie niet mag stukmaken.
+// v23.6 haalt het zoekvenster weg. De pil in de kop opent het woordenboek, typen laat de betekenis
+// zien, en bij precies één treffer klapt die vanzelf open. Deze suite bewaakt dat pad en de dingen
+// die bij de verhuizing niet verloren mochten gaan.
 const { chromium } = require('playwright');
 
 (async () => {
@@ -32,108 +32,140 @@ const { chromium } = require('playwright');
   await page.click('button:has-text("A2")');
   await page.click('button:has-text("Start")');
   await page.waitForTimeout(500);
+  const skip = page.locator('button:has-text("Skip")');
+  if (await skip.count()) await skip.click();
+  await page.waitForTimeout(300);
 
-  // ---- 1. de weg van Stefan, via het echte scherm ----
-  // Een woord kiezen dat het woordenboek kan tonen en dat maar één treffer geeft, zodat de test niet
-  // afhangt van welke track er toevallig actief is.
+  // ---- 1. de pil opent het woordenboek, leeg en met de cursor erin ----
+  await page.click('#dicFab');
+  await page.waitForTimeout(300);
+  const start = await page.evaluate(() => ({
+    open: !document.getElementById('dicWrap').classList.contains('hidden'),
+    veld: document.getElementById('dicZoek').value,
+    cursor: document.activeElement === document.getElementById('dicZoek')
+  }));
+  ok(start.open, 'de zoekpil opent het woordenboek');
+  ok(start.veld === '', 'met een leeg veld, dus je begint niet in andermans zoekopdracht');
+  ok(start.cursor, 'en je kunt meteen typen');
+
+  // ---- 2. typen geeft de betekenis, niet een lijst om nog eens uit te kiezen ----
   const doelwit = await page.evaluate(() => {
     const zichtbaar = dicZichtbareWoorden();
     for (const w of zichtbaar) {
       const kern = w.es.replace(/^(el|la|los|las|un|una)\s+/i, '').split(/[\/(]/)[0].trim();
       if (kern.length < 5 || /\s/.test(kern)) continue;
-      const groepen = zoekResultaten(kern);
-      const woorden = groepen.filter((g) => g.soort === 'woord')[0];
-      if (woorden && woorden.rijen.length === 1 && woorden.rijen[0].id === w.id) return { id: w.id, es: w.es, kern: kern };
+      const q = kern.toLowerCase();
+      const treffers = zichtbaar.filter(function (x) {
+        return x.es.toLowerCase().indexOf(q) !== -1 || x.nl.toLowerCase().indexOf(q) !== -1;
+      });
+      const groepen = {};
+      treffers.forEach(function (x) { groepen[x.es] = 1; });
+      if (Object.keys(groepen).length === 1) return { id: w.id, es: w.es, kern: kern };
     }
     return null;
   });
-  ok(!!doelwit, 'een testwoord met precies één zoektreffer gevonden: ' + (doelwit ? doelwit.es : 'geen'));
+  ok(!!doelwit, 'een testwoord met precies één treffer gevonden: ' + (doelwit ? doelwit.es : 'geen'));
 
   if (doelwit) {
-    await page.evaluate(() => zoekOpen());
-    await page.waitForTimeout(150);
-    await page.fill('#zoekVeld', doelwit.kern);
-    await page.waitForTimeout(300);
-    const treffers = await page.locator('#zoekUit .zoekrij[data-zs="woord"]').count();
-    ok(treffers === 1, 'het zoekveld toont precies één woordtreffer: ' + treffers);
-
-    // Aantikken via de knoop zelf. Een echte muisklik is hier onbetrouwbaar omdat het paneel na 120 ms
-    // stilte opnieuw tekent; de afhandelaar die eronder hangt is dezelfde.
-    await page.evaluate(() => document.querySelector('#zoekUit .zoekrij[data-zs="woord"]').click());
-    await page.waitForTimeout(300);
-
+    await page.fill('#dicZoek', doelwit.kern);
+    await page.waitForTimeout(400);
     const na = await page.evaluate(() => {
-      const wrap = document.getElementById('dicWrap');
-      const zoekDicht = (document.getElementById('zoekWrap') || {}).className || '';
-      const veld = document.getElementById('dicZoek');
-      const open = document.querySelectorAll('#dicCard .dicbody').length;
-      const rijen = document.querySelectorAll('#dicCard .dicrow').length;
+      const kaart = document.getElementById('dicCard');
       return {
-        dicZichtbaar: !!wrap && !wrap.classList.contains('hidden'),
-        zoekWeg: /hidden/.test(zoekDicht),
-        veld: veld ? veld.value : null,
-        open: open,
-        rijen: rijen,
-        tekst: (document.getElementById('dicCard') || {}).innerText || ''
+        rijen: kaart.querySelectorAll('.dicrow[data-dic]').length,
+        open: kaart.querySelectorAll('.dicrow[data-dic] .dicbody').length,
+        tekst: kaart.innerText || ''
       };
     });
-    ok(na.dicZichtbaar, 'het woordenboek staat open');
-    ok(na.zoekWeg, 'en het zoekvenster is dicht, dus er staat er maar één');
-    ok(na.veld === doelwit.es, 'het zoekveld van het woordenboek is gevuld met het woord zelf: ' + na.veld);
-    ok(na.open === 1, 'precies één rij staat opengeklapt, dus je hoeft niet nog eens te tikken: ' + na.open);
-    ok(na.rijen <= 3, 'en de lijst is teruggebracht tot de treffer in plaats van alle leswoorden: ' + na.rijen);
+    ok(na.rijen === 1, 'er staat precies één woordrij: ' + na.rijen);
+    ok(na.open >= 1, 'en die staat open, dus de betekenis staat er zonder nog een tik');
     ok(na.tekst.indexOf(doelwit.es) !== -1, 'het woord staat op het scherm: ' + doelwit.es);
+
+    // dichtklappen mag, en dan moet hij dicht blijven bij de volgende render
+    await page.evaluate(() => document.querySelector('#dicCard .dicrow[data-dic] .dichead').click());
+    await page.waitForTimeout(200);
+    await page.evaluate(() => renderDic());
+    await page.waitForTimeout(200);
+    const dicht = await page.evaluate(() => document.querySelectorAll('#dicCard .dicrow[data-dic] .dicbody').length);
+    ok(dicht === 0, 'wat je dichtklapt blijft dicht, het openklappen springt niet terug');
   }
 
-  // ---- 2. dezelfde stap zonder scherm, zodat de oorzaak zelf vastligt ----
+  // ---- 3. meerdere treffers: dan kies je zelf, niets klapt open ----
+  const meer = await page.evaluate(() => {
+    dicZoek = 'a'; dicOpen = null; dicAutoQ = null;
+    dicZoek = 'ar';
+    renderDic();
+    const kaart = document.getElementById('dicCard');
+    // alleen de woordrijen tellen: liedregels krijgen ook een .dicbody, en die zegt niets over openklappen
+    return { rijen: kaart.querySelectorAll('.dicrow[data-dic]').length,
+             open: kaart.querySelectorAll('.dicrow[data-dic] .dicbody').length };
+  });
+  ok(meer.rijen > 1, 'een brede zoekterm geeft meerdere rijen: ' + meer.rijen);
+  ok(meer.open === 0, 'en dan klapt er niets vanzelf open, want er valt iets te kiezen');
+
+  // ---- 4. de uitleg boven het veld wijkt zodra je typt ----
+  const kop = await page.evaluate(() => {
+    dicZoek = ''; dicOpen = null; dicAutoQ = null;
+    renderDic();
+    const bladeren = document.getElementById('dicCard').innerText;
+    dicZoek = 'casa';
+    renderDic();
+    const zoeken = document.getElementById('dicCard').innerText;
+    return { bladeren: bladeren, zoeken: zoeken };
+  });
+  ok(/(lastig|tricky)/.test(kop.bladeren), 'bij bladeren staat er nog uitleg van de bolletjes');
+  ok(!/(lastig|tricky)/.test(kop.zoeken), 'zodra je typt is die uitleg weg');
+  ok(!/(Jouw woordenboek|Your dictionary)/.test(kop.bladeren), 'de kop zegt niet nog een keer wat er in de balk erboven al staat');
+  ok(kop.bladeren.split('\n')[0].length < 120, 'en de eerste regel is kort: "' + kop.bladeren.split('\n')[0].slice(0, 90) + '"');
+
+  // ---- 5. wat het oude venster wél vond, is niet verdwenen ----
+  const ander = await page.evaluate(() => {
+    dicZoek = 'casa'; dicOpen = null; dicAutoQ = null;
+    renderDic();
+    const vouw = document.querySelector('#dicCard details');
+    return {
+      erIn: !!vouw,
+      rijen: vouw ? vouw.querySelectorAll('.dicrow[data-oz]').length : 0,
+      soorten: vouw ? Array.from(vouw.querySelectorAll('.dicrow[data-oz]')).map((r) => r.getAttribute('data-oz')) : []
+    };
+  });
+  ok(ander.erIn && ander.rijen > 0, 'zinnen en grammatica staan onder de vouw: ' + ander.rijen);
+  ok(ander.soorten.indexOf('woord') === -1, 'en daar staat geen woord tussen, die horen bovenaan');
+
+  // ---- 6. "+ leren" is meeverhuisd naar de woordrij ----
+  const leren = await page.evaluate(() => {
+    const w = dicZichtbareWoorden().filter(function (x) { return !S.srs[x.id]; })[0];
+    if (!w) return { geen: true };
+    dicZoek = w.es; dicOpen = null; dicAutoQ = null;
+    renderDic();
+    const knop = document.querySelector('#dicCard button[data-dmee]');
+    if (!knop) return { geen: false, knop: false };
+    knop.click();
+    return { geen: false, knop: true, inRotatie: !!S.srs[w.id], box: S.srs[w.id] && S.srs[w.id].box, zelf: S.srs[w.id] && S.srs[w.id].zelf };
+  });
+  if (leren.geen) {
+    console.log('PASS elk woord zit al in de rotatie, niets te toetsen');
+  } else {
+    ok(leren.knop === true, 'op een woord dat je nog niet oefent staat een knop om het mee te nemen');
+    ok(leren.inRotatie === true, 'en die zet het woord in je woordjes');
+    ok(leren.box === 0 && leren.zelf === 1, 'in doosje nul en gemarkeerd als zelf opgezocht');
+  }
+
+  const bladerKnop = await page.evaluate(() => {
+    dicZoek = ''; dicOpen = null; dicAutoQ = null;
+    renderDic();
+    return document.querySelectorAll('#dicCard button[data-dmee]').length;
+  });
+  ok(bladerKnop === 0, 'in de alfabetische lijst staat die knop niet, daar zou hij honderden keren staan');
+
+  // ---- 7. dicToonWoord blijft werken voor wie er van buitenaf in komt ----
   const direct = await page.evaluate(() => {
     dicZoek = ''; dicOpen = null;
     const w = dicZichtbareWoorden()[0];
-    const geraakt = dicToonWoord(w.id);
-    return { geraakt: geraakt, zoek: dicZoek, open: dicOpen, es: w.es };
+    return { geraakt: dicToonWoord(w.id), zoek: dicZoek, open: dicOpen, es: w.es, mis: dicToonWoord('bestaat-niet-w99999') };
   });
-  ok(direct.geraakt === true, 'dicToonWoord meldt dat het gelukt is');
-  ok(direct.zoek === direct.es && direct.open === direct.es, 'zoekterm en open rij wijzen allebei naar het woord: ' + direct.open);
-
-  // ---- 3. een onbekende id verandert niets, in plaats van het woordenboek leeg te filteren ----
-  const onbekend = await page.evaluate(() => {
-    dicZoek = ''; dicOpen = null;
-    const geraakt = dicToonWoord('bestaat-niet-w99999');
-    return { geraakt: geraakt, zoek: dicZoek, open: dicOpen };
-  });
-  ok(onbekend.geraakt === false, 'een onbekende id levert false op');
-  ok(onbekend.zoek === '' && onbekend.open === null, 'en laat het woordenboek staan zoals het stond');
-
-  // ---- 4. een woord uit een hoofdstuk dat nog op slot staat valt terug op het oude gedrag ----
-  // Zonder deze terugval zou de zoeker een woord tonen dat het woordenboek daarna niet kán laten
-  // zien, en dan staat er "niets gevonden" over iets wat je net zag staan. Een stap extra is minder erg.
-  const opSlot = await page.evaluate(() => {
-    const zichtbaar = {};
-    dicZichtbareWoorden().forEach((w) => { zichtbaar[w.id] = 1; });
-    const dicht = WORDS.filter((w) => !zichtbaar[w.id])[0];
-    if (!dicht) return { geen: true };
-    dicZoek = ''; dicOpen = null;
-    const geraakt = dicToonWoord(dicht.id);
-    return { geen: false, geraakt: geraakt, zoek: dicZoek, open: dicOpen, es: dicht.es };
-  });
-  if (opSlot.geen) {
-    console.log('PASS geen woord op slot in dit profiel, niets te toetsen');
-  } else {
-    ok(opSlot.geraakt === false, 'een woord uit een vergrendeld hoofdstuk geeft false: ' + opSlot.es);
-    ok(opSlot.zoek === '' && opSlot.open === null, 'en het woordenboek wordt niet leeggefilterd');
-  }
-
-  // ---- 5. de andere soorten treffers gaan nog steeds hun eigen kant op ----
-  const anders = await page.evaluate(() => {
-    const bron = zoekGaNaar.toString();
-    return {
-      zin: /soort === "zin"/.test(bron),
-      concept: /soort === "concept"/.test(bron),
-      woordEerst: bron.indexOf('dicToonWoord') < bron.indexOf('soort === "zin"')
-    };
-  });
-  ok(anders.zin && anders.concept, 'zinnen en grammaticaconcepten hebben hun eigen route nog');
-  ok(anders.woordEerst, 'en de woordroute staat er nog vóór, dus de volgorde is niet omgegooid');
+  ok(direct.geraakt === true && direct.zoek === direct.es && direct.open === direct.es, 'dicToonWoord vult veld en opent de rij: ' + direct.open);
+  ok(direct.mis === false, 'een onbekende id verandert niets');
 
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
 

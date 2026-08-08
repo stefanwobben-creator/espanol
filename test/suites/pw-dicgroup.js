@@ -49,8 +49,10 @@ const { chromium } = require('playwright');
   const rijen = await page.locator(LES).count();
   ok(rijen === 1, 'zoeken op "antiguo" toont nog maar 1 leswoord-rij (was 4 losse rijen voor hetzelfde woord)');
 
-  await page.click(LES + ' .dichead');
-  await page.waitForTimeout(150);
+  // v23.6: bij precies één treffer klapt de rij vanzelf open, dus de tik die hier stond zou hem juist
+  // dichtdoen. Wat de test wil weten is niet veranderd: staan beide betekenissen er, en staat "oeroud"
+  // er maar één keer.
+  ok(await page.locator(LES + ' .dicbody').count() === 1, 'de enige treffer staat meteen open, zonder tik');
   const detailText = await page.locator(LES).innerText();
   ok(detailText.indexOf('oud, van vroeger') !== -1, 'opengeklapt toont de eerste betekenis (les9: "oud, van vroeger")');
   ok(detailText.indexOf('oeroud') !== -1, 'opengeklapt toont ook de andere betekenis (boek-11: "oud, oeroud")');
