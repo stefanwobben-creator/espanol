@@ -57,23 +57,25 @@ const { chromium } = require('playwright');
 
   // ---- 1b. en ze worden ook echt uit je profiel gegooid, niet alleen bij het rekenen genegeerd ----
   const opgeruimd = await page.evaluate(() => {
-    const vuil = { compOpgeruimd: 0, comp: { luisteren: {}, schrijven: { s1: true } } };
+    // v22.11: de losse vlag compOpgeruimd is vervangen door het schemanummer. Een state zonder
+    // nummer is er een van voor die versie, dus de migratie draait.
+    const vuil = { comp: { luisteren: {}, schrijven: { s1: true } } };
     for (let i = 1; i <= 50; i++) vuil.comp.luisteren['s' + i] = true;
     vuil.comp.luisteren[AUDICIONES[0].id] = true;
     const schoon = normaliseerState(vuil);
     return {
       over: Object.keys(schoon.comp.luisteren),
-      vlag: schoon.compOpgeruimd,
+      vlag: schoon.schema,
       schrijvenIntact: Object.keys(schoon.comp.schrijven).length
     };
   });
   ok(opgeruimd.over.length === 1, 'de vijftig oude sleutels zijn echt weg uit de state: ' + opgeruimd.over.length + ' over');
   ok(opgeruimd.over[0] && /^esc|^aud|.+/.test(opgeruimd.over[0]), 'de echte luisterscene staat er nog: ' + opgeruimd.over[0]);
-  ok(opgeruimd.vlag === 1, 'en er staat een vlag, zodat dit niet elke keer opnieuw hoeft');
+  ok(opgeruimd.vlag === 2, 'en het schemanummer staat op 2, zodat dit niet elke keer opnieuw hoeft');
   ok(opgeruimd.schrijvenIntact === 1, 'comp.schrijven wordt niet aangeraakt: daar is de geldige verzameling niet bekend');
 
   const tweedeKeer = await page.evaluate(() => {
-    const al = { compOpgeruimd: 1, comp: { luisteren: { s99: true }, schrijven: {} } };
+    const al = { schema: SCHEMA, comp: { luisteren: { s99: true }, schrijven: {} } };
     return Object.keys(normaliseerState(al).comp.luisteren).length;
   });
   ok(tweedeKeer === 1, 'een profiel dat al opgeruimd is wordt niet nog eens doorgespit');

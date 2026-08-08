@@ -1083,7 +1083,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.10";
+var APP_VERSIE = "v22.11";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3500,14 +3500,80 @@ var store = {
   }
 };
 
-function defaultState(){ return { srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, gram:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
+function defaultState(){ return { schema:SCHEMA, srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, gram:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
 // S.boek, en dan viel de app om op de eerste de beste render (berekenCompetenties() struikelde over
 // S.comp.luisteren). Nieuwe sleutel toevoegen? Alleen hier, dan klopt hij overal.
+/* ================= SCHEMA VAN DE STATE (v22.11) =================
+   De state van een profiel draagt vanaf nu zelf een nummer. Dat lost één concreet probleem op:
+   opruimen was eng. Elke opruiming moest zijn eigen vlaggetje meenemen (v22.10 deed dat met
+   compOpgeruimd), en bij de derde daarvan weet niemand meer wat er al gedraaid heeft en wat niet.
+   Met een nummer is het antwoord één getal en staat de geschiedenis op één plek.
+
+   Drie regels die het bruikbaar houden:
+
+   1. Een migratie draait hoogstens één keer per profiel, maar moet toch idempotent zijn. Profielen
+      staan op meerdere apparaten en syncen over elkaar heen; een migratie die twee keer draait en
+      dan iets kapotmaakt, maakt het op één van die apparaten kapot.
+   2. Klapt een migratie, dan stopt de ketting daar en blijft het nummer staan waar het stond. Anders
+      draait de volgende op een halfverbouwde state en is de schade groter dan de bug.
+   3. Een profiel zonder nummer is een profiel van vóór vandaag, dus schema 1. Dat is geen aanname
+      maar een definitie: alles wat er tot nu toe stond heet 1.
+
+   Een nieuwe migratie toevoegen: SCHEMA een hoger, één blok onderaan de lijst erbij. Niets anders. */
+var SCHEMA = 2;
+
+var MIGRATIES = [
+  {naar: 2, wat: "oude luister-sleutels van voor v21.2 opruimen", doe: function(s){
+    /* Tot v21.2 schreef Dictado zijn zin-ids in comp.luisteren. Sindsdien hoort daar alleen een
+       luisterscene in te staan, maar de oude ids bleven staan en reisden elke sync mee. Ze maakten
+       van Luisteren "55 van de 6". berekenCompetenties() negeert ze al bij het rekenen; hier gaan
+       ze er echt uit. comp.schrijven blijft met opzet ongemoeid: daar is de geldige verzameling
+       niet bekend, want die telt zinnen uit het actieve track en een profiel kan van track wisselen.
+       Een opruiming die gokt, gooit voortgang weg. */
+    if(typeof AUDICIONES === "undefined" || !s.comp || !s.comp.luisteren) return 0;
+    var geldig = {}, weg = 0;
+    AUDICIONES.forEach(function(sc){ geldig[sc.id] = 1; });
+    Object.keys(s.comp.luisteren).forEach(function(sleutel){
+      if(!geldig[sleutel]){ delete s.comp.luisteren[sleutel]; weg++; }
+    });
+    delete s.compOpgeruimd;   // de losse vlag van v22.10; het nummer neemt zijn werk over
+    return weg;
+  }}
+];
+
+/* Geeft terug wat er gedraaid heeft, zodat een test en een mens hetzelfde kunnen zien. */
+function migreer(s){
+  var van = (typeof s.schema === "number" && s.schema >= 1) ? s.schema : 1;
+  var gedaan = [];
+  for(var i = 0; i < MIGRATIES.length; i++){
+    var m = MIGRATIES[i];
+    if(m.naar <= van) continue;
+    try {
+      var aantal = m.doe(s) || 0;
+      van = m.naar;
+      gedaan.push({naar: m.naar, wat: m.wat, aantal: aantal});
+    } catch(e){
+      // Stoppen, niet doorlopen. Het nummer blijft staan waar het stond, dus een volgende keer
+      // wordt het opnieuw geprobeerd in plaats van stilletjes overgeslagen.
+      console.error("migratie naar schema " + m.naar + " klapte: " + (e && e.message));
+      break;
+    }
+  }
+  s.schema = van;
+  if(gedaan.length) console.log("state gemigreerd naar schema " + van + ": " +
+    gedaan.map(function(g){ return g.wat + (g.aantal ? " (" + g.aantal + ")" : ""); }).join(", "));
+  return gedaan;
+}
+
 function normaliseerState(s){
   if(!s || typeof s !== "object") s = {};
+  /* Eerst lezen, dan pas de defaults erin. defaultState() draagt het huidige schemanummer, dus als
+     we dit na de lus zouden doen, zou elke oude state zichzelf bij verklaren en zou er nooit meer
+     iets gemigreerd worden. Dit is de enige regel in dit bestand die op volgorde staat. */
+  var gevondenSchema = typeof s.schema === "number" ? s.schema : null;
   var d = defaultState(), k;
   for(k in d){ if(s[k] === undefined || s[k] === null) s[k] = d[k]; }
   s.xp = s.xp || {};
@@ -3535,24 +3601,9 @@ function normaliseerState(s){
   s.comp = s.comp || {};
   s.comp.luisteren = s.comp.luisteren || {};
   s.comp.schrijven = s.comp.schrijven || {};
-  /* v22.10: eenmalig opruimen. Tot v21.2 schreef Dictado zijn zin-ids in comp.luisteren; sinds die
-     versie hoort daar alleen een luisterscene in te staan. berekenCompetenties() filtert ze er al
-     uit bij het rekenen, maar dan blijven ze wel in je profiel staan en synchroniseren ze elke keer
-     mee. Dus hier gaan ze er echt uit, één keer, bij het laden.
-
-     Twee redenen om alleen deze sleutel op te ruimen en niet "alles wat niet meer bestaat": voor
-     luisteren is de geldige verzameling exact bekend (AUDICIONES), en bij schrijven niet, want die
-     telt zinnen uit het actieve track terwijl een profiel van track kan wisselen. Een opruiming die
-     gokt, gooit voortgang weg. */
-  if(!s.compOpgeruimd && typeof AUDICIONES !== "undefined"){
-    var geldig = {}, weg = 0;
-    AUDICIONES.forEach(function(sc){ geldig[sc.id] = 1; });
-    Object.keys(s.comp.luisteren).forEach(function(sleutel){
-      if(!geldig[sleutel]){ delete s.comp.luisteren[sleutel]; weg++; }
-    });
-    s.compOpgeruimd = 1;
-    if(weg) console.log("opgeruimd: " + weg + " oude luister-sleutels van voor v21.2");
-  }
+  // v22.11: alles wat een oude state moet bijwerken staat in MIGRATIES, niet meer hier.
+  s.schema = gevondenSchema;
+  migreer(s);
   s.dagStats = s.dagStats || {};
   s.lesFlow = s.lesFlow || {};
   s.lesFlowSpel = s.lesFlowSpel || {};
