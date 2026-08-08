@@ -66,14 +66,19 @@ jobs:
         continue-on-error: true
         run: node test/poort.js
 
+      - name: Stond main al rood?
+        if: steps.vooraf.outcome == 'failure'
+        run: echo "::warning::De poort was al rood op main vóórdat de avondrun iets deed. Wat hierna misgaat, is niet per se van de bot."
+
       - name: Run
         id: run
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
         run: |
           if [ -z "$ADMIN_KEY" ]; then
-            echo "ADMIN_KEY-secret ontbreekt; alleen de analyse hierboven is gedraaid"
-            exit 0
+            echo "ADMIN_KEY-secret ontbreekt, dus er valt vannacht niets te genereren."
+            echo "Dat is een mislukte run en geen geslaagde; logboek.yml doet hier hetzelfde."
+            exit 1
           fi
           VLAGGEN=""
           [ "${{ inputs.droog }}" = "true" ] && VLAGGEN="$VLAGGEN --droog"
@@ -85,7 +90,9 @@ jobs:
       - name: Wat is er veranderd?
         id: soort
         run: |
-          if git diff --quiet; then echo "wat=niets" >> $GITHUB_OUTPUT; exit 0; fi
+          # De hartslag verandert per definitie elke nacht en telt hier dus niet mee. Anders zou
+          # "er is iets veranderd" altijd waar zijn en draaide de poort achteraf elke nacht voor niets.
+          if git diff --quiet -- . ':(exclude)tools/avondrun-hart.json'; then echo "wat=niets" >> $GITHUB_OUTPUT; exit 0; fi
           if [ -f tools/curriculum-laatste.json ] && \
              node -e "process.exit(require('./tools/curriculum-laatste.json').nieuweLes ? 0 : 1)"; then
             echo "wat=nieuwe-les" >> $GITHUB_OUTPUT
@@ -127,7 +134,7 @@ jobs:
             const z = (p.reparatie.zinnen||[]).length, t = (p.reparatie.toetsjes||[]).length;
             console.log(\`\${z} oefenzinnen\${t ? ' en ' + t + ' toetsje(s)' : ''} bij: \${g}\`);
           ")
-          git add index.html versie.txt tools/curriculum-laatste.json
+          git add index.html versie.txt tools/curriculum-laatste.json tools/avondrun-hart.json
           git commit -m "avondrun: $SAMENVATTING"
           git push
 
@@ -159,4 +166,23 @@ jobs:
 
       - name: Niets veranderd
         if: steps.soort.outputs.wat == 'niets'
-        run: echo "geen wijzigingen — geen gaten om te dichten en genoeg voorraad"
+        run: |
+          # Hier stond "geen gaten om te dichten en genoeg voorraad", ook op nachten waarop de analyse
+          # zes regels hoger 0 dagen voorraad meldde. Die zin is nooit gecontroleerd tegen de analyse.
+          # Nu zegt de run zelf wat er aan de hand was, in zijn eigen woorden.
+          echo "Er is niets weggeschreven. Wat de run daar zelf over zegt:"
+          cat tools/avondrun-hart.json
+
+      # Altijd, en juist ook als het hierboven is geklapt. Zonder dit bestand is de enige manier om te
+      # zien of de avondrun ooit iets heeft geleverd: commits van de bot tellen. Dat is geen meting.
+      - name: Hartslag wegschrijven
+        if: always()
+        run: |
+          [ -f tools/avondrun-hart.json ] || exit 0
+          git config user.name "curriculum-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add tools/avondrun-hart.json
+          if git diff --cached --quiet; then echo "hartslag ongewijzigd"; exit 0; fi
+          git commit -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gelukt ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
+          git pull --rebase --autostash
+          git push

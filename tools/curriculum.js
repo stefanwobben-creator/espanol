@@ -33,6 +33,7 @@ const lib = require("./content-lib");
 
 const LOGS = path.join(__dirname, "logs-latest.json");
 const PLAN = path.join(__dirname, "curriculum-laatste.json");
+const HART_PAD = path.join(__dirname, "avondrun-hart.json");   // elke nacht een regel, ook als er niets kwam
 const VOORRAAD_DREMPEL_DAGEN = 14;   // minder dan twee weken nieuwe woorden op de plank? pad verlengen
 const MAX_ZINNEN_PER_GAT = 4;        // kleine dagelijkse aanvullingen leveren betere content dan een dump
 
@@ -170,6 +171,10 @@ function rapport(inv, an, vrd) {
    omgeving, dan pakt hij llm.js direct — dat is handig voor uitproberen zonder de server te storen. */
 const API = process.env.VAMOS_API || "https://espanol-qbm8.onrender.com";
 
+/* De reden waarom de ladder niet antwoordde. Stond eerst alleen in de logregels van een groene run,
+   waar niemand hem las; nu gaat hij mee in de hartslag en in de exit. */
+let LADDERFOUT = null;
+
 function ladderLokaal() {
   const heeftSleutel = ["GEMINI_API_KEY", "GOOGLE_API_KEY", "MISTRAL_API_KEY", "ANTHROPIC_API_KEY",
                         "OPENAI_API_KEY", "OPENROUTER_API_KEY"].some(k => process.env[k]);
@@ -192,7 +197,7 @@ function ladderViaServer() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, maxTokens: (opts && opts.maxTokens) || 4000, jsonMode: !!(opts && opts.jsonMode) })
       });
-      if (!r.ok) { console.error("  server gaf " + r.status + " op /api/admin/llm"); return null; }
+      if (!r.ok) { LADDERFOUT = "server gaf " + r.status + " op /api/admin/llm"; console.error("  " + LADDERFOUT); return null; }
       const j = await r.json().catch(() => null);
       return j && j.ok ? j.tekst : null;
     }
@@ -205,6 +210,18 @@ function llm() {
   else console.error("geen taalmodel bereikbaar: zet ADMIN_KEY (dan gaat het via de server) of een " +
                      "LLM-sleutel in je omgeving");
   return motor;
+}
+
+/* Eerst even kloppen. Een ladder die niet antwoordt leverde tot nu toe per gat een aparte, stille
+   klacht halverwege het log; nu staat de status meteen bovenaan en stopt de run erop. */
+async function ladderProef(motor) {
+  let t = null;
+  try { t = await motor.reason("Antwoord met precies het woord: ja", { maxTokens: 10 }); }
+  catch (e) { LADDERFOUT = "de aanroep klapte: " + (e && e.message ? e.message : e); }
+  if (t && String(t).trim()) return true;
+  console.error("de LLM-ladder antwoordt niet" + (LADDERFOUT ? " (" + LADDERFOUT + ")" : "") +
+                "; er valt vannacht dus niets te genereren");
+  return false;
 }
 
 function haalJson(tekst) {
@@ -490,6 +507,11 @@ async function main() {
   const padKrap = vrd.krapsteDagen !== null && vrd.krapsteDagen < VOORRAAD_DREMPEL_DAGEN;
   const verlengen = OPT.nieuweLes || padKrap;
 
+  // Wat het besluit belooft, is vanaf hier een afspraak: leveren of falen. Zie het slot van main.
+  HART.staat.beloofd = { gaten: Math.min(OPT.max, gaten.length), toetsje: an.toetsGaten.length ? 1 : 0,
+                         nieuweLes: verlengen ? 1 : 0 };
+  HART.staat.voorraadDagen = vrd.krapsteDagen;
+
   console.log("— besluit —");
   if (gaten.length) console.log(`  ${Math.min(OPT.max, gaten.length)} gat(en) aanpakken: ` +
     gaten.slice(0, OPT.max).map(g => `${g.tag} (${g.soort})`).join(", "));
@@ -500,7 +522,12 @@ async function main() {
   if (OPT.analyse) return 0;
 
   const motor = OPT.stub ? null : llm();
-  if (!motor && !OPT.stub) { console.error("geen LLM beschikbaar; stop"); return 1; }
+  if (!motor && !OPT.stub) { HART.staat.reden = "geen taalmodel bereikbaar"; console.error("geen LLM beschikbaar; stop"); return 1; }
+  if (motor) HART.staat.ladder = motor.bron;
+  if (motor && !(await ladderProef(motor))) {
+    HART.staat.reden = "ladder onbereikbaar" + (LADDERFOUT ? ": " + LADDERFOUT : "");
+    return 1;
+  }
 
   /* --- deel 1: gaten dichten (gaat direct live) --- */
   const reparatie = { sentences: [], quizzes: [], lessen: {} };
@@ -566,6 +593,10 @@ async function main() {
     }
   }
 
+  HART.staat.geleverd = { zinnen: reparatie.sentences.length, toetsjes: reparatie.quizzes.length,
+                          nieuweLes: nieuweLes ? 1 : 0 };
+  HART.staat.versie = versie;
+
   if (!OPT.droog && (versie || nieuweLes)) {
     fs.writeFileSync(PLAN, JSON.stringify({
       wanneer: new Date().toISOString(), versie,
@@ -574,7 +605,47 @@ async function main() {
       nieuweLes: nieuweLes ? nieuweLes.nieuweLessen[0] : null
     }, null, 1));
   }
+
+  /* De afsluitregel. Hierboven kan van alles stilletjes op niets uitlopen: een model dat geen
+     bruikbare JSON teruggeeft, een tegenlezer die niets oordeelt, een levering die de controles van
+     content-lib niet haalt. Elk van die paden schreef een klacht naar stderr en liep door, en de run
+     eindigde groen met "geen wijzigingen". Vanaf nu geldt: wat het besluit beloofde, moet er zijn.
+     Nul geleverd op een gevulde belofte is een mislukte nacht en die hoort rood te zijn. */
+  const b = HART.staat.beloofd || { gaten: 0, toetsje: 0, nieuweLes: 0 };
+  const beloofd = b.gaten + b.toetsje + b.nieuweLes;
+  const geleverd = reparatie.sentences.length + reparatie.quizzes.length + (nieuweLes ? 1 : 0);
+  if (beloofd > 0 && geleverd === 0) {
+    HART.staat.reden = "het besluit vroeg om " + beloofd + " stuk(ken) werk en er is niets van weggeschreven";
+    console.error("MISLUKT: " + HART.staat.reden + ". Kijk hierboven welk onderdeel afhaakte.");
+    return 1;
+  }
+  if (beloofd === 0) HART.staat.reden = "niets te doen: geen gaten, geen toetsgaten, voorraad ruim genoeg";
   return 0;
 }
 
-main().then(code => process.exit(code)).catch(e => { console.error(e); process.exit(1); });
+/* Precies een plek waar de hartslag wordt weggeschreven, en die ligt buiten main, zodat ook een
+   klapper er nog in komt. Zonder dit bestand is de enige manier om te zien of de avondrun ooit iets
+   heeft gedaan: door de commits van de bot te tellen. Dat is geen meting, dat is archeologie. */
+const HART = { staat: { wanneer: null, gelukt: false, ladder: null, voorraadDagen: null,
+                        beloofd: null, geleverd: null, versie: null, reden: "de run is niet afgemaakt" } };
+
+function hartslag(gelukt) {
+  HART.staat.gelukt = !!gelukt;
+  HART.staat.wanneer = new Date().toISOString();
+  if (gelukt && !HART.staat.reden) HART.staat.reden = null;
+  if (gelukt && HART.staat.reden === "de run is niet afgemaakt") HART.staat.reden = null;
+  console.log("— hartslag —");
+  console.log("  " + JSON.stringify(HART.staat));
+  if (OPT.analyse || OPT.droog) return;                 // kijken verandert niets, ook niet hier
+  try { fs.writeFileSync(HART_PAD, JSON.stringify(HART.staat, null, 1) + "\n"); }
+  catch (e) { console.error("hartslag niet weg te schrijven: " + e.message); }
+}
+
+main()
+  .then(code => { hartslag(code === 0); process.exit(code); })
+  .catch(e => {
+    console.error(e);
+    HART.staat.reden = "de run klapte: " + (e && e.message ? e.message : e);
+    hartslag(false);
+    process.exit(1);
+  });
