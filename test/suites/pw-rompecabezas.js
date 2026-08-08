@@ -73,7 +73,10 @@ const { chromium } = require('playwright');
   // ---- 3. elke deal is te winnen ----
   const deals = await page.evaluate(() => {
     const uit = [];
-    for (let k = 0; k < 25; k++) {
+    // v23.10: was 25. De fout in rvDeel liet zich maar bij een ongelukkige loting zien, en dook
+    // daardoor pas in CI op terwijl hij lokaal keer op keer groen was. Met 300 pogingen is de kans
+    // dat een deal met te weinig goede uitgangen onopgemerkt blijft verwaarloosbaar.
+    for (let k = 0; k < 300; k++) {
       const d = rvDeel();
       const i = rvIndex();
       let n = 0;
@@ -86,7 +89,7 @@ const { chromium } = require('playwright');
     return uit;
   });
   ok(deals.every((d) => d.n >= 3), 'elke deal heeft minstens drie geldige combinaties (min ' + Math.min.apply(null, deals.map((d) => d.n)) + ')');
-  ok(deals.every((d) => d.uitgangen === 6), 'elke deal geeft zes zetten');
+  ok(deals.every((d) => d.uitgangen === 6), 'elke deal geeft zes zetten (min ' + Math.min.apply(null, deals.map((d) => d.uitgangen)) + ' over ' + deals.length + ' pogingen)');
   ok(deals.every((d) => d.stammen <= 5 && d.stammen >= 1), 'en hoogstens vijf stamkaarten');
 
   // ---- 4. een goede zet scoort, een misser kost je de zet en legt uit wat het wel was ----

@@ -1113,7 +1113,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.9";
+var APP_VERSIE = "v23.10";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7622,7 +7622,27 @@ function rvGloss(inf){
 /* Een deal die te winnen is. We kiezen drie werkwoorden, nemen daar de stammen van, en zoeken er
    uitgangen bij die met minstens één van die stammen een echte vorm maken. Eén uitgang die dat niet
    doet mag erbij: zonder val is er niets te kiezen. */
+/* v23.10. Hier zat een rekenfout die zich alleen liet zien als de dobbelsteen ongunstig viel, en dat
+   gebeurde vandaag in CI: "FAIL elke deal geeft zes zetten".
+
+   De opzet is vijf goede uitgangen plus één valstrik. Leverden de drie geloote werkwoorden samen maar
+   drie goede uitgangen op, dan werd het 3 + 1 = 4, en de aanvullus eronder deed niets omdat zijn
+   voorwaarde (goede.length > uitgangen.length) dan al niet meer klopte. Je kreeg een ronde met vier
+   zetten in plaats van zes, zonder foutmelding.
+
+   Nu vult hij eerst aan met de goede uitgangen die nog over zijn en daarna met extra valstrikken, en
+   probeert rvDeel() een paar keer opnieuw als de loting te mager uitpakt. Het beste van die pogingen
+   wint, zodat er altijd een deal uitkomt, ook bij een woordenschat waar weinig mee kan. */
 function rvDeel(){
+  var beste = null;
+  for(var p = 0; p < 12; p++){
+    var d = rvDeelPoging();
+    if(!beste || d.goedeN > beste.goedeN) beste = d;
+    if(d.goedeN >= RV_ZETTEN - 1) break;
+  }
+  return beste;
+}
+function rvDeelPoging(){
   var ix = rvIndex();
   var infs = geschud(Object.keys(ix.perVerb)).slice(0, 3);
   var stamLijst = [];
@@ -7642,8 +7662,16 @@ function rvDeel(){
   Object.keys(RV_UITGANG).forEach(function(t){ RV_UITGANG[t].forEach(function(e){ if(alle.indexOf(e) === -1) alle.push(e); }); });
   var vallen = geschud(alle.filter(function(e){ return !kanMet[e]; }));
   var uitgangen = goede.slice(0, RV_ZETTEN - 1).concat(vallen.slice(0, 1));
-  while(uitgangen.length < RV_ZETTEN && goede.length > uitgangen.length) uitgangen.push(goede[uitgangen.length]);
-  return {stammen: stamLijst, uitgangen: geschud(uitgangen).slice(0, RV_ZETTEN)};
+  var i;
+  // eerst de goede uitgangen die nog over zijn, want daar valt iets mee te winnen
+  for(i = RV_ZETTEN - 1; uitgangen.length < RV_ZETTEN && i < goede.length; i++){
+    if(uitgangen.indexOf(goede[i]) === -1) uitgangen.push(goede[i]);
+  }
+  // en pas als die op zijn, extra valstrikken
+  for(i = 1; uitgangen.length < RV_ZETTEN && i < vallen.length; i++){
+    if(uitgangen.indexOf(vallen[i]) === -1) uitgangen.push(vallen[i]);
+  }
+  return {stammen: stamLijst, uitgangen: geschud(uitgangen).slice(0, RV_ZETTEN), goedeN: goede.length};
 }
 var rvSpel = null;
 function rvNieuweRonde(){
