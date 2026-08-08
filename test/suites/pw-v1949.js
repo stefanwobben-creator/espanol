@@ -161,64 +161,38 @@ const { chromium } = require('playwright');
   ok(!gloed.glowUit, 'en anders licht ze niet op: aandacht wordt beloond, afwezigheid niet bestraft');
   ok(!gloed.badge, 'er hangt geen reeks-badge meer onder die je kwijt kunt raken');
 
-  /* ---------------- verzoek 6: krabbels, alleen in het Spaans ---------------- */
-  await page.evaluate(() => {
-    window.__echteApi = window.api;
-    window.api = function (pad, methode, body) {
-      if (pad === '/api/familia') {
-        return Promise.resolve({ ok: true, spelers: [
-          { naam: 'Elise', niveau: 'a2', txp: 900, streak: 4, lessen: 7 },
-          { naam: 'Ilona', niveau: 'a0', txp: 300, streak: 1, lessen: 2 }
-        ], krabbels: [{ van: 'elise', naar: 'Ilona', sleutel: 'choca' }] });
-      }
-      window.__laatsteKrabbel = { pad: pad, methode: methode, body: body };
-      return Promise.resolve({ ok: true, tekst: 'ok' });
+  /* ---------------- verzoek 6: krabbels, alleen in het Spaans ----------------
+     v22.9: dit werd getest op het familie-klassement, en dat scherm is opgeheven (geen competitie).
+     De wens erachter staat nog fier overeind en is verhuisd naar de muur: je kunt een schouderklopje
+     achterlaten, en je kunt daarbij niets anders dan Spaans. Dus wordt hij nu daar gecontroleerd. */
+  const palet = await page.evaluate(() => {
+    const uit = KRABBELS.map((k) => k.es);
+    return { aantal: uit.length, teksten: uit };
+  });
+  ok(palet.aantal >= 8, 'er is genoeg keuze om iets persoonlijks te sturen (' + palet.aantal + ' krabbels)');
+  ok(palet.teksten.some((t) => /plátano/i.test(t)), 'de banaan die Stefan vroeg zit erbij, als ¡Un plátano para ti!');
+  ok(palet.teksten.some((t) => /Choca esos cinco/i.test(t)), 'de high-five zit erbij, als ¡Choca esos cinco!');
+  const nlWoorden = /\b(je|een|voor|goed|hoi|gaan|hallo|knuffel)\b/i;
+  ok(!palet.teksten.some((t) => nlWoorden.test(t)), 'geen enkele krabbel bevat Nederlands: alleen in het Spaans');
+
+  // De muur bouwt de reactieknoppen uit datzelfde palet, en er is nergens een vrij tekstveld.
+  const muur = await page.evaluate(() => {
+    const vandaag = today();
+    S.groepen = [{ gcode: 'gtest', naam: 'Proef' }];
+    muurData = { ok: true, krabbels: [], spelers: [
+      { naam: 'Elise', niveau: 'a2', txp: 900, wear: {}, baile: 'salsa', mijlpalen: {},
+        oogst: { [vandaag]: { w: 4, z: 2 } } }
+    ] };
+    muurOpen = 'Elise|' + vandaag;
+    const el = document.createElement('div');
+    el.innerHTML = muurHtml();
+    return {
+      knoppen: el.querySelectorAll('[data-mk]').length,
+      velden: el.querySelectorAll('input, textarea').length
     };
   });
-  await page.click('#userName');
-  await page.waitForTimeout(600);
-  // v19.51: één blok per familielid met één knop erin, palet klapt open (zie pw-krabbels.js)
-  ok(await page.locator('#familieCard .famrij').count() === 2, 'elk ander familielid krijgt een eigen blok (jezelf niet)');
-  ok(await page.locator('#familieCard button.krabtoggle').count() === 2, 'en per familielid precies één krabbelknop');
-  ok(await page.locator('#familieCard input, #familieCard textarea').count() === 0,
-    'er is geen vrij tekstveld: je kúnt niets anders dan Spaans achterlaten');
-
-  await page.locator('#familieCard button.krabtoggle').first().click();
-  await page.waitForTimeout(250);
-  const knoppen = await page.evaluate(() => Array.prototype.slice
-    .call(document.querySelectorAll('#familieCard .krabpal button.krabbelknop'))
-    .map(function (b) { return b.getAttribute('title') || ''; }));
-  const eersteRij = knoppen.slice(0, 10);
-  ok(eersteRij.length >= 8, 'er is genoeg keuze om iets persoonlijks te sturen (' + eersteRij.length + ' krabbels)');
-  ok(eersteRij.some((t) => /plátano/i.test(t)), 'de banaan die Stefan vroeg zit erbij, als ¡Un plátano para ti!');
-  ok(eersteRij.some((t) => /Choca esos cinco/i.test(t)), 'de high-five zit erbij, als ¡Choca esos cinco!');
-  const nlWoorden = /\b(je|een|voor|goed|hoi|gaan|hallo|knuffel)\b/i;
-  ok(!eersteRij.some((t) => nlWoorden.test(t)), 'geen enkele krabbel bevat Nederlands: alleen in het Spaans');
-
-  // ontvangen krabbels van vandaag staan als chip bij het juiste familielid
-  const ontvangen = await page.locator('#familieCard .krabchip').first().innerText();
-  ok(/Choca esos cinco/.test(ontvangen) && /elise/i.test(ontvangen), 'een ontvangen krabbel toont de Spaanse tekst plus van wie (' + ontvangen.replace(/\s+/g, ' ') + ')');
-
-  // versturen: de client stuurt alleen een sleutel mee, nooit tekst
-  await page.locator('#familieCard .krabbelknop[data-krab="platano"]').first().click();
-  await page.waitForTimeout(400);
-  const gestuurd = await page.evaluate(() => window.__laatsteKrabbel);
-  ok(gestuurd && gestuurd.pad === '/api/krabbel' && gestuurd.methode === 'POST', 'een klik stuurt een POST naar /api/krabbel');
-  ok(gestuurd && gestuurd.body && gestuurd.body.sleutel === 'platano', 'er gaat alleen een sleutel over de lijn (' + (gestuurd && gestuurd.body && gestuurd.body.sleutel) + ')');
-  const geenTekst = gestuurd && gestuurd.body && Object.keys(gestuurd.body).every((k) => ['van', 'naar', 'sleutel'].indexOf(k) !== -1);
-  ok(geenTekst, 'het bericht bevat geen vrij tekstveld, dus de server bepaalt de woorden');
-  ok(await page.evaluate(() => S.krabbels && S.krabbels.ilona === 'platano') || await page.evaluate(() => S.krabbels && S.krabbels.elise === 'platano'),
-    'je eigen keuze wordt lokaal bewaard, zodat hij ook offline blijft staan');
-
-  // en zonder server: nette fallback in plaats van een stille mislukking
-  await page.evaluate(() => {
-    window.api = function () { return Promise.resolve(null); };
-    renderFamilia();
-  });
-  await page.waitForTimeout(500);
-  const famStatus = await page.locator('#famStatus').innerText();
-  ok(famStatus.length > 0, 'zonder server blijft er een nette statusregel staan (' + famStatus.slice(0, 60) + ')');
-  await page.evaluate(() => { if (window.__echteApi) window.api = window.__echteApi; });
+  ok(muur.knoppen >= 8, 'de muur zet dat palet als knoppen neer (' + muur.knoppen + ')');
+  ok(muur.velden === 0, 'er is geen vrij tekstveld: je kúnt niets anders dan Spaans achterlaten');
 
   const echte = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED/.test(e));
   ok(echte.length === 0, 'geen JS-fouten in eigen app-code (' + echte.length + ' gevonden, ' + (errors.length - echte.length) + ' netwerkruis genegeerd)');

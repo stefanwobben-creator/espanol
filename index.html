@@ -885,7 +885,8 @@
   <section id="tab-perfil" class="hidden">
     <div class="card" id="perfilCard"></div>
     <div class="card" id="statsCard"></div>
-    <div class="card" id="familieCard"></div>
+    <!-- v22.9: hier stond de familie-klassementkaart. Weg: geen competitie meer, en de krabbels
+         die eraan hingen staan nu op de muur, bij de gebeurtenis waar ze over gaan. -->
     <div class="card" id="groepCard"></div>
     <div class="card" id="steunCard">
       <h2>Steun ¡Vamos! 💛</h2>
@@ -1082,7 +1083,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.8";
+var APP_VERSIE = "v22.9";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -18432,7 +18433,6 @@ function renderPerfil(){
     toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
   };
   renderNivClaim();
-  renderFamilia();
   renderGroepen();
   instelWire();
 }
@@ -19213,7 +19213,12 @@ var KRABBELS = [
   {k:"abrazo",   e:"\ud83e\udd17", es:"\u00a1Un abrazo!"}
 ];
 var krabOpen = "";   // v19.51: bij welk familielid staat het krabbel-palet open (leeg = allemaal dicht)
-var famCache = null; // laatste /api/familia-antwoord, zodat het palet open/dicht kan zonder nieuwe fetch
+/* v22.9: hier stonden krabbelStuur(), krabbelRijHtml(), famLijstRender() en renderFamiliaKrabbels().
+   Met het klassement weg riep niemand ze meer aan, en dode code die naar een opgeheven scherm wijst
+   ziet er over drie maanden uit als iets dat kapot is in plaats van iets dat is afgeschaft.
+   Wat blijft: KRABBELS en krabbelVind() (de muur gebruikt ze), krabbelIkBen(), en famCache voor de
+   binnengekomen krabbels op je beginscherm. */
+var famCache = null; // laatste /api/familia-antwoord, voor de krabbels op je beginscherm
 function krabbelVind(k){
   for(var i=0;i<KRABBELS.length;i++){ if(KRABBELS[i].k === k) return KRABBELS[i]; }
   return null;
@@ -19227,45 +19232,8 @@ function krabbelLokaal(){
   if(S.krabbelDag !== today()){ S.krabbels = {}; S.krabbelDag = today(); }
   return S.krabbels;
 }
-function krabbelStuur(naar, k){
-  var kr = krabbelVind(k);
-  if(!kr) return;
-  var mij = krabbelIkBen();
-  krabbelLokaal()[naar] = k;
-  krabOpen = "";  // v19.51: palet klapt dicht zodra je gekozen hebt, anders blijft het rommelig staan
-  persist();
-  famLijstRender();
-  // Spaans-only, ook in de bevestiging: dit is het enige plekje in de app dat niet vertaalt.
-  toast(kr.e + " " + kr.es + " \u2192 " + naar);
-  api("/api/krabbel", "POST", {van: mij, naar: naar, sleutel: k}).then(function(res){
-    if(!res || !res.ok){
-      var st = document.getElementById("krabStatus");
-      if(st) st.textContent = ct("Krabbel staat klaar, hij gaat mee zodra de server er weer is.",
-                                 "Your krabbel is saved and will go out once the server is back.");
-    } else { renderFamilia(); }
-  });
-}
-function krabbelRijHtml(naam){
-  var mij = krabbelIkBen();
-  if(!naam || naam.toLowerCase() === mij) return "";
-  var sleutel = naam.toLowerCase();
-  var gekozen = krabbelLokaal()[sleutel] || "";
-  var open = krabOpen === sleutel;
-  // Spaans-only, ook hier: de knoptekst wordt niet vertaald (afspraak uit v19.49).
-  var h = "<button class='krabtoggle"+(open ? " dicht" : "")+"' data-krabtoggle='"+sleutel+"'>"+
-    (open ? "\u2715 Cerrar" : "\u270f\ufe0f Dejar un saludo")+"</button>";
-  if(open){
-    h += "<div class='krabpal'>"+KRABBELS.map(function(kr){
-      return "<button class='krabbelknop"+(gekozen === kr.k ? " gekozen" : "")+"' data-krab='"+kr.k+
-        "' data-naar='"+sleutel+"' title='"+kr.es+"' aria-label='"+kr.es+"'>"+kr.e+"</button>";
-    }).join("")+"</div>";
-  }
-  if(gekozen){
-    var kg = krabbelVind(gekozen);
-    if(kg) h += "<span class='krabverstuurd'>"+kg.e+" <span class='es'>"+kg.es+"</span></span>";
-  }
-  return h;
-}
+
+
 function krabbelOntvangenHtml(naam, krabbels){
   if(!krabbels || !krabbels.length) return "";
   var mijn = krabbels.filter(function(x){ return String(x.naar||"").toLowerCase() === String(naam||"").toLowerCase(); });
@@ -19279,50 +19247,11 @@ function krabbelOntvangenHtml(naam, krabbels){
   }).filter(Boolean).join("");
   return chips ? "<div class='krabchips'>"+chips+"</div>" : "";
 }
-function famLijstRender(){
-  var res = famCache;
-  var lijst = document.getElementById("famLijst");
-  if(!lijst || !res || !res.spelers) return;
-  var medailles = ["\ud83e\udd47","\ud83e\udd48","\ud83e\udd49"];
-  lijst.innerHTML = res.spelers.map(function(sp, i){
-    var lvl = TRACKS[sp.niveau] ? TRACKS[sp.niveau].label : sp.niveau;
-    var lesTxt = sp.lessen+" "+(profLang()==="nl" ? ("les"+(sp.lessen===1?"":"sen")) : ("session"+(sp.lessen===1?"":"s")));
-    return "<div class='famrij'>"+
-      "<div class='duelrow'><span>"+(medailles[i]||"\u00b7")+" <b>"+sp.naam+"</b> <span class='muted'>\u00b7 "+lvl+"</span></span>"+
-      "<span><b>"+sp.txp+" "+xpw()+"</b> \u00b7 \ud83d\udd25 "+sp.streak+" \u00b7 "+lesTxt+"</span></div>"+
-      krabbelOntvangenHtml(sp.naam, res.krabbels)+
-      krabbelRijHtml(sp.naam)+
-      "</div>";
-  }).join("");
-  renderFamiliaKrabbels();
-}
-function renderFamiliaKrabbels(){
-  document.querySelectorAll("button.krabtoggle").forEach(function(t){
-    var naar = t.getAttribute("data-krabtoggle");
-    t.onclick = function(){ krabOpen = (krabOpen === naar) ? "" : naar; famLijstRender(); };
-  });
-  document.querySelectorAll("button.krabbelknop").forEach(function(b){
-    var naar = b.getAttribute("data-naar");
-    var k = b.getAttribute("data-krab");
-    if(krabbelLokaal()[naar] === k) b.classList.add("gekozen"); else b.classList.remove("gekozen");
-    b.onclick = function(){ krabbelStuur(naar, k); };
-  });
-}
-function renderFamilia(){
-  var el = document.getElementById("familieCard");
-  if(!el) return;
-  el.innerHTML = "<h2>"+ct("Familie-klassement","Family leaderboard")+" \ud83c\udfc6</h2><p class='muted' id='famStatus'>"+ct("Scores ophalen...","Fetching scores...")+"</p>"+
-    "<div id='famLijst'></div><p class='muted' id='krabStatus' style='font-size:.78rem'></p>";
-  api("/api/familia").then(function(res){
-    var st = document.getElementById("famStatus");
-    if(!document.getElementById("famLijst")) return;
-    if(!res || !res.ok || !res.spelers){ if(st) st.textContent = ct("Server even niet bereikbaar, probeer zo opnieuw.","Server not reachable right now, try again in a bit."); return; }
-    if(!res.spelers.length){ if(st) st.textContent = ct("Nog niemand van de familie hier gezien. Zodra iemand start, verschijnt die hier.","No family members seen here yet. As soon as someone starts, they'll show up here."); return; }
-    if(st) st.textContent = ct("Iedereen ziet alleen elkaars scores, nooit elkaars oefeningen of fouten. Een krabbel achterlaten kan alleen in het Spaans.","Everyone only sees each other's scores, never each other's exercises or mistakes. Krabbels can only be left in Spanish.");
-    famCache = res;
-    famLijstRender();
-  });
-}
+
+
+/* v22.9: renderFamilia() is opgeheven. Hij haalde /api/familia op en zette daar een lijst met
+   medailles van neer. Het eindpunt blijft bestaan (de nachtrun en het maatje leunen er niet op, maar
+   hij doet ook geen kwaad), alleen tekent de app er niets meer mee. */
 
 function renderFunWs(){
   var el = document.getElementById("funCard");
