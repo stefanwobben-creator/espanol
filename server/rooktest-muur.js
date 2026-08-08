@@ -11,7 +11,16 @@ function muurVelden(st) {
     wear: (st && st.wear) || {},
     baile: (st && st.baile) || null,
     bailes: (st && st.bailes) || [],
+    oogst: oogstKort((st && st.oogst) || {}),
   };
+}
+function oogstKort(o) {
+  const vandaag = new Date().toISOString().slice(0, 10);
+  const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const uit = {};
+  if (o[vandaag]) uit[vandaag] = o[vandaag];
+  if (o[gisteren]) uit[gisteren] = o[gisteren];
+  return uit;
 }
 let fails = 0;
 const ok = (c, n) => { console.log(c ? 'PASS' : 'FAIL', n); if (!c) fails++; };
@@ -27,7 +36,10 @@ const ok = (c, n) => { console.log(c ? 'PASS' : 'FAIL', n); if (!c) fails++; };
       dag date NOT NULL DEFAULT current_date, created_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (van, naar, dag));`);
 
-  const stefan = { txp: 5200, srs: {a:1,b:1,c:1}, mijlpalen: {'woorden-500':'2026-08-08','les-a2-8':'oud'},
+  const vandaagStr = new Date().toISOString().slice(0,10);
+  const oudStr = '2020-05-05';
+  const stefan = { oogst: { [vandaagStr]: {w:5, z:18}, [oudStr]: {w:9, z:9} },
+                   txp: 5200, srs: {a:1,b:1,c:1}, mijlpalen: {'woorden-500':'2026-08-08','les-a2-8':'oud'},
                    wear: { sombrero: true }, baile: 'salsa', bailes: ['salsa','tango'], lessons: {'a2-8':{done:true}} };
   const ilona  = { txp: 340, srs: {a:1}, mijlpalen: {'woorden-100':'2026-08-08'}, wear: {}, baile: 'salsa', bailes: ['salsa'] };
   await pool.query("INSERT INTO profiles (code,name,track,state) VALUES ('c1','Stefan','a2',$1),('c2','Ilona','beginner',$2),('c3','Buiten','a2','{}')",
@@ -46,6 +58,8 @@ const ok = (c, n) => { console.log(c ? 'PASS' : 'FAIL', n); if (!c) fails++; };
   ok(st.baile === 'salsa', 'baile komt mee');
   ok(st.mijlpalen['woorden-500'] === '2026-08-08', 'mijlpalen komen mee, met datum');
   ok(JSON.stringify(spelers).indexOf('c1') === -1, 'geen sync-code in het antwoord');
+  ok(st.oogst[vandaagStr] && st.oogst[vandaagStr].w === 5, 'de oogst van vandaag komt mee');
+  ok(st.oogst[oudStr] === undefined, 'oude dagen worden eruit gefilterd, dat is dode last');
 
   // --- 2. krabbel binnen de groep mag, van buiten niet ---
   const leden = (await pool.query(

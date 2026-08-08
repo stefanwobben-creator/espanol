@@ -308,6 +308,15 @@ const KRABBEL_TEKST = {
    te weten wat er te vieren valt. Dat zijn vier velden uit state, en meer heeft dat scherm niet nodig:
    de namen, de vertalingen, de plaatjes en de animaties staan al aan de clientkant.
    Bewust GEEN pcode in het antwoord: dat is de sync-sleutel van iemand anders. */
+function oogstKort(o) {
+  const vandaag = new Date().toISOString().slice(0, 10);
+  const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const uit = {};
+  if (o[vandaag]) uit[vandaag] = o[vandaag];
+  if (o[gisteren]) uit[gisteren] = o[gisteren];
+  return uit;
+}
+
 function muurVelden(st) {
   return {
     woorden: Object.keys((st && st.srs) || {}).length,
@@ -315,6 +324,9 @@ function muurVelden(st) {
     wear: (st && st.wear) || {},
     baile: (st && st.baile) || null,
     bailes: (st && st.bailes) || [],
+    // v22.6: de kleine dag naast de grote grenzen. Alleen vandaag en gisteren, want verder terug
+    // kijkt de muur niet en de rest is dode last in een antwoord dat elk bezoek wordt opgehaald.
+    oogst: oogstKort((st && st.oogst) || {}),
   };
 }
 

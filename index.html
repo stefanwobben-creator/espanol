@@ -1052,7 +1052,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.4";
+var APP_VERSIE = "v22.6";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3608,7 +3608,39 @@ function mijlpaalCheck(){
   return eerste ? [] : nieuw;
 }
 
-function persist(){ mijlpaalCheck(); store.save(S); scheduleSync(); }
+/* ================= DAGOOGST (v22.6) =================
+   Naast de grote grenzen ook de kleine dag: wat je vandaag hebt geleerd. Gemeten als verschil sinds
+   de laatste keer, niet geteld bij elke handeling, want dan moet elke plek in de app eraan denken en
+   vergeet er ooit een. persist() wordt overal aangeroepen, dus hier kan het niet mis.
+
+   Wat er NIET wordt bijgehouden: hoeveel dagen achter elkaar. Dat is een streak met een ander jasje,
+   en dat is precies de kritiek op Duolingo die deze app niet moet herhalen. Een gat kost hier niets;
+   een dag zonder oogst laat gewoon geen regel achter. */
+var OOGST_DAGEN = 7;   // langer bewaren heeft geen doel: de muur kijkt hoogstens een dag terug
+
+function oogstBij(){
+  var dag = today();
+  S.oogst = S.oogst || {};
+  var nuW = Object.keys(S.srs || {}).length;
+  var nuZ = Object.keys(S.done || {}).length;
+  var snap = S.oogstSnap;
+  if(!snap || snap.dag !== dag){
+    // Nieuwe dag (of de eerste keer): ijkpunt zetten en niets boeken. Anders zou alles wat je ooit
+    // hebt geleerd op de eerste dag als oogst van vandaag verschijnen.
+    S.oogstSnap = {dag: dag, w: nuW, z: nuZ};
+    var oud = Object.keys(S.oogst).sort();
+    while(oud.length > OOGST_DAGEN) delete S.oogst[oud.shift()];
+    return null;
+  }
+  var dw = Math.max(0, nuW - snap.w), dz = Math.max(0, nuZ - snap.z);
+  snap.w = nuW; snap.z = nuZ;
+  if(!dw && !dz) return null;
+  var o = S.oogst[dag] = S.oogst[dag] || {w: 0, z: 0};
+  o.w += dw; o.z += dz;
+  return o;
+}
+
+function persist(){ mijlpaalCheck(); oogstBij(); store.save(S); scheduleSync(); }
 
 /* ================= SERVER-SYNC ================= */
 var API = "https://espanol-qbm8.onrender.com";
