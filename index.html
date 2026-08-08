@@ -691,6 +691,17 @@
                text-transform:uppercase; color:var(--muted);}
   .muurDansEs{display:block; font-size:.9rem; font-weight:800; color:var(--accent);}
   .muurDansNl{display:block; font-size:.74rem; color:var(--muted); font-style:italic;}
+  /* voortgang (v23.0): de kop is een aantal, de legenda geeft elke laag een naam */
+  .vgKop{text-align:center; padding:2px 0 0;}
+  .vgGroot{font-size:2.4rem; font-weight:800; line-height:1; letter-spacing:-.03em;}
+  .vgBij{font-size:.88rem; color:var(--muted); margin:1px 0 8px;}
+  .vgLegenda{display:flex; gap:12px; flex-wrap:wrap; font-size:.78rem; color:var(--muted); margin-top:6px;}
+  .vgLegenda b{color:var(--ink);}
+  .vgDot{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:5px;}
+  .vgDot.vgVast{background:var(--accent);}
+  .vgDot.vgOnderweg{background:#f0b49a;}
+  .vgDot.vgSchat{background:#efe0d2;}
+  .vgDot.vgRest{background:#e8e1d4;}
   .krabbelknop{width:34px; height:34px; padding:0; font-size:1.05rem; line-height:1; border-radius:50%;
                border:1.5px solid var(--border); background:var(--card); cursor:pointer;
                display:inline-flex; align-items:center; justify-content:center; transition:transform .12s ease;}
@@ -1083,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.11";
+var APP_VERSIE = "v23.0";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10545,13 +10556,36 @@ function dagBasisRegelHtml(){
                "<b>"+d+"</b> of the "+n+" "+niv+" words are solid"+(w > d ? ", <b>"+(w - d)+"</b> on the way" : "")+".");
   }
   var bD = Math.min(100, pctD), bW = Math.min(100 - bD, pctW), bS = Math.min(100 - bD - bW, pctS);
-  return "<span class='kicker'>"+ct("Je basis \u00b7 "+niv,"Your base \u00b7 "+niv)+"</span>"+
+  /* v23.0. Hier stond het geschatte percentage als kop, en op je profiel stond het bewezen
+     percentage. Twee getallen boven hetzelfde niveau, 100 tegenover 0, en geen van beide gelogen.
+     Het probleem was de vorm: een los percentage zegt niet wélk deel het meet.
+
+     Nu staat er een aantal in plaats van een percentage, en dat aantal is wat je actief bijhoudt.
+     Daaronder een legenda die elke laag van de balk een naam en een getal geeft, zodat de som
+     zichtbaar klopt. De schatting blijft, want dat is precies het stuk dat zegt: je kent meer dan
+     hier bewezen is. Ze is alleen geen kop meer.
+
+     Stefan, over waarom het bewezen getal niet vooraan hoort: "stevig duurt heel lang en klopt ook
+     niet helemaal, want ik ken echt al veel meer woorden stevig dan 20." Dat is letterlijk waar:
+     box 5 vraagt 25 dagen, dus dat getal meet vooral hoe lang je bezig bent. */
+  var lgOnderweg = Math.max(0, w - d);
+  var lgSchat = sch ? Math.max(0, sch.punt - w) : 0;
+  var lgRest = Math.max(0, n - d - lgOnderweg - lgSchat);
+  return "<span class='kicker'>"+ct("Waar je staat \u00b7 "+niv,"Where you are \u00b7 "+niv)+"</span>"+
+    "<div class='vgKop'><div class='vgGroot'>"+w+"</div>"+
+      "<div class='vgBij'>"+ct("woorden houd je actief bij","words you're actively keeping up")+"</div></div>"+
     "<div class='boxrow' id='dagBasisBalk'><span style='width:34px'>"+niv+"</span>"+
       "<div class='bar duo'><div style='width:"+bD+"%'></div>"+
         "<div class='marge' style='width:"+bW+"%'></div>"+
         "<div class='schat' style='width:"+bS+"%'></div>"+merk+"</div>"+
-      "<b style='width:44px; text-align:right'>"+kop+"%</b></div>"+
-    "<p class='muted' style='margin:0 0 6px; font-size:.85rem'>"+regel+"</p>"+stap+
+      "<b style='width:44px; text-align:right'>"+w+"</b></div>"+
+    "<div class='vgLegenda'>"+
+      "<span><i class='vgDot vgOnderweg'></i><b>"+lgOnderweg+"</b> "+ct("onderweg","on the way")+"</span>"+
+      "<span><i class='vgDot vgVast'></i><b>"+d+"</b> "+ct("bewezen vast","proven solid")+"</span>"+
+      (sch ? "<span><i class='vgDot vgSchat'></i><b>"+lgSchat+"</b> "+ct("geschat al gekend","estimated already known")+"</span>" : "")+
+      "<span><i class='vgDot vgRest'></i><b>"+lgRest+"</b> "+ct("nog niet gezien","not seen yet")+"</span>"+
+    "</div>"+
+    "<p class='muted' style='margin:6px 0; font-size:.83rem'>"+regel+"</p>"+stap+
     (aanbod ? dagPeilKnopHtml(aanbod) : "");
 }
 /* De stap. Niet als los blokje ergens anders op het scherm, maar als een zin onder dezelfde balk,

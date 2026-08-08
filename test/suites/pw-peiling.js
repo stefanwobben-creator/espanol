@@ -238,7 +238,17 @@ async function beantwoord(page, aantal) {
   ok(bal.merk === 1, 'en een streepje waar je eerste peiling stond (' + bal.merk + ')');
   const kop = parseInt(bal.kop, 10);
   const schat = await page.evaluate(() => JSON.parse(JSON.stringify(niveauSchatting('A1'))));
-  ok(kop === Math.round(100 * schat.punt / 390), 'het getal boven de balk is de schatting en niet het bewezen deel (' + bal.kop + ')');
+  /* v23.0: de kop was een percentage, en dat was precies de fout. Hetzelfde niveau stond hier op
+     100% (de schatting) en op je profiel op 0% (het bewezen deel), allebei zonder te zeggen welk
+     stuk ze maten. Nu staat er een aantal: wat je actief bijhoudt. De schatting is niet weg maar
+     verhuisd naar de legenda, waar ze een naam heeft. Hieronder wordt dat allebei gecontroleerd. */
+  const opweg = await page.evaluate(() => {
+    const t = voortgangTellers();
+    return Math.max((t.dekw && t.dekw.A1) || 0, (t.dek && t.dek.A1) || 0);
+  });
+  ok(kop === opweg, 'de kop is geen percentage meer maar wat je actief bijhoudt (' + bal.kop + ' vs ' + opweg + ')');
+  ok(/geschat al gekend|estimated already known/i.test(bal.tekst), 'de schatting staat in de legenda, met een naam erbij');
+  ok(/bewezen vast|proven solid/i.test(bal.tekst), 'en het bewezen deel staat er als eigen laag naast');
   ok(new RegExp('naar schatting ' + schat.punt + ' van de 390', 'i').test(bal.tekst), 'de zin eronder noemt hetzelfde getal');
   ok(new RegExp('tussen ' + schat.onder + ' en ' + schat.boven, 'i').test(bal.tekst), 'en de marge eromheen (' + schat.onder + '-' + schat.boven + ')');
   ok(/Daarvan staan er 0 hier vast/i.test(bal.tekst), 'en wat je hier zelf hebt vastgezet');

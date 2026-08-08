@@ -209,7 +209,10 @@ async function dagFoto(page) {
     const k = document.querySelector('#lijnKaart .kicker');
     return k ? k.innerText.replace(/\s+/g, ' ') : '';
   });
-  ok(/je basis . A2/i.test(kop), 'het kopje boven de balk noemt A2 ("' + kop + '")');
+  // v23.0: het kopje heet "Waar je staat" in plaats van "Je basis". Wat deze test bewaakt is
+  // niet de woordkeuze maar dat er een niveau in staat, want zonder niveau meet de balk iets
+  // anders dan de lezer denkt. Dus: het niveau moet erin, de rest mag veranderen.
+  ok(/A2/.test(kop) && kop.length > 2, 'het kopje boven de balk noemt A2 ("' + kop + '")');
   ok(naA2.tekst.indexOf('van de 409 A2-woorden') !== -1, 'en de noemer is die van A2, niet die van A1');
 
   console.log('\n-- weggelaten is niet verstopt --');
