@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.3";
+var APP_VERSIE = "v23.4";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5062,8 +5062,24 @@ function snapshotSchrijf(){
       srsE = S.srs[srsK];
       if(srsE && typeof srsE === "object" && srsE.sp){ sp++; if((srsE.box || 0) >= 3) spw++; }
     }
+    /* v23.4. Het foutpercentage op je scherm wordt live uit S.dagStats gerekend en verdwijnt daarna
+       weer; er is geen geschiedenis van. Daardoor kan niemand ooit narekenen bij welk foutpercentage
+       jij de meeste woorden per week vast krijgt, en dat is precies de vraag die achter "te makkelijk
+       of te uitdagend" zit. De 85%-regel (Wilson e.a., Nature Communications 2019) geeft dat antwoord
+       niet: die is afgeleid voor gradient-descent-leeralgoritmes op binaire classificatie en claimt
+       expliciet niets over woordenschat of spaced repetition. FSRS, dat wél over dit soort herhaling
+       gaat, zegt dat de optimale stand per persoon verschilt en uit eigen gegevens moet komen.
+       Dus leggen we hem hier vast. Zeven dagen pogingen en fouten, naast het aantal dat die week
+       stevig kwam te staan. Over een week of tien staat er een verband; tot die tijd staat er niets,
+       en dat is beter dan een geleend getal. */
+    var pog = 0, fout = 0, dsI, dsD, dsE;
+    for(dsI = 0; dsI < 7; dsI++){
+      dsD = addDays(t, -dsI);
+      dsE = (S.dagStats || {})[dsD];
+      if(dsE){ pog += dsE.pogingen || 0; fout += dsE.fouten || 0; }
+    }
     S.meting[w] = {d:t, stevig:c.stevig, bijna:c.bijna, geoefend:c.geoefend,
-                 dek:c.dek, txp:S.txp || 0, spel:sp, spelw:spw};
+                 dek:c.dek, txp:S.txp || 0, spel:sp, spelw:spw, pog:pog, fout:fout};
     persist();
   }catch(e){}                                // een meter mag de app nooit omver duwen
 }
