@@ -173,6 +173,82 @@ const { chromium } = require('playwright');
   });
   ok(feest.leeg === true || feest.heeftVraag === false, 'het feestscherm vraagt niet meer wanneer je hem morgen doet');
 
+  // ---- v23.11: wat Rueda kwam brengen, zit nu in Letras zelf ----
+  //
+  // Rueda stond één versie lang naast Letras met het argument dat je bij Letras niet weet wat je
+  // zoekt. Dat argument was onjuist: lt-lijst toont de vertaling en het aantal letters allang. Stefan,
+  // na het spelen: "het is niet zoveel anders dan letras, ik zie niet waarom dit nou beter is."
+  // Wat er wél verschilde waren twee dingen die je niet ziet, en die staan hier nu op.
+  const opgenomen = await page.evaluate(() => {
+    delete S.letras; ltSpel = null;
+    funView = 'letras'; show('speeltuin', true); renderFun();
+    // Een doelwoord kiezen dat een leswoord is, want alleen die kan de app volgen. En waarvan geen
+    // enkel begin zelf ook een doelwoord is: bij "leer" is "lee" (hij leest) er ook een, en dan vindt
+    // het spel dat eerst en begint het wiel opnieuw. Dat is goed gedrag van de app en slecht gedrag
+    // van een test die blind letters aantikt.
+    const alle = ltSpel.doelen.map((d) => ltPlat(d.es));
+    let plat = null, id = null;
+    for (const d of ltSpel.doelen) {
+      const q = ltPlat(d.es), i = ltIdVoor(q);
+      if (!i) continue;
+      let botst = false;
+      for (let n = LT_MIN; n < q.length; n++) if (alle.indexOf(q.slice(0, n)) !== -1) botst = true;
+      if (botst) continue;
+      plat = q; id = i; break;
+    }
+    if (!plat) return { geen: true };
+    S.srs[id] = { box: 1, due: today(), n: 1 };
+    plat.split('').forEach((L) => {
+      for (let i = 0; i < ltSpel.letters.length; i++) {
+        if (ltSpel.letters[i] === L && ltSpel.gekozen.indexOf(i) === -1) { ltTik(i); return; }
+      }
+    });
+    return {
+      geen: false, plat: plat,
+      diag: { letters: ltSpel.letters.join(''), huidig: ltHuidig(), gev: Object.keys(ltSpel.gevonden).join(',') },
+      gevonden: !!ltSpel.gevonden[plat],
+      box: S.srs[id].box,
+      uitSpel: S.srs[id].sp === 1,
+      bewaard: (S.letras.gevonden || []).indexOf(plat) !== -1,
+      letters: S.letras.letters
+    };
+  });
+  if (opgenomen.geen) {
+    console.log('PASS geen leswoord in deze puzzel, niets te toetsen');
+  } else {
+    ok(opgenomen.gevonden === true, 'een woord uit het wiel tikken vult het in: ' + opgenomen.plat + ' :: ' + JSON.stringify(opgenomen.diag));
+    ok(opgenomen.box > 1, 'en een gevonden leswoord schuift een doosje op, net als bij de andere spellen');
+    ok(opgenomen.uitSpel === true, 'gemarkeerd als uit een spel, zodat "werkt de app" en "werkt spelen" apart leesbaar blijven');
+    ok(opgenomen.bewaard === true, 'je puzzel staat bewaard, dus halverwege stoppen mag');
+  }
+
+  await page.reload();
+  await page.waitForTimeout(700);
+  const terug = await page.evaluate(() => {
+    const bewaard = S.letras;
+    if (!bewaard) return { geen: true };
+    funView = 'letras'; show('speeltuin', true); renderFun();
+    return {
+      geen: false,
+      zelfdeLetters: ltSpel && ltSpel.letters.join('') === bewaard.letters,
+      gevonden: ltSpel ? Object.keys(ltSpel.gevonden).length : -1,
+      wasGevonden: (bewaard.gevonden || []).length
+    };
+  });
+  if (!terug.geen) {
+    ok(terug.zelfdeLetters === true, 'na herladen krijg je dezelfde puzzel terug, geen nieuwe');
+    ok(terug.gevonden === terug.wasGevonden, 'met wat je al had gevonden er nog in: ' + terug.gevonden);
+  }
+
+  const weg = await page.evaluate(() => ({
+    spel: typeof renderFunRueda,
+    tegel: !!document.getElementById('ftRueda'),
+    dag: DAGSPELLEN.some((g) => g.v === 'rueda'),
+    eis: !!SPEEL_EIS.rueda
+  }));
+  ok(weg.spel === 'undefined' && !weg.tegel && !weg.dag && !weg.eis,
+     'en Rueda is echt weg, niet alleen onbereikbaar');
+
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
 
   await browser.close();
