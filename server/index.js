@@ -304,24 +304,65 @@ const KRABBEL_TEKST = {
   campeon: "¡Campeón!",
   abrazo: "¡Un abrazo!",
 };
+/* De muur (v22.6) tekent per lid zijn eigen Chispa in zijn eigen kleren, en leest zijn mijlpalen om
+   te weten wat er te vieren valt. Dat zijn vier velden uit state, en meer heeft dat scherm niet nodig:
+   de namen, de vertalingen, de plaatjes en de animaties staan al aan de clientkant.
+   Bewust GEEN pcode in het antwoord: dat is de sync-sleutel van iemand anders. */
+function muurVelden(st) {
+  return {
+    woorden: Object.keys((st && st.srs) || {}).length,
+    mijlpalen: (st && st.mijlpalen) || {},
+    wear: (st && st.wear) || {},
+    baile: (st && st.baile) || null,
+    bailes: (st && st.bailes) || [],
+  };
+}
+
 function familiaNamen() {
   return String(process.env.FAMILIA_NAMEN || "stefan,elise,ilona,martina")
     .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 }
+/* v22.5. Drie dingen erbij, geen tabel gewijzigd.
+
+   1. `gcode`: hoort de afzender bij dezelfde groep als de ontvanger, dan mag het. De vaste
+      FAMILIA_NAMEN-lijst blijft werken voor het familiescherm, maar hij was nooit een goede
+      toegangsregel: hij staat in een omgevingsvariabele en groeit niet mee met wie de app gebruikt.
+   2. `dag`: vandaag of gisteren. De muur toont ook de regel van gisteren, en daar wil je nog op
+      kunnen reageren. Verder terug niet: dan verander je geschiedenis.
+   3. Sleutel "baile": het dansje. De tekst daarvan staat niet hier maar in BAILES aan de clientkant,
+      samen met de vertaling en de animatie. Dit eindpunt weet alleen dát je danste, niet welk dansje;
+      dat leest de ontvanger uit het `baile`-veld van de afzender. Zo staat de tekst op één plek. */
 app.post("/api/krabbel", async (req, res) => {
   try {
     const van = String((req.body && req.body.van) || "").trim().toLowerCase();
     const naar = String((req.body && req.body.naar) || "").trim().toLowerCase();
     const sleutel = String((req.body && req.body.sleutel) || "").trim().toLowerCase();
-    if (!KRABBEL_TEKST[sleutel]) return bad(res, 400, "onbekende krabbel");
+    const gcode = String((req.body && req.body.gcode) || "").trim().toLowerCase();
+    const dag = String((req.body && req.body.dag) || "").trim();
+    if (sleutel !== "baile" && !KRABBEL_TEKST[sleutel]) return bad(res, 400, "onbekende krabbel");
     if (!van || !naar || van === naar) return bad(res, 400, "van/naar ongeldig");
-    const namen = familiaNamen();
-    if (namen.indexOf(van) === -1 || namen.indexOf(naar) === -1) return bad(res, 403, "alleen binnen de familie");
-    await pool.query(
-      `INSERT INTO krabbels (van, naar, sleutel, dag) VALUES ($1, $2, $3, current_date)
-       ON CONFLICT (van, naar, dag) DO UPDATE SET sleutel = EXCLUDED.sleutel, created_at = now()`,
-      [van, naar, sleutel]);
-    ok(res, { tekst: KRABBEL_TEKST[sleutel] });
+    if (dag && !/^\d{4}-\d{2}-\d{2}$/.test(dag)) return bad(res, 400, "dag ongeldig");
+
+    let mag = false;
+    if (gcode) {
+      const m = await pool.query(
+        `SELECT lower(p.name) AS naam FROM group_members m JOIN profiles p ON p.code = m.pcode
+          WHERE m.gcode = $1`, [gcode]);
+      const leden = m.rows.map((x) => x.naam);
+      mag = leden.indexOf(van) >= 0 && leden.indexOf(naar) >= 0;
+      if (!mag) return bad(res, 403, "alleen binnen je eigen groep");
+    } else {
+      const namen = familiaNamen();
+      if (namen.indexOf(van) === -1 || namen.indexOf(naar) === -1) return bad(res, 403, "alleen binnen de familie");
+    }
+
+    const r = await pool.query(
+      `INSERT INTO krabbels (van, naar, sleutel, dag)
+       VALUES ($1, $2, $3, GREATEST(LEAST(COALESCE($4::date, current_date), current_date), current_date - 1))
+       ON CONFLICT (van, naar, dag) DO UPDATE SET sleutel = EXCLUDED.sleutel, created_at = now()
+       RETURNING dag::text`,
+      [van, naar, sleutel, dag || null]);
+    ok(res, { tekst: KRABBEL_TEKST[sleutel] || "", dag: r.rows[0] && r.rows[0].dag });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
@@ -466,16 +507,28 @@ app.get("/api/groep/:gcode", async (req, res) => {
       const sd = st.streak || {};
       const streak = (sd.last === vandaag || sd.last === gisteren) ? (sd.count || 0) : 0;
       const doel = st.doel || 30;
-      return { naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, doel,
+      return Object.assign({ naam: row.name, niveau: row.track, txp: st.txp || 0, streak, lessen, doel,
         weekXp: sumXp(st, dezeWeek), weekDagen: dagenGehaald(st, dezeWeek), weekLessen: lesDagenTellen(st, dezeWeek),
-        vorigeXp: sumXp(st, vorigeWeekDagen), vorigeDagen: dagenGehaald(st, vorigeWeekDagen) };
+        vorigeXp: sumXp(st, vorigeWeekDagen), vorigeDagen: dagenGehaald(st, vorigeWeekDagen) },
+        muurVelden(st));
     }).sort((a, b) => (b.weekDagen - a.weekDagen) || (b.weekXp / (a.doel * 7) - a.weekXp / (b.doel * 7)) || (b.txp - a.txp));
     // winnaar vorige week: meeste dagen eigen doel gehaald; tiebreak: % van eigen weekdoel
     let vorigeWeek = null;
     const top = [...spelers].sort((a, b) =>
       (b.vorigeDagen - a.vorigeDagen) || (b.vorigeXp / (b.doel * 7) - a.vorigeXp / (a.doel * 7)))[0];
     if (top && top.vorigeXp > 0) vorigeWeek = { winnaar: top.naam, xp: top.vorigeXp, dagen: top.vorigeDagen, week: vorigeWeekDagen[0] };
-    ok(res, { groep: g.rows[0], spelers, vorigeWeek, week: dezeWeek[0] });
+    // De reacties van vandaag en gisteren, alleen tussen leden van deze groep. Twee dagen, want de
+    // muur toont ook de regel van gisteren en daar moet je nog op kunnen reageren.
+    let krabbels = [];
+    try {
+      const namen = spelers.map((x) => String(x.naam).toLowerCase());
+      const kr = await pool.query(
+        `SELECT van, naar, sleutel, dag::text FROM krabbels
+          WHERE dag >= current_date - 1 AND van = ANY($1) AND naar = ANY($1) ORDER BY created_at`,
+        [namen]);
+      krabbels = kr.rows;
+    } catch (e2) { console.error(e2); }
+    ok(res, { groep: g.rows[0], spelers, vorigeWeek, week: dezeWeek[0], krabbels });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
@@ -567,16 +620,11 @@ app.get("/api/maatje/:mcode", async (req, res) => {
  */
 app.post("/api/admin/llm", async (req, res) => {
   if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
-  const { prompt, maxTokens, jsonMode, ladder } = req.body || {};
+  const { prompt, maxTokens, jsonMode } = req.body || {};
   if (!prompt || typeof prompt !== "string") return bad(res, 400, "prompt verplicht");
   if (prompt.length > 20000) return bad(res, 400, "prompt te lang");
-  // Eigen ladder toegestaan op deze ingang, en alleen hier. De app draait op de goedkope ladder omdat
-  // daar elke leerlingactie langskomt; de avondrun doet tien aanroepen per etmaal en mag het beste
-  // model vragen. Achter de ADMIN_KEY, dus dit is geen open ingang naar dure modellen.
-  if (ladder !== undefined && (typeof ladder !== "string" || ladder.length > 300))
-    return bad(res, 400, "ladder moet een korte tekst zijn");
   try {
-    const txt = await vraagLadder("", prompt, Math.min(8000, maxTokens || 4000), !!jsonMode, "admin-llm", ladder || null);
+    const txt = await vraagLadder("", prompt, Math.min(8000, maxTokens || 4000), !!jsonMode, "admin-llm");
     ok(res, { tekst: txt });
   } catch (e) {
     console.error("admin-llm:", e.message);
@@ -594,9 +642,8 @@ app.get("/api/admin/schoon", async (req, res) => {
 });
 
 // ---- AI-feedback via de LLM-ladder (goedkoop eerst, duur als vangnet) ----
-async function vraagLadder(system, user, maxTokens, jsonMode, callSite, ladder) {
-  const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite,
-                                                     ladder: ladder || null });
+async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
+  const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite });
   if (!res) throw new Error("alle LLM-tredes uitgeput");
   return res.text;
 }
