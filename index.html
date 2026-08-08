@@ -1094,7 +1094,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.6";
+var APP_VERSIE = "v23.7";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15467,7 +15467,11 @@ function renderDic(){
          alleGroepen.length+" words from your lessons, <b>"+geleerd+"</b> seen. ")+
       "⚪ "+ct("nog niet","not yet")+" · 🔴 "+ct("lastig","tricky")+" · 🟡 "+ct("bezig","working on it")+" · 🟢 "+ct("zit goed","solid")+
     "</p>")+
-    "<input type='text' id='dicZoek' placeholder='"+ct("Zoek een woord of vervoeging"+(freqN ? ", ook buiten de lessen" : "")+"...","Search a word or conjugated form"+(freqN ? ", also beyond the lessons" : "")+"...")+"' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
+    /* v23.7: hier stond "Zoek een woord of vervoeging, ook buiten de lessen...". Stefan: "dit kan weg,
+       dat spreekt voor zich." Een leeg veld onder de kop WOORDENBOEK, geopend met een knop waar Zoek
+       op staat en met de cursor er al in, heeft geen bijschrift nodig. freqN wordt hierboven nog
+       gebruikt voor de vraag of er zoekwoorden buiten de lessen bestaan. */
+    "<input type='text' id='dicZoek' autocomplete='off' value=\""+dicZoek.replace(/"/g, "&quot;")+"\">";
   // vervoegings-herkenning: "comiste" → comer (indefinido, tú)
   if(q && q.length >= 3){
     var vormen = vormAnalyse(dicZoek);

@@ -63,13 +63,15 @@ const { chromium } = require('playwright');
   // v21.6: de kop opent nu het globale zoekveld; het woordenboek zit daar een tik achter.
   await page.evaluate(() => dicModal());
   await page.waitForTimeout(250);
-  // v23.6: dit stond in een alinea van vier zinnen boven het zoekveld. Stefan: "deze tekst kan korter".
-  // Het getal is niet weg, het staat nu in het zoekveld zelf, op de plek waar het pas telt.
+  // v23.6/v23.7: dit getal stond in een alinea van vier zinnen boven het zoekveld, daarna kort in de
+  // tekst van het zoekveld, en nu nergens meer. Stefan over die tekst: "dit kan weg, dat spreekt voor
+  // zich." Dat de 4.219 woorden er echt zijn en echt bereikbaar, bewijst stap 3 hieronder met de
+  // zoekbalk zelf; dat is een sterker bewijs dan een zin die het belooft.
   const intro = await page.locator('#dicCard').innerText();
   const plaats = await page.locator('#dicZoek').getAttribute('placeholder');
-  ok(/(buiten de lessen|beyond the lessons)/.test(plaats || ''),
-     'het zoekveld zegt dat het verder reikt dan de lessen: "' + plaats + '"');
-  ok(!/frequentietop|frequency top/i.test(intro + (plaats || '')), 'er staat geen jargon als "frequentietop"');
+  ok(!plaats, 'het zoekveld heeft geen bijschrift meer nodig');
+  ok(intro.split('\n')[0].length < 120, 'en de eerste regel boven het veld is kort: "' + intro.split('\n')[0].slice(0, 90) + '"');
+  ok(!/frequentietop|frequency top/i.test(intro), 'er staat geen jargon als "frequentietop"');
 
   // helper: alle rijen, in schermvolgorde, met hun sleutel en zichtbare tekst
   async function alleRijen() {
