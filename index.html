@@ -1052,7 +1052,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.1";
+var APP_VERSIE = "v22.2";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7576,7 +7576,31 @@ function clDansHtml(){
    De woordenlijst is jouw eigen materiaal: de frequentielijst plus alles wat in de app geleerd
    wordt. Geen extra content nodig, en de scheidsrechter is opnieuw gewoon de data. */
 var LT_MIN = 3, LT_MAX_DOELEN = 10;
-var ltWbCache = null, ltSpel = null;
+/* v22.2. Stefan speelde een potje en kreeg "reo" (de gedaagde) voorgeschoteld. Dat woord staat in de
+   frequentielijst omdat die uit ondertitels komt, en in ondertitels wordt nogal wat afgemoord: cárcel,
+   detective, carajo. Prima Spaans, geen A1-materiaal.
+
+   Dus schuift er een horizon voor: alleen de meestgebruikte woorden doen mee, plus alles wat de app
+   zelf leert (dat is per definitie lesstof). En die horizon groeit mee met de speler. Het getal dat
+   hem stuurt is hetzelfde dat overal in de app "wat kun je aantoonbaar" betekent: woorden die in
+   doosje twee of hoger staan, dus die je na een dag nog wist. Geen sessies, geen dagen: bewijs. */
+var LT_BASIS = 1200, LT_PER_STAP = 100, LT_WOORDEN_PER_STAP = 25;
+var ltWbCache = null, ltWbHorizon = null, ltSpel = null;
+
+function ltVasteWoorden(){
+  var n = 0;
+  try{
+    for(var k in S.srs){ if((S.srs[k].box || 0) >= 2) n++; }
+  }catch(e){}
+  return n;
+}
+function ltHorizon(){
+  var totaal = (typeof FREQ !== "undefined" ? FREQ.length : LT_BASIS);
+  return Math.min(totaal, LT_BASIS + Math.floor(ltVasteWoorden() / LT_WOORDEN_PER_STAP) * LT_PER_STAP);
+}
+function ltTotVolgend(){
+  return LT_WOORDEN_PER_STAP - (ltVasteWoorden() % LT_WOORDEN_PER_STAP);
+}
 
 function ltPlat(w){
   return stripAcc(String(w || "").toLowerCase()).replace(/[^a-z]/g, "");
@@ -7593,7 +7617,8 @@ function ltPast(sig, basis){
   return true;
 }
 function ltWoordenboek(){
-  if(ltWbCache) return ltWbCache;
+  var hor = ltHorizon();
+  if(ltWbCache && ltWbHorizon === hor) return ltWbCache;
   var uit = {}, zien = {};
   function voeg(es, nl){
     if(!es || !nl) return;
@@ -7605,7 +7630,8 @@ function ltWoordenboek(){
     zien[plat] = 1;
     uit[plat] = {es: es, nl: nl, sig: ltSig(es)};
   }
-  (typeof FREQ !== "undefined" ? FREQ : []).forEach(function(r){ voeg(r[0], r[1]); });
+  // FREQ staat op volgorde van hoe vaak een woord voorkomt, dus de horizon is gewoon een afkapping.
+  (typeof FREQ !== "undefined" ? FREQ : []).slice(0, hor).forEach(function(r){ voeg(r[0], r[1]); });
   [typeof WORDS !== "undefined" ? WORDS : [], typeof B_WORDS !== "undefined" ? B_WORDS : [],
    typeof K_WORDS !== "undefined" ? K_WORDS : []].forEach(function(lijst){
     lijst.forEach(function(w){
@@ -7614,6 +7640,7 @@ function ltWoordenboek(){
     });
   });
   ltWbCache = uit;
+  ltWbHorizon = hor;
   return uit;
 }
 function ltDeel(){
@@ -7686,11 +7713,18 @@ function renderFunLetras(){
   }
   var klaar = Object.keys(ltSpel.gevonden).length === ltSpel.doelen.length;
   var huidig = ltHuidig();
+  var hor = ltHorizon(), volTotaal = (typeof FREQ !== "undefined" ? FREQ.length : hor);
   el.innerHTML = "<h2>Letras 🔤</h2>" +
     "<span class='kicker'>" + Object.keys(ltSpel.gevonden).length + "/" + ltSpel.doelen.length + " " +
       ct("gevonden","found") + "</span>" +
     "<p class='muted'>" + ct("Tik letters aan tot er een woord staat. Geen klok, geen levens: stop wanneer je wilt.",
                              "Tap letters until a word appears. No clock, no lives: stop whenever you like.") + "</p>" +
+    "<p class='muted' style='font-size:.82rem; margin-top:-4px'>" +
+      (hor >= volTotaal
+        ? ct("Je speelt met alle woorden die de app kent.","You're playing with every word the app knows.")
+        : ct("Je speelt met de " + hor + " meestgebruikte woorden. Nog " + ltTotVolgend() + " woorden vast en er komen er " + LT_PER_STAP + " bij.",
+             "You're playing with the " + hor + " most common words. " + ltTotVolgend() + " more words solid and " + LT_PER_STAP + " more join in.")) +
+    "</p>" +
     "<div class='lt-woord'>" + (huidig || "&nbsp;") + "</div>" +
     "<div class='dsleep-bank' style='justify-content:center'>" + ltSpel.letters.map(function(L, i){
       var op = ltSpel.gekozen.indexOf(i) !== -1;

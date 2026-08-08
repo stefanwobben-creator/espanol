@@ -44,7 +44,45 @@ const { chromium } = require('playwright');
       voorbeeld: w[k[0]]
     };
   });
-  ok(wb.n >= 1000, 'het woordenboek is groot genoeg voor variatie (' + wb.n + ' woorden)');
+  ok(wb.n >= 800, 'het woordenboek is groot genoeg voor variatie (' + wb.n + ' woorden)');
+
+  // ---- 1b. de horizon: alleen de meestgebruikte woorden, en hij groeit mee ----
+  // v22.2: "reo" (de gedaagde) kwam uit de frequentielijst, die op ondertitels is gebaseerd en dus
+  // vol rechtbanktaal zit. Nu doet alleen de kop van die lijst mee, plus alles wat de app zelf leert.
+  const horizon = await page.evaluate(() => {
+    const uit = {};
+    S.srs = {};
+    uit.leeg = ltHorizon();
+    for (let i = 0; i < 50; i++) S.srs['x' + i] = { box: 3, due: today() };
+    uit.na50 = ltHorizon();
+    for (let i = 0; i < 40; i++) S.srs['z' + i] = { box: 1, due: today() };   // doosje 1 telt niet mee
+    uit.naZwak = ltHorizon();
+    uit.basis = LT_BASIS; uit.perStap = LT_PER_STAP; uit.freq = FREQ.length;
+    S.srs = {};
+    return uit;
+  });
+  ok(horizon.leeg === horizon.basis, 'een nieuwe speler begint bij de ' + horizon.basis + ' meestgebruikte woorden');
+  ok(horizon.na50 === horizon.basis + 2 * horizon.perStap, 'vijftig vaste woorden schuiven de horizon twee stappen op (' + horizon.na50 + ')');
+  ok(horizon.naZwak === horizon.na50, 'woorden in doosje 1 tellen niet mee: het gaat om wat je aantoonbaar kent');
+  ok(horizon.basis < horizon.freq, 'er valt dus echt iets af aan het begin (' + horizon.basis + ' van ' + horizon.freq + ')');
+
+  const rechtbank = await page.evaluate(() => {
+    S.srs = {};
+    const w = ltWoordenboek();
+    return { reo: !!w['reo'], carajo: !!w['carajo'], casa: !!w['casa'], agua: !!w['agua'] };
+  });
+  ok(rechtbank.reo === false, 'rechtbanktaal als "reo" doet niet meer mee op het startniveau');
+  ok(rechtbank.casa === true && rechtbank.agua === true, 'gewone woorden als casa en agua wel');
+
+  const groeit = await page.evaluate(() => {
+    S.srs = {};
+    const klein = Object.keys(ltWoordenboek()).length;
+    for (let i = 0; i < 400; i++) S.srs['g' + i] = { box: 3, due: today() };
+    const groot = Object.keys(ltWoordenboek()).length;
+    S.srs = {};
+    return { klein: klein, groot: groot };
+  });
+  ok(groeit.groot > groeit.klein, 'wie meer woorden vast heeft, speelt met een grotere lijst (' + groeit.klein + ' naar ' + groeit.groot + ')');
   ok(wb.metSpatie === 0, 'geen uitdrukkingen met spaties');
   ok(wb.metNtilde === 0, 'geen woorden met ñ (die verdwijnt bij het platslaan)');
   ok(wb.teKort === 0, 'niets korter dan drie letters');
