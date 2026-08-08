@@ -1083,7 +1083,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v22.9";
+var APP_VERSIE = "v22.10";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5375,7 +5375,15 @@ function berekenCompetenties(){
      klanken kunt spellen, niet dat je hem begreep; dat hoort bij schrijven en staat daar nu ook.
      Luisteren komt uit Escuchar, waar je een gesprek hoort en vragen over de inhoud beantwoordt.
      Gevolg: dit percentage zakt eenmalig. Dat is een correctie, geen achteruitgang. */
-  var luisterTeller = Object.keys(S.comp.luisteren || {}).length;
+  /* v22.10. Hier stond "Escuchar · 55/6 · 100%". Vijfenvijftig van de zes.
+     De oorzaak zit in v21.2: tot die versie schreef Dictado zijn zinnen in S.comp.luisteren, en die
+     ids staan er bij bestaande profielen nog gewoon in. De teller telde ze mee, de noemer (zes
+     luisterscenes) niet, en pct() knipt op 100 zodat de fout er als een prestatie uitzag.
+     Niet met een migratie opgelost maar met een filter: een oude sleutel die geen scene is, telt
+     niet mee. Dat repareert het voor iedereen tegelijk, ook voor wie hier maanden niet komt. */
+  var audIds = {};
+  AUDICIONES.forEach(function(sc){ audIds[sc.id] = 1; });
+  var luisterTeller = Object.keys(S.comp.luisteren || {}).filter(function(k){ return audIds[k]; }).length;
   var luisteren = { pct: pct(luisterTeller, AUDICIONES.length), teller: luisterTeller, noemer: AUDICIONES.length,
     bron: ["Escuchar"] };
   // Schrijven-noemer: sinds 29 juli (v19.42) is de losse Jaartallen-oefening opgeheven en zijn de 15
@@ -23083,8 +23091,16 @@ function renderStats(){
       (vast === 0 && seen > 0 ? ct(" Dat eerste getal blijft de eerste vier weken op nul staan, en dat hoort: stevig betekent vijf keer goed over vijfentwintig dagen. Kijk zolang naar het tweede.",
          " That first number stays at zero for the first four weeks, and that's correct: solid means five correct answers across twenty-five days. Watch the second one meanwhile.") : "")+
       ct(" Tempo: ongeveer "," Pace: about ")+getal1(tempo)+ct(" nieuwe woorden per dag"," new words a day")+
-      (actief14 ? ct(" ("+getal1(tempoActief)+" per actieve dag, het maximum is 15)",
-                     " ("+getal1(tempoActief)+" per active day, the maximum is 15)") : "")+".</p>";
+      /* v22.10. Hier stond "het maximum is 15", en er stond 15,9 voor. Dat was geen afrondingsfout:
+         S.newIntro telt élk woord dat nieuw in je srs komt, ook uit de spellen en het boek, terwijl
+         die 15 alleen over je dagportie in de les ging. Een bovengrens die niet begrenst wat er
+         gemeten wordt, is geen bovengrens. Nu staat er wat het echt is, en het getal komt uit
+         nieuwPerDag() in plaats van uit een hardgecodeerde 15 die na elke tempowijziging weer
+         een leugen zou zijn. */
+      (actief14 ? ct(" ("+getal1(tempoActief)+" per actieve dag; je dagportie in de les is "+nieuwPerDag()+
+                     ", de rest komt uit spellen en het boek)",
+                     " ("+getal1(tempoActief)+" per active day; your daily lesson portion is "+nieuwPerDag()+
+                     ", the rest comes from games and the book)") : "")+".</p>";
     /* v19.87: de band hangt aan stevige woorden per week, niet aan nieuwe woorden
        per dag. Wie alleen herhaalt maakt nog steeds woorden stevig, dus die hoort
        zijn schatting ook te zien. Vandaar: geen if op tempo meer. */
