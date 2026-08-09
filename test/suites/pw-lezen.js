@@ -35,6 +35,23 @@ const { chromium } = require('playwright');
   await page.evaluate(() => show('lezen')); // locale-onafhankelijk (nav-taal kan EN/NL/... zijn)
   await page.waitForTimeout(200);
 
+  /* v23.26: het Lezen-scherm begint nu op de boekenplank. Eerst kijken of die klopt, dan Chispa
+     openen; de rest van deze suite gaat over de hoofdstukkenlijst en die zit een tik verder. */
+  const plank = await page.evaluate(() => {
+    const el = document.getElementById('lezenMenu');
+    return {
+      tekst: (el.innerText || '').replace(/\s+/g, ' '),
+      boeken: el.querySelectorAll('button[data-reeks]').length,
+      geenHoofdstukken: el.querySelectorAll('button[data-boek]').length
+    };
+  });
+  ok(plank.boeken >= 2, 'de boekenplank toont allebei de boeken (' + plank.boeken + ')');
+  ok(plank.geenHoofdstukken === 0, 'en nog geen hoofdstukken: die zitten een tik verder');
+  ok(/0%|\d+%/.test(plank.tekst), 'met een percentage erbij hoe ver je in dat boek bent');
+  await page.evaluate(() => { document.querySelector('button[data-reeks="chispa"]').click(); });
+  await page.waitForTimeout(150);
+  ok(await page.locator('#btnPlankTerug').count() === 1, 'in een boek staat een weg terug naar de plank');
+
   const eersteKaart = await page.evaluate(() => ({
     ontgrendeld1: boekOntgrendeld(BOOK[0]),
     ontgrendeld4: boekOntgrendeld(BOOK[3]),
@@ -108,6 +125,13 @@ const { chromium } = require('playwright');
   ok(menuNaAfloop.indexOf('✓') !== -1, 'het Lezen-menu toont een vinkje bij een voltooid hoofdstuk');
   const knopKlasse = await page.evaluate(() => document.querySelector('button[data-boek="boek-1"]').className);
   ok(knopKlasse.indexOf('ghost') !== -1, 'een voltooid hoofdstuk krijgt de "nog eens"-knopstijl (ghost) i.p.v. de primaire "Lezen"-knop');
+
+  /* De weg terug moet ook echt terug gaan, en niet alleen bestaan. Een knop die niets doet is
+     erger dan geen knop, want je hebt hem al aangetikt voordat je het merkt. */
+  await page.evaluate(() => { document.getElementById('btnPlankTerug').click(); });
+  await page.waitForTimeout(150);
+  ok(await page.evaluate(() => document.querySelectorAll('#lezenMenu button[data-reeks]').length) >= 2,
+     'de weg terug brengt je op de plank, met de boeken er weer op');
 
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED/.test(e));
   ok(relevanteErrors.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + relevanteErrors.length + ' gevonden, ' + (errors.length - relevanteErrors.length) + ' netwerkruis genegeerd)');

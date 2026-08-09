@@ -713,6 +713,11 @@
   /* v23.21: een woord in de leestekst is aan te tikken. Geen onderstreping en geen kleur, want dan
      wordt de bladzijde een veld met tweehonderd knoppen en leest niemand meer een verhaal. Alleen
      het woord dat je aantikt licht op. */
+  /* v23.26: de boekenplank. Een kaart per boek, met de balk die je van Vandaag kent. */
+  .plankKop{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .plankSoort{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);}
+  .plankBalk{height:8px; border-radius:4px; background:var(--border); overflow:hidden; margin:8px 0 6px;}
+  .plankBalk div{height:100%; background:var(--accent);}
   .lw{cursor:pointer; border-radius:3px; padding:0 1px; margin:0 -1px;}
   .lw.aan{background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent) inset;}
   /* v23.22: de betekenis hoort bij het woord en niet onder de bladzijde. Onderaan betekent scrollen,
@@ -1122,7 +1127,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.24";
+var APP_VERSIE = "v23.26";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10925,12 +10930,118 @@ function closeQuiz(){
 /* ================= LEZEN (Chispa-boek) ================= */
 function boekEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
+/* ================= DE BOEKENPLANK (v23.26) =================
+   Een reeks is een boek. Ze staan hier los van de hoofdstukken zelf, want een hoofdstuk hoort te
+   weten waar het over gaat en niet hoe de kast eruitziet. */
+var LEES_REEKSEN = [
+ {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa",
+  soortNl:"verhaal", soortEn:"story",
+  omNl:"Een wezentje zonder naam zoekt zijn eigen lied, van de kust tot het kasteel.",
+  omEn:"A small creature without a name looks for its own song, from the coast to the castle."},
+ {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco",
+  soortNl:"geschiedenis", soortEn:"history",
+  omNl:"Spanje van 1931 tot nu, in tien hoofdstukken: de oorlog, de honger, de stilte en de terugweg.",
+  omEn:"Spain from 1931 until now, in ten chapters: the war, the hunger, the silence and the way back."}
+];
+var leesReeks = null;                     // welk boek staat open; null is de plank zelf
+function leesReeksVan(h){
+  for(var i = 0; i < LEES_REEKSEN.length; i++){
+    if(String(h.id).indexOf(LEES_REEKSEN[i].pre) === 0) return LEES_REEKSEN[i];
+  }
+  return null;
+}
+/* Wat telt als bekend: een woord dat in jouw doosjes zit, plus de achthonderd meest voorkomende
+   woorden van het Spaans. Die tweede groep moet erbij, anders zou "de", "que" en "en" als onbekend
+   tellen en dan meet je vooral of iemand toevallig lidwoorden als leskaart heeft staan.
+
+   Eenmaal opgebouwd per render, want dit loopt over een paar duizend woorden. */
+var _leesBekend = null;
+function leesBekendeSet(){
+  if(_leesBekend) return _leesBekend;
+  var s = {}, i, j, w, delen;
+  for(i = 0; i < Math.min(800, (typeof FREQ !== "undefined" ? FREQ.length : 0)); i++){
+    s[stripAcc(FREQ[i][0].toLowerCase()).replace(/[^a-z]/g, "")] = 1;
+  }
+  for(i = 0; i < WORDS.length; i++){
+    w = WORDS[i];
+    if(!S.srs[w.id]) continue;
+    delen = String(w.es).toLowerCase().replace(/\([^)]*\)/g, " ").split(/[\/,]/);
+    for(j = 0; j < delen.length; j++){
+      stripAcc(delen[j]).replace(/[^a-z ]/g, "").split(" ").forEach(function(t){ if(t) s[t] = 1; });
+    }
+  }
+  _leesBekend = s;
+  return s;
+}
+/* Onbekende woorden per zin. Deze maat en niet een dekkingspercentage: op een dekking kun je met
+   drie redelijke definities drie verschillende antwoorden krijgen, en dit is te tellen. */
+function leesZwaarte(reeks){
+  var bekend = leesBekendeSet(), tok, zin, onb = 0, zinnen = 0, i, j;
+  for(i = 0; i < BOOK.length; i++){
+    if(String(BOOK[i].id).indexOf(reeks.pre) !== 0) continue;
+    tok = BOOK[i].tekst.split(/[^A-Za-z\u00c0-\u024f]+/).filter(Boolean);
+    for(j = 0; j < tok.length; j++){
+      if(!bekend[stripAcc(tok[j].toLowerCase()).replace(/[^a-z]/g, "")]) onb++;
+    }
+    zin = BOOK[i].tekst.split(/[.!?\u2026]+/).filter(function(x){ return x.trim().length > 3; });
+    zinnen += zin.length;
+  }
+  if(!zinnen) return null;
+  return onb / zinnen;
+}
+function leesZwaarteWoord(z){
+  if(z === null) return "";
+  if(z < 1) return ct("goed te doen","comfortable");
+  if(z < 2) return ct("pittig","demanding");
+  return ct("zwaar","heavy");
+}
+function leesPlankHtml(){
+  var h = "";
+  LEES_REEKSEN.forEach(function(r){
+    var hst = BOOK.filter(function(x){ return String(x.id).indexOf(r.pre) === 0; });
+    if(!hst.length) return;
+    var af = hst.filter(function(x){ return S.boek[x.id] && S.boek[x.id].done; }).length;
+    var pct = Math.round(100 * af / hst.length);
+    var z = leesZwaarte(r);
+    h += "<div class='card'><div class='plankKop'><h2 style='margin:0'>"+(profLang() === "nl" ? r.nl : r.en)+"</h2>"+
+        "<span class='plankSoort'>"+(profLang() === "nl" ? r.soortNl : r.soortEn)+"</span></div>"+
+      "<p class='muted' style='margin:4px 0 0; font-size:.88rem'>"+(profLang() === "nl" ? r.omNl : r.omEn)+"</p>"+
+      "<div class='plankBalk'><div style='width:"+pct+"%'></div></div>"+
+      "<p class='muted' style='margin:0; font-size:.85rem'>"+
+        ct(af+" van de "+hst.length+" hoofdstukken gelezen ("+pct+"%)",
+           af+" of "+hst.length+" chapters read ("+pct+"%)")+"</p>"+
+      (z === null ? "" :
+        "<p class='muted' style='margin:4px 0 0; font-size:.85rem'>"+
+          ct("Voor jou nu: <b>"+leesZwaarteWoord(z)+"</b>, ongeveer "+getal1(z)+" onbekende woorden per zin.",
+             "For you right now: <b>"+leesZwaarteWoord(z)+"</b>, about "+getal1(z)+" unknown words per sentence.")+"</p>")+
+      "<div class='row' style='margin-top:10px'><button class='"+(af ? "ghost" : "primary")+"' data-reeks='"+r.id+"'>"+
+        (af && af < hst.length ? ct("Verder lezen","Keep reading")
+                               : (af ? ct("Nog eens lezen","Read again") : ct("Beginnen","Start")))+" \u2192</button></div>"+
+      "</div>";
+  });
+  return h;
+}
+
 function renderBoekMenu(){
   var el = document.getElementById("lezenMenu");
-  var html = "";
+  _leesBekend = null;                       // per render opnieuw: je doosjes veranderen
+  if(!leesReeks){
+    el.innerHTML = leesPlankHtml();
+    el.querySelectorAll("button[data-reeks]").forEach(function(b){
+      b.onclick = function(){ leesReeks = b.getAttribute("data-reeks"); renderBoekMenu(); };
+    });
+    return;
+  }
+  var reeks = LEES_REEKSEN.filter(function(r){ return r.id === leesReeks; })[0];
+  var html = "<div class='row' style='margin-bottom:6px'><button class='ghost' id='btnPlankTerug'>\u2190 "+
+      ct("Alle boeken","All books")+"</button></div>"+
+    "<h2 style='margin:0 0 2px'>"+(profLang() === "nl" ? reeks.nl : reeks.en)+"</h2>";
   var huidigDeel = null;
-  BOOK.forEach(function(h){
-    if(h.deel !== huidigDeel){ huidigDeel = h.deel; html += "<p style='margin:14px 0 4px'><b>"+huidigDeel+"</b></p>"; }
+  BOOK.filter(function(h){ return String(h.id).indexOf(reeks.pre) === 0; }).forEach(function(h){
+    // de deelkop alleen als hij iets toevoegt: bij Franco heet elk deel hetzelfde als het boek
+    if(h.deel !== huidigDeel && h.deel !== reeks.nl){
+      huidigDeel = h.deel; html += "<p style='margin:14px 0 4px'><b>"+huidigDeel+"</b></p>";
+    }
     var ontgrendeld = boekOntgrendeld(h);
     var klaar = !!(S.boek[h.id] && S.boek[h.id].done);
     html += "<div class='card'><h2>"+h.num+". "+h.titel+(klaar ? " ✓" : "")+"</h2>"+
@@ -10940,6 +11051,8 @@ function renderBoekMenu(){
       "</div>";
   });
   el.innerHTML = html;
+  var bt = document.getElementById("btnPlankTerug");
+  if(bt) bt.onclick = function(){ leesReeks = null; renderBoekMenu(); };
   el.querySelectorAll("button[data-boek]").forEach(function(b){
     b.onclick = function(){ startBoek(b.getAttribute("data-boek")); };
   });
@@ -11054,6 +11167,33 @@ var LEES_EXTRA = {
  dona:["mevrouw (voor een voornaam)","lady (before a first name)"], don:["meneer (voor een voornaam)","sir (before a first name)"],
  abrirse:["opengaan","to open up"], pequenita:["heel klein","very small"]
 };
+/* v23.25. Vaste combinaties van een werkwoord met een voorzetsel. Ze staan hier en niet bij de
+   woorden, want het zijn geen woorden: het is een patroon over drie posities in een zin.
+
+   stam is een reeks beginletters van het eerste werkwoord, zodat elke vervoeging meedoet (dejan,
+   deja, dejaron, dejó). deel is het vaste woord ertussen, of leeg als er geen tussenwoord is. eind
+   zegt wat er achteraan hoort: "inf" voor een hele werkwoordsvorm, "ger" voor een -ndo-vorm.
+
+   Kort gehouden met opzet. Dit zijn de vormen die in vrijwel elke Spaanse tekst staan. Een lange
+   lijst met halve treffers zou precies het omgekeerde doen van waar dit voor bedoeld is. */
+var LEES_CONSTRUCTIES = [
+ {stam:["dej"], deel:"de", eind:"inf", nl:"ophouden met, stoppen met", en:"to stop doing"},
+ {stam:["empez","empie","comenz","comien"], deel:"a", eind:"inf", nl:"beginnen te", en:"to start to"},
+ {stam:["volv","vuelv"], deel:"a", eind:"inf", nl:"opnieuw, weer", en:"to do again"},
+ {stam:["acab"], deel:"de", eind:"inf", nl:"net gedaan hebben", en:"to have just done"},
+ {stam:["termin"], deel:"de", eind:"inf", nl:"klaar zijn met", en:"to finish doing"},
+ {stam:["trat"], deel:"de", eind:"inf", nl:"proberen te", en:"to try to"},
+ {stam:["olvid"], deel:"de", eind:"inf", nl:"vergeten te", en:"to forget to"},
+ {stam:["v","ib","ir"], deel:"a", eind:"inf", nl:"gaan (straks)", en:"going to (future)"},
+ {stam:["pon","pus"], deel:"a", eind:"inf", nl:"beginnen te", en:"to start to"},
+ {stam:["lleg"], deel:"a", eind:"inf", nl:"erin slagen te, zelfs gaan", en:"to manage to, even to"},
+ {stam:["ayud"], deel:"a", eind:"inf", nl:"helpen om te", en:"to help to"},
+ {stam:["aprend"], deel:"a", eind:"inf", nl:"leren om te", en:"to learn to"},
+ {stam:["ten","tien","tuv","tendr"], deel:"que", eind:"inf", nl:"moeten", en:"to have to"},
+ {stam:["hay"], deel:"que", eind:"inf", nl:"je moet, men moet", en:"one has to"},
+ {stam:["sigu","sig","segu"], deel:"", eind:"ger", nl:"blijven (doorgaan met)", en:"to keep on doing"},
+ {stam:["est"], deel:"", eind:"ger", nl:"aan het ... zijn", en:"to be doing"}
+];
 var LEES_LETTERS = {y:["en","and"], o:["of","or"], a:["naar, aan, tot","to, at"],
                     e:["en (voor i- of hi-)","and (before i- or hi-)"],
                     u:["of (voor o- of ho-)","or (before o- or ho-)"]};
@@ -11158,16 +11298,53 @@ function leesBetekenis(ruw){
 }
 /* Wat je opzoekt, wordt geteld. Nog niet getoond: eerst een paar hoofdstukken meten, dan pas iets
    beweren. Zie de weekmetingen en de tijdmeting; dezelfde volgorde. */
+function leesPlat(w){ return stripAcc(String(w || "").toLowerCase()).replace(/[^a-z]/g, ""); }
+function leesIsInf(w){ return /(ar|er|ir|arse|erse|irse|arme|arte|arlo|arla|arle)$/.test(leesPlat(w)); }
+function leesIsGer(w){ return /(ando|iendo|yendo)$/.test(leesPlat(w)); }
+/* Past er een constructie om het woord dat je aantikte? We proberen drie startposities, zodat het
+   niet uitmaakt of je op dejan, op de of op saludarse tikt: alle drie horen bij hetzelfde patroon. */
+function leesConstructie(woorden, i){
+  var start, c, k, w0, w1, w2, lengte, past;
+  for(start = Math.max(0, i - 2); start <= i; start++){
+    for(k = 0; k < LEES_CONSTRUCTIES.length; k++){
+      c = LEES_CONSTRUCTIES[k];
+      lengte = c.deel ? 3 : 2;
+      if(start + lengte - 1 >= woorden.length) continue;
+      if(i > start + lengte - 1) continue;
+      w0 = leesPlat(woorden[start]);
+      w1 = woorden[start + 1];
+      w2 = woorden[start + 2];
+      past = c.stam.some(function(s){ return w0.indexOf(s) === 0; });
+      if(!past) continue;
+      if(c.deel){
+        if(leesPlat(w1) !== c.deel) continue;
+        if(c.eind === "inf" && !leesIsInf(w2)) continue;
+        if(c.eind === "ger" && !leesIsGer(w2)) continue;
+        return {tekst:woorden[start] + " " + w1 + " " + w2, nl:ct(c.nl, c.en)};
+      }
+      if(c.eind === "ger" && !leesIsGer(w1)) continue;
+      if(c.eind === "inf" && !leesIsInf(w1)) continue;
+      return {tekst:woorden[start] + " " + w1, nl:ct(c.nl, c.en)};
+    }
+  }
+  return null;
+}
 function leesNoteer(plat){
   if(!plat) return;
   S.leesZoek = S.leesZoek || {};
   S.leesZoek[plat] = (S.leesZoek[plat] || 0) + 1;
   persist();
 }
+/* De woorden van het hoofdstuk op volgorde, zodat de constructieherkenner de buren kan zien. Hij
+   staat hier als lijst en niet in de DOM, want uit de DOM teruglezen zou betekenen dat de opmaak de
+   betekenis bepaalt. */
+var leesWoorden = [];
 function leesTekstHtml(p){
   var veilig = String(p).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return veilig.replace(/([A-Za-z\u00c0-\u024f]+)/g, function(m){
-    return "<span class='lw' data-lw=\""+m+"\">"+m+"</span>";
+    var i = leesWoorden.length;
+    leesWoorden.push(m);
+    return "<span class='lw' data-lw=\""+m+"\" data-li='"+i+"'>"+m+"</span>";
   });
 }
 /* Onder het woord als het past, anders erboven, en altijd binnen de kaart. Gerekend met
@@ -11200,6 +11377,15 @@ function leesVerberg(){
 function leesToon(woord, span){
   var el = document.getElementById("leesUitleg");
   if(!el) return;
+  var con = null;
+  if(span && span.getAttribute("data-li") !== null){
+    try { con = leesConstructie(leesWoorden, +span.getAttribute("data-li")); } catch(e){ con = null; }
+  }
+  /* De constructie staat bovenaan en het losse woord eronder. Die volgorde is het punt: wie
+     "dejan de saludarse" leest heeft niets aan "dejan = zij laten", en zou met die twee losse
+     betekenissen een zin bouwen die het tegenovergestelde zegt van wat er staat. */
+  var kop = con ? "<p><span class='es'>"+con.tekst+"</span></p><p>"+con.nl+"</p>"+
+                  "<div style='border-top:1px solid var(--border); margin:6px 0 4px'></div>" : "";
   var b = leesBetekenis(woord);
   leesNoteer(stripAcc(String(woord).toLowerCase()).replace(/[^a-z]/g, ""));
   if(!b){
@@ -11207,7 +11393,7 @@ function leesToon(woord, span){
        doña Inés. "Staat niet in het woordenboek" leest daar als een storing, terwijl er niets mis is.
        Het wordt wel gewoon genoteerd, want als je op een naam tikt wilde je iets weten. */
     var naam = /^[A-ZÁÉÍÓÚÑ]/.test(String(woord));
-    el.innerHTML = "<p><span class='es'>"+woord+"</span></p>"+
+    el.innerHTML = kop + "<p><span class='es'>"+woord+"</span></p>"+
       "<p class='muted' style='font-size:.85rem'>"+
         (naam ? ct("Een naam, van een persoon of een plaats.","A name, of a person or a place.")
               : ct("Staat niet in het woordenboek. Genoteerd.","Not in the dictionary. Noted."))+"</p>";
@@ -11221,7 +11407,7 @@ function leesToon(woord, span){
   /* Een woord uit een uitdrukking krijgt een ander voorzetsel: "in de uitdrukking" in plaats van
      "van". Anders leest de tooltip als de betekenis van dat ene woord, en dat is het niet. */
   var brug = b.uitdrukking ? ct("in de uitdrukking","in the expression") : ct("van","from");
-  el.innerHTML = "<p><span class='es'>"+woord+"</span>"+
+  el.innerHTML = kop + "<p><span class='es'>"+woord+"</span>"+
       (stripAcc(String(b.es).toLowerCase()) !== stripAcc(String(woord).toLowerCase())
         ? " <span class='muted'>"+brug+" <span class='es'>"+b.es+"</span></span>" : "")+
       extra+"</p>"+
@@ -11233,6 +11419,7 @@ function renderBoekLectura(){
   var h = bState.h;
   var el = document.getElementById("lezenCard");
   // v23.21: elk woord is aan te tikken. De alinea's blijven verder precies zoals ze waren.
+  leesWoorden = [];
   var paras = h.tekst.split("\n\n").map(function(p){ return "<p>"+leesTekstHtml(p)+"</p>"; }).join("");
   var inFlowBoek = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "boek");
   el.innerHTML = (inFlowBoek ? lesFlowBannerHtml() : "")+"<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
