@@ -275,6 +275,10 @@ const VOORBEELD_VRAAG = {
 
 const STIJL = `Stijl-eisen (belangrijk):
 - Alledaags, natuurlijk Spaans zoals in Spanje gesproken wordt. Geen letterlijk vertaald Nederlands.
+- De zin moet ergens over gaan. Iets wat een mens op een gewone dag tegen een ander zegt. Grammaticaal
+  kloppen is niet genoeg: "Las mesas son tímidas" (de tafels zijn verlegen) en "Busco las casas" (ik
+  zoek de huizen) zijn correct Spaans en toch onbruikbaar, want niemand zegt dat. Kies liever een
+  saaie ware zin dan een grammaticaal keurige onzinzin.
 - A2-woordenschat, korte zinnen, geen literaire constructies.
 - "uitleg" legt in het Nederlands uit WAAROM het antwoord zo is: twee zinnen, concreet, met de vorm erin.
   Geen verwijzingen naar regelnummers of naar "de spiekbrief".
@@ -353,8 +357,12 @@ Antwoord met UITSLUITEND JSON:
 function promptTegenlezerZinnen(items) {
   return `Je bent corrector Spaans (Spanje, niveau A2/B1) voor een leerapp. Controleer per item:
 (1) is het Spaans correct en natuurlijk, (2) klopt de Nederlandse vertaling, (3) klopt de uitleg,
-(4) staat het antwoord (kleine letters, zonder accenten) in "alt".
-Wees streng op fouten, maar keur niets af om stijlvoorkeur.
+(4) SLAAT DE ZIN ERGENS OP? Zou een mens dit op een gewone dag tegen een ander zeggen? Keur af als de
+    zin grammaticaal klopt maar inhoudelijk onzin is. Voorbeelden die zijn doorgeglipt en dus af
+    hadden gemoeten: "Las mesas son tímidas" (de tafels zijn verlegen), "Busco las casas" (ik zoek de
+    huizen). Correct Spaans, maar niemand zegt dat.
+Wees streng op fouten en op onzin, maar keur niets af om stijlvoorkeur.
+Het veld "alt" hoef je niet te controleren: dat vullen wij machinaal aan.
 
 ${JSON.stringify(items, null, 1)}
 
@@ -365,7 +373,9 @@ bij ok:false in "reden" één zin over wat er mis is.`;
 function promptTegenlezerToets(qz) {
   return `Je bent corrector Spaans (Spanje, A2/B1) voor een leerapp. Hieronder een grammatica-toetsje.
 Controleer per vraag: is het Spaans correct, is er precies één juist antwoord, wijst "c" naar dat
-antwoord, en klopt de uitleg? Keur het hele toetsje af zodra één vraag fout is.
+antwoord, klopt de uitleg, en SLAAT DE ZIN ERGENS OP? Een vraag als "Las mesas son ___ (de tafels zijn
+verlegen)" is grammaticaal in orde en toch fout: niemand zegt dat. Ook: staan er geen twee identieke
+opties tussen. Keur het hele toetsje af zodra één vraag fout is.
 
 ${JSON.stringify(qz, null, 1)}
 
