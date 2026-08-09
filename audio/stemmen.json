@@ -3,7 +3,8 @@
     "dictado": "nTkjq09AuYgsNR8E4sDe",
     "boek": "imFXYz8XIletRKLZZQaA",
     "dialogo-a": "nTkjq09AuYgsNR8E4sDe",
-    "dialogo-b": "OjrdP8Z2fWjVyt0scrL7"
+    "dialogo-b": "OjrdP8Z2fWjVyt0scrL7",
+    "hist": "YKrm0N1EAM9Bw27j8kuD"
   },
   "boek": {
     "boek-1": {
@@ -1445,6 +1446,68 @@
       "model": "eleven_multilingual_v2",
       "hash": "160f0d7edbdc63ac",
       "tekens": 57
+    }
+  },
+  "hist": {
+    "hist-1": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "2d5a35707a112f66",
+      "tekens": 835
+    },
+    "hist-2": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "81da8500b8f4c9b2",
+      "tekens": 716
+    },
+    "hist-3": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "b73f6a6a9b01f21e",
+      "tekens": 863
+    },
+    "hist-4": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "684ed3f5e490b85a",
+      "tekens": 706
+    },
+    "hist-5": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "a2c6328088bb6894",
+      "tekens": 756
+    },
+    "hist-6": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "6f244466f9df1f74",
+      "tekens": 823
+    },
+    "hist-7": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "71d9f1bcb7ba8721",
+      "tekens": 791
+    },
+    "hist-8": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "eb7ff1c107cc6c72",
+      "tekens": 842
+    },
+    "hist-9": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "01e907456b026c3f",
+      "tekens": 735
+    },
+    "hist-10": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "f01d6785a8b381ec",
+      "tekens": 829
     }
   }
 }

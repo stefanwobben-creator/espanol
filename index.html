@@ -1127,7 +1127,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.26";
+var APP_VERSIE = "v23.27";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -11075,7 +11075,11 @@ function startBoek(id){
 function boekSpreek(h){
   boekStop();
   try{
-    var a = new Audio("audio/boek/" + h.id + ".mp3");
+    /* v23.27: de geschiedenisreeks heeft een eigen verteller en dus een eigen map. Het voorvoegsel
+       van het id bepaalt waar we zoeken, net zoals de boekenplank er de reeks aan herkent. Ontbreekt
+       het bestand, dan valt de app terug op de voorleesstem van de browser; dat was al zo. */
+    var map = String(h.id).indexOf("hist-") === 0 ? "hist" : "boek";
+    var a = new Audio("audio/" + map + "/" + h.id + ".mp3");
     boekAudioEl = a;
     var teruggevallen = false;
     function valTerug(){ if(teruggevallen) return; teruggevallen = true; }

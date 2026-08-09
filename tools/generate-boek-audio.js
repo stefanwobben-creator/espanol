@@ -25,16 +25,30 @@
 
 const lib = require("./audio-lib");
 
+/* v23.27: BOOK bevat sinds v23.23 twee reeksen. Chispa (boek-*) houdt zijn verteller, de
+   geschiedenisreeks (hist-*) krijgt een eigen stem en een eigen map. De verdeling gebeurt op het
+   id-voorvoegsel, want dat is hoe de app ze zelf ook uit elkaar houdt. */
+function groepVan(id){ return String(id).indexOf("hist-") === 0 ? "hist" : "boek"; }
+
 async function main(){
   const opties = lib.leesOpties(process.argv);
-  const cfg = lib.leesConfig(opties, ["boek"]);
-  const hoofdstukken = lib.leesHoofdstukken();
+  const alle = lib.leesHoofdstukken();
+  const perGroep = { boek: [], hist: [] };
+  alle.forEach(function(h){ perGroep[groepVan(h.id)].push(h); });
+  const groepen = ["boek", "hist"].filter(function(g){ return perGroep[g].length; });
+  const cfg = lib.leesConfig(opties, groepen);
   if(!opties.droog){
-    await lib.controleerVooraf(cfg, ["boek"]);
-    console.log("Stem: " + lib.stemVoor("boek", cfg) + " · model: " + cfg.model);
+    await lib.controleerVooraf(cfg, groepen);
+    groepen.forEach(function(g){
+      console.log("Stem (" + g + "): " + lib.stemVoor(g, cfg) + " · model: " + cfg.model);
+    });
   }
-  const r = await lib.verwerk("boek", hoofdstukken, opties, cfg, 400);
-  lib.slotwoord([r], cfg, opties);
+  const uit = [];
+  for(const g of groepen){
+    console.log("\n== " + g + " (" + perGroep[g].length + " hoofdstukken) ==");
+    uit.push(await lib.verwerk(g, perGroep[g], opties, cfg, 400));
+  }
+  lib.slotwoord(uit, cfg, opties);
 }
 
 main().catch(function(e){ console.error("Onverwachte fout:", e); process.exit(1); });

@@ -139,7 +139,12 @@ const GROEP_ENV = {
      is een dialoog juist moeilijker te volgen dan hij hoort te zijn. Twee groepen, twee mappen:
      audio/dialogo-a en audio/dialogo-b, precies zoals de app ze zoekt. */
   "dialogo-a": "ELEVENLABS_VOICE_DIALOGO_A",
-  "dialogo-b": "ELEVENLABS_VOICE_DIALOGO_B"
+  "dialogo-b": "ELEVENLABS_VOICE_DIALOGO_B",
+  /* v23.27: de geschiedenisreeks is een eigen groep, met een eigen verteller. Niet om het mooi te
+     maken maar om het betaalbaar te houden: het manifest houdt de stem per groep bij, dus zonder
+     eigen groep zou een andere stem voor de nieuwe hoofdstukken betekenen dat alle Chispa-
+     hoofdstukken als gewijzigd gelden en opnieuw ingesproken worden. */
+  hist: "ELEVENLABS_VOICE_HIST"
 };
 // Elke groep die dit bestand kent. Het is niet de lijst die een run verwerkt: welke groepen een run
 // aanraakt, geeft het aanroepende script mee aan leesConfig().
@@ -153,7 +158,10 @@ const GROEP_STEMINSTELLING = {
   // Een gesprek mag iets losser klinken dan een dicteeroefening, maar niet zo los als een verteller:
   // je moet er nog steeds elk woord uit kunnen halen.
   "dialogo-a": { stability: 0.55, similarity_boost: 0.8 },
-  "dialogo-b": { stability: 0.55, similarity_boost: 0.8 }
+  "dialogo-b": { stability: 0.55, similarity_boost: 0.8 },
+  // Iets stabieler dan het verhaal: bij jaartallen, plaatsnamen en cijfers wil je geen verteller
+  // die improviseert. Het is iemand die je iets vertelt, geen voorlezer van een sprookje.
+  hist: { stability: 0.55, similarity_boost: 0.78 }
 };
 
 function stemVoor(groep, cfg){
