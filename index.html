@@ -1109,7 +1109,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.15";
+var APP_VERSIE = "v23.16";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6430,15 +6430,20 @@ function tempoVandaag(){
     return S.tempo;
   }
   var nieuw = dagPortieNieuw(), cap = dagPortieCap();
-  var k = leerKpi().recent;
-  if(k.pog >= 40 && k.pct !== null){
-    if(k.pct < 15){ nieuw = dagPortieNieuw() + 2; cap = dagPortieCap() + 6; }
-    else if(k.pct > 25){ nieuw = Math.round(dagPortieNieuw() / 2); }
+  /* v23.16: hier hing het tempo aan het foutpercentage, met 15 en 25 procent als grenzen. Zie de
+     toelichting bij afgemaakt7() voor waarom dat het verkeerde getal was. Nu stuurt of je je portie
+     afmaakt, en dat vraagt een week aan dagen voordat het iets zegt: onder de zeven dagen blijft de
+     portie staan zoals hij is, want een nieuwe gebruiker heeft nog niets afgemaakt en hoort daar
+     niet voor gestraft te worden. */
+  var af = afgemaakt7(), dgn = dagenTotaal();
+  if(dgn >= 7){
+    if(af >= 6){ nieuw = dagPortieNieuw() + 3; cap = dagPortieCap() + 8; }
+    else if(af <= 3){ nieuw = Math.round(dagPortieNieuw() / 2); }
   }
   // v20.5: de vloer. Knijpen mag, uithongeren niet.
   nieuw = Math.max(nieuw, dagPortieVloer());
   cap = Math.max(cap, nieuw + 3);
-  S.tempo = {d:t, n:Math.min(nieuw, MAX_NEW_PER_DAY), cap:cap, pct:(k.pct === null ? -1 : k.pct)};
+  S.tempo = {d:t, n:Math.min(nieuw, nieuwPlafond()), cap:cap, pct:af};
   persist();
   return S.tempo;
 }
@@ -7155,10 +7160,30 @@ function allowedSentIds(){
 
 /* ================= WOORDJES (SRS, 5-15 nieuwe per dag) ================= */
 var MAX_NEW_PER_DAY = 15, MIN_NEW_PER_DAY = 5;
+/* v23.16. MAX_NEW_PER_DAY stond op 15 en dagPortieNieuw() is doelMinuten() maal 0,5. Bij dertig
+   minuten zijn die twee dus precies gelijk, en dat is de stand die Stefan had staan. Gevolg: het
+   plafond zat bovenop zijn eigen instelling, en 45 of 60 minuten kiezen leverde geen enkel woord
+   extra op. Zijn les was in vier minuten klaar met dertig minuten ingesteld.
+   Het plafond hoort niet vast te staan maar bij je instelling te horen. De 60 erboven is de echte
+   bovengrens: meer dan zestig nieuwe woorden op een dag is geen leren meer maar doorbladeren, en
+   dat blijft de app weigeren ook als je hem erom vraagt. */
+function nieuwPlafond(){
+  return Math.max(MIN_NEW_PER_DAY, Math.min(60, Math.round(doelMinuten() * 0.75)));
+}
+/* Hoe vaak maakte je je dagportie de laatste week af? Dit stuurt het tempo, in plaats van het
+   foutpercentage dat er tot v23.15 aan hing. Twee redenen. Het foutpercentage telt nieuwe woorden,
+   herhalingen, dictado en toetsjes bij elkaar op, dus het zegt niet of jouw portie past. En de
+   grenzen eraan (onder 15 procent erbij, boven 25 eraf) waren verzonnen getallen.
+   Of je afmaakt wat je krijgt is geen afgeleide. Het is de vraag zelf. */
+function afgemaakt7(){
+  var t = today(), n = 0, i;
+  for(i = 0; i < 7; i++){ if(S.lesFlow && S.lesFlow[addDays(t, -i)]) n++; }
+  return n;
+}
 var wQueue = [], wCur = null, wShown = false, wSessionDone = 0;
 
 function newToday(){ return S.newIntro[today()] || 0; }
-function newAllowance(){ return Math.max(0, MAX_NEW_PER_DAY - newToday()); }
+function newAllowance(){ return Math.max(0, nieuwPlafond() - newToday()); }
 
 /* ================= DE DAGPORTIE (v19.66) =================
    v19.64 haalde de schuldteller weg, maar niet de stapel eronder. Wie na drie weken terugkwam zag
@@ -7925,10 +7950,10 @@ function renderWord(){
       "<p class='muted'>"+ct("Je hebt "+wSessionDone+" "+(wSessionDone===1?"kaartje":"kaartjes")+" gedaan. ",
                              "You did "+wSessionDone+" card"+(wSessionDone===1?"":"s")+". ")+
       (capRest.length ? (scopeLesson
-        ? ct("Er "+(capRest.length===1?"wacht nog 1 nieuw woord":"wachten nog "+capRest.length+" nieuwe woorden")+" achter je dagmaximum van "+MAX_NEW_PER_DAY+". Morgen komen ze vanzelf, of doe ze nu.",
-             capRest.length===1?"1 new word is waiting behind your daily max of "+MAX_NEW_PER_DAY+". It'll come tomorrow, or do it now.":capRest.length+" new words are waiting behind your daily max of "+MAX_NEW_PER_DAY+". They'll come tomorrow, or do them now.")
-        : ct("Dit was je portie voor vandaag: "+MAX_NEW_PER_DAY+" nieuwe woordjes per dag blijven beter plakken dan honderd in een keer. Morgen staan de volgende klaar.",
-             "That was your round for today: "+MAX_NEW_PER_DAY+" new words a day stick better than a hundred at once. The next ones are ready tomorrow."))
+        ? ct("Er "+(capRest.length===1?"wacht nog 1 nieuw woord":"wachten nog "+capRest.length+" nieuwe woorden")+" achter je dagmaximum van "+nieuwPlafond()+". Morgen komen ze vanzelf, of doe ze nu.",
+             capRest.length===1?"1 new word is waiting behind your daily max of "+nieuwPlafond()+". It'll come tomorrow, or do it now.":capRest.length+" new words are waiting behind your daily max of "+nieuwPlafond()+". They'll come tomorrow, or do them now.")
+        : ct("Dit was je portie voor vandaag: "+nieuwPlafond()+" nieuwe woordjes per dag blijven beter plakken dan honderd in een keer. Morgen staan de volgende klaar.",
+             "That was your round for today: "+nieuwPlafond()+" new words a day stick better than a hundred at once. The next ones are ready tomorrow."))
         : (scopeLesson ? "Alle woorden van deze les zitten in je herhaalsysteem en komen vanzelf terug."
           : (meerPortie ? ct("Dit was je portie voor vandaag. Genoeg is genoeg, maar doorgaan mag.","That was your round for today. Enough is enough, but you may carry on.")
                         : ct("Herhalingen komen vanzelf terug; nieuwe woorden vind je in de volgende les.","Reviews come back on their own; new words are waiting in the next lesson."))))+"</p>"+
@@ -11954,7 +11979,7 @@ function ritmeCard(){
      v19.64 staat nog: "14 herhalingen open" komt nooit meer terug. Een getal dat groeit terwijl je
      niets doet, straft wegblijven af en maakt terugkomen duurder naarmate je langer weg was. */
   var chipsHtml = "";
-  if(rel.chipNieuw) chipsHtml += chip(nieuw >= dagPortieVloer(), ct("nieuwe woorden ","new words ")+nieuw+"/"+dagPortieVloer()+" (max "+MAX_NEW_PER_DAY+")");
+  if(rel.chipNieuw) chipsHtml += chip(nieuw >= dagPortieVloer(), ct("nieuwe woorden ","new words ")+nieuw+"/"+dagPortieVloer()+" (max "+nieuwPlafond()+")");
   if(rel.chipHerhaal) chipsHtml += chip(true, ct("herhalingen bij","reviews done"));
   if(rel.chipDoel) chipsHtml += chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" "+xpw());
   if(chipsHtml) chipsHtml = "<div class='ritme' style='margin-top:10px'>"+chipsHtml+"</div>";
@@ -12099,10 +12124,34 @@ function dagNiveau(){
   return NIV_NAAM[r];
 }
 
+/* v23.16. Ging de poort open, dan kwam er in stilte een hele voorraad woorden bij. Stefan zag
+   daar niets van: dezelfde portie, dezelfde knop, alleen andere woorden erin. Dat is precies het
+   moment waarop een app kan laten merken dat er iets verdiend is.
+   Wat hier bewust niet gebeurt is de portie vergroten. Zien dat de plank vol ligt is iets anders
+   dan hem in een keer op je bord krijgen, en de portie is niet voor niets klein en voorspelbaar. */
+function poortNieuws(){
+  var po = S && S.poortOpen;
+  if(!po || po.dag !== today()) return null;          // alleen op de dag zelf, daarna is het oud nieuws
+  var r = po.rang;
+  if(!(r > 0)) return null;
+  var niv = NIV_NAAM[Math.min(r, NIV_NAAM.length - 1)], n = 0, i, w;
+  for(i = 0; i < WORDS.length; i++){
+    w = WORDS[i];
+    if(S.srs[w.id]) continue;
+    if(woordNiveau(w.id) === r) n++;
+  }
+  return {rang:r, niv:niv, aantal:n};
+}
 function dagNieuwsRegels(){
   var och = dagSnapOchtend();
   var nu = dagSnapNu();
   var r = [];
+  var pn = poortNieuws();
+  if(pn){
+    r.push({e:"\ud83d\udd13", go:"perfil",
+      t:ct("<b>"+NIV_NAAM[Math.max(0, pn.rang - 1)]+" staat.</b> Er staan "+pn.aantal+" nieuwe "+pn.niv+"-woorden klaar",
+           "<b>"+NIV_NAAM[Math.max(0, pn.rang - 1)]+" is in place.</b> "+pn.aantal+" new "+pn.niv+" words are ready")});
+  }
   dagKrabbels().forEach(function(x){
     var kr = null;
     try { kr = krabbelVind(x.sleutel); } catch(e){}
@@ -12124,6 +12173,15 @@ function dagNieuwsRegels(){
   return r;
 }
 function dagNieuwsHtml(){
+  /* De stand onthouden gebeurt hier en niet in dagNieuwsRegels(), want die wordt ook als stille
+     lezer aangeroepen vanuit dagRelevantie() en een lezer hoort niets te veranderen. De eerste keer
+     wordt de stand stil gezet: een nieuwe gebruiker heeft niets ontgrendeld en hoort geen felicitatie
+     te krijgen voor het openen van de app. */
+  try {
+    var pr = poortRang();
+    if(S.poortGezien === undefined || S.poortGezien === null){ S.poortGezien = pr; persist(); }
+    else if(pr > S.poortGezien){ S.poortOpen = {rang:pr, dag:today()}; S.poortGezien = pr; persist(); }
+  } catch(e){}
   var r = dagNieuwsRegels();
   // v20.1: geen nieuws is geen kaart. De vorige versie zette hier een blok neer met daarin de
   // mededeling dat het blok leeg was, plus een aansporing om je les te doen. Die knop staat al
