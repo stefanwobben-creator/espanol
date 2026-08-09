@@ -118,8 +118,11 @@ async function dagFoto(page) {
   ok(naBasis.lijn, 'en dus ook de kaart eromheen');
   ok(!naBasis.strook, 'maar de staafjes nog niet: één blok tegelijk, elk om zijn eigen reden');
   // v23.2: zie pw-a1vandaag. De noemer moet zichtbaar zijn, de rest staat in de legenda.
-  ok(naBasis.tekst.indexOf('van de 390 A1-woorden') !== -1,
-    'de zin noemt jouw niveau en de noemer erbij');
+  // v23.15: het getal wordt opgehaald in plaats van opgeschreven, want het hoort bij de sleutellijst
+  // en die groeit mee met wat de app aan Cervantes in huis heeft.
+  const noemA1 = await page.evaluate(() => PCIC_NOEMER.A1);
+  ok(naBasis.tekst.indexOf('van de ' + noemA1 + ' A1-woorden') !== -1,
+    'de zin noemt jouw niveau en de noemer erbij (' + noemA1 + ')');
   ok(/onderweg/.test(naBasis.tekst), 'en wat er onderweg is telt zichtbaar mee');
 
   console.log('\n-- de lijn komt vanaf twee dagen --');
@@ -214,7 +217,9 @@ async function dagFoto(page) {
   // niet de woordkeuze maar dat er een niveau in staat, want zonder niveau meet de balk iets
   // anders dan de lezer denkt. Dus: het niveau moet erin, de rest mag veranderen.
   ok(/A2/.test(kop) && kop.length > 2, 'het kopje boven de balk noemt A2 ("' + kop + '")');
-  ok(naA2.tekst.indexOf('van de 409 A2-woorden') !== -1, 'en de noemer is die van A2, niet die van A1');
+  const noemA2 = await page.evaluate(() => PCIC_NOEMER.A2);
+  ok(noemA2 !== noemA1 && naA2.tekst.indexOf('van de ' + noemA2 + ' A2-woorden') !== -1,
+     'en de noemer is die van A2, niet die van A1 (' + noemA2 + ' tegenover ' + noemA1 + ')');
 
   console.log('\n-- weggelaten is niet verstopt --');
   await page.evaluate(() => show('perfil'));

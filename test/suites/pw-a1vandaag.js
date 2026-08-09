@@ -106,9 +106,18 @@ async function nieuwProfiel(page) {
   const cijfers = await page.evaluate(() => {
     const t = voortgangTellers();
     const tekst = document.getElementById('lijnKaart').innerText;
-    return { dek: t.dek.A1 || 0, noemer: PCIC_NOEMER.A1, tekst: tekst.replace(/\s+/g, ' ') };
+    return { dek: t.dek.A1 || 0, noemer: PCIC_NOEMER.A1,
+             sleutels: Object.keys(pcicKeysApp().A1 || {}).length,
+             tekst: tekst.replace(/\s+/g, ' ') };
   });
-  ok(cijfers.noemer === 390, 'de noemer is de 390 A1-eenheden van het Cervantes');
+  /* v23.15: hier stond `noemer === 390`. Dat getal is 409 geworden omdat de noemer nu uit dezelfde
+     uitpakregel komt als de sleutellijst, en een suite die op een teller staat valt om zodra die
+     teller loopt. Wat hier echt onder ligt is een verhouding: de noemer is de Cervantes-telling van
+     A1, en de app hoort daar bijna alles van in huis te hebben. Zakt dat weg, dan meet de balk iets
+     anders dan de lezer denkt, en dat is wel een reden om rood te worden. */
+  ok(cijfers.noemer > 0 && cijfers.sleutels / cijfers.noemer >= 0.9,
+     'de noemer is de A1-telling van het Cervantes en de app heeft er minstens 90 procent van ('
+     + cijfers.sleutels + '/' + cijfers.noemer + ')');
   // v23.2: de zin met het bewezen aantal erin is weg (dat getal staat in de legenda). Wat deze test
   // bewaakt blijft hetzelfde: de noemer moet zichtbaar zijn, anders is de legenda maatloos.
   ok(cijfers.tekst.indexOf('van de ' + cijfers.noemer + ' A1-woorden') !== -1,

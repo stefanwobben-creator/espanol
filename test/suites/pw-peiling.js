@@ -125,19 +125,23 @@ async function beantwoord(page, aantal) {
   ok(await page.evaluate(() => niveauSchatting('A2') === null), 'en over A2 doet de app dan ook geen uitspraak');
 
   console.log('\n-- de rekensom, op de cent --');
+  /* v23.15: deze vier getallen stonden hier als 390, 130 en 260. Dat waren geen losse waarden maar
+     de noemer en twee breuken daarvan, en de noemer is 409 geworden. Ze worden nu uitgerekend uit
+     PCIC_NOEMER, zodat de suite de rekensom bewaakt en niet de stand van de teller. */
+  const noem = await page.evaluate(() => PCIC_NOEMER.A1);
   const alles = await zetItems(page, 30, 0, 0);
-  ok(alles && alles.punt === 390, 'dertig keer goed op een leeg profiel: schatting 390 (' + (alles && alles.punt) + ')');
-  ok(alles && alles.onder < 390 && alles.onder > 330, 'met een ondergrens eronder, geen zekerheid (' + (alles && alles.onder) + ')');
-  ok(alles && alles.boven === 390, 'en een bovengrens op de noemer (' + (alles && alles.boven) + ')');
+  ok(alles && alles.punt === noem, 'dertig keer goed op een leeg profiel: schatting ' + noem + ' (' + (alles && alles.punt) + ')');
+  ok(alles && alles.onder < noem && alles.onder > noem * 0.8, 'met een ondergrens eronder, geen zekerheid (' + (alles && alles.onder) + ')');
+  ok(alles && alles.boven === noem, 'en een bovengrens op de noemer (' + (alles && alles.boven) + ')');
 
   const niets = await zetItems(page, 0, 30, 0);
   ok(niets && niets.punt === 0, 'dertig keer fout: schatting 0 (' + (niets && niets.punt) + ')');
 
   const half = await zetItems(page, 15, 15, 0);
-  ok(half && half.punt === 130, 'vijftien goed en vijftien fout is na gokcorrectie een derde: 130 (' + (half && half.punt) + ')');
+  ok(half && half.punt === Math.round(noem / 3), 'vijftien goed en vijftien fout is na gokcorrectie een derde: ' + Math.round(noem / 3) + ' (' + (half && half.punt) + ')');
 
   const geen = await zetItems(page, 20, 0, 10);
-  ok(geen && geen.punt === 260, '"geen idee" telt als niet gekend maar niet als gokfout: 260 (' + (geen && geen.punt) + ')');
+  ok(geen && geen.punt === Math.round(noem * 2 / 3), '"geen idee" telt als niet gekend maar niet als gokfout: ' + Math.round(noem * 2 / 3) + ' (' + (geen && geen.punt) + ')');
 
   console.log('\n-- onder de twintig antwoorden zwijgt de balk --');
   const weinig = await zetItems(page, 19, 0, 0);

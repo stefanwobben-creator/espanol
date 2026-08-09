@@ -184,9 +184,12 @@ const { chromium } = require('playwright');
   ok(/avocado/i.test(agu), 'de uitklap toont wel de betekenis, ook als de app er verder niets over te zeggen heeft');
 
   // --- 11. een werkwoord uit de zoekstaart krijgt dezelfde behandeling, geen aparte rijtjesknop ---
-  await page.fill('#dicZoek', 'hornear');
+  /* v23.15: hier stond hornear. Dat woord staat in de Cervantes-inventaris en is daarmee een
+     gewoon leswoord geworden, dus het komt niet meer als zoekstaart-treffer langs. derretir doet
+     wat hornear hier deed: een werkwoord dat alleen in de frequentielijst zit. */
+  await page.fill('#dicZoek', 'derretir');
   await page.waitForTimeout(250);
-  const selVerb = '.dicrow[data-dic="freq:hornear"]';
+  const selVerb = '.dicrow[data-dic="freq:derretir"]';
   await page.click(selVerb + ' .dichead');
   await page.waitForTimeout(220);
   ok(await page.locator(selVerb + ' button').count() === 0, 'een werkwoord uit de zoekstaart krijgt ook geen eigen knoppen (consistentie)');
