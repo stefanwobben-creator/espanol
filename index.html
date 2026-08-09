@@ -649,8 +649,6 @@
   .feestcijfers div{flex:1; background:var(--amber-soft); border:1.5px solid var(--amber); border-radius:12px; padding:8px 4px;}
   .feestcijfers b{display:block; font-size:1.2rem; color:var(--ink);}
   .feestcijfers span{font-size:.7rem; color:var(--muted);}
-  .feestmorgen{background:var(--bg); border:1.5px dashed var(--border); border-radius:14px; padding:12px 12px 10px; margin:0 0 12px; text-align:left;}
-  .feestmorgen .kicker{margin-bottom:2px;}
   .feestcard .row{justify-content:center;}
   .feestklein{font-size:.78rem; color:var(--muted); margin:10px 0 0;}
   .feestklein span{text-decoration:underline; cursor:pointer;}
@@ -1104,7 +1102,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.12";
+var APP_VERSIE = "v23.13";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10365,7 +10363,6 @@ function dagFeestKaart(){
   var t = today();
   var xp = S.xp[t] || 0;
   var st = dagenTotaal();
-  var heeftMoment = !!(S.ritme && S.ritme.wanneer);
   var dans = ["chsalsa","chcumbia","chmerengue","chjarabe"][Math.floor(Math.random()*4)];
   return "<div class='feestwrap' id='feestWrap'><div class='feestcard'>"+
     "<div class='feestpet "+dans+"'>"+petSVG()+"</div>"+
@@ -10376,13 +10373,18 @@ function dagFeestKaart(){
       "<div><b>"+st+"</b><span>"+ct(st===1?"dag erbij geweest":"dagen erbij geweest", st===1?"day showed up":"days showed up")+"</span></div>"+
       "<div><b>🫒 "+(S.tapas||0)+"</b><span>tapas</span></div>"+
     "</div>"+
-    // v22.1: hier stond "Wanneer doe je hem morgen?". Een goede gewoontetechniek op een plek waar
-    // hij niet hoort: je hebt net iets afgerond en krijgt dan een planningsvraag. Wie zijn moment al
-    // had ingevuld ziet hem nog wel, want dat is dan zijn eigen afspraak en geen nieuwe vraag.
-    (heeftMoment
-      ? "<div class='feestmorgen' id='feestMorgen'><span class='kicker'>"+ct("Morgen","Tomorrow")+"</span>"+
-        "<p style='margin:4px 0 0'>📌 <b>"+momentTekst()+"</b></p></div>"
-      : "")+
+    /* v22.1 haalde hier de vraag "Wanneer doe je hem morgen?" weg, maar liet het antwoord staan voor
+       wie het ooit had ingevuld. v23.13 haalt ook dat weg. Stefan: "als ik klaar ben staat er nog
+       wanneer ik de volgende les doe. Dat kan hier weg."
+
+       Zijn redenering eronder is scherper dan de techniek zelf: een implementatie-intentie helpt wie
+       een doel heeft en een deadline, en werkt averechts bij wie het voor de lol doet, want dan wordt
+       het een afspraak die je kunt breken. Dit scherm is het moment waarop je net klaar bent en je
+       goed voelt. Daar een afspraak voor morgen naast zetten maakt van een afgeronde dag een
+       openstaande verplichting.
+
+       Je eigen moment staat nog wel op de leskaart zelf, waar je hem uitvoert. Dat is de plek waar
+       een implementatie-intentie hoort te werken: het moment roept de handeling op. */
     "<div class='row'><button class='primary' id='btnFeestKlaar'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button></div>"+
     "<p class='feestklein'><span id='btnFeestDoor'>"+ct("toch nog even door","keep going anyway")+"</span></p>"+
     "</div></div>";
@@ -10432,7 +10434,9 @@ function dagFeestToon(){
     persist(); syncUp();
     dagFeestSluit();
     if(S.ritme && S.ritme.wanneer){
-      toast(ct("Tot morgen, "+momentTekst()+".","See you tomorrow, "+momentTekst()+"."));
+      // v23.13: hier stond het moment er nog een keer bij, op precies hetzelfde scherm als het blok
+      // hierboven. Eén afscheid is genoeg.
+      toast(ct("Tot morgen.","See you tomorrow."));
     }
     renderLessons();
     show("lessen");
@@ -11163,18 +11167,22 @@ function muurItemHtml(ev, ik){
 function muurHtml(){
   var g = muurGroep();
   if(!g) return "";
-  if(!muurData) return "<div class='card' id='muurCard'><h2>" + ct("De muur", "The wall") + " 👥</h2>" +
-    "<p class='muted'>" + ct("Even ophalen…", "Loading…") + "</p></div>";
+  /* v23.13. Hier stond een kop "De muur 👥". Stefan: "muur is beetje rare naam, ik denk dat we gewoon
+     direct resultaat kunnen laten zien en het geen naam/titel hoeven te geven." Dezelfde ingreep als
+     bij het woordenboek: een kop die vertelt wat je al ziet, is een regel die je moet lezen voordat je
+     bij het antwoord bent. De regels spreken voor zich. */
+  if(!muurData) return "<div class='card' id='muurCard'>" +
+    "<p class='muted' style='margin:0'>" + ct("Even ophalen…", "Loading…") + "</p></div>";
   var ik = krabbelIkBen();
   var lijst = muurGebeurtenissen(muurData.spelers);
-  return "<div class='card' id='muurCard'><h2>" + ct("De muur", "The wall") + " 👥</h2>" +
+  /* De uitleg onderaan ("één regel per persoon per dag") is met de kop meegegaan: die legde een regel
+     uit die je alleen merkt als je hem mist, en tot die tijd is het een zin die niets doet. */
+  return "<div class='card' id='muurCard'>" +
     (lijst.length
       ? lijst.map(function(ev){ return muurItemHtml(ev, ik); }).join("")
-      : "<p class='muted'>" + ct("Deze week nog niets. Zodra iemand iets leert, staat het hier.",
+      : "<p class='muted' style='margin:0'>" + ct("Deze week nog niets. Zodra iemand iets leert, staat het hier.",
                                  "Nothing yet this week. As soon as someone learns something, it shows up here.") + "</p>") +
-    "<p class='muted' style='margin:10px 0 0; font-size:.82rem'>" +
-      ct("Eén regel per persoon per dag, de zwaarste van die dag.",
-         "One line per person per day: the biggest thing of that day.") + "</p></div>";
+    "</div>";
 }
 
 function muurHaal(){

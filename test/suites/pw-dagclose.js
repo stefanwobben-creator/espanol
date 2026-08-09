@@ -106,7 +106,12 @@ const { chromium } = require('playwright');
   ok(bewaard.weg === true, 'en het feestscherm gaat weg');
   ok(bewaard.dagKlaarFn === true, 'dagKlaar() klopt');
 
-  // wie zijn moment ooit invulde, ziet zijn eigen afspraak nog wel terug
+  // v23.13: wie zijn moment ooit invulde, zag zijn eigen afspraak hier nog wel terug. Ook dat is nu
+  // weg. Stefan: "als ik klaar ben staat er nog wanneer ik de volgende les doe. Dat kan hier weg." Zijn
+  // redenering: plannen helpt wie een doel en een deadline heeft, en werkt averechts bij wie het voor
+  // de lol doet, want dan wordt het een afspraak die je kunt breken. Dit scherm is het moment waarop je
+  // net klaar bent; daar hoort geen openstaande verplichting bij. Het moment staat nog wel op de
+  // leskaart zelf, waar je hem uitvoert.
   const eigenAfspraak = await page.evaluate(() => {
     const bewaarDag = JSON.parse(JSON.stringify(S.dag || {}));
     S.dag = { wacht: today() }; S.ritme = { wanneer: 'stil' };
@@ -118,7 +123,7 @@ const { chromium } = require('playwright');
     S.dag = bewaarDag; S.dag.klaar = today();
     return { toont: /📌/.test(t), tekst: momentTekst() };
   });
-  ok(eigenAfspraak.toont === true, 'een bestaande afspraak staat er nog wel bij (' + eigenAfspraak.tekst + ')');
+  ok(eigenAfspraak.toont === false, 'ook een bestaande afspraak staat niet meer op het klaar-scherm');
 
   // ---------- 5. het lessenoverzicht is daarna rustig ----------
   const rustig = await page.evaluate(() => {
@@ -154,7 +159,7 @@ const { chromium } = require('playwright');
     return r;
   });
   ok(alGezet.picks === 0, 'wie zijn moment al heeft, krijgt de vraag niet nog een keer');
-  ok(/koffie|coffee/.test(alGezet.tekst), 'in plaats daarvan staat zijn eigen moment er als herinnering');
+  ok(!/koffie|coffee/.test(alGezet.tekst), 'en zijn moment staat er ook niet als herinnering: dat hoort op de leskaart');
 
   // ---------- 8. einde les: stoppen kan altijd, en het is altijd de hoofdknop ----------
   // v20.5: dit stond hier andersom. Onder het dagdoel wás "nog een les" de primaire knop, en dan
