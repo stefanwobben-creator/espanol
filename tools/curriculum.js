@@ -279,7 +279,9 @@ const STIJL = `Stijl-eisen (belangrijk):
 - "uitleg" legt in het Nederlands uit WAAROM het antwoord zo is: twee zinnen, concreet, met de vorm erin.
   Geen verwijzingen naar regelnummers of naar "de spiekbrief".
 - "ue" is dezelfde uitleg in het Engels.
-- "alt" bevat het antwoord in kleine letters zonder accenten, plus varianten die net zo goed zijn.`;
+- "alt" hoeft alleen ANDERE goede formuleringen te bevatten (andere woordvolgorde, een synoniem).
+  Het antwoord zelf zetten wij er machinaal bij; dat hoef jij niet over te typen. Laat "alt" gerust
+  leeg als er geen echte varianten zijn.`;
 
 function promptZinnenVerschijnsel(gat, ids, inv) {
   const bestaand = inv.sentences.filter(s => s.tag === gat.tag).slice(0, 8).map(s => `- ${s.es} — ${s.nl}`).join("\n");
@@ -398,8 +400,15 @@ async function maakZinnen(gat, aantal, inv, alTeGaan, motor) {
   // Zowel {zinnen:[...]} als een kale array wordt geaccepteerd: het model mag zich hier niet in vergissen.
   const rij = Array.isArray(antw) ? antw : (antw && Array.isArray(antw.zinnen) ? antw.zinnen : null);
   if (!rij) { console.error(`    geen bruikbare JSON voor ${gat.tag}`); return []; }
-  // ids en tag dwingen we zelf af; daar mag het model zich niet in vergissen
-  return rij.slice(0, aantal).map((z, i) => Object.assign({}, z, { id: ids[i], tag: gat.tag }));
+  /* ids, tag en alt dwingen we zelf af; daar mag het model zich niet in vergissen.
+     alt kwam er op 9 aug bij, na twee nachten waarin de run al zijn eigen zinnen afkeurde op precies
+     dat veld ("alt bevat het eigen antwoord niet", vijf van de vijf). alt is een normalisatie van es:
+     kleine letters, leestekens weg, accenten weg. Dat is machinewerk. Het model mag nog wel extra
+     varianten aandragen, en die blijven staan; herstelAlt zet alleen het antwoord zelf er gegarandeerd
+     vooraan bij. Zie tools/content-lib.js. */
+  return rij.slice(0, aantal)
+    .map((z, i) => Object.assign({}, z, { id: ids[i], tag: gat.tag }))
+    .map(lib.herstelAlt);
 }
 
 async function keurZinnen(items, motor) {
@@ -507,7 +516,9 @@ async function maakNieuweLes(inv, motor) {
       console.error("    geen bruikbare les van het model"); return null;
     }
     les.words = les.words.slice(0, 14).map((w, i) => Object.assign({}, w, { id: ids.words[i] }));
-    les.sentences = les.sentences.slice(0, 8).map((s, i) => Object.assign({}, s, { id: ids.sents[i] }));
+    les.sentences = les.sentences.slice(0, 8)
+      .map((s, i) => Object.assign({}, s, { id: ids.sents[i] }))
+      .map(lib.herstelAlt);   // zelfde reden als in maakZinnen: alt is machinewerk
     if (les.quiz) les.quiz.id = ids.quiz;
     /* Alles of niets was hier te streng: een hele B1-les met acht zinnen ging de prullenbak in omdat
        de corrector bij een ervan een verkeerde tag zag. Nu vallen de afgekeurde zinnen eruit en gaat de

@@ -118,6 +118,33 @@ const NL_VELDEN = { woord: ["id", "es", "nl", "en", "tag"],
                     zin: ["id", "lvl", "nl", "en", "es", "alt", "uitleg", "ue", "tag"],
                     toets: ["id", "titel", "titelEn", "spiek", "vragen"] };
 
+/* ---------- alt: mechanisch werk, geen modelwerk (9 aug) ----------
+   De avondrun draaide twee nachten achter elkaar en keurde beide keren al zijn eigen zinnen af, alle
+   vijf op dezelfde regel: "alt bevat het eigen antwoord niet". Het model kreeg de opdracht om het
+   antwoord in kleine letters zonder accenten te herhalen, en deed dat net niet goed genoeg.
+
+   Dat is de verkeerde taakverdeling. alt is een normalisatie van es: kleine letters, leestekens weg,
+   accenten weg. Een machine doet dat foutloos en een taalmodel bij benadering. Het model mag nog wel
+   extra varianten aandragen (andere woordvolgorde, synoniem), want dát is taalwerk.
+
+   altNorm en altKaal zijn dezelfde functies die de poort hieronder gebruikt om te keuren. Bewust
+   dezelfde: een reparatie die net iets anders normaliseert dan de keuring is een reparatie die je op
+   een dag laat vallen zonder dat iemand het ziet. */
+const altNorm = t => String(t).toLowerCase().trim().replace(/[¡!¿?.,;:]/g, "").replace(/\s+/g, " ");
+const altKaal = t => altNorm(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+function herstelAlt(zin) {
+  if (!zin || typeof zin.es !== "string") return zin;
+  const eigen = altKaal(zin.es);
+  const uit = [eigen];
+  (Array.isArray(zin.alt) ? zin.alt : []).forEach(a => {
+    if (typeof a !== "string") return;
+    const schoon = altNorm(a);
+    if (schoon && !uit.map(altKaal).includes(altKaal(schoon))) uit.push(schoon);
+  });
+  return Object.assign({}, zin, { alt: uit });
+}
+
 function valideer(nieuw, inv) {
   const fouten = [];
   const bestaandeIds = new Set([].concat(
@@ -146,6 +173,8 @@ function valideer(nieuw, inv) {
 
   (nieuw.sentences || []).forEach((s, i) => {
     const waar = `zin ${i + 1} (${s.id})`;
+    // altNorm/altKaal staan buiten deze lus (zie boven): herstelAlt() gebruikt dezelfde twee functies,
+    // zodat de reparatie en de keuring niet uit elkaar kunnen lopen.
     eisUniek(s.id, waar); eisVelden(s, "zin", waar);
     if (!/^s\d+$/.test(s.id || "")) fouten.push(`${waar}: id moet s<nummer> zijn`);
     if (!Array.isArray(s.alt) || !s.alt.length) fouten.push(`${waar}: alt moet minstens één variant hebben`);
@@ -153,9 +182,7 @@ function valideer(nieuw, inv) {
       // Zelfde vergelijking als checkSentence() in de app: normaliseren én accenten strippen (de app
       // rekent een antwoord met een missend accent goed). Strenger controleren dan de app zelf doet
       // levert alleen valse afkeuringen op.
-      const norm = t => String(t).toLowerCase().trim().replace(/[¡!¿?.,;:]/g, "").replace(/\s+/g, " ");
-      const kaal = t => norm(t).normalize("NFD").replace(/[̀-ͯ]/g, "");
-      if (!s.alt.map(kaal).includes(kaal(s.es))) fouten.push(`${waar}: alt bevat het eigen antwoord niet (ook niet accentloos)`);
+      if (!s.alt.map(altKaal).includes(altKaal(s.es))) fouten.push(`${waar}: alt bevat het eigen antwoord niet (ook niet accentloos)`);
       if (s.alt.some(a => a !== String(a).toLowerCase())) fouten.push(`${waar}: alt hoort in kleine letters`);
     }
     if (typeof s.lvl !== "number" || s.lvl < 1 || s.lvl > 5) fouten.push(`${waar}: lvl moet 1-5 zijn`);
@@ -290,9 +317,11 @@ function pasToe(nieuw, opties) {
 }
 
 module.exports = { INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
-                   valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie };
+                   valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie,
+                   altNorm, altKaal, herstelAlt };
 
 /* ---------- zelftest ---------- */
+
 if (require.main === module && process.argv.includes("--zelftest")) {
   const inv = inventaris();
   console.log("gelezen:", inv.words.length, "leswoorden,", (inv.kern||[]).length, "kernwoorden,", inv.sentences.length, "zinnen,",
@@ -311,6 +340,24 @@ if (require.main === module && process.argv.includes("--zelftest")) {
   stuk.words[0].id = inv.words[0].id;
   const f2 = valideer(stuk, inv);
   console.log("validatie van een kapotte levering vindt", f2.length, "fouten:", f2.join(" | "));
+  /* herstelAlt (9 aug). De avondrun keurde twee nachten op rij al zijn eigen zinnen af op het
+     alt-veld. Deze vier gevallen zijn precies wat het model aanleverde: geen alt, hoofdletters,
+     accenten laten staan, en een echte variant die moet blijven. */
+  const altProef = [
+    { es: "Me cuesta hablar rápido.", alt: [] },
+    { es: "¿Puedo pedirte un favor?", alt: ["Puedo Pedirte un Favor"] },
+    { es: "Antes no teníamos televisión en casa.", alt: ["antes no teníamos tele en casa"] },
+    { es: "Los sábados salimos a cenar.", alt: undefined }
+  ].map(herstelAlt);
+  const altGoed = altProef.every(z => z.alt.map(altKaal).includes(altKaal(z.es)))
+    && altProef.every(z => z.alt.every(a => a === a.toLowerCase()))
+    && altProef[1].alt.length === 1            // de hoofdletter-variant is dezelfde zin, dus ontdubbeld
+    && altProef[2].alt.length === 2;           // de echte variant blijft staan
+  console.log("herstelAlt op de vier gevallen van 9 aug:", altGoed ? "schoon \u2713" : "FOUT: " + JSON.stringify(altProef.map(z => z.alt)));
+  const alsZin = valideer({ sentences: [{ id: idS(2), lvl: 1, nl: "Proef twee.", en: "Test two.",
+      uitleg: "Proef.", ue: "Test.", tag: "zelftest", ...herstelAlt({ es: "Me cuesta hablar rápido.", alt: [] }) }] }, inv);
+  console.log("een herstelde zin komt door de poort:", alsZin.length ? "FOUT: " + alsZin.join("; ") : "ja \u2713");
+
   const droog = pasToe(proef, { droog: true });
   console.log("droge schrijfbeurt:", droog.ok ? "ok, wordt " + droog.versie : "MISLUKT: " + droog.fouten);
   if (droog.ok) {
