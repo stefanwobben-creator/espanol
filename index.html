@@ -715,8 +715,12 @@
      het woord dat je aantikt licht op. */
   .lw{cursor:pointer; border-radius:3px; padding:0 1px; margin:0 -1px;}
   .lw.aan{background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent) inset;}
-  .leesUit{position:sticky; bottom:0; background:var(--card); border-top:1px solid var(--border);
-           padding:10px 2px 4px; margin-top:10px;}
+  /* v23.22: de betekenis hoort bij het woord en niet onder de bladzijde. Onderaan betekent scrollen,
+     en na het scrollen moet je je zin terugzoeken; dan is de hulp duurder dan het opzoeken zelf. */
+  .leesUit{position:absolute; z-index:30; max-width:250px; background:var(--card);
+           border:1px solid var(--border); border-radius:10px; padding:8px 10px;
+           box-shadow:0 6px 20px rgba(45,42,38,.16); font-size:.92rem; line-height:1.3;}
+  .leesUit.weg{display:none;}
   .leesUit .es{font-weight:700;}
   .leesUit p{margin:2px 0;}
   /* v23.14: de lange lijst op je profiel. Getal links, betekenis rechts, een regel per getal. */
@@ -1118,7 +1122,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.21";
+var APP_VERSIE = "v23.22";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -4462,14 +4466,14 @@ var AUDICIONES = [
    {v:"b", es:"Claro. La tarjeta aquí, por favor."}
   ],
   vragen:[
-   {q:"Hoeveel betaalt ze uiteindelijk?", qEn:"How much does she end up paying?",
+   {q:"Hoeveel wordt er uiteindelijk betaald?", qEn:"How much is paid in the end?",
     opts:["Dertig euro","Veertig euro","Dertien euro","Zeventig euro"],
     optsEn:["Thirty euros","Forty euros","Thirteen euros","Seventy euros"], c:0,
     waarom:"Cuarenta is veertig, treinta is dertig. De vraagprijs was veertig, met korting dertig.",
     waaromEn:"Cuarenta is forty, treinta is thirty. The asking price was forty, with the discount thirty."},
-   {q:"Hoe wil ze betalen?", qEn:"How does she want to pay?",
-    opts:["Met kaart","Contant","Later","Ze betaalt niet"],
-    optsEn:["By card","In cash","Later","She doesn't pay"], c:0,
+   {q:"Hoe wordt er betaald?", qEn:"How is the payment made?",
+    opts:["Met kaart","Contant","Later","Er wordt niet betaald"],
+    optsEn:["By card","In cash","Later","No payment"], c:0,
     waarom:"Pagar con tarjeta = met de kaart betalen.", waaromEn:"Pagar con tarjeta = to pay by card."},
    {q:"Waarom is het goedkoper dan de vraagprijs?", qEn:"Why is it cheaper than the asking price?",
     opts:["Er is vandaag korting","Ze praat de prijs omlaag","De tas is beschadigd","Ze komt hier vaker"],
@@ -4485,13 +4489,13 @@ var AUDICIONES = [
    {v:"b", es:"Nada más, gracias. Tengo poca hambre."}
   ],
   vragen:[
-   {q:"Wat wil hij drinken?", qEn:"What does he want to drink?",
+   {q:"Wat wordt er te drinken besteld?", qEn:"What drink is ordered?",
     opts:["Water zonder bubbels","Water met bubbels","Wijn","Bier"],
     optsEn:["Still water","Sparkling water","Wine","Beer"], c:0,
     waarom:"Sin gas = zonder koolzuur. Con gas zou met bubbels zijn.",
     waaromEn:"Sin gas = without bubbles. Con gas would be sparkling."},
-   {q:"Neemt hij een hoofdgerecht?", qEn:"Is he having a main course?",
-    opts:["Nee, hij heeft weinig honger","Ja, hij neemt de vis van de dag","Ja, hij neemt vlees met patat","Hij wil er nog even over nadenken"],
+   {q:"Wordt er een hoofdgerecht besteld?", qEn:"Is a main course ordered?",
+    opts:["Nee, weinig honger","Ja, de vis van de dag","Ja, hij neemt vlees met patat","Hij wil er nog even over nadenken"],
     optsEn:["No, he isn't very hungry","Yes, he takes the fish of the day","Yes, he takes meat with fries","He wants to think about it a bit"], c:0,
     waarom:"Nada más = niets meer. En tengo poca hambre = ik heb weinig honger.",
     waaromEn:"Nada más = nothing more. And tengo poca hambre = I'm not very hungry."},
@@ -4510,7 +4514,7 @@ var AUDICIONES = [
    {v:"b", es:"No, todavía no."}
   ],
   vragen:[
-   {q:"Waar heeft ze last van?", qEn:"What's bothering her?",
+   {q:"Wat is de klacht?", qEn:"What is the complaint?",
     opts:["Hoofdpijn","Buikpijn","Keelpijn","Koorts"],
     optsEn:["A headache","A stomach ache","A sore throat","A fever"], c:0,
     waarom:"Me duele la cabeza = mijn hoofd doet pijn.",
@@ -4520,8 +4524,8 @@ var AUDICIONES = [
     optsEn:["Since Monday","Since yesterday","For a month","Since this morning"], c:0,
     waarom:"Desde el lunes = sinds maandag. Desde geeft het beginpunt aan.",
     waaromEn:"Desde el lunes = since Monday. Desde marks the starting point."},
-   {q:"Slikt ze al iets?", qEn:"Is she taking anything yet?",
-    opts:["Nee, nog niet","Ja, elke dag","Ja, alleen 's nachts","Dat zegt ze niet"],
+   {q:"Wordt er al iets ingenomen?", qEn:"Is anything being taken yet?",
+    opts:["Nee, nog niet","Ja, elke dag","Ja, alleen 's nachts","Dat wordt niet gezegd"],
     optsEn:["No, not yet","Yes, every day","Yes, only at night","She doesn't say"], c:0,
     waarom:"Todavía no = nog niet. Dus ze is er nog niet aan begonnen.",
     waaromEn:"Todavía no = not yet. So she hasn't started."}
@@ -4539,7 +4543,7 @@ var AUDICIONES = [
     optsEn:["From Amsterdam","From Madrid","From Rosario","She doesn't say"], c:0,
     waarom:"Soy de Ámsterdam. Soy de + plaats geeft je herkomst aan.",
     waaromEn:"Soy de Ámsterdam. Soy de + place gives your origin."},
-   {q:"Hoe lang woont ze er al?", qEn:"How long has she lived there?",
+   {q:"Hoe lang woont Marta er al?", qEn:"How long has Marta lived there?",
     opts:["Sinds vorige week","Al een jaar","Sinds vandaag","Sinds de zomer"],
     optsEn:["Since last week","For a year","Since today","Since the summer"], c:0,
     waarom:"Desde la semana pasada = sinds vorige week.",
@@ -10889,7 +10893,34 @@ function leesTekstHtml(p){
     return "<span class='lw' data-lw=\""+m+"\">"+m+"</span>";
   });
 }
-function leesToon(woord){
+/* Onder het woord als het past, anders erboven, en altijd binnen de kaart. Gerekend met
+   getBoundingClientRect en niet met offsetTop, want de alinea's zitten in elementen met hun eigen
+   positie en dan klopt offsetTop niet meer zodra er ergens iets verandert aan de opmaak. */
+function leesTooltipPlaats(el, span){
+  var kaart = document.getElementById("lezenCard");
+  if(!kaart) return;
+  var rk = kaart.getBoundingClientRect(), rs = span.getBoundingClientRect();
+  el.classList.remove("weg");
+  el.style.left = "0px";
+  el.style.top = "0px";
+  var breedte = el.offsetWidth, hoogte = el.offsetHeight;
+  var links = rs.left - rk.left + (rs.width / 2) - (breedte / 2);
+  links = Math.max(6, Math.min(links, kaart.clientWidth - breedte - 6));
+  var onder = rs.bottom - rk.top + 8;
+  var boven = rs.top - rk.top - hoogte - 8;
+  // past hij nog op het scherm als hij eronder staat? Zo niet, dan erboven.
+  var plaatsBoven = (rs.bottom + hoogte + 12 > window.innerHeight) && boven > 0;
+  el.style.left = Math.round(links) + "px";
+  el.style.top = Math.round(plaatsBoven ? boven : onder) + "px";
+}
+function leesVerberg(){
+  var el = document.getElementById("leesUitleg");
+  if(el) el.classList.add("weg");
+  var kaart = document.getElementById("lezenCard");
+  var aan = kaart && kaart.querySelector(".lw.aan");
+  if(aan) aan.classList.remove("aan");
+}
+function leesToon(woord, span){
   var el = document.getElementById("leesUitleg");
   if(!el) return;
   var b = leesBetekenis(woord);
@@ -10897,8 +10928,8 @@ function leesToon(woord){
   if(!b){
     el.innerHTML = "<p><span class='es'>"+woord+"</span></p>"+
       "<p class='muted' style='font-size:.85rem'>"+
-        ct("Dit woord staat niet in het woordenboek. Het is genoteerd, zodat het er een keer bij komt.",
-           "This word is not in the dictionary. It has been noted, so it can be added later.")+"</p>";
+        ct("Staat niet in het woordenboek. Genoteerd.","Not in the dictionary. Noted.")+"</p>";
+    if(span) leesTooltipPlaats(el, span);
     return;
   }
   var extra = "";
@@ -10910,6 +10941,7 @@ function leesToon(woord){
         ? " <span class='muted'>"+ct("van","from")+" <span class='es'>"+b.es+"</span></span>" : "")+
       extra+"</p>"+
     "<p>"+b.nl+"</p>";
+  if(span) leesTooltipPlaats(el, span);
 }
 
 function renderBoekLectura(){
@@ -10922,20 +10954,23 @@ function renderBoekLectura(){
     "<h2>"+h.titel+"</h2>"+
     "<div class='row' style='margin:6px 0 10px'><button class='ghost' id='btnBoekLuister'>🔊 "+ct("Luisteren","Listen")+"</button></div>"+
     paras+
-    "<div class='leesUit' id='leesUitleg'><p class='muted' style='font-size:.85rem'>"+
-      ct("Tik op een woord dat je niet kent, dan staat de betekenis hier.",
-         "Tap a word you do not know and its meaning appears here.")+"</p></div>"+
+    "<p class='muted' style='font-size:.82rem; margin:10px 0 0'>"+
+      ct("Tik op een woord dat je niet kent.","Tap a word you do not know.")+"</p>"+
+    "<div class='leesUit weg' id='leesUitleg'></div>"+
     "<div class='row'><button class='primary' id='btnBoekVragen'>"+ct("Naar de vragen →","To the questions →")+"</button>"+
     "<button class='ghost' id='btnBoekMenu'>"+ct("Terug","Back")+"</button></div>";
   /* Eén luisteraar op de kaart in plaats van tweehonderd op de losse woorden: dat scheelt bij een
      hoofdstuk van driehonderd woorden een hoop werk bij elke render, en het gedrag is hetzelfde. */
+  el.style.position = "relative";
   el.onclick = function(ev){
     var t = ev.target;
-    if(!t || !t.classList || !t.classList.contains("lw")) return;
+    // ergens anders tikken sluit de tooltip: dat is de gebaarloze manier om hem weg te krijgen
+    if(!t || !t.classList || !t.classList.contains("lw")){ leesVerberg(); return; }
     var vorige = el.querySelector(".lw.aan");
+    if(vorige === t){ leesVerberg(); return; }          // nog eens op hetzelfde woord sluit hem ook
     if(vorige) vorige.classList.remove("aan");
     t.classList.add("aan");
-    leesToon(t.getAttribute("data-lw"));
+    leesToon(t.getAttribute("data-lw"), t);
   };
   document.getElementById("btnBoekLuister").onclick = function(){ boekSpreek(h); };
   document.getElementById("btnBoekVragen").onclick = function(){ boekStop(); bState.fase = "vragen"; bState.i = 0; bState.score = 0; renderBoekVraag(); };
