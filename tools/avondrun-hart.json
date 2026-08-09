@@ -1,18 +1,20 @@
 {
- "wanneer": "2026-08-08T08:58:25.301Z",
+ "wanneer": "2026-08-09T03:26:38.137Z",
  "gelukt": false,
- "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm)",
+ "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
   "gaten": 2,
   "toetsje": 1,
   "nieuweLes": 1
  },
- "geleverd": {
-  "zinnen": 0,
-  "toetsjes": 0,
-  "nieuweLes": 0
- },
+ "geleverd": null,
  "versie": null,
- "reden": "het besluit vroeg om 4 stuk(ken) werk en er is niets van weggeschreven"
+ "klachten": [
+  "s150: afgekeurd — De alternatieve formulering 'cuando llega a casa, siempre tiene hambre' is grammaticaal correct maar niet natuurlijk in deze context; de voorgestelde volgorde is minder gebruikelijk in het Spaans.",
+  "toetsje afgekeurd (poging 1): Vraag 2: Het werkwoord 'hacer' is een -er werkwoord, maar de uitleg noemt het ten onrechte een -er werkwoord in de imperfecto. Het is een -er werkwoord, dus de uitleg klopt wel, maar de formulering is onnauwkeurig (het is geen fout in de uitleg zelf, maar wel een onduidelijke formulering).; Vraag 2: De Nederlandse vertaling 'Wat deed jij gisteren op school?' is niet correct voor de imperfecto. De imperfecto duidt op een gewoonte in het verleden, niet op een specifieke actie gisteren (dat zou de indefinido zijn). Dit is een fout in de vertaling.",
+  "toetsje afgekeurd (poging 2): Vraag 6: Optie 'c' (index 1) wijst naar 'vimos', maar het correcte antwoord is 'veíamos' (index 0). De uitleg klopt wel, maar de opties en de index van 'c' zijn incorrect.; Vraag 8: Optie 'c' (index 0) en optie 'a' (index 0) zijn identiek ('nadaban'), waardoor er niet precies één juist antwoord is.",
+  "AFGEKEURD:\n - zin 1 (s149): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 2 (s150): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 3 (s151): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 4 (s152): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 5 (s153): alt bevat het eigen antwoord niet (ook niet accentloos)"
+ ],
+ "reden": "de run is niet afgemaakt"
 }
