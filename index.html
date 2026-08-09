@@ -1122,7 +1122,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.23";
+var APP_VERSIE = "v23.24";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10985,6 +10985,75 @@ function boekStop(){
 /* Woorden van een letter. Ze staan in geen enkele lijst die de app heeft, en juist die kwamen op
    elke bladzijde langs. e en u zijn de vormen van y en o voor een woord dat met dezelfde klank
    begint: padres e hijos, siete u ocho. */
+/* v23.24. Woorden die in de leesteksten voorkomen en die de app nergens had staan: niet als
+   leswoord en niet in de frequentielijst. Gevonden door alle 23 hoofdstukken langs de opzoeker te
+   halen en op te schrijven wat er niet uit kwam, dus dit is geen gok maar een gatenlijst.
+
+   De eerste zeven zijn de belangrijkste: por, todo, me, mundo, perder, calor en mal bestonden alleen
+   binnen een uitdrukking (por favor, todo el mundo, me llamo), en werden daardoor uitgelegd als die
+   uitdrukking. Samen zijn ze goed voor 82 treffers in deze teksten.
+
+   De rest zijn woorden uit de verhalen zelf. Vervoegde vormen staan er los bij waar de vormherkenning
+   ze niet kan terugrekenen: sonríe komt van sonreír, en die klinkerwissel kent VORM_TABEL niet. */
+var LEES_EXTRA = {
+ por:["voor, door, per","for, by, per"], todo:["alles, heel","all, everything"],
+ me:["mij, me","me, myself"], mundo:["wereld","world"], perder:["verliezen, missen","to lose, to miss"],
+ calor:["warmte, hitte","heat"], mal:["slecht","bad, badly"], vosotras:["jullie (v)","you (fem. plural)"],
+ treinta:["dertig","thirty"], cuarenta:["veertig","forty"], cincuenta:["vijftig","fifty"],
+ sesenta:["zestig","sixty"], setenta:["zeventig","seventy"], ochenta:["tachtig","eighty"],
+ noventa:["negentig","ninety"], cien:["honderd","a hundred"], mil:["duizend","a thousand"],
+ millon:["miljoen","a million"],
+ enero:["januari","January"], febrero:["februari","February"], marzo:["maart","March"],
+ abril:["april","April"], mayo:["mei","May"], junio:["juni","June"], julio:["juli","July"],
+ agosto:["augustus","August"], septiembre:["september","September"], octubre:["oktober","October"],
+ noviembre:["november","November"], diciembre:["december","December"],
+ redondo:["rond","round"], moverse:["bewegen","to move"], sonreir:["glimlachen","to smile"],
+ sonrie:["glimlacht (van sonreír)","smiles (from sonreír)"],
+ sonriendo:["glimlachend","smiling"], reir:["lachen","to laugh"], rie:["lacht (van reír)","laughs (from reír)"],
+ torcido:["scheef, krom","crooked"], melodia:["melodie","melody"], fino:["fijn, dun","fine, thin"],
+ transparente:["doorzichtig","transparent"], metal:["metaal","metal"], casco:["schild, helm","shell, helmet"],
+ aceite:["olie","oil"], obrero:["arbeider","worker"], monte:["berg, heuvel","mountain, hill"],
+ prohibido:["verboden","forbidden"], tranquilidad:["rust","calm"], vaca:["koe","cow"],
+ maletero:["kofferbak","car boot, trunk"], pacto:["pact, afspraak","pact, agreement"],
+ republica:["republiek","republic"], gobernar:["regeren","to govern"], votar:["stemmen","to vote"],
+ saludarse:["elkaar groeten","to greet each other"], bombardear:["bombarderen","to bomb"],
+ besar:["kussen","to kiss"], mirarse:["elkaar aankijken","to look at each other"],
+ caber:["passen, erin gaan","to fit"], reaccionar:["reageren","to react"],
+ cartilla:["bonnenboekje","ration book"], racionamiento:["rantsoenering","rationing"],
+ casilla:["hokje, vakje","box, square"], bikini:["bikini","bikini"],
+ apretado:["opeengepakt, krap","cramped, tight"], lejano:["ver weg","distant"],
+ pegado:["geplakt, dicht tegen","stuck, close against"], tembloroso:["bevend","trembling"],
+ expectante:["afwachtend","expectant"], observar:["kijken naar, observeren","to watch, to observe"],
+ guardian:["bewaker","guardian"], valentia:["moed","courage"], brillar:["schitteren","to shine"],
+ explotar:["ontploffen","to explode"], tararear:["neuriën","to hum"], jugueton:["speels","playful"],
+ picaro:["ondeugend","mischievous"], silencioso:["stil","silent"], reverencia:["buiging","bow"],
+ exagerado:["overdreven","exaggerated"], ofenderse:["beledigd zijn","to take offence"],
+ incomodo:["ongemakkelijk","uncomfortable"], ideal:["ideaal","ideal"], flaco:["mager","skinny"],
+ lentamente:["langzaam","slowly"], rendirse:["opgeven","to give up"], luchar:["vechten","to fight"],
+ sentarse:["gaan zitten","to sit down"], acercarse:["naderen","to approach"],
+ oyen:["horen (van oír)","hear (from oír)"], oyeron:["hoorden (van oír)","heard (from oír)"],
+ juegan:["spelen (van jugar)","play (from jugar)"], piensen:["denken (van pensar)","think (from pensar)"],
+ sientan:["gaan zitten (van sentarse)","sit down (from sentarse)"],
+ acercan:["naderen (van acercarse)","approach (from acercarse)"],
+ explota:["ontploft (van explotar)","explodes (from explotar)"],
+ brilla:["schittert (van brillar)","shines (from brillar)"],
+ tararea:["neuriet (van tararear)","hums (from tararear)"],
+ luche:["vecht (van luchar)","fight (from luchar)"],
+ rendirte:["je overgeven, opgeven","to give up"],
+ encontremos:["laten we vinden (van encontrar)","let us find (from encontrar)"],
+ ensenarte:["je laten zien, je leren","to show you, to teach you"],
+ observando:["kijkend, observerend","watching, observing"],
+ buscarlo:["hem zoeken","to look for it"],
+ bombardean:["bombarderen (van bombardear)","bomb (from bombardear)"],
+ bombardea:["bombardeert (van bombardear)","bombs (from bombardear)"],
+ besan:["kussen (van besar)","kiss (from besar)"],
+ cabe:["past erin (van caber)","fits (from caber)"],
+ reacciona:["reageert (van reaccionar)","reacts (from reaccionar)"],
+ votan:["stemmen (van votar)","vote (from votar)"],
+ votado:["gestemd (van votar)","voted (from votar)"],
+ dona:["mevrouw (voor een voornaam)","lady (before a first name)"], don:["meneer (voor een voornaam)","sir (before a first name)"],
+ abrirse:["opengaan","to open up"], pequenita:["heel klein","very small"]
+};
 var LEES_LETTERS = {y:["en","and"], o:["of","or"], a:["naar, aan, tot","to, at"],
                     e:["en (voor i- of hi-)","and (before i- or hi-)"],
                     u:["of (voor o- of ho-)","or (before o- or ho-)"]};
@@ -11002,15 +11071,48 @@ function leesFreqZoek(plat){
   var idx = leesFreqIdx[plat];
   return idx === undefined ? null : {es:FREQ[idx][0], nl:freqGloss(FREQ[idx][0], FREQ[idx][1])};
 }
+/* v23.24. Hier stond een functie die trefzeker leek maar te grof zocht: hij keek of het aangetikte
+   woord ergens tussen de losse woorden van een leswoord zat. Voor "de pequeño / de pequeña" (als
+   kind) is "pequeña" zo'n los woord, dus wie op pequeña tikte kreeg "als kind, toen ik klein was",
+   terwijl "pequeño / pequeña = klein" gewoon in dezelfde lijst staat. De A2-lessen staan alleen
+   eerder in de woordenlijst dan het A1-materiaal, en dus won de uitdrukking.
+
+   Nu zijn het twee functies. leesLesWoord() geeft alleen een treffer als het hele lemma het woord
+   is. Uitdrukkingen komen via leesUitdrukking(), en die wordt pas geprobeerd als het woordenboek en
+   de vormherkenning allebei niets gaven. Dat is ook de goede volgorde: por, todo, hace en mundo
+   staan gewoon in de frequentielijst, en die hoorden nooit als "por favor" of "todo el mundo" te
+   verschijnen.
+
+   Wat tussen haakjes staat telt niet mee bij het vergelijken: "cerca (de)" en "tocar (un
+   instrumento)" zijn gewoon cerca en tocar. */
+function leesLosseDelen(es){
+  var art = {el:1, la:1, los:1, las:1, un:1, una:1};
+  return String(es).toLowerCase().replace(/\([^)]*\)/g, " ").split(/[\/,]/).map(function(d){
+    return stripAcc(d.trim()).replace(/[^a-z ]/g, "").split(" ").filter(function(t){
+      return t && !art[t];
+    });
+  });
+}
 function leesLesWoord(plat){
-  var art = {el:1, la:1, los:1, las:1, un:1, una:1}, i, w, delen, j, kern;
+  var i, w, delen, j;
   for(i = 0; i < WORDS.length; i++){
     w = WORDS[i];
-    delen = String(w.es).toLowerCase().split(/[\/,]/);
+    delen = leesLosseDelen(w.es);
     for(j = 0; j < delen.length; j++){
-      kern = delen[j].trim().split(/\s+/).filter(function(t){ return !art[t]; }).join(" ");
-      if(stripAcc(kern).replace(/[^a-z ]/g, "").split(" ").indexOf(plat) !== -1){
-        return {es:w.es, nl:wTrans(w), id:w.id};
+      if(delen[j].length === 1 && delen[j][0] === plat) return {es:w.es, nl:wTrans(w), id:w.id};
+    }
+  }
+  return null;
+}
+function leesUitdrukking(plat){
+  var i, w, delen, j, ruw;
+  for(i = 0; i < WORDS.length; i++){
+    w = WORDS[i];
+    delen = leesLosseDelen(w.es);
+    for(j = 0; j < delen.length; j++){
+      if(delen[j].length > 1 && delen[j].indexOf(plat) !== -1){
+        ruw = String(w.es).split(/[\/,]/)[j];
+        return {es:(ruw || w.es).trim(), nl:wTrans(w), id:w.id, uitdrukking:true};
       }
     }
   }
@@ -11025,6 +11127,7 @@ function leesBetekenis(ruw){
      data dus, en dan is de bladzijde compleet. */
   if(!plat) return null;
   if(LEES_LETTERS[plat]) return {es:plat, nl:ct(LEES_LETTERS[plat][0], LEES_LETTERS[plat][1]), soort:"woordenboek"};
+  if(LEES_EXTRA[plat]) return {es:ruw, nl:ct(LEES_EXTRA[plat][0], LEES_EXTRA[plat][1]), soort:"woordenboek"};
   var hit = leesLesWoord(plat);
   if(hit) return {es:hit.es, nl:hit.nl, id:hit.id, soort:"les"};
   hit = leesFreqZoek(plat);
@@ -11041,9 +11144,16 @@ function leesBetekenis(ruw){
                   plat.replace(/a$/, "o"), plat.replace(/as$/, "o")];
   for(var k = 0; k < pogingen.length; k++){
     if(!pogingen[k] || pogingen[k] === plat || pogingen[k].length < 2) continue;
+    if(LEES_EXTRA[pogingen[k]]){
+      return {es:pogingen[k], nl:ct(LEES_EXTRA[pogingen[k]][0], LEES_EXTRA[pogingen[k]][1]), soort:"vorm"};
+    }
     hit = leesLesWoord(pogingen[k]) || leesFreqZoek(pogingen[k]);
     if(hit) return {es:hit.es, nl:hit.nl, id:hit.id, soort:"vorm"};
   }
+  /* Als laatste pas een uitdrukking. Eerder in de rij zou hij het woordenboek overstemmen, en dan
+     krijg je "por" uitgelegd als "por favor". */
+  hit = leesUitdrukking(plat);
+  if(hit) return {es:hit.es, nl:hit.nl, id:hit.id, soort:"les", uitdrukking:true};
   return null;
 }
 /* Wat je opzoekt, wordt geteld. Nog niet getoond: eerst een paar hoofdstukken meten, dan pas iets
@@ -11093,9 +11203,14 @@ function leesToon(woord, span){
   var b = leesBetekenis(woord);
   leesNoteer(stripAcc(String(woord).toLowerCase()).replace(/[^a-z]/g, ""));
   if(!b){
+    /* Een woord met een hoofdletter dat nergens in staat is bijna altijd een naam: Chispa, Guernica,
+       doña Inés. "Staat niet in het woordenboek" leest daar als een storing, terwijl er niets mis is.
+       Het wordt wel gewoon genoteerd, want als je op een naam tikt wilde je iets weten. */
+    var naam = /^[A-ZÁÉÍÓÚÑ]/.test(String(woord));
     el.innerHTML = "<p><span class='es'>"+woord+"</span></p>"+
       "<p class='muted' style='font-size:.85rem'>"+
-        ct("Staat niet in het woordenboek. Genoteerd.","Not in the dictionary. Noted.")+"</p>";
+        (naam ? ct("Een naam, van een persoon of een plaats.","A name, of a person or a place.")
+              : ct("Staat niet in het woordenboek. Genoteerd.","Not in the dictionary. Noted."))+"</p>";
     if(span) leesTooltipPlaats(el, span);
     return;
   }
@@ -11103,9 +11218,12 @@ function leesToon(woord, span){
   if(b.soort === "vorm" && b.tijd){
     extra = " <span class='muted'>("+b.tijd+(b.persoon ? ", "+b.persoon : "")+")</span>";
   }
+  /* Een woord uit een uitdrukking krijgt een ander voorzetsel: "in de uitdrukking" in plaats van
+     "van". Anders leest de tooltip als de betekenis van dat ene woord, en dat is het niet. */
+  var brug = b.uitdrukking ? ct("in de uitdrukking","in the expression") : ct("van","from");
   el.innerHTML = "<p><span class='es'>"+woord+"</span>"+
       (stripAcc(String(b.es).toLowerCase()) !== stripAcc(String(woord).toLowerCase())
-        ? " <span class='muted'>"+ct("van","from")+" <span class='es'>"+b.es+"</span></span>" : "")+
+        ? " <span class='muted'>"+brug+" <span class='es'>"+b.es+"</span></span>" : "")+
       extra+"</p>"+
     "<p>"+b.nl+"</p>";
   if(span) leesTooltipPlaats(el, span);
