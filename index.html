@@ -710,6 +710,13 @@
   .vgDot.vgOnderweg{background:#f0b49a;}
   .vgDot.vgSchat{background:#efe0d2;}
   .vgDot.vgRest{background:#e8e1d4;}
+  /* v23.14: de lange lijst op je profiel. Getal links, betekenis rechts, een regel per getal. */
+  .cijfLijst{margin-top:4px;}
+  .cijfRij{display:flex; gap:12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--border);}
+  .cijfRij:last-child{border-bottom:0;}
+  .cijfW{flex:0 0 92px; text-align:right; font-weight:800; font-size:1.05rem; letter-spacing:-.02em;}
+  .cijfT{flex:1; font-size:.92rem; line-height:1.35;}
+  .cijfT span{display:block; font-size:.82rem; color:var(--muted); margin-top:2px;}
   .krabbelknop{width:34px; height:34px; padding:0; font-size:1.05rem; line-height:1; border-radius:50%;
                border:1.5px solid var(--border); background:var(--card); cursor:pointer;
                display:inline-flex; align-items:center; justify-content:center; transition:transform .12s ease;}
@@ -1102,7 +1109,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.13";
+var APP_VERSIE = "v23.14";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5077,6 +5084,60 @@ function voortgangTellers(){
   }
   for(k in opweg){ n = niv[k]; if(n) dekw[n]++; }
   return {stevig:stevig, bijna:bijna, geoefend:geoefend, dek:dek, dekw:dekw};
+}
+
+/* ================= EEN FUNCTIE VOOR ALLE CIJFERS (v23.14) =================
+   De valkuil van dit onderwerp, in een zin: elke keer dat het misging, ging het mis doordat er
+   twee stukken code over hetzelfde getal bestonden. In v23.0 stond hetzelfde niveau op Vandaag op
+   100 procent en op je profiel op 0 procent, allebei zonder te zeggen welk stuk ze maten. En tot
+   deze versie noemde het profiel boxes[5] "stevig", terwijl de balk daarboven het aantal Cervantes
+   sleutels telde dat een echte check heeft gehad. Twee sommen, een naam.
+
+   Vanaf nu levert deze ene functie de cijfers en roepen alle schermen hem aan. Wil een scherm iets
+   anders laten zien, dan kiest het een ander veld uit dit object. Het schrijft geen tweede som.
+
+   Wat er bewust niet in zit is een oordeel. Geen "te makkelijk, precies goed, te uitdagend" bij het
+   foutpercentage: die grens zou uit het 85 procent onderzoek moeten komen (Wilson e.a., Nature
+   Communications 2019) en dat gaat over leeralgoritmes op binaire classificatie, niet over
+   woordenschat. De band hoort uit S.meting te komen, uit Stefans eigen reeks, en die is op 8
+   augustus gestart. Tot die tijd staat er een kaal percentage en staat erbij dat de band nog wordt
+   opgebouwd. Een geleende grens is een verzonnen grens. */
+var MEET_WEKEN = 10;   // zoveel weekmetingen zijn er nodig voordat je eigen reeks iets zegt
+function voortgangCijfers(){
+  var tel = voortgangTellers();
+  var niv = balkNiveau();
+  var noem = PCIC_NOEMER[niv] || 0;
+  var vast = (tel.dek && tel.dek[niv]) || 0;
+  // onderweg is nooit minder dan vast: dekw telt vanaf doos 3, dek vanaf de laatste doos
+  var actief = Math.max(vast, (tel.dekw && tel.dekw[niv]) || 0);
+  var sch = null;
+  try { sch = niveauSchatting(niv); } catch(e){ sch = null; }
+  var geschat = sch ? Math.max(0, sch.punt - actief) : 0;
+  var kpi = leerKpi();
+  var tk = null;
+  try { tk = terugkomKpi(); } catch(e){ tk = null; }
+  var sw = S.sweep || {}, swN = (sw.goed || 0) + (sw.fout || 0);
+  return {
+    niv: niv,
+    noem: noem,
+    vast: vast,                                     // bewezen vast: laatste doos plus een echte check
+    onderweg: Math.max(0, actief - vast),           // doos 3 of hoger, nog niet vast
+    actief: actief,                                 // de kop op Vandaag: vast plus onderweg
+    schat: sch,                                     // null zolang de peiling niets zegt
+    geschat: geschat,                               // wat de peiling erbij schat, boven actief
+    ongezien: Math.max(0, noem - actief - geschat),
+    geoefend: tel.geoefend,                         // elk woord dat ooit in S.srs kwam, loopt alleen op
+    stevig: tel.stevig,                             // over alle niveaus, niet alleen dit
+    bijna: tel.bijna,
+    dek: tel.dek, dekw: tel.dekw,
+    fout7: kpi.recent,                              // {pog, fout, pct}, pct is null bij te weinig pogingen
+    foutTrend: kpi.trend,
+    weken: Object.keys(S.meting || {}).length,
+    terugkom: tk,
+    dagen: dagenTotaal(),
+    // hoe goed schat je jezelf in: uit S.sweep, pas als er tien woorden nagekeken zijn
+    zelf: swN >= 10 ? {n:swN, goed:(sw.goed || 0), pct:Math.round(100 * (sw.goed || 0) / swN)} : null
+  };
 }
 
 function isoWeek(dateStr){
@@ -10694,8 +10755,12 @@ function dagLijnHtml(){
   // beide iets, dan is er ook geen kaart, en geen knop naar cijfers die nog nergens over gaan.
   var rel = dagRelevantie();
   var basis = rel.basis ? dagBasisRegelHtml() : "";
-  if(!basis && !rel.lijn) return "";
-  return "<div class='card' id='lijnKaart'>"+basis+
+  // v23.14: de twee kerncijfers horen bij de balk en niet in een eigen kaart. Ze kunnen er ook
+  // staan als de balk zwijgt (wie geoefend heeft zonder dat er al iets onderweg is), dus ze zijn
+  // een eigen reden om deze kaart te tonen.
+  var kern = dagKerncijfersHtml();
+  if(!basis && !kern && !rel.lijn) return "";
+  return "<div class='card' id='lijnKaart'>"+basis+kern+
     /* v23.2: de veertien staafjes gaan onder een vouw. Ze meten hoe vaak je kwam, niet wat je kunt,
        en dit blok gaat over de vraag "waar sta ik". Niet weg, wel weg van je eerste blik. */
     (rel.lijn
@@ -10723,32 +10788,31 @@ function dagLijnHtml(){
    licht is wat de peiling erbij schat. Het getal boven de balk is de schatting en niet het bewezen
    deel, want dat getal is de vraag die Stefan stelde: klopt dit ongeveer met waar ik denk te zijn.
    Zonder peiling verandert er niets: dan staat hier exact de balk van v20.1. */
-function dagBasisRegelHtml(){
-  var t = voortgangTellers();
-  var niv = balkNiveau();
-  var n = PCIC_NOEMER[niv] || 390;
-  var d = (t.dek && t.dek[niv]) || 0;
-  var w = Math.max(d, (t.dekw && t.dekw[niv]) || 0);
-  var sch = null, aanbod = null;
-  try { sch = niveauSchatting(niv); } catch(e){ sch = null; }
+/* v23.14: de getallen komen uit voortgangCijfers(), niet meer uit een eigen som hier. De vorm
+   blijft precies zoals hij was. opt.legenda mag op false: op je profiel staat de lange lijst er
+   direct onder, en dan zou de legenda dezelfde vier getallen twee keer op een scherm zetten. */
+function dagBasisRegelHtml(opt){
+  var c = voortgangCijfers();
+  var niv = c.niv;
+  var n = c.noem || 390;
+  var d = c.vast;
+  var w = c.actief;
+  var sch = c.schat, aanbod = null;
   try { aanbod = peilAanbod(); } catch(e){ aanbod = null; }
   if(w <= 0 && !sch && !aanbod) return "";
   var pctD = n ? Math.round(100 * d / n) : 0;
   var pctW = n ? Math.round(100 * (w - d) / n) : 0;
-  var kop = pctD, pctS = 0, merk = "", regel, stap = "";
+  /* v23.14: hier stond ook een variabele "regel" met de zin "je kent er naar schatting X van de
+     390". Die zin is er in v23.2 uitgehaald omdat hij hetzelfde getal nog een keer zei, maar de
+     twee stukken tekst die hem opbouwden bleven staan. Dood, en juist over dit getal: precies het
+     soort restant waar per ongeluk weer een tweede weergave uit groeit. Weg. */
+  var kop = pctD, pctS = 0, merk = "", stap = "";
   if(sch){
     kop = Math.round(100 * sch.punt / n);
     pctS = Math.max(0, kop - pctD - pctW);
     var e0 = peilEerste(niv);
     if(e0) merk = "<i class='merk' style='left:"+Math.max(0, Math.min(99, Math.round(100 * e0.punt / n)))+"%'></i>";
-    regel = ct("Je kent er naar schatting <b>"+sch.punt+"</b> van de "+n+" "+niv+"-woorden, ergens tussen "+
-                 sch.onder+" en "+sch.boven+". Daarvan staan er <b>"+d+"</b> hier vast.",
-               "You know an estimated <b>"+sch.punt+"</b> of the "+n+" "+niv+" words, somewhere between "+
-                 sch.onder+" and "+sch.boven+". <b>"+d+"</b> of those are solid here.");
     stap = dagBasisStapHtml(niv, sch, d);
-  } else {
-    regel = ct("<b>"+d+"</b> van de "+n+" "+niv+"-woorden staan stevig"+(w > d ? ", <b>"+(w - d)+"</b> zijn onderweg" : "")+".",
-               "<b>"+d+"</b> of the "+n+" "+niv+" words are solid"+(w > d ? ", <b>"+(w - d)+"</b> on the way" : "")+".");
   }
   var bD = Math.min(100, pctD), bW = Math.min(100 - bD, pctW), bS = Math.min(100 - bD - bW, pctS);
   /* v23.0. Hier stond het geschatte percentage als kop, en op je profiel stond het bewezen
@@ -10774,15 +10838,16 @@ function dagBasisRegelHtml(){
         "<div class='marge' style='width:"+bW+"%'></div>"+
         "<div class='schat' style='width:"+bS+"%'></div>"+merk+"</div>"+
       "<b style='width:44px; text-align:right'>"+w+"</b></div>"+
+    ((opt && opt.legenda === false) ? "" :
     "<div class='vgLegenda'>"+
-      "<span><i class='vgDot vgOnderweg'></i><b>"+lgOnderweg+"</b> "+ct("onderweg","on the way")+"</span>"+
       "<span><i class='vgDot vgVast'></i><b>"+d+"</b> "+ct("bewezen vast","proven solid")+"</span>"+
+      "<span><i class='vgDot vgOnderweg'></i><b>"+lgOnderweg+"</b> "+ct("onderweg","on the way")+"</span>"+
       (sch && lgSchat > 0 ? "<span><i class='vgDot vgSchat'></i><b>"+lgSchat+"</b> "+ct("geschat al gekend","estimated already known")+"</span>" : "")+
       /* v23.2. Hier stond altijd "0 nog niet gezien" zodra de schatting de balk volmaakte, en dat
          beweert iets onwaars: dat je alle woorden van dit niveau al hebt gezien. Een laag met nul
          erin is geen informatie maar een bewering. Weg als hij leeg is. */
       (lgRest > 0 ? "<span><i class='vgDot vgRest'></i><b>"+lgRest+"</b> "+ct("nog niet gezien","not seen yet")+"</span>" : "")+
-    "</div>"+
+    "</div>")+
     /* v23.2. Hier stond de zin "Je kent er naar schatting 390 van de 390, daarvan staan er 1 vast".
        Dat is precies hetzelfde getal als in de legenda, alleen als totaal in plaats van als restant,
        en daardoor leek 390 iets anders te zijn dan de 341 ernaast. Twee vormen van één getal naast
@@ -10794,6 +10859,42 @@ function dagBasisRegelHtml(){
       ct("van de "+n+" "+niv+"-woorden", "of the "+n+" "+niv+" words")+"</p>"+
     stap+
     (aanbod ? dagPeilKnopHtml(aanbod) : "");
+}
+/* ================= DE TWEE KERNCIJFERS OP VANDAAG (v23.14) =================
+   Punt 1 van de werklijst. Naast de balk hoort op Vandaag te staan hoeveel woorden je geoefend
+   hebt en hoe vaak je fout zit. De geoefend-teller is met opzet de teller die alleen oploopt: dat
+   is het enige getal op dit scherm dat nooit tegenvalt, en het meet precies wat jij gedaan hebt.
+   Het foutpercentage staat ernaast en meet hoe zwaar het je valt.
+
+   Er hangt geen oordeel aan. Zie de uitleg bij voortgangCijfers(): de grens tussen te makkelijk en
+   te uitdagend hoort uit Stefans eigen weekmetingen te komen, en die reeks is net begonnen. Wat er
+   wel bij staat is hoe ver die reeks is, zodat het getal niet doet alsof het al iets weet.
+
+   Allebei volgen ze de regel van v20.1: ze verschijnen als ze iets zeggen en anders niet. */
+function dagKerncijfersHtml(){
+  var c = voortgangCijfers(), tegels = "";
+  if(c.geoefend > 0){
+    tegels += "<div class='stat'><b>"+c.geoefend+"</b><span class='muted'>"+
+      ct("woorden geoefend","words practised")+"</span></div>";
+  }
+  if(c.fout7.pct !== null){
+    tegels += "<div class='stat'><b>"+c.fout7.pct+"%</b><span class='muted'>"+
+      ct("fout, laatste 7 dagen","wrong, last 7 days")+"</span></div>";
+  }
+  if(!tegels) return "";
+  return "<div class='statgrid' style='margin-top:10px'>"+tegels+"</div>"+
+    (c.fout7.pct === null ? "" :
+      "<p class='muted' style='margin:6px 0 0; font-size:.8rem'>"+
+        ct(weekMetingZin(c.weken)+" Vanaf ongeveer "+MEET_WEKEN+" kan de app uit je eigen reeks "+
+           "aflezen wat voor jou een goede stand is; tot die tijd staat er geen oordeel bij.",
+           weekMetingZin(c.weken)+" From about "+MEET_WEKEN+" on the app can read from "+
+           "your own series what a good rate is for you; until then no verdict is attached.")+"</p>");
+}
+// een getal van een is enkelvoud, ook in een zin die je zelden ziet. "Er liggen 1 weekmetingen"
+// leest als een sjabloon dat niemand heeft nagelopen, en dan gaat de lezer aan de rest ook twijfelen.
+function weekMetingZin(n){
+  if(profLang() === "nl") return n === 1 ? "Er ligt 1 weekmeting." : "Er liggen "+n+" weekmetingen.";
+  return n === 1 ? "There is 1 weekly measurement." : "There are "+n+" weekly measurements.";
 }
 /* De stap. Niet als los blokje ergens anders op het scherm, maar als een zin onder dezelfde balk,
    met het streepje als beginpunt. Twee dingen kunnen gegroeid zijn sinds je eerste peiling: wat je
@@ -15941,10 +16042,12 @@ function sweepBlokHtml(){
            "On "+sw.dag+" you said you knew <b>"+sw.ken+"</b> words and didn't know <b>"+(sw.niet||0)+"</b>. "+
            "The first group comes back spread out, to prove itself.")+"</p>";
     if(gedaan >= 10){
-      var pct = Math.round(100 * (sw.goed || 0) / gedaan);
+      /* v23.14: het percentage stond hier, en het staat nu in de lange lijst hieronder, waar het
+         net als elk ander getal een regel uitleg heeft. Het werd hier ook nog eens apart
+         uitgerekend, en dat is de tweede som die dit scherm niet meer mag hebben. */
       html += "<p class='muted' style='margin:6px 0'>"+
-        ct("Van de "+gedaan+" al nagekeken woorden had je er <b>"+pct+"%</b> goed. Dat is niet je niveau, dat is hoe goed je jezelf inschat.",
-           "Of the "+gedaan+" checked so far you got <b>"+pct+"%</b> right. That's not your level, that's how well you judge yourself.")+"</p>";
+        ct("Van de "+gedaan+" al nagekeken woorden staat bij de cijfers hieronder hoe vaak je inschatting klopte.",
+           "How often your judgement was right, over the "+gedaan+" checked so far, is with the numbers below.")+"</p>";
     } else {
       html += "<p class='muted' style='margin:6px 0; font-size:.84rem'>"+
         ct("Na tien nagekeken woorden staat hier hoe vaak je inschatting klopte. Nu: "+gedaan+".",
@@ -23311,8 +23414,11 @@ function basisHtml(actief14){
      regel lager, onder een vouw, want daar horen ze: dat is verdieping en geen antwoord op "waar
      sta ik". De uitleg over donker en licht is overbodig geworden; de legenda zegt het nu bij de
      balk zelf, met getallen erbij. */
+  /* v23.14: zonder legenda. Die vier getallen staan een stuk lager op ditzelfde scherm in de
+     lange lijst, daar met een regel uitleg erbij. Hier zou het een tweede weergave van dezelfde
+     som zijn, en dat is precies wat dit scherm niet meer doet. */
   return "<h2>"+ct("Waar je staat","Where you are")+"</h2>"+
-    dagBasisRegelHtml()+
+    dagBasisRegelHtml({legenda:false})+
     "<details style='margin-top:10px'><summary class='muted' style='cursor:pointer; font-size:.86rem'>"+
       ct("Per niveau","Per level")+"</summary>"+
       nivBalkHtml("A1", t)+nivBalkHtml("A2", t)+
@@ -23452,8 +23558,8 @@ function voorspelHtml(){
   if(!voorspelWaar("A1", voorspelWk)){
     var gemeten = Object.keys(S.meting || {}).length, nog = Math.max(1, 3 - gemeten);
     return h + "<p class='muted'>"+
-      ct("Nog niet te zeggen. Er liggen "+gemeten+" weekmetingen; vanaf drie kan hier een strook staan in plaats van een gok. Nog <b>"+nog+"</b> "+(nog === 1 ? "week" : "weken")+" te gaan.",
-         "Can't be said yet. There are "+gemeten+" weekly measurements; from three on a band can appear here instead of a guess. <b>"+nog+"</b> more "+(nog === 1 ? "week" : "weeks")+" to go.")+"</p>"+
+      ct("Nog niet te zeggen. "+weekMetingZin(gemeten)+" Vanaf drie kan hier een strook staan in plaats van een gok. Nog <b>"+nog+"</b> "+(nog === 1 ? "week" : "weken")+" te gaan.",
+         "Can't be said yet. "+weekMetingZin(gemeten)+" From three on a band can appear here instead of a guess. <b>"+nog+"</b> more "+(nog === 1 ? "week" : "weeks")+" to go.")+"</p>"+
       doelRegelHtml();
   }
   var opties = [{w:4, nl:"over een maand", en:"in a month"},
@@ -23485,14 +23591,118 @@ function voorspelWire(el){
   });
 }
 
+/* ================= DE LANGE LIJST OP JE PROFIEL (v23.14) =================
+   Punt 2 van de werklijst. Stefan wilde op Vandaag een simpel overzicht en op zijn profiel een
+   lange lijst met alles in cijfers, met per cijfer een regel wat het betekent. Dat laatste is de
+   hele opdracht: een getal zonder die regel is een getal dat je zelf moet uitleggen, en dan legt
+   iedereen het anders uit.
+
+   Elk getal hier komt uit voortgangCijfers(). Er wordt in deze functie niets opnieuw uitgerekend.
+   Een rij die niets te zeggen heeft staat er niet: dezelfde regel als v20.1.
+
+   Wat hier bewust niet staat: hoe vaak je per week terugkomt en hoeveel dagen je erbij was. Die
+   staan een stuk hoger op ditzelfde scherm, bij "Waar je staat". Twee keer hetzelfde getal op een
+   scherm maakt allebei de keren ongeloofwaardig. De Cervantes-dekking per niveau staat om dezelfde
+   reden onder de vouw "Per niveau", ook daar uit dezelfde tellers. */
+function cijferRij(waarde, label, uitleg){
+  return "<div class='cijfRij'><div class='cijfW'>"+waarde+"</div>"+
+    "<div class='cijfT'>"+label+"<span>"+uitleg+"</span></div></div>";
+}
+function cijferLijstHtml(){
+  var c = voortgangCijfers(), r = "";
+  r += cijferRij(c.actief, ct("woorden houd je actief bij op "+c.niv, "words you actively keep up at "+c.niv),
+    ct("Dit is het getal dat op Vandaag boven de balk staat: bewezen vast plus onderweg, van de "+
+       c.noem+" woorden die het Instituto Cervantes voor "+c.niv+" telt.",
+       "This is the number above the bar on Today: proven solid plus on the way, out of the "+
+       c.noem+" words the Instituto Cervantes counts for "+c.niv+"."));
+  r += cijferRij(c.vast, ct("bewezen vast","proven solid"),
+    ct("Vijf goede beurten over vijfentwintig dagen, met een check die je niet zelf beoordeelt. "+
+       "Dit getal loopt daardoor achter op wat je kunt, en dat hoort: het meet bewijs, geen gevoel.",
+       "Five correct turns across twenty five days, with a check you do not grade yourself. "+
+       "So this number lags behind what you can do, and that is right: it measures proof, not feeling."));
+  r += cijferRij(c.onderweg, ct("onderweg","on the way"),
+    ct("Woorden met een herhaalinterval van een week of langer die nog niet vast staan. Dit is de "+
+       "groep die de komende weken naar bewezen vast schuift.",
+       "Words with a review interval of a week or more that are not solid yet. This is the group "+
+       "moving to proven solid over the coming weeks."));
+  if(c.schat){
+    r += cijferRij(c.schat.punt, ct("geschat totaal op "+c.niv, "estimated total at "+c.niv),
+      ct("Uit je peiling, en dat is een steekproef. Ergens tussen "+c.schat.onder+" en "+c.schat.boven+
+         ". De marge hoort erbij: dit is een schatting en geen telling.",
+         "From your check, which is a sample. Somewhere between "+c.schat.onder+" and "+c.schat.boven+
+         ". The margin belongs to it: this is an estimate and not a count."));
+  }
+  if(c.ongezien > 0){
+    r += cijferRij(c.ongezien, ct("nog niet gezien","not seen yet"),
+      ct("Woorden van "+c.niv+" die je hier nog niet bent tegengekomen. Dit getal daalt vanzelf "+
+         "zolang je nieuwe woorden blijft krijgen.",
+         "Words at "+c.niv+" you have not met here yet. This number drops on its own as long as "+
+         "you keep getting new words."));
+  }
+  r += cijferRij(c.geoefend, ct("woorden ooit geoefend","words practised ever"),
+    ct("Elk woord dat je hier ooit hebt aangeraakt. Dit is de enige teller die alleen oploopt, ook "+
+       "als een woord daarna weer wegzakt. Hij meet wat jij gedaan hebt, niet wat blijft hangen.",
+       "Every word you have ever touched here. This is the only counter that only goes up, even if "+
+       "a word slips back later. It measures what you did, not what stuck."));
+  if(c.fout7.pct === null){
+    r += cijferRij(ct("nog niets","none yet"), ct("fout in de laatste 7 dagen","wrong in the last 7 days"),
+      ct("Nog te weinig pogingen om een percentage te tonen. Deze meting telt vanaf 28 juli en niet "+
+         "met terugwerkende kracht, want pogingen werden daarvoor niet bijgehouden.",
+         "Too few attempts to show a percentage. This measurement counts from 28 July and not "+
+         "retroactively, because attempts were not tracked before that."));
+  } else {
+    var tr = "";
+    if(c.foutTrend !== null && c.foutTrend < 0){
+      tr = ct(" Dat is "+Math.abs(c.foutTrend)+" procentpunt lager dan de week ervoor.",
+              " That is "+Math.abs(c.foutTrend)+" percentage points lower than the week before.");
+    } else if(c.foutTrend !== null && c.foutTrend > 0){
+      tr = ct(" Dat is "+c.foutTrend+" procentpunt hoger dan de week ervoor.",
+              " That is "+c.foutTrend+" percentage points higher than the week before.");
+    } else if(c.foutTrend !== null){
+      tr = ct(" Gelijk aan de week ervoor."," The same as the week before.");
+    }
+    r += cijferRij(c.fout7.pct + "%", ct("fout in de laatste 7 dagen","wrong in the last 7 days"),
+      ct(c.fout7.fout+" van de "+c.fout7.pog+" pogingen ging fout."+tr+" Er staat geen oordeel bij: "+
+         "welke stand voor jou het beste werkt komt uit je eigen weekmetingen. "+weekMetingZin(c.weken)+
+         " Daarvan zijn er ongeveer "+MEET_WEKEN+" nodig.",
+         c.fout7.fout+" of "+c.fout7.pog+" attempts went wrong."+tr+" No verdict is attached: which "+
+         "rate works best for you comes from your own weekly measurements. "+weekMetingZin(c.weken)+
+         " About "+MEET_WEKEN+" of those are needed."));
+  }
+  if(c.zelf){
+    r += cijferRij(c.zelf.pct + "%", ct("van je eigen inschatting klopte","of your own judgement was right"),
+      ct("Bij de inhaalslag zei je van een hoop woorden dat je ze kende. Van de "+c.zelf.n+" die "+
+         "daarna zijn nagekeken had je er "+c.zelf.goed+" goed. Dat is niet je niveau, dat is hoe "+
+         "goed je jezelf inschat.",
+         "In the catch up round you said you knew a pile of words. Of the "+c.zelf.n+" checked since, "+
+         "you got "+c.zelf.goed+" right. That is not your level, that is how well you judge yourself."));
+  }
+  r += cijferRij(corrStevig()+"/"+corrBereikbaar().length, ct("grammaticaregels stevig","grammar rules solid"),
+    ct("Regels uit El Corrector die je vaak genoeg goed hebt toegepast. De noemer is wat er met jouw "+
+       "woorden nu te oefenen valt, niet alle regels van het Spaans.",
+       "Rules from El Corrector you applied correctly often enough. The denominator is what is "+
+       "practisable with your words right now, not all the rules of Spanish."));
+  r += cijferRij(Object.keys(S.done).length+"/"+SENTENCES.length, ct("zinnen gehaald","sentences done"),
+    ct("Hele zinnen die je goed hebt geschreven. Een zin vraagt meer dan een woord: je moet ook de "+
+       "volgorde en de vervoeging kloppend krijgen.",
+       "Whole sentences you wrote correctly. A sentence asks more than a word: you also have to get "+
+       "the order and the conjugation right."));
+  r += cijferRij(Object.keys(S.quiz).length+"/"+QUIZZES.length, ct("toetsjes gemaakt","quizzes taken"),
+    ct("Afgeronde toetsjes. Dit zegt iets over hoeveel je hebt afgemaakt, niet over hoeveel je kunt.",
+       "Finished quizzes. This says something about how much you completed, not about how much you know."));
+  return "<h2 style='margin-top:16px'>"+ct("Alles in cijfers","Every number")+"</h2>"+
+    "<p class='muted' style='margin:0 0 4px'>"+
+      ct("Elk getal met een regel erbij wat het betekent. Ze komen allemaal uit dezelfde som, dus ze "+
+         "kunnen elkaar niet tegenspreken.",
+         "Every number with a line on what it means. They all come from the same calculation, so they "+
+         "cannot contradict each other.")+"</p>"+
+    "<div class='cijfLijst'>"+r+"</div>";
+}
+
 function renderStats(){
   var el = document.getElementById("statsCard");
   var boxes = [0,0,0,0,0,0];
-  var seen = 0;
-  WORDS.forEach(function(w){ var st=S.srs[w.id]; if(st){ seen++; boxes[st.box]++; } });
-  var zinnenGoed = Object.keys(S.done).length;
-  var quizzesDone = Object.keys(S.quiz).length;
-  var kpi = leerKpi();
+  WORDS.forEach(function(w){ var st=S.srs[w.id]; if(st){ boxes[st.box]++; } });
   // v19.67: ook dit scherm sprak Nederlands tegen een Engelse gebruiker.
   var boxLabels = ct("nieuw/fout|1 dag|3 dagen|1 week|2 weken|1 maand","new/wrong|1 day|3 days|1 week|2 weeks|1 month").split("|");
   var maxBox = Math.max.apply(null, boxes.concat([1]));
@@ -23520,11 +23730,13 @@ function renderStats(){
   var venster = eersteActief === null ? 14 : (eersteActief + 1);
   var tempo = nieuw14 / Math.max(1, venster);
   var tempoActief = actief14 ? nieuw14 / actief14 : 0;
-  // v19.87: box 5 is stevig (dat is stevigDrempel(), en dat is wat de A1-balk telt),
-  // box 3 en 4 zijn onderweg. Hiervoor heette box 3 ook "stevig", waardoor hetzelfde
-  // scherm twee verschillende getallen stevig noemde.
-  var vast = boxes[5];
-  var opweg = boxes[3] + boxes[4];
+  /* v23.14. Hier stond vast = boxes[5] en opweg = boxes[3] + boxes[4]. Dat was de tweede som:
+     boxes[5] telt de laatste doos zonder de echte check eronder, terwijl de balk twee regels
+     hoger juist alleen telt wat die check heeft gehad. Hetzelfde woord "stevig", twee uitkomsten,
+     op een scherm. Nu komen ze allebei uit voortgangCijfers(), net als de balk. */
+  var c = voortgangCijfers();
+  var vast = c.stevig;
+  var opweg = c.bijna;
   var koersHtml = basisHtml(actief14) + "<h2>"+ct("Jouw ontwikkeling 📈","How you're doing 📈")+"</h2>";
   if(actief14 === 0){
     koersHtml += "<p class='muted'>"+ct("Nog geen activiteit in de afgelopen twee weken. Begin vandaag met 5 woordjes, dan staat hier morgen je koers.",
@@ -23544,9 +23756,9 @@ function renderStats(){
     koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · "+ct(actief14+" van de laatste "+doelNoemer+" dagen actief · dagdoel gehaald op "+doel14,
         "active on "+actief14+" of the last "+doelNoemer+" days · daily goal reached on "+doel14)+"</span></p>"+
       "<p class='muted' style='margin:6px 0'>"+
-      ct("Je bent met <b>"+seen+"</b> woorden bezig geweest: <b>"+vast+"</b> staan stevig, <b>"+opweg+"</b> zijn onderweg.",
-         "You've worked on <b>"+seen+"</b> words: <b>"+vast+"</b> are solid, <b>"+opweg+"</b> on their way.")+
-      (vast === 0 && seen > 0 ? ct(" Dat eerste getal blijft de eerste vier weken op nul staan, en dat hoort: stevig betekent vijf keer goed over vijfentwintig dagen. Kijk zolang naar het tweede.",
+      ct("Je bent met <b>"+c.geoefend+"</b> woorden bezig geweest: <b>"+vast+"</b> staan stevig, <b>"+opweg+"</b> zijn onderweg.",
+         "You've worked on <b>"+c.geoefend+"</b> words: <b>"+vast+"</b> are solid, <b>"+opweg+"</b> on their way.")+
+      (vast === 0 && c.geoefend > 0 ? ct(" Dat eerste getal blijft de eerste vier weken op nul staan, en dat hoort: stevig betekent vijf keer goed over vijfentwintig dagen. Kijk zolang naar het tweede.",
          " That first number stays at zero for the first four weeks, and that's correct: solid means five correct answers across twenty-five days. Watch the second one meanwhile.") : "")+
       ct(" Tempo: ongeveer "," Pace: about ")+getal1(tempo)+ct(" nieuwe woorden per dag"," new words a day")+
       /* v22.10. Hier stond "het maximum is 15", en er stond 15,9 voor. Dat was geen afrondingsfout:
@@ -23569,23 +23781,8 @@ function renderStats(){
     koersHtml += bandHtml("A1");
   }
   // ---- foutpercentage-tegel + trendzin (28 juli, verving het oude opgetelde "fouten gelogd") ----
-  // v19.90: hier stond een liggend streepje als leegwaarde. Weg ermee, en meteen
-  // in woorden: een tegel die "nog niets" zegt is duidelijker dan een teken.
-  var kpiTegelWaarde = kpi.recent.pct === null ? ct("nog niets","none yet") : kpi.recent.pct + "%";
-  var kpiTekst;
-  if(kpi.recent.pct === null){
-    kpiTekst = ct("Nog te weinig pogingen deze week om een foutpercentage te tonen (deze meting begint te tellen vanaf 28 juli, niet met terugwerkende kracht).",
-      "Not enough attempts this week to show an error rate yet (this measurement starts counting from 28 July, not retroactively).");
-  } else if(kpi.trend === null){
-    kpiTekst = ct("Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout). Nog geen trend te tonen: daarvoor moet de week ervoor ook genoeg pogingen hebben.",
-      "Error rate over the last 7 days: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" of "+kpi.recent.pog+" attempts wrong). No trend yet: the week before needs enough attempts too.");
-  } else {
-    var trendTekst = kpi.trend < 0 ? ct("↓ "+Math.abs(kpi.trend)+" procentpunt beter dan de week ervoor","↓ "+Math.abs(kpi.trend)+" percentage points better than the week before")
-      : kpi.trend > 0 ? ct("↑ "+kpi.trend+" procentpunt hoger dan de week ervoor","↑ "+kpi.trend+" percentage points higher than the week before")
-      : ct("gelijk aan de week ervoor","the same as the week before");
-    kpiTekst = ct("Foutpercentage laatste 7 dagen: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" van de "+kpi.recent.pog+" pogingen fout), ",
-                  "Error rate over the last 7 days: <b>"+kpi.recent.pct+"%</b> ("+kpi.recent.fout+" of "+kpi.recent.pog+" attempts wrong), ")+trendTekst+".";
-  }
+  /* v23.14. Hier werd de foutpercentage-tegel en de zin eronder opgebouwd. Allebei staan ze nu in
+     de lange lijst, waar het getal ook een regel uitleg krijgt in plaats van alleen een label. */
   /* v19.90, Stefans tweede punt: systeem- en leerindicatoren scheiden. Ze stonden
      in één raster van acht tegels, en daar is een tapa net zo groot als een stevig
      woord. Dan gaat het scherm dagen tellen in plaats van Spaans, en dat is precies
@@ -23593,17 +23790,7 @@ function renderStats(){
      Boven staat nu wat je kunt. Wat de app bijhoudt om je aan de gang te houden
      staat eronder, ingeklapt, want het is nuttig maar het is geen Spaans. */
   el.innerHTML = koersHtml + voorspelHtml() +
-    "<h2 style='margin-top:16px'>"+ct("Wat je kunt","What you can do")+"</h2>"+
-    "<p class='muted' style='margin:0 0 8px'>"+ct("Deze cijfers gaan over Spaans.","These numbers are about Spanish.")+"</p>"+
-    "<div class='statgrid'>"+
-    "<div class='stat'><b>"+vast+"</b><span class='muted'>"+ct("woorden stevig","words solid")+"</span></div>"+
-    "<div class='stat'><b>"+opweg+"</b><span class='muted'>"+ct("woorden onderweg","words on the way")+"</span></div>"+
-    "<div class='stat'><b>"+corrStevig()+"/"+corrBereikbaar().length+"</b><span class='muted'>"+ct("grammaticaregels stevig","grammar rules solid")+"</span></div>"+
-    "<div class='stat'><b>"+kpiTegelWaarde+"</b><span class='muted'>"+ct("fout (laatste 7 dagen)","wrong (last 7 days)")+"</span></div>"+
-    "<div class='stat'><b>"+zinnenGoed+"/"+SENTENCES.length+"</b><span class='muted'>"+ct("zinnen gehaald","sentences done")+"</span></div>"+
-    "<div class='stat'><b>"+quizzesDone+"/"+QUIZZES.length+"</b><span class='muted'>"+ct("toetsjes gemaakt","quizzes taken")+"</span></div>"+
-    "</div>"+
-    "<p class='muted' style='margin-top:6px'>"+kpiTekst+"</p>"+
+    cijferLijstHtml()+
     "<h2 style='margin-top:16px'>"+ct("Woorden per herhaalinterval","Words per review interval")+"</h2>"+boxHtml+
     "<p class='muted' style='margin-top:8px'>"+
       // v19.90: hier stond ook nog een keer hoeveel woorden je hebt aangeraakt.
