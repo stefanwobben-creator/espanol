@@ -114,7 +114,10 @@ const { chromium } = require('playwright');
   ok(wens.eerst === true && wens.na === 1, 'de dagwens vervullen levert een tapa terug op');
   ok(wens.tweedeKeer === false, 'dezelfde wens kan niet twee keer op één dag verzilverd worden');
   ok(wens.verkeerde === false, 'een andere handeling dan de gevraagde vervult de wens niet (ze vraagt echt iets specifieks)');
-  ok(wens.aantal >= 4 && /^¡/.test(wens.es) === false && /Chispa/.test(wens.es), 'de wens staat in het Spaans (' + wens.es + ')');
+  /* v23.35: de wens "haar cadeautje openmaken" is weg omdat de knop weg is, en een wens die je niet
+     kunt vervullen is erger dan geen wens. Er blijven er drie, en die kunnen alle drie: een tapa
+     geven, laten dansen, aaien. */
+  ok(wens.aantal >= 3 && /^¡/.test(wens.es) === false && /Chispa/.test(wens.es), 'de wens staat in het Spaans (' + wens.es + ')');
 
   // 4. v19.63: de zorgreeks kon breken. Nu is het het aantal dagen dat je samen iets deed,
   //    en dat kan alleen oplopen: wegblijven kost niets.

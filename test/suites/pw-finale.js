@@ -102,9 +102,10 @@ const { chromium } = require('playwright');
       knop: !!document.getElementById('btnFinaleTerug')
     };
   });
-  ok(plaq.erIs && plaq.inVitrine, 'de plaquette staat bij Chispa, waar de verzameling staat');
-  ok(/Gran Men/i.test(plaq.tekst), 'met dezelfde naam als de ceremonie');
-  ok(plaq.datum, 'en de datum waarop je het afmaakte staat erop');
+  /* v23.35, op Stefans verzoek: de plaquette is weg. De ceremonie zelf blijft en komt één keer,
+     op het moment dat je de laatste tapa geeft; wat er daarna van overblijft is de volle rij tapas,
+     en dat is een prima bewijs. S.tapaFinale blijft bewaard, zodat de ceremonie niet opnieuw komt. */
+  ok(!plaq.erIs, 'de plaquette staat er niet meer');
   /* v23.33, op Stefans verzoek: de knop "Kijk de ceremonie terug" is weg. De plaquette blijft, want
      die is het bewijs; de herhaling was iets anders. Een ceremonie die je op afroep kunt herhalen is
      na de tweede keer geen ceremonie meer, en de datum erop doet het werk. */

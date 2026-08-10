@@ -53,13 +53,20 @@ const { chromium } = require('playwright');
     vNu: petVorm().id,
     knoppenK: document.querySelectorAll('#kleurRij button[data-kleur]').length,
     knoppenV: document.querySelectorAll('#vormRij button[data-vorm]').length,
+    vormRij: !!document.getElementById('vormRij'),
     tekst: (document.getElementById('groeiCard') || {}).innerText || ''
   }));
   ok(aanbod.kleuren.length >= 5, 'er is meer dan één kleur om uit te kiezen (' + aanbod.kleuren.length + ')');
   ok(aanbod.vormen.length === 3, 'en drie figuren (' + aanbod.vormen.length + ')');
   ok(aanbod.kNu === 'rosa' && aanbod.vNu === 'clasica', 'standaard is ze gewoon roze en klassiek: wie niets kiest merkt er niets van');
   ok(aanbod.knoppenK === aanbod.kleuren.length, 'elke kleur heeft een eigen knop, en die knop is de kleur zelf');
-  ok(aanbod.knoppenV === aanbod.vormen.length, 'elk figuur heeft een eigen knop');
+  /* v23.35, op Stefans verzoek: het figuurkiezertje is weg van het scherm. PET_VORMEN blijft
+     bestaan, want die voedt de tekening, en petVorm() valt terug op clásica. Wie ooit iets anders
+     koos houdt dat: de keuze is niet weggegooid, alleen het kiezertje. Wat hier nu vastligt is dat
+     die terugval echt werkt, want anders zou een verwijderd kiezertje een lege tekening opleveren. */
+  ok(!aanbod.vormRij, 'het figuurkiezertje staat niet meer op het scherm');
+  ok(aanbod.vormen.length === 3 && aanbod.vNu === 'clasica',
+     'maar de drie figuren bestaan nog en de terugval is clásica (' + aanbod.vNu + ')');
 
   // het blok zelf mag geen enkel slotje dragen: identiteit is geen prestatie
   const slotjes = await page.evaluate(() => {
@@ -68,9 +75,11 @@ const { chromium } = require('playwright');
   });
   ok(slotjes === -1, 'er staat geen slotje bij kleur of figuur: dit hoef je niet te verdienen');
 
-  // --- 2. Twee betekenissen van "vorm" naast elkaar zou niemand snappen ---
+  // --- 2. De groeiteller heet Vorm n/8, en dat gaat over haar leeftijd ---
   ok(/Vorm \d\/8|Form \d\/8/.test(aanbod.tekst), 'de groeiteller heet nog steeds Vorm n/8 (dat is haar leeftijd)');
-  ok(/figuur|build/i.test(aanbod.tekst), 'en de figuurkeuze heet daarom géén vorm');
+  /* v23.35: hier stond dat de figuurkeuze géén "vorm" mocht heten, omdat twee betekenissen van
+     hetzelfde woord op één kaart iemand kwijtraken. Dat probleem is opgelost door het kiezertje weg
+     te halen, dus de eis vervalt met het ding waar hij over ging. */
 
   // --- 3. Een klik doet echt iets, en het blijft ---
   const voor = await page.evaluate(() => document.getElementById('petBox').innerHTML);
@@ -86,11 +95,14 @@ const { chromium } = require('playwright');
   ok(na.svg !== voor, 'en dat zie je meteen aan de tekening');
   ok(na.aan === 1 && /aan/.test(na.gekozen), 'precies één kleur staat aangevinkt: de jouwe');
 
-  await page.click("#vormRij button[data-vorm='esbelta']");
+  /* Het kiezertje is weg, maar de figuren moeten nog wel dóórwerken in de tekening: wie ooit
+     esbelta koos heeft dat nog staan, en die tekening hoort er dan ook anders uit te zien. Dus
+     zetten we hem hier rechtstreeks, precies zoals een oud profiel hem heeft staan. */
+  await page.evaluate(() => { S.petVorm = 'esbelta'; try { persist(); } catch (e) {} renderPet(); });
   await page.waitForTimeout(300);
   const naVorm = await page.evaluate(() => ({ id: petVorm().id, svg: document.getElementById('petBox').innerHTML }));
-  ok(naVorm.id === 'esbelta', 'en een klik op esbelta verandert haar figuur');
-  ok(naVorm.svg !== na.svg, 'ook dat zie je aan de tekening, niet alleen aan de knop');
+  ok(naVorm.id === 'esbelta', 'een profiel dat ooit esbelta koos, heeft dat nog steeds');
+  ok(naVorm.svg !== na.svg, 'en dat zie je nog steeds aan de tekening');
 
   await page.reload();
   await page.waitForTimeout(900);

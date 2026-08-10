@@ -1,4 +1,152 @@
-// v23.34: la mezcla. Een tapa plus een dans wordt een naam, en die naam buigt mee.
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+v23.36: de mezcla danst mee, op ware grootte.
+
+Stefan: "kies je tapa die staat onderin de rij uitgeklapt, kies je dans die staat daaronder
+uitgeklapt, dan maakt ie de dans en begint het hem af te spelen. Tijdens de dans moet je emoji
+ongeveer net zo groot zijn als Chispa en meedansen."
+
+Drie dingen dus, en het derde is het leukste.
+
+1. De vakjes waren 42 pixels: een aanwijzing, geen keuze. Ze zijn nu twee keer zo groot, met de naam
+   eronder, zodat je ziet wát je gekozen hebt en niet alleen dát je iets gekozen hebt.
+
+2. De dans begon alleen als je de dans als laatste aantikte. Tik je ze andersom aan, dan stond de
+   naam er wel maar gebeurde er niets. Nu start de dans zodra het paar compleet is, ongeacht in
+   welke volgorde je tikte. Dat is ook waarom mezclaKies pas ná feedPet en chispaBaila wordt
+   aangeroepen: die twee doen hun eigen ding, en de mezcla kijkt of het paar nu rond is.
+
+3. Tijdens de dans staat de tapa naast haar, ongeveer even groot, met dezelfde beweging en hetzelfde
+   tempo. Niet met een eigen animatie die er ongeveer op lijkt: hij krijgt letterlijk dezelfde
+   klasse en dezelfde animatieduur als Chispa, dus hij kan niet uit de pas lopen. De grootte wordt
+   uitgerekend uit haar eigen hoogte op dat moment, want die verschilt per scherm en per fase.
+
+Idempotent.
+"""
+import io, sys, os
+
+WORTEL = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/espanol")
+PAD = os.path.join(WORTEL, "index.html")
+PAD_VER = os.path.join(WORTEL, "versie.txt")
+MAP_S = os.path.join(WORTEL, "test", "suites")
+
+with io.open(PAD, encoding="utf-8") as f:
+    src = f.read()
+
+if "function mezclaDansMee" in src:
+    print("al toegepast, niets te doen")
+    sys.exit(0)
+if 'var APP_VERSIE = "v23.35";' not in src:
+    print("Deze index.html staat niet op v23.35. Eerst bijtrekken:\n\n    git pull --rebase\n")
+    sys.exit(1)
+
+
+def rep(anker, nieuw, n=1):
+    global src
+    gevonden = src.count(anker)
+    assert gevonden == n, "anker komt %d keer voor in plaats van %d:\n%s" % (gevonden, n, anker[:160])
+    src = src.replace(anker, nieuw, n)
+
+
+# ---------------------------------------------------------------- 1. grotere vakjes
+rep(
+    """  .mezVak{width:42px; height:42px; border-radius:10px; background:#faf7f2; border:1px solid var(--border);
+          display:flex; align-items:center; justify-content:center; font-size:1.35rem; flex:0 0 42px;}
+  .mezVak.leeg{color:var(--muted); font-size:.78rem; font-weight:700;}""",
+    """  /* v23.36: de vakjes waren 42 pixels, en dat is een aanwijzing en geen keuze. Nu groot genoeg om
+     te zien wát je gekozen hebt, met de naam eronder. */
+  .mezVak{width:76px; border-radius:12px; background:#faf7f2; border:1px solid var(--border);
+          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+          padding:8px 4px; font-size:2rem; line-height:1; flex:0 0 76px;}
+  .mezVak small{font-size:.66rem; color:var(--muted); text-align:center; line-height:1.2;
+                display:block; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mezVak.leeg{color:var(--border); font-size:1.6rem; font-weight:700; min-height:76px;}
+  /* de meedanser: even groot als Chispa, dezelfde beweging, hetzelfde tempo */
+  .chmez{z-index:6; line-height:1; filter:drop-shadow(0 3px 5px rgba(0,0,0,.18));}""")
+
+# ---------------------------------------------------------------- 2. de vakjes tonen wat je koos
+rep(
+    """  var vak = function(x){
+    return x ? "<span class='mezVak'>"+x.e+"</span>"
+             : "<span class='mezVak leeg'>?</span>";
+  };""",
+    """  var vak = function(x, naam){
+    return x ? "<span class='mezVak'>"+x.e+"<small>"+naam+"</small></span>"
+             : "<span class='mezVak leeg'>?</span>";
+  };""")
+
+rep(
+    """    vak(tp)+"<span class='mezOp'>+</span>"+vak(bl)+"<span class='mezOp'>=</span>"+""",
+    """    vak(tp, tp ? (tp.kern || tp.es) : "")+"<span class='mezOp'>+</span>"+
+    vak(bl, bl ? bl.es : "")+"<span class='mezOp'>=</span>"+""")
+
+# ---------------------------------------------------------------- 3. meedansen
+rep(
+    """function mezclaWis(){ mezclaTapa = null; mezclaBaile = null; mezclaTeken(false); }""",
+    """function mezclaWis(){ mezclaTapa = null; mezclaBaile = null; mezclaTeken(false); }
+/* De tapa danst mee. Hij krijgt letterlijk dezelfde klasse en dezelfde animatieduur als Chispa, dus
+   hij kán niet uit de pas lopen; een eigen animatie die er ongeveer op lijkt zou dat wel doen.
+
+   De grootte komt uit haar eigen hoogte op dat moment en staat niet in de opmaak: ze is groter op
+   een breed scherm en kleiner in de balk, en een vast aantal pixels zou op een van de twee mis
+   staan. Emoji zijn ongeveer zo hoog als hun lettergrootte, dus de helft van haar hoogte komt
+   ongeveer op haar formaat uit. */
+function mezclaDansMee(m, ms, tempoSec){
+  var laag = chispaPropLaag(), box = chispaBox();
+  if(!laag || !laag.appendChild || !box || !document.createElement) return null;
+  var hoog = 0;
+  try { hoog = box.getBoundingClientRect().height || 0; } catch(e){ hoog = 0; }
+  if(hoog < 40) return null;                       // niet in beeld: dan valt er ook niets mee te dansen
+  var el = document.createElement("span");
+  el.className = "chprop chmez " + m.baile.klas;
+  el.textContent = m.tapa.e;
+  el.style.fontSize = Math.round(hoog * 0.5) + "px";
+  el.style.left = "auto";
+  el.style.right = "2%";
+  el.style.bottom = "10%";
+  if(tempoSec) el.style.animationDuration = (Math.round(tempoSec * 1000) / 1000) + "s";
+  laag.appendChild(el);
+  setTimeout(function(){ if(el.parentNode && el.parentNode.removeChild) el.parentNode.removeChild(el); },
+             (ms || 3000) + 200);
+  return el;
+}""")
+
+rep(
+    """  mezclaTeken(nieuw);
+  if(m) try { chispaSay({es:"\\u00a1" + m.es + "!", nl:m.nl, en:m.nl}); } catch(e){}
+  return m;""",
+    """  mezclaTeken(nieuw);
+  /* v23.36: het paar is rond, dus hij danst. Dat gebeurde eerst alleen als je de dans als laatste
+     aantikte; tikte je ze andersom aan, dan stond de naam er wel maar gebeurde er niets. */
+  if(m){
+    try {
+      var tempo = (m.baile.bpm && m.baile.slagen) ? m.baile.slagen * 60 / m.baile.bpm : 0;
+      var duur = tempo ? Math.max(1, Math.round(4400 / (tempo * 1000))) * tempo * 1000 : 4400;
+      duur = Math.round(duur);
+      if(soort !== "baile") chispaBaila(m.baile);   // bij een dansklik danst ze al
+      mezclaDansMee(m, duur, tempo);
+    } catch(e){}
+    /* De naam als laatste. Eerst stond hij vóór chispaBaila, en die zegt zelf ook iets: dan zag je
+       de mezcla een fractie en daarna weer de gewone danszin. Wat je gemaakt hebt hoort te blijven
+       staan, niet het feit dat er gedanst wordt. */
+    try { chispaSay({es:"\\u00a1" + m.es + "!", nl:m.nl, en:m.nl}); } catch(e){}
+  }
+  return m;""")
+
+rep('var APP_VERSIE = "v23.35";', 'var APP_VERSIE = "v23.36";')
+
+with io.open(PAD, "w", encoding="utf-8") as f:
+    f.write(src)
+with io.open(PAD_VER, "w", encoding="utf-8") as f:
+    f.write("v23.36\n")
+print("v23.36 toegepast op", PAD)
+
+# ---------------------------------------------------------------- 4. de suite erbij
+# De hele suite wordt vervangen in plaats van er drie stukjes in te knippen: er komen twee
+# secties bij en twee bestaande assertions veranderen mee, en dan is knippen fragieler dan
+# neerzetten wat er moet staan.
+SUITE36 = r'''// v23.34: la mezcla. Een tapa plus een dans wordt een naam, en die naam buigt mee.
 //
 // Wat hier vastligt:
 //   - het bijvoeglijk naamwoord volgt het lidwoord van de tapa. Dit is het hele punt: het spelletje
@@ -184,3 +332,14 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   console.log(fout === 0 ? '\nALLE PLAYWRIGHT-TESTS GESLAAGD' : '\n' + fout + ' PLAYWRIGHT-TEST(S) GEFAALD');
   process.exit(fout === 0 ? 0 : 1);
 })();
+'''
+
+pad = os.path.join(MAP_S, "pw-mezcla.js")
+with io.open(pad, encoding="utf-8") as f:
+    _s = f.read()
+if "v23.36" in _s:
+    print("  pw-mezcla.js: al bijgewerkt")
+else:
+    with io.open(pad, "w", encoding="utf-8") as f:
+        f.write(SUITE36)
+    print("  pw-mezcla.js: bijgewerkt")

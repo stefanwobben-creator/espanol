@@ -717,9 +717,16 @@
      omdat het geen kaart is maar een werkbank: hier gebeurt iets terwijl je bezig bent. */
   .mezcla{border:1px dashed var(--border); border-radius:12px; padding:9px 10px; margin:10px 0 2px;
           display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
-  .mezVak{width:42px; height:42px; border-radius:10px; background:#faf7f2; border:1px solid var(--border);
-          display:flex; align-items:center; justify-content:center; font-size:1.35rem; flex:0 0 42px;}
-  .mezVak.leeg{color:var(--muted); font-size:.78rem; font-weight:700;}
+  /* v23.36: de vakjes waren 42 pixels, en dat is een aanwijzing en geen keuze. Nu groot genoeg om
+     te zien wát je gekozen hebt, met de naam eronder. */
+  .mezVak{width:76px; border-radius:12px; background:#faf7f2; border:1px solid var(--border);
+          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+          padding:8px 4px; font-size:2rem; line-height:1; flex:0 0 76px;}
+  .mezVak small{font-size:.66rem; color:var(--muted); text-align:center; line-height:1.2;
+                display:block; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mezVak.leeg{color:var(--border); font-size:1.6rem; font-weight:700; min-height:76px;}
+  /* de meedanser: even groot als Chispa, dezelfde beweging, hetzelfde tempo */
+  .chmez{z-index:6; line-height:1; filter:drop-shadow(0 3px 5px rgba(0,0,0,.18));}
   .mezOp{color:var(--muted); font-weight:800;}
   .mezUit{font-size:.95rem; text-align:center;}
   .mezUit b{display:block; font-size:1.05rem;}
@@ -1173,7 +1180,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.34";
+var APP_VERSIE = "v23.36";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14498,20 +14505,61 @@ function mezclaKies(soort, id){
   var nieuw = false;
   if(m && mezclaState().indexOf(m.id) < 0){ mezclaState().push(m.id); nieuw = true; try { persist(); } catch(e){} }
   mezclaTeken(nieuw);
-  if(m) try { chispaSay({es:"\u00a1" + m.es + "!", nl:m.nl, en:m.nl}); } catch(e){}
+  /* v23.36: het paar is rond, dus hij danst. Dat gebeurde eerst alleen als je de dans als laatste
+     aantikte; tikte je ze andersom aan, dan stond de naam er wel maar gebeurde er niets. */
+  if(m){
+    try {
+      var tempo = (m.baile.bpm && m.baile.slagen) ? m.baile.slagen * 60 / m.baile.bpm : 0;
+      var duur = tempo ? Math.max(1, Math.round(4400 / (tempo * 1000))) * tempo * 1000 : 4400;
+      duur = Math.round(duur);
+      if(soort !== "baile") chispaBaila(m.baile);   // bij een dansklik danst ze al
+      mezclaDansMee(m, duur, tempo);
+    } catch(e){}
+    /* De naam als laatste. Eerst stond hij vóór chispaBaila, en die zegt zelf ook iets: dan zag je
+       de mezcla een fractie en daarna weer de gewone danszin. Wat je gemaakt hebt hoort te blijven
+       staan, niet het feit dat er gedanst wordt. */
+    try { chispaSay({es:"\u00a1" + m.es + "!", nl:m.nl, en:m.nl}); } catch(e){}
+  }
   return m;
 }
 function mezclaWis(){ mezclaTapa = null; mezclaBaile = null; mezclaTeken(false); }
+/* De tapa danst mee. Hij krijgt letterlijk dezelfde klasse en dezelfde animatieduur als Chispa, dus
+   hij kán niet uit de pas lopen; een eigen animatie die er ongeveer op lijkt zou dat wel doen.
+
+   De grootte komt uit haar eigen hoogte op dat moment en staat niet in de opmaak: ze is groter op
+   een breed scherm en kleiner in de balk, en een vast aantal pixels zou op een van de twee mis
+   staan. Emoji zijn ongeveer zo hoog als hun lettergrootte, dus de helft van haar hoogte komt
+   ongeveer op haar formaat uit. */
+function mezclaDansMee(m, ms, tempoSec){
+  var laag = chispaPropLaag(), box = chispaBox();
+  if(!laag || !laag.appendChild || !box || !document.createElement) return null;
+  var hoog = 0;
+  try { hoog = box.getBoundingClientRect().height || 0; } catch(e){ hoog = 0; }
+  if(hoog < 40) return null;                       // niet in beeld: dan valt er ook niets mee te dansen
+  var el = document.createElement("span");
+  el.className = "chprop chmez " + m.baile.klas;
+  el.textContent = m.tapa.e;
+  el.style.fontSize = Math.round(hoog * 0.5) + "px";
+  el.style.left = "auto";
+  el.style.right = "2%";
+  el.style.bottom = "10%";
+  if(tempoSec) el.style.animationDuration = (Math.round(tempoSec * 1000) / 1000) + "s";
+  laag.appendChild(el);
+  setTimeout(function(){ if(el.parentNode && el.parentNode.removeChild) el.parentNode.removeChild(el); },
+             (ms || 3000) + 200);
+  return el;
+}
 function mezclaHtml(nieuw){
   var tp = mezclaTapa ? TAPAS.filter(function(x){ return x.id === mezclaTapa; })[0] : null;
   var bl = mezclaBaile ? BAILES.filter(function(x){ return x.id === mezclaBaile; })[0] : null;
   var m = (tp && bl) ? mezclaMaak(tp.id, bl.id) : null;
-  var vak = function(x){
-    return x ? "<span class='mezVak'>"+x.e+"</span>"
+  var vak = function(x, naam){
+    return x ? "<span class='mezVak'>"+x.e+"<small>"+naam+"</small></span>"
              : "<span class='mezVak leeg'>?</span>";
   };
   return "<div class='mezcla' id='mezclaStrip'>"+
-    vak(tp)+"<span class='mezOp'>+</span>"+vak(bl)+"<span class='mezOp'>=</span>"+
+    vak(tp, tp ? (tp.kern || tp.es) : "")+"<span class='mezOp'>+</span>"+
+    vak(bl, bl ? bl.es : "")+"<span class='mezOp'>=</span>"+
     (m ? "<span class='mezUit'><b class='es'>"+m.es+"</b><span>"+m.nl+"</span>"+
            (nieuw ? "<span class='mezNieuw'>"+ct("nieuw!","new!")+"</span>" : "")+"</span>"+
          "<button class='mezWis' id='btnMezWis' type='button'>"+ct("opnieuw","again")+"</button>"
@@ -14687,8 +14735,10 @@ function tapaMenuWire(el){
 var CHISPA_WENSEN = [
   {id:"tapa",   e:"🫒", es:"Hoy Chispa quiere una tapa.",        nl:"Chispa wil vandaag een tapa.",          en:"Chispa wants a tapa today."},
   {id:"musica", e:"🎶", es:"Hoy Chispa quiere música.",          nl:"Chispa wil vandaag muziek.",            en:"Chispa wants music today."},
-  {id:"mimos",  e:"🤗", es:"Hoy Chispa quiere mimos.",           nl:"Chispa wil vandaag geknuffeld worden.", en:"Chispa wants cuddles today."},
-  {id:"regalo", e:"🎁", es:"Hoy Chispa quiere abrir su regalo.", nl:"Chispa wil haar cadeautje openmaken.",  en:"Chispa wants to open her gift."}
+  /* v23.35: de wens "haar cadeautje openmaken" is weg. Het dagcadeautje had een knop en die knop
+     is weg, dus die wens was niet meer te vervullen, en een wens die je niet kunt vervullen is erger
+     dan geen wens. De drie die overblijven kunnen alle drie: een tapa geven, laten dansen, aaien. */
+  {id:"mimos",  e:"🤗", es:"Hoy Chispa quiere mimos.",           nl:"Chispa wil vandaag geknuffeld worden.", en:"Chispa wants cuddles today."}
 ];
 function chispaWens(){ return CHISPA_WENSEN[dayHash("wens") % CHISPA_WENSEN.length]; }
 function chispaWensVervuld(){ return zorgState().wensOp === today(); }
@@ -14829,21 +14879,21 @@ var chispaLevenTeller = 0;
 
 /* Acht echte dansen: het feestje leert ook dansvocabulaire (el baile del día). */
 var BAILES = [
-  {id:"salsa",     klas:"chsalsa",    e:"💃", es:"la salsa",          nl:"de salsa",       land:"Cuba",
+  {id:"salsa", bpm:190, slagen:2,     klas:"chsalsa",    e:"💃", es:"la salsa",          nl:"de salsa",       land:"Cuba",
    zeg:"¡Vamos a bailar salsa!",              zegnl:"Kom, we dansen salsa!",            zegen:"Let's dance salsa!"},
-  {id:"flamenco",  klas:"chflamenco", e:"🌹", es:"el flamenco",       nl:"de flamenco",    land:"España",
+  {id:"flamenco", bpm:180, slagen:6,  klas:"chflamenco", e:"🌹", es:"el flamenco",       nl:"de flamenco",    land:"España",
    zeg:"¡Olé! Un poco de flamenco.",     zegnl:"Olé! Even wat flamenco.",     zegen:"Olé! A bit of flamenco."},
-  {id:"cumbia",    klas:"chcumbia",   e:"🪘", es:"la cumbia",         nl:"de cumbia",      land:"Colombia",
+  {id:"cumbia", bpm:95, slagen:2,    klas:"chcumbia",   e:"🪘", es:"la cumbia",         nl:"de cumbia",      land:"Colombia",
    zeg:"La cumbia se baila así.",             zegnl:"Zo dans je cumbia.",               zegen:"This is how you dance cumbia."},
-  {id:"merengue",  klas:"chmerengue", e:"🎺", es:"el merengue",       nl:"de merengue",    land:"República Dominicana",
+  {id:"merengue", bpm:132, slagen:1,  klas:"chmerengue", e:"🎺", es:"el merengue",       nl:"de merengue",    land:"República Dominicana",
    zeg:"¡Rápido, rápido! Es merengue.", zegnl:"Snel, snel! Dit is merengue.", zegen:"Fast, fast! This is merengue."},
-  {id:"bachata",   klas:"chbachata",  e:"💗", es:"la bachata",        nl:"de bachata",     land:"República Dominicana",
+  {id:"bachata", bpm:128, slagen:4,   klas:"chbachata",  e:"💗", es:"la bachata",        nl:"de bachata",     land:"República Dominicana",
    zeg:"Bachata: uno, dos, tres... ¡y cadera!", zegnl:"Bachata: een, twee, drie... en heup!", zegen:"Bachata: one, two, three... and hip!"},
-  {id:"tango",     klas:"chtango",    e:"🖤", es:"el tango",          nl:"de tango",       land:"Argentina",
+  {id:"tango", bpm:116, slagen:4,     klas:"chtango",    e:"🖤", es:"el tango",          nl:"de tango",       land:"Argentina",
    zeg:"El tango es una pasión, ¿sabes?", zegnl:"Tango is een passie, weet je.",   zegen:"Tango is a passion, you know."},
-  {id:"reggaeton", klas:"chdembow",   e:"🔥", es:"el reggaetón", nl:"de reggaeton",   land:"Puerto Rico",
+  {id:"reggaeton", bpm:96, slagen:1, klas:"chdembow",   e:"🔥", es:"el reggaetón", nl:"de reggaeton",   land:"Puerto Rico",
    zeg:"¡Dale! Un poco de perreo.",           zegnl:"Kom op! Een beetje perreo.",       zegen:"Come on! A bit of perreo."},
-  {id:"jarabe",    klas:"chjarabe",   e:"👒", es:"el jarabe tapatío", nl:"de Mexicaanse hoedendans", land:"México",
+  {id:"jarabe", bpm:132, slagen:1,    klas:"chjarabe",   e:"👒", es:"el jarabe tapatío", nl:"de Mexicaanse hoedendans", land:"México",
    zeg:"¡Ay ay ay! El jarabe tapatío.",  zegnl:"Ay ay ay! De jarabe tapatío.", zegen:"Ay ay ay! The jarabe tapatío."}
 ];
 function bailePorDia(){ return BAILES[dayHash("baile") % BAILES.length]; }
@@ -14986,19 +15036,28 @@ function chispaBeweegt(){
     return !!(b.classList.contains && b.classList.contains("chbezig"));
   });
 }
-function chispaMove(klas, ms, klaar){
+/* v23.35: duur is de duur van de hele beweging, tempo is de lengte van één cyclus. Dat tempo stond
+   tot nu toe in de CSS als een getal dat ik op gevoel had gekozen; nu komt het uit de bpm van de
+   dans, dezelfde bpm waarmee de muziek gemaakt is. Geen tempo meegegeven, dan blijft de CSS staan
+   en verandert er niets: alles wat niet danst raakt dit niet. */
+function chispaMove(klas, ms, klaar, tempoSec){
   var box = chispaBox();
   if(!box || !box.classList){ if(klaar) klaar(); return false; }
   CHISPA_MOVES.forEach(function(k){ box.classList.remove(k); });
   box.classList.remove("petbounce");
+  box.style.animationDuration = "";
   void(box.offsetWidth || 0);
   box.classList.add("chbezig");
   box.classList.add(klas);
+  if(tempoSec) box.style.animationDuration = (Math.round(tempoSec * 1000) / 1000) + "s";
   if(chispaMoveTimer) clearTimeout(chispaMoveTimer);
   chispaMoveTimer = setTimeout(function(){
     // v19.78: opruimen op alle podia. Wie tijdens een dans terugscrollt wisselt van podium, en
     // dan zou de klasse blijven hangen op het podium dat niemand meer opruimt.
-    chispaPodia(box).forEach(function(b2){ b2.classList.remove(klas); b2.classList.remove("chbezig"); });
+    chispaPodia(box).forEach(function(b2){
+      b2.classList.remove(klas); b2.classList.remove("chbezig");
+      b2.style.animationDuration = "";
+    });
     if(klaar) klaar();
   }, ms || 2400);
   return true;
@@ -15137,6 +15196,7 @@ function chBus(){
 /* Eén knop om alles af te kappen. Zonder dit stapelen twee snel achter elkaar aangeklikte dansen
    zich op elkaar, en dan hoor je geen salsa en geen tango maar een ongeluk. */
 function chMuziekUit(){
+  baileStop();                       // v23.35: de opname hoort net zo goed te stoppen als de synthese
   var ac = avtCtx();
   var oud = chBusNode;
   chBusNode = null;
@@ -15357,6 +15417,43 @@ function baileMuziek(id, ms){
   }
   return Math.round(maten * maatSec * 1000);
 }
+/* v23.35: eerst de echte opname, en de synthese als die er niet is.
+
+   De terugval hangt aan het foutsignaal van het audio-element en niet aan een lijstje van welke
+   bestanden er zouden moeten zijn. Zo'n lijstje loopt namelijk uit de pas met wat er echt in de map
+   staat, en dan hoor je stilte terwijl alles "klopt". Het kost wel een tel: de synthese begint pas
+   als de browser zegt dat het bestand er niet is. Dat is de goedkope kant om fout te zitten. */
+var chBaileAudio = null;
+function baileStop(){
+  if(!chBaileAudio) return;
+  try { chBaileAudio.pause(); } catch(e){}
+  chBaileAudio = null;
+}
+function baileGeluid(b, ms){
+  if(S.chispaStil) return 0;
+  baileStop();
+  var terug = function(){ try { baileMuziek(b.id, ms); } catch(e){} };
+  var a;
+  try { a = new Audio("audio/baile/" + b.id + ".mp3"); } catch(e){ terug(); return 0; }
+  a.volume = 0.5;
+  a.addEventListener("error", terug);
+  chBaileAudio = a;
+  try {
+    var p = a.play();
+    if(p && p.catch) p.catch(terug);
+  } catch(e){ terug(); }
+  setTimeout(function(){
+    if(chBaileAudio !== a) return;
+    // uitfaden in plaats van afkappen: een track die middenin stopt klinkt als een storing
+    var stap = 0;
+    var t = setInterval(function(){
+      stap++;
+      try { a.volume = Math.max(0, 0.5 * (1 - stap / 8)); } catch(e){}
+      if(stap >= 8){ clearInterval(t); baileStop(); }
+    }, 60);
+  }, Math.max(600, ms - 500));
+  return ms;
+}
 function chispaBaila(baile, stilBeeld){
   var b = baile || bailePorDia();
   // v19.82: sliep ze, dan wordt ze wakker van de muziek in plaats van je weg te sturen.
@@ -15370,15 +15467,21 @@ function chispaBaila(baile, stilBeeld){
        nl:"Mmm... muziek? Oké, oké... we dansen!",
        en:"Mmm... music? Okay, okay... let's dance!"}
     : {es:b.zeg, nl:ct(b.zegnl, b.zegen) + " (" + b.land + ")"});
+  /* De hele beweging duurt een heel aantal maten van deze dans, en niet 4400 milliseconden omdat
+     dat een rond getal is. Zo eindigt ze op een tel en niet middenin een pas. */
+  var tempo = (b.bpm && b.slagen) ? b.slagen * 60 / b.bpm : 0;
+  var duur = tempo ? Math.round(4400 / (tempo * 1000) ) : 0;
+  duur = tempo ? Math.max(1, duur) * tempo * 1000 : 4400;
+  duur = Math.round(duur);
   chispaVloer(true);
-  chispaReis(true, 4400);
-  try { baileMuziek(b.id, 4400); } catch(e){}
+  chispaReis(true, duur);
+  try { baileGeluid(b, duur); } catch(e){}
   chispaNotas(6);
-  if(b.id === "flamenco" || b.id === "jarabe") chispaProp("chguit", "🎸", 4600);
-  if(b.id === "cumbia" || b.id === "merengue"){ chispaProp("chmar", "🪇", 4600); chispaProp("chmar2", "🪇", 4600); }
-  chispaMove(b.klas, 4400, function(){ chispaVloer(false); chispaReis(false); });
+  if(b.id === "flamenco" || b.id === "jarabe") chispaProp("chguit", "🎸", duur + 200);
+  if(b.id === "cumbia" || b.id === "merengue"){ chispaProp("chmar", "🪇", duur + 200); chispaProp("chmar2", "🪇", duur + 200); }
+  chispaMove(b.klas, duur, function(){ chispaVloer(false); chispaReis(false); }, tempo);
   chispaZorgTik();
-  if(gewekt) chispaSlaapHerstel(6100);   // daarna mag ze weer verder slapen
+  if(gewekt) chispaSlaapHerstel(duur + 1700);   // daarna mag ze weer verder slapen
   if(chispaWensDoe("musica")) chispaHerrenderStraks(4800);
   else if(nieuw) chispaHerrenderStraks(4800);
   return true;
@@ -15607,21 +15710,13 @@ function renderPet(){
        keuze voor je maakt is de slechtere van de twee. Hoeveel tapas je hebt staat nu bij de rij
        waar je ze uitgeeft. */
     chVerzamelHtml()+
-    "<div class='row center'>"+
-    "<button class='ghost' id='btnFiesta'>\ud83c\udf89 \u00a1Fiesta!</button>"+
-    "<button class='ghost' id='btnSerenade'>\ud83c\udfb6 Serenade</button>"+
-    "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">\ud83c\udf81 "+(cadeauGehad?ct("Morgen weer","Back tomorrow"):ct("Dagcadeautje","Daily gift"))+"</button>"+
-    "</div>"+
+    /* v23.35, op Stefans verzoek: de rij Fiesta/Serenade/Dagcadeautje is weg. Wat je met haar doet
+       staat nu in de twee rijen erboven, en aaien doe je door haar aan te tikken. De functies
+       blijven bestaan (het feestje komt nog vanzelf voorbij), alleen de knoppen niet. */
     "</div>";
   chVerzamelWire(el);
   var bmw = document.getElementById("btnMezWis");
   if(bmw) bmw.onclick = mezclaWis;
-  var bfi = document.getElementById("btnFiesta");
-  if(bfi) bfi.onclick = function(){ chispaFiesta(); };
-  var bs = document.getElementById("btnSerenade");
-  if(bs) bs.onclick = chispaSerenade;
-  var bc = document.getElementById("btnCadeau");
-  if(bc && !cadeauGehad) bc.onclick = chispaCadeau;
   var box = document.getElementById("petBox");
   if(box){
     box.onclick = chispaAai;
@@ -15688,10 +15783,9 @@ function renderGroei(){
   PET_VORMEN.forEach(function(vv){
     vr += "<button class='vormknop"+(vv.id===vNu?" aan":"")+"' data-vorm='"+vv.id+"' aria-pressed='"+(vv.id===vNu)+"'><span class='es'>"+vv.naam+"</span> <span class='muted'>\u00b7 "+ct(vv.nl,vv.en)+"</span></button>";
   });
-  // Bewust "figuur" en niet "vorm": twee regels hoger staat "Vorm 7/8", en dat gaat over haar
-  // leeftijd. Twee betekenissen van hetzelfde woord op dezelfde kaart is hoe je iemand kwijtraakt.
-  html += "<p class='zorglabel' style='margin:12px 0 0'>"+ct("Haar figuur","Her build")+"</p>"+
-    "<div class='vormrij' id='vormRij'>"+vr+"</div>";
+  /* v23.35: het figuurkiezertje is weg, op Stefans verzoek. petVorm() valt terug op "clásica", dus
+     wie ooit iets anders koos houdt dat: de keuze verdwijnt niet, alleen het kiezertje. vr wordt
+     hieronder niet meer gebruikt en blijft staan omdat PET_VORMEN nog de tekening voedt. */
 
   // v19.77: twee groepen, want er zijn nu twee manieren om iets te verdienen en die door elkaar
   // zetten maakt onnavolgbaar waarom het ene wel opengaat en het andere niet.
@@ -15782,8 +15876,6 @@ function chVerzamelHtml(){
       b.e+" <span class='es'>"+b.es+"</span></button>";
   });
   return "<div class='vitrinevak'>"+
-      (S.tapaFinale ? "<div class='plaquette' id='tapaPlaquette'><b><span class='es'>El Gran Men\u00fa</span></b>"+
-        "<span>"+ct("alle "+TAPAS.length+" tapas geproefd \u00b7 ","all "+TAPAS.length+" tapas tasted \u00b7 ")+S.tapaFinale+"</span></div>" : "")+
       "<p class='bailehoy' id='tapaHoy'><span class='es'>"+(tapaKlaar ? "La tapa del d\u00eda" : "La pr\u00f3xima tapa")+"</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+
         (tapaKlaar ? "" : " \u00b7 "+ct("na je volgende les","after your next session"))+"</span></p>"+
       tapaMenuHtml()+

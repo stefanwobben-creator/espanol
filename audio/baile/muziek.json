@@ -1,0 +1,58 @@
+{
+ "salsa": {
+  "prompt": "Instrumental Cuban salsa, no vocals, 190 BPM, montuno piano, tumbao bass, congas, timbales and a bright brass stab. Warm, danceable, loopable, consistent tempo.",
+  "bpm": 190,
+  "ms": 20000,
+  "bytes": 321455,
+  "wanneer": "2026-08-10T08:55:23.100Z"
+ },
+ "flamenco": {
+  "prompt": "Instrumental Spanish flamenco, no vocals, 180 BPM in a 12-beat compás, solo Spanish guitar with rasgueado, palmas and cajón. Intimate, dry room, loopable.",
+  "bpm": 180,
+  "ms": 20000,
+  "bytes": 320201,
+  "wanneer": "2026-08-10T08:55:30.351Z"
+ },
+ "cumbia": {
+  "prompt": "Instrumental Colombian cumbia, no vocals, 95 BPM, gaita flute, accordion, guacharaca scraper and steady kick on the downbeat. Sunny, relaxed, loopable.",
+  "bpm": 95,
+  "ms": 20000,
+  "bytes": 321037,
+  "wanneer": "2026-08-10T08:55:37.055Z"
+ },
+ "merengue": {
+  "prompt": "Instrumental Dominican merengue, no vocals, 132 BPM, fast tambora and güira, accordion and punchy saxophone riffs. Joyful, driving, loopable.",
+  "bpm": 132,
+  "ms": 20000,
+  "bytes": 320201,
+  "wanneer": "2026-08-10T08:55:46.546Z"
+ },
+ "bachata": {
+  "prompt": "Instrumental Dominican bachata, no vocals, 128 BPM, nylon lead guitar with tremolo, bongo with the martillo pattern, güira and soft bass. Romantic, swaying, loopable.",
+  "bpm": 128,
+  "ms": 20000,
+  "bytes": 320201,
+  "wanneer": "2026-08-10T08:55:55.218Z"
+ },
+ "tango": {
+  "prompt": "Instrumental Argentine tango, no vocals, 116 BPM, bandoneón lead, violin, upright bass and piano marcato. Dramatic, moody, loopable.",
+  "bpm": 116,
+  "ms": 20000,
+  "bytes": 320201,
+  "wanneer": "2026-08-10T08:56:02.053Z"
+ },
+ "reggaeton": {
+  "prompt": "Instrumental reggaeton, no vocals, 96 BPM, classic dembow drum pattern, deep sub bass and sparse synth plucks. Modern, clean, loopable.",
+  "bpm": 96,
+  "ms": 20000,
+  "bytes": 320201,
+  "wanneer": "2026-08-10T08:56:09.891Z"
+ },
+ "jarabe": {
+  "prompt": "Instrumental Mexican mariachi jarabe tapatío, no vocals, 132 BPM, trumpets, violins, vihuela and guitarrón in fast 6/8. Festive, bright, loopable.",
+  "bpm": 132,
+  "ms": 20000,
+  "bytes": 320201,
+  "wanneer": "2026-08-10T08:56:17.010Z"
+ }
+}

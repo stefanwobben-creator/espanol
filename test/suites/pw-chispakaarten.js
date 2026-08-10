@@ -80,6 +80,7 @@ const { chromium } = require('playwright');
       stemming: c.querySelectorAll('.petmood').length,
       wens: c.querySelectorAll('#wensRij').length,
       knoppen: ['btnFiesta', 'btnSerenade', 'btnCadeau'].filter((i) => !!c.querySelector('#' + i)).length,
+      mezcla: !!c.querySelector('#mezclaStrip'),
       tapachips: c.querySelectorAll('.tapachip').length,
       bailechips: c.querySelectorAll('.bailechip').length,
       shopitems: c.querySelectorAll('.shopitem').length,
@@ -88,7 +89,12 @@ const { chromium } = require('playwright');
     };
   });
   ok(pet.dier >= 1 && pet.naam === 1 && pet.stemming === 1 && pet.wens === 1, 'kaart 1: het dier, haar naam, stemming en wens');
-  ok(pet.knoppen === 3, 'kaart 1: de drie dingen die je met haar kunt doen (' + pet.knoppen + ')');
+  /* v23.35, op Stefans verzoek: de knoppenrij Fiesta/Serenade/Dagcadeautje is weg. Wat je met haar
+     doet staat in de twee rijen (een tapa geven, laten dansen) en in de mezcla ertussen; aaien doe je
+     door haar aan te tikken. Deze suite bewaakt vanaf nu dat er iets te doen is, niet dat er precies
+     drie knoppen staan. */
+  ok(pet.knoppen === 0, 'kaart 1: geen losse knoppenrij meer (' + pet.knoppen + ')');
+  ok(pet.mezcla, 'kaart 1: de mezcla staat er wel, want dat is wat je hier doet');
   /* v23.33 draait v19.70 op dit punt om, en dat is een besluit en geen slordigheid. Toen zijn de
      verzamelingen bij Chispa weggehaald omdat er tussen haar voeten ook een kledingkast, een kamer
      en een straattaalles stonden; dat blijft weg. Maar de tapas en de dansen zijn precies de twee
