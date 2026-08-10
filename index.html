@@ -1180,7 +1180,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.37";
+var APP_VERSIE = "v23.38";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7035,17 +7035,27 @@ function snapshotSchrijf(){
    van het aantal weken, dus de uitspraak wordt vanzelf scherper naarmate je langer
    meedoet. Onder de drie weken staat hier niets, want met twee punten is elk
    tempo toeval. */
+/* v23.38. De weekmetingen die in de maat van deze pagina staan: actief bijgehouden, dus bewezen
+   vast plus onderweg. Metingen van voor v23.37 kennen dekw niet en horen hier niet bij. */
+function metingenNieuweMaat(niveau){
+  var ws = Object.keys(S.meting || {}).sort(), uit = [], i, m;
+  for(i = 0; i < ws.length; i++){
+    m = S.meting[ws[i]] || {};
+    if(m.dekw && typeof m.dekw[niveau] === "number") uit.push(m.dekw[niveau]);
+  }
+  return uit;
+}
+/* v23.37 rekende het tempo op dekw en viel voor oudere weken terug op dek. Dat leek voorzichtig
+   (weggooien wat je hebt is zonde) maar het is het ergste van twee werelden: een verschil tussen
+   twee getallen die niet hetzelfde meten is geen tempo maar een sprong van de ene maat naar de
+   andere. Op Stefans scherm werd dat "27,2 per week nodig" naast "1 haal je nu", en in de fixture
+   van de poort zelfs een groen "op koers" dat nergens op sloeg.
+
+   v23.38: alleen weken in dezelfde maat. Zijn dat er nog geen drie, dan is er geen tempo. Dat kost
+   drie weken zwijgen en dat is de goede prijs, want de rest van deze pagina hangt eraan. */
 function tempoMeting(niveau){
-  var ws = Object.keys(S.meting || {}).sort();
-  if(ws.length < 3) return null;
-  /* v23.37: het tempo rekent met wat je actief bijhoudt, net als de balk en het doel. Op dek
-     (bewezen vast) gerekend kwam er 1 woord per week uit terwijl er tientallen bewegen, en dan is
-     elke uitspraak over koers onbruikbaar. Weken zonder dekw vallen terug op dek: dat is wat we van
-     die weken weten, en het alternatief is ze weggooien. */
-  var reeks = ws.map(function(w){
-    var m = S.meting[w] || {};
-    return (m.dekw || {})[niveau] || (m.dek || {})[niveau] || 0;
-  });
+  var reeks = metingenNieuweMaat(niveau);
+  if(reeks.length < 3) return null;
   var d = [], i;
   for(i = 1; i < reeks.length; i++) d.push(reeks[i] - reeks[i-1]);
   var som = d.reduce(function(a, b){ return a + b; }, 0), gem = som / d.length;
@@ -7249,17 +7259,52 @@ function trackTijd(){
   }
   tijdLaatst = nu;
 }
+/* v23.38. De nameting bij punt 6: sec is exact tussen twee antwoorden onder de twee minuten, en
+   telt verder niets. Niet het lezen, niet het luisteren, niet de kaart waar je nog over nadenkt
+   als je stopt, niet je eerste antwoord van een sessie, en een gat boven de twee minuten telt voor
+   nul en niet voor twee minuten. Het is dus een ondergrens, en hoeveel eronder weet niemand.
+
+   asec meet hetzelfde langs de andere kant: het gat sinds je vorige handeling in de app, met
+   dezelfde tweeminutenregel. Elke nagekeken beurt begint met een tik of een toets, dus asec is per
+   definitie ruimer dan sec, en het verschil is precies wat sec niet ziet.
+
+   Er wordt nog niets van getoond en dat is het punt. Twee meters die een week naast elkaar lopen
+   zeggen samen wat "minuten" hoort te betekenen; een meter met een aanname erbij zegt dat niet. */
+var aktieLaatst = 0;
+function trackAktie(){
+  if(!S) return;
+  var nu = Date.now(), d = today();
+  S.dagStats = S.dagStats || {};
+  S.dagStats[d] = S.dagStats[d] || {pogingen:0, fouten:0};
+  if(aktieLaatst && nu - aktieLaatst < TIJD_GAT){
+    S.dagStats[d].asec = (S.dagStats[d].asec || 0) + Math.round((nu - aktieLaatst) / 1000);
+  }
+  aktieLaatst = nu;
+}
+/* In de capture-fase, zodat een handler die het event tegenhoudt de meting niet stilzet. Er wordt
+   hier niet weggeschreven: dat doet trackPoging al bij elk antwoord, en anders het wegklikken van
+   het tabblad hieronder. Een persist() per tik zou een schrijfactie per klik betekenen. */
+function aktieWire(){
+  if(aktieWire._klaar || typeof document === "undefined" || !document.addEventListener) return;
+  aktieWire._klaar = true;
+  document.addEventListener("pointerdown", trackAktie, true);
+  document.addEventListener("keydown", trackAktie, true);
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){ trackAktie(); try{ persist(); }catch(e){} }
+  });
+}
 /* Wat je de laatste zeven dagen echt hebt gedaan: seconden en pogingen. Twee getallen die alleen
    samen iets zeggen, want tijd zonder pogingen is een tabblad dat openstond. */
 function tijdVenster(dagen){
-  var t = today(), sec = 0, pog = 0, dagenMet = 0, i, e;
+  var t = today(), sec = 0, asec = 0, pog = 0, dagenMet = 0, i, e;
   for(i = 0; i < dagen; i++){
     e = (S.dagStats || {})[addDays(t, -i)];
     if(!e) continue;
     if(e.sec){ sec += e.sec; dagenMet++; }
+    asec += e.asec || 0;                 // v23.38: de tweede meter, nog nergens in beeld
     pog += e.pogingen || 0;
   }
-  return {sec:sec, pog:pog, dagen:dagenMet,
+  return {sec:sec, asec:asec, pog:pog, dagen:dagenMet,
           perPoging: pog >= 30 && sec > 0 ? sec / pog : null,
           perDag: dagenMet ? Math.round(sec / dagenMet / 60) : null};
 }
@@ -21581,32 +21626,28 @@ function vgRij(naam, sub, pct, cijf, soort){
 }
 
 /* ---------- 1. Je week ---------- */
-/* v23.37: de aanwas van geoefende woorden, niet van bewezen vast. Stefan: "hoezo maar +4 woorden
-   erbij? dit zijn gegronde woorden denk ik, maar die gaan heel langzaam dus beter hier aantal
-   nieuwe woorden geoefend." Precies: bewezen vast vraagt vijf goede beurten over vijfentwintig
-   dagen, dus als weekcijfer meet dat vooral hoe lang je al bezig bent. Geoefend beweegt met wat je
-   die week echt gedaan hebt, en staat al in elke weekmeting. */
-function vgWeekGroei(wk){
-  if(wk.length < 2) return null;
-  return Math.max(0, wk[wk.length-1].geoefend - wk[wk.length-2].geoefend);
-}
+/* v23.38, punt 1 uit claude/rapport.md. Hier stond de aanwas van geoefende woorden: het verschil in
+   `geoefend` tussen twee weekmetingen. Twee dingen mis. Geoefend telt elk woord dat ooit in S.srs
+   terechtkwam, dus de inhaalslag zet er in een keer honderden neer die je niet geoefend maar
+   weggeklikt hebt als bekend; Stefan zag "+449 woorden geoefend deze week" naast "26 minuten deze
+   week", en zeventien woorden per minuut houdt niemand een week vol. En het bewoog pas als er een
+   nieuwe weekmeting geschreven was, dus het was geen weekcijfer maar een sprong.
+
+   Nu staat er wat je echt gedaan hebt: de beurten uit S.dagStats, over hetzelfde venster van zeven
+   dagen als de minuten en het foutpercentage die eronder staan. Een beurt is een nagekeken
+   antwoord. Dat is geen woorden en het zegt het ook niet: liever een eerlijk getal in een andere
+   eenheid dan een woordental dat niet klopt. */
 function vgWeekHtml(c){
   var t = today(), i, d, dagen = 0;
   for(i = 0; i < 7; i++){ d = addDays(t, -i); if((S.xp || {})[d] > 0) dagen++; }
-  var wk = vgWeken(c.samen.nivs);
-  var groei = vgWeekGroei(wk);
   var tv = tijdVenster(7);
   var h = "<div class='card'><span class='kicker'>"+ct("Je week","Your week")+" \ud83d\udc40</span>";
-  /* De kop is de aanwas en niet de stand. De stand loopt altijd op, dus die kan niet zeggen of dit
-     een goede week was; de aanwas wel. Zonder tweede weekmeting staat er geen aanwas, want een
-     verschil met niets is geen verschil. */
-  if(groei === null){
-    h += "<p style='margin:0 0 6px'>"+ct("Je eerste weekmeting staat er. Vanaf de volgende staat hier "+
-      "hoeveel er die week bij kwam.","Your first weekly measurement is in. From the next one on, this "+
-      "shows how much came in that week.")+"</p>";
+  if(!tv.pog){
+    h += "<p style='margin:0 0 6px'>"+ct("Zodra je een antwoord geeft telt hij hier mee. Deze week "+
+      "staat er nog niets.","As soon as you answer something it counts here. Nothing yet this week.")+"</p>";
   } else {
-    h += "<div class='vgKop'><div class='vgGroot'>"+(groei >= 0 ? "+" : "")+groei+"</div>"+
-      "<div class='vgBij'>"+ct("woorden geoefend deze week","words practised this week")+"</div></div>";
+    h += "<div class='vgKop'><div class='vgGroot'>"+tv.pog+"</div>"+
+      "<div class='vgBij'>"+ct("beurten deze week","answers this week")+"</div></div>";
   }
   /* v23.37: minuten in plaats van lessen. Stefan: "lessen is hier beetje verwarrend, misschien hier
      totale tijd per week?" Die tijd wordt al gemeten (uit de gaten tussen je antwoorden), hij stond
@@ -21615,7 +21656,7 @@ function vgWeekHtml(c){
   h += "<div class='statgrid' style='margin-top:8px'>"+
     "<div class='stat'><b>"+dagen+"/7</b><span class='muted'>"+ct("dagen geoefend","days practised")+"</span></div>"+
     (minuten !== null
-      ? "<div class='stat'><b>"+minuten+"</b><span class='muted'>"+ct("minuten deze week","minutes this week")+"</span></div>"
+      ? "<div class='stat'><b>"+minuten+"</b><span class='muted'>"+ct("minuten gemeten","minutes measured")+"</span></div>"
       : "<div class='stat'><b>"+afgemaakt7()+"</b><span class='muted'>"+ct("lessen afgemaakt","sessions finished")+"</span></div>")+
     "</div>";
   var los = [];
@@ -21623,6 +21664,17 @@ function vgWeekHtml(c){
   los.push(afgemaakt7() + " " + ct("lessen","sessions"));
   if(c.fout7.pct !== null) los.push(c.fout7.pct + "% " + ct("fout","wrong"));
   h += "<p class='muted' style='margin:8px 0 0; font-size:.86rem'>"+los.join(" \u00b7 ")+"</p>";
+  /* v23.38: de minuten staan er nu met hun noemer, want de beurten staan erboven. Deel het een door
+     het ander en je ziet meteen of de meting kan kloppen; dat was precies wat er miste toen er
+     "26 minuten" stond zonder iets om het tegenaan te houden. En erbij wat de meter niet ziet,
+     want dat is geen detail: hij telt de gaten tussen je antwoorden en verder niets. */
+  if(minuten !== null && tv.pog){
+    h += "<p class='muted' style='margin:4px 0 0; font-size:.82rem'>"+
+      ct("Dat is ongeveer "+getal1(tv.sec / tv.pog)+" seconde per beurt. De klok loopt tussen je "+
+         "antwoorden, dus lezen, luisteren en lang nadenken tellen niet mee: het is een ondergrens.",
+         "That is about "+getal1(tv.sec / tv.pog)+" seconds per answer. The clock runs between your "+
+         "answers, so reading, listening and long pauses are not counted: this is a floor.")+"</p>";
+  }
   /* Delen gaat via de link die er al is. Geen tweede deelweg erbij: die link laat precies vijf
      getallen zien en niets anders, en dat is een belofte die we niet per scherm opnieuw moeten
      uitvinden. */
@@ -21664,8 +21716,10 @@ function vgDoelHtml(){
       ct("weken te gaan","weeks to go")+"</span></div></div>";
   if(ds.tempo === null){
     h += "<p class='muted' style='margin:8px 0 0; font-size:.86rem'>"+
-      ct("Wat je nu haalt is nog niet te meten; daar zijn drie weekmetingen voor nodig.",
-         "What you're doing isn't measurable yet; that needs three weekly measurements.")+"</p>";
+      ct("Wat je nu haalt is nog niet te meten: daar zijn drie weekmetingen voor nodig in dezelfde "+
+         "maat als de balk hierboven, en die maat wordt sinds kort pas vastgelegd.",
+         "What you're doing isn't measurable yet: that needs three weekly measurements in the same "+
+         "unit as the bar above, and that unit has only recently started being recorded.")+"</p>";
   } else if(ds.nodig !== null && ds.tempo >= ds.nodig){
     h += "<p style='margin:8px 0 0; font-size:.9rem'><span class='vgKoers ja'>"+ct("op koers","on track")+
       "</span> "+ct("In dit tempo ben je er op tijd.","At this pace you'll get there in time.")+"</p>";
@@ -26428,7 +26482,9 @@ function basisHtml(actief14){
    hoeveel weken er nog nodig zijn. Stefan zelf: "gaan we beginnen meten en over
    3 weken ofzo kijken wat we met de data kunnen doen."  */
 function bandHtml(niveau){
-  var weken = Object.keys(S.meting || {}).length;
+  // v23.38: tellen wat meetelt. Weken zonder dekw staan wel in S.meting maar doen niet mee, dus met
+  // Object.keys() zou hier "nog 1 week te gaan" staan die nooit voorbijgaat.
+  var weken = metingenNieuweMaat(niveau).length;
   var b = voortgangBand(niveau);
   if(!b){
     var nog = Math.max(1, 3 - weken);
@@ -26575,33 +26631,42 @@ function cijferRij(waarde, label, uitleg){
 }
 function cijferLijstHtml(){
   var c = voortgangCijfers(), r = "";
-  r += cijferRij(c.actief, ct("woorden houd je actief bij op "+c.niv, "words you actively keep up at "+c.niv),
+  /* v23.38: dezelfde samentelling als de balk. Stond hier c.actief (alleen je huidige niveau), dan
+     stond onderaan de pagina "50 woorden houd je actief bij op A2" terwijl bovenaan 406 stond, met
+     dezelfde woorden erbij. Een lezer die dat ziet weet niet welk van de twee liegt, en gaat aan de
+     rest van het scherm ook twijfelen. */
+  var nivT = samenNivTekst(c.samen.nivs);
+  r += cijferRij(c.samen.actief, ct("woorden houd je actief bij op "+nivT, "words you actively keep up at "+nivT),
     ct("Dit is het getal dat op Vandaag boven de balk staat: bewezen vast plus onderweg, van de "+
-       c.noem+" woorden die het Instituto Cervantes voor "+c.niv+" telt.",
+       c.samen.noem+" woorden die het Instituto Cervantes voor "+nivT+" telt.",
        "This is the number above the bar on Today: proven solid plus on the way, out of the "+
-       c.noem+" words the Instituto Cervantes counts for "+c.niv+"."));
-  r += cijferRij(c.vast, ct("bewezen vast","proven solid"),
+       c.samen.noem+" words the Instituto Cervantes counts for "+nivT+"."));
+  r += cijferRij(c.samen.vast, ct("bewezen vast","proven solid"),
     ct("Vijf goede beurten over vijfentwintig dagen, met een check die je niet zelf beoordeelt. "+
        "Dit getal loopt daardoor achter op wat je kunt, en dat hoort: het meet bewijs, geen gevoel.",
        "Five correct turns across twenty five days, with a check you do not grade yourself. "+
        "So this number lags behind what you can do, and that is right: it measures proof, not feeling."));
-  r += cijferRij(c.onderweg, ct("onderweg","on the way"),
+  r += cijferRij(c.samen.onderweg, ct("onderweg","on the way"),
     ct("Woorden met een herhaalinterval van een week of langer die nog niet vast staan. Dit is de "+
        "groep die de komende weken naar bewezen vast schuift.",
        "Words with a review interval of a week or more that are not solid yet. This is the group "+
        "moving to proven solid over the coming weeks."));
   if(c.schat){
     r += cijferRij(c.schat.punt, ct("geschat totaal op "+c.niv, "estimated total at "+c.niv),
-      ct("Uit je peiling, en dat is een steekproef. Ergens tussen "+c.schat.onder+" en "+c.schat.boven+
+      ct("Alleen "+c.niv+", en niet samengeteld zoals de regels hierboven: een marge van twee niveaus "+
+         "is niet de som van twee marges. Uit je peiling, en dat is een steekproef. Ergens tussen "+
+         c.schat.onder+" en "+c.schat.boven+
          ". De marge hoort erbij: dit is een schatting en geen telling.",
-         "From your check, which is a sample. Somewhere between "+c.schat.onder+" and "+c.schat.boven+
+         c.niv+" only, not added up like the rows above: a margin across two levels is not the sum "+
+         "of two margins. From your check, which is a sample. Somewhere between "+c.schat.onder+
+         " and "+c.schat.boven+
          ". The margin belongs to it: this is an estimate and not a count."));
   }
-  if(c.ongezien > 0){
-    r += cijferRij(c.ongezien, ct("nog niet gezien","not seen yet"),
-      ct("Woorden van "+c.niv+" die je hier nog niet bent tegengekomen. Dit getal daalt vanzelf "+
+  if(c.samen.ongezien > 0){
+    r += cijferRij(c.samen.ongezien, ct("nog niet gezien","not seen yet"),
+      ct("Woorden van "+nivT+" die je hier nog niet bent tegengekomen. Dit getal daalt vanzelf "+
          "zolang je nieuwe woorden blijft krijgen.",
-         "Words at "+c.niv+" you have not met here yet. This number drops on its own as long as "+
+         "Words at "+nivT+" you have not met here yet. This number drops on its own as long as "+
          "you keep getting new words."));
   }
   var tv = tijdVenster(7);
@@ -27092,6 +27157,7 @@ function show(tabId, skipPush){
 (function init(){
   if(!store.ok) document.getElementById("storageWarn").classList.remove("hidden");
   buildNav();
+  aktieWire();                            // v23.38: de tweede tijdmeter, zie trackAktie
   var lt0 = document.getElementById("lnkTour");
   if(lt0) lt0.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); showTour(0); return false; };
   var ls0 = document.getElementById("lnkSteun");

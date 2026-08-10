@@ -59,6 +59,13 @@ const U = 'http://localhost:8321/espanol-stefan.html';
     const t = today();
     for (let i = 0; i < 10; i++) S.xp[addDays(t, -i)] = 20;
     for (let i = 0; i < 5; i++) S.lesFlow[addDays(t, -i)] = true;
+    /* v23.38: de weekkop komt hieruit en niet meer uit S.meting. Zeven dagen maal twaalf beurten is
+       84, maal 300 seconden is 35 minuten, en 21 fouten op 84 beurten is 25%. Drie getallen die op
+       het scherm bij elkaar horen te passen, dus alle drie uit dezelfde bron en hetzelfde venster. */
+    S.dagStats = {};
+    for (let i = 0; i < 7; i++) S.dagStats[addDays(t, -i)] = { pogingen: 12, fouten: 3, sec: 300 };
+    // een niveaudoel, anders heeft het doelblok niets te tonen en toetst maatstaf 2 niets
+    S.doelNiv = 'A1'; S.doelDatum = addDays(t, 140);
     S.meting = {
       '2026-W30': { d: addDays(t, -21), dek: { A1: 40 }, stevig: 40, geoefend: 90, pog: 200, fout: 60 },
       '2026-W31': { d: addDays(t, -14), dek: { A1: 78 }, stevig: 78, geoefend: 150, pog: 220, fout: 55 },
@@ -105,16 +112,85 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   ok(cijf.tekst.indexOf(String(cijf.samen.noem)) !== -1,
     'en de noemer erbij (' + cijf.samen.noem + ')');
 
-  console.log('\n-- je week rekent met het verschil, niet met de stand --');
+  console.log('\n-- je week telt wat je gedaan hebt, niet wat er in S.srs staat --');
   const week = await page.evaluate(() => {
     const k = [...document.querySelectorAll('#voortgangCard .card')][0];
     return (k ? k.innerText : '').replace(/\s+/g, ' ');
   });
-  /* v23.37: de week telt geoefende woorden, niet bewezen vast. De fixture gaat van 150 naar 200
-     geoefend, dus +50. Bewezen vast ging van 78 naar 120; dat is wat hier eerst stond, en precies
-     de teller waarvan Stefan zei dat hij als weekcijfer niets zegt. */
-  ok(/\+50/.test(week), 'de aanwas is die van geoefende woorden (+50)');
+  /* v23.38. Hier stond de aanwas van `geoefend` tussen twee weekmetingen (+50 in deze fixture). Dat
+     getal springt met de inhaalslag mee en heeft niets met je week te maken. Nu: de beurten uit
+     S.dagStats over zeven dagen, hetzelfde venster als de minuten en het foutpercentage eronder. */
+  ok(/\b84\b/.test(week), 'de kop is het aantal beurten van deze week (84)');
+  ok(/beurten/.test(week), 'en zegt ook beurten, niet woorden');
+  ok(!/\+50/.test(week), 'de aanwas uit de weekmeting staat er niet meer');
   ok(/\/7/.test(week), 'met het aantal dagen dat je er was');
+  ok(/\b35\b/.test(week), 'de gemeten minuten staan erbij (35)');
+  ok(/per beurt/.test(week), 'en de seconden per beurt, zodat de minuten na te rekenen zijn');
+  ok(/ondergrens/.test(week), 'met erbij dat de klok alleen tussen je antwoorden loopt');
+
+  /* ---------- de drie regels uit claude/rapport.md, machinaal ----------
+     Deze drie bewaken de maatstaf zelf en niet de tekst. Ze staan hier omdat elke fout die ik op dit
+     scherm gemaakt heb er een van deze drie was, en omdat een maatstaf die alleen in een document
+     staat de volgende versie niet haalt. */
+  console.log('\n-- maatstaf 1: dezelfde zin is hetzelfde getal --');
+  const zelfde = await page.evaluate(() => {
+    /* Op een A1-profiel zijn "alleen je niveau" en "alle niveaus samen" hetzelfde getal, en dan kan
+       deze regel niet omvallen: hij zou groen staan zonder iets te bewaken. Daarom even A2 als
+       balkniveau. Dan telt de balk A1 en A2 samen, en moet elke regel die diezelfde woorden gebruikt
+       dat ook doen. Dit is precies de fout die op Stefans scherm stond: 50 onderaan, 406 bovenaan. */
+    const oudNiv = balkNiveau;
+    balkNiveau = function () { return 'A2'; };
+    try {
+      const c = voortgangCijfers();
+      const doos = document.createElement('div');
+      doos.innerHTML = cijferLijstHtml();
+      const rijen = [...doos.querySelectorAll('.cijfRij')]
+        .filter((r) => /actief bij/.test(r.textContent || ''));
+      return { samen: c.samen.actief, perNiveau: c.actief, nivs: c.samen.nivs,
+               getallen: rijen.map((r) => ((r.querySelector('.cijfW') || {}).textContent || '').trim()) };
+    } finally { balkNiveau = oudNiv; }
+  });
+  ok(zelfde.nivs.length > 1 && zelfde.samen !== zelfde.perNiveau,
+    'de proef zet twee verschillende getallen tegenover elkaar (samen ' + zelfde.samen +
+    ', alleen A2 ' + zelfde.perNiveau + ')');
+  ok(zelfde.getallen.length > 0, 'de regel "actief bij" staat in de cijferlijst');
+  ok(zelfde.getallen.every((g) => Number(g) === zelfde.samen),
+    'en toont hetzelfde getal als de balk (' + (zelfde.getallen.join(', ') || 'niets') + ')');
+
+  console.log('\n-- maatstaf 2: geen tempo uit een meting die het niet weet --');
+  /* De metingen in deze fixture kennen geen dekw, want die bestaat pas sinds v23.37. Dan is er geen
+     tempo in de maat van de balk, en dus ook geen koersoordeel. Dit is de fout die ik in v23.37 zelf
+     maakte: de stand omgezet naar de nieuwe maat en het tempo uit de oude laten komen. */
+  const doel = await page.evaluate(() => {
+    const k = [...document.querySelectorAll('#voortgangCard .card')][1];
+    const ds = doelStand();
+    return { tekst: (k ? k.innerText : '').replace(/\s+/g, ' '), tempo: ds ? ds.tempo : null };
+  });
+  ok(doel.tempo === null, 'zonder dekw in de weekmetingen is er geen tempo (' + doel.tempo + ')');
+  ok(!/op koers|later dan je datum/.test(doel.tekst), 'en dus staat er ook geen koersoordeel');
+
+  console.log('\n-- maatstaf 3: elk percentage heeft woorden bij zich --');
+  const losPct = await page.evaluate(() => {
+    /* Naar het vak eromheen kijken en niet naar de regel: een meetbalk zet naam, staaf en getal in
+       drie elementen, dus in innerText staat "23%" bijna altijd alleen op zijn eigen regel terwijl
+       het label er in beeld pal naast staat. De vraag is of het vak waarin het percentage staat
+       zegt wat het meet. */
+    const vakken = [...document.querySelectorAll('#tab-voortgang .vgMeet, #tab-voortgang .stat, ' +
+      '#tab-voortgang .cijfRij, #tab-voortgang p, #tab-voortgang li')];
+    const kaal = vakken.filter((v) => {
+      const t = (v.innerText || '').replace(/\s+/g, ' ').trim();
+      if (!/%/.test(t)) return false;
+      return !/[a-z\u00e0-\u017f]{3}/i.test(t.replace(/[\d.,%]+/g, ' '));
+    }).map((v) => (v.innerText || '').replace(/\s+/g, ' ').trim());
+    // en een percentage dat in helemaal geen vak staat is per definitie kaal
+    const zwevend = [...document.querySelectorAll('#tab-voortgang *')].filter((e) => {
+      if (e.children.length) return false;
+      return /%/.test((e.textContent || '')) && !e.closest('.vgMeet, .stat, .cijfRij, p, li');
+    }).map((e) => (e.textContent || '').trim());
+    return kaal.concat(zwevend);
+  });
+  ok(losPct.length === 0, 'geen kaal percentage zonder wat het meet (' +
+    (losPct.join(' | ') || 'geen') + ')');
 
   console.log('\n-- sterk en zwak staan er één keer --');
   const dubbel = await page.evaluate(() => {
