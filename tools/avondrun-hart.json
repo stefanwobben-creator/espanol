@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-08-09T03:26:38.137Z",
- "gelukt": false,
+ "wanneer": "2026-08-10T03:46:42.807Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -8,13 +8,16 @@
   "toetsje": 1,
   "nieuweLes": 1
  },
- "geleverd": null,
- "versie": null,
+ "geleverd": {
+  "zinnen": 6,
+  "toetsjes": 0,
+  "nieuweLes": 0
+ },
+ "versie": "v23.28",
  "klachten": [
-  "s150: afgekeurd — De alternatieve formulering 'cuando llega a casa, siempre tiene hambre' is grammaticaal correct maar niet natuurlijk in deze context; de voorgestelde volgorde is minder gebruikelijk in het Spaans.",
-  "toetsje afgekeurd (poging 1): Vraag 2: Het werkwoord 'hacer' is een -er werkwoord, maar de uitleg noemt het ten onrechte een -er werkwoord in de imperfecto. Het is een -er werkwoord, dus de uitleg klopt wel, maar de formulering is onnauwkeurig (het is geen fout in de uitleg zelf, maar wel een onduidelijke formulering).; Vraag 2: De Nederlandse vertaling 'Wat deed jij gisteren op school?' is niet correct voor de imperfecto. De imperfecto duidt op een gewoonte in het verleden, niet op een specifieke actie gisteren (dat zou de indefinido zijn). Dit is een fout in de vertaling.",
-  "toetsje afgekeurd (poging 2): Vraag 6: Optie 'c' (index 1) wijst naar 'vimos', maar het correcte antwoord is 'veíamos' (index 0). De uitleg klopt wel, maar de opties en de index van 'c' zijn incorrect.; Vraag 8: Optie 'c' (index 0) en optie 'a' (index 0) zijn identiek ('nadaban'), waardoor er niet precies één juist antwoord is.",
-  "AFGEKEURD:\n - zin 1 (s149): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 2 (s150): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 3 (s151): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 4 (s152): alt bevat het eigen antwoord niet (ook niet accentloos)\n - zin 5 (s153): alt bevat het eigen antwoord niet (ook niet accentloos)"
+  "toetsje afgekeurd (poging 1): Vraag 2: Optie 'vivíamos' komt twee keer voor (opties 0 en 1), waardoor er geen uniek juist antwoord is.; Vraag 7: De Nederlandse vertaling 'Keken jullie tv in de avonden?' is onnatuurlijk Spaans; de juiste formulering zou zijn 'Keken jullie 's avonds tv?' of 'Keken jullie tv in de avonduren?'; Vraag 7: De uitleg in het Nederlands en Engels is correct, maar de zin '¿Vosotros ___ la tele por las tardes?' slaat niet op een natuurlijke situatie (tv-kijken in de avonduren is eerder 'por las noches').",
+  "toetsje afgekeurd (poging 2): Vraag 1: Optie 0 en 1 zijn identiek ('vivíamos'), dit is niet toegestaan.; Vraag 2: Optie 0 en 1 zijn identiek ('pasabas'), dit is niet toegestaan.; Vraag 4: Optie 0 en 1 zijn identiek ('corría'), dit is niet toegestaan.; Vraag 6: Optie 0 en 1 zijn identiek ('decía'), dit is niet toegestaan.; Vraag 7: Optie 0 en 1 zijn identiek ('veíamos'), dit is niet toegestaan.; Vraag 8: Optie 0 en 1 zijn identiek ('estudiabas'), dit is niet toegestaan.",
+  "toetsje van de nieuwe les afgekeurd"
  ],
- "reden": "de run is niet afgemaakt"
+ "reden": null
 }

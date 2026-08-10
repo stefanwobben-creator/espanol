@@ -1,24 +1,26 @@
 {
- "wanneer": "2026-08-03T18:45:45.426Z",
- "versie": "v19.93",
+ "wanneer": "2026-08-10T03:46:42.806Z",
+ "versie": "v23.28",
  "gaten": [
   {
-   "tag": "ser-estar",
+   "tag": "basis",
    "soort": "verschijnsel",
-   "fouten": 5
+   "fouten": 9
   },
   {
    "tag": "les3",
    "soort": "woorden",
-   "fouten": 39
+   "fouten": 43
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s138",
-   "s139",
-   "s140",
-   "s141"
+   "s153",
+   "s154",
+   "s155",
+   "s156",
+   "s157",
+   "s158"
   ],
   "toetsjes": []
  },
