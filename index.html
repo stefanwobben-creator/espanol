@@ -713,6 +713,28 @@
   /* v23.21: een woord in de leestekst is aan te tikken. Geen onderstreping en geen kleur, want dan
      wordt de bladzijde een veld met tweehonderd knoppen en leest niemand meer een verhaal. Alleen
      het woord dat je aantikt licht op. */
+  /* v23.32: de compacte meetregel van de voortgangspagina. Naam links, balkje, getal rechts.
+     Bewust smal: hier staan rijtjes van vijf en die moeten in een oogopslag te vergelijken zijn. */
+  .vgMeet{display:grid; grid-template-columns:1fr 84px 62px; align-items:center; gap:10px;
+          padding:7px 0; border-top:1px solid var(--border); font-size:.9rem;}
+  .vgMeet:first-of-type{border-top:0;}
+  .vgMeet .vgStaaf{height:7px; background:#f2eee6; border-radius:4px; overflow:hidden;}
+  .vgMeet .vgStaaf i{display:block; height:100%; background:var(--accent); border-radius:4px;}
+  .vgMeet .vgStaaf i.zwak{background:var(--red);}
+  .vgMeet .vgStaaf i.sterk{background:var(--green);}
+  .vgMeet b{text-align:right; font-variant-numeric:tabular-nums;}
+  .vgMeet span span{display:block; font-size:.76rem; color:var(--muted);}
+  .vgPil{display:inline-block; border:1px solid var(--border); background:#faf7f2; border-radius:999px;
+         padding:3px 10px; font-size:.82rem; margin:0 4px 4px 0;}
+  .vgPil.aan{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .vgKoers{display:inline-block; border-radius:999px; padding:2px 10px; font-size:.78rem; font-weight:700;}
+  .vgKoers.ja{background:var(--green-soft); color:var(--green);}
+  .vgKoers.nee{background:var(--amber-soft); color:var(--amber);}
+  .vgMijl{display:flex; gap:10px; padding:8px 0; border-top:1px solid var(--border);}
+  .vgMijl:first-of-type{border-top:0;}
+  .vgBol{width:26px; height:26px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+         display:flex; align-items:center; justify-content:center; flex:0 0 26px; font-size:.9rem;}
+  .vgBol.uit{background:#f2eee6; color:var(--muted);}
   /* v23.26: de boekenplank. Een kaart per boek, met de balk die je van Vandaag kent. */
   .plankKop{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
   .plankSoort{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);}
@@ -911,6 +933,14 @@
     <div id="cursusCard"></div>
   </section>
 
+  <!-- v23.32: Voortgang is een eigen scherm geworden. Het stond onder Profiel, achter je naam, en
+       je voortgang is geen profielgegeven. De volgorde van de blokken is die van Stefan: je week,
+       je doel, wat je vasthoudt, onderweg, sterk, zwak, en daarna de rest. -->
+  <section id="tab-voortgang" class="hidden">
+    <div id="voortgangCard"></div>
+    <div class="card" id="statsCard"></div>
+  </section>
+
   <!-- CHISPA (alleen het huisdier, via het mini-icoontje) -->
   <!-- v19.70: vier kaarten, elk met één taak. Chispa zelf, haar groei, de vitrine, haar kamer. -->
   <section id="tab-chispa" class="hidden">
@@ -928,7 +958,7 @@
        meer aanraakt achter één regel. Admin is geen voortgang en hoort dus niet bovenaan. -->
   <section id="tab-perfil" class="hidden">
     <div class="card" id="perfilCard"></div>
-    <div class="card" id="statsCard"></div>
+    <div class="card" id="perfNaarVoortgang"></div>
     <!-- v22.9: hier stond de familie-klassementkaart. Weg: geen competitie meer, en de krabbels
          die eraan hingen staan nu op de muur, bij de gebeurtenis waar ze over gaan. -->
     <div class="card" id="groepCard"></div>
@@ -1127,7 +1157,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.30";
+var APP_VERSIE = "v23.32";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6816,6 +6846,41 @@ function krachtGewicht(box){
   var top = INTERVALS[INTERVALS.length - 1] || 30;
   return (INTERVALS[box] || 0) / top;
 }
+/* v23.31: alle niveaus tot en met het jouwe bij elkaar. Het staat als eigen functie naast
+   voortgangCijfers en niet erin verstopt, want dit is de telling waar de balk op Vandaag op staat en
+   die hoort net zo goed op een plek te wonen als de rest.
+
+   Waarom optellen: de balk telde alleen het niveau waar je nu aan werkt. Dat betekent dat op de dag
+   dat je A1 haalt, alles wat je daar hebt opgebouwd van je scherm verdwijnt en de balk bij nul
+   opnieuw begint. Precies op het moment dat je iets bereikt hebt.
+
+   De schatting van elk niveau telt mee zoals hij ook op zijn eigen niveau meetelde: als laag boven
+   wat je hebt bewezen, nooit eronder. Een niveau dat je voorbij bent staat dus niet automatisch vol;
+   er staat wat de peiling ervan zegt, en dat is eerlijker dan een streep die zichzelf volmaakt. */
+function voortgangSamen(tel, niv){
+  var uit = {noem:0, vast:0, actief:0, geschat:0, nivs:[]}, i, n, v, a, s;
+  for(i = 0; i < NIV_NAAM.length; i++){
+    n = NIV_NAAM[i];
+    uit.nivs.push(n);
+    uit.noem += PCIC_NOEMER[n] || 0;
+    v = (tel.dek && tel.dek[n]) || 0;
+    a = Math.max(v, (tel.dekw && tel.dekw[n]) || 0);
+    s = null;
+    try { s = niveauSchatting(n); } catch(e){ s = null; }
+    uit.vast += v;
+    uit.actief += a;
+    uit.geschat += s ? Math.max(0, s.punt - a) : 0;
+    if(n === niv) break;
+  }
+  uit.onderweg = Math.max(0, uit.actief - uit.vast);
+  uit.ongezien = Math.max(0, uit.noem - uit.actief - uit.geschat);
+  return uit;
+}
+// A1 en A2 samen heet "A1 en A2"; een niveau in je eentje heet gewoon zichzelf.
+function samenNivTekst(nivs){
+  if(nivs.length < 2) return nivs[0] || "";
+  return nivs.slice(0, -1).join(", ") + (profLang() === "nl" ? " en " : " and ") + nivs[nivs.length - 1];
+}
 function voortgangCijfers(){
   var tel = voortgangTellers();
   var niv = balkNiveau();
@@ -6853,6 +6918,7 @@ function voortgangCijfers(){
     kracht: Math.round(kr),
     niv: niv,
     noem: noem,
+    samen: voortgangSamen(tel, niv),                // v23.31: alle niveaus tot en met het jouwe
     vast: vast,                                     // bewezen vast: laatste doos plus een echte check
     onderweg: Math.max(0, actief - vast),           // doos 3 of hoger, nog niet vast
     actief: actief,                                 // de kop op Vandaag: vast plus onderweg
@@ -12805,7 +12871,9 @@ function ritmeCard(){
   var chipsHtml = "";
   if(rel.chipNieuw) chipsHtml += chip(nieuw >= dagPortieVloer(), ct("nieuwe woorden ","new words ")+nieuw+"/"+dagPortieVloer()+" (max "+nieuwPlafond()+")");
   if(rel.chipHerhaal) chipsHtml += chip(true, ct("herhalingen bij","reviews done"));
-  if(rel.chipDoel) chipsHtml += chip(xp >= dagdoel(), ct("dagdoel ","daily goal ")+Math.min(xp,dagdoel())+"/"+dagdoel()+" "+xpw());
+  /* v23.31: het dagdoel-chipje weg. Datzelfde getal staat bovenin het scherm al in de strook
+     ("9/90 taco's"), en twee weergaven van een getal is de fout waar dit hele scherm mee bezig was.
+     rel.chipDoel blijft bestaan; hij wordt op andere plekken gelezen. */
   if(chipsHtml) chipsHtml = "<div class='ritme' style='margin-top:10px'>"+chipsHtml+"</div>";
   var portie = dagPortie();
   var portieTxt = (function(){
@@ -12855,13 +12923,12 @@ function ritmeCard(){
             : gedaanVandaag ? ct("Nog een les doen","Do another session") : ct("Start je les →","Start your session →"))+"</button></div>"+
         (hervat ? "<p class='muted' style='margin:6px 0 0'><span id='btnLesOpnieuw' style='text-decoration:underline; cursor:pointer'>"+
           ct("liever opnieuw beginnen","rather start over")+"</span></p>" : ""))+
-    // v19.58: je eigen afspraak, elke dag terug te zien op de plek waar je hem uitvoert. Een
-    // implementatie-intentie werkt doordat het moment de handeling oproept, dus moet het moment
-    // in beeld staan en niet weggestopt in instellingen.
-    ((S.ritme && S.ritme.wanneer)
-      ? "<p class='muted' style='margin:8px 0 0'>📌 "+(afgesloten ? ct("Morgen: ","Tomorrow: ") : ct("Jouw moment: ","Your moment: "))+"<b>"+momentTekst()+"</b> · "+
-        "<span id='momentRegel' style='text-decoration:underline; cursor:pointer'>"+ct("wijzigen","change")+"</span></p>"
-      : "")+
+    /* v23.31: "Jouw moment ... wijzigen" is weg. Niet omdat de gedachte niet klopt (een
+       implementatie-intentie werkt doordat het moment de handeling oproept), maar omdat die link
+       sinds v22.1 niets meer doet: de momentkaart is toen opgeheven en "wijzigen" zet alleen nog
+       een vlaggetje dat niemand meer leest. Een knop die niets doet is slechter dan geen knop, want
+       je hebt hem al aangetikt voordat je het merkt. momentTekst() blijft staan voor wie hem ooit
+       heeft ingevuld. */
     chipsHtml+"</div>";
 }
 
@@ -13088,9 +13155,13 @@ function dagLijnHtml(){
 function dagBasisRegelHtml(opt){
   var c = voortgangCijfers();
   var niv = c.niv;
-  var n = c.noem || 390;
-  var d = c.vast;
-  var w = c.actief;
+  /* v23.31: de getallen komen uit de samentelling, niet meer uit het ene niveau. Zie
+     voortgangSamen(). c.vast en c.actief blijven bestaan voor de schermen die wel over een enkel
+     niveau gaan; hier zou dat betekenen dat je A1 kwijtraakt op de dag dat je hem haalt. */
+  var sm = c.samen;
+  var n = sm.noem || 390;
+  var d = sm.vast;
+  var w = sm.actief;
   var sch = c.schat, aanbod = null;
   try { aanbod = peilAanbod(); } catch(e){ aanbod = null; }
   if(w <= 0 && !sch && !aanbod) return "";
@@ -13100,14 +13171,12 @@ function dagBasisRegelHtml(opt){
      390". Die zin is er in v23.2 uitgehaald omdat hij hetzelfde getal nog een keer zei, maar de
      twee stukken tekst die hem opbouwden bleven staan. Dood, en juist over dit getal: precies het
      soort restant waar per ongeluk weer een tweede weergave uit groeit. Weg. */
-  var kop = pctD, pctS = 0, merk = "", stap = "";
-  if(sch){
-    kop = Math.round(100 * sch.punt / n);
-    pctS = Math.max(0, kop - pctD - pctW);
-    var e0 = peilEerste(niv);
-    if(e0) merk = "<i class='merk' style='left:"+Math.max(0, Math.min(99, Math.round(100 * e0.punt / n)))+"%'></i>";
-    stap = dagBasisStapHtml(niv, sch, d);
-  }
+  /* v23.31: de geschatte laag komt uit de samentelling. Het streepje van je eerste peiling is weg:
+     dat markeerde je beginpunt op een schaal van een niveau, en op een samengetelde schaal zou het
+     ergens staan zonder te kunnen uitleggen waarom. De zin eronder blijft, want die gaat wel over
+     je huidige niveau en zegt zelf welk niveau hij meet. */
+  var pctS = n ? Math.round(100 * sm.geschat / n) : 0, merk = "", stap = "";
+  if(sch) stap = dagBasisStapHtml(niv, sch, c.vast);
   var bD = Math.min(100, pctD), bW = Math.min(100 - bD, pctW), bS = Math.min(100 - bD - bW, pctS);
   /* v23.0. Hier stond het geschatte percentage als kop, en op je profiel stond het bewezen
      percentage. Twee getallen boven hetzelfde niveau, 100 tegenover 0, en geen van beide gelogen.
@@ -13121,22 +13190,27 @@ function dagBasisRegelHtml(opt){
      Stefan, over waarom het bewezen getal niet vooraan hoort: "stevig duurt heel lang en klopt ook
      niet helemaal, want ik ken echt al veel meer woorden stevig dan 20." Dat is letterlijk waar:
      box 5 vraagt 25 dagen, dus dat getal meet vooral hoe lang je bezig bent. */
-  var lgOnderweg = Math.max(0, w - d);
-  var lgSchat = sch ? Math.max(0, sch.punt - w) : 0;
-  var lgRest = Math.max(0, n - d - lgOnderweg - lgSchat);
+  var lgOnderweg = sm.onderweg;
+  var lgSchat = sm.geschat;
+  var lgRest = sm.ongezien;
+  var nivTxt = samenNivTekst(sm.nivs);
   return "<span class='kicker'>"+ct("Waar je staat \u00b7 "+niv,"Where you are \u00b7 "+niv)+"</span>"+
     "<div class='vgKop'><div class='vgGroot'>"+w+"</div>"+
       "<div class='vgBij'>"+ct("woorden houd je actief bij","words you're actively keeping up")+"</div></div>"+
-    "<div class='boxrow' id='dagBasisBalk'><span style='width:34px'>"+niv+"</span>"+
+    /* Links waar de balk over gaat, rechts waar hij ophoudt. Daar stond tot v23.30 hetzelfde
+       getal als in de kop, en dan is de streep maatloos: je ziet een balk die voor een derde vol
+       staat en het getal ernaast zegt niet waarvan. */
+    "<div class='boxrow' id='dagBasisBalk'><span style='width:52px'>"+
+        (sm.nivs.length > 1 ? sm.nivs[0]+"-"+sm.nivs[sm.nivs.length-1] : niv)+"</span>"+
       "<div class='bar duo'><div style='width:"+bD+"%'></div>"+
         "<div class='marge' style='width:"+bW+"%'></div>"+
         "<div class='schat' style='width:"+bS+"%'></div>"+merk+"</div>"+
-      "<b style='width:44px; text-align:right'>"+w+"</b></div>"+
+      "<b style='width:44px; text-align:right'>"+n+"</b></div>"+
     ((opt && opt.legenda === false) ? "" :
     "<div class='vgLegenda'>"+
       "<span><i class='vgDot vgVast'></i><b>"+d+"</b> "+ct("bewezen vast","proven solid")+"</span>"+
       "<span><i class='vgDot vgOnderweg'></i><b>"+lgOnderweg+"</b> "+ct("onderweg","on the way")+"</span>"+
-      (sch && lgSchat > 0 ? "<span><i class='vgDot vgSchat'></i><b>"+lgSchat+"</b> "+ct("geschat al gekend","estimated already known")+"</span>" : "")+
+      (lgSchat > 0 ? "<span><i class='vgDot vgSchat'></i><b>"+lgSchat+"</b> "+ct("geschat al gekend","estimated already known")+"</span>" : "")+
       /* v23.2. Hier stond altijd "0 nog niet gezien" zodra de schatting de balk volmaakte, en dat
          beweert iets onwaars: dat je alle woorden van dit niveau al hebt gezien. Een laag met nul
          erin is geen informatie maar een bewering. Weg als hij leeg is. */
@@ -13150,7 +13224,9 @@ function dagBasisRegelHtml(opt){
     /* De noemer moet wel ergens staan, anders is de legenda een rij losse getallen zonder maat.
        Eén regel, alleen de noemer, geen enkel getal dat hierboven al staat. */
     "<p class='muted' style='margin:5px 0 0; font-size:.8rem'>"+
-      ct("van de "+n+" "+niv+"-woorden", "of the "+n+" "+niv+" words")+"</p>"+
+      (sm.nivs.length > 1
+        ? ct("van de "+n+" woorden op "+nivTxt, "of the "+n+" words in "+nivTxt)
+        : ct("van de "+n+" "+niv+"-woorden", "of the "+n+" "+niv+" words"))+"</p>"+
     stap+
     (aanbod ? dagPeilKnopHtml(aanbod) : "");
 }
@@ -13180,23 +13256,11 @@ function dagKerncijfersHtml(){
       ct("fout, laatste 7 dagen","wrong, last 7 days")+"</span></div>";
   }
   if(!tegels) return "";
-  return "<div class='statgrid' style='margin-top:10px'>"+tegels+"</div>"+
-    (c.geoefend > 0 ? "<p class='muted' style='margin:6px 0 0; font-size:.8rem'>"+
-      /* Bewust zonder de woorden week en maand erin, ook al zijn dat de doosjes waar het over gaat.
-         pw-a1vandaag bewaakt dat er op dit scherm geen enkele belofte over tijd staat, en die wacht
-         houdt geen rekening met de bedoeling van een zin. Dat is maar goed ook: het is precies het
-         soort zin waar per ongeluk een voorspelling in sluipt. De uitleg met de intervallen erin
-         staat op je profiel, bij de uitsplitsing zelf. */
-      ct("Hoe verder een woord in de doosjes staat, hoe zwaarder het meetelt. De uitsplitsing staat "+
-         "bij je cijfers.",
-         "The further a word sits in the boxes, the heavier it counts. The breakdown is with your "+
-         "numbers.")+"</p>" : "")+
-    (c.fout7.pct === null ? "" :
-      "<p class='muted' style='margin:6px 0 0; font-size:.8rem'>"+
-        ct(weekMetingZin(c.weken)+" Vanaf ongeveer "+MEET_WEKEN+" kan de app uit je eigen reeks "+
-           "aflezen wat voor jou een goede stand is; tot die tijd staat er geen oordeel bij.",
-           weekMetingZin(c.weken)+" From about "+MEET_WEKEN+" on the app can read from "+
-           "your own series what a good rate is for you; until then no verdict is attached.")+"</p>");
+  /* v23.31: hier stonden twee uitlegregels onder de tegels, over de weging en over hoeveel
+     weekmetingen er nog nodig zijn. Allebei waar, allebei niets waar je 's ochtends op zit te
+     wachten, en samen langer dan de cijfers zelf. Ze staan nog waar ze horen: bij de uitsplitsing
+     op je profiel, waar de doosjes ook staan. */
+  return "<div class='statgrid' style='margin-top:10px'>"+tegels+"</div>";
 }
 // een getal van een is enkelvoud, ook in een zin die je zelden ziet. "Er liggen 1 weekmetingen"
 // leest als een sjabloon dat niemand heeft nagelopen, en dan gaat de lezer aan de rest ook twijfelen.
@@ -13286,7 +13350,8 @@ function dagBordWire(el){
     b.onclick = function(){ if(g === "conj") speelNaar("conj"); else show(g); };
   });
   var bl = document.getElementById("btnLijnMeer");
-  if(bl) bl.onclick = function(){ show("perfil"); };
+  // v23.32: naar het voortgangsscherm, niet meer naar je profiel
+  if(bl) bl.onclick = function(){ show("voortgang"); };
   var bp = document.getElementById("btnPeilStart");
   if(bp) bp.onclick = function(){ peilStart(); };
   el.querySelectorAll("[data-speel]").forEach(function(b){
@@ -16291,6 +16356,7 @@ var TXT = {
   // gewoon blijven werken: dit is een naamswijziging op het scherm, geen verbouwing eronder.
   lessen:{nl:"Vandaag",en:"Today",fr:"Aujourd'hui",de:"Heute"},
   cursus:{nl:"Cursus",en:"Course",fr:"Cours",de:"Kurs"},
+  voortgang:{nl:"Voortgang",en:"Progress",fr:"Progrès",de:"Fortschritt"},
   woorden:{nl:"Woordjes",en:"Words",fr:"Mots",de:"Wörter"},
   vertalen:{nl:"Vertalen",en:"Translate",fr:"Traduire",de:"Übersetzen"},
   toetsjes:{nl:"Toetsjes",en:"Quizzes",fr:"Quiz",de:"Tests"},
@@ -16384,8 +16450,13 @@ function meerItems(){
       "Your course: which lesson you left off at.")},
     {id:"musica", ico:"\uD83C\uDFB5", uit:ct("Liedjes met vragen erbij.", "Songs with questions alongside.")},
     {id:"chispa", ico:"\uD83E\uDD8E", uit:ct("Hoe het met je axolotl gaat.", "How your axolotl is doing.")},
-    {id:"perfil", ico:"\uD83D\uDC64", uit:ct("Je voortgang, je instellingen en wisselen van profiel.",
-      "Your progress, your settings and switching profiles.")}
+    /* v23.32: Voortgang staat hier als eigen regel. Niet alleen omdat pw-v1998 eist dat elke tab
+       via de balk of via Meer te bereiken is (die eis is terecht), maar omdat de omschrijving bij
+       Profiel niet meer klopte: daar staat je voortgang niet meer. */
+    {id:"voortgang", ico:"\uD83D\uDCC8", uit:ct("Je week, je doel en waar je staat.",
+      "Your week, your goal and where you are.")},
+    {id:"perfil", ico:"\uD83D\uDC64", uit:ct("Je instellingen en wisselen van profiel.",
+      "Your settings and switching profiles.")}
   ];
 }
 
@@ -21232,6 +21303,295 @@ function renderCompetentieRij(kind, c){
     "<div class='goalbar' style='margin-top:4px'><div style='width:"+c.pct+"%'></div></div>"+
     "<p class='muted' style='font-size:.78rem; margin:4px 0 0'>"+c.bron.join(" · ")+" · "+c.teller+"/"+c.noemer+"</p></div>";
 }
+/* ================= DE VOORTGANGSPAGINA (v23.32) =================
+   Zes blokken in de volgorde die Stefan gaf, en daarna wat er al stond. De volgorde is niet
+   willekeurig: hij begint bij de week die net voorbij is (dat is het stuk dat je meteen snapt),
+   dan waar je heen wilt, dan waar je staat, en pas daarna de uitsplitsingen.
+
+   Alle getallen komen uit functies die er al waren. Er wordt hier niets opnieuw uitgerekend, en dat
+   is de enige reden dat dit scherm te vertrouwen is: een tweede telling naast voortgangCijfers()
+   was elke keer de oorzaak als er twee getallen over hetzelfde ding op het scherm stonden. */
+function vgSomDek(m, nivs){
+  var s = 0, i;
+  for(i = 0; i < nivs.length; i++) s += ((m && m.dek) || {})[nivs[i]] || 0;
+  return s;
+}
+// De weekmetingen op volgorde, met het bewezen deel opgeteld over de niveaus van je balk.
+function vgWeken(nivs){
+  var ws = Object.keys(S.meting || {}).sort(), uit = [], i, m;
+  for(i = 0; i < ws.length; i++){
+    m = S.meting[ws[i]];
+    if(!m) continue;
+    uit.push({week:ws[i], d:m.d, vast:vgSomDek(m, nivs), geoefend:m.geoefend || 0,
+              pog:m.pog || 0, fout:m.fout || 0});
+  }
+  return uit;
+}
+function vgRij(naam, sub, pct, cijf, soort){
+  return "<div class='vgMeet'><span>"+naam+(sub ? "<span>"+sub+"</span>" : "")+"</span>"+
+    "<span class='vgStaaf'><i class='"+(soort || "")+"' style='width:"+
+      Math.max(2, Math.min(100, pct))+"%'></i></span><b>"+cijf+"</b></div>";
+}
+
+/* ---------- 1. Je week ---------- */
+function vgWeekHtml(c){
+  var t = today(), i, d, dagen = 0;
+  for(i = 0; i < 7; i++){ d = addDays(t, -i); if((S.xp || {})[d] > 0) dagen++; }
+  var wk = vgWeken(c.samen.nivs);
+  var groei = wk.length > 1 ? wk[wk.length-1].vast - wk[wk.length-2].vast : null;
+  var lessen = afgemaakt7(), tv = tijdVenster(7);
+  var h = "<div class='card'><span class='kicker'>"+ct("Je week","Your week")+" \ud83d\udc40</span>";
+  /* De kop is de aanwas en niet de stand. De stand loopt altijd op, dus die kan niet zeggen of dit
+     een goede week was; de aanwas wel. Zonder tweede weekmeting staat er geen aanwas, want een
+     verschil met niets is geen verschil. */
+  if(groei === null){
+    h += "<p style='margin:0 0 6px'>"+ct("Je eerste weekmeting staat er. Vanaf de volgende staat hier "+
+      "hoeveel er die week bij kwam.","Your first weekly measurement is in. From the next one on, this "+
+      "shows how much came in that week.")+"</p>";
+  } else {
+    h += "<div class='vgKop'><div class='vgGroot'>"+(groei >= 0 ? "+" : "")+groei+"</div>"+
+      "<div class='vgBij'>"+ct("woorden erbij deze week","words added this week")+"</div></div>";
+  }
+  h += "<div class='statgrid' style='margin-top:8px'>"+
+    "<div class='stat'><b>"+dagen+"/7</b><span class='muted'>"+ct("dagen geoefend","days practised")+"</span></div>"+
+    "<div class='stat'><b>"+lessen+"</b><span class='muted'>"+ct("lessen afgemaakt","sessions finished")+"</span></div>"+
+    "</div>";
+  var los = [];
+  los.push("\ud83d\udd25 " + streakNow() + " " + ct("dagen op rij","days in a row"));
+  if(tv.perDag !== null) los.push(tv.perDag + " " + ct("minuten per dag","minutes a day"));
+  if(c.fout7.pct !== null) los.push(c.fout7.pct + "% " + ct("fout","wrong"));
+  h += "<p class='muted' style='margin:8px 0 0; font-size:.86rem'>"+los.join(" \u00b7 ")+"</p>";
+  /* Delen gaat via de link die er al is. Geen tweede deelweg erbij: die link laat precies vijf
+     getallen zien en niets anders, en dat is een belofte die we niet per scherm opnieuw moeten
+     uitvinden. */
+  h += "<div class='row' style='margin-top:10px'>"+
+    (maatjeAan()
+      ? "<button class='primary' id='btnVgWeekDeel'>"+ct("Stuur je week \ud83d\udd17","Send your week \ud83d\udd17")+"</button>"
+      : "<button class='ghost' id='btnVgWeekMaatje'>"+ct("Iemand laten meekijken \ud83d\udc40","Let someone follow along \ud83d\udc40")+"</button>")+
+    "</div></div>";
+  return h;
+}
+
+/* ---------- 2. Je doel ---------- */
+function vgDoelHtml(){
+  var mi = doelMinuten(), ds = doelStand();
+  var h = "<div class='card'><span class='kicker'>"+ct("Je doel","Your goal")+"</span><p style='margin:0 0 6px'>"+
+    "<span class='vgPil aan'>"+mi+" "+ct("min per dag","min a day")+"</span>";
+  if(ds) h += "<span class='vgPil aan'>"+ds.niv+" "+ct("vol","full")+"</span>"+
+              "<span class='vgPil aan'>"+datumUit(ds.datum)+"</span>";
+  h += "<span class='vgPil' id='btnVgDoel' style='cursor:pointer'>"+ct("wijzigen","change")+"</span></p>";
+  if(!ds){
+    h += "<p class='muted' style='margin:0; font-size:.86rem'>"+
+      ct("Je hebt nog geen niveaudoel. Het stuurt niets aan; het geeft de app iets om je gemeten tempo "+
+         "naast te leggen.",
+         "You have no level goal yet. It drives nothing; it gives the app something to hold your "+
+         "measured pace against.")+"</p></div>";
+    return h;
+  }
+  if(ds.klaar){
+    h += "<p style='margin:0'>"+"<span class='vgKoers ja'>"+ct("gehaald","reached")+"</span> "+
+      ct(ds.niv+" staat vol.", ds.niv+" is full.")+"</p></div>";
+    return h;
+  }
+  h += "<div class='statgrid' style='grid-template-columns:1fr 1fr 1fr; margin-top:8px'>"+
+    "<div class='stat'><b>"+(ds.nodig === null ? "\u2013" : getal1(ds.nodig))+"</b><span class='muted'>"+
+      ct("per week nodig","a week needed")+"</span></div>"+
+    "<div class='stat'><b>"+(ds.tempo === null ? "\u2013" : getal1(ds.tempo))+"</b><span class='muted'>"+
+      ct("haal je nu","you're doing")+"</span></div>"+
+    "<div class='stat'><b>"+Math.max(0, ds.weken)+"</b><span class='muted'>"+
+      ct("weken te gaan","weeks to go")+"</span></div></div>";
+  if(ds.tempo === null){
+    h += "<p class='muted' style='margin:8px 0 0; font-size:.86rem'>"+
+      ct("Wat je nu haalt is nog niet te meten; daar zijn drie weekmetingen voor nodig.",
+         "What you're doing isn't measurable yet; that needs three weekly measurements.")+"</p>";
+  } else if(ds.nodig !== null && ds.tempo >= ds.nodig){
+    h += "<p style='margin:8px 0 0; font-size:.9rem'><span class='vgKoers ja'>"+ct("op koers","on track")+
+      "</span> "+ct("In dit tempo ben je er op tijd.","At this pace you'll get there in time.")+"</p>";
+  } else {
+    /* Geen rood. Stefan, v19.90: een deadline die je mist is een indicator die liegt. Het doel is
+       een richting, en het getal dat telt blijft hoe vaak je terugkomt. */
+    h += "<p style='margin:8px 0 0; font-size:.9rem'><span class='vgKoers nee'>"+ct("later","later")+
+      "</span> "+ct("In dit tempo wordt het later dan je datum. Dat is geen fout; een doel is hier een "+
+                    "richting.",
+                    "At this pace it'll be later than your date. That's not a failure; a goal here is "+
+                    "a direction.")+"</p>";
+  }
+  return h + "</div>";
+}
+
+/* ---------- 3. Wat je vasthoudt ---------- */
+function vgLijnHtml(c){
+  var wk = vgWeken(c.samen.nivs);
+  if(wk.length < 2) return "";
+  /* De schaal loopt tot je eigen hoogste punt en niet tot de noemer. Eerst deed hij dat wel, en dan
+     plakt een reeks van 20 naar 54 als een streep tegen de bodem: een groeigrafiek die geen groei
+     laat zien. De noemer staat een regel hoger al in de balk; deze lijn beantwoordt een andere
+     vraag, namelijk of het de goede kant op gaat. Het hoogste getal staat erbij, anders is een
+     eigen schaal een truc. */
+  var top = 0, i, x, y, d = "", pad = "";
+  for(i = 0; i < wk.length; i++) top = Math.max(top, wk[i].vast);
+  if(top <= 0) return "";
+  top = Math.ceil(top * 1.15);
+  var W = 600, H = 130, L = 8, R = 8, T = 10, B = 18;
+  for(i = 0; i < wk.length; i++){
+    x = L + (W - L - R) * (i / (wk.length - 1));
+    y = T + (H - T - B) * (1 - wk[i].vast / top);
+    d += (i ? " L " : "M ") + Math.round(x) + " " + Math.round(y);
+    pad += (i ? " L " : "M ") + Math.round(x) + " " + Math.round(y);
+  }
+  pad += " L " + (W - R) + " " + (H - B) + " L " + L + " " + (H - B) + " Z";
+  return "<svg viewBox='0 0 "+W+" "+H+"' style='width:100%; height:auto; display:block; margin:10px 0 2px'>"+
+    "<path d='"+pad+"' fill='var(--accent-soft)'></path>"+
+    "<path d='"+d+"' fill='none' stroke='var(--accent)' stroke-width='2.5'></path>"+
+    "<circle cx='"+Math.round(W - R)+"' cy='"+Math.round(T + (H-T-B) * (1 - wk[wk.length-1].vast/top))+
+      "' r='4' fill='var(--accent)'></circle>"+
+    "</svg>"+
+    "<p class='muted' style='margin:0; font-size:.8rem'>"+
+      ct("Bewezen vast, van <b>"+wk[0].vast+"</b> op "+datumUit(wk[0].d)+" naar <b>"+
+         wk[wk.length-1].vast+"</b> nu, over "+wk.length+" weekmetingen.",
+         "Proven solid, from <b>"+wk[0].vast+"</b> on "+datumUit(wk[0].d)+" to <b>"+
+         wk[wk.length-1].vast+"</b> now, across "+wk.length+" weekly measurements.")+"</p>";
+}
+
+/* ---------- 4. Onderweg ---------- */
+/* Mijlpalen uit gegevens die er al zijn. Waar geen datum bekend is staat er geen datum: S.boek
+   bewaart alleen dát een hoofdstuk uit is, niet wanneer, en dan is verzinnen erger dan zwijgen. */
+function vgMijlpalen(c){
+  var uit = [], wk = vgWeken(c.samen.nivs), i, j, drempels = [50, 100, 250, 500, 812];
+  var dagen = Object.keys(S.xp || {}).filter(function(x){ return S.xp[x] > 0; }).sort();
+  if(dagen.length) uit.push({e:"\ud83c\udf31", t:ct("Je eerste dag","Your first day"),
+                             d:datumUit(dagen[0]), dsort:dagen[0], aan:true});
+  for(i = 0; i < drempels.length; i++){
+    var dr = drempels[i], gevonden = null;
+    for(j = 0; j < wk.length; j++){ if(wk[j].vast >= dr){ gevonden = wk[j]; break; } }
+    if(gevonden){
+      uit.push({e:"\ud83d\udcaf", t:ct(dr+" woorden bewezen vast", dr+" words proven solid"),
+                d:datumUit(gevonden.d), dsort:gevonden.d, aan:true});
+    } else if(c.samen.vast < dr){
+      uit.push({e:"\ud83c\udfaf", t:ct(dr+" woorden bewezen vast", dr+" words proven solid"),
+                d:ct("nog "+(dr - c.samen.vast)+" te gaan", (dr - c.samen.vast)+" to go"),
+                aan:false});
+      break;
+    }
+  }
+  var lg = (S.peil && S.peil.log) || [];
+  for(i = 0; i < lg.length; i++){
+    if(lg[i] && lg[i].punt / (PCIC_NOEMER[lg[i].niv] || 1) >= POORT_PCT){
+      uit.push({e:"\ud83c\udfc5", t:ct(lg[i].niv+" gehaald", lg[i].niv+" reached"),
+                d:datumUit(lg[i].d), dsort:lg[i].d, aan:true});
+      break;
+    }
+  }
+  var af = BOOK.filter(function(h){ return S.boek[h.id] && S.boek[h.id].done; }).length;
+  if(af > 0) uit.push({e:"\ud83d\udcd6", t:ct(af+" "+(af === 1 ? "hoofdstuk" : "hoofdstukken")+" uit",
+                                                af+" "+(af === 1 ? "chapter" : "chapters")+" read"),
+                       d:"", aan:true});
+  if(af < BOOK.length){
+    uit.push({e:"\ud83d\udcda", t:ct("Een boek uit","A whole book"),
+              d:ct("nog "+(BOOK.length - af)+" hoofdstukken", (BOOK.length - af)+" chapters to go"),
+              aan:false});
+  }
+  return uit;
+}
+function vgOnderwegHtml(c){
+  var mp = vgMijlpalen(c);
+  if(!mp.length) return "";
+  /* Op datum, niet op de volgorde waarin ik ze toevallig opzocht. Bij het bouwen stond "A1 gehaald
+     11 juli" onder "50 woorden vast 3 augustus", en een terugblik die door elkaar loopt is geen
+     terugblik. Wat geen datum heeft gaat achteraan. */
+  var gehaald = mp.filter(function(m){ return m.aan; }).sort(function(a, b){
+    if(!a.dsort) return 1;
+    if(!b.dsort) return -1;
+    return a.dsort < b.dsort ? -1 : 1;
+  });
+  var open = mp.filter(function(m){ return !m.aan; }).slice(0, 2);
+  /* Drie gehaald en twee te gaan. Een lijst van vijftien mijlpalen is een takenlijst en geen
+     terugblik, en dan lees je hem één keer en daarna nooit meer. */
+  var toon = gehaald.slice(-3).concat(open);
+  return "<div class='card'><span class='kicker'>"+ct("Onderweg","Along the way")+"</span>"+
+    toon.map(function(m){
+      return "<div class='vgMijl'><div class='vgBol"+(m.aan ? "" : " uit")+"'>"+m.e+"</div>"+
+        "<div><b"+(m.aan ? "" : " class='muted'")+">"+m.t+"</b>"+
+        (m.d ? "<br><span class='muted' style='font-size:.84rem'>"+m.d+"</span>" : "")+"</div></div>";
+    }).join("")+"</div>";
+}
+
+/* ---------- 5 en 6. Sterke punten en zwakke plekken ---------- */
+/* Stond als één blok onderaan renderStats, met de sterke kant eerst. Nu twee kaarten, want Stefan
+   zette ze in zijn volgorde ook los neer, en omdat je een zwakke plek pas gaat oefenen als hij niet
+   tussen goed nieuws staat. De telling is niet veranderd: zwakkePunten() doet hem nog steeds. */
+/* Een sterk punt moet ook echt sterk zijn. Bij het bouwen stond hier "sterke punten: 23%, 0%, 0%",
+   want de lijst nam gewoon de bovenste drie van wat er was. Drie nullen onder het kopje sterk is
+   geen bemoediging maar een leugen, en precies het soort getal waardoor je de rest van het scherm
+   ook niet meer gelooft. Dus een drempel: minstens de helft van de weg naar het maanddoosje, en
+   minstens twee thema's die dat halen, anders staat de kaart er niet. */
+var VG_STERK = 50;
+function vgSterkHtml(){
+  var z = zwakkePunten();
+  var sterk = z.themas.filter(function(x){ return x.kracht >= VG_STERK; }).slice(-3).reverse();
+  if(sterk.length < 2) return "";
+  return "<div class='card'><span class='kicker'>"+ct("Sterke punten","Strong points")+"</span>"+
+    sterk.map(function(x){
+      return vgRij(x.naam, ct(x.gehad+" van de "+x.n+" woorden gehad", x.gehad+" of "+x.n+" words seen"),
+                   x.kracht, x.kracht+"%", "sterk");
+    }).join("")+
+    "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
+      ct("Deze hoef je even niet te doen. Dat is ook informatie.",
+         "You can leave these alone for now. That's information too.")+"</p></div>";
+}
+function vgZwakHtml(){
+  var z = zwakkePunten();
+  var h = "";
+  /* Alleen thema's waar je aan begonnen bent. Een thema dat je nooit zag staat op nul procent en
+     kwam daardoor bovenaan de zwakke plekken te staan, terwijl er niets zwaks aan is: je bent er
+     gewoon nog niet geweest. Dat is een aanbod, geen tekort, en het staat al op Vandaag als nieuwe
+     woorden. Drie gehad is de ondergrens: daaronder meet je ruis. */
+  var aangeraakt = z.themas.filter(function(x){ return x.gehad >= 3; });
+  if(aangeraakt.length >= 3){
+    h += aangeraakt.slice(0, 3).map(function(x){
+      return vgRij(x.naam, ct(x.gehad+" van de "+x.n+" woorden gehad", x.gehad+" of "+x.n+" words seen"),
+                   x.kracht, x.kracht+"%", "zwak");
+    }).join("");
+  }
+  var wankel = z.regels.filter(function(x){ return x.kracht < 60; });
+  if(wankel.length >= 2){
+    h += wankel.slice(0, 3).map(function(x){
+      return vgRij(x.naam, ct(x.fout+" fout van "+x.beurten+" beurten", x.fout+" wrong of "+x.beurten+" turns"),
+                   x.kracht, x.kracht+"%", "zwak");
+    }).join("");
+  }
+  /* Eerst de regels bouwen, dan pas de kaart. Andersom stond er een kaart met alleen een kopje en
+     een alinea uitleg over een lijst die er niet was, en dat is de leegste vorm van iets beloven. */
+  if(!h) return "";
+  return "<div class='card'><span class='kicker'>"+ct("Zwakke plekken","Weak spots")+"</span>"+h+
+    "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
+    ct("Van alle woorden die dit thema op jouw niveau heeft: hoe ver ze in de doosjes staan. Woorden "+
+       "die je nooit zag tellen voor nul. Niet op fouten geteld, want een thema dat je vaak oefent "+
+       "verzamelt vanzelf de meeste fouten.",
+       "Of all the words this topic has at your level: how far they sit in the boxes. Words you never "+
+       "saw count as zero. Not counted on mistakes: a topic you practise a lot collects the most.")+
+    "</p></div>";
+}
+
+function renderVoortgang(){
+  var c = voortgangCijfers();
+  var el = document.getElementById("voortgangCard");
+  el.innerHTML =
+    vgWeekHtml(c) +
+    vgDoelHtml() +
+    "<div class='card' id='vgVastKaart'>"+dagBasisRegelHtml({legenda:true})+vgLijnHtml(c)+"</div>" +
+    vgOnderwegHtml(c) +
+    vgSterkHtml() +
+    vgZwakHtml();
+  var bd = document.getElementById("btnVgWeekDeel");
+  if(bd) bd.onclick = function(){ maatjeDeel("voortgang"); };
+  var bm = document.getElementById("btnVgWeekMaatje");
+  if(bm) bm.onclick = function(){ show("perfil"); };
+  var bg = document.getElementById("btnVgDoel");
+  if(bg) bg.onclick = function(){ show("perfil"); };
+  renderStats();
+}
+
 function renderCompetenties(){
   var c = berekenCompetenties();
   return "<div class='card' style='margin-top:14px'>"+
@@ -21859,7 +22219,10 @@ function samenKaartNu(compact){
      voelt die uit de context." Klopt: een implementatie-intentie werkt als hij bij een besluit hoort
      dat je net genomen hebt, niet als losse vraag na een oefening. Weg dus. De functies eronder
      blijven staan omdat momentTekst() nog wordt gelezen door wie hem ooit heeft ingevuld. */
-  if(maatjeStuurMoment()) return maatjeStuurKaart();
+  /* v23.31: het weekbericht staat niet meer op Vandaag. Stefan wil het als rapport dat een keer
+     per week binnenkomt en dat je kunt delen, niet als kaart die elke zondag tussen je les en je
+     spelletjes gaat staan. maatjeStuurMoment() en maatjeStuurKaart() blijven bestaan, en onder
+     Groepen staat "Stuur je week" gewoon nog: er verdwijnt geen functie, alleen een kaart. */
   if(uitnodigMoment(2)) return uitnodigKaart(compact);
   if(maatjeStap || maatjeMoment()) return maatjeKaart();
   return "";
@@ -26218,11 +26581,13 @@ function renderStats(){
      zijn eigen kritiek op Duolingo: "ik doe de habit maar ik leer niks."
      Boven staat nu wat je kunt. Wat de app bijhoudt om je aan de gang te houden
      staat eronder, ingeklapt, want het is nuttig maar het is geen Spaans. */
+  /* v23.32: sterkZwakHtml() staat hier niet meer. Hij is als twee losse kaarten naar boven
+     verhuisd, in de volgorde die Stefan gaf. Verhuisd en niet gekopieerd: de telling zit nog steeds
+     in zwakkePunten() en die is niet aangeraakt. */
   el.innerHTML = koersHtml + voorspelHtml() +
     cijferLijstHtml()+
     "<h2 style='margin-top:16px'>"+ct("Woorden per herhaalinterval","Words per review interval")+"</h2>"+boxHtml+
     krachtTabelHtml()+
-    sterkZwakHtml()+
     "<details style='margin-top:18px'><summary>"+ct("Wat de app bijhoudt","What the app keeps score of")+"</summary>"+
     "<p class='muted'>"+
       ct("Punten, tapas en dagen houden je aan de gang, en daar zijn ze goed voor. Maar het is geen Spaans, dus staan ze hier en niet tussen de cijfers hierboven.",
@@ -26299,6 +26664,7 @@ function alertBox(msg){
 var TABS = [
   {id:"lessen", label:"Lessen"},
   {id:"cursus", label:"Cursus"},   // v19.90: de leerlijn, weg bij het profiel vandaan
+  {id:"voortgang", label:"Voortgang", nav:false},   // v23.32: eigen scherm, weg bij het profiel vandaan
   {id:"woorden", label:"Woordjes"},
   {id:"vertalen", label:"Vertalen"},
   {id:"toetsjes", label:"Toetsjes", nav:false}, // v19.47: geen eigen tab meer, zit nu in Grammatica
@@ -26419,6 +26785,7 @@ function show(tabId, skipPush){
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
   if(tabId==="cursus"){ renderCursus(); }
+  if(tabId==="voortgang"){ renderVoortgang(); }
   if(tabId==="chispa"){ renderChispaPagina(); }
   // v19.78: wie de chispa-pagina verlaat neemt haar podium niet mee naar de woordjes
   try { chispaBalkCheck(); } catch(e){}
@@ -26426,7 +26793,22 @@ function show(tabId, skipPush){
     // v19.71: wie zijn profiel opent komt kijken hoe het gaat, niet hoe het is ingesteld.
     // De lade gaat dus dicht bij binnenkomst, maar niet bij een hertekening terwijl je erin bezig bent.
     instelOpen = false;
-    renderPerfil(); renderStats();
+    renderPerfil();
+    /* v23.32: de cijfers zijn naar hun eigen scherm verhuisd. Hier staat de weg erheen, want
+       weglaten mag nooit verstoppen worden. */
+    var pnv = document.getElementById("perfNaarVoortgang");
+    if(pnv){
+      pnv.innerHTML = "<h2 style='margin:0 0 4px'>"+ct("Je voortgang","Your progress")+"</h2>"+
+        "<p class='muted' style='margin:0 0 8px; font-size:.9rem'>"+
+          ct("Je week, je doel, wat je vasthoudt en waar je zwakke plekken zitten staan op hun eigen "+
+             "scherm.",
+             "Your week, your goal, what you're holding on to and where the gaps are live on their "+
+             "own screen.")+"</p>"+
+        "<div class='row'><button class='primary' id='btnNaarVoortgang'>"+
+          ct("Bekijk je voortgang","See your progress")+" \u2192</button></div>";
+      var bnv = document.getElementById("btnNaarVoortgang");
+      if(bnv) bnv.onclick = function(){ show("voortgang"); };
+    }
     var bns = document.getElementById("btnNaarSteun");
     if(bns) bns.onclick = function(){ show("steun"); };
     var pc = activeProfile();

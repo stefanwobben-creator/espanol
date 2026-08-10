@@ -67,6 +67,9 @@ async function basis(page) {
       knop: !!knop,
       knopTekst: knop ? knop.innerText.replace(/\s+/g, ' ').trim() : '',
       knopKaart: knop && knop.closest('.card') ? (knop.closest('.card').id || '') : '',
+      // v23.31: de kop en het getal aan het eind van de balk zijn twee verschillende dingen
+      // geworden. De kop is wat je actief bijhoudt, het getal rechts is de noemer.
+      kopGroot: kaart ? ((kaart.querySelector('.vgGroot') || {}).innerText || '') : '',
       tekst: kaart ? kaart.innerText.replace(/\s+/g, ' ') : ''
     };
   });
@@ -254,18 +257,28 @@ async function beantwoord(page, aantal) {
   const bal = await basis(page);
   ok(bal.balk, 'de balk staat op het dagscherm');
   ok(bal.lagen === 3, 'met drie lagen: bewezen, onderweg en geschat (' + bal.lagen + ')');
-  ok(bal.merk === 1, 'en een streepje waar je eerste peiling stond (' + bal.merk + ')');
-  const kop = parseInt(bal.kop, 10);
+  /* v23.31: het streepje van je eerste peiling is weg. Het stond op een schaal van een niveau, en
+     de balk telt nu alle niveaus tot en met het jouwe bij elkaar op; op die schaal is er geen enkel
+     beginpunt om te markeren. Wat het streepje deed (laten zien dat je vooruit bent gegaan sinds je
+     eerste peiling) doet de zin eronder, en die wordt verderop in deze suite gecontroleerd. */
+  ok(bal.merk === 0, 'geen streepje meer op de samengetelde balk (' + bal.merk + ')');
+  const kop = parseInt(bal.kopGroot, 10);
   const schat = await page.evaluate(() => JSON.parse(JSON.stringify(niveauSchatting('A1'))));
   /* v23.0: de kop was een percentage, en dat was precies de fout. Hetzelfde niveau stond hier op
      100% (de schatting) en op je profiel op 0% (het bewezen deel), allebei zonder te zeggen welk
      stuk ze maten. Nu staat er een aantal: wat je actief bijhoudt. De schatting is niet weg maar
      verhuisd naar de legenda, waar ze een naam heeft. Hieronder wordt dat allebei gecontroleerd. */
-  const opweg = await page.evaluate(() => {
-    const t = voortgangTellers();
-    return Math.max((t.dekw && t.dekw.A1) || 0, (t.dek && t.dek.A1) || 0);
-  });
-  ok(kop === opweg, 'de kop is geen percentage meer maar wat je actief bijhoudt (' + bal.kop + ' vs ' + opweg + ')');
+  /* v23.31: het scherm mag geen eigen sommetje maken. Dus wordt hier niet nagerekend wat de kop
+     hoort te zijn, maar vergeleken met wat voortgangCijfers().samen zegt: dat is de enige plek waar
+     dit getal wordt uitgerekend, en als het scherm daarvan afwijkt is er een tweede telling bij
+     gekomen. Precies waar dit hele hoofdstuk over ging. */
+  const sm = await page.evaluate(() => JSON.parse(JSON.stringify(voortgangCijfers().samen)));
+  const opweg = sm.actief;
+  ok(kop === opweg, 'de kop is wat je actief bijhoudt, uit voortgangCijfers (' + bal.kopGroot + ' vs ' + opweg + ')');
+  ok(parseInt(bal.kop, 10) === sm.noem,
+     'en het getal aan het eind van de balk is de noemer (' + bal.kop + ' vs ' + sm.noem + ')');
+  ok(sm.vast + sm.onderweg + sm.geschat + sm.ongezien === sm.noem,
+     'de vier lagen tellen op tot de noemer (' + [sm.vast, sm.onderweg, sm.geschat, sm.ongezien].join('+') + ' = ' + sm.noem + ')');
   ok(/geschat al gekend|estimated already known/i.test(bal.tekst), 'de schatting staat in de legenda, met een naam erbij');
   ok(/bewezen vast|proven solid/i.test(bal.tekst), 'en het bewezen deel staat er als eigen laag naast');
   /* v23.2: de zin "je kent er naar schatting X van de 390, daarvan staan er Y vast" is weg. Dat was
@@ -290,7 +303,9 @@ async function beantwoord(page, aantal) {
   const met = await basis(page);
   ok(/Sinds je eerste peiling/i.test(met.tekst), 'is er wel verschil, dan staat de stap er (' + met.tekst.slice(0, 120) + ')');
   ok(/ging de schatting van/i.test(met.tekst), 'met beide getallen erin, zodat het na te rekenen is');
-  ok(met.merk === 1, 'en het streepje verschuift mee naar het beginpunt');
+  ok(met.tekst.indexOf('Sinds je eerste peiling') < met.tekst.indexOf('Alle cijfers') ||
+     met.tekst.indexOf('Alle cijfers') === -1,
+    'en de stapzin staat in dezelfde kaart als de balk, niet in een blok eronder');
   ok(!/—|–|--/.test(met.tekst), 'nog steeds geen streepjes in de tekst');
 
   console.log('\n-- na veertien dagen mag het opnieuw --');

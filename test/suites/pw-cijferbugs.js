@@ -90,11 +90,15 @@ const { chromium } = require('playwright');
     const gis = g.getFullYear() + '-' + String(g.getMonth() + 1).padStart(2, '0') + '-' + String(g.getDate()).padStart(2, '0');
     S.newIntro[gis] = 15; S.xp[gis] = 100;
     const el = document.createElement('div');
-    try { show('perfil'); } catch (e) {}
+    // v23.32: de cijfers staan op hun eigen scherm, niet meer onder Profiel
+    try { show('voortgang'); } catch (e) {}
     return { tekst: (document.getElementById('statsCard') || el).innerText || '', portie: nieuwPerDag() };
   });
   await page.waitForTimeout(400);
-  const tekst = await page.evaluate(() => (document.getElementById('statsCard') || {}).innerText || '');
+  const tekst = await page.evaluate(() => {
+    try { show('voortgang'); } catch (e) {}
+    return (document.getElementById('statsCard') || {}).innerText || '';
+  });
   ok(!/maximum is 15/.test(tekst), 'de zin belooft geen hardgecodeerd maximum van 15 meer');
   ok(!/het maximum is/.test(tekst), 'en ook geen ander maximum dat het gemeten getal niet begrenst');
   ok(/(dagportie|lesson portion)/.test(tekst), 'er staat nu wat het echt is: je dagportie in de les');

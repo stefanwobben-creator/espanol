@@ -101,14 +101,21 @@ const { chromium } = require('playwright');
   ok(!/herhaling(en)? bij|reviews done/i.test(ritme), 'en met een achterstand ook geen vinkje dat je bij bent');
   ok(!/grammatica-herhaling|grammar review/i.test(ritme), 'geen "N grammatica-herhalingen open"');
   ok(!/🔁/.test(ritme), 'geen herhaal-icoon met een saldo erachter');
-  // en het chipje voor het dagdoel komt terug zodra er iets in staat
+  /* v23.31: het dagdoel-chipje op de leskaart is weg. Niet omdat een saldo terugkwam (daar gaat
+     deze suite over en dat blijft zo), maar omdat dezelfde stand bovenin al in de strook staat en
+     twee weergaven van een getal de fout is die dit scherm aan het opruimen was. Wat hier vanaf nu
+     vastligt is precies dat: de stand staat er, en op een plek. */
   const metDoel = await page.evaluate(() => {
     S.xp[today()] = (S.xp[today()] || 0) + 5;
     show('lessen');
     const el = document.querySelector('.ritme');
-    return el ? el.innerText : '';
+    return { ritme: el ? el.innerText : '',
+             kop: (document.getElementById('goalTxt') || {}).innerText || '' };
   });
-  ok(/dagdoel|daily goal/i.test(metDoel), 'zodra je vandaag punten hebt staat het dagdoel er wel ("' + metDoel.replace(/\n/g, ' | ') + '")');
+  ok(/\d+\/\d+/.test(metDoel.kop),
+    'zodra je vandaag punten hebt staat je stand bovenin ("' + metDoel.kop + '")');
+  ok(!/dagdoel|daily goal/i.test(metDoel.ritme),
+    'en niet ook nog eens als chipje op de leskaart ("' + metDoel.ritme.replace(/\n/g, ' | ') + '")');
 
   // --- 6. ben je wél bij, dan verschijnt het schouderklopje ---
   const bij = await page.evaluate(() => {

@@ -130,7 +130,16 @@ async function dagFoto(page) {
   await dagOpnieuw(page);
   const eenDag = await dagFoto(page);
   ok(!eenDag.strook, 'met één dag is er nog geen lijn om te tekenen');
-  ok(eenDag.ritme && /dagdoel/i.test(eenDag.tekst), 'het dagdoel-chipje staat er wel, want daar staat iets in');
+  /* v23.31: het dagdoel-chipje is weg van de leskaart. Het stond twee keer op hetzelfde scherm,
+     want bovenin staat dezelfde stand al in de strook. Deze test bewaakt vanaf nu dat het bij die
+     ene plek blijft: eentje op het dagscherm, niet nul en niet twee. */
+  const doelPlekken = await page.evaluate(() => ({
+    lijst: /dagdoel/i.test((document.getElementById('lessonList') || {}).innerText || ''),
+    kop: ((document.getElementById('goalTxt') || {}).innerText || '')
+  }));
+  ok(!doelPlekken.lijst, 'het dagdoel-chipje staat niet meer op de leskaart');
+  ok(/\d+\/\d+/.test(doelPlekken.kop),
+     'en de stand staat nog wel bovenin, op die ene plek ("' + doelPlekken.kop + '")');
   await page.evaluate(() => { S.xp[addDays(today(), -1)] = 10; try { persist(); } catch (e) {} });
   await dagOpnieuw(page);
   const tweeDagen = await dagFoto(page);
@@ -217,9 +226,16 @@ async function dagFoto(page) {
   // niet de woordkeuze maar dat er een niveau in staat, want zonder niveau meet de balk iets
   // anders dan de lezer denkt. Dus: het niveau moet erin, de rest mag veranderen.
   ok(/A2/.test(kop) && kop.length > 2, 'het kopje boven de balk noemt A2 ("' + kop + '")');
-  const noemA2 = await page.evaluate(() => PCIC_NOEMER.A2);
-  ok(noemA2 !== noemA1 && naA2.tekst.indexOf('van de ' + noemA2 + ' A2-woorden') !== -1,
-     'en de noemer is die van A2, niet die van A1 (' + noemA2 + ' tegenover ' + noemA1 + ')');
+  /* v23.31: de balk telt vanaf nu alle niveaus tot en met het jouwe bij elkaar op, dus op A2 is
+     de noemer A1 plus A2. Wat deze test bewaakt is niet veranderd: de noemer moet zichtbaar zijn en
+     hij moet meegroeien met het niveau, want anders meet de balk iets anders dan de lezer denkt.
+     Erbij: wat je op A1 hebt opgebouwd mag niet van het scherm verdwijnen op de dag dat je A1
+     haalt, en dat is precies wat een noemer van 403 zou betekenen. */
+  const samenA2 = await page.evaluate(() => PCIC_NOEMER.A1 + PCIC_NOEMER.A2);
+  ok(samenA2 !== noemA1 && naA2.tekst.indexOf('van de ' + samenA2 + ' woorden op A1 en A2') !== -1,
+     'de noemer is A1 en A2 samen (' + samenA2 + ' tegenover ' + noemA1 + ' op A1)');
+  ok(naA2.tekst.indexOf('403') === -1,
+     'en niet alleen A2: het losse niveaugetal staat er niet meer');
 
   console.log('\n-- weggelaten is niet verstopt --');
   await page.evaluate(() => show('perfil'));

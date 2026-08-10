@@ -330,8 +330,12 @@ const { chromium } = require('playwright');
   ok(volgorde.alles === 'uitnodigKaart', 'de uitnodiging gaat nu voor (' + volgorde.alles + ')');
   ok(volgorde.naMoment === 'uitnodigKaart', 'daarna pas de uitnodiging (' + volgorde.naMoment + ')');
   ok(volgorde.naUitnodiging === 'maatjeKaart', 'en als die op is, de maatje-vraag (' + volgorde.naUitnodiging + ')');
-  ok(volgorde.metMaatje === (volgorde.stuurMoment ? 'maatjeKaart' : 'geen'),
-    'met een maatje verdwijnt de werving; het weekbericht staat er alleen zo/ma (' + volgorde.metMaatje + ')');
+  /* v23.31: het weekbericht staat niet meer op Vandaag; het komt terug als rapport dat je een
+     keer per week krijgt en kunt delen. Met een maatje staat er dus geen kaart meer, ook niet op
+     zondag. Deze test hing tot nu toe aan de dag waarop hij toevallig draaide (op zondag verwachtte
+     hij een kaart, doordeweeks niet); dat is nu weg en dat is winst op zich. */
+  ok(volgorde.metMaatje === 'geen',
+    'met een maatje staat er op Vandaag geen kaart meer, ook niet op zondag (' + volgorde.metMaatje + ')');
   ok(volgorde.gewijzigd !== 'momentKaart', 'ook met momentOpen komt de opgeheven momentkaart niet terug (' + volgorde.gewijzigd + ')');
   ok(volgorde.leeg === 'geen', 'en is alles afgehandeld, dan staat er niets (' + volgorde.leeg + ')');
 
