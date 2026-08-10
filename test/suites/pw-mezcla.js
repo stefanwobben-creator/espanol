@@ -104,6 +104,18 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   ok(naBaile.nieuw, 'met erbij dat hij nieuw is');
 
   console.log('\n-- de tapa danst mee, op haar formaat en in haar tempo --');
+  /* Eerst haar in beeld schuiven. Staat de kaart weggescrold, dan danst ze in de meeloopbalk en is
+     alles daar kleiner; dan meet deze test twee verschillende podia tegen elkaar en valt hij om op
+     iets wat klopt. */
+  await page.evaluate(() => {
+    const b = document.getElementById('petBox');
+    if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center' });
+    try { chispaBalkCheck(); } catch (e) {}
+  });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { mezclaWis(); document.querySelectorAll('.chmez').forEach((e) => e.remove()); });
+  await page.evaluate(() => { mezclaKies('tapa', TAPAS[0].id); mezclaKies('baile', BAILES[0].id); });
+  await page.waitForTimeout(400);
   /* v23.36: hij krijgt dezelfde klasse en dezelfde animatieduur als Chispa. Dat is het punt: een
      eigen animatie die er ongeveer op lijkt kan uit de pas lopen, deze niet. */
   const mee = await page.evaluate(() => {

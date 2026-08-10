@@ -101,7 +101,13 @@ const { chromium } = require('playwright');
   });
   ok(!/maximum is 15/.test(tekst), 'de zin belooft geen hardgecodeerd maximum van 15 meer');
   ok(!/het maximum is/.test(tekst), 'en ook geen ander maximum dat het gemeten getal niet begrenst');
-  ok(/(dagportie|lesson portion)/.test(tekst), 'er staat nu wat het echt is: je dagportie in de les');
+  /* v23.37: de zin die dit droeg is weg. Hij stond in het blok "Jouw ontwikkeling", dat dezelfde
+     getallen nog een derde keer in proza zette en dat Stefan om die reden liet vervallen. Wat deze
+     suite bewaakt blijft overeind en wordt zelfs breder: nergens op dit scherm mag een hardgecodeerd
+     maximum staan dat het gemeten getal niet begrenst. Daarom kijkt hij nu naar het hele scherm en
+     niet alleen naar de cijferkaart. */
+  const heleScherm = await page.evaluate(() => (document.getElementById('tab-voortgang') || {}).innerText || '');
+  ok(!/maximum is/.test(heleScherm), 'ook nergens anders op het scherm staat een hardgecodeerd maximum');
 
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
 

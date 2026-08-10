@@ -1180,7 +1180,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.36";
+var APP_VERSIE = "v23.37";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7014,8 +7014,11 @@ function snapshotSchrijf(){
       dsE = (S.dagStats || {})[dsD];
       if(dsE){ pog += dsE.pogingen || 0; fout += dsE.fouten || 0; }
     }
+    /* v23.37: dekw erbij. De weekmeting bewaarde alleen dek (bewezen vast), en dat is de traagste
+       teller die de app heeft; elke grafiek die erop staat kruipt. dekw is wat je actief bijhoudt,
+       dezelfde maat als de balk en de kop, en vanaf nu is die dus ook terug te kijken. */
     S.meting[w] = {d:t, stevig:c.stevig, bijna:c.bijna, geoefend:c.geoefend,
-                 dek:c.dek, txp:S.txp || 0, spel:sp, spelw:spw, pog:pog, fout:fout};
+                 dek:c.dek, dekw:c.dekw, txp:S.txp || 0, spel:sp, spelw:spw, pog:pog, fout:fout};
     persist();
   }catch(e){}                                // een meter mag de app nooit omver duwen
 }
@@ -7035,7 +7038,14 @@ function snapshotSchrijf(){
 function tempoMeting(niveau){
   var ws = Object.keys(S.meting || {}).sort();
   if(ws.length < 3) return null;
-  var reeks = ws.map(function(w){ return (S.meting[w].dek || {})[niveau] || 0; });
+  /* v23.37: het tempo rekent met wat je actief bijhoudt, net als de balk en het doel. Op dek
+     (bewezen vast) gerekend kwam er 1 woord per week uit terwijl er tientallen bewegen, en dan is
+     elke uitspraak over koers onbruikbaar. Weken zonder dekw vallen terug op dek: dat is wat we van
+     die weken weten, en het alternatief is ze weggooien. */
+  var reeks = ws.map(function(w){
+    var m = S.meting[w] || {};
+    return (m.dekw || {})[niveau] || (m.dek || {})[niveau] || 0;
+  });
   var d = [], i;
   for(i = 1; i < reeks.length; i++) d.push(reeks[i] - reeks[i-1]);
   var som = d.reduce(function(a, b){ return a + b; }, 0), gem = som / d.length;
@@ -7087,7 +7097,9 @@ function doelStand(){
   if(!niv || !dat) return null;
   var weken = Math.round((new Date(dat) - new Date(today())) / 604800000);
   var tel = voortgangTellers();
-  var nu = tel.dek[niv] || 0, noemer = PCIC_NOEMER[niv] || 0;
+  // v23.37: dezelfde maat als de balk: bewezen vast plus onderweg
+  var nu = Math.max(tel.dek[niv] || 0, (tel.dekw && tel.dekw[niv]) || 0);
+  var noemer = PCIC_NOEMER[niv] || 0;
   var rest = Math.max(0, noemer - nu);
   var m = tempoMeting(niv);
   return {niv:niv, datum:dat, weken:weken, nu:nu, noemer:noemer, rest:rest,
@@ -21542,11 +21554,12 @@ function renderCompetentieRij(kind, c){
    Alle getallen komen uit functies die er al waren. Er wordt hier niets opnieuw uitgerekend, en dat
    is de enige reden dat dit scherm te vertrouwen is: een tweede telling naast voortgangCijfers()
    was elke keer de oorzaak als er twee getallen over hetzelfde ding op het scherm stonden. */
-function vgSomDek(m, nivs){
+function vgSomVeld(veld, nivs){
   var s = 0, i;
-  for(i = 0; i < nivs.length; i++) s += ((m && m.dek) || {})[nivs[i]] || 0;
+  for(i = 0; i < nivs.length; i++) s += (veld || {})[nivs[i]] || 0;
   return s;
 }
+function vgSomDek(m, nivs){ return vgSomVeld(m && m.dek, nivs); }
 // De weekmetingen op volgorde, met het bewezen deel opgeteld over de niveaus van je balk.
 function vgWeken(nivs){
   var ws = Object.keys(S.meting || {}).sort(), uit = [], i, m;
@@ -21554,6 +21567,9 @@ function vgWeken(nivs){
     m = S.meting[ws[i]];
     if(!m) continue;
     uit.push({week:ws[i], d:m.d, vast:vgSomDek(m, nivs), geoefend:m.geoefend || 0,
+              /* actief is null voor weken van vóór v23.37: die metingen kennen dekw niet. Null en
+                 niet nul, want nul zou een lijn naar beneden trekken die nooit gebeurd is. */
+              actief:m.dekw ? vgSomVeld(m.dekw, nivs) : null,
               pog:m.pog || 0, fout:m.fout || 0});
   }
   return uit;
@@ -21565,12 +21581,21 @@ function vgRij(naam, sub, pct, cijf, soort){
 }
 
 /* ---------- 1. Je week ---------- */
+/* v23.37: de aanwas van geoefende woorden, niet van bewezen vast. Stefan: "hoezo maar +4 woorden
+   erbij? dit zijn gegronde woorden denk ik, maar die gaan heel langzaam dus beter hier aantal
+   nieuwe woorden geoefend." Precies: bewezen vast vraagt vijf goede beurten over vijfentwintig
+   dagen, dus als weekcijfer meet dat vooral hoe lang je al bezig bent. Geoefend beweegt met wat je
+   die week echt gedaan hebt, en staat al in elke weekmeting. */
+function vgWeekGroei(wk){
+  if(wk.length < 2) return null;
+  return Math.max(0, wk[wk.length-1].geoefend - wk[wk.length-2].geoefend);
+}
 function vgWeekHtml(c){
   var t = today(), i, d, dagen = 0;
   for(i = 0; i < 7; i++){ d = addDays(t, -i); if((S.xp || {})[d] > 0) dagen++; }
   var wk = vgWeken(c.samen.nivs);
-  var groei = wk.length > 1 ? wk[wk.length-1].vast - wk[wk.length-2].vast : null;
-  var lessen = afgemaakt7(), tv = tijdVenster(7);
+  var groei = vgWeekGroei(wk);
+  var tv = tijdVenster(7);
   var h = "<div class='card'><span class='kicker'>"+ct("Je week","Your week")+" \ud83d\udc40</span>";
   /* De kop is de aanwas en niet de stand. De stand loopt altijd op, dus die kan niet zeggen of dit
      een goede week was; de aanwas wel. Zonder tweede weekmeting staat er geen aanwas, want een
@@ -21581,15 +21606,21 @@ function vgWeekHtml(c){
       "shows how much came in that week.")+"</p>";
   } else {
     h += "<div class='vgKop'><div class='vgGroot'>"+(groei >= 0 ? "+" : "")+groei+"</div>"+
-      "<div class='vgBij'>"+ct("woorden erbij deze week","words added this week")+"</div></div>";
+      "<div class='vgBij'>"+ct("woorden geoefend deze week","words practised this week")+"</div></div>";
   }
+  /* v23.37: minuten in plaats van lessen. Stefan: "lessen is hier beetje verwarrend, misschien hier
+     totale tijd per week?" Die tijd wordt al gemeten (uit de gaten tussen je antwoorden), hij stond
+     alleen nergens per week. Zonder gemeten tijd staat er niets in plaats van een nul. */
+  var minuten = tv.sec ? Math.round(tv.sec / 60) : null;
   h += "<div class='statgrid' style='margin-top:8px'>"+
     "<div class='stat'><b>"+dagen+"/7</b><span class='muted'>"+ct("dagen geoefend","days practised")+"</span></div>"+
-    "<div class='stat'><b>"+lessen+"</b><span class='muted'>"+ct("lessen afgemaakt","sessions finished")+"</span></div>"+
+    (minuten !== null
+      ? "<div class='stat'><b>"+minuten+"</b><span class='muted'>"+ct("minuten deze week","minutes this week")+"</span></div>"
+      : "<div class='stat'><b>"+afgemaakt7()+"</b><span class='muted'>"+ct("lessen afgemaakt","sessions finished")+"</span></div>")+
     "</div>";
   var los = [];
   los.push("\ud83d\udd25 " + streakNow() + " " + ct("dagen op rij","days in a row"));
-  if(tv.perDag !== null) los.push(tv.perDag + " " + ct("minuten per dag","minutes a day"));
+  los.push(afgemaakt7() + " " + ct("lessen","sessions"));
   if(c.fout7.pct !== null) los.push(c.fout7.pct + "% " + ct("fout","wrong"));
   h += "<p class='muted' style='margin:8px 0 0; font-size:.86rem'>"+los.join(" \u00b7 ")+"</p>";
   /* Delen gaat via de link die er al is. Geen tweede deelweg erbij: die link laat precies vijf
@@ -21652,21 +21683,31 @@ function vgDoelHtml(){
 
 /* ---------- 3. Wat je vasthoudt ---------- */
 function vgLijnHtml(c){
-  var wk = vgWeken(c.samen.nivs);
-  if(wk.length < 2) return "";
+  /* v23.37: de lijn tekent wat je actief bijhoudt, dezelfde maat als de kop erboven. Tot v23.36
+     tekende hij bewezen vast, en dan loopt er een lijn naar 4 onder een kop van 357. Weken van vóór
+     deze versie hebben dat veld niet, dus die doen niet mee; staan er nog geen twee, dan staat er
+     één regel in plaats van een grafiek. Geen lijn is beter dan een lijn in de verkeerde eenheid. */
+  var wk = vgWeken(c.samen.nivs).filter(function(x){ return x.actief !== null; });
+  if(wk.length < 2){
+    return "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
+      ct("De lijn hierbij komt zodra er twee weekmetingen liggen die dit getal bewaren. Tot v23.36 "+
+         "bewaarden ze alleen het bewezen deel, en dat is een ander getal dan hierboven staat.",
+         "The line here appears once two weekly measurements store this number. Until v23.36 they "+
+         "only stored the proven part, which is a different number than the one above.")+"</p>";
+  }
   /* De schaal loopt tot je eigen hoogste punt en niet tot de noemer. Eerst deed hij dat wel, en dan
      plakt een reeks van 20 naar 54 als een streep tegen de bodem: een groeigrafiek die geen groei
      laat zien. De noemer staat een regel hoger al in de balk; deze lijn beantwoordt een andere
      vraag, namelijk of het de goede kant op gaat. Het hoogste getal staat erbij, anders is een
      eigen schaal een truc. */
   var top = 0, i, x, y, d = "", pad = "";
-  for(i = 0; i < wk.length; i++) top = Math.max(top, wk[i].vast);
+  for(i = 0; i < wk.length; i++) top = Math.max(top, wk[i].actief);
   if(top <= 0) return "";
   top = Math.ceil(top * 1.15);
   var W = 600, H = 130, L = 8, R = 8, T = 10, B = 18;
   for(i = 0; i < wk.length; i++){
     x = L + (W - L - R) * (i / (wk.length - 1));
-    y = T + (H - T - B) * (1 - wk[i].vast / top);
+    y = T + (H - T - B) * (1 - wk[i].actief / top);
     d += (i ? " L " : "M ") + Math.round(x) + " " + Math.round(y);
     pad += (i ? " L " : "M ") + Math.round(x) + " " + Math.round(y);
   }
@@ -21674,14 +21715,14 @@ function vgLijnHtml(c){
   return "<svg viewBox='0 0 "+W+" "+H+"' style='width:100%; height:auto; display:block; margin:10px 0 2px'>"+
     "<path d='"+pad+"' fill='var(--accent-soft)'></path>"+
     "<path d='"+d+"' fill='none' stroke='var(--accent)' stroke-width='2.5'></path>"+
-    "<circle cx='"+Math.round(W - R)+"' cy='"+Math.round(T + (H-T-B) * (1 - wk[wk.length-1].vast/top))+
+    "<circle cx='"+Math.round(W - R)+"' cy='"+Math.round(T + (H-T-B) * (1 - wk[wk.length-1].actief/top))+
       "' r='4' fill='var(--accent)'></circle>"+
     "</svg>"+
     "<p class='muted' style='margin:0; font-size:.8rem'>"+
-      ct("Bewezen vast, van <b>"+wk[0].vast+"</b> op "+datumUit(wk[0].d)+" naar <b>"+
-         wk[wk.length-1].vast+"</b> nu, over "+wk.length+" weekmetingen.",
-         "Proven solid, from <b>"+wk[0].vast+"</b> on "+datumUit(wk[0].d)+" to <b>"+
-         wk[wk.length-1].vast+"</b> now, across "+wk.length+" weekly measurements.")+"</p>";
+      ct("Wat je actief bijhoudt, van <b>"+wk[0].actief+"</b> op "+datumUit(wk[0].d)+" naar <b>"+
+         wk[wk.length-1].actief+"</b> nu. De schaal loopt tot "+top+", je eigen hoogste punt.",
+         "What you actively keep up, from <b>"+wk[0].actief+"</b> on "+datumUit(wk[0].d)+" to <b>"+
+         wk[wk.length-1].actief+"</b> now. The scale runs to "+top+", your own highest point.")+"</p>";
 }
 
 /* ---------- 4. Onderweg ---------- */
@@ -21756,19 +21797,31 @@ function vgOnderwegHtml(c){
    geen bemoediging maar een leugen, en precies het soort getal waardoor je de rest van het scherm
    ook niet meer gelooft. Dus een drempel: minstens de helft van de weg naar het maanddoosje, en
    minstens twee thema's die dat halen, anders staat de kaart er niet. */
+/* v23.37: de kaart verdween als er niets boven de vijftig stond, en dus zag Stefan hem nooit
+   ("ik mis sterke punten"). De drempel was bedoeld tegen "sterk: 0%", maar het middel was erger dan
+   de kwaal. Nu staat er altijd waar je het verst bent, en de regel eronder zegt of dat al iets
+   voorstelt. */
 var VG_STERK = 50;
 function vgSterkHtml(){
   var z = zwakkePunten();
-  var sterk = z.themas.filter(function(x){ return x.kracht >= VG_STERK; }).slice(-3).reverse();
+  var sterk = z.themas.slice(-3).reverse();
   if(sterk.length < 2) return "";
+  var echtSterk = sterk[0] && sterk[0].kracht >= VG_STERK;
   return "<div class='card'><span class='kicker'>"+ct("Sterke punten","Strong points")+"</span>"+
     sterk.map(function(x){
       return vgRij(x.naam, ct(x.gehad+" van de "+x.n+" woorden gehad", x.gehad+" of "+x.n+" words seen"),
                    x.kracht, x.kracht+"%", "sterk");
     }).join("")+
     "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
-      ct("Deze hoef je even niet te doen. Dat is ook informatie.",
-         "You can leave these alone for now. That's information too.")+"</p></div>";
+      (echtSterk
+        ? ct("Het percentage is hoe ver deze woorden in je doosjes staan, niet hoeveel je er goed had. "+
+             "Deze hoef je even niet te doen.",
+             "The percentage is how far these words sit in your boxes, not how many you got right. "+
+             "You can leave these alone for now.")
+        : ct("Hier ben je het verst, maar nog niet ver: het percentage is hoe ver deze woorden in je "+
+             "doosjes staan, niet hoeveel je er goed had.",
+             "This is where you are furthest along, but not far yet: the percentage is how far these "+
+             "words sit in your boxes, not how many you got right."))+"</p></div>";
 }
 function vgZwakHtml(){
   var z = zwakkePunten();
@@ -21786,9 +21839,16 @@ function vgZwakHtml(){
   }
   var wankel = z.regels.filter(function(x){ return x.kracht < 60; });
   if(wankel.length >= 2){
+    /* v23.37: bij een regel stond een percentage, en dat leest als een score. "Ser of estar, 1 fout
+       van 7 beurten, 0%" terwijl je er zes goed had: die nul is het doosje, niet je uitslag. Eén
+       fout zet een regel terug naar doosje nul, en dat is precies wat er staat als je het doosje
+       noemt in plaats van een percentage. */
+    var dozen = GRAM_INTERVALS.length - 1;
     h += wankel.slice(0, 3).map(function(x){
-      return vgRij(x.naam, ct(x.fout+" fout van "+x.beurten+" beurten", x.fout+" wrong of "+x.beurten+" turns"),
-                   x.kracht, x.kracht+"%", "zwak");
+      var doos = Math.round(x.kracht / 100 * dozen);
+      return vgRij(x.naam,
+                   ct(x.fout+" fout van "+x.beurten+" beurten", x.fout+" wrong of "+x.beurten+" turns"),
+                   x.kracht, ct("doosje "+doos+"/"+dozen, "box "+doos+"/"+dozen), "zwak");
     }).join("");
   }
   /* Eerst de regels bouwen, dan pas de kaart. Andersom stond er een kaart met alleen een kopje en
@@ -21796,9 +21856,10 @@ function vgZwakHtml(){
   if(!h) return "";
   return "<div class='card'><span class='kicker'>"+ct("Zwakke plekken","Weak spots")+"</span>"+h+
     "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
-    ct("Van alle woorden die dit thema op jouw niveau heeft: hoe ver ze in de doosjes staan. Woorden "+
-       "die je nooit zag tellen voor nul. Niet op fouten geteld, want een thema dat je vaak oefent "+
-       "verzamelt vanzelf de meeste fouten.",
+    ct("Het percentage is geen score. Het is hoe ver de woorden van dit thema in je doosjes staan, "+
+       "van alle woorden die het thema op jouw niveau heeft; woorden die je nooit zag tellen voor "+
+       "nul. Niet op fouten geteld, want een thema dat je vaak oefent verzamelt vanzelf de meeste "+
+       "fouten.",
        "Of all the words this topic has at your level: how far they sit in the boxes. Words you never "+
        "saw count as zero. Not counted on mistakes: a topic you practise a lot collects the most.")+
     "</p></div>";
@@ -26760,49 +26821,12 @@ function renderStats(){
   var c = voortgangCijfers();
   var vast = c.stevig;
   var opweg = c.bijna;
-  var koersHtml = basisHtml(actief14) + "<h2>"+ct("Jouw ontwikkeling 📈","How you're doing 📈")+"</h2>";
-  if(actief14 === 0){
-    koersHtml += "<p class='muted'>"+ct("Nog geen activiteit in de afgelopen twee weken. Begin vandaag met 5 woordjes, dan staat hier morgen je koers.",
-      "No activity in the past two weeks. Start today with 5 words and your trajectory will be here tomorrow.")+"</p>";
-  } else {
-    /* v19.86b. Stefan: "ik vind de indicator belangrijker dan de doelstelling."
-       Het oordeel hing aan doel14: op hoeveel dagen je je XP-doel haalde. Dat maakt
-       van een gemiste dag een fout. Het hangt nu aan hoe vaak je terugkwam, want
-       dat is wat voorspelt of je ooit A1 uitkrijgt. Het dagdoel staat er nog, een
-       regel lager, als informatie in plaats van als vonnis. */
-    var perWeek = actief14 * 7 / Math.max(1, Math.min(14, venster));
-    var oordeel = perWeek >= 6 ? ct("Je bent er bijna dagelijks 💪","You're here almost daily 💪")
-      : perWeek >= TERUGKOM_PW ? ct("Je blijft terugkomen, en dat is het cijfer dat telt ✓","You keep coming back, and that's the number that counts ✓")
-      : perWeek >= 2 ? ct("Je komt terug, alleen wat onregelmatig. Eén korte sessie telt net zo goed mee.","You do come back, just irregularly. One short session counts just as much.")
-      : ct("Het is even stil geweest. Twee minuten vandaag zetten de teller weer aan.","It's been quiet for a bit. Two minutes today gets the counter going again.");
-    var doelNoemer = Math.min(14, venster);
-    koersHtml += "<p><b>"+oordeel+"</b><span class='muted'> · "+ct(actief14+" van de laatste "+doelNoemer+" dagen actief · dagdoel gehaald op "+doel14,
-        "active on "+actief14+" of the last "+doelNoemer+" days · daily goal reached on "+doel14)+"</span></p>"+
-      "<p class='muted' style='margin:6px 0'>"+
-      ct("Je bent met <b>"+c.geoefend+"</b> woorden bezig geweest: <b>"+vast+"</b> staan stevig, <b>"+opweg+"</b> zijn onderweg.",
-         "You've worked on <b>"+c.geoefend+"</b> words: <b>"+vast+"</b> are solid, <b>"+opweg+"</b> on their way.")+
-      (vast === 0 && c.geoefend > 0 ? ct(" Dat eerste getal blijft de eerste vier weken op nul staan, en dat hoort: stevig betekent vijf keer goed over vijfentwintig dagen. Kijk zolang naar het tweede.",
-         " That first number stays at zero for the first four weeks, and that's correct: solid means five correct answers across twenty-five days. Watch the second one meanwhile.") : "")+
-      ct(" Tempo: ongeveer "," Pace: about ")+getal1(tempo)+ct(" nieuwe woorden per dag"," new words a day")+
-      /* v22.10. Hier stond "het maximum is 15", en er stond 15,9 voor. Dat was geen afrondingsfout:
-         S.newIntro telt élk woord dat nieuw in je srs komt, ook uit de spellen en het boek, terwijl
-         die 15 alleen over je dagportie in de les ging. Een bovengrens die niet begrenst wat er
-         gemeten wordt, is geen bovengrens. Nu staat er wat het echt is, en het getal komt uit
-         nieuwPerDag() in plaats van uit een hardgecodeerde 15 die na elke tempowijziging weer
-         een leugen zou zijn. */
-      (actief14 ? ct(" ("+getal1(tempoActief)+" per actieve dag; je dagportie in de les is "+nieuwPerDag()+
-                     ", de rest komt uit spellen en het boek)",
-                     " ("+getal1(tempoActief)+" per active day; your daily lesson portion is "+nieuwPerDag()+
-                     ", the rest comes from games and the book)") : "")+".</p>";
-    /* v19.87: de band hangt aan stevige woorden per week, niet aan nieuwe woorden
-       per dag. Wie alleen herhaalt maakt nog steeds woorden stevig, dus die hoort
-       zijn schatting ook te zien. Vandaar: geen if op tempo meer. */
-    if(tempo === 0){
-      koersHtml += "<p class='muted'>"+ct("Je herhaalt vooral, en dat telt gewoon mee: herhalen is wat een woord stevig maakt.",
-        "You're mostly reviewing, and that counts: reviewing is what makes a word solid.")+"</p>";
-    }
-    koersHtml += bandHtml("A1");
-  }
+  /* v23.37: hier stonden twee dingen die de voortgangspagina al boven zich heeft staan. basisHtml()
+     tekende "Waar je staat" een tweede keer (Stefan: "kan weg en is dubbel"), en "Jouw ontwikkeling"
+     zette dezelfde getallen nog eens in een zin (Stefan: "dit voelt overbodig of verwarrend, denk
+     dat we dit al hebben"). Allebei weg. basisHtml() en bandHtml() blijven bestaan; ze worden alleen
+     hier niet meer aangeroepen. */
+  var koersHtml = "";
   // ---- foutpercentage-tegel + trendzin (28 juli, verving het oude opgetelde "fouten gelogd") ----
   /* v23.14. Hier werd de foutpercentage-tegel en de zin eronder opgebouwd. Allebei staan ze nu in
      de lange lijst, waar het getal ook een regel uitleg krijgt in plaats van alleen een label. */

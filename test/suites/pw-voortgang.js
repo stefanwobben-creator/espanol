@@ -110,7 +110,10 @@ const U = 'http://localhost:8321/espanol-stefan.html';
     const k = [...document.querySelectorAll('#voortgangCard .card')][0];
     return (k ? k.innerText : '').replace(/\s+/g, ' ');
   });
-  ok(/\+42/.test(week), 'de aanwas van de laatste twee weekmetingen staat er (+42)');
+  /* v23.37: de week telt geoefende woorden, niet bewezen vast. De fixture gaat van 150 naar 200
+     geoefend, dus +50. Bewezen vast ging van 78 naar 120; dat is wat hier eerst stond, en precies
+     de teller waarvan Stefan zei dat hij als weekcijfer niets zegt. */
+  ok(/\+50/.test(week), 'de aanwas is die van geoefende woorden (+50)');
   ok(/\/7/.test(week), 'met het aantal dagen dat je er was');
 
   console.log('\n-- sterk en zwak staan er één keer --');
