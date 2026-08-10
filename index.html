@@ -713,6 +713,22 @@
   /* v23.21: een woord in de leestekst is aan te tikken. Geen onderstreping en geen kleur, want dan
      wordt de bladzijde een veld met tweehonderd knoppen en leest niemand meer een verhaal. Alleen
      het woord dat je aantikt licht op. */
+  /* v23.34: la mezcla. Twee vakjes en een uitkomst, tussen de tapas en de dansen in. Gestippeld
+     omdat het geen kaart is maar een werkbank: hier gebeurt iets terwijl je bezig bent. */
+  .mezcla{border:1px dashed var(--border); border-radius:12px; padding:9px 10px; margin:10px 0 2px;
+          display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
+  .mezVak{width:42px; height:42px; border-radius:10px; background:#faf7f2; border:1px solid var(--border);
+          display:flex; align-items:center; justify-content:center; font-size:1.35rem; flex:0 0 42px;}
+  .mezVak.leeg{color:var(--muted); font-size:.78rem; font-weight:700;}
+  .mezOp{color:var(--muted); font-weight:800;}
+  .mezUit{font-size:.95rem; text-align:center;}
+  .mezUit b{display:block; font-size:1.05rem;}
+  /* elk deel op zijn eigen regel: zonder display:block plakte "nieuw!" tegen de vertaling aan
+     ("...die flamenco danstnieuw!") en dat leest als een fout in plaats van als een vondst. */
+  .mezUit span{display:block; color:var(--muted); font-size:.82rem;}
+  .mezNieuw{display:block; margin-top:2px; color:var(--accent); font-weight:700; font-size:.78rem;}
+  .mezWis{background:none; border:0; color:var(--muted); text-decoration:underline; cursor:pointer;
+          font-size:.8rem; padding:2px 4px;}
   /* v23.32: de compacte meetregel van de voortgangspagina. Naam links, balkje, getal rechts.
      Bewust smal: hier staan rijtjes van vijf en die moeten in een oogopslag te vergelijken zijn. */
   .vgMeet{display:grid; grid-template-columns:1fr 84px 62px; align-items:center; gap:10px;
@@ -1157,7 +1173,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.33";
+var APP_VERSIE = "v23.34";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14410,26 +14426,116 @@ function chispaSlaapHerstel(ms, pogingen){
 
    De namen staan met lidwoord ("las patatas bravas"), want zo leer je het geslacht mee. */
 var TAPAS = [
-  {id:"aceitunas",   e:"🫒",  es:"las aceitunas",              nl:"olijven",                  en:"olives"},
-  {id:"bravas",      e:"🥔",  es:"las patatas bravas",         nl:"pittige aardappeltjes",    en:"spicy potatoes"},
-  {id:"padron",      e:"🌶️", es:"los pimientos de padrón",    nl:"gepofte pepertjes",        en:"blistered peppers"},
-  {id:"sardinas",    e:"🐟",  es:"las sardinas",               nl:"sardientjes",              en:"sardines"},
-  {id:"pantomate",   e:"🍅",  es:"el pan con tomate",          nl:"brood met tomaat",         en:"bread with tomato"},
-  {id:"taco",        e:"🌮",  es:"el taco",                    nl:"taco",                     en:"taco"},
-  {id:"tortilla",    e:"🥚",  es:"la tortilla española",       nl:"aardappelomelet",          en:"potato omelette"},
-  {id:"gambas",      e:"🍤",  es:"las gambas al ajillo",       nl:"garnalen in knoflook",     en:"garlic prawns"},
-  {id:"jamon",       e:"🍖",  es:"el jamón ibérico",           nl:"ibericoham",               en:"iberico ham"},
-  {id:"manchego",    e:"🧀",  es:"el queso manchego",          nl:"manchegokaas",             en:"manchego cheese"},
-  {id:"calamares",   e:"🦑",  es:"los calamares",              nl:"inktvisringen",            en:"fried squid"},
-  {id:"champis",     e:"🍄",  es:"los champiñones al ajillo",  nl:"champignons in knoflook",  en:"garlic mushrooms"},
-  {id:"pulpo",       e:"🐙",  es:"el pulpo a la gallega",      nl:"octopus uit Galicië",      en:"Galician octopus"},
-  {id:"albondigas",  e:"🍡",  es:"las albóndigas",             nl:"gehaktballetjes",          en:"meatballs"},
-  {id:"croquetas",   e:"🥐",  es:"las croquetas de jamón",     nl:"hamkroketjes",             en:"ham croquettes"},
-  {id:"ensaladilla", e:"🥗",  es:"la ensaladilla rusa",        nl:"aardappelsalade",          en:"potato salad"},
-  {id:"boquerones",  e:"🐠",  es:"los boquerones en vinagre",  nl:"ansjovis in azijn",        en:"anchovies in vinegar"},
-  {id:"chorizo",     e:"🌭",  es:"el chorizo al vino",         nl:"chorizo in wijn",          en:"chorizo in wine"}
+  {id:"aceitunas", kern:"las aceitunas",   e:"🫒",  es:"las aceitunas",              nl:"olijven",                  en:"olives"},
+  {id:"bravas", kern:"las patatas",      e:"🥔",  es:"las patatas bravas",         nl:"pittige aardappeltjes",    en:"spicy potatoes"},
+  {id:"padron", kern:"los pimientos",      e:"🌶️", es:"los pimientos de padrón",    nl:"gepofte pepertjes",        en:"blistered peppers"},
+  {id:"sardinas", kern:"las sardinas",    e:"🐟",  es:"las sardinas",               nl:"sardientjes",              en:"sardines"},
+  {id:"pantomate", kern:"el pan",   e:"🍅",  es:"el pan con tomate",          nl:"brood met tomaat",         en:"bread with tomato"},
+  {id:"taco", kern:"el taco",        e:"🌮",  es:"el taco",                    nl:"taco",                     en:"taco"},
+  {id:"tortilla", kern:"la tortilla",    e:"🥚",  es:"la tortilla española",       nl:"aardappelomelet",          en:"potato omelette"},
+  {id:"gambas", kern:"las gambas",      e:"🍤",  es:"las gambas al ajillo",       nl:"garnalen in knoflook",     en:"garlic prawns"},
+  {id:"jamon", kern:"el jamón",       e:"🍖",  es:"el jamón ibérico",           nl:"ibericoham",               en:"iberico ham"},
+  {id:"manchego", kern:"el queso",    e:"🧀",  es:"el queso manchego",          nl:"manchegokaas",             en:"manchego cheese"},
+  {id:"calamares", kern:"los calamares",   e:"🦑",  es:"los calamares",              nl:"inktvisringen",            en:"fried squid"},
+  {id:"champis", kern:"los champiñones",     e:"🍄",  es:"los champiñones al ajillo",  nl:"champignons in knoflook",  en:"garlic mushrooms"},
+  {id:"pulpo", kern:"el pulpo",       e:"🐙",  es:"el pulpo a la gallega",      nl:"octopus uit Galicië",      en:"Galician octopus"},
+  {id:"albondigas", kern:"las albóndigas",  e:"🍡",  es:"las albóndigas",             nl:"gehaktballetjes",          en:"meatballs"},
+  {id:"croquetas", kern:"las croquetas",   e:"🥐",  es:"las croquetas de jamón",     nl:"hamkroketjes",             en:"ham croquettes"},
+  {id:"ensaladilla", kern:"la ensaladilla", e:"🥗",  es:"la ensaladilla rusa",        nl:"aardappelsalade",          en:"potato salad"},
+  {id:"boquerones", kern:"los boquerones",  e:"🐠",  es:"los boquerones en vinagre",  nl:"ansjovis in azijn",        en:"anchovies in vinegar"},
+  {id:"chorizo", kern:"el chorizo",     e:"🌭",  es:"el chorizo al vino",         nl:"chorizo in wijn",          en:"chorizo in wine"}
 ];
 function tapaVanDaag(){ return TAPAS[dayHash("tapa") % TAPAS.length]; }
+
+/* ================= LA MEZCLA (v23.34) =================
+   Een tapa plus een dans wordt een naam, en die naam buigt. Het lidwoord van de tapa zegt al welk
+   geslacht en welk getal het is, dus de tabel hieronder is acht stammen maal vier uitgangen en niet
+   honderdvierenveertig regels.
+
+   De woorden zijn echt: salsero, tanguero, cumbiambero, bachatero, merenguero, reggaetonero,
+   flamenco en tapatío (van de jarabe tapatío). Verzonnen vormen zouden hier iets fouts aanleren, en
+   dat is precies wat een leerapp niet mag doen met iets dat op een grap lijkt. */
+var MEZCLA_ADJ = {
+  salsa:     ["salsero", "salsera", "salseros", "salseras"],
+  flamenco:  ["flamenco", "flamenca", "flamencos", "flamencas"],
+  cumbia:    ["cumbiambero", "cumbiambera", "cumbiamberos", "cumbiamberas"],
+  merengue:  ["merenguero", "merenguera", "merengueros", "merengueras"],
+  bachata:   ["bachatero", "bachatera", "bachateros", "bachateras"],
+  tango:     ["tanguero", "tanguera", "tangueros", "tangueras"],
+  reggaeton: ["reggaetonero", "reggaetonera", "reggaetoneros", "reggaetoneras"],
+  jarabe:    ["tapat\u00edo", "tapat\u00eda", "tapat\u00edos", "tapat\u00edas"]
+};
+// el = 0, la = 1, los = 2, las = 3. Het lidwoord draagt allebei de gegevens die we nodig hebben.
+function mezclaVorm(kern){
+  var w = String(kern || "").split(" ")[0].toLowerCase();
+  if(w === "la") return 1;
+  if(w === "los") return 2;
+  if(w === "las") return 3;
+  return 0;
+}
+function mezclaMaak(tapaId, baileId){
+  var tp = TAPAS.filter(function(x){ return x.id === tapaId; })[0];
+  var bl = BAILES.filter(function(x){ return x.id === baileId; })[0];
+  if(!tp || !bl) return null;
+  var adj = MEZCLA_ADJ[bl.id];
+  if(!adj) return null;
+  var kern = tp.kern || tp.es;
+  return {id:tp.id + "|" + bl.id, tapa:tp, baile:bl,
+          es:kern + " " + adj[mezclaVorm(kern)],
+          nl:ct(tp.nl, tp.en) + " " + ct("die " + bl.nl.replace(/^de /, "") + " danst",
+                                         "dancing the " + bl.nl.replace(/^de /, ""))};
+}
+function mezclaState(){ if(!S.mezcla) S.mezcla = []; return S.mezcla; }
+function mezclaTotaal(){ return TAPAS.length * BAILES.length; }
+// de twee vakjes leven alleen in dit tabblad: het is een handeling, geen bezit
+var mezclaTapa = null, mezclaBaile = null;
+/* Aantikken vult het vakje, en dat is alles wat deze functie doet. De tapa geven en het dansen
+   gebeuren gewoon in hun eigen afhandeling; die zijn niet aangeraakt. Zo blijft de mezcla iets wat
+   ontstaat terwijl je bezig bent, en niet iets waarvoor je eerst een stand moet klaarzetten. */
+function mezclaKies(soort, id){
+  if(soort === "tapa") mezclaTapa = id; else mezclaBaile = id;
+  var m = (mezclaTapa && mezclaBaile) ? mezclaMaak(mezclaTapa, mezclaBaile) : null;
+  var nieuw = false;
+  if(m && mezclaState().indexOf(m.id) < 0){ mezclaState().push(m.id); nieuw = true; try { persist(); } catch(e){} }
+  mezclaTeken(nieuw);
+  if(m) try { chispaSay({es:"\u00a1" + m.es + "!", nl:m.nl, en:m.nl}); } catch(e){}
+  return m;
+}
+function mezclaWis(){ mezclaTapa = null; mezclaBaile = null; mezclaTeken(false); }
+function mezclaHtml(nieuw){
+  var tp = mezclaTapa ? TAPAS.filter(function(x){ return x.id === mezclaTapa; })[0] : null;
+  var bl = mezclaBaile ? BAILES.filter(function(x){ return x.id === mezclaBaile; })[0] : null;
+  var m = (tp && bl) ? mezclaMaak(tp.id, bl.id) : null;
+  var vak = function(x){
+    return x ? "<span class='mezVak'>"+x.e+"</span>"
+             : "<span class='mezVak leeg'>?</span>";
+  };
+  return "<div class='mezcla' id='mezclaStrip'>"+
+    vak(tp)+"<span class='mezOp'>+</span>"+vak(bl)+"<span class='mezOp'>=</span>"+
+    (m ? "<span class='mezUit'><b class='es'>"+m.es+"</b><span>"+m.nl+"</span>"+
+           (nieuw ? "<span class='mezNieuw'>"+ct("nieuw!","new!")+"</span>" : "")+"</span>"+
+         "<button class='mezWis' id='btnMezWis' type='button'>"+ct("opnieuw","again")+"</button>"
+       : "<span class='mezUit'><span>"+
+           ct("Tik een tapa en een dans aan","Tap a tapa and a dance")+"</span></span>")+
+    "</div>"+
+    "<p class='zorglabel' id='mezclaTel'>"+
+      ct("Je vond "+mezclaState().length+" van de "+mezclaTotaal()+" mezclas",
+         "You found "+mezclaState().length+" of "+mezclaTotaal()+" mezclas")+"</p>";
+}
+/* Alleen de strip opnieuw tekenen en niet de hele kaart. Een hertekening van renderPet zou de
+   tapa-rij en de dansrij laten knipperen terwijl er niets aan veranderd is, en dat leest als een
+   foutje op precies het moment dat er iets leuks gebeurt. */
+function mezclaTeken(nieuw){
+  var strip = document.getElementById("mezclaStrip");
+  if(!strip || !strip.parentNode) return;
+  var tel = document.getElementById("mezclaTel");
+  var wrap = document.createElement("div");
+  wrap.innerHTML = mezclaHtml(nieuw);
+  strip.parentNode.replaceChild(wrap.firstChild, strip);
+  if(tel && tel.parentNode) tel.parentNode.replaceChild(wrap.lastChild, tel);
+  var bw = document.getElementById("btnMezWis");
+  if(bw) bw.onclick = mezclaWis;
+}
 /* v19.72 - welke tapa Chispa nu krijgt.
    Stefan: "nu krijg ik alleen maar champginos." Terecht, en het was geen smaakkwestie maar een
    ontwerpfout: tapaGeven() gaf altijd tapaVanDaag(), dus je kon er hoogstens een per dag ontdekken.
@@ -14572,6 +14678,9 @@ function tapaMenuWire(el){
       var tp = TAPAS.filter(function(x){ return x.id === b.getAttribute("data-tapa"); })[0];
       if(!tp) return;
       feedPet(tp);   // regelt zelf de lege-voorraadmelding, het slapen, en het opnieuw tekenen
+      /* v23.34: en het vult het linkervakje van de mezcla. Na feedPet, want die kan de kaart
+         opnieuw tekenen; dan staat er weer een verse strip om in te vullen. */
+      try { mezclaKies("tapa", tp.id); } catch(e){}
     };
   });
 }
@@ -15505,6 +15614,8 @@ function renderPet(){
     "</div>"+
     "</div>";
   chVerzamelWire(el);
+  var bmw = document.getElementById("btnMezWis");
+  if(bmw) bmw.onclick = mezclaWis;
   var bfi = document.getElementById("btnFiesta");
   if(bfi) bfi.onclick = function(){ chispaFiesta(); };
   var bs = document.getElementById("btnSerenade");
@@ -15681,6 +15792,7 @@ function chVerzamelHtml(){
            "Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one to feed it to her")+
         " \u00b7 \ud83e\uded2 "+(S.tapas || 0)+"</p>"+
     "</div>"+
+    mezclaHtml(false)+
     "<div class='vitrinevak'>"+
       "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del d\u00eda</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>\u00b7 "+bd.land+"</span></p>"+
       "<div class='bailerij' id='baileRij'>"+bailHtml+"</div>"+
@@ -15696,6 +15808,7 @@ function chVerzamelWire(el){
       var id = bb.getAttribute("data-baile");
       var bl = BAILES.filter(function(x){ return x.id === id; })[0];
       if(bl) chispaBaila(bl);
+      try { mezclaKies("baile", id); } catch(e){}
     };
   });
   /* v19.81: muziek aan of uit. Stefan vroeg om muziek bij de dansjes, maar iemand die in de trein
