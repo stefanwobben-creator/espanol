@@ -63,7 +63,11 @@ const { chromium } = require('playwright');
   ok(bouw.pos.every((p) => p > -1), 'alle vier de kaarten staan in tab-chispa (' + bouw.pos.join(',') + ')');
   ok(bouw.pos[0] < bouw.pos[1] && bouw.pos[1] < bouw.pos[2] && bouw.pos[2] < bouw.pos[3],
     'in de volgorde: het dier, haar groei, de vitrine, haar kamer');
-  ok(bouw.gevuld.every(Boolean), 'en ze zijn alle vier echt gevuld (' + bouw.gevuld.join(',') + ')');
+  /* v23.33: de vitrinekaart is leeg sinds de twee verzamelingen bij Chispa zelf staan. Hij blijft
+     als element bestaan (schermen en suites verwijzen ernaar) maar hij toont niets. */
+  ok(bouw.gevuld[0] && bouw.gevuld[1] && bouw.gevuld[3],
+    'het dier, haar groei en haar kamer zijn gevuld (' + bouw.gevuld.join(',') + ')');
+  ok(!bouw.gevuld[2], 'en de vitrinekaart is leeg, want zijn inhoud staat nu bij haar');
   ok(!bouw.shop, 'de oude verzamelkaart #shopCard bestaat niet meer');
   ok(bouw.shopFn === 'undefined', 'en renderShop() is helemaal opgeruimd, geen slapende tweede winkel');
 
@@ -75,7 +79,7 @@ const { chromium } = require('playwright');
       naam: c.querySelectorAll('.petname').length,
       stemming: c.querySelectorAll('.petmood').length,
       wens: c.querySelectorAll('#wensRij').length,
-      knoppen: ['btnFeed', 'btnFiesta', 'btnSerenade', 'btnCadeau'].filter((i) => !!c.querySelector('#' + i)).length,
+      knoppen: ['btnFiesta', 'btnSerenade', 'btnCadeau'].filter((i) => !!c.querySelector('#' + i)).length,
       tapachips: c.querySelectorAll('.tapachip').length,
       bailechips: c.querySelectorAll('.bailechip').length,
       shopitems: c.querySelectorAll('.shopitem').length,
@@ -84,8 +88,14 @@ const { chromium } = require('playwright');
     };
   });
   ok(pet.dier >= 1 && pet.naam === 1 && pet.stemming === 1 && pet.wens === 1, 'kaart 1: het dier, haar naam, stemming en wens');
-  ok(pet.knoppen === 4, 'kaart 1: de vier dingen die je met haar kunt doen (' + pet.knoppen + ')');
-  ok(pet.tapachips === 0 && pet.bailechips === 0, 'kaart 1: geen verzamelingen meer tussen haar voeten');
+  ok(pet.knoppen === 3, 'kaart 1: de drie dingen die je met haar kunt doen (' + pet.knoppen + ')');
+  /* v23.33 draait v19.70 op dit punt om, en dat is een besluit en geen slordigheid. Toen zijn de
+     verzamelingen bij Chispa weggehaald omdat er tussen haar voeten ook een kledingkast, een kamer
+     en een straattaalles stonden; dat blijft weg. Maar de tapas en de dansen zijn precies de twee
+     dingen die je mét haar doet, en die stonden twee kaarten lager dan het dier waar ze over gaan.
+     Wat deze suite nu bewaakt is de grens die er echt toe doet: doen mag hier, bezit en beheer niet. */
+  ok(pet.tapachips >= 12 && pet.bailechips >= 4,
+     'kaart 1: de tapas en de dansen staan bij haar, want daar geef je ze (' + pet.tapachips + '/' + pet.bailechips + ')');
   ok(pet.shopitems === 0 && pet.badge === 0, 'kaart 1: geen kledingkast, geen kamer, geen tapateller');
   ok(pet.jerga === 0, 'kaart 1: geen straattaalles; dat is geen onderdeel van wie ze is');
 
@@ -104,9 +114,10 @@ const { chromium } = require('playwright');
   ok(groei.wear > 0, 'kaart 2: de kledingkast staat hier (' + groei.wear + ' te dragen)');
   ok(groei.rincon === 0, 'kaart 2: en de kamer nadrukkelijk niet');
 
-  // --- 4. Kaart 3 is de vitrine: twee verzamelingen, twee vakken, twee tellers ---
+  // --- 4. De verzamelingen: twee vakken, twee tellers, nu in kaart 1 ---
   const vit = await page.evaluate(() => {
-    const c = document.getElementById('vitrineCard');
+    const c = document.getElementById('petCard');
+    const leeg = document.getElementById('vitrineCard');
     return {
       vakken: c.querySelectorAll('.vitrinevak').length,
       tapas: c.querySelectorAll('.tapachip').length,
@@ -114,14 +125,29 @@ const { chromium } = require('playwright');
       tapaTel: !!c.querySelector('#tapaTel'),
       baileTel: !!c.querySelector('#baileTel'),
       hoy: c.querySelectorAll('.tapachip.hoy').length + c.querySelectorAll('.bailechip.hoy').length,
-      shopitems: c.querySelectorAll('.shopitem').length
+      shopitems: c.querySelectorAll('.shopitem').length,
+      vitrineLeeg: !!leeg && leeg.classList.contains('hidden') && leeg.innerText.trim() === '',
+      teller: (c.querySelector('#tapaTel') || {}).innerText || ''
     };
   });
-  ok(vit.vakken === 2, 'kaart 3: twee vakken naast elkaar (' + vit.vakken + ')');
-  ok(vit.tapas >= 12 && vit.bailes >= 4, 'kaart 3: alle tapas en alle dansen staan er (' + vit.tapas + '/' + vit.bailes + ')');
-  ok(vit.tapaTel && vit.baileTel, 'kaart 3: elke verzameling heeft een eigen teller');
-  ok(vit.hoy === 2, 'kaart 3: de tapa én de dans van vandaag zijn aangewezen (' + vit.hoy + ')');
-  ok(vit.shopitems === 0, 'kaart 3: hier valt niets te kopen, alleen te kijken');
+  ok(vit.vakken === 2, 'twee vakken onder elkaar (' + vit.vakken + ')');
+  ok(vit.tapas >= 12 && vit.bailes >= 4, 'alle tapas en alle dansen staan er (' + vit.tapas + '/' + vit.bailes + ')');
+  ok(vit.tapaTel && vit.baileTel, 'elke verzameling heeft een eigen teller');
+  ok(vit.hoy === 2, 'de tapa én de dans van vandaag zijn aangewezen (' + vit.hoy + ')');
+  ok(vit.shopitems === 0, 'hier valt niets te kopen, alleen te geven');
+  ok(vit.vitrineLeeg, 'de oude vitrinekaart is leeg en uit beeld, niet blijven staan met een kop erboven');
+  /* v23.33: op Stefans scherm stond "Chispa proefde 29 van de 18 tapas". S.tapaMenu bewaart ids en
+     TAPAS is sindsdien veranderd; de teller telde alles wat er ooit in kwam. Dezelfde fout als de
+     luisterteller van v22.10, en hij ziet er als een prestatie uit, dus je merkt hem nooit. */
+  const gek = await page.evaluate(() => {
+    S.tapaMenu = (S.tapaMenu || []).concat(['bestaat-niet-1', 'bestaat-niet-2']);
+    renderPet();
+    const t = (document.getElementById('tapaTel') || {}).innerText || '';
+    const m = t.match(/(\d+)\D+(\d+)/);
+    return { tekst: t, gehad: m ? +m[1] : -1, totaal: m ? +m[2] : -1, tapas: TAPAS.length };
+  });
+  ok(gek.totaal === gek.tapas && gek.gehad <= gek.totaal,
+     'de teller kan nooit boven zijn eigen noemer uitkomen (' + gek.tekst.slice(0, 60) + ')');
 
   // --- 5. Kaart 4 is de kamer ---
   const kamer = await page.evaluate(() => {
@@ -141,12 +167,12 @@ const { chromium } = require('playwright');
   const samen = await page.evaluate(() => {
     S.tapaMenu = [];
     renderChispaPagina();
-    const voor = document.querySelectorAll('#vitrineCard .tapachip.gehad').length;
+    const voor = document.querySelectorAll('#petCard .tapachip.gehad').length;
     S.tapaMenu = [TAPAS[0].id, TAPAS[1].id, TAPAS[2].id];
     renderChispaPagina();
-    return { voor: voor, na: document.querySelectorAll('#vitrineCard .tapachip.gehad').length };
+    return { voor: voor, na: document.querySelectorAll('#petCard .tapachip.gehad').length };
   });
-  ok(samen.voor === 0 && samen.na === 3, 'een gegroeide verzameling is meteen zichtbaar in de vitrine (' + samen.voor + ' -> ' + samen.na + ')');
+  ok(samen.voor === 0 && samen.na === 3, 'een gegroeide verzameling is meteen zichtbaar (' + samen.voor + ' -> ' + samen.na + ')');
 
   // --- 7. Kleren aantrekken werkt nog en tekent Chispa opnieuw ---
   const kleding = await page.evaluate(() => {

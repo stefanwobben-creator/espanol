@@ -1157,7 +1157,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.32";
+var APP_VERSIE = "v23.33";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14510,6 +14510,17 @@ function tapaFinaleTonen(){
   } catch(e){}
 }
 function tapaMenuState(){ if(!S.tapaMenu) S.tapaMenu = []; return S.tapaMenu; }
+/* v23.33: "Chispa proefde 29 van de 18 tapas". Dezelfde fout als de luisterteller van v22.10:
+   S.tapaMenu bewaart ids, TAPAS is sinds die ids veranderd, en de teller telde alles wat er ooit in
+   kwam. Een sleutel die geen tapa meer is telt niet mee. Bewust geen migratie die S.tapaMenu
+   opschoont: dan hangt het van het moment van openen af of iemands geschiedenis nog compleet is, en
+   dit is een teller, geen archief. */
+function tapaMenuGehad(){
+  var m = tapaMenuState(), bekend = {}, i, n = 0;
+  for(i = 0; i < TAPAS.length; i++) bekend[TAPAS[i].id] = 1;
+  for(i = 0; i < m.length; i++) if(bekend[m[i]]) n++;
+  return n;
+}
 function tapaMenuKent(id){ return tapaMenuState().indexOf(id) >= 0; }
 function tapaMenuNoteer(id){
   var m = tapaMenuState();
@@ -15482,15 +15493,18 @@ function renderPet(){
     "<p class='wensrij"+(wensOk?" vervuld":"")+"' id='wensRij'>"+wens.e+" <span class='es'>"+wens.es+"</span>"+
       (wensOk ? " \u2713" : " <span class='muted' style='font-weight:400'>\u00b7 "+ct(wens.nl, wens.en)+"</span>")+"</p>"+
     "<p class='muted' style='font-size:.82rem; margin:8px 0 8px; text-align:center'>"+deco.txt+"</p>"+
+    /* v23.33: de tapas en de dansen staan hier, direct onder haar. De knop "Geef een tapa" is weg:
+       sinds v19.81 is een tapa aantikken al geven, en een knop ernaast die hetzelfde doet maar de
+       keuze voor je maakt is de slechtere van de twee. Hoeveel tapas je hebt staat nu bij de rij
+       waar je ze uitgeeft. */
+    chVerzamelHtml()+
     "<div class='row center'>"+
-    "<button class='primary' id='btnFeed' "+((S.tapas||0)<1?"disabled style='opacity:.5'":"")+">"+(slaapt?ct("Stil een tapa neerzetten ","Quietly leave a tapa "):ct("Geef een tapa ","Give a tapa "))+"\ud83e\uded2 "+(S.tapas||0)+"</button>"+
     "<button class='ghost' id='btnFiesta'>\ud83c\udf89 \u00a1Fiesta!</button>"+
     "<button class='ghost' id='btnSerenade'>\ud83c\udfb6 Serenade</button>"+
     "<button class='ghost' id='btnCadeau' "+(cadeauGehad?"disabled style='opacity:.5'":"")+">\ud83c\udf81 "+(cadeauGehad?ct("Morgen weer","Back tomorrow"):ct("Dagcadeautje","Daily gift"))+"</button>"+
     "</div>"+
     "</div>";
-  var b = document.getElementById("btnFeed");
-  if(b) b.onclick = feedPet;
+  chVerzamelWire(el);
   var bfi = document.getElementById("btnFiesta");
   if(bfi) bfi.onclick = function(){ chispaFiesta(); };
   var bs = document.getElementById("btnSerenade");
@@ -15641,11 +15655,13 @@ function chMuziekTitel(){
                       : ct("Tik om de muziek uit te zetten", "Tap to turn the music off");
 }
 
-function renderVitrine(){
-  var el = document.getElementById("vitrineCard");
-  if(!el) return;
+/* v23.33: de twee verzamelingen staan nu bij Chispa zelf, want daar geef je ze aan. Ze staan hier
+   als eigen functie zodat er precies één versie van is: hij werd uit de vitrinekaart gehaald en niet
+   overgeschreven. De plaquette gaat mee, zonder de knop "Kijk de ceremonie terug" (Stefans verzoek);
+   de plaquette zelf blijft, want die is het bewijs en niet de herhaling. */
+function chVerzamelHtml(){
   var tapaHoy = tapaVolgende();
-  var tapaGehad = tapaMenuState().length;
+  var tapaGehad = tapaMenuGehad();
   var tapaKlaar = tapaAllemaal();
   var bd = bailePorDia();
   var bekend = baileState();
@@ -15654,16 +15670,16 @@ function renderVitrine(){
     bailHtml += "<button class='bailechip"+(b.id===bd.id?" hoy":"")+(bekend.indexOf(b.id)>=0?" gehad":"")+"' data-baile='"+b.id+"' title='"+b.land+"'>"+
       b.e+" <span class='es'>"+b.es+"</span></button>";
   });
-  el.innerHTML = "<h2>"+ct("De vitrine","The display case")+" \ud83c\udf7d\ufe0f</h2>"+
-    "<p class='muted' style='margin:0 0 12px'>"+ct("Twee verzamelingen die alleen maar kunnen groeien. Wegblijven kost je hier niets.","Two collections that can only grow. Staying away never costs you anything here.")+"</p>"+
-    "<div class='vitrinevak'>"+
+  return "<div class='vitrinevak'>"+
       (S.tapaFinale ? "<div class='plaquette' id='tapaPlaquette'><b><span class='es'>El Gran Men\u00fa</span></b>"+
-        "<span>"+ct("alle "+TAPAS.length+" tapas geproefd \u00b7 ","all "+TAPAS.length+" tapas tasted \u00b7 ")+S.tapaFinale+"</span>"+
-        "<button class='ghost' id='btnFinaleTerug'>"+ct("Kijk de ceremonie terug","Watch the ceremony again")+"</button></div>" : "")+
+        "<span>"+ct("alle "+TAPAS.length+" tapas geproefd \u00b7 ","all "+TAPAS.length+" tapas tasted \u00b7 ")+S.tapaFinale+"</span></div>" : "")+
       "<p class='bailehoy' id='tapaHoy'><span class='es'>"+(tapaKlaar ? "La tapa del d\u00eda" : "La pr\u00f3xima tapa")+"</span>: "+tapaHoy.e+" <span class='es'>"+tapaHoy.es+"</span> <span class='muted'>\u00b7 "+ct(tapaHoy.nl, tapaHoy.en)+
         (tapaKlaar ? "" : " \u00b7 "+ct("na je volgende les","after your next session"))+"</span></p>"+
       tapaMenuHtml()+
-      "<p class='zorglabel' id='tapaTel'>"+ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas \u00b7 tik er een aan om hem te geven","Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one to feed it to her")+"</p>"+
+      "<p class='zorglabel' id='tapaTel'>"+
+        ct("Chispa proefde "+tapaGehad+" van de "+TAPAS.length+" tapas \u00b7 tik er een aan om hem te geven",
+           "Chispa has tasted "+tapaGehad+" of "+TAPAS.length+" tapas \u00b7 tap one to feed it to her")+
+        " \u00b7 \ud83e\uded2 "+(S.tapas || 0)+"</p>"+
     "</div>"+
     "<div class='vitrinevak'>"+
       "<p class='bailehoy' id='baileHoy'><span class='es'>El baile del d\u00eda</span>: <span class='es'>"+bd.es+"</span> <span class='muted'>\u00b7 "+bd.land+"</span></p>"+
@@ -15671,9 +15687,10 @@ function renderVitrine(){
       "<p class='zorglabel' id='baileTel'>"+ct("Je kent "+bekend.length+" van de "+BAILES.length+" dansen \u00b7 tik er een aan","You know "+bekend.length+" of "+BAILES.length+" dances \u00b7 tap one")+
         " <button class='muziekchip"+(S.chispaStil?" stil":"")+"' id='btnChMuziek' type='button' title='"+chMuziekTitel()+"'>"+chMuziekLabel()+"</button></p>"+
     "</div>";
+}
+function chVerzamelWire(el){
+  if(!el) return;
   tapaMenuWire(el);
-  var bt = document.getElementById("btnFinaleTerug");
-  if(bt) bt.onclick = function(){ tapaFinaleTonen(); };
   el.querySelectorAll("button.bailechip").forEach(function(bb){
     bb.onclick = function(){
       var id = bb.getAttribute("data-baile");
@@ -15694,6 +15711,15 @@ function renderVitrine(){
     mz.title = chMuziekTitel();
     mz.className = "muziekchip" + (S.chispaStil ? " stil" : "");
   };
+}
+/* De vitrinekaart is leeg sinds de twee rijen naar boven zijn gegaan. Hij blijft als element staan
+   (schermen en suites verwijzen ernaar) maar hij toont niets meer en gaat uit beeld. Een lege kaart
+   met een kop erboven is erger dan geen kaart. */
+function renderVitrine(){
+  var el = document.getElementById("vitrineCard");
+  if(!el) return;
+  el.innerHTML = "";
+  el.classList.add("hidden");
 }
 
 /* kaart 4 - haar kamer. */

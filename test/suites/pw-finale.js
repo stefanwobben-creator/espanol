@@ -96,40 +96,32 @@ const { chromium } = require('playwright');
     const p = document.getElementById('tapaPlaquette');
     return {
       erIs: !!p,
-      inVitrine: !!(p && p.closest('#vitrineCard')),
+      inVitrine: !!(p && p.closest('#petCard')),   // v23.33: de plaquette staat bij Chispa zelf
       tekst: p ? p.innerText : '',
       datum: p ? p.innerText.indexOf(S.tapaFinale) !== -1 : false,
       knop: !!document.getElementById('btnFinaleTerug')
     };
   });
-  ok(plaq.erIs && plaq.inVitrine, 'de plaquette hangt in de vitrine, waar de verzameling staat');
+  ok(plaq.erIs && plaq.inVitrine, 'de plaquette staat bij Chispa, waar de verzameling staat');
   ok(/Gran Men/i.test(plaq.tekst), 'met dezelfde naam als de ceremonie');
   ok(plaq.datum, 'en de datum waarop je het afmaakte staat erop');
-  ok(plaq.knop, 'er zit een knop bij om de ceremonie terug te kijken');
+  /* v23.33, op Stefans verzoek: de knop "Kijk de ceremonie terug" is weg. De plaquette blijft, want
+     die is het bewijs; de herhaling was iets anders. Een ceremonie die je op afroep kunt herhalen is
+     na de tweede keer geen ceremonie meer, en de datum erop doet het werk. */
+  ok(!plaq.knop, 'en er zit geen knop meer bij om de ceremonie te herhalen');
 
-  // --- 4. Terugkijken kan, en verandert niets aan je stand ---
-  await page.click('#btnFinaleTerug');
-  await page.waitForTimeout(600);
-  const terug = await page.evaluate(() => {
-    const w = document.getElementById('finaleWrap');
-    return { zichtbaar: !!(w && w.getClientRects().length > 0), datum: S.tapaFinale,
-             tapas: w ? w.querySelectorAll('.finaletapa').length : 0 };
-  });
-  ok(terug.zichtbaar, 'uitgespeeld betekent niet weg: je kunt hem terugkijken');
-  ok(terug.tapas === bijna.n, 'met dezelfde achttien tapas (' + terug.tapas + ')');
-  ok(terug.datum === laatste.datum, 'en de oorspronkelijke datum blijft staan, niet die van vandaag');
-
-  await page.click('#btnFinaleSluit');
-  await page.waitForTimeout(400);
+  // --- 4. De stand blijft staan, ook zonder herhaling ---
   const weg = await page.evaluate(() => {
     const w = document.getElementById('finaleWrap');
     return { dicht: !(w && w.getClientRects().length > 0),
              chispa: !document.getElementById('tab-chispa').classList.contains('hidden'),
-             chips: document.querySelectorAll('#vitrineCard .tapachip.gehad').length };
+             datum: S.tapaFinale,
+             chips: document.querySelectorAll('#petCard .tapachip.gehad').length };
   });
-  ok(weg.dicht, 'de knop doet hem weer dicht');
-  ok(weg.chispa, 'en je staat weer op Chispa\'s pagina');
-  ok(weg.chips === bijna.n, 'de vitrine staat vol (' + weg.chips + ')');
+  ok(weg.dicht, 'de ceremonie staat niet opnieuw open');
+  ok(weg.chispa, 'je staat op Chispa\'s pagina');
+  ok(weg.datum === laatste.datum, 'de oorspronkelijke datum blijft staan, niet die van vandaag');
+  ok(weg.chips === bijna.n, 'en de verzameling staat vol (' + weg.chips + ')');
 
   // --- 5. Het scherm spreekt de taal van het profiel ---
   const taal = await page.evaluate(() => {
