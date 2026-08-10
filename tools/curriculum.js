@@ -434,6 +434,32 @@ async function keurZinnen(items, motor) {
   });
 }
 
+/* Dubbele opties zijn mechanisch, dus repareren we ze mechanisch. Zie de kop van
+   patch-toetspoort.py: het model erop aanspreken maakte het twee nachten op rij erger.
+
+   Exacte tekst, niet accentloos: comia tegenover comía is hier een geldige vraag en die moet blijven
+   kunnen. c verschuift mee naar de kopie die blijft staan, want anders wijst het juiste antwoord na
+   het opschonen naar de verkeerde optie, en dat is erger dan het probleem dat we oplossen. */
+function schoonToets(qz) {
+  const gemeld = [];
+  const vragen = ((qz && qz.vragen) || []).map((v, i) => {
+    if (!Array.isArray(v.opts)) return v;
+    const houd = [], heen = [];
+    v.opts.forEach(o => {
+      const al = houd.indexOf(String(o));
+      if (al === -1) { heen.push(houd.length); houd.push(String(o)); } else heen.push(al);
+    });
+    if (houd.length === v.opts.length) return v;
+    /* Alleen wegstrepen wat door het opschonen te mager wordt. Een vraag die zelf al met twee opties
+       kwam blijft staan: die is niet stuk, en valideer() laat er twee toe. */
+    if (houd.length < 3) { gemeld.push(`vraag ${i + 1}: te weinig opties over, valt weg`); return null; }
+    gemeld.push(`vraag ${i + 1}: ${v.opts.length - houd.length} dubbele optie weg`);
+    const c = typeof v.c === "number" && heen[v.c] !== undefined ? heen[v.c] : v.c;
+    return Object.assign({}, v, { opts: houd, c });
+  }).filter(Boolean);
+  return { qz: Object.assign({}, qz, { vragen }), gemeld };
+}
+
 async function maakToets(gat, inv, motor) {
   const nr = inv.quizzes.filter(q => /-extra\d*$/.test(q.id)).length + 1;
   const id = gat.tag + "-extra" + nr;
@@ -454,8 +480,15 @@ async function maakToets(gat, inv, motor) {
     const qz = await vraagModel(motor, promptToets(gat, id, inv) + extra, 5000);
     if (!qz || !Array.isArray(qz.vragen)) { console.error(`    geen bruikbaar toetsje voor ${gat.tag} (poging ${poging})`); continue; }
     qz.id = id; qz.spiek = gat.spiek;
-    const uit = await vraagModel(motor, promptTegenlezerToets(qz), 2000);
-    if (uit && uit.ok === true) return qz;
+    const schoon = schoonToets(qz);
+    if (schoon.gemeld.length) console.log("    opgeschoond: " + schoon.gemeld.join("; "));
+    if (schoon.qz.vragen.length < 4) {
+      console.error(`    te weinig vragen over na opschonen (poging ${poging})`);
+      bezwaren = ["te veel vragen hadden dubbele opties; geef per vraag vier verschillende opties"];
+      continue;
+    }
+    const uit = await vraagModel(motor, promptTegenlezerToets(schoon.qz), 2000);
+    if (uit && uit.ok === true) return schoon.qz;
     bezwaren = (uit && uit.problemen) || ["de corrector gaf geen bruikbaar oordeel"];
     console.error(`    toetsje afgekeurd (poging ${poging}): ${bezwaren.join("; ")}`);
   }
@@ -539,8 +572,19 @@ async function maakNieuweLes(inv, motor) {
     if (keur.length < 6) { console.error("    te weinig zinnen over → les niet aangeboden"); return null; }
     les.sentences = keur;
     if (les.quiz) {
-      const uit = await vraagModel(motor, promptTegenlezerToets(les.quiz), 2000);
-      if (!uit || uit.ok !== true) { console.error("    toetsje van de nieuwe les afgekeurd"); return null; }
+      const schoon = schoonToets(les.quiz);
+      if (schoon.gemeld.length) console.log("    toetsje opgeschoond: " + schoon.gemeld.join("; "));
+      les.quiz = schoon.qz.vragen.length >= 4 ? schoon.qz : null;
+      /* Zelfde reden als bij de zinnen hierboven: alles of niets was te streng. Een afgekeurd
+         toetsje kostte tot nu toe de hele les, veertien woorden en acht zinnen erbij. De
+         lesindeling kan een les zonder toetsje aan, en jij leest de pull request toch na. */
+      if (les.quiz) {
+        const uit = await vraagModel(motor, promptTegenlezerToets(les.quiz), 2000);
+        if (!uit || uit.ok !== true) {
+          console.error("    toetsje van de nieuwe les afgekeurd, de les gaat door zonder");
+          les.quiz = null;
+        }
+      }
     }
   }
   // de spiekkaart komt achter de bestaande, dus haar index is de huidige lengte
@@ -632,6 +676,7 @@ async function main() {
   let versie = null;
   if (reparatie.sentences.length || reparatie.quizzes.length) {
     const res = lib.pasToe(reparatie, { droog: OPT.droog });
+    meldAlt(res);
     if (!res.ok) { console.error("AFGEKEURD:\n - " + res.fouten.join("\n - ")); return 1; }
     versie = res.versie;
     if (OPT.droog) fs.writeFileSync("/tmp/vamos-curriculum-droog.html", res.src);
@@ -646,6 +691,7 @@ async function main() {
     nieuweLes = await maakNieuweLes(inv2, motor);
     if (nieuweLes) {
       const res = lib.pasToe(nieuweLes, { droog: true });   // altijd eerst droog: dit gaat via een PR
+      meldAlt(res);
       if (!res.ok) { console.error("nieuwe les AFGEKEURD:\n - " + res.fouten.join("\n - ")); nieuweLes = null; }
       else {
         fs.writeFileSync("/tmp/vamos-nieuwe-les.json", JSON.stringify(nieuweLes, null, 1));
@@ -688,6 +734,16 @@ async function main() {
   }
   if (beloofd === 0) HART.staat.reden = "niets te doen: geen gaten, geen toetsgaten, voorraad ruim genoeg";
   return 0;
+}
+
+/* De alt-waarschuwingen uit pasToe op het scherm. Ze keuren niets af, dus ze horen niet bij de
+   fouten, maar ze moeten wel in het verslag staan: dit is precies het soort ding dat niemand ooit
+   meer terugvindt als het alleen in de code zit. Zie patch-altpoort.py voor de aanleiding. */
+function meldAlt(res) {
+  const w = (res && res.waarschuwingen) || [];
+  if (!w.length) return;
+  console.log("— alt om na te lezen —");
+  w.forEach(r => console.log("  " + r));
 }
 
 /* Precies een plek waar de hartslag wordt weggeschreven, en die ligt buiten main, zodat ook een

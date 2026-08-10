@@ -145,6 +145,58 @@ function herstelAlt(zin) {
   return Object.assign({}, zin, { alt: uit });
 }
 
+/* De voornaamwoorden waar het om gaat: de wederkerende en persoonlijke. os staat er niet bij, dat
+   botst met het meervoud op -eros (companeros zou anders een os opleveren). lo/la/los/las/le/les
+   tellen ook niet mee, want dat zijn ook lidwoorden, maar ze mogen er wel afgepeld worden: in
+   prestarmelo zit het me achter het lo verstopt. */
+const ALT_CLIT = ["me", "te", "se", "nos"];
+const ALT_PEEL = ["me", "te", "se", "nos", "os", "lo", "la", "los", "las", "le", "les"];
+function altEnclitisch(w) {
+  /* Pel de vastgeplakte voornaamwoorden er achteraan af, maximaal drie lagen (dandomelo). Wat
+     overblijft moet een werkwoordsvorm zijn waar iets aan vast kán zitten: hele werkwoordsvorm of
+     -ndo-vorm. De diepste peling die daaraan voldoet wint. */
+  let beste = [], rest = w, mee = [];
+  for (let laag = 0; laag < 3; laag++) {
+    const hit = ALT_PEEL.filter(c => rest.length > c.length && rest.endsWith(c))
+                        .sort((a, b) => b.length - a.length)[0];
+    if (!hit) break;
+    rest = rest.slice(0, -hit.length);
+    if (ALT_CLIT.includes(hit)) mee = mee.concat([hit]);
+    if (/(ar|er|ir|ando|iendo|yendo)$/.test(rest)) beste = mee.slice();
+  }
+  return beste;
+}
+function altVoornaamwoorden(zin) {
+  let uit = [];
+  altKaal(zin).split(/[^a-z]+/).filter(Boolean).forEach(w => {   // altKaal maakt van n met tilde al een n
+    if (ALT_CLIT.includes(w)) { uit.push(w); return; }
+    uit = uit.concat(altEnclitisch(w));
+  });
+  return uit.sort().join(" ");
+}
+/* De poort op de alternatieven. Zie de kop van patch-altpoort.py voor waarom dit er is: het
+   machinaal vullen van alt (9 aug) maakte de poort blij, maar kon een fout antwoord goedkeuren.
+   Dit keurt niet af maar waarschuwt, want een herformulering met een ander voornaamwoord kán
+   kloppen (nos falta hacer la compra). Op de 356 varianten die nu in de app staan geeft hij
+   precies een waarschuwing, en die is terecht om even naar te kijken. */
+function altWaarschuwingen(nieuw) {
+  const uit = [];
+  (nieuw.sentences || []).forEach(z => {
+    if (!z || typeof z.es !== "string") return;
+    const eigen = altVoornaamwoorden(z.es);
+    (Array.isArray(z.alt) ? z.alt : []).forEach(a => {
+      if (typeof a !== "string") return;
+      const hunne = altVoornaamwoorden(a);
+      if (hunne !== eigen) {
+        uit.push(`${z.id || "?"}: alternatief "${a}" heeft andere voornaamwoorden dan de zin ` +
+                 `(${eigen || "geen"} tegenover ${hunne || "geen"}). Klopt dat, of drilt de zin ` +
+                 `een regel die het alternatief overtreedt?`);
+      }
+    });
+  });
+  return uit;
+}
+
 function valideer(nieuw, inv) {
   const fouten = [];
   const bestaandeIds = new Set([].concat(
@@ -274,7 +326,8 @@ function pasToe(nieuw, opties) {
   opties = opties || {};
   const voor = inventaris();
   const fouten = valideer(nieuw, voor);
-  if (fouten.length) return { ok: false, fouten };
+  const waarschuwingen = altWaarschuwingen(nieuw);
+  if (fouten.length) return { ok: false, fouten, waarschuwingen };
 
   let src = voor.src;
   src = voegToeAanArray(src, "WORDS", nieuw.words);
@@ -296,7 +349,7 @@ function pasToe(nieuw, opties) {
   const bump = bumpVersie(src);
   src = bump.src;
 
-  if (opties.droog) return { ok: true, droog: true, versie: bump.versie, src };
+  if (opties.droog) return { ok: true, droog: true, versie: bump.versie, src, waarschuwingen };
 
   fs.writeFileSync(INDEX, src);
   fs.writeFileSync(VERSIE, bump.versie + "\n");
@@ -313,10 +366,11 @@ function pasToe(nieuw, opties) {
     fs.writeFileSync(INDEX, voor.src);            // terugdraaien
     return { ok: false, fouten: ["telling klopt niet na schrijven: " + mis.join(", ") + " — bestand teruggedraaid"] };
   }
-  return { ok: true, versie: bump.versie, aantallen: verwacht };
+  return { ok: true, versie: bump.versie, aantallen: verwacht, waarschuwingen };
 }
 
-module.exports = { INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
+module.exports = { altWaarschuwingen, altVoornaamwoorden,
+                   INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
                    valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie,
                    altNorm, altKaal, herstelAlt };
 
@@ -357,6 +411,20 @@ if (require.main === module && process.argv.includes("--zelftest")) {
   const alsZin = valideer({ sentences: [{ id: idS(2), lvl: 1, nl: "Proef twee.", en: "Test two.",
       uitleg: "Proef.", ue: "Test.", tag: "zelftest", ...herstelAlt({ es: "Me cuesta hablar rápido.", alt: [] }) }] }, inv);
   console.log("een herstelde zin komt door de poort:", alsZin.length ? "FOUT: " + alsZin.join("; ") : "ja \u2713");
+
+  const altFout = altWaarschuwingen({ sentences: [{ id: "s158", es: "Mi hija se parece a mi.",
+      alt: ["mi hija me parece pero es distinta"] }] });
+  console.log("de fout van 10 aug (se wordt me):", altFout.length === 1 ? "gezien \u2713" : "GEMIST");
+  const altStil = altWaarschuwingen({ sentences: [
+    { id: "t1", es: "\u00bfMe lo puedes prestar?", alt: ["\u00bfpuedes prest\u00e1rmelo?"] },
+    { id: "t2", es: "Se est\u00e1 duchando.", alt: ["est\u00e1 duch\u00e1ndose"] },
+    { id: "t3", es: "Te lo voy a decir.", alt: ["voy a dec\u00edrtelo"] },
+    { id: "t4", es: "Mis compa\u00f1eros llegan tarde.", alt: ["llegan tarde mis compa\u00f1eros"] },
+    { id: "t5", es: "Quiero escribirlas hoy.", alt: ["hoy quiero escribirlas"] }
+  ] });
+  console.log("verplaatst voornaamwoord en -eros geven geen vals alarm:",
+    altStil.length ? "FOUT: " + altStil.join("; ") : "klopt \u2713");
+  console.log("op de inhoud van nu:", altWaarschuwingen(inv).length + " alt om na te lezen");
 
   const droog = pasToe(proef, { droog: true });
   console.log("droge schrijfbeurt:", droog.ok ? "ok, wordt " + droog.versie : "MISLUKT: " + droog.fouten);
