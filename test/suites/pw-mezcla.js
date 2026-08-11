@@ -78,6 +78,11 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   ok(plek && plek.leeg === 2, 'met twee lege vakjes om te beginnen (' + (plek ? plek.leeg : '-') + ')');
 
   console.log('\n-- aantikken doet nog steeds wat het deed, en vult het vakje --');
+  /* De wens van de dag eerst afvinken. Is die wens toevallig "een tapa", dan geeft Chispa er een
+     terug zodra je haar voert (chispaWensDoe), en dan gaat je voorraad van 20 naar 20. Dat is geen
+     fout in de app maar wel een test die op een derde van de dagen omvalt, en een poort die van de
+     kalender afhangt is geen poort. Op 10 aug was hij groen en op 11 aug rood, met dezelfde code. */
+  await page.evaluate(() => { zorgState().wensOp = today(); try { persist(); } catch (e) {} });
   const voor = await page.evaluate(() => ({ tapas: S.tapas || 0, bailes: (S.bailes || []).length }));
   await page.locator('#tapaMenuRij button.tapachip').first().click();
   await page.waitForTimeout(500);
