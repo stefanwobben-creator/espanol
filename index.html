@@ -913,6 +913,7 @@
       <div id="profileList"></div>
       <p id="uitnodigBanner" class="hidden" style="margin:14px 0 0; padding:10px 12px; border-radius:var(--radius); background:var(--accent-soft)"></p>
       <h2 id="profNieuwKop" style="margin-top:18px">Nieuw profiel</h2>
+      <p id="helRegel" class="muted hidden" style="margin:2px 0 8px"></p>
       <input type="text" id="newProfName" placeholder="Naam / Name" autocomplete="off">
       <p class="muted" style="margin:10px 0 4px" id="lblNiveau">Niveau:</p>
       <div class="row">
@@ -1206,7 +1207,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.42";
+var APP_VERSIE = "v23.44";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5794,6 +5795,116 @@ function proefData(){
 }
 function proefBewaar(d){ proefMem = d; try{ localStorage.setItem("espanol-proef-v1", JSON.stringify(d)); }catch(e){} }
 function proefWis(){ proefMem = null; try{ localStorage.removeItem("espanol-proef-v1"); }catch(e){} }
+/* ================= DE HELLING (v23.44) =================
+   Het aanmeldscherm vroeg een vreemde naar zijn niveau. Dat is de enige vraag op dat scherm die hij
+   niet kan beantwoorden: wie weet of hij A1 of A2 is, is niet de persoon die dit voor het eerst
+   opent. De helling draait het om. Je doet dertig woorden, en dan vertelt de app het jou.
+
+   Dertig is geen rond getal maar een ondergrens: PEIL_MIN_N staat op 20, en daaronder weigert
+   niveauSchatting() te spreken. Met twaalf (de oude peiling) krijg je "nog 8 antwoorden en de balk
+   kan je niveau schatten", oftewel een meting die niets meet op de dag dat iemand het meest wil.
+
+   Niet adaptief, en dat is een keuze. niveauSchatting() legt een Wilson-band om de steekproef, en
+   die band veronderstelt dat de steekproef aselect is. Een ladder die zijn volgende vraag kiest op
+   grond van je vorige antwoord levert precies dat niet, en dan is de band sier. Dertig willekeurige
+   A1-sleutels geven vanzelf makkelijk en lastig door elkaar. */
+var HEL_N = 30;                         // antwoorden in de eerste ronde, inclusief de drie vaste
+var HEL_VAST = PROEF_WOORDEN.length;    // die eerste drie zijn viertalig en staan vast
+var helBankKlaar = false;
+
+function helBankLaden(){
+  /* Vóór het eerste profiel staat WORDS op de kleine standaardbak (313) en haalt A1 twaalf procent
+     van de Cervantes-noemer, ruim onder de 80 die peilMeetbaar() eist. boot() vult WORDS pas nadat
+     je een track hebt gekozen, en dat is de keuze die we hier juist wegnemen. Dus laden we hier
+     dezelfde ruime bak die de a2-track ook krijgt: A1 komt dan op 405 van de 409 sleutels. */
+  try {
+    if(!helBankKlaar){
+      WORDS = TRACKS.a2.words.concat(B_WORDS).concat(K_WORDS).concat(C_WORDS);
+      _peilKeys = null;
+      helBankKlaar = true;
+    }
+    return peilMeetbaar("A1");
+  } catch(e){ return false; }
+}
+
+/* De vragen in één keer trekken, zoals peilStart() dat ook doet. Geschud, want de sleutelvolgorde
+   van pcicKeysApp() is alfabetisch en dan krijgt iedereen dezelfde dertig.
+
+   De uitsluitlijst is niet overbodig. peilKandidaten() slaat sleutels over die al in S.peil.items
+   staan, maar één woord kan aan meer dan één sleutel hangen, en de drie vaste proefwoorden hangen
+   sowieso buiten dat systeem. Zonder deze filter kreeg een vreemde "gracias" twee keer in dezelfde
+   ronde: één keer als vast proefwoord en één keer uit de bak. */
+function helVragen(n, weg){
+  var kand = geschud(peilKandidaten("A1")), uit = [], gehad = {}, i, w;
+  (weg || []).forEach(function(id){ gehad[id] = 1; });
+  for(i = 0; i < kand.length && uit.length < n; i++){
+    w = peilWoordVoor(pcicKeysApp()["A1"][kand[i]]);
+    if(!w || gehad[w.id]) continue;
+    gehad[w.id] = 1;
+    uit.push({key:kand[i], id:w.id, es:w.es, goed:wTrans(w), opties:peilOpties(w)});
+  }
+  return uit;
+}
+
+// De drie vaste proefwoorden tellen mee waar ze een Cervantes-sleutel hebben (gracias heeft er een,
+// hola en adiós niet). Weglaten zou de meting zuiverder lijken dan hij is: je hebt die vraag echt
+// beantwoord.
+function helVasteSleutels(){
+  var mp = {}, uit = [];
+  try { mp = pcicMap() || {}; } catch(e){ mp = {}; }
+  PROEF_WOORDEN.forEach(function(w){
+    var ks = mp[w.id];
+    if(ks && ks.length) uit.push({id:w.id, key:ks[0]});
+  });
+  return uit;
+}
+
+/* De schatting. Alles gaat via S.peil.items, want dat is wat niveauSchatting() leest. Let op:
+   persist() mag hier niet, want store.key staat vóór het aanmelden nog op de standaardsleutel en
+   dan schrijf je in het profiel van een ander. De helling bewaart in zijn eigen blob. */
+function helMeet(stand){
+  if(!helBankLaden()) return null;
+  try {
+    S.peil = S.peil || {items:{}, log:[], laatst:""};
+    S.peil.items = S.peil.items || {};
+    var res = (stand && stand.items) || {}, k;
+    for(k in res) S.peil.items[k] = {r:res[k], d:today(), niv:"A1"};
+    return niveauSchatting("A1");
+  } catch(e){ return null; }
+}
+
+/* Van schatting naar startpunt. POORT_PCT (0,85) is elders in de app al de grens waarop een niveau
+   "staat"; die hergebruiken we hier, zodat één getal niet op twee plekken iets anders betekent. */
+function helVoorstel(sch){
+  if(!sch || !sch.noem) return {track:"beginner", lvl:"A1", zeker:false};
+  var p = sch.punt / sch.noem;
+  if(p >= POORT_PCT) return {track:"a2", lvl:"A2", zeker:true};
+  if(p >= 0.2)       return {track:"beginner", lvl:"A1", zeker:true};
+  return {track:"beginner", lvl:"A0", zeker:true};
+}
+
+var HEL_TXT = {
+ nl:{door:"Nog even door? Dan weten we straks waar je staat.", doorJa:"Ja, laat maar komen →",
+     doorNee:"Nee, ik maak gewoon een profiel", vraag:"Wat betekent dit?", geen:"Geen idee",
+     klaarKop:"Klaar. En nu weten we iets.", stop:"Genoeg voor nu",
+     hoeveel:function(r,n){ return "Je herkende "+r+" van de "+n+" woorden."; },
+     genoeg:"Genoeg om te zien waar je staat.",
+     start:function(l){ return "Je begint op "+l+"."; },
+     later:"De volledige schatting, met marge eromheen, staat straks op je voortgangspagina.",
+     geenBand:"Nog te weinig antwoorden om er iets over te zeggen. Kies zelf maar even.",
+     door2:"Verder →", zelf:"Ik kies liever zelf"},
+ en:{door:"Keep going? Then we will know where you stand.", doorJa:"Yes, bring them on →",
+     doorNee:"No, just make me a profile", vraag:"What does this mean?", geen:"No idea",
+     klaarKop:"Done. And now we know something.", stop:"Enough for now",
+     hoeveel:function(r,n){ return "You recognised "+r+" of the "+n+" words."; },
+     genoeg:"Enough to see where you stand.",
+     start:function(l){ return "You start at "+l+"."; },
+     later:"The full estimate, with its margin, will be on your progress page.",
+     geenBand:"Too few answers to say anything about it. Pick one yourself.",
+     door2:"Continue →", zelf:"I would rather choose myself"}
+};
+function helTxt(){ var L = proefTaal(); return HEL_TXT[L] || HEL_TXT.en; }
+
 function renderProef(){
   var card = document.getElementById("profCard");
   if(!card) return;
@@ -5806,16 +5917,62 @@ function renderProef(){
   card.classList.add("hidden");
   box.classList.remove("hidden");
   var L = proefTaal(), d = PROEF_TXT[L];
-  if(!proefStand) proefStand = {i:0, xp:0, res:{}};
+  if(!proefStand){
+    // v23.44: dertig vragen is lang genoeg dat een per ongeluk ververste pagina pijn doet,
+    // dus de helling schrijft na elk antwoord zijn stand weg en pakt hem hier weer op.
+    var bew = proefData();
+    proefStand = (bew && bew.bezig && bew.stand) ? bew.stand : {i:0, xp:0, res:{}};
+  }
   var i = proefStand.i;
   if(i >= PROEF_WOORDEN.length){
+    /* v23.44: hier hield het op na drie woorden en werd je naar een formulier gestuurd dat je
+       niveau vroeg. Nu is dit een tussenstand: de helling biedt aan om door te gaan, en pas na
+       dertig antwoorden weet de app genoeg om je niveau te vertellen in plaats van te vragen.
+       De oude weg blijft er: "nee" komt uit op precies het scherm van hiervoor, en een bak die
+       onverwacht niet meetbaar is doet hetzelfde. */
+    var h = helTxt();
+    if(!proefStand.helKlaar && proefStand.helAan !== false && helBankLaden()){
+      if(!proefStand.hel){
+        /* Eerst de vaste woorden wegschrijven, dan pas trekken. peilKandidaten() slaat sleutels
+           over die al in S.peil.items staan, dus deze volgorde voorkomt dat "gracias" twee keer in
+           dezelfde ronde langskomt. */
+        proefStand.items = proefStand.items || {};
+        S.peil = S.peil || {items:{}, log:[], laatst:""};
+        S.peil.items = S.peil.items || {};
+        helVasteSleutels().forEach(function(v){
+          if(proefStand.res[v.id] === undefined) return;
+          proefStand.items[v.key] = proefStand.res[v.id] ? 1 : 0;
+          S.peil.items[v.key] = {r:proefStand.items[v.key], d:today(), niv:"A1"};
+        });
+        proefStand.hel = helVragen(HEL_N - HEL_VAST, PROEF_WOORDEN.map(function(w){ return w.id; }));
+      }
+      if(proefStand.hel.length >= 4 && !proefStand.helGestart){
+        box.innerHTML = "<div style='text-align:center'><div style='width:130px; margin:0 auto'>"+petSVG()+"</div>"+
+          "<h2 style='margin:8px 0 4px'>"+d.klaarKop+"</h2>"+
+          "<p class='muted'>+"+proefStand.xp+" "+xpw()+"</p>"+
+          "<p style='margin:10px 0 12px'>"+h.door+"</p>"+
+          "<div class='row center'><button class='primary' id='btnHelJa'>"+h.doorJa+"</button></div>"+
+          "<p class='muted' style='margin-top:10px'><a href='#' id='lnkHelNee'>"+h.doorNee+"</a></p></div>";
+        var bj = document.getElementById("btnHelJa");
+        if(bj) bj.onclick = function(){ proefStand.helGestart = true; proefStand.helI = 0; renderProef(); };
+        var ln = document.getElementById("lnkHelNee");
+        if(ln) ln.onclick = function(e){
+          if(e && e.preventDefault) e.preventDefault();
+          proefStand.helAan = false; renderProef(); return false;
+        };
+        return;
+      }
+      if(proefStand.helGestart && proefStand.helI < proefStand.hel.length){ return helVraagRender(box, d, h); }
+      if(proefStand.helGestart){ proefStand.helKlaar = true; return helUitslagRender(box, h); }
+    }
+    if(proefStand.helKlaar) return helUitslagRender(box, h);
     box.innerHTML = "<div style='text-align:center'><div style='width:130px; margin:0 auto'>"+petSVG()+"</div>"+
       "<h2 style='margin:8px 0 4px'>"+d.klaarKop+"</h2>"+
       "<p class='muted'>+"+proefStand.xp+" "+xpw()+" · "+d.klaarSub+"</p>"+
       "<div class='row center'><button class='primary' id='btnProefDoor'>"+d.bewaar+"</button></div></div>";
     var bd = document.getElementById("btnProefDoor");
     if(bd) bd.onclick = function(){
-      proefBewaar({klaar:true, xp:proefStand.xp, res:proefStand.res});
+      proefBewaar({klaar:true, xp:proefStand.xp, res:proefStand.res, items:proefStand.items || {}});
       box.classList.add("hidden");
       card.classList.remove("hidden");
       var nn = document.getElementById("newProfName");
@@ -5852,6 +6009,124 @@ function renderProef(){
     card.classList.remove("hidden");
     return false;
   };
+}
+
+/* De vraag zelf. Bewust dezelfde vorm als het proefscherm ervoor: je merkt de overgang van de drie
+   vaste woorden naar de bak niet, en dat is het punt van "één beleving". */
+function helVraagRender(box, d, h){
+  var v = proefStand.hel[proefStand.helI];
+  var nr = HEL_VAST + proefStand.helI + 1;
+  var gekozen = proefStand.helGekozen;
+  var knoppen = v.opties.map(function(o){
+    var cls = "opt";
+    if(gekozen !== undefined && gekozen !== null){
+      if(o === v.goed) cls = "opt good";
+      else if(o === gekozen) cls = "opt bad";
+    }
+    return "<button type='button' class='"+cls+"' data-hel=\"" + o.replace(/"/g, "&quot;") +
+      "\" style='margin:4px 0'>"+o+"</button>";
+  }).join("");
+  box.innerHTML = "<span class='kicker'>¡Vamos! · "+nr+"/"+HEL_N+"</span>"+
+    "<div class='progressbar'><div style='width:"+Math.round(100 * (nr - 1) / HEL_N)+"%'></div></div>"+
+    "<p style='font-size:1.7rem; margin:10px 0 2px; text-align:center'><b class='es'>"+v.es+"</b></p>"+
+    "<p class='muted' style='margin:0 0 10px; text-align:center'>"+h.vraag+"</p>"+
+    knoppen+
+    "<button type='button' class='ghost' id='btnHelGeen' style='margin-top:8px; width:100%'>"+h.geen+"</button>"+
+    "<p class='muted' style='margin-top:12px; text-align:center'><a href='#' id='lnkHelStop'>"+h.stop+"</a></p>";
+  if(gekozen !== undefined && gekozen !== null) return;
+  function antwoord(keuze){
+    if(proefStand.helGekozen !== undefined && proefStand.helGekozen !== null) return;
+    proefStand.helGekozen = (keuze === null ? "" : keuze);
+    proefStand.items = proefStand.items || {};
+    proefStand.items[v.key] = (keuze === null ? -1 : (keuze === v.goed ? 1 : 0));
+    if(keuze === v.goed){ proefStand.helGoed = (proefStand.helGoed || 0) + 1; proefStand.xp += 2; }
+    else proefStand.xp += 1;
+    // Bewaren na elk antwoord. Dertig vragen is lang genoeg dat een per ongeluk ververste pagina
+    // echt pijn doet, en dit kost één regel.
+    proefBewaar({bezig:true, xp:proefStand.xp, res:proefStand.res, items:proefStand.items, stand:proefStand});
+    helVraagRender(box, d, h);
+    setTimeout(function(){
+      if(!proefStand) return;
+      proefStand.helGekozen = null;
+      proefStand.helI++;
+      renderProef();
+    }, 700);
+  }
+  box.querySelectorAll("[data-hel]").forEach(function(b){
+    b.onclick = function(){ antwoord(b.getAttribute("data-hel")); };
+  });
+  var bg = document.getElementById("btnHelGeen");
+  if(bg) bg.onclick = function(){ antwoord(null); };
+  var ls = document.getElementById("lnkHelStop");
+  if(ls) ls.onclick = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    proefStand.helKlaar = true; renderProef(); return false;
+  };
+}
+
+/* De uitslag. Drie regels: wat je deed, dat het genoeg was, waar je begint.
+
+   Wat hier bewust NIET staat is de puntschatting ("ongeveer 195 van de 409 A1-woorden"). Die was er
+   eerst, en hij was fout op de manier die claude/rapport.md maatstaf 1 beschrijft: vóór het
+   aanmelden rekent de schatter over de ruime bak (405 van de 409 A1-sleutels), en meteen na het
+   aanmelden over de bak van jouw track (371). Zelfde vraag, zelfde persoon, twee getallen, twee
+   schermen na elkaar. Gemeten: 195 hier, 182 daar. Het tweede ligt netjes binnen de marge van het
+   eerste, dus het spreekt elkaar niet tegen, maar dat weet de lezer niet: die ziet een getal
+   veranderen tussen twee schermen door.
+
+   Wat je hier wél kunt zeggen verandert niet: hoeveel van de woorden die je zag je herkende. Dat is
+   een telling en geen schatting. De volledige schatting hoort op de voortgangspagina, waar hij één
+   keer wordt uitgerekend en met marge staat. */
+function helUitslagRender(box, h){
+  var sch = helMeet(proefStand);
+  var voorstel = helVoorstel(sch);
+  // Alles wat je hebt beantwoord telt, ook de twee vaste proefwoorden zonder Cervantes-sleutel.
+  // De meting gaat over de sleutels; deze regel gaat over jouw ronde, en die was dertig lang.
+  var n = HEL_VAST + (proefStand.helI || 0);
+  var goed = (proefStand.helGoed || 0);
+  PROEF_WOORDEN.forEach(function(w){ if(proefStand.res[w.id]) goed++; });
+  proefStand.voorstel = voorstel;
+  var body = "<p class='big' style='margin:8px 0 4px'>"+h.hoeveel(goed, n)+"</p>";
+  if(sch) body += "<p class='muted' style='margin:0 0 8px'>"+h.genoeg+"</p>"+
+                  "<p class='big' style='margin:8px 0 2px'>"+h.start(voorstel.lvl)+"</p>"+
+                  "<p class='muted' style='margin:6px 0 0; font-size:.85rem'>"+h.later+"</p>";
+  else body += "<p class='muted' style='margin:0 0 8px'>"+h.geenBand+"</p>";
+  box.innerHTML = "<div style='text-align:center'><div style='width:130px; margin:0 auto'>"+petSVG()+"</div>"+
+    "<h2 style='margin:8px 0 4px'>"+h.klaarKop+"</h2>"+body+
+    "<div class='row center'><button class='primary' id='btnHelVerder'>"+h.door2+"</button></div>"+
+    "<p class='muted' style='margin-top:10px'><a href='#' id='lnkHelZelf'>"+h.zelf+"</a></p></div>";
+  function verder(metVoorstel){
+    proefBewaar({klaar:true, xp:proefStand.xp, res:proefStand.res, items:proefStand.items || {},
+                 hel:(proefStand.hel || []), voorstel:(metVoorstel ? voorstel : null)});
+    box.classList.add("hidden");
+    var card = document.getElementById("profCard");
+    if(card) card.classList.remove("hidden");
+    if(metVoorstel && sch) helVoorstelToepassen(voorstel);
+    var nn = document.getElementById("newProfName");
+    if(nn) nn.focus();
+  }
+  var bv = document.getElementById("btnHelVerder");
+  if(bv) bv.onclick = function(){ verder(true); };
+  var lz = document.getElementById("lnkHelZelf");
+  if(lz) lz.onclick = function(e){ if(e && e.preventDefault) e.preventDefault(); verder(false); return false; };
+}
+
+// Het aanmeldscherm staat nu op het voorstel in plaats van op niets. De vier knoppen blijven staan
+// en blijven aanklikbaar: dit is een voorstel, geen uitspraak.
+function helVoorstelToepassen(v){
+  try {
+    newTrack = v.track;
+    document.querySelectorAll(".trackpick[data-lvl]").forEach(function(x){
+      x.classList.toggle("active", x.getAttribute("data-lvl") === v.lvl);
+    });
+    var r = document.getElementById("helRegel");
+    if(r){
+      r.textContent = (proefTaal() === "nl")
+        ? "Op grond van je woorden zetten we je op "+v.lvl+". Klopt dat niet? Kies hieronder zelf."
+        : "Based on your words we put you at "+v.lvl+". Not right? Pick your own below.";
+      r.classList.remove("hidden");
+    }
+  } catch(e){}
 }
 
 function renderDoelRow(){
@@ -6006,10 +6281,14 @@ function renderProfileScreen(){
   list.querySelectorAll(".profbtn").forEach(function(b){
     b.onclick = function(){ selectProfile(b.getAttribute("data-prof")); };
   });
-  document.querySelectorAll(".trackpick:not(.langpick)").forEach(function(b){
+  document.querySelectorAll(".trackpick[data-lvl]").forEach(function(b){
     b.onclick = function(){
       newTrack = b.getAttribute("data-track");
-      document.querySelectorAll(".trackpick:not(.langpick)").forEach(function(x){ x.classList.toggle("active", x===b); });
+      /* v23.44: hier stond .trackpick:not(.langpick), en die selector pakt ook de
+         doelpick-knoppen, want die dragen dezelfde klasse. Een tik op een niveau haalde zo
+         de markering van je gekozen dagdoel weg. newMinuten bleef goed, maar het scherm
+         zei dat je niets gekozen had, en dat dagdoel bepaalt je dagportie. */
+      document.querySelectorAll(".trackpick[data-lvl]").forEach(function(x){ x.classList.toggle("active", x===b); });
       document.getElementById("profHint").textContent = "Niveau gekozen: "+TRACKS[newTrack].label+". Vul een naam in en klik Start.";
     };
   });
@@ -6218,6 +6497,11 @@ function boot(){
     WORDS = tr.words.concat(K_WORDS).concat(C_WORDS); SENTENCES = tr.sentences; QUIZZES = tr.quizzes;
   }
   CHEATSHEET = tr.cheat; BATCH = tr.batch;
+  /* v23.44: WORDS is hierboven vervangen, dus de sleutelkaart die pcicKeysApp() bewaart
+     hoort bij de vorige bak. Tot nu toe viel dat niet op omdat niemand hem vóór het
+     aanmelden aanriep; de helling doet dat juist wel, en dan zou de cache de rest van de
+     sessie op de kleine bak blijven staan. */
+  _peilKeys = null;
   store.key = p.key;
   S = normaliseerState(store.load()); // v19.56: dezelfde normalisatie als bij een pull van de server
   // v19.92: ?beheer=chispa pas hier verzilveren, want hierboven kwam S vers uit de opslag.
@@ -6232,6 +6516,14 @@ function boot(){
   quizSpreid(); // bestaande achterstand uitsmeren i.p.v. als stapel presenteren
   // startdatum voor het dag-2-welkom (alleen voor echt verse profielen, niet met terugwerkende kracht)
   if(!S.gestart && !(S.txp > 0)) S.gestart = today();
+  /* v23.43: en een vers profiel begint met een lege spellenlijst. speelOoitInit() geeft
+     iedereen met iets in S.srs al zijn spellen cadeau (de coulanceregel van v19.92), maar
+     het proefscherm zet drie woorden in S.srs voordat dit profiel bestond. Zonder deze
+     regel valt dus elke nieuwe bezoeker onder de coulance en doet SPEEL_EIS niets. Staat
+     hier bewust boven het blok dat de proef verzilvert: daaronder is S.txp niet meer nul.
+     Wie al bezig was (txp > 0) heeft geen S.speelOoit en houdt de oude regel, dus er raakt
+     niemand iets kwijt. */
+  if(!S.speelOoit && !(S.txp > 0)) S.speelOoit = {};
   // v19.85: wie bij het aanmelden A2 koos, of de plaatsingstoets op A2 uitkwam, heeft
   // daarmee al gezegd dat A1 grotendeels bekend is. Dan hoef je dat niet nog eens per
   // woord te bevestigen. Alleen bij een vers profiel: bij iemand die al maanden bezig
@@ -6251,6 +6543,31 @@ function boot(){
       if(res0[w.id] === undefined) return;
       if(!S.srs[w.id]) S.srs[w.id] = {box: res0[w.id]?1:0, due: res0[w.id]?addDays(today(),1):today(), n:1, f: res0[w.id]?0:1};
     });
+    /* v23.44: en de helling. De sleutels gaan naar S.peil.items, zodat de meting meteen op je
+       voortgangspagina staat en de balk niet hoeft te zwijgen (PEIL_MIN_N is 20, de helling levert
+       er dertig). Woorden die je goed had krijgen claim:1 in doosje SWEEP_BOX, precies zoals de
+       inhaalslag ze zet: een voorsprong, geen bewijs. Zodra zo'n woord voor het eerst echt wordt
+       nagekeken verdwijnt de vlag en telt S.sweep of jouw "die ken ik" klopte.
+
+       Wat je fout had gaat bewust NIET in S.srs. Die woorden zitten al in je leerlijn en komen daar
+       vanzelf voorbij; ze hier op doosje nul zetten zou ze laten meetellen als "geoefend" terwijl je
+       ze alleen maar hebt gezien, en dat is de fout uit claude/rapport.md punt 1. */
+    var items0 = pd0.items || {}, kh;
+    S.peil = S.peil || {items:{}, log:[], laatst:""};
+    for(kh in items0) if(!S.peil.items[kh]) S.peil.items[kh] = {r:items0[kh], d:today(), niv:"A1"};
+    if(pd0.hel && pd0.hel.length){
+      var iz = 0;
+      pd0.hel.forEach(function(v){
+        if(!v || items0[v.key] !== 1) return;
+        if(S.srs[v.id]) return;
+        S.srs[v.id] = {box: SWEEP_BOX, due: addDays(today(), 1 + (iz % SWEEP_SPREIDING)), n:0, claim:1};
+        iz++;
+      });
+      if(iz){
+        S.sweep = S.sweep || {dag: today(), ken: 0, niet: 0, goed: 0, fout: 0};
+        S.sweep.ken = (S.sweep.ken || 0) + iz;
+      }
+    }
     proefWis();
   }
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
@@ -13523,7 +13840,17 @@ function dagSpelKeuze(){
   if(!kan.length) kan = DAGSPELLEN;
   var h = dayHash("spel");
   var uit = [];
-  for(var i = 0; i < 3 && i < kan.length; i++) uit.push(kan[(h + i * 2) % kan.length]);
+  // De stap van 2 geeft de afwisseling per dag zolang de lijst lang genoeg is; de tweede ronde
+  // met stap 1 vult aan als die stap in zichzelf terugvalt. Zonder die tweede ronde stond er op
+  // dag 1 twee keer hetzelfde spel, en ontbrak het spel dat wel kon.
+  for(var i = 0; i < kan.length && uit.length < 3; i++){
+    var k1 = kan[(h + i * 2) % kan.length];
+    if(uit.indexOf(k1) === -1) uit.push(k1);
+  }
+  for(var j = 0; j < kan.length && uit.length < 3; j++){
+    var k2 = kan[(h + j) % kan.length];
+    if(uit.indexOf(k2) === -1) uit.push(k2);
+  }
   return uit;
 }
 function dagSpeelHtml(){
@@ -21403,18 +21730,47 @@ function fx(k){ var d = profLang() === "nl" ? FUN_TXT.nl : FUN_TXT.en; return d[
       het nodig heeft en hoe ver je bent. Verschijnen, niet ontgrendelen.
    3. Wat je gisteren kon, neemt een update je niet af, en nieuwsgierigheid wordt nooit
       geblokkeerd: één tik op "laat ze toch allemaal zien" en alles staat er. */
+/* v23.43. De eis stond op "aantal geleerde woorden", en voor drie van de acht spellen zegt dat
+   getal niets. Een woordenzoeker en een kruiswoord hebben geen woorden nodig maar letters die in
+   een raster passen, en wsWoordPool() gooit alles weg wat uit meer dan een woord bestaat. De
+   eerste dertien woorden van A0 zijn begroetingen en uitdrukkingen (por favor, buenos días,
+   hasta mañana, ¿cómo estás?, uno dos tres); daarvan overleven er drie. Gemeten: kruisBouw()
+   faalt tot en met dertien geleerde woorden vijf van de vijf keer, en slaagt vanaf veertien.
+   De eis van 12 liet het kruiswoord dus open op een moment dat hij niet kon bouwen.
+
+   Nu telt de eis de voorraad die de bouwer in handen krijgt, en staat hij op precies het getal
+   waarop het spel zelf afslaat. Daarmee is "de tegel verschijnt zodra het spel kan draaien" geen
+   belofte meer maar een gevolg.
+
+   De andere vijf blijven op je woordenteller staan, en dat is geen slordigheid: letras, adiv,
+   audi, clas en corr kunnen altijd bouwen. Hun eis zegt "hier ben je nog niet aan toe", en dat is
+   een andere uitspraak dan "hier is niet genoeg van". */
 var SPEEL_EIS = {
-  ws:      {soort:"w", n:12},
-  audi:    {soort:"w", n:20},
-  clas:    {soort:"w", n:25},
-  letras:  {soort:"w", n:10},
-  adiv:    {soort:"w", n:15},
-  kruis:   {soort:"w", n:12},
-  mem:     {soort:"w", n:12},
-  corr:    {soort:"z", n:8}
+  ws:      {soort:"raster", n:4},
+  kruis:   {soort:"kruis",  n:4},
+  mem:     {soort:"w",      n:4},
+  letras:  {soort:"w",      n:10},
+  adiv:    {soort:"w",      n:15},
+  audi:    {soort:"w",      n:20},
+  clas:    {soort:"w",      n:25},
+  corr:    {soort:"z",      n:8}
 };
 function speelWoordN(){ try { return Object.keys(S.srs || {}).length; } catch(e){ return 999; } }
 function speelZinN(){ try { return allowedSentIds().length; } catch(e){ return 999; } }
+// Dezelfde vijver waar wsStart() uit put, en dezelfde drempel (4) die hij zelf hanteert.
+function speelRasterN(){ try { return wsWoordPool().length; } catch(e){ return 999; } }
+// kruisBouw() houdt daar nog een lengtefilter op aan, dus die telt hier ook mee.
+function speelKruisN(){
+  try {
+    return wsWoordPool().filter(function(k){ return k.woord.length >= 4 && k.woord.length <= 8; }).length;
+  } catch(e){ return 999; }
+}
+function speelTelN(soort){
+  if(soort === "z") return speelZinN();
+  if(soort === "raster") return speelRasterN();
+  if(soort === "kruis") return speelKruisN();
+  return speelWoordN();
+}
 // Zelfde afspraak als conjOpenInit(): wie al aan het oefenen was, krijgt niets afgepakt.
 function speelOoitInit(){
   if(S.speelOoit) return S.speelOoit;
@@ -21430,17 +21786,24 @@ function speelKlaar(v){
   if(S.speelAlles) return true;
   var ooit = speelOoitInit();
   if(ooit && ooit[v]) return true;
-  return (SPEEL_EIS[v].soort === "w" ? speelWoordN() : speelZinN()) >= SPEEL_EIS[v].n;
+  return speelTelN(SPEEL_EIS[v].soort) >= SPEEL_EIS[v].n;
 }
 function speelWacht(v){
   var eis = SPEEL_EIS[v];
   if(!eis) return "";
-  var nu = eis.soort === "w" ? speelWoordN() : speelZinN();
-  return eis.soort === "w"
-    ? ct("doet mee vanaf "+eis.n+" geleerde woordjes · nu "+nu,
-         "joins in from "+eis.n+" learned words · now "+nu)
-    : ct("doet mee vanaf "+eis.n+" vrijgespeelde zinnen · nu "+nu,
-         "joins in from "+eis.n+" unlocked sentences · now "+nu);
+  var nu = speelTelN(eis.soort);
+  if(eis.soort === "z"){
+    return ct("doet mee vanaf "+eis.n+" vrijgespeelde zinnen · nu "+nu,
+              "joins in from "+eis.n+" unlocked sentences · now "+nu);
+  }
+  // "woorden die in een raster passen" en niet "geleerde woorden": anders staat er straks
+  // "vanaf 4 woorden · nu 13" en dat is de soort regel waar je de app niet meer op vertrouwt.
+  if(eis.soort === "raster" || eis.soort === "kruis"){
+    return ct("doet mee vanaf "+eis.n+" woorden die in een raster passen · nu "+nu,
+              "joins in from "+eis.n+" words that fit in a grid · now "+nu);
+  }
+  return ct("doet mee vanaf "+eis.n+" geleerde woordjes · nu "+nu,
+            "joins in from "+eis.n+" learned words · now "+nu);
 }
 function speelGezien(v){
   if(!SPEEL_EIS[v]) return;

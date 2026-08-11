@@ -29,6 +29,11 @@ kost dat niemand wilde uitgeven. Alles in dit document is op die twee dingen ges
   per IP, een dagplafond van 800 en een noodrem (`AI_UIT=1`).
 - **nachtrun** kiest voortaan het gat dat er het meest toe doet (verschijnselen vóór woordgaten, zoals
   het commentaar altijd al beloofde) en maakt niets waar al genoeg ligt.
+- **v23.43** de poort van dag 1 gaat weer dicht: een vers profiel viel per ongeluk onder de
+  coulanceregel voor bestaande spelers, en de eis telt nu wat de bouwer echt in handen krijgt. Zie
+  punt 1 hieronder.
+- **v23.44** de helling: het aanmeldscherm vraagt je niveau niet meer maar vertelt het, na dertig
+  woorden in één doorlopende beleving. Zie punt 1b hieronder.
 
 ## Wat er open staat, op volgorde van hoe erg het is
 
@@ -41,6 +46,95 @@ het ruis. De regel uit gedragsontwerp is één handeling op dag 1.
 De machinerie staat er al: `SPEEL_EIS` houdt spellen dicht tot je genoeg woorden kent, en
 `lessonUnlocked` doet hetzelfde voor lessen. Ze staan alleen ruim afgesteld. Dit is aanpassen en niet
 bouwen.
+
+**Correctie, 11 aug (v23.43): ze stonden niet ruim afgesteld, ze stonden uit.** Nagemeten op een vers
+A0-profiel in een browser. `speelOoitInit()` geeft iedereen met iets in `S.srs` al zijn spellen cadeau
+(de coulanceregel van v19.92: wie al oefende raakt door een update niets kwijt), en het proefscherm
+zet drie woorden in `S.srs` voordat er een profiel bestaat. Elke vreemde viel dus onder de coulance en
+`SPEEL_EIS` deed sinds v19.92 niets voor precies de groep waarvoor hij bedoeld was. Op dag 1 met drie
+geleerde woorden: Clasificador opende op indefinido-of-imperfecto, Crucigrama kaatste terug met "Leer
+eerst wat meer woordjes", El Corrector opende met acht zinnen op vijf vrijgespeelde.
+
+Wat v23.43 doet: een vers profiel begint met een lege `S.speelOoit` (één regel in `boot()`, boven het
+blok dat de proef verzilvert, want daaronder is `S.txp` niet meer nul), en de eis telt voortaan wat de
+bouwer echt in handen krijgt in plaats van je woordenteller. Dat laatste is geen extraatje: de eerste
+dertien A0-woorden zijn begroetingen en uitdrukkingen (`por favor`, `buenos días`, `¿cómo estás?`,
+`uno dos tres`) en `wsWoordPool()` gooit die allemaal weg. Gemeten met `kruisBouw()`, vijf pogingen per
+stand: tot en met dertien woorden nul van de vijf geslaagd, vanaf veertien vijf van de vijf. De oude
+eis van twaalf woorden liet het kruiswoord dus ook zonder de coulancebug open op een moment dat hij
+niet kon bouwen. `ws`, `kruis` en `mem` staan nu op precies de ondergrens die hun eigen bouwer
+hanteert; `letras`, `adiv`, `audi`, `clas` en `corr` blijven op je teller staan, want hun eis zegt
+"hier ben je nog niet aan toe" en dat is een andere uitspraak dan "hier is niet genoeg van".
+
+Onderweg gevonden en meegenomen: `dagSpelKeuze()` liep met een stap van 2 door de lijst speelbare
+spellen, en bij een lijst van twee komt dat drie keer op dezelfde uit. Zolang er negen spellen open
+stonden viel dat nooit op; zodra de eis bijt stond er op dag 1 twee keer Rompecabezas en ontbrak het
+spel dat wel kon.
+
+Wat een vreemde nu ziet: na de proef (3 woorden) Aventura en Rompecabezas, na de eerste les (8)
+komt Memory erbij, en rond woord 14 de Woordenzoeker en Crucigrama. Vastgelegd in `pw-dag1.js`, dat
+niet de teksten bewaakt maar de belofte: een tegel staat er alleen als het spel er ook echt uit kan
+komen, gecontroleerd door de bouwer zelf aan te roepen. Op de oude `index.html` zakt die suite op acht
+punten.
+
+**Wat hier nog open staat.** De reparatie haalt de kapotte knoppen weg, maar het scherm is nog niet
+leeg. Dag 1 telt nog steeds negentien zichtbare knoppen en verwijzingen, een balk van vijf en een
+modal van twee stappen, en het eerste getal dat een vreemde ziet is een **0** ("0 van je 3 woorden").
+Eén handeling op dag 1 betekent: EVEN SPELEN en de cijferregel weg tot je je eerste les af hebt. Dat
+is het volgende verhaal, en het is een eigen versie waard.
+
+### 1b. Het aanmeldscherm vroeg de enige vraag die een vreemde niet kan beantwoorden (v23.44, af)
+
+Stefan, 11 aug: "als je begint ben je misschien gemotiveerd en wil je wel iets meer woordjes doen.
+Je krijgt 30 woorden, dan schatten we je niveau in." En daarna: "kunnen we er niet een geïntegreerde
+beleving van maken?"
+
+Waarom dertig het goede getal is, en niet twaalf: `PEIL_MIN_N` staat op 20. Onder twintig antwoorden
+weigert `niveauSchatting()` iets te zeggen, en de bestaande peiling gaf er twaalf. Een vreemde die op
+dag 1 de peiling deed kreeg dus letterlijk "Bedankt. Nog 8 antwoorden en de balk kan je niveau
+schatten": een meting die weigert te meten, op de dag dat iemand het meest gemotiveerd is.
+
+De helling is één doorlopende beleving. Hij begint zoals de proef altijd al begon (hola, gracias,
+adiós, viertalig, geen account), stopt daar niet meer maar biedt aan door te gaan, en loopt door tot
+dertig. Daarna vraagt het aanmeldscherm je niveau niet meer maar vertelt het: "Op grond van je
+woorden zetten we je op A1. Klopt dat niet? Kies hieronder zelf."
+
+**Niet adaptief, en dat is een keuze en geen luiheid.** `niveauSchatting()` legt een Wilson-band om
+de steekproef, en die band veronderstelt dat de steekproef aselect is. Een ladder die zijn volgende
+vraag kiest op grond van je vorige antwoord levert precies dat niet, en dan is de marge eromheen
+versiering. Dertig willekeurige A1-sleutels geven vanzelf makkelijk (aprender) en lastig (tímido)
+door elkaar, dus het voelt gevarieerd zonder dat de meting kapotgaat.
+
+Twee dingen moesten eerst weg. Vóór het eerste profiel staat `WORDS` op de kleine standaardbak van
+313 woorden, en dan haalt A1 twaalf procent van de Cervantes-noemer terwijl `peilMeetbaar()` er
+tachtig eist: er was vóór het aanmelden geen enkel niveau meetbaar, en dat is precies het moment
+waarop we willen meten. De helling laadt daarom zelf de ruime bak (2184 woorden, A1 op 405 van de
+409). En `pcicKeysApp()` bewaart zijn sleutelkaart in `_peilKeys` zonder dat `boot()` die leegmaakt;
+zolang niemand hem vóór het aanmelden aanriep viel dat niet op, maar de helling doet dat juist wel.
+`boot()` maakt hem nu leeg.
+
+De hybride, zoals afgesproken: goed beantwoorde woorden krijgen `claim:1` in doosje `SWEEP_BOX`,
+precies zoals de inhaalslag ze zet (een voorsprong, geen bewijs, en `S.sweep` telt later of jouw "die
+ken ik" klopte). Fout beantwoorde woorden gaan **niet** in `S.srs`: ze zitten al in je leerlijn, en ze
+daar op doosje nul zetten zou ze laten meetellen als "geoefend" terwijl je ze alleen hebt gezien.
+Dat is de fout uit `claude/rapport.md` punt 1. Alle dertig gaan wel als sleutel naar `S.peil.items`,
+dus de voortgangspagina hoeft vanaf dag 1 niet meer te zwijgen.
+
+De oude weg blijft heel: de drie vaste woorden, de vier niveauknoppen en de niveautest van tien
+grammaticavragen werken onveranderd, "nee, ik maak gewoon een profiel" komt uit op precies het scherm
+van hiervoor, en een bak die onverwacht niet meetbaar is valt daar vanzelf op terug. Bij het
+allereerste scherm, drie dagen voor een lancering, wil je die terugvalweg hebben.
+
+Vastgelegd in `pw-helling.js`. Twee dingen die daarbij misgingen en het onthouden waard zijn: mijn
+eerste uitslagscherm noemde een puntschatting ("ongeveer 195 van de 409 A1-woorden") en na het
+aanmelden rekent dezelfde schatter over de kleinere bak van je track en zegt 182 — zelfde vraag,
+twee getallen, twee schermen na elkaar, dus maatstaf 1 van `rapport.md`. Het uitslagscherm telt nu
+alleen nog wat het echt geteld heeft. En de suite was groen als losse run en rood in de poort, puur
+door vaste pauzes die net onder de `setTimeout` van het scherm zaten; hij wacht nu op de toestand.
+
+**Nog open hier:** onder het voorstel staat nog steeds "Kies een niveau, of doe de test van 10
+vragen". Dat is nu een tegenspraak in het klein: de app heeft je niveau net verteld. Die regel hoort
+te veranderen in een uitweg ("liever zelf kiezen?") in plaats van een opdracht.
 
 ### 2. De eerste indruk duurt te lang
 
