@@ -49,7 +49,9 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   console.log('\n-- de vijver --');
   const pool = await page.evaluate(() => {
     const l = adivPool();
-    return { n: l.length, fout: l.filter((w) => [5, 6].indexOf(w.plat.length) === -1 || /\s|ñ/.test(w.es)).length,
+    /* v23.42: es is wat je te zien krijgt en dat is "el coche", plat is wat op het bord staat en dat
+       is "coche". De eis van losse letters geldt dus voor plat en niet voor es. */
+    return { n: l.length, fout: l.filter((w) => [5, 6].indexOf(w.plat.length) === -1 || /[^a-z]/.test(w.plat)).length,
              zonderId: l.filter((w) => !w.id).length };
   });
   ok(pool.n >= 100, 'er zijn genoeg woorden om mee te spelen (' + pool.n + ')');

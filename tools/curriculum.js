@@ -282,6 +282,11 @@ const STIJL = `Stijl-eisen (belangrijk):
 - A2-woordenschat, korte zinnen, geen literaire constructies.
 - "uitleg" legt in het Nederlands uit WAAROM het antwoord zo is: twee zinnen, concreet, met de vorm erin.
   Geen verwijzingen naar regelnummers of naar "de spiekbrief".
+  Harde eis, machinaal gecontroleerd: de uitleg noemt een Spaans woord dat in de zin zelf staat, of
+  de regel bij naam (subjuntivo, imperfecto, vrouwelijk meervoud, en zo verder). Een uitleg die de
+  zin navertelt ("de zin beschrijft een voordeel en een nadeel") wordt afgekeurd, ook als hij waar is.
+- Zelfstandige naamwoorden krijgen hun lidwoord mee: "el coche", "la casa", nooit "coche" los. Het
+  geslacht hoort bij het woord.
 - "ue" is dezelfde uitleg in het Engels.
 - "alt" hoeft alleen ANDERE goede formuleringen te bevatten (andere woordvolgorde, een synoniem).
   Het antwoord zelf zetten wij er machinaal bij; dat hoef jij niet over te typen. Laat "alt" gerust
@@ -344,6 +349,9 @@ Eisen:
 - 8 vragen, meerkeuze met 2 of 3 opties, precies één goed antwoord ("c" is de index, 0-gebaseerd).
 - De opties van een vraag moeten onderling VERSCHILLEN. Twee keer hetzelfde woord in "opts" maakt de
   vraag onbeantwoordbaar. Dit is de fout die hier het vaakst gemaakt wordt, dus loop je vragen na.
+- Opties mogen ook niet alleen in een ACCENT verschillen (ibamos tegenover íbamos). Die vraag wordt
+  weggegooid: de app rekent een antwoord zonder accent overal goed, dus zo'n vraag toetst een regel
+  die de app zelf niet hanteert. Laat de opties in verschillende woorden of vormen verschillen.
 - Bij elke vraag een Nederlandse vertaling ("nl") en Engelse ("ne") van de bedoelde zin, zodat de vraag
   te maken is zonder gokken.
 - "u" legt in het Nederlands uit waarom het goede antwoord goed is; "ue" is dezelfde uitleg in het Engels.
@@ -449,6 +457,19 @@ function schoonToets(qz) {
       const al = houd.indexOf(String(o));
       if (al === -1) { heen.push(houd.length); houd.push(String(o)); } else heen.push(al);
     });
+    /* Twee opties die alleen in een accent verschillen (ibamos tegenover íbamos) zijn geen vraag maar
+       een valstrik, en ze zijn de reden dat er drie nachten op rij geen toetsje doorkwam: het model
+       schrijft er een uitleg bij die zichzelf tegenspreekt en de corrector keurt het hele toetsje af.
+       Er is ook een principiële reden: de app rekent overal een antwoord zonder accent goed, dus een
+       vraag waarin het accent het hele antwoord is, spreekt de rest van de app tegen.
+
+       Na het ontdubbelen en niet ervoor: era naast era is een dubbele optie en geen accentval, en een
+       melding die de verkeerde reden noemt stuurt de volgende lezer het bos in. */
+    const kaal = houd.map(o => o.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    if (new Set(kaal).size !== kaal.length) {
+      gemeld.push(`vraag ${i + 1}: opties verschillen alleen in een accent, valt weg`);
+      return null;
+    }
     if (houd.length === v.opts.length) return v;
     /* Alleen wegstrepen wat door het opschonen te mager wordt. Een vraag die zelf al met twee opties
        kwam blijft staan: die is niet stuk, en valideer() laat er twee toe. */

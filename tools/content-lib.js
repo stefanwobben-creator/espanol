@@ -197,6 +197,62 @@ function altWaarschuwingen(nieuw) {
   return uit;
 }
 
+/* ---------- legt deze uitleg iets uit? (11 aug) ----------
+   De nachtrun leverde een hele les met uitleg in de vorm van "De zin beschrijft een voordeel en een
+   nadeel. Het is een praktische uitspraak." Het veld was gevuld, de tekst was waar, en de tegenlezer
+   keurde hem goed. Toch leert niemand er iets van.
+
+   Het verschil tussen uitleg en beschrijving is machinaal te vinden: echte uitleg wijst naar iets in
+   de zin. Ze noemt een Spaans woord dat er staat ("hay que + infinitief"), of ze noemt de regel bij
+   naam ("subjuntivo", "vrouwelijk meervoud"). Een tekst die geen van beide doet, gaat over de zin in
+   plaats van over het Spaans.
+
+   Bewust een ondergrens en geen oordeel: hij haalt de lege huls eruit, hij belooft geen goede
+   didactiek. Dat laatste kan een machine niet en daar hoort de tegenlezer voor te zijn. */
+const GRAMTERMEN = ["indefinido", "imperfecto", "perfecto", "subjuntivo", "gerundio", "infinitief",
+  "infinitive", "lidwoord", "meervoud", "enkelvoud", "vrouwelijk", "mannelijk", "wederkerend",
+  "voornaamwoord", "vervoeging", "werkwoord", "bijvoeglijk", "zelfstandig", "onregelmatig", "accent",
+  "verkleinwoord", "bijwoord", "voorzetsel", "vergrotende trap", "overtreffende trap", "gebiedende",
+  "verleden tijd", "tegenwoordige tijd", "toekomende tijd", "onvoltooid", "voltooid", "stam",
+  "uitgang", "geslacht", "klemtoon", "spelling"];
+function woordenVan(tekst) {
+  return String(tekst || "").toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+}
+function uitlegZegtIets(uitleg, es) {
+  const u = String(uitleg || "");
+  if (u.trim().length < 30) return false;
+  const laag = u.toLowerCase();
+  if (GRAMTERMEN.some(t => laag.indexOf(t) !== -1)) return true;
+  // een Spaans woord uit de zin zelf, aangehaald in de uitleg
+  const inZin = new Set(woordenVan(es));
+  return woordenVan(u).some(w => inZin.has(w));
+}
+
+/* ---------- el of la hoort bij het woord (11 aug, verzoek van Stefan) ----------
+   Een zelfstandig naamwoord zonder lidwoord leer je zonder geslacht, en dan moet je het er later
+   alsnog bij leren. In de bestaande inhoud staat dit al goed (412 van de 422), maar dat was
+   handwerk en geen regel, dus de nachtrun kon het zo weer stukmaken.
+
+   De vraag "is dit een zelfstandig naamwoord" beantwoorden we aan de Nederlandse kant, want daar
+   staat het lidwoord er altijd: "de angst" is er een, "de hoofdrol spelen in" niet (te veel woorden)
+   en "het regent" ook niet (dat is een werkwoord, herkenbaar aan de Spaanse uitgang). Liever een
+   controle die een enkel geval doorlaat dan een die goede woorden afkeurt. */
+const WERKUIT = /(ar|er|ir|[aeiou]r|[aeiouáéíóú])$/;
+function heeftLidwoordNodig(w) {
+  const nl = String(w.nl || "").trim().toLowerCase();
+  const es = String(w.es || "").trim();
+  if (!/^(de|het) [a-zà-ÿ]+$/.test(nl)) return false;   // geen kaal zelfstandig naamwoord
+  if (/\s/.test(es)) return false;                                 // uitdrukking: die heeft zijn eigen vorm
+  if (/(ar|er|ir)$/.test(es.toLowerCase())) return false;          // infinitief
+  if (/[áéíóú]$/.test(es.toLowerCase())) return false;  // vervoegde vorm (pasó)
+  return true;
+}
+function heeftLidwoord(es) {
+  return /^(el|la|los|las) /i.test(String(es || "").trim());
+}
+
 function valideer(nieuw, inv) {
   const fouten = [];
   const bestaandeIds = new Set([].concat(
@@ -221,6 +277,8 @@ function valideer(nieuw, inv) {
     eisUniek(w.id, waar); eisVelden(w, "woord", waar);
     if (!/^w\d+$/.test(w.id || "")) fouten.push(`${waar}: id moet w<nummer> zijn`);
     if (w.es && w.es.length > 60) fouten.push(`${waar}: es is verdacht lang`);
+    if (heeftLidwoordNodig(w) && !heeftLidwoord(w.es))
+      fouten.push(`${waar}: zelfstandig naamwoord zonder lidwoord ("${w.es}"); schrijf "el ${w.es}" of "la ${w.es}"`);
   });
 
   (nieuw.sentences || []).forEach((s, i) => {
@@ -238,6 +296,8 @@ function valideer(nieuw, inv) {
       if (s.alt.some(a => a !== String(a).toLowerCase())) fouten.push(`${waar}: alt hoort in kleine letters`);
     }
     if (typeof s.lvl !== "number" || s.lvl < 1 || s.lvl > 5) fouten.push(`${waar}: lvl moet 1-5 zijn`);
+    if (!uitlegZegtIets(s.uitleg, s.es))
+      fouten.push(`${waar}: uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam`);
   });
 
   (nieuw.quizzes || []).forEach((q, i) => {

@@ -166,21 +166,33 @@ const { chromium } = require('playwright');
   ok(portie.knijp >= portie.basis.vloer, 'bij veel fouten knijpt de regelaar tot de vloer, niet eronder (' + portie.knijp + ')');
   ok(portie.herstel >= 3, 'zelfs in herstelmodus krijg je elke dag nieuwe woorden (' + portie.herstel + ')');
 
-  /* ---------------- 5. de flow stopt na de toets ---------------- */
+  /* ---------------- 5. na de toets: drie zinnen schrijven, en dan klaar ----------------
+     v20.5 haalde het hele productieblok uit de verplichte les omdat Stefan erop afhaakte: vijf tot
+     tien zinnen, achter het punt waarop je al klaar was. v23.42 zet er één stuk van terug, op zijn
+     verzoek van 11 aug, maar klein: drie zinnen, binnen de les. Wat deze suite bewaakt is dus niet
+     dat schrijven bestaat, maar dat het bij drie zinnen blijft en dat dictado er niet mee terugkomt.
+     Zie ook pw-schrijven.js. */
   const stopt = await page.evaluate(() => {
     S.xp = {}; S.dag = {}; S.ritme = { wanneer: 'stil' }; S.lesFlow = {};
     lesFlow = { stap: 'toetsjes', quizzesTeDoen: [], gekozenSpel: null, vertalenTeGaan: 0 };
     lesFlowVolgende();
+    const naToets = { stap: lesFlow && lesFlow.stap, spel: lesFlow && lesFlow.gekozenSpel,
+                      zinnen: lesFlow && lesFlow.vertalenTotaal };
+    // de drie zinnen afwerken
+    for (let i = 0; i < 5 && lesFlow && lesFlow.stap === 'produceren'; i++) {
+      lesFlow.vertalenTeGaan--;
+      if (lesFlow.vertalenTeGaan <= 0) { S.lesFlowSpel.vertalen = today(); lesFlowVolgende(); }
+    }
     const feest = document.getElementById('feestWrap');
     if (feest && feest.remove) feest.remove();
-    return {
-      flowWeg: lesFlow === null,
-      tekst: document.getElementById('lessonList').innerText
-    };
+    return { naToets, flowWeg: lesFlow === null, tekst: document.getElementById('lessonList').innerText };
   });
-  ok(stopt.flowWeg === true, 'na de toets is de les klaar: geen verplicht dictado-blok meer');
+  ok(stopt.naToets.spel === 'vertalen' && stopt.naToets.zinnen === 3,
+    'na de toets volgen drie zinnen schrijven (' + stopt.naToets.spel + ', ' + stopt.naToets.zinnen + ')');
+  ok(stopt.naToets.spel !== 'dictado', 'en geen verplicht dictado-blok');
+  ok(stopt.flowWeg === true, 'daarna is de les klaar');
   // let op de /i: de kicker staat in CSS op text-transform, dus innerText leest hem in kapitalen
-  ok(/les afgerond|session complete/i.test(stopt.tekst), 'en je krijgt meteen het afgerond-scherm');
+  ok(/les afgerond|session complete/i.test(stopt.tekst), 'en je krijgt het afgerond-scherm');
 
   /* ---------------- 6. de voorstellen, met een reden ---------------- */
   const voorstel = await page.evaluate(() => {
