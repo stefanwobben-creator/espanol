@@ -43,6 +43,8 @@ kost dat niemand wilde uitgeven. Alles in dit document is op die twee dingen ges
 - **v23.48** geen verzonnen werkwoordsvormen meer: twee grammaticaconcepten bouwden hun Nederlandse
   en Engelse vertaling met knip- en plakwerk op de infinitief. 90 kapotte NL- en 68 kapotte
   EN-vormen. Zie punt 6.
+- **v23.49** de taalsalade weg: de app bood vier talen en heeft er twee. Zie punt 7, en dat is
+  meteen de belangrijkste sectie van dit document geworden.
 - **pw-clasificador** is niet meer wisselvallig (punt 5 hieronder). Geen tijdsprobleem maar een
   dobbelsteen: `clNieuwSpel()` zonder id koos een willekeurig concept, en bij een concept met weinig
   patronen was de ronde al klaar vóór de misser die de test wilde meten. Staat nu op `serestar`.
@@ -154,8 +156,21 @@ te veranderen in een uitweg ("liever zelf kiezen?") in plaats van een opdracht.
 gemiddelde telefoon op 4G is vijf tot acht seconden wit scherm realistisch. Dat is precies het venster
 waarin een vreemde wegklikt.
 
+**Nagemeten op 11 aug**, want dit stond hier als schatting en dat is niet goed genoeg voor een punt
+dat zo hoog op de lijst staat:
+
+    verbinding                    eerste pixels    eerste knop die werkt
+    geen rem                          76 ms                0,4 s
+    4G (9 Mbit, 85 ms, 2x cpu)       184 ms                2,9 s
+    traag 4G (1,6 Mbit, 300 ms)      724 ms               12,8 s
+
+Let op het gat. Op een trage verbinding staat het aanmeldscherm er na 0,7 seconde, mét de naamvelden
+en de niveauknoppen, want die staan in de statische HTML. Maar het script is pas twaalf seconden
+later klaar. Een bezoeker ziet dus geen wit scherm maar iets ergers: een app die er staat en niet
+reageert. Hij tikt op "hallo", er gebeurt niets, en hij concludeert dat het stuk is.
+
 Niet op te lossen voor vrijdag (de content zit ín het bestand), wel te verzachten: een laadscherm dat
-binnen 300 ms staat, en de zware content pas na de eerste render. De echte oplossing, content per
+binnen 300 ms staat en pas weggaat als boot() alles heeft aangesloten. De echte oplossing, content per
 niveau laden, is de eerste grote verbouwing ná de lancering.
 
 ### 3. De taal van het eerste scherm
@@ -380,3 +395,64 @@ of vier opties zijn geen fout: Clasificador filtert zelf op twee, de Grammatica-
 dat klopt in "Als kind woonde ik in Sevilla" maar niet in "Dit jaar heb ik veel gewoond" (daar is
 *he vivido mucho* eerder "geleefd"). Eén werkwoord met twee betekenissen in één veld. Kleine
 verbetering, eigen versie waard, en niet urgent: de zin is niet fout, alleen houterig.
+
+## 7. De telefoontest van 11 aug: zes bevindingen (WERKLIJST VOOR WOENSDAG)
+
+Stefan zette v23.48 live en liep hem 's avonds voor het eerst door op zijn eigen telefoon, in een
+privévenster, als vreemde. Tien minuten. Zes bevindingen, waar geen van de 64 suites op sloeg.
+
+Niet omdat de tests slecht zijn, maar omdat ze allemaal in het Nederlands draaien, op een snelle
+machine, met een profiel dat de tester zelf maakte. **De poort bewaakt wat we al weten; een vreemde
+vindt wat we niet wisten.** Dat is het argument om er vóór vrijdag nog twee of drie doorheen te
+sturen.
+
+### Af: de taal (v23.49)
+
+Zijn telefoon staat op Duits. Eén scherm, drie talen: de balk Duits, de schermtekst Engels, de
+woordbetekenis Nederlands. De oorzaak, geteld in de bron:
+
+    ct(nl, en)                927 aanroepen    2 talen
+    tt(key) via TXT             9 aanroepen    4 talen
+    TRANS (woordbetekenis)                     en 794 · fr 420 · de 420
+    proefTaal() eigen tabel                    4 talen, los van de rest
+    profLang() zonder profiel                  altijd "nl"
+
+927 tegen 9. De app is tweetalig en het keuzemenu belooft vier vlaggen. `ct(nl, en)` maakt het
+goedkoop om een Nederlandse zin toe te voegen en onmogelijk om een Duitse: de vorm van die functie
+bepaalt hoeveel talen de app kan hebben, en dat is nooit bewust gekozen.
+
+v23.49 snoeit tot wat waar is: nl en en, één functie `taalWeHebben()` in plaats van drie tabellen,
+`profLang()` valt zonder profiel terug op `newLang`, bestaande de/fr-profielen gaan bij het opstarten
+naar en, en de helling vraagt alleen woorden waarvan de betekenis in jouw taal bestaat. Dat laatste
+kost bijna niets: Engels dekt 36% van de bak maar 97% van de A1-kern (416 van 427).
+
+Wat er open blijft: buiten A1 ziet een Engelse gebruiker nog Nederlandse betekenissen. Dat vraagt
+1390 vertalingen erbij, of dezelfde filter op de hele leerlijn (en dan krimpt de app voor hem van
+2184 naar 794 woorden). Eerste grote klus ná de lancering, samen met het splitsen van de content.
+
+### Open, op volgorde van bouwen
+
+**6. De toets schaalt te hoog in.** Stefan: "bijna de helft kan je raden." Geen gevoel maar een
+ontwerpfout. Bij *el jardín* waren de afleiders *de badkamer*, *hoeveel kost het?* en *blauw*: een
+kamer, een vraag en een kleur. Je elimineert op soort zonder het woord te kennen. `peilOpties()`
+neemt afleiders uit dezelfde categorie alleen als er drie beschikbaar zijn, anders uit de hele bak.
+Daar komt bij dat veel A1-woorden cognaten zijn (jardín, hospital, pizarra) terwijl de gokcorrectie
+in `niveauSchatting()` (r − f/3) blind raden veronderstelt en geen geïnformeerd elimineren. Fix:
+afleiders uit dezelfde woordsoort en categorie, en de drempel omhoog. Raakt waar iedereen begint,
+dus eerst.
+
+**3. "Next sentence" vind je niet.** Bij het schrijven staat na Check eerst de groene uitslag, dan
+*Why:*, dan de luisterknoppen, en pas daaronder de knop. Op een telefoon onder de vouw. Fix: bij een
+goed antwoord automatisch door na een korte pauze; bij fout de knop direct onder de uitslag.
+
+**4. Het loopt dood na de dagles.** Je bent klaar en er is geen volgende stap: geen Chispa voeren,
+geen spel, geen tweede les. Staat al sinds v23.4 in de docs als `volgendeStap(context)` ("de zes
+doodlopende plekken") en is nooit gebouwd.
+
+**2 en 5, samen één verhaal: de app weet niet wat makkelijk is.** `GC_CONCEPTEN` heeft geen
+moeilijkheidsvolgorde, alleen een verwijzing naar een spiekbrief, dus op dag 1 kwam *qué of cuál*
+langs. Stefans voorstel is juist: begin bij el/la en los/las, en die concepten bestaan al (`genero`,
+`concordancia`), ze staan alleen niet vooraan. En Oefenen en Grammatica staan wagenwijd open terwijl
+lessen en spellen wél gepoort zijn, dus je kunt op dag 1 bij subjuntivo. Fix: elk concept een rang,
+de dagles pakt de laagste die je nog niet hebt, en Oefenen krijgt dezelfde vriendelijke poort als de
+spellen.
