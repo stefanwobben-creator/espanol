@@ -1206,7 +1206,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.40";
+var APP_VERSIE = "v23.41";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1512,7 +1512,21 @@ var WORDS = [
  {id:"w296", es:"brillante", nl:"stralend", tag:"boek-13"},
  {id:"w297", es:"terminar", nl:"eindigen", tag:"boek-13"},
  {id:"w298", es:"aprender", nl:"leren", tag:"boek-13"},
- {id:"w299", es:"el recuerdo", nl:"de herinnering", tag:"boek-13"}
+ {id:"w299", es:"el recuerdo", nl:"de herinnering", tag:"boek-13"},
+ {"id":"w300","es":"el tráfico","nl":"het verkeer","en":"traffic","tag":"ciudad"},
+ {"id":"w301","es":"el transporte público","nl":"het openbaar vervoer","en":"public transport","tag":"ciudad"},
+ {"id":"w302","es":"la contaminación","nl":"de vervuiling","en":"pollution","tag":"ciudad"},
+ {"id":"w303","es":"el ruido","nl":"het lawaai","en":"noise","tag":"ciudad"},
+ {"id":"w304","es":"la naturaleza","nl":"de natuur","en":"nature","tag":"campo"},
+ {"id":"w305","es":"el aire puro","nl":"de schone lucht","en":"fresh air","tag":"campo"},
+ {"id":"w306","es":"el espacio","nl":"de ruimte","en":"space","tag":"campo"},
+ {"id":"w307","es":"la tranquilidad","nl":"de rust","en":"peacefulness","tag":"campo"},
+ {"id":"w308","es":"el ambiente","nl":"de sfeer","en":"atmosphere","tag":"general"},
+ {"id":"w309","es":"la oferta cultural","nl":"het culturele aanbod","en":"cultural offer","tag":"ciudad"},
+ {"id":"w310","es":"la vida social","nl":"het sociale leven","en":"social life","tag":"general"},
+ {"id":"w311","es":"el ritmo de vida","nl":"het levensritme","en":"pace of life","tag":"general"},
+ {"id":"w312","es":"la vivienda","nl":"de woning","en":"housing","tag":"general"},
+ {"id":"w313","es":"el ocio","nl":"de vrije tijd","en":"leisure","tag":"general"}
 ];
 
 var SENTENCES = [
@@ -1687,6 +1701,19 @@ var SENTENCES = [
  {"id":"s159","lvl":2,"tag":"planesocio","nl":"Wat vind je van het plan voor zaterdag?","en":"What do you think of the plan for Saturday?","es":"¿Qué te parece el plan para el sábado?","alt":["¿qué te parece el plan para el sábado?","que te parece el plan para el sabado","¿qué te parece el plan del sábado?"],"uitleg":"Je schreef '¿qué te parezco el plan?' — maar parecer werkt als gustar: het plan is het onderwerp, dus te parece (parezco betekent 'ik kom op jou over als'). En let op het accent: sábado, klemtoon vooraan, meervoud los sábados (niet 'sabadó').","ue":"You wrote '¿qué te parezco el plan?' — but parecer works like gustar: the plan is the subject, so te parece (parezco means 'I seem to you'). Also mind the accent: sábado, stress on the first syllable, plural los sábados (not 'sabadó')."},
  {"id":"s160","lvl":2,"tag":"cocina","nl":"Voeg niet zoveel zout toe, alleen een snufje.","en":"Don't add so much salt, just a pinch.","es":"No añadas tanta sal, solo una pizca.","alt":["no añadas tanta sal, solo una pizca","no anadas tanta sal solo una pizca","no añadas tanta sal, sólo una pizca"],"uitleg":"Je schreef 'no añades demasiada sal' — bijna, maar de ontkennende imperatief gebruikt de subjuntivo-vorm: no añadas. Alleen de bevestigende vorm blijft añade (Añade una pizca de sal). En una pizca de = een snufje, die kwam deze week ook langs bij de woordjes.","ue":"You wrote 'no añades demasiada sal' — close, but the negative imperative takes the subjunctive form: no añadas. Only the affirmative keeps añade (Añade una pizca de sal). And una pizca de = a pinch of, which also came up in your word practice this week."},
  {"id":"s161","lvl":2,"tag":"les4","nl":"Mijn appartement is op de vijfde verdieping en er is geen lift.","en":"My flat is on the fifth floor and there is no lift.","es":"Mi piso está en la quinta planta y no hay ascensor.","alt":["mi piso está en la quinta planta y no hay ascensor","mi piso esta en la quinta planta y no hay ascensor","mi apartamento está en la quinta planta y no hay ascensor"],"uitleg":"El ascensor (de lift) ging deze week twee keer mis bij de woordjes — hier zit hij in een zin: no hay ascensor, zonder lidwoord na hay. En la planta = de verdieping; el piso is zowel 'het appartement' als 'de vloer'.","ue":"El ascensor (the lift) tripped you up twice this week in word practice — here it is in a sentence: no hay ascensor, no article after hay. And la planta = the floor/storey; el piso means both 'the flat' and 'the floor'."},
+ {"id":"s162","lvl":2,"nl":"Ik vergeet altijd mijn telefoon te laden.","en":"I always forget to charge my phone.","es":"Siempre se me olvida cargar el móvil.","alt":["siempre se me olvida cargar el movil","siempre se me olvida cargar el teléfono"],"uitleg":"Bij 'olvidar' met 'se me' staat het onderwerp (cargar el móvil) achter de persoonsvorm. 'Se me' geeft aan dat het onbedoeld gebeurt.","ue":"With 'olvidar' and 'se me', the subject (cargar el móvil) comes after the verb. 'Se me' indicates it happens unintentionally.","tag":"basis"},
+ {"id":"s163","lvl":2,"nl":"We moeten nog even wachten tot de bus komt.","en":"We still have to wait until the bus arrives.","es":"Todavía tenemos que esperar a que llegue el autobús.","alt":["todavia tenemos que esperar a que llegue el autobus","aún tenemos que esperar a que llegue el autobús"],"uitleg":"Na 'esperar a que' volgt de subjuntivo (llegue) omdat het om een toekomstige gebeurtenis gaat. 'Todavía' of 'aún' benadrukt dat het nog niet gebeurd is.","ue":"After 'esperar a que' the subjunctive (llegue) is used because it refers to a future event. 'Todavía' or 'aún' emphasizes it hasn't happened yet.","tag":"basis"},
+ {"id":"s164","lvl":2,"nl":"Mijn broer is heel lang, maar mijn zus is juist heel klein.","en":"My brother is very tall, but my sister is really short.","es":"Mi hermano es muy alto, pero mi hermana es muy baja.","alt":["mi hermano es muy alto pero mi hermana es muy baja","mi hermano es muy alto pero mi hermana es bajita"],"uitleg":"Alto en baja zijn tegenstellingen in lengte. Baja is het vrouwelijk woord voor 'klein' in lengte, niet in betekenis zoals in 'kleine zus'.","ue":"Alto and baja are opposites in height. Baja is the feminine word for 'short' in height, not in meaning like 'little sister'.","tag":"les3"},
+ {"id":"s165","lvl":2,"nl":"Die vrouw daar lijkt op mijn tante, ze heeft dezelfde bril.","en":"That woman over there looks like my aunt, she has the same glasses.","es":"Esa mujer de ahí se parece a mi tía, lleva las mismas gafas.","alt":["esa mujer de ahi se parece a mi tia lleva las mismas gafas","esa mujer de ahí se parece a mi tía tiene las mismas gafas"],"uitleg":"Llevar gafas is de natuurlijke uitdrukking voor 'een bril dragen'. Se parece a betekent 'lijkt op'.","ue":"Llevar gafas is the natural expression for 'to wear glasses'. Se parece a means 'looks like'.","tag":"les3"},
+ {"id":"s166","lvl":2,"nl":"Ik kan niet goed opschieten met mijn buurman, hij is altijd zo gesloten.","en":"I don’t get along well with my neighbor, he’s always so closed-off.","es":"No me llevo bien con mi vecino, es muy cerrado.","alt":["no me llevo bien con mi vecino es muy cerrado","no me llevo bien con mi vecino es muy poco abierto"],"uitleg":"Cerrado betekent hier 'gesloten' in karakter, niet in letterlijke zin. Llevarse bien/mal con is de gebruikelijke uitdrukking voor 'opschieten met'.","ue":"Cerrado here means 'closed-off' in character, not literally. Llevarse bien/mal con is the usual expression for 'get along with'.","tag":"les3"},
+ {"id":"s167","lvl":2,"nl":"Die man is heel knap, maar zijn broer is juist heel slank.","en":"That man is very handsome, but his brother is really slim.","es":"Ese hombre es muy guapo, pero su hermano es muy delgado.","alt":["ese hombre es muy guapo pero su hermano es muy delgado","ese hombre es muy guapo pero su hermano es muy flaco"],"uitleg":"Guapo betekent 'knap' voor mensen, delgado betekent 'slank'. Flaco is een informeel synoniem voor delgado.","ue":"Guapo means 'handsome' for people, delgado means 'slim'. Flaco is an informal synonym for delgado.","tag":"les3"},
+ {"id":"s168","lvl":2,"nl":"In de stad is het openbaar vervoer beter, maar het verkeer is altijd druk.","en":"Public transport is better in the city, but traffic is always busy.","es":"En la ciudad el transporte público es mejor, pero el tráfico siempre está congestionado.","alt":["en la ciudad el transporte publico es mejor pero el trafico siempre esta congestionado","en la ciudad el transporte público es mejor pero siempre hay mucho tráfico"],"uitleg":"De eerste zin beschrijft een feit (beter openbaar vervoer), de tweede een situatie (druk verkeer). Beide zinnen zijn natuurlijk en logisch.","ue":"The first sentence describes a fact (better public transport), the second a situation (busy traffic). Both sentences are natural and logical.","tag":"ciudad"},
+ {"id":"s169","lvl":2,"nl":"Op het platteland is de lucht schoner, maar je moet verder reizen voor werk.","en":"The air is cleaner in the countryside, but you have to travel further for work.","es":"En el campo el aire es más puro, pero hay que desplazarse más para ir al trabajo.","alt":["en el campo el aire es mas puro pero hay que desplazarse mas para ir al trabajo","en el campo se respira aire más puro pero para ir al trabajo hay que moverse mucho"],"uitleg":"De eerste zin beschrijft een voordeel (schone lucht), de tweede een nadeel (ver reizen). Beide zinnen zijn concreet en dagelijks.","ue":"The first sentence describes an advantage (clean air), the second a disadvantage (long commute). Both sentences are concrete and everyday.","tag":"campo"},
+ {"id":"s170","lvl":2,"nl":"Ik mis de rust van het platteland als ik in de stad woon.","en":"I miss the peace of the countryside when I live in the city.","es":"Echo de menos la tranquilidad del campo cuando vivo en la ciudad.","alt":["echo de menos la tranquilidad del campo cuando vivo en la ciudad","cuando vivo en la ciudad echo de menos la tranquilidad del campo"],"uitleg":"De zin beschrijft een gevoel (missen) en een situatie (in de stad wonen). Het is een natuurlijke uitspraak.","ue":"The sentence describes a feeling (missing) and a situation (living in the city). It is a natural statement.","tag":"general"},
+ {"id":"s171","lvl":2,"nl":"In de stad is er meer te doen in je vrije tijd, maar het is duurder.","en":"There’s more to do in your free time in the city, but it’s more expensive.","es":"En la ciudad hay más planes para el ocio, pero es más caro.","alt":["en la ciudad hay mas planes para el ocio pero es mas caro","en la ciudad hay más opciones de ocio pero todo cuesta más"],"uitleg":"De zin beschrijft een voordeel (meer vrije tijd activiteiten) en een nadeel (duurder). Het is een alledaagse uitspraak.","ue":"The sentence describes an advantage (more leisure activities) and a disadvantage (more expensive). It is an everyday statement.","tag":"general"},
+ {"id":"s172","lvl":2,"nl":"Op het platteland is het levensritme rustiger, maar je hebt minder winkels.","en":"The pace of life is slower in the countryside, but there are fewer shops.","es":"En el campo el ritmo de vida es más tranquilo, pero hay menos tiendas.","alt":["en el campo el ritmo de vida es mas tranquilo pero hay menos tiendas","en el campo se vive más despacio pero hay menos comercios"],"uitleg":"De zin beschrijft een voordeel (rustiger ritme) en een nadeel (minder winkels). Het is een natuurlijke vergelijking.","ue":"The sentence describes an advantage (slower pace) and a disadvantage (fewer shops). It is a natural comparison.","tag":"campo"},
+ {"id":"s173","lvl":2,"nl":"Ik woon liever in de stad omdat ik van de sfeer hou.","en":"I prefer to live in the city because I love the atmosphere.","es":"Prefiero vivir en la ciudad porque me gusta el ambiente.","alt":["prefiero vivir en la ciudad porque me gusta el ambiente","me gusta más vivir en la ciudad por el ambiente"],"uitleg":"De zin beschrijft een voorkeur (liever in de stad wonen) en een reden (houden van de sfeer). Het is een persoonlijke uitspraak.","ue":"The sentence describes a preference (prefer to live in the city) and a reason (love the atmosphere). It is a personal statement.","tag":"general"},
+ {"id":"s174","lvl":2,"nl":"Op het platteland is er meer ruimte, maar je moet zelf alles regelen.","en":"There’s more space in the countryside, but you have to arrange everything yourself.","es":"En el campo hay más espacio, pero tienes que organizar todo tú mismo.","alt":["en el campo hay mas espacio pero tienes que organizar todo tu mismo","en el campo hay más sitio pero todo depende de ti"],"uitleg":"De zin beschrijft een voordeel (meer ruimte) en een nadeel (zelf regelen). Het is een praktische uitspraak.","ue":"The sentence describes an advantage (more space) and a disadvantage (have to arrange everything yourself). It is a practical statement.","tag":"campo"},
  {"id":"s176","lvl":2,"tag":"les2","nl":"Ik haalde mijn rijbewijs op mijn achttiende.","en":"I got my driving licence when I was eighteen.","es":"Me saqué el carnet de conducir a los dieciocho años.","alt":["me saqué el carnet de conducir a los dieciocho años","me saque el carnet de conducir a los dieciocho anos","me saqué el carné de conducir a los dieciocho años"],"uitleg":"El carnet de conducir (het rijbewijs) ging deze week twee keer mis bij de woordjes — hier zit hij in een zin. Sacarse el carnet = je rijbewijs halen; in het indefinido wordt dat me saqué: één afgerond moment in je leven (a los dieciocho años), precies het soort biografiezin van deze les.","ue":"El carnet de conducir (the driving licence) tripped you up twice this week in word practice — here it is in a sentence. Sacarse el carnet = to get your licence; in the indefinido that becomes me saqué: one completed life event (a los dieciocho años), exactly the kind of biography sentence this lesson is about."}
 ];
 
@@ -1749,7 +1776,8 @@ var CHEATSHEET = [
  {"titel":"Advies geven: imperativo + tener que / deber","titelEn":"Giving advice: imperativo + tener que / deber","html":"<p>Advies geef je op twee manieren, van losser naar dwingender:</p><table><tr><th>vorm</th><th>voorbeeld</th></tr><tr><td>imperativo (tú)</td><td>Descansa. Toma una pastilla.</td></tr><tr><td>tener que + infinitief</td><td>Tienes que descansar.</td></tr><tr><td>deber + infinitief</td><td>Debes tomar un jarabe.</td></tr></table><p>Imperativo is het meest direct (zoals een recept), tener que/deber klinken iets vriendelijker/adviserend — allebei prima voor advies onder vrienden of familie.</p>","htmlEn":"<p>You can give advice in two ways, from more casual to more forceful:</p><table><tr><th>form</th><th>example</th></tr><tr><td>imperativo (tú)</td><td>Descansa. Toma una pastilla.</td></tr><tr><td>tener que + infinitive</td><td>Tienes que descansar.</td></tr><tr><td>deber + infinitive</td><td>Debes tomar un jarabe.</td></tr></table><p>Imperativo is the most direct (like a recipe), tener que/deber sound a bit gentler/more advisory — both work fine for advice among friends or family.</p>"},
  {"titel":"Een verhaal vertellen: indefinido + imperfecto samen","titelEn":"Telling a story: indefinido and imperfecto together","html":"<p>Een goed verhaal combineert bijna altijd twee tijden: <b>imperfecto</b> voor de achtergrond/scène, <b>indefinido</b> voor wat er dan gebeurde.</p><table><tr><th>rol in het verhaal</th><th>tijd</th><th>voorbeeld</th></tr><tr><td>achtergrond/omstandigheid</td><td>imperfecto</td><td>Mientras cenábamos... (terwijl we aten...)</td></tr><tr><td>de gebeurtenis die de scène onderbreekt</td><td>indefinido</td><td>...alguien llamó a la puerta. (klopte iemand)</td></tr></table><p>Vuistregel: imperfecto is de camera die stilstaat op de scène, indefinido is wat er dan ineens gebeurt. De twee werken bijna altijd samen in een goed verteld verhaal.</p>","htmlEn":"<p>A good story almost always combines two tenses: <b>imperfecto</b> for the background/scene, <b>indefinido</b> for what happened then.</p><table><tr><th>role in the story</th><th>tense</th><th>example</th></tr><tr><td>background/circumstance</td><td>imperfecto</td><td>Mientras cenábamos... (while we were having dinner...)</td></tr><tr><td>the event that interrupts the scene</td><td>indefinido</td><td>...alguien llamó a la puerta. (someone knocked)</td></tr></table><p>Rule of thumb: imperfecto is the camera holding steady on the scene, indefinido is what suddenly happens in it. The two almost always work together in a well-told story.</p>"},
  {"titel":"Perfecto of indefinido: welk tijdvak?","titelEn":"Perfecto or indefinido: which time frame?","html":"<p>Bij het navertellen van momenten maakt het uit of het tijdvak nog loopt of al voorbij is:</p><table><tr><th>pretérito perfecto</th><th>pretérito indefinido</th></tr><tr><td>tijdvak loopt nog: esta semana, hoy, este año</td><td>tijdvak is afgesloten: el año pasado, ayer, en 2020</td></tr><tr><td>ervaring tot nu toe: nunca, alguna vez, todavía no</td><td>één moment in het verleden: el sábado pasado, aquel día</td></tr></table><p>Dit is dezelfde regel als eerder in het lijstje (Indefinido of perfecto), nu toegepast op het navertellen van bijzondere momenten.</p>","htmlEn":"<p>When recounting moments, it matters whether the time frame is still ongoing or already over:</p><table><tr><th>pretérito perfecto</th><th>pretérito indefinido</th></tr><tr><td>time frame still ongoing: esta semana, hoy, este año</td><td>time frame is closed: el año pasado, ayer, en 2020</td></tr><tr><td>experience up to now: nunca, alguna vez, todavía no</td><td>one moment in the past: el sábado pasado, aquel día</td></tr></table><p>This is the same rule as earlier in this list (Indefinido or perfecto), now applied to recounting specific moments.</p>"},
- {"titel":"Nuttige woorden om een anekdote te vertellen","titelEn":"Useful words for telling an anecdote","html":"<p>Vaste verbindingswoorden die een verhaal soepel laten lopen:</p><table><tr><th>woord</th><th>gebruik</th></tr><tr><td>un día / una vez</td><td>opening: op een dag, op een keer</td></tr><tr><td>mientras</td><td>gelijktijdigheid: terwijl</td></tr><tr><td>de repente</td><td>plotselinge wending: plotseling</td></tr><tr><td>al final</td><td>afsluiting: uiteindelijk</td></tr></table><p>Combineer deze met de indefinido/imperfecto-vuistregel hierboven en je kunt een compleet anekdote vertellen.</p>","htmlEn":"<p>Set connecting words that make a story flow smoothly:</p><table><tr><th>word</th><th>use</th></tr><tr><td>un día / una vez</td><td>opening: one day, once</td></tr><tr><td>mientras</td><td>simultaneity: while</td></tr><tr><td>de repente</td><td>sudden turn: suddenly</td></tr><tr><td>al final</td><td>closing: in the end</td></tr></table><p>Combine these with the indefinido/imperfecto rule of thumb above and you can tell a complete anecdote.</p>"}
+ {"titel":"Nuttige woorden om een anekdote te vertellen","titelEn":"Useful words for telling an anecdote","html":"<p>Vaste verbindingswoorden die een verhaal soepel laten lopen:</p><table><tr><th>woord</th><th>gebruik</th></tr><tr><td>un día / una vez</td><td>opening: op een dag, op een keer</td></tr><tr><td>mientras</td><td>gelijktijdigheid: terwijl</td></tr><tr><td>de repente</td><td>plotselinge wending: plotseling</td></tr><tr><td>al final</td><td>afsluiting: uiteindelijk</td></tr></table><p>Combineer deze met de indefinido/imperfecto-vuistregel hierboven en je kunt een compleet anekdote vertellen.</p>","htmlEn":"<p>Set connecting words that make a story flow smoothly:</p><table><tr><th>word</th><th>use</th></tr><tr><td>un día / una vez</td><td>opening: one day, once</td></tr><tr><td>mientras</td><td>simultaneity: while</td></tr><tr><td>de repente</td><td>sudden turn: suddenly</td></tr><tr><td>al final</td><td>closing: in the end</td></tr></table><p>Combine these with the indefinido/imperfecto rule of thumb above and you can tell a complete anecdote.</p>"},
+ {"titel":"Vergelijken met 'más ... que' en 'menos ... que'","titelEn":"Comparing with 'más ... que' and 'menos ... que'","html":"<p><b>Regel:</b> Gebruik <i>más ... que</i> om iets groter, beter of meer te vergelijken. Gebruik <i>menos ... que</i> voor het tegenovergestelde.</p>\n\n<p><b>Voorbeelden:</b></p>\n<table>\n<tr><th>Spaans</th><th>Nederlands</th></tr>\n<tr><td>En la ciudad <i>hay más ruido</i> <i>que</i> en el campo.</td><td>In de stad is <i>er meer lawaai</i> <i>dan</i> op het platteland.</td></tr>\n<tr><td>En el campo <i>hay menos tiendas</i> <i>que</i> en la ciudad.</td><td>Op het platteland zijn <i>er minder winkels</i> <i>dan</i> in de stad.</td></tr>\n</table>\n\n<p><b>Valkuil:</b> Vergeet niet dat <i>que</i> altijd na <i>más</i> of <i>menos</i> komt. Zeg niet <i>*más que ruido</i> of <i>*menos que tiendas</i>.</p>\n\n<p><b>Ezelsbruggetje:</b> Denk aan <i>‘meer dan’</i> en <i>‘minder dan’</i> in het Nederlands. Het Spaans doet precies hetzelfde: <i>más ... que</i> = meer ... dan, <i>menos ... que</i> = minder ... dan.</p>","htmlEn":"<p><b>Rule:</b> Use <i>más ... que</i> to compare something as bigger, better, or more. Use <i>menos ... que</i> for the opposite.</p>\n\n<p><b>Examples:</b></p>\n<table>\n<tr><th>Spanish</th><th>English</th></tr>\n<tr><td>En la ciudad <i>hay más ruido</i> <i>que</i> en el campo.</td><td>In the city <i>there is more noise</i> <i>than</i> in the countryside.</td></tr>\n<tr><td>En el campo <i>hay menos tiendas</i> <i>que</i> en la ciudad.</td><td>In the countryside <i>there are fewer shops</i> <i>than</i> in the city.</td></tr>\n</table>\n\n<p><b>Pitfall:</b> Don’t forget that <i>que</i> always comes after <i>más</i> or <i>menos</i>. Don’t say <i>*más que ruido</i> or <i>*menos que tiendas</i>.</p>\n\n<p><b>Memory trick:</b> Think of <i>‘more than’</i> and <i>‘less than’</i> in English. Spanish does the same: <i>más ... que</i> = more ... than, <i>menos ... que</i> = less ... than.</p>"}
 ];
 
 /* ================= BEGINNERSTRACK ================= */
@@ -4438,7 +4466,11 @@ var EXTRA_CONTENT = {
     "s155",
     "s156",
     "s157",
-    "s158"
+    "s158",
+    "s164",
+    "s165",
+    "s166",
+    "s167"
    ],
    "quizzes": []
   },
@@ -4480,7 +4512,9 @@ var EXTRA_CONTENT = {
    "sents": [
     "s145",
     "s153",
-    "s154"
+    "s154",
+    "s162",
+    "s163"
    ],
    "quizzes": []
   },
@@ -4517,7 +4551,45 @@ var EXTRA_CONTENT = {
    "quizzes": []
   }
  },
- "nieuweLessen": []
+ "nieuweLessen": [
+  {
+   "id": "b1-11",
+   "num": 11,
+   "niveau": "B1",
+   "titel": "En la ciudad o en el campo",
+   "doel": "Leren praten over verschillen tussen leven in de stad en op het platteland, inclusief voor- en nadelen.",
+   "doelEn": "Learning to talk about differences between city and countryside life, including pros and cons.",
+   "spiek": [
+    29
+   ],
+   "words": [
+    "w300",
+    "w301",
+    "w302",
+    "w303",
+    "w304",
+    "w305",
+    "w306",
+    "w307",
+    "w308",
+    "w309",
+    "w310",
+    "w311",
+    "w312",
+    "w313"
+   ],
+   "sents": [
+    "s168",
+    "s169",
+    "s170",
+    "s171",
+    "s172",
+    "s173",
+    "s174"
+   ],
+   "quizzes": []
+  }
+ ]
 };
 
 function pasExtraContentToe(){
