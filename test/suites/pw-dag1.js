@@ -172,6 +172,90 @@ async function verseBezoeker(page, niveau) {
   ok(alles === Object.keys(await page.evaluate(() => SPEEL_EIS)).length,
     '"laat ze toch allemaal zien" opent nog steeds alles');
 
+  console.log('\n-- op het Vandaag-scherm staat niets dat nul is (v23.45) --');
+  await page.evaluate(() => {
+    Object.keys(S.srs).slice(3).forEach(id => delete S.srs[id]);
+    try { persist(); } catch (e) {}
+    // De vorige stap liet de app op de speeltuin staan; zonder deze regel is het Vandaag-scherm
+    // verborgen en meet je de zichtbaarheid van iets wat sowieso niet in beeld is.
+    funView = null; show('lessen'); renderLessons();
+  });
+  await page.waitForTimeout(500);
+  const vandaag = await page.evaluate(() => {
+    const zicht = el => {
+      const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
+    };
+    const lijst = document.getElementById('lessonList');
+    return {
+      kaarten: Array.prototype.filter.call(lijst.querySelectorAll('.card'), zicht).length,
+      lijnKaart: !!document.getElementById('lijnKaart'),
+      tekst: lijst.innerText,
+      kracht: voortgangCijfers().kracht,
+      geoefend: voortgangCijfers().geoefend,
+      klikbaar: Array.prototype.filter.call(lijst.querySelectorAll('button,a'), zicht).length
+    };
+  });
+  console.log('  vandaag ::', JSON.stringify({ kaarten: vandaag.kaarten, lijn: vandaag.lijnKaart,
+    kracht: vandaag.kracht, geoefend: vandaag.geoefend, klikbaar: vandaag.klikbaar }));
+  ok(vandaag.kracht === 0 && vandaag.geoefend > 0,
+    'er staan wel woorden in je lijst, maar kracht is nul (die weegt naar hoe lang je ze vasthoudt)');
+  ok(!vandaag.lijnKaart,
+    'de lijnkaart staat er niet, want alles wat hij kan tonen is nul');
+  ok(!/van je 3 woorden, gewogen naar/.test(vandaag.tekst),
+    'en dus ook niet het eerste getal dat een vreemde van deze app te zien kreeg: een 0');
+  ok(/START JE LES/.test(vandaag.tekst) && /EVEN SPELEN/.test(vandaag.tekst),
+    'wat er wel staat: de les en de twee spellen die echt kunnen draaien');
+  ok(vandaag.kaarten === 2, 'twee kaarten op dag 1, niet drie');
+
+  console.log('\n-- maar zodra de tegel iets te zeggen heeft, staat hij er --');
+  const metKracht = await page.evaluate(() => {
+    // doosje 4 met een echte check eronder: dan telt hij mee in kracht (zie stevigDrempel/st.k)
+    allowedWordIds().slice(0, 12).forEach(id => {
+      S.srs[id] = { box: 5, due: '2020-01-01', n: 5, k: 1 };
+    });
+    try { persist(); } catch (e) {}
+    show('lessen'); renderLessons();
+    return { kracht: voortgangCijfers().kracht, tekst: document.getElementById('lessonList').innerText };
+  });
+  console.log('  kracht ::', metKracht.kracht);
+  ok(metKracht.kracht > 0 && /gewogen naar hoe lang je ze onthoudt/.test(metKracht.tekst),
+    'de tegel verschijnt zodra hij niet meer nul is (het is een drempel, geen verwijdering)');
+
+  console.log('\n-- de teksten zijn meegegroeid met de app (v23.47) --');
+  const teksten = await page.evaluate(() => {
+    const uit = { stappen: [], dagkaart: '' };
+    S.tour = true; // ook de late stappen, die achter de link Rondleiding zitten
+    tourLijst().forEach(st => { if (st.txt) uit.stappen.push(st.txt); });
+    show('lessen'); renderLessons();
+    uit.dagkaart = (document.querySelector('#lessonList .card') || {}).innerText || '';
+    uit.nieuwPerDag = nieuwPerDag();
+    // wat showTour er werkelijk van maakt, met de plaatshouder ingevuld
+    const w = document.getElementById('tourWrap'); if (w && w.remove) w.remove();
+    showTour(0);
+    uit.eerste = (document.getElementById('tourWrap') || {}).innerText || '';
+    const w2 = document.getElementById('tourWrap'); if (w2 && w2.remove) w2.remove();
+    return uit;
+  });
+  const alle = teksten.stappen.join(' ');
+  console.log('  nieuwPerDag ::', teksten.nieuwPerDag);
+  ok(!/1 grammaticapunt/.test(teksten.dagkaart) && /daarna kort/.test(teksten.dagkaart),
+    'de dagles geeft grammatica geen kwart van de zin meer');
+  ok(!/hooguit 15 nieuwe/.test(alle),
+    'de rondleiding belooft geen 15 nieuwe woordjes meer terwijl je er 5 krijgt');
+  ok(teksten.eerste.indexOf(String(teksten.nieuwPerDag) + ' nieuwe woordjes') !== -1,
+    'hij noemt jouw eigen dagportie (' + teksten.nieuwPerDag + ')');
+  ok(!/\{\{/.test(teksten.eerste),
+    'en de plaatshouder is echt ingevuld, er staat geen {{...}} op het scherm');
+  // De drie schermen die niet meer bestaan. Dit is de tekst achter de link "Rondleiding", dus
+  // precies wat iemand opent als hij het even niet meer weet; verouderde hulp is erger dan geen.
+  ok(!/Onder <b>Grammatica<\/b>/.test(alle),
+    'de rondleiding wijst niet meer naar een Grammatica-tab die niet bestaat');
+  ok(!/\ud83d\udcd6-knop|ronde 📖/.test(alle),
+    'en niet meer naar de ronde 📖-knop, die sinds v21.6 de pil "Zoek" is');
+  ok(!/<b>Speeltuin<\/b>/.test(alle),
+    'en noemt de balk bij de naam die er staat, niet "Speeltuin"');
+
   console.log('\n-- schone console --');
   ok(errs.length === 0, 'geen javascript-fouten onderweg' + (errs.length ? ' :: ' + errs.join(' | ') : ''));
 

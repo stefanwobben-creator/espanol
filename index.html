@@ -1207,7 +1207,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.44";
+var APP_VERSIE = "v23.48";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5887,6 +5887,7 @@ var HEL_TXT = {
  nl:{door:"Nog even door? Dan weten we straks waar je staat.", doorJa:"Ja, laat maar komen →",
      doorNee:"Nee, ik maak gewoon een profiel", vraag:"Wat betekent dit?", geen:"Geen idee",
      klaarKop:"Klaar. En nu weten we iets.", stop:"Genoeg voor nu",
+     telt:"Deze woorden tellen niet voor je taco's, wel voor je startpunt.",
      hoeveel:function(r,n){ return "Je herkende "+r+" van de "+n+" woorden."; },
      genoeg:"Genoeg om te zien waar je staat.",
      start:function(l){ return "Je begint op "+l+"."; },
@@ -5896,6 +5897,7 @@ var HEL_TXT = {
  en:{door:"Keep going? Then we will know where you stand.", doorJa:"Yes, bring them on →",
      doorNee:"No, just make me a profile", vraag:"What does this mean?", geen:"No idea",
      klaarKop:"Done. And now we know something.", stop:"Enough for now",
+     telt:"These words do not count towards your tacos, but they do set your starting point.",
      hoeveel:function(r,n){ return "You recognised "+r+" of the "+n+" words."; },
      genoeg:"Enough to see where you stand.",
      start:function(l){ return "You start at "+l+"."; },
@@ -6032,15 +6034,25 @@ function helVraagRender(box, d, h){
     "<p class='muted' style='margin:0 0 10px; text-align:center'>"+h.vraag+"</p>"+
     knoppen+
     "<button type='button' class='ghost' id='btnHelGeen' style='margin-top:8px; width:100%'>"+h.geen+"</button>"+
-    "<p class='muted' style='margin-top:12px; text-align:center'><a href='#' id='lnkHelStop'>"+h.stop+"</a></p>";
+    // Zelfde belofte als op het peilingscherm, maar zonder het woord "meting": dat klinkt als een
+    // toets, en dit is het eerste scherm van iemand die nog niets van deze app weet.
+    "<p class='muted' style='margin:12px 0 0; text-align:center; font-size:.85rem'>"+h.telt+"</p>"+
+    "<p class='muted' style='margin-top:10px; text-align:center'><a href='#' id='lnkHelStop'>"+h.stop+"</a></p>";
   if(gekozen !== undefined && gekozen !== null) return;
   function antwoord(keuze){
     if(proefStand.helGekozen !== undefined && proefStand.helGekozen !== null) return;
     proefStand.helGekozen = (keuze === null ? "" : keuze);
     proefStand.items = proefStand.items || {};
     proefStand.items[v.key] = (keuze === null ? -1 : (keuze === v.goed ? 1 : 0));
-    if(keuze === v.goed){ proefStand.helGoed = (proefStand.helGoed || 0) + 1; proefStand.xp += 2; }
-    else proefStand.xp += 1;
+    /* v23.46: de helling deelde XP uit alsof het een oefening was, twee per goed antwoord en
+       één per fout. Zevenentwintig keer, en dan sta je op vijftig taco's met een dagdoel van
+       dertig: "doel gehaald ✓" boven een knop die zegt "start je les". De peiling zegt op zijn
+       eigen scherm al hoe dit hoort ("Dit is een meting, geen les. Je punten en je doosjes
+       veranderen er niet van"), en de helling is sinds v23.45 ook echt een peiling.
+       De drie vaste proefwoorden houden hun taco's: dat is het eerste dat een vreemde
+       terugkrijgt, en daar is het voor bedoeld. Je begint dus op 5/30 en je eerste les is nog
+       steeds de weg naar je dagdoel. */
+    if(keuze === v.goed) proefStand.helGoed = (proefStand.helGoed || 0) + 1;
     // Bewaren na elk antwoord. Dertig vragen is lang genoeg dat een per ongeluk ververste pagina
     // echt pijn doet, en dit kost één regel.
     proefBewaar({bezig:true, xp:proefStand.xp, res:proefStand.res, items:proefStand.items, stand:proefStand});
@@ -6119,6 +6131,17 @@ function helVoorstelToepassen(v){
     document.querySelectorAll(".trackpick[data-lvl]").forEach(function(x){
       x.classList.toggle("active", x.getAttribute("data-lvl") === v.lvl);
     });
+    /* v23.47: zodra er een voorstel staat, klopt "Kies een niveau, of doe de test van 10
+       vragen" niet meer: de app vráágt niet meer om een keuze. En die tien vragen gaan over
+       grammatica, terwijl je niveau nu uit dertig woorden komt; het woord "niveau" hoort daarbij.
+       De knop blijft staan als uitweg, maar heet wat hij is. Wie de helling overslaat, houdt het
+       oude scherm met de oude tekst, want daar is die test wél de manier om je niveau te bepalen. */
+    var hint = document.getElementById("profHint");
+    if(hint) hint.textContent = "";
+    var bp = document.getElementById("btnPlacement");
+    if(bp) bp.textContent = (proefTaal() === "nl")
+      ? "Liever de grammaticatest van 10 vragen?"
+      : "Rather take the 10-question grammar check?";
     var r = document.getElementById("helRegel");
     if(r){
       r.textContent = (proefTaal() === "nl")
@@ -6555,6 +6578,20 @@ function boot(){
     var items0 = pd0.items || {}, kh;
     S.peil = S.peil || {items:{}, log:[], laatst:""};
     for(kh in items0) if(!S.peil.items[kh]) S.peil.items[kh] = {r:items0[kh], d:today(), niv:"A1"};
+    /* v23.45: de helling is een peiling, dus schrijft hij zich ook zo weg. Zonder deze regels
+       stond S.peil.laatst nog op "" terwijl er wél een schatting lag, en dan komt peilAanbod()
+       via peilDagenGeleden("") = 9999 uit op "aanbieden". Gevolg: de app bood een peiling van
+       twaalf woorden aan iemand die net dertig woorden had gedaan. Meteen erbij: de
+       voortgangspagina heeft nu vanaf dag 1 een nulpunt om groei tegen af te zetten, in
+       plaats van pas na je eerste losse peiling. Zelfde velden als peilKlaar() schrijft. */
+    if(Object.keys(items0).length){
+      S.peil.laatst = today();
+      S.peil.log = S.peil.log || [];
+      var schH = null;
+      try { schH = niveauSchatting("A1"); } catch(e){ schH = null; }
+      if(schH) S.peil.log.push({d:today(), niv:"A1", punt:schH.punt, onder:schH.onder,
+                                boven:schH.boven, n:schH.n, vast:schH.vast, hel:1});
+    }
     if(pd0.hel && pd0.hel.length){
       var iz = 0;
       pd0.hel.forEach(function(v){
@@ -13397,9 +13434,12 @@ function ritmeCard(){
     var d = [];
     d.push(portie.totaal + " " + ct("woordjes","words") + (portie.nieuw.length ? " (" + portie.nieuw.length + " " + ct("nieuw","new") + ")" : ""));
     if(portie.vanGisteren) d.push(portie.vanGisteren + " " + ct("van gisteren","from yesterday"));
-    d.push("1 " + ct("grammaticapunt","grammar point"));
-    d.push("1 " + ct("toetsje","quiz"));
-    d.push("1 " + ct("oefenronde","practice round"));
+    /* v23.47: hier stonden drie losse "1 iets"-onderdelen naast de woordjes. Dat gaf elk
+       kwart van de zin evenveel gewicht terwijl het in werk zes tegen een is, en het maakte
+       van grammatica een kwart van je dagles. Stefan, 11 aug: "grammatica is maar een klein
+       onderdeel nu." Eén regel voor de rest, en de woordjes houden de kop. */
+    d.push(ct("daarna kort: grammatica, een toetsje en oefenen",
+              "then briefly: grammar, a quiz and practice"));
     /* v23.17: hier stond "±5 min", hardgecodeerd. Dat was geen schatting maar een tekst: hij stond
        er ook als je portie drie keer zo groot was. Nu wordt hij gerekend uit jouw eigen seconden per
        antwoord, en zolang die er niet zijn staat er niets. De onderdelen tellen mee zoals ze op de
@@ -13763,7 +13803,12 @@ function dagKerncijfersHtml(){
   /* v23.18: hier stond "woorden geoefend". Dat getal loopt alleen maar op, ook als alles weer
      wegzakt, dus het kan niet tegenvallen en daarmee zegt het ook niets. Het staat nog gewoon op je
      profiel. Wat hier nu staat beweegt met wat er echt gebeurt. */
-  if(c.geoefend > 0){
+  /* v23.45: hier stond c.geoefend > 0, en dat is de verkeerde vraag. Die zegt "er staat iets
+     in je lijst", niet "er valt iets te melden". Op dag 1 kan kracht niets anders zijn dan
+     nul (hij weegt naar hoe lang je een woord vasthoudt), dus kreeg elke vreemde als eerste
+     getal van deze app een 0 te zien, met "van je 3 woorden" eronder. De kaart eromheen wist
+     dat al beter: zie dagRelevantie(), "nul is geen bericht". */
+  if(c.geoefend > 0 && c.kracht > 0){
     tegels += "<div class='stat'><b>"+c.kracht+"</b><span class='muted'>"+
       ct("van je "+c.geoefend+" woorden, gewogen naar hoe lang je ze onthoudt",
          "of your "+c.geoefend+" words, weighted by how long you remember them")+"</span></div>";
@@ -21257,12 +21302,12 @@ var TOUR = [
   {titel:"Je eerste woordje 🎉", oefen:{id:"b1", es:"hola", opts:["hallo","tot ziens"], c:0}},
   {titel:"En nummer twee ✨", oefen:{id:"b3", es:"gracias", opts:["alsjeblieft","dank je wel"], c:1}},
   {titel:"Zo werkt het 🧠",
-   txt:"Elke dag een klein stapje: hooguit <b>15 nieuwe woordjes</b>. Wat je niet wist komt vanzelf terug tot het blijft zitten. En een fout antwoord? Ook goed. Daar leer je het meest van, en het levert net zo goed taco's op."},
+   txt:"Elke dag een klein stapje: bij jouw instelling zijn dat <b>{{NIEUWPERDAG}} nieuwe woordjes</b> per dag. Wat je niet wist komt vanzelf terug tot het blijft zitten. En een fout antwoord? Ook goed. Daar leer je het meest van, en het levert net zo goed taco's op."},
   {titel:"Nog eentje dan 😄", oefen:{id:"b2", es:"adiós", opts:["tot ziens","goedemorgen"], c:0}},
   {titel:"Alles binnen handbereik 🧭", laat:true,
-   txt:"Onder <b>Grammatica</b> staat elk onderwerp opgeknipt in stappen met vragen erbij (plus alle spiekbrieven en toetsjes), de ronde 📖-knop bovenin is je woordenboek (opent als popup, altijd bij de hand), en in de <b>Speeltuin</b> leer je spelenderwijs verder met muziek, memory en meer."},
+   txt:"Onderin staan vijf plekken. <b>Vandaag</b> is je dagles. <b>Woordjes</b> en <b>Spelen</b> open je uit jezelf. Onder <b>Oefenen</b> staat alles wat meetelt voor je niveau, waaronder Grammatica: regels opzoeken en oefenen zonder ze uit je hoofd te leren. Achter <b>Meer</b> zit de rest, met een zin erbij die zegt wat het is. En iets opzoeken kan altijd: de pil <b>🔍 Zoek</b> rechtsboven opent je woordenboek."},
   {titel:"Samen leren 👤", laat:true,
-   txt:"Tik op je <b>naam</b> bovenaan voor je voortgang, je geheime sync-code en <b>Groepen</b>: start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
+   txt:"Achter <b>Meer</b> vind je <b>Voortgang</b> (je week, je doel en waar je staat) en <b>Profiel</b>: je instellingen, je geheime sync-code en <b>Groepen</b>. Start er een met vrienden of klasgenoten en deel de uitnodigingslink. Ben je docent? Maak een groep voor je klas en nodig je leerlingen uit."},
   {titel:"Ik groei met je mee ✨",
    txt:"Je hebt net je eerste taco's verdiend, en van taco's groei ík: van ei tot abuela, in acht vormen. Doe het op je eigen tempo, een dagje missen is prima. <b>Tot morgen?</b> Dan bewaar ik je woordjes van vandaag en staan er nieuwe voor je klaar: vijf minuutjes, zelfde plek. ¿Trato hecho? (afgesproken?) ¡Vamos!"}
 ];
@@ -21272,12 +21317,12 @@ var TOUR_EN = [
   {titel:"Your first word 🎉", oefen:{id:"b1", es:"hola", opts:["hello","goodbye"], c:0}},
   {titel:"And number two ✨", oefen:{id:"b3", es:"gracias", opts:["please","thank you"], c:1}},
   {titel:"How it works 🧠",
-   txt:"One small step a day: at most <b>15 new words</b>. Whatever you didn't know comes back until it sticks. And a wrong answer? That's fine too. It's where you learn the most, and it earns tacos just the same."},
+   txt:"One small step a day: with your setting that is <b>{{NIEUWPERDAG}} new words</b> a day. Whatever you didn't know comes back until it sticks. And a wrong answer? That's fine too. It's where you learn the most, and it earns tacos just the same."},
   {titel:"One more 😄", oefen:{id:"b2", es:"adiós", opts:["goodbye","good morning"], c:0}},
   {titel:"Everything within reach 🧭", laat:true,
-   txt:"Under <b>Grammar</b> every topic is cut into steps with questions (plus all the cheat sheets and quizzes), the round 📖 button at the top is your dictionary (opens as a popup, always at hand), and in the <b>Playground</b> you keep learning through music, memory and more."},
+   txt:"There are five places along the bottom. <b>Today</b> is your daily lesson. <b>Words</b> and <b>Play</b> you open yourself. Under <b>Practice</b> sits everything that counts towards your level, including Grammar: look up the rules and practise them without memorising them. Behind <b>More</b> is the rest, each with a line saying what it is. And you can always look something up: the <b>🔍 Search</b> pill at the top opens your dictionary."},
   {titel:"Learn together 👤", laat:true,
-   txt:"Tap your <b>name</b> at the top for your progress, your secret sync code and <b>Groups</b>: start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
+   txt:"Behind <b>More</b> you will find <b>Progress</b> (your week, your goal and where you stand) and <b>Profile</b>: your settings, your secret sync code and <b>Groups</b>. Start one with friends or classmates and share the invite link. Are you a teacher? Create a group for your class and invite your students."},
   {titel:"I grow with you ✨",
    txt:"You just earned your first tacos, and tacos are what make me grow: from egg to abuela, in eight forms. Go at your own pace — missing a day is fine. <b>See you tomorrow?</b> I'll keep today's words safe and have new ones ready: five minutes, same place. ¿Trato hecho? (deal?) ¡Vamos!"}
 ];
@@ -21311,7 +21356,17 @@ function showTour(stap){
       "<p class='muted' style='margin:0 0 10px'>"+(nl?"Wat betekent dit?":"What does this mean?")+"</p>"+
       t.oefen.opts.map(function(o, i){ return "<button class='opt' data-toefen='"+i+"' style='margin:4px 0'>"+o+"</button>"; }).join("");
   } else {
-    midden = "<p>"+t.txt+"</p>";
+    /* v23.47: de rondleiding beloofde "hooguit 15 nieuwe woordjes" terwijl je er bij het
+       standaard dagdoel van tien minuten vijf krijgt. "Hooguit" maakt dat formeel waar en
+       praktisch misleidend. Nu rekent de zin met jouw eigen instelling; verandert je
+       dagdoel, dan verandert de zin mee. */
+    var txt = String(t.txt || "");
+    if(txt.indexOf("{{NIEUWPERDAG}}") !== -1){
+      var npd = 5;
+      try { npd = nieuwPerDag(); } catch(e){}
+      txt = txt.replace(/\{\{NIEUWPERDAG\}\}/g, npd);
+    }
+    midden = "<p>"+txt+"</p>";
   }
   wrap.innerHTML = "<div class='tourcard'>"+
     "<div class='tourpet'>"+petSVG()+"</div>"+
@@ -23798,14 +23853,36 @@ var GC_PROF = [
  {m:"médico", f:"médica", nl:"arts", en:"a doctor"}, {m:"profesor", f:"profesora", nl:"docent", en:"a teacher"},
  {m:"cocinero", f:"cocinera", nl:"kok", en:"a cook"}, {m:"abogado", f:"abogada", nl:"advocaat", en:"a lawyer"}
 ];
+/* v23.48: hier stonden alleen de infinitieven, en de patronen hieronder maakten er zelf een
+   verleden tijd van door een uitgang achter de stam te plakken. Dat is Spaanse morfologie op
+   Nederlands en Engels losgelaten: "reizen" werd "reizende ik" en "gereizt", "eat" werd "eated".
+   Bij "werken" komt er toevallig "gewerkt" uit, en dat is precies waarom het zo lang bleef staan.
+   Vierentwintig woorden die één keer goed staan zijn beter dan een regel die bij elk nieuw
+   werkwoord opnieuw kan misgaan.
+
+   obj: mag er een lijdend voorwerp achter. Alleen deze twee kunnen in "Un día ___ algo increíble"
+   staan; *hablé algo increíble* en *viajé algo increíble* zijn geen Spaans, en oefenen op een zin
+   die niet bestaat is erger dan een scheve vertaling. */
 var GC_PAS = [
- {inf:"hablar", nl:"praten", en:"talk", part:"hablado", indef:"hablé", imp:"hablaba"},
- {inf:"trabajar", nl:"werken", en:"work", part:"trabajado", indef:"trabajé", imp:"trabajaba"},
- {inf:"estudiar", nl:"studeren", en:"study", part:"estudiado", indef:"estudié", imp:"estudiaba"},
- {inf:"viajar", nl:"reizen", en:"travel", part:"viajado", indef:"viajé", imp:"viajaba"},
- {inf:"comer", nl:"eten", en:"eat", part:"comido", indef:"comí", imp:"comía"},
- {inf:"vivir", nl:"wonen", en:"live", part:"vivido", indef:"viví", imp:"vivía"}
+ {inf:"hablar", nl:"praten", nlVt:"praatte", nlVd:"gepraat",
+  en:"talk", enVt:"talked", enVd:"talked", part:"hablado", indef:"hablé", imp:"hablaba"},
+ {inf:"trabajar", nl:"werken", nlVt:"werkte", nlVd:"gewerkt",
+  en:"work", enVt:"worked", enVd:"worked", part:"trabajado", indef:"trabajé", imp:"trabajaba"},
+ {inf:"estudiar", nl:"studeren", nlVt:"studeerde", nlVd:"gestudeerd", obj:1,
+  en:"study", enVt:"studied", enVd:"studied", part:"estudiado", indef:"estudié", imp:"estudiaba"},
+ {inf:"viajar", nl:"reizen", nlVt:"reisde", nlVd:"gereisd",
+  en:"travel", enVt:"travelled", enVd:"travelled", part:"viajado", indef:"viajé", imp:"viajaba"},
+ {inf:"comer", nl:"eten", nlVt:"at", nlVd:"gegeten", obj:1,
+  en:"eat", enVt:"ate", enVd:"eaten", part:"comido", indef:"comí", imp:"comía"},
+ {inf:"vivir", nl:"wonen", nlVt:"woonde", nlVd:"gewoond",
+  en:"live", enVt:"lived", enVd:"lived", part:"vivido", indef:"viví", imp:"vivía"}
 ];
+/* "Never" hoort in het Engels niet vooraan maar tussen het hulpwerkwoord en het deelwoord. Het
+   sjabloon zette het tijdvak altijd vooraan en maakte er "Never I have eaten a lot" van. */
+function gcEnPerfect(m, vd){
+  if(m.en === "Never") return "I have never " + vd + " much.";
+  return m.en + " I have " + vd + " a lot.";
+}
 var GC_ABIERTO = [
  {es:"Hoy", nl:"Vandaag", en:"Today"}, {es:"Esta semana", nl:"Deze week", en:"This week"},
  {es:"Este mes", nl:"Deze maand", en:"This month"}, {es:"Este año", nl:"Dit jaar", en:"This year"},
@@ -24118,26 +24195,26 @@ var GC_CONCEPTEN = [
     wEn:"It is about the frame, not the distance. Something twelve hours ago can be perfect and something three hours ago preterite."},
   patronen:[
    function(){ var m = gcKies(GC_ABIERTO), w = gcKies(GC_PAS);
-     return {v:m.es+" ___ mucho. ("+m.nl+" heb ik veel ge"+w.nl.replace(/en$/,"")+"t.)",
-             vEn:m.es+" ___ mucho. ("+m.en+" I "+w.en+"ed a lot.)",
+     return {v:m.es+" ___ mucho. ("+m.nl+" heb ik veel "+w.nlVd+".)",
+             vEn:m.es+" ___ mucho. ("+gcEnPerfect(m, w.enVd)+")",
              o:["he "+w.part, w.indef], g:0,
              w:m.es+" is een vak dat nog loopt, dus perfecto: he "+w.part+".",
              wEn:m.es+" is a frame that is still running, so perfect: he "+w.part+"."}; },
    function(){ var m = gcKies(GC_CERRADO), w = gcKies(GC_PAS);
-     return {v:m.es+" ___ mucho. ("+m.nl+" heb ik veel ge"+w.nl.replace(/en$/,"")+"t.)",
-             vEn:m.es+" ___ mucho. ("+m.en+" I "+w.en+"ed a lot.)",
+     return {v:m.es+" ___ mucho. ("+m.nl+" heb ik veel "+w.nlVd+".)",
+             vEn:m.es+" ___ mucho. ("+m.en+" I "+w.enVt+" a lot.)",
              o:["he "+w.part, w.indef], g:1,
              w:m.es+" is een dicht vak, dus indefinido: "+w.indef+". "+m.es+" he ... is altijd fout.",
              wEn:m.es+" is a closed frame, so preterite: "+w.indef+". "+m.es+" he ... is always wrong."}; },
    function(){ var w = gcKies(GC_PAS);
      return {v:"Nunca ___ en Perú. (Ik ben nooit in Peru geweest om te "+w.nl+".)",
-             vEn:"Nunca ___ en Perú. (I have never "+w.en+"ed in Peru.)",
+             vEn:"Nunca ___ en Perú. (I have never "+w.enVd+" in Peru.)",
              o:["he "+w.part, w.indef], g:0,
              w:"Nunca gaat over je leven tot nu toe, en dat vak loopt nog. Dus perfecto.",
              wEn:"Nunca is about your life so far, and that frame is still open. So perfect."}; },
    function(){ var w = gcKies(GC_PAS), j = gcKies(["2015","2018","2020","2021"]);
-     return {v:"En "+j+" ___ en Madrid. (In "+j+" heb ik in Madrid ge"+w.nl.replace(/en$/,"")+"d.)",
-             vEn:"En "+j+" ___ en Madrid. (In "+j+" I "+w.en+"ed in Madrid.)",
+     return {v:"En "+j+" ___ en Madrid. (In "+j+" heb ik in Madrid "+w.nlVd+".)",
+             vEn:"En "+j+" ___ en Madrid. (In "+j+" I "+w.enVt+" in Madrid.)",
              o:["he "+w.part, w.indef], g:1,
              w:"Een jaartal in het verleden is een dicht vak: indefinido.",
              wEn:"A year in the past is a closed frame: preterite."}; }
@@ -24162,26 +24239,28 @@ var GC_CONCEPTEN = [
     wEn:"The preterite pushes the story forward, the imperfect describes the circumstances around it. The same event can be either, depending on the role it plays."},
   patronen:[
    function(){ var w = gcKies(GC_PAS);
-     return {v:"De niño ___ en Sevilla. (Als kind "+w.nl.replace(/r$/,"")+"de ik in Sevilla.)",
+     return {v:"De niño ___ en Sevilla. (Als kind "+w.nlVt+" ik in Sevilla.)",
              vEn:"De niño ___ en Sevilla. (As a child I used to "+w.en+" in Seville.)",
              o:[w.indef, w.imp], g:1,
              w:"De niño gaat over hoe het vroeger altijd was, dus imperfecto: "+w.imp+".",
              wEn:"De niño is about how things always were, so imperfect: "+w.imp+"."}; },
    function(){ var w = gcKies(GC_PAS);
-     return {v:"Ayer ___ tres horas. (Gisteren heb ik drie uur ge"+w.nl.replace(/en$/,"")+"t.)",
-             vEn:"Ayer ___ tres horas. (Yesterday I "+w.en+"ed for three hours.)",
+     return {v:"Ayer ___ tres horas. (Gisteren heb ik drie uur "+w.nlVd+".)",
+             vEn:"Ayer ___ tres horas. (Yesterday I "+w.enVt+" for three hours.)",
              o:[w.indef, w.imp], g:0,
              w:"Een afgeronde gebeurtenis op een afgesloten moment: indefinido.",
              wEn:"A finished event at a closed moment: preterite."}; },
    function(){ var w = gcKies(GC_PAS);
-     return {v:"Todos los días ___ con mi abuela. (Elke dag "+w.nl.replace(/r$/,"")+"de ik met mijn oma.)",
+     return {v:"Todos los días ___ con mi abuela. (Elke dag "+w.nlVt+" ik met mijn oma.)",
              vEn:"Todos los días ___ con mi abuela. (Every day I would "+w.en+" with my grandmother.)",
              o:[w.indef, w.imp], g:1,
              w:"Todos los días is een gewoonte, en gewoontes staan in het imperfecto.",
              wEn:"Todos los días is a habit, and habits go in the imperfect."}; },
-   function(){ var w = gcKies(GC_PAS);
-     return {v:"Un día ___ algo increíble. (Op een dag "+w.nl.replace(/r$/,"")+"de ik iets ongelooflijks.)",
-             vEn:"Un día ___ something incredible. (One day I "+w.en+"ed something incredible.)",
+   function(){ /* alleen werkwoorden die een lijdend voorwerp kunnen hebben: zie de obj-vlag bij
+                   GC_PAS. Met de hele lijst leverde dit patroon *hablé algo increíble* op. */
+     var w = gcKies(GC_PAS.filter(function(x){ return x.obj; }));
+     return {v:"Un día ___ algo increíble. (Op een dag "+w.nlVt+" ik iets ongelooflijks.)",
+             vEn:"Un día ___ algo increíble. (One day I "+w.enVt+" something incredible.)",
              o:[w.indef, w.imp], g:0,
              w:"Un día kondigt een gebeurtenis aan die het verhaal vooruit duwt: indefinido.",
              wEn:"Un día announces an event that pushes the story forward: preterite."}; }

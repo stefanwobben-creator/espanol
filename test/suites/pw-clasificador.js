@@ -78,7 +78,15 @@ const { chromium } = require('playwright');
 
   // ---- 4. drie missers en de ronde stopt, met je langste reeks als score ----
   const mis = await page.evaluate(() => {
-    clNieuwSpel();
+    /* 11 aug: hier stond clNieuwSpel() zonder id, en dat is de reden dat deze suite af en toe rood
+       werd in de poort en nooit als losse run. Zonder id kiest clNieuwSpel() een willekeurig
+       concept (geschud(pool)[0]), en clTrekItem() geeft elk item maar één keer. Valt de keuze op een
+       concept met weinig patronen, dan is de ronde al klaar vóór de misser hieronder: clKies() doet
+       dan niets meer, de reeks blijft op 2 staan en "een misser zet je reeks op nul" zakt. Geen
+       tijdsprobleem dus maar een dobbelsteen, en serestar heeft genoeg items (blok 2 trekt er
+       twaalf uit). Zie claude/lancering.md punt 5. */
+    clNieuwSpel('serestar');
+    if (!clSpel) clNieuwSpel();
     S.clBest = 0;
     clKies(clSpel.item.g); clKies(clSpel.item.g);   // reeks van 2 opbouwen
     const best = clSpel.best, streakVoor = clSpel.streak;
@@ -99,7 +107,8 @@ const { chromium } = require('playwright');
 
   // ---- 5. een misser vertelt wat het wel was ----
   const uitleg = await page.evaluate(() => {
-    clNieuwSpel();
+    clNieuwSpel('serestar');
+    if (!clSpel) clNieuwSpel();
     clKies(clSpel.item.g === 0 ? 1 : 0);
     return clSpel.laatste;
   });

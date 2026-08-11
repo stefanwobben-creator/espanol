@@ -169,6 +169,18 @@ async function helling(page, deelGoed) {
     'de drie kiesbare niveaus, het grijze B1 en de niveautest staan er nog: dit is een voorstel, ' +
     'geen uitspraak');
 
+  console.log('\n-- de grammaticatest concurreert niet meer met het voorstel (v23.47) --');
+  const test = await page.evaluate(() => ({
+    hint: (document.getElementById('profHint') || {}).textContent || '',
+    knop: (document.getElementById('btnPlacement') || {}).textContent || '',
+    erNog: !!document.getElementById('btnPlacement')
+  }));
+  console.log('  test ::', JSON.stringify(test));
+  ok(test.hint === '',
+    '"Kies een niveau, of doe de test van 10 vragen" staat er niet meer: de app vraagt niets meer');
+  ok(test.erNog && /grammatica/i.test(test.knop) && !/niveau/i.test(test.knop),
+    'de knop blijft als uitweg staan maar heet wat hij is: een grammaticatest, geen niveautest');
+
   console.log('\n-- een niveauknop laat je dagdoel met rust --');
   const doel = await page.evaluate(() => {
     document.getElementById('lnkMeerOpties').click();
@@ -215,6 +227,22 @@ async function helling(page, deelGoed) {
   // helling laadde. Zonder de reset in boot() bleef hij de hele sessie op 405 staan.
   ok(na.keysCache < 405 && na.keysCache > 300,
     'pcicKeysApp() is opnieuw opgebouwd voor de bak van dit profiel (' + na.keysCache + ' A1-sleutels)');
+
+  console.log('\n-- de meting is een meting (v23.46) --');
+  const punten = await page.evaluate(() => ({
+    vandaag: (S.xp || {})[today()] || 0,
+    txp: S.txp || 0,
+    doel: S.doel,
+    balk: (document.getElementById('goalLine') || {}).innerText || '',
+    gehaald: ((S.xp || {})[today()] || 0) >= S.doel
+  }));
+  console.log('  punten ::', JSON.stringify(punten));
+  ok(punten.vandaag > 0 && punten.vandaag <= 6,
+    'alleen de drie vaste proefwoorden gaven taco\'s (' + punten.vandaag + '), de dertig niet');
+  ok(!punten.gehaald,
+    'je dagdoel is niet gehaald voordat je je eerste les hebt gedaan (was: 50 van 30)');
+  ok(!/gehaald/.test(punten.balk),
+    'en de kopbalk zegt dus niet "doel gehaald" boven een knop die zegt "start je les"');
 
   console.log('\n-- de oude weg blijft heel --');
   const oud = await b.newPage({ viewport: { width: 390, height: 844 }, locale: 'nl-NL' });

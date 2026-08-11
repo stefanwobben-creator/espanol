@@ -34,6 +34,18 @@ kost dat niemand wilde uitgeven. Alles in dit document is op die twee dingen ges
   punt 1 hieronder.
 - **v23.44** de helling: het aanmeldscherm vraagt je niveau niet meer maar vertelt het, na dertig
   woorden in één doorlopende beleving. Zie punt 1b hieronder.
+- **v23.45** op het Vandaag-scherm staat niets dat nul is, en wie net de helling deed krijgt geen
+  tweede peiling aangeboden. Zie punt 1c.
+- **v23.46** de meting is een meting: de dertig woorden leveren geen taco's meer op, alleen de drie
+  proefwoorden. Zie punt 1c.
+- **v23.47** de onboarding zegt alleen nog dingen die waar zijn: vier teksten die niet waren
+  meegegroeid met de app. Zie punt 1d.
+- **v23.48** geen verzonnen werkwoordsvormen meer: twee grammaticaconcepten bouwden hun Nederlandse
+  en Engelse vertaling met knip- en plakwerk op de infinitief. 90 kapotte NL- en 68 kapotte
+  EN-vormen. Zie punt 6.
+- **pw-clasificador** is niet meer wisselvallig (punt 5 hieronder). Geen tijdsprobleem maar een
+  dobbelsteen: `clNieuwSpel()` zonder id koos een willekeurig concept, en bij een concept met weinig
+  patronen was de ronde al klaar vóór de misser die de test wilde meten. Staat nu op `serestar`.
 
 ## Wat er open staat, op volgorde van hoe erg het is
 
@@ -227,3 +239,144 @@ En twee dingen die specifiek in deze omgeving misgingen:
 - Git draaien op Stefans schijf via de koppeling gaat mis: schrijven kan wel, verwijderen niet, en
   git heeft dat nodig om zijn eigen lockbestanden op te ruimen. Bestanden neerzetten is prima, git
   laat je aan Stefan.
+
+### 1c. De onboarding zei dingen die niet meer waar waren (v23.45 en v23.46, af)
+
+Nagemeten op de echte schermen, telefoonformaat, na v23.44. Vijf dingen klopten niet, en drie ervan
+had ik er de dag ervoor zelf in gezet.
+
+**Weg in v23.45.** Het eerste getal dat een vreemde van deze app te zien kreeg was een **0** ("van
+je 3 woorden, gewogen naar hoe lang je ze onthoudt"). Die tegel verscheen bij `c.geoefend > 0`, en
+dat zegt "er staat iets in je lijst" en niet "er valt iets te melden". Op dag 1 kán `kracht` niets
+anders zijn dan nul. Nu verschijnt hij bij `c.kracht > 0`. Het Vandaag-scherm ging daarmee van drie
+kaarten naar twee en van 1059 naar 810 pixels.
+
+En: de app bood een peiling van twaalf woorden aan iemand die net dertig woorden had gedaan. De
+helling schreef zichzelf niet weg als peiling, dus stond `S.peil.laatst` nog op `""` terwijl er wél
+een schatting lag, en dan komt `peilAanbod()` via `peilDagenGeleden("")` = 9999 uit op aanbieden. De
+helling registreert zich nu zoals `peilKlaar()` dat doet, inclusief een regel in `S.peil.log`. Dat
+geeft de voortgangspagina meteen een nulpunt om groei tegen af te zetten.
+
+**Weg in v23.46.** De helling deelde XP uit alsof het een oefening was: twee taco's per goed
+antwoord, één per fout, zevenentwintig keer. Gemeten: 50 taco's op een dagdoel van 30, dus de
+kopbalk zei **"doel gehaald ✓"** boven een knop die zei "start je les". Een tegenstrijdig bevel op
+het enige moment dat een vreemde nog moet besluiten of hij hier iets gaat doen.
+
+De regel die de app zelf al had, op het peilingscherm: *"Dit is een meting, geen les. Je punten en
+je doosjes veranderen er niet van."* Stefan, 11 aug: "de meting is de meting." De drie vaste
+proefwoorden houden hun taco's (+5), de dertig leveren niets meer op. Je begint dus op 5/30 en je
+eerste les is nog steeds de weg naar je dagdoel. Op de vraagschermen staat het er nu ook bij:
+"Deze woorden tellen niet voor je taco's, wel voor je startpunt."
+
+**Nog open, en het is één verhaal (voorstel v23.47).** Drie teksten die niet zijn meegegroeid met
+wat de app doet:
+
+1. Onder het niveauvoorstel staat nog "Weet ik niet: doe de niveautest — Kies een niveau, of doe de
+   test van 10 vragen (2 minuten)". Dat zijn tien grammaticavragen, en het is nu een tweede weg naar
+   je niveau die een ander antwoord kan geven dan de dertig woorden erboven.
+2. De dagles heet "6 woordjes (5 nieuw) · 1 grammaticapunt · 1 toetsje · 1 oefenronde". Vier
+   gelijkwaardige stukken in de zin, zes tegen één in werk. Stefan: grammatica is maar een klein
+   onderdeel nu.
+3. De rondleiding belooft "hooguit 15 nieuwe woordjes"; bij het standaard dagdoel van 10 minuten is
+   je portie er 5 en je plafond 8.
+
+## Nieuwigheid: wat er vrijkomt, en dat niemand het merkt
+
+Nagemeten door de drempel echt over te gaan, van 12 naar 16 geleerde woorden. Woordenzoeker,
+Crucigrama en Adivina kwamen alle drie vrij.
+
+Er gebeurt niets. `dagNieuwsRegels()` blijft leeg, er is geen "Nieuw voor jou"-kaart, en op Vandaag
+staat geen enkel teken. De drie tegels zijn in de Speeltuin stil verhuisd van "Komt er straks bij"
+naar de bovenste lijst. Om het te merken moet je zelf naar de Speeltuin gaan én je herinneren wat er
+gisteren niet stond.
+
+Dat is v19.92 ("verschijnen, niet ontgrendelen") die zijn eigen regel te ver heeft doorgevoerd. De
+regel is goed tegen slotjes die je uitlachen, maar hij is doorgeslagen naar helemaal geen moment.
+
+En er staat een inconsistentie naast: **lessen gebruiken wél een slot.** Op De cursus staat les 0
+open en hebben 1 tot en met 9 een 🔒. Spellen krijgen de vriendelijke behandeling ("doet mee vanaf
+25 geleerde woordjes · nu 16"), lessen de kale. Twee talen voor hetzelfde idee, in dezelfde app.
+
+Wat "Nieuw voor jou" wél meldt: een nieuwe tapa, een nieuwe dans, een nieuwe fase in de Conjugador,
+een afgeronde les, een niveau dat staat. De machinerie ligt er dus al.
+
+De voorraad ligt er ook, en hij is groter dan gedacht: 9 spellen met drempels, 8 groeivormen voor
+Chispa, 18 tapas, 11 winkelstukken, 23 boekhoofdstukken, 12 liedjes, 6 luisterscènes, 10 lessen,
+de vier werelden van Aventura, de Conjugador-fases, het maatje, groepen en Palabra Duel. Het
+probleem is niet aanbod maar aankondiging en tempo.
+
+### 1d. Vier teksten die niet waren meegegroeid (v23.47, af)
+
+Stefan, 11 aug, na het doorlopen van de schermen: "het verwijst ook nog naar oude dingen zoals
+grammatica, want dat is maar een klein onderdeel nu." Het waren er vier, allemaal hetzelfde soort
+fout: geen bug, de app werkt, hij vertelt het verkeerd. En juist daarom vindt niemand ze.
+
+**De niveautest concurreerde met het voorstel.** Onder "we zetten je op A1" stond nog "Kies een
+niveau, of doe de test van 10 vragen". De app vraagt niet meer om een keuze, dus dat is geen
+instructie meer maar een tegenspraak, en die tien vragen gaan over grammatica terwijl je niveau nu
+uit dertig woorden komt. Zodra er een voorstel staat verdwijnt de regel en heet de knop wat hij is:
+"Liever de grammaticatest van 10 vragen?" Het woord *niveau* is nu van de dertig woorden. Wie de
+helling overslaat houdt het oude scherm, want daar bepaalt die test je niveau wél.
+
+**Grammatica kreeg een kwart van je dagles.** "6 woordjes (5 nieuw) · 1 grammaticapunt · 1 toetsje ·
+1 oefenronde" gaf vier onderdelen evenveel gewicht terwijl het in werk zes tegen een is. Nu: "6
+woordjes (5 nieuw) · daarna kort: grammatica, een toetsje en oefenen".
+
+**De rondleiding beloofde vijftien nieuwe woordjes** terwijl je er bij het standaard dagdoel vijf
+krijgt (plafond acht). "Hooguit" maakt dat formeel waar en praktisch misleidend. De zin rekent nu
+met je eigen instelling, via een plaatshouder die `showTour()` invult.
+
+**En hij wees naar schermen die niet bestaan.** Twee stappen, die verschijnen als je de rondleiding
+later zelf opent via de voetregel, beschreven een app van maanden geleden: "Onder Grammatica staat
+elk onderwerp opgeknipt in stappen", "de ronde 📖-knop bovenin is je woordenboek", "in de
+Speeltuin", "Tik op je naam bovenaan voor je voortgang". Nagemeten: de balk heeft vijf plekken
+(Vandaag, Woordjes, Oefenen, Spelen, Meer), Grammatica is één van vier tegels ónder Oefenen, de
+📖-knop is sinds v21.6 de pil "🔍 Zoek" (juist veranderd omdat Stefan zelf niet wist dat dat boekje
+het woordenboek was), en Voortgang zit sinds v23.32 onder Meer. Dit is de gemeenste van de vier: het
+is de tekst achter de link "Rondleiding", dus precies wat iemand opent als hij het niet meer weet.
+Verouderde hulp is erger dan geen hulp.
+
+## 6. De content: waar de app zelf zinnen maakt (v23.48, af)
+
+Aan het eind van 11 aug de hele bak nagelopen op wat een vreemde te zien krijgt. Eén klasse fouten
+sprong eruit, en hij begon met een zin die Stefan zelf op zijn scherm zag:
+
+    Todos los días ___ con mi abuela.  (Elke dag reizende ik met mijn oma.)
+
+Geen typefout maar een sjabloon. Twee van de drieëntwintig grammaticaconcepten bouwden hun
+vertaling met knip- en plakwerk op de infinitief:
+
+    "Elke dag "+w.nl.replace(/r$/,"")+"de ik ..."   ->  reizen -> "reizende ik"
+    "heb ik veel ge"+w.nl.replace(/en$/,"")+"t."    ->  reizen -> "gereizt"
+    "I "+w.en+"ed a lot."                            ->  eat    -> "eated"
+
+Gemeten door elk patroon van alle concepten tweehonderd keer te draaien: **1074 varianten, 90
+kapotte Nederlandse vormen en 68 kapotte Engelse**, allemaal in `perfindef` en `indefimperf`.
+Gereizt, gewont, gestudert, geett, gepratt, reizende ik, wonende ik, eated, liveed, studyed.
+
+Waarom dit zo lang bleef staan: bij "werken" komt er toevallig "gewerkt" uit. Het werkte voor het
+eerste werkwoord dat je toetste.
+
+De vormen worden nu niet meer afgeleid maar opgeschreven. `GC_PAS` heeft er vier velden bij per
+werkwoord (`nlVt`, `nlVd`, `enVt`, `enVd`). Vierentwintig woorden die één keer goed staan, in plaats
+van een regel die bij elk nieuw werkwoord opnieuw kan misgaan.
+
+Twee dingen die er onderweg bij kwamen. Het Engelse sjabloon zette het tijdvak altijd vooraan, dus
+"Nunca" werd "Never I eated a lot"; nu "I have never eaten much". En het patroon `Un día ___ algo
+increíble` trok uit alle zes de werkwoorden, terwijl *hablé algo increíble*, *trabajé algo
+increíble* en *viajé algo increíble* geen Spaans zijn. Oefenen op een zin die niet bestaat is erger
+dan een scheve vertaling, dus dat patroon trekt nu alleen uit werkwoorden met de vlag `obj`.
+
+Vastgelegd in `pw-vormen.js`, de 64e suite. Hij bewaakt de regel en niet de zinnen: hij leidt uit
+`GC_PAS` zelf af wat een naïeve afleiding zou opleveren, gooit weg wat toevallig ook een echte vorm
+is, en kijkt of die verzonnen vormen ergens in de gegenereerde tekst opduiken. Voeg je morgen een
+werkwoord toe, dan doet dat vanzelf mee. Draai één patroon terug en hij valt om op zes punten.
+
+**Wat er schoon doorheen kwam.** De andere eenentwintig concepten: geen lege uitleg, geen dubbele
+antwoordopties, geen antwoordindex buiten bereik, overal een Engelse variant. De patronen met drie
+of vier opties zijn geen fout: Clasificador filtert zelf op twee, de Grammatica-tab gebruikt ze wel.
+
+**Wat er nog ligt in deze hoek.** `vivir` staat in `GC_PAS` met de Nederlandse vertaling "wonen", en
+dat klopt in "Als kind woonde ik in Sevilla" maar niet in "Dit jaar heb ik veel gewoond" (daar is
+*he vivido mucho* eerder "geleefd"). Eén werkwoord met twee betekenissen in één veld. Kleine
+verbetering, eigen versie waard, en niet urgent: de zin is niet fout, alleen houterig.
