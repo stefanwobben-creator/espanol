@@ -6,6 +6,10 @@
  *   ANTHROPIC_API_KEY — sleutel van console.anthropic.com (voor /api/ai/*)
  *   ADMIN_KEY         — zelfverzonnen lang wachtwoord; nodig om alle logs uit te lezen
  *   ALLOWED_ORIGIN    — standaard https://vamos.stefanwobben.nl
+ *   AI_PER_UUR        — AI-aanroepen per IP per uur (standaard 20)
+ *   AI_PER_DAG        — AI-aanroepen per IP per dag (standaard 60)
+ *   AI_DAGPLAFOND     — AI-aanroepen per dag over alle bezoekers heen (standaard 800)
+ *   AI_UIT            — zet op "1" om de AI-knoppen meteen uit te zetten, zonder opnieuw uitrollen
  */
 const express = require("express");
 const { Pool } = require("pg");
@@ -26,6 +30,69 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
+
+/* ================= HET SLOT OP DE AI-KNOPPEN (11 aug, vóór de lancering) =================
+   Zie de kop van claude/patch-server-slot.py voor het waarom. Drie sloten: herkomst, per bezoeker,
+   en een dagplafond met een noodrem.
+
+   De tellers staan in het geheugen van dit proces en zijn dus leeg na een herstart. Dat is met
+   opzet: dit is een rem op een lus en geen boekhouding. Draait deze dienst ooit op meer dan één
+   instantie tegelijk, dan telt elke instantie zijn eigen bezoekers en moet dit naar de database. */
+const AI_PER_UUR = Number(process.env.AI_PER_UUR || 20);
+const AI_PER_DAG = Number(process.env.AI_PER_DAG || 60);
+const AI_DAGPLAFOND = Number(process.env.AI_DAGPLAFOND || 800);
+const aiTeller = new Map();          // ip -> {uur:[tijdstippen], dag:[tijdstippen]}
+let aiDagTotaal = { dag: "", n: 0 };
+
+function vandaagUTC() { return new Date().toISOString().slice(0, 10); }
+
+function herkomstOk(req) {
+  const o = req.headers.origin || "";
+  if (!o) return false;                                   // curl en losse scripts sturen niets mee
+  if (o === ORIGIN || o === "null") return true;
+  if (o.endsWith(".stefanwobben.nl")) return true;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
+}
+
+/* Eén functie voor alle drie de AI-ingangen, zodat er geen ingang kan zijn die hem vergeet.
+   Geeft null als het mag, en anders een {code, tekst} om terug te sturen. */
+function aiSlot(req) {
+  if (process.env.AI_UIT === "1") {
+    return { code: 503, tekst: "de AI-hulp staat even uit" };
+  }
+  if (!herkomstOk(req)) {
+    return { code: 403, tekst: "deze ingang is alleen voor de app zelf" };
+  }
+  const dag = vandaagUTC();
+  if (aiDagTotaal.dag !== dag) aiDagTotaal = { dag, n: 0 };
+  if (aiDagTotaal.n >= AI_DAGPLAFOND) {
+    return { code: 429, tekst: "de AI-hulp is vandaag op; morgen kan het weer" };
+  }
+  const ip = String(req.headers["x-forwarded-for"] || req.ip || "").split(",")[0].trim() || "onbekend";
+  const nu = Date.now();
+  const t = aiTeller.get(ip) || { uur: [], dag: [] };
+  t.uur = t.uur.filter((x) => nu - x < 3600000);
+  t.dag = t.dag.filter((x) => nu - x < 86400000);
+  if (t.uur.length >= AI_PER_UUR || t.dag.length >= AI_PER_DAG) {
+    aiTeller.set(ip, t);
+    return { code: 429, tekst: "even rustig aan met de AI-hulp; probeer het over een uur weer" };
+  }
+  t.uur.push(nu); t.dag.push(nu);
+  aiTeller.set(ip, t);
+  aiDagTotaal.n++;
+  /* De kaart groeit anders door met IP's die één keer langskwamen. Opruimen op het moment dat je er
+     toch al in zit is goedkoper dan een timer die altijd loopt. */
+  if (aiTeller.size > 5000) {
+    for (const [k, v] of aiTeller) { if (!v.dag.length) aiTeller.delete(k); }
+  }
+  return null;
+}
+
+// Zodat je kunt zien of het plafond in de buurt komt zonder in de logs te graven.
+function aiStand() {
+  return { dag: aiDagTotaal.dag, gebruikt: aiDagTotaal.n, plafond: AI_DAGPLAFOND,
+           bezoekers: aiTeller.size, uit: process.env.AI_UIT === "1" };
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -212,7 +279,7 @@ const ok = (res, data) => res.json({ ok: true, ...data });
 const bad = (res, code, msg) => res.status(code).json({ ok: false, error: msg });
 
 // ---- gezondheid ----
-app.get("/health", (_req, res) => ok(res, { tijd: new Date().toISOString() }));
+app.get("/health", (_req, res) => ok(res, { tijd: new Date().toISOString(), ai: aiStand() }));
 
 // ---- profielsync ----
 // POST /api/sync  {code, name, track, state}
@@ -664,6 +731,8 @@ async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
 // POST /api/ai/check {nl, verwacht, gegeven}
 // Beoordeelt of een afwijkende vertaling tóch goed Spaans is.
 app.post("/api/ai/check", async (req, res) => {
+  const slot = aiSlot(req);
+  if (slot) return bad(res, slot.code, slot.tekst);
   const { nl, verwacht, gegeven } = req.body || {};
   if (!nl || !gegeven) return bad(res, 400, "nl en gegeven verplicht");
   try {
@@ -672,7 +741,9 @@ app.post("/api/ai/check", async (req, res) => {
       "Antwoord UITSLUITEND met geldige JSON: {\"goed\": true/false, \"uitleg\": \"korte uitleg in het Nederlands (max 2 zinnen)\"}. " +
       "Wees streng op grammatica maar accepteer natuurlijke alternatieven (andere woordvolgorde, synoniemen, weglaten van onderwerp). " +
       "Kleine accentfouten: goed=true maar benoem ze in de uitleg.",
-      "Nederlandse zin: \"" + nl + "\"\nModelantwoord: \"" + (verwacht || "-") + "\"\nAntwoord van de leerling: \"" + gegeven + "\"\nIs het antwoord van de leerling correct Spaans voor deze zin?",
+      "Nederlandse zin: \"" + String(nl).slice(0, 300) + "\"\nModelantwoord: \"" +
+        String(verwacht || "-").slice(0, 300) + "\"\nAntwoord van de leerling: \"" +
+        String(gegeven).slice(0, 300) + "\"\nIs het antwoord van de leerling correct Spaans voor deze zin?",
       250, true, "ai-check"
     );
     const m = txt.match(/\{[\s\S]*\}/);
@@ -688,6 +759,8 @@ app.post("/api/ai/check", async (req, res) => {
 // POST /api/ai/zin {woord, zin}
 // Schrijfoefening: beoordeel of de leerling het woord goed gebruikt in een eigen zin.
 app.post("/api/ai/zin", async (req, res) => {
+  const slot = aiSlot(req);
+  if (slot) return bad(res, slot.code, slot.tekst);
   const { woord, zin } = req.body || {};
   if (!woord || !zin) return bad(res, 400, "woord en zin verplicht");
   try {
@@ -713,13 +786,16 @@ app.post("/api/ai/zin", async (req, res) => {
 // POST /api/ai/uitleg {vraag, context}
 // "Leg uit waarom"-knop: korte NL-uitleg over een grammaticapunt.
 app.post("/api/ai/uitleg", async (req, res) => {
+  const slot = aiSlot(req);
+  if (slot) return bad(res, slot.code, slot.tekst);
   const { vraag, context } = req.body || {};
   if (!vraag) return bad(res, 400, "vraag verplicht");
   try {
     const txt = await vraagLadder(
       "Je bent een geduldige Spaanse-taaldocent voor Nederlandstaligen (A0-A2). Antwoord in eenvoudig Nederlands, " +
       "maximaal 120 woorden, met één concreet voorbeeld. Geen opsommingstekens, gewoon lopende tekst.",
-      (context ? "Context uit de oefening: " + context + "\n\n" : "") + "Vraag van de leerling: " + vraag,
+      (context ? "Context uit de oefening: " + String(context).slice(0, 600) + "\n\n" : "") +
+        "Vraag van de leerling: " + String(vraag).slice(0, 400),
       350, false, "ai-uitleg"
     );
     ok(res, { uitleg: txt.slice(0, 1200) });
