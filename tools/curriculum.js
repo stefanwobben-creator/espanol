@@ -93,6 +93,21 @@ function groepeer(items, sleutel) {
   return Object.values(uit);
 }
 
+/* Wanneer is een onderwerp verzadigd? Als er al ruim materiaal ligt én er ruim materiaal is per
+   verse fout. Twee eisen, want één is te grof: een onderwerp met twee zinnen en één fout haalt de
+   verhouding wel maar heeft alsnog te weinig om mee te oefenen. */
+const VERZADIGD_ZINNEN = 10;      // zoveel oefenzinnen liggen er al
+const VERZADIGD_PER_FOUT = 3;     // en zoveel per verse fout
+/* Delen door het aantal oefenzinnen geeft rare uitschieters zodra dat aantal klein is: een
+   onderwerp met één zin en drie fouten kwam boven een onderwerp met zes zinnen en zeventien fouten.
+   Vandaar een demping in de noemer. Twee is geen magisch getal, het is "doe alsof er altijd al een
+   paar zinnen liggen", en dat haalt de scherpste rand van de deling af. */
+const DEMPING = 2;
+
+function verzadigd(g) {
+  return g.zinnen >= VERZADIGD_ZINNEN && g.zinnen / Math.max(1, g.fouten) >= VERZADIGD_PER_FOUT;
+}
+
 function analyseer(logboek, inv) {
   const fouten = foutenSamenvatten(logboek);
   const zinnenPerTag = {};
@@ -103,7 +118,7 @@ function analyseer(logboek, inv) {
     .map(g => {
       const zinnen = zinnenPerTag[g.sleutel] || 0;
       return { soort: "verschijnsel", tag: g.sleutel, fouten: g.fouten, items: g.items.length,
-               zinnen, score: g.fouten / Math.max(1, zinnen) };
+               zinnen, score: g.fouten / (zinnen + DEMPING) };
     })
     .filter(g => g.fouten >= 2 && g.tag)
     .sort((a, b) => b.score - a.score);
@@ -128,7 +143,13 @@ function analyseer(logboek, inv) {
     .filter(g => g.spiek && g.spiek.length)
     .sort((a, b) => b.fouten - a.fouten);
 
-  return { zinGaten, woordGaten, toetsGaten };
+  /* Eerst kijken of er al genoeg ligt, dan pas maken. De overgeslagen onderwerpen blijven wel in
+     het rapport staan: "er is niets te doen" en "hier lag al genoeg" zijn niet hetzelfde, en dat
+     verschil hoort zichtbaar te zijn. */
+  const vol = zinGaten.filter(verzadigd).concat(woordGaten.filter(verzadigd));
+  return { zinGaten: zinGaten.filter(g => !verzadigd(g)),
+           woordGaten: woordGaten.filter(g => !verzadigd(g)),
+           toetsGaten, verzadigd: vol };
 }
 
 // Hoeveel dagen nieuwe woorden liggen er nog op de plank? De app stuurt geleerd/minuten mee in het
@@ -175,6 +196,12 @@ function rapport(inv, an, vrd) {
   toon("taalverschijnselen", an.zinGaten, g => `${g.tag}: ${g.fouten} fouten · ${g.zinnen} oefenzinnen · score ${g.score.toFixed(1)}`);
   toon("woorden die niet plakken", an.woordGaten, g => `${g.tag}: ${g.fouten} fouten over ${g.items} woorden (${g.woorden.slice(0,4).map(w=>w.es).join(", ")}…)`);
   toon("grammatica-toetsjes", an.toetsGaten, g => `${g.tag} (${g.titel}): ${g.fouten} fouten · spiekkaart ${JSON.stringify(g.spiek)}`);
+  if ((an.verzadigd || []).length) {
+    console.log("  overgeslagen, hier ligt al genoeg:");
+    an.verzadigd.forEach(g => console.log(
+      `    ${g.tag}: ${g.fouten} fouten · ${g.zinnen} oefenzinnen · dat is ` +
+      `${(g.zinnen / Math.max(1, g.fouten)).toFixed(1)} zin per fout, dus herhalen en niet bijmaken`));
+  }
 }
 
 /* ================= 2. genereren ================= */
@@ -633,9 +660,18 @@ async function main() {
   const vrd = voorraad(logboek, inv);
   rapport(inv, an, vrd);
 
-  // gaten op één stapel, zwaarste eerst; verschijnselen wegen zwaarder dan losse woorden omdat een
-  // regel die je niet snapt tientallen items blijft besmetten
-  const gaten = [].concat(an.zinGaten, an.woordGaten).sort((a, b) => b.score - a.score);
+  /* Gaten op één stapel, verschijnselen eerst. Een regel die je niet snapt blijft tientallen items
+     besmetten, een woord dat je mist is één woord; bovendien komen die woorden hoe dan ook terug via
+     de herhaling, en een verschijnsel heeft geen tweede kanaal.
+
+     Dit stond tot 11 aug wel in dit commentaar maar niet in de code: de twee soorten werden op één
+     hoop gegooid en op score gesorteerd, terwijl hun scores uit twee verschillende sommen komen en
+     dus niet op dezelfde schaal staan. De woordgaten wonnen daardoor stelselmatig. Uitkomst van
+     11 aug: de run pakte les3 en les5 aan terwijl sentirse 20 fouten had op 6 oefenzinnen. Sorteren
+     op soort en pas daarbinnen op score is botter dan één formule, maar het is wél wat er staat. */
+  const gaten = [].concat(
+    an.zinGaten.slice().sort((a, b) => b.score - a.score),
+    an.woordGaten.slice().sort((a, b) => b.score - a.score));
   const padKrap = vrd.krapsteDagen !== null && vrd.krapsteDagen < VOORRAAD_DREMPEL_DAGEN;
   const verlengen = OPT.nieuweLes || padKrap;
 
