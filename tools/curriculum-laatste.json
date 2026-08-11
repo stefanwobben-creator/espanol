@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-08-10T03:46:42.806Z",
- "versie": "v23.28",
+ "wanneer": "2026-08-11T03:29:36.395Z",
+ "versie": "v23.41",
  "gaten": [
   {
    "tag": "basis",
@@ -15,14 +15,50 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s153",
-   "s154",
-   "s155",
-   "s156",
-   "s157",
-   "s158"
+   "s162",
+   "s163",
+   "s164",
+   "s165",
+   "s166",
+   "s167"
   ],
   "toetsjes": []
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-11",
+  "num": 11,
+  "niveau": "B1",
+  "titel": "En la ciudad o en el campo",
+  "doel": "Leren praten over verschillen tussen leven in de stad en op het platteland, inclusief voor- en nadelen.",
+  "doelEn": "Learning to talk about differences between city and countryside life, including pros and cons.",
+  "spiek": [
+   29
+  ],
+  "words": [
+   "w300",
+   "w301",
+   "w302",
+   "w303",
+   "w304",
+   "w305",
+   "w306",
+   "w307",
+   "w308",
+   "w309",
+   "w310",
+   "w311",
+   "w312",
+   "w313"
+  ],
+  "sents": [
+   "s168",
+   "s169",
+   "s170",
+   "s171",
+   "s172",
+   "s173",
+   "s174"
+  ],
+  "quizzes": []
+ }
 }
