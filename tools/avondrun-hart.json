@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-10T03:46:42.807Z",
+ "wanneer": "2026-08-11T03:29:36.396Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -11,13 +11,15 @@
  "geleverd": {
   "zinnen": 6,
   "toetsjes": 0,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
- "versie": "v23.28",
+ "versie": "v23.41",
  "klachten": [
-  "toetsje afgekeurd (poging 1): Vraag 2: Optie 'vivíamos' komt twee keer voor (opties 0 en 1), waardoor er geen uniek juist antwoord is.; Vraag 7: De Nederlandse vertaling 'Keken jullie tv in de avonden?' is onnatuurlijk Spaans; de juiste formulering zou zijn 'Keken jullie 's avonds tv?' of 'Keken jullie tv in de avonduren?'; Vraag 7: De uitleg in het Nederlands en Engels is correct, maar de zin '¿Vosotros ___ la tele por las tardes?' slaat niet op een natuurlijke situatie (tv-kijken in de avonduren is eerder 'por las noches').",
-  "toetsje afgekeurd (poging 2): Vraag 1: Optie 0 en 1 zijn identiek ('vivíamos'), dit is niet toegestaan.; Vraag 2: Optie 0 en 1 zijn identiek ('pasabas'), dit is niet toegestaan.; Vraag 4: Optie 0 en 1 zijn identiek ('corría'), dit is niet toegestaan.; Vraag 6: Optie 0 en 1 zijn identiek ('decía'), dit is niet toegestaan.; Vraag 7: Optie 0 en 1 zijn identiek ('veíamos'), dit is niet toegestaan.; Vraag 8: Optie 0 en 1 zijn identiek ('estudiabas'), dit is niet toegestaan.",
-  "toetsje van de nieuwe les afgekeurd"
+  "toetsje afgekeurd (poging 1): Vraag 1: Optie 'jugabamos' is niet identiek aan een andere optie, maar de uitleg is onjuist: 'jugabamos' is géén veelgemaakte fout door een dubbele 'b' (de juiste vorm is 'jugábamos' met een accent op de 'a'). De uitleg suggereert ten onrechte dat 'jugabamos' een bestaande vorm is.; Vraag 2: De uitleg is onjuist: 'era' is de vorm voor yo/él/ella, maar 'eras' is de vorm voor tú. De uitleg noemt 'era' als juiste vorm voor 'tú', wat incorrect is.; Vraag 3: De uitleg is onjuist: 'llegaste' is de indefinido-vorm voor tú, maar de zin vraagt om imperfecto ('did you always arrive' = 'kwam jij altijd te laat'). De uitleg noemt 'llegaste' als incorrect, maar de zin is grammaticaal correct voor indefinido, terwijl de vertaling en context imperfecto vereisen.; Vraag 4: De uitleg is onjuist: 'íbamos' is de juiste vorm voor nosotros, maar de uitleg noemt 'iba' als vorm voor yo/él/ella, wat correct is, maar niet relevant voor de zin. De uitleg is onnodig ingewikkeld en deelt informatie die niet direct van toepassing is op de vraag.; Vraag 5: De uitleg is onjuist: 'eran' is de juiste vorm voor ellos/ellas, maar de uitleg noemt 'era' als vorm voor yo/él/ella, wat correct is maar niet relevant voor de zin. De uitleg is onnodig ingewikkeld.; Vraag 6: De uitleg is onjuist: 'veía' is de juiste vorm voor yo, maar de uitleg noemt 'veía' als vorm voor yo, wat correct is, maar de uitleg is onnodig kort en mist context.",
+  "toetsje afgekeurd (poging 2): Vraag 2: Optie 'ibamos' (zonder accent) is fout gespeld; de juiste vorm is 'íbamos' (met accent).; Vraag 2: Optie 'ibamos' (zonder accent) is identiek aan de correcte vorm 'ibamos' (zonder accent) in de uitleg, wat verwarring kan geven.; Vraag 2: De uitleg verwijst naar 'ibamos' zonder accent als incorrect, maar de optie in de vraag is ook zonder accent, waardoor de fout niet duidelijk is.; Vraag 2: De zin 'Ellos ___ a la escuela en bicicleta todos los días.' is grammaticaal correct, maar de context is onnatuurlijk in het Spaans (men zegt meestal 'iban en bici' of 'iban en bicicleta').",
+  "s175: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onlogisch: niemand kan niet zonder vervuiling leven.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les afgekeurd, de les gaat door zonder"
  ],
  "reden": null
 }
