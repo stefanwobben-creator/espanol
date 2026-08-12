@@ -861,6 +861,4 @@ app.post("/api/ai/uitleg", async (req, res) => {
 });
 
 const port = process.env.PORT || 10000;
-init()
-  .then(() => app.listen(port, () => console.log("¡Vamos! API draait op poort " + port)))
-  .catch((e) => { console.error("init faalde:", e); process.exit(1); });
+app.listen(port, () => console.log("rooktest luistert op " + port));
