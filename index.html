@@ -1445,7 +1445,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.55";
+var APP_VERSIE = "v23.56";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6106,7 +6106,13 @@ var HEL_TXT = {
      telt:"Deze woorden tellen niet voor je taco's, wel voor je startpunt.",
      hoeveel:function(r,n){ return "Je herkende "+r+" van de "+n+" woorden."; },
      genoeg:"Genoeg om te zien waar je staat.",
-     start:function(l){ return "Je begint op "+l+"."; },
+     /* v23.50: hier stond "Je begint op A1." A0 en A1 hebben allebei data-track="beginner" en
+        het veld lvl wordt nergens bewaard, dus ze leveren exact dezelfde app op: dezelfde woorden,
+        zinnen en lessen. Alleen A2 is een ander pad (grote bak plus niveauClaim). Een uitslag die
+        onderscheid maakt waar de app dat niet doet, is een belofte die je niet nakomt. */
+     start:function(l){ return l === "A2"
+       ? "Je slaat de basis over en begint op A2."
+       : "Je begint bij het begin, bij les 1."; },
      later:"De volledige schatting, met marge eromheen, staat straks op je voortgangspagina.",
      geenBand:"Nog te weinig antwoorden om er iets over te zeggen. Kies zelf maar even.",
      door2:"Verder →", zelf:"Ik kies liever zelf"},
@@ -6116,7 +6122,9 @@ var HEL_TXT = {
      telt:"These words do not count towards your tacos, but they do set your starting point.",
      hoeveel:function(r,n){ return "You recognised "+r+" of the "+n+" words."; },
      genoeg:"Enough to see where you stand.",
-     start:function(l){ return "You start at "+l+"."; },
+     start:function(l){ return l === "A2"
+       ? "You skip the basics and start at A2."
+       : "You start at the beginning, at lesson 1."; },
      later:"The full estimate, with its margin, will be on your progress page.",
      geenBand:"Too few answers to say anything about it. Pick one yourself.",
      door2:"Continue →", zelf:"I would rather choose myself"}
@@ -9630,16 +9638,26 @@ function checkSentence(){
       logError(s.id, "zin", s.tag, given); addXP(1); retryable = true;
     }
   }
-  html += "<div class='uitleg'><b>"+ct("Waarom:","Why:")+"</b> "+zinUitleg(s)+"</div>";
-  // De juiste zin staat nu in beeld. Dit is het enige moment waarop horen hoe hij klinkt iets
-  // toevoegt: je weet wat er staat en wat het betekent, dus je hoort de uitspraak en niet een raadsel.
-  html += "<div class='row' style='margin-top:6px'>"+ct("<span class='muted' style='font-size:.85rem; align-self:center'>Zo klinkt hij:</span>","<span class='muted' style='font-size:.85rem; align-self:center'>This is how it sounds:</span>")+zinLuisterKnopHtml()+"</div>";
+  /* v23.51: de knoppen stonden hier onderaan, ná de uitleg en de luisterknoppen, en op een telefoon
+     van 390 pixels valt dat onder de vouw. Stefan: "je controleert, resultaat is goed of fout, maar
+     dan moet je zelf op de knop volgende zin klikken, dat vind je niet." De volgorde eronder klopte
+     wel (horen hoe het klinkt heeft pas zin als je weet wat er staat), maar de handeling hoort niet
+     achter de toelichting. Uitslag, dan wat je nu kunt doen, dan waarom.
+
+     Bewust geen automatische doorloop: dan pak je het moment af waarop je de zin nog kunt horen, en
+     dat moment staat er met opzet. Het probleem was dat je de knop niet zag, niet dat je erop moest
+     tikken. */
   html += "<div class='row'>"+
     (retryable ? "<button class='primary' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
                  "<button class='ghost' id='btnAiCheck'>🤖 "+ct("Is mijn variant ook goed?","Is my version also correct?")+"</button>"+
                  "<button class='ghost' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
                : "<button class='primary' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button><button class='ghost' id='btnAiUitleg'>🤖 "+ct("Meer uitleg","More explanation")+"</button>")+
-    "</div><div id='aiFb'></div>";
+    "</div>";
+  html += "<div class='uitleg'><b>"+ct("Waarom:","Why:")+"</b> "+zinUitleg(s)+"</div>";
+  // De juiste zin staat nu in beeld. Dit is het enige moment waarop horen hoe hij klinkt iets
+  // toevoegt: je weet wat er staat en wat het betekent, dus je hoort de uitspraak en niet een raadsel.
+  html += "<div class='row' style='margin-top:6px'>"+ct("<span class='muted' style='font-size:.85rem; align-self:center'>Zo klinkt hij:</span>","<span class='muted' style='font-size:.85rem; align-self:center'>This is how it sounds:</span>")+zinLuisterKnopHtml()+"</div>";
+  html += "<div id='aiFb'></div>";
   fb.innerHTML = html;
   persist();
   if(gehaald){ checkLessonComplete(); }
@@ -13260,14 +13278,40 @@ function peilEerste(niv){
 }
 // vier vertalingen, afleiders het liefst uit dezelfde categorie. Zelfde idee als wCheckOpties, maar
 // andersom: daar zoek je het Spaanse woord, hier de betekenis.
+/* v23.50: de woordsoort, afgeleid uit het Spaans en niet uit de vertaling. Het Spaans is er altijd
+   en is regelmatiger: een lidwoord ervoor maakt het een zelfstandig naamwoord, één woord op
+   -ar/-er/-ir is een werkwoord (infinitief), meer dan één woord zonder lidwoord is een uitdrukking.
+   Grof, maar het hoeft alleen goed genoeg te zijn om te voorkomen dat het juiste antwoord het enige
+   van zijn soort is. */
+function woordSoort(w){
+  try {
+    var es = String(w.es || "").split("/")[0].split("(")[0].trim();
+    if(/^(el|la|los|las|un|una)\s/i.test(es)) return "zn";
+    if(/[?\u00bf]/.test(es)) return "vraag";
+    if(/\s/.test(es)) return "uitdrukking";
+    if(/(ar|er|ir)$/i.test(es)) return "ww";
+    return "rest";
+  } catch(e){ return "rest"; }
+}
 function peilOpties(w){
   var goed = wTrans(w);
   /* v23.49: de afleiders moeten in dezelfde taal staan als het goede antwoord. Zonder deze filter
      kreeg een Engelse bezoeker "the garden" naast "de badkamer" en "blauw", en dan raad je niet op
      betekenis maar op taal. */
   var pool = WORDS.filter(function(x){ return x.id !== w.id && wTrans(x) !== goed && woordVertaald(x); });
-  var zelfde = pool.filter(function(x){ return x.tag === w.tag; });
-  var bron = zelfde.length >= 3 ? zelfde : pool;
+  /* v23.50. Stefan zag "el jardín" met "de badkamer", "hoeveel kost het?" en "blauw" ernaast: een
+     kamer, een vraag en een kleur. Je hoeft het woord dan niet te kennen om het eruit te pikken.
+     Gemeten: bij 30 van de 200 vragen was het goede antwoord het enige van zijn woordsoort.
+     De oude regel viel bij een tag met weinig woorden meteen terug op de hele bak van 2184; nu is
+     er een tussenstap. Volgorde: zelfde tag én soort, dan zelfde soort, dan zelfde tag, dan pas
+     alles. */
+  var mijnSoort = woordSoort(w);
+  var zelfdeSoort = pool.filter(function(x){ return woordSoort(x) === mijnSoort; });
+  var zelfdeTag = pool.filter(function(x){ return x.tag === w.tag; });
+  var beide = zelfdeTag.filter(function(x){ return woordSoort(x) === mijnSoort; });
+  var bron = beide.length >= 3 ? beide
+           : (zelfdeSoort.length >= 3 ? zelfdeSoort
+           : (zelfdeTag.length >= 3 ? zelfdeTag : pool));
   var g = geschud(bron), gezien = {}, af = [], i, v;
   for(i = 0; i < g.length && af.length < 3; i++){
     v = wTrans(g[i]);
