@@ -135,7 +135,10 @@ const { chromium } = require('playwright');
     S.samen = {}; // uitnodiging leeft nog
     uit.metUitnodiging = maatjeMoment();
     S.samen = { gedeeld: '2026-01-01', tikken: 2 };
-    S.maatje = { niet: '2026-07-29', overgeslagen: 1 };
+    // 12 aug: was '2026-07-29', en de drempel in de app is 21 dagen. Op 12 augustus is dat 14 dagen
+    // (goed), op 19 augustus 21 en dan valt deze test om zonder dat er iets is veranderd. Zelfde
+    // tijdbom als in pw-samen, die vannacht wél afging. Nu relatief.
+    S.maatje = { niet: addDays(today(), -1), overgeslagen: 1 };
     uit.netAfgewezen = maatjeMoment();
     S.maatje = { overgeslagen: 2 };
     uit.tweeKeerWeg = maatjeMoment();

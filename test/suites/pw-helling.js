@@ -122,7 +122,11 @@ async function helling(page, deelGoed) {
   ok(uit.schatting !== null, 'niveauSchatting() geeft een uitkomst in plaats van null');
   ok(/Je herkende \d+ van de 30 woorden/.test(uit.tekst),
     'de uitslag telt alle dertig antwoorden, ook de twee vaste zonder Cervantes-sleutel');
-  ok(/Je begint op A[012]\./.test(uit.tekst), 'er staat een startniveau, geen vraag');
+  // v23.50: hier stond /Je begint op A[012]\./. Die tekst is weg omdat A0 en A1 dezelfde track
+  // opleveren en de uitslag geen onderscheid hoort te beloven dat de app niet maakt. Wat blijft is
+  // de eis eronder: er staat een uitkomst, geen vraag.
+  ok(/Je begint/.test(uit.tekst) && !/\?/.test(uit.tekst.split('Je begint')[1] || ''),
+    'er staat een uitkomst en geen vraag');
   // Dit is het punt waar ik de eerste versie fout had: hier stond een puntschatting ("ongeveer 195
   // van de 409"), en na het aanmelden rekent dezelfde schatter over een kleinere bak en zegt 182.
   // Twee getallen voor dezelfde vraag, twee schermen na elkaar. Zie claude/rapport.md maatstaf 1.
@@ -227,6 +231,54 @@ async function helling(page, deelGoed) {
   // helling laadde. Zonder de reset in boot() bleef hij de hele sessie op 405 staan.
   ok(na.keysCache < 405 && na.keysCache > 300,
     'pcicKeysApp() is opnieuw opgebouwd voor de bak van dit profiel (' + na.keysCache + ' A1-sleutels)');
+
+  console.log('\n-- de afleiders zijn van dezelfde woordsoort (v23.50) --');
+  const afl = await page.evaluate(() => {
+    // Stefan zag "el jardín" met "de badkamer", "hoeveel kost het?" en "blauw" ernaast: een kamer,
+    // een vraag en een kleur. Dan hoef je het woord niet te kennen om het eruit te pikken.
+    const kand = geschud(peilKandidaten('A1')).slice(0, 150);
+    let n = 0, alleen = 0, soorten = 0;
+    const vb = [];
+    kand.forEach(k => {
+      const w = peilWoordVoor(pcicKeysApp().A1[k]);
+      if (!w) return;
+      const opts = peilOpties(w);
+      if (opts.length < 4) return;
+      const bij = opts.map(o => WORDS.filter(x => wTrans(x) === o)[0]).filter(Boolean);
+      if (bij.length < 4) return;
+      n++;
+      const s = bij.map(woordSoort);
+      const mijn = woordSoort(w);
+      if (s.filter(x => x === mijn).length === 1) {
+        alleen++;
+        if (vb.length < 3) vb.push(w.es + ' [' + mijn + '] :: ' + opts.join(' · '));
+      }
+      if (new Set(s).size > 2) soorten++;
+    });
+    return { n: n, alleen: alleen, soorten: soorten, vb: vb };
+  });
+  console.log('  vragen ::', afl.n, '· alleen van zijn soort ::', afl.alleen, '· meer dan twee soorten ::', afl.soorten);
+  afl.vb.forEach(v => console.log('    ✗ ' + v));
+  ok(afl.n > 50, 'er zijn genoeg vragen bekeken om iets te kunnen zeggen (' + afl.n + ')');
+  ok(afl.alleen === 0,
+    'geen enkele vraag waar het goede antwoord het enige van zijn woordsoort is (was: 30 van de 200)');
+  ok(afl.soorten === 0, 'en nergens meer dan twee woordsoorten door elkaar');
+
+  console.log('\n-- de uitslag belooft geen verschil dat er niet is (v23.50) --');
+  const paden = await page.evaluate(() => ({
+    knoppen: Array.prototype.map.call(document.querySelectorAll('.trackpick[data-lvl]'),
+      b => b.getAttribute('data-lvl') + '=' + b.getAttribute('data-track')),
+    tracks: Object.keys(TRACKS)
+  }));
+  console.log('  knoppen ::', paden.knoppen.join(' · '), '· tracks ::', paden.tracks.join(', '));
+  // A0 en A1 wijzen allebei naar dezelfde track. Zolang dat zo is mag de uitslag niet doen alsof
+  // het uitmaakt. Gaan ze ooit echt uit elkaar, dan valt deze test om en hoort de tekst terug.
+  const zelfdePad = paden.knoppen.indexOf('A0=beginner') !== -1 && paden.knoppen.indexOf('A1=beginner') !== -1;
+  const tekstA1 = await page.evaluate(() => helTxt().start('A1'));
+  const tekstA2 = await page.evaluate(() => helTxt().start('A2'));
+  ok(!zelfdePad || !/A1/.test(tekstA1),
+    'zolang A0 en A1 dezelfde track opleveren, noemt de uitslag dat verschil niet ("' + tekstA1 + '")');
+  ok(/A2/.test(tekstA2), 'A2 is wél een ander pad en wordt dus wel genoemd ("' + tekstA2 + '")');
 
   console.log('\n-- de meting is een meting (v23.46) --');
   const punten = await page.evaluate(() => ({

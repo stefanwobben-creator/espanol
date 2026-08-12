@@ -33,6 +33,15 @@ const { chromium } = require('playwright');
   if (await skip.count()) await skip.click();
   await page.waitForTimeout(300);
 
+  /* v23.53: de grammatica heeft sinds deze versie een volgorde (GC_ORDE) en die volgorde is een
+     poort: op dag 1 staan er drie onderwerpen open en twintig dicht. Deze suite gaat niet over de
+     poort maar over de handgeschreven wizards zelf, dus is dit profiel een gevorderde: alles al een keer goed gedaan.
+     De poort zelf staat in pw-gramorde.js. */
+  await page.evaluate(() => {
+    GC_ORDE.forEach((id) => gramBij(id, true));
+    try { persist(); } catch (e) {}
+  });
+
   await page.evaluate(() => show('spiekbrief'));
   await page.waitForTimeout(250);
 

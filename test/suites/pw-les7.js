@@ -22,6 +22,17 @@ const { chromium } = require('playwright');
   if (await skip.count()) await skip.click();
   await page.waitForTimeout(300);
 
+  /* v23.53: de gegenereerde grammatica-onderwerpen verschijnen sinds deze versie pas als de les die
+     ernaar verwijst is aangebroken (gwGenLijst), en een vers profiel staat op les 1. Deze suite gaat
+     over de inhoud van les 7, dus hoort het profiel daar ook echt te staan. De poort zelf staat in
+     pw-gramorde.js. */
+  await page.evaluate(() => {
+    (tLessons() || []).forEach((l) => {
+      S.lessons[l.id] = Object.assign(S.lessons[l.id] || {}, { done: true });
+    });
+    try { persist(); } catch (e) {}
+  });
+
   await page.evaluate(() => show('spiekbrief'));
   await page.waitForTimeout(300);
   // sinds de A2-content-EN-vertaalronde (26 juli) toont de spiekbrief de Engelse titel (het

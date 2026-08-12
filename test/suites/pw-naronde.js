@@ -133,6 +133,56 @@ const { chromium } = require('playwright');
 
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
 
+  // ---- v23.52: een voorstel wijst nooit naar een gesloten deur, en staat in beeld ----
+  // Stefan, telefoontest 11 aug: "als je alles hebt doorlopen, loopt het dood." Het klaar-scherm had
+  // wél voorstellen, maar het eerste was El Corrector (doet mee vanaf 8 vrijgespeelde zinnen, een
+  // vreemde heeft er 5) en het tweede Escuchar (vanaf 20 woorden, hij had er 3). De poort van v23.43
+  // verbergt die tegels, maar deze voorstellen riepen speelNaar() rechtstreeks aan.
+  console.log('\n-- v23.52: het voorstel kan ook echt --');
+  // De regel testen en niet de toestand: in dit profiel staan die spellen misschien gewoon open.
+  // Daarom zetten we de poort zelf even dicht en kijken of de voorstellen dat respecteren.
+  const dag1 = await page.evaluate(() => {
+    const echt = speelKlaar;
+    const uit = {};
+    uit.metPoortOpen = lesFlowVoorstellen().map(v => v.kop);
+    // eerst: hoe reageert het als corr en audi dicht staan?
+    window.speelKlaar = function (v) { return (v === 'corr' || v === 'audi') ? false : echt(v); };
+    S.lesFlowSpel = {}; S.gram = {};
+    uit.metPoortDicht = lesFlowVoorstellen().map(v => v.kop);
+    uit.corrDue = corrDueHaalbaar().length;
+    window.speelKlaar = echt;
+    return uit;
+  });
+  console.log('  poort open  ::', dag1.metPoortOpen.join(' · ') || '(niets)');
+  console.log('  poort dicht ::', dag1.metPoortDicht.join(' · ') || '(niets)', '· regels op herhaling ::', dag1.corrDue);
+  ok(dag1.metPoortDicht.indexOf('El Corrector') === -1,
+    'staat El Corrector dicht, dan wordt hij niet voorgesteld (ook al staan er ' + dag1.corrDue + ' regels op herhaling)');
+  ok(!dag1.metPoortDicht.some(k => /Escuchar/.test(k)),
+    'staat Escuchar dicht, dan wordt hij niet voorgesteld');
+  ok(dag1.metPoortDicht.length > 0,
+    'er blijft wél iets over om voor te stellen (' + dag1.metPoortDicht.join(', ') + ')');
+  ok(await page.evaluate(() => dagSpelKeuze().every(x => speelKlaar(x.v))),
+    'en het spel dat wordt voorgesteld voldoet aan zijn eigen eis');
+
+  console.log('\n-- v23.52: het antwoord op "en nu?" staat binnen het scherm --');
+  const plek = await page.evaluate(() => {
+    S.lesFlow = {}; S.lesFlowEerste = null;   // dag 1: dan is de kaart het langst
+    lesFlowKlaar();
+    const kaarten = Array.prototype.map.call(document.querySelectorAll('#lessonList .card'), c => ({
+      kicker: ((c.querySelector('.kicker') || {}).innerText || '').trim(),
+      top: Math.round(c.getBoundingClientRect().top)
+    }));
+    const knoppen = Array.prototype.map.call(document.querySelectorAll('[data-voorstel]'),
+      b => Math.round(b.getBoundingClientRect().top));
+    return { kaarten: kaarten, knoppen: knoppen, hoogte: window.innerHeight };
+  });
+  console.log('  kaarten ::', plek.kaarten.map(k => k.kicker + '@' + k.top).join(' · '), '· venster', plek.hoogte);
+  const enNu = plek.kaarten.filter(k => /EN NU|WHAT NOW/i.test(k.kicker))[0];
+  ok(!!enNu, 'de voorstellen staan in één kaart "En nu?" in plaats van twee losse kaarten');
+  ok(enNu && enNu.top < plek.hoogte,
+    'die kaart begint binnen het scherm (' + (enNu ? enNu.top : '?') + ' van ' + plek.hoogte + ' px)');
+  ok(plek.knoppen.length >= 1, 'er staat minstens één knop in (' + plek.knoppen.length + ')');
+
   await browser.close();
   console.log(fails === 0 ? 'ALLES GROEN' : fails + ' FOUT');
   process.exit(fails === 0 ? 0 : 1);

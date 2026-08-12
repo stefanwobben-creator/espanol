@@ -135,6 +135,35 @@ const { chromium } = require('playwright');
   });
   ok(typen === 1, 'zelf typen telt wel mee voor schrijfvaardigheid');
 
+  // ---- 6. v23.51: de knop staat waar je hem zoekt ----
+  // Stefan, telefoontest 11 aug: "je controleert, resultaat is goed of fout, maar dan moet je zelf
+  // op de knop volgende zin klikken, dat vind je niet." Hij stond ná de uitleg én de luisterknoppen,
+  // en dat is op 390 pixels onder de vouw.
+  const plek = await page.evaluate(() => {
+    const s = sIdx;
+    document.getElementById('sInput').value = s.es;
+    checkSentence();
+    const fb = document.getElementById('sFeedback');
+    const kids = Array.prototype.slice.call(fb.children);
+    const idx = (test) => kids.findIndex(test);
+    return {
+      uitslag: idx(c => /feedback/.test(c.className || '')),
+      knoppen: idx(c => !!c.querySelector('#btnNext')),
+      uitleg: idx(c => /uitleg/.test(c.className || '')),
+      volgorde: kids.map(c => (c.className || c.id || c.tagName)).join(' | '),
+      knopY: (function () { const b = document.getElementById('btnNext'); return b ? Math.round(b.getBoundingClientRect().top) : -1; })(),
+      hoogte: window.innerHeight
+    };
+  });
+  console.log('  volgorde ::', plek.volgorde);
+  ok(plek.uitslag !== -1 && plek.knoppen !== -1 && plek.uitleg !== -1, 'uitslag, knoppen en uitleg staan er alle drie');
+  ok(plek.knoppen === plek.uitslag + 1,
+    'de knoppenrij staat direct onder de uitslag (uitslag ' + plek.uitslag + ', knoppen ' + plek.knoppen + ')');
+  ok(plek.knoppen < plek.uitleg,
+    'en dus vóór de uitleg en de luisterknoppen, niet erachter');
+  ok(plek.knopY > 0 && plek.knopY < plek.hoogte,
+    'Volgende zin staat binnen het scherm (' + plek.knopY + ' van ' + plek.hoogte + ' px)');
+
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
 
   await browser.close();

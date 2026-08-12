@@ -353,7 +353,12 @@ const { chromium } = require('playwright');
       label: label,
       eerste: eerste,
       reden: document.getElementById('cheat').innerText,
-      totaal: GC_CONCEPTEN.length
+      /* v23.53: dit was GC_CONCEPTEN.length, en dat klopte niet meer zodra de grammatica een poort
+         kreeg. "Alle onderwerpen" betekent nu alle onderwerpen die voor jou open staan; de rest
+         staat er als een aantal onder ("nog 19 komen later"). Dat aantal wordt hieronder apart
+         getoetst, want verstoppen zonder te zeggen dat je verstopt was de fout van v23.45. */
+      totaal: gcLijst().length,
+      dicht: gcDichtAantal()
     };
   });
   ok(kort.zichtbaar <= 3, 'de Grammatica-tab opent met hoogstens drie conceptkaartjes (' + kort.zichtbaar + ')');
@@ -368,7 +373,9 @@ const { chromium } = require('playwright');
     document.getElementById('gcToggleAlles').click();
     return { n: n, bewaard: bewaard, terug: document.querySelectorAll('#cheat [data-gclees]').length, uit: S.gcAlles };
   });
-  ok(uitgeklapt.n === kort.totaal, 'de knop klapt alle onderwerpen uit (' + uitgeklapt.n + ')');
+  ok(uitgeklapt.n === kort.totaal, 'de knop klapt alle open onderwerpen uit (' + uitgeklapt.n + ')');
+  ok(kort.dicht > 0 && new RegExp(kort.dicht).test(kort.reden),
+    'en de tab zegt er hoeveel er nog dicht staan (' + kort.dicht + ')');
   ok(uitgeklapt.bewaard === true && uitgeklapt.uit === false, 'en die keuze wordt onthouden, dus je hoeft hem niet elke dag opnieuw te maken');
   ok(uitgeklapt.terug <= 3, 'terugklappen kan ook weer');
 

@@ -870,12 +870,76 @@
   details.gwdiep{margin:4px 0 0; border-top:1px solid var(--border); padding-top:6px;}
   details.gwdiep summary{cursor:pointer; font-size:.88rem; color:var(--muted); font-weight:600;}
   details.gwdiep .inner{font-size:.92rem; line-height:1.5; padding-top:8px;}
+  /* --- laadscherm v23.54 ---
+     Gemeten op traag 4G (1,6 Mbit, 300 ms rtt, cpu 4x geremd): de statische HTML staat er na 964 ms,
+     het script is pas na 13,6 seconden klaar. In dat gat zag je "¡Vamos …! Chispa ↑" en verder
+     niets: een pagina die eruitziet alsof hij klaar is en niet reageert. Deze stijl staat in het
+     bestaande blok en niet in een eigen bestand, want een extra verzoek op zo'n verbinding kost
+     precies de tijd die we hier proberen te winnen. */
+  #laadScherm{position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex;
+              align-items:center; justify-content:center; padding:24px;
+              transition:opacity .22s ease;}
+  #laadScherm .laadbin{width:100%; max-width:320px; text-align:center;}
+  #laadScherm .laadlogo{font-size:1.9rem; font-weight:800; color:var(--ink); margin:0 0 18px;}
+  /* een onbepaalde balk en geen percentage: er is niets te melden dat waar is. Het is één script
+     dat bezig is of klaar. Een balk die naar 80% kruipt en daar blijft hangen is een leugen met
+     een animatie eromheen. */
+  #laadScherm .laadbaan{height:6px; border-radius:3px; background:var(--border); overflow:hidden;}
+  #laadScherm .laadloop{height:100%; width:40%; border-radius:3px; background:var(--accent);
+                        animation:laadloop 1.15s ease-in-out infinite;}
+  @keyframes laadloop{0%{transform:translateX(-110%)} 100%{transform:translateX(310%)}}
+  #laadScherm p{margin:14px 0 0; font-size:.95rem; color:var(--muted); line-height:1.45;}
+  #laadScherm #laadTxt2{margin-top:6px; font-size:.85rem;}
+  @media (prefers-reduced-motion: reduce){
+    #laadScherm .laadloop{animation:none; width:100%; opacity:.5;}
+  }
 </style>
 </head>
 <body>
+<!-- v23.54: het laadscherm staat vóór alles en in de statische HTML, zodat het meekomt met de
+     eerste 964 ms in plaats van met het script van 2,3 MB. Het maakt de wachttijd niet korter;
+     het maakt hem eerlijk. -->
+<div id="laadScherm" role="status" aria-live="polite">
+  <div class="laadbin">
+    <div class="laadlogo">¡Vamos!</div>
+    <div class="laadbaan"><div class="laadloop"></div></div>
+    <p id="laadTxt">Even geduld, we zetten je Spaans klaar.</p>
+    <p id="laadTxt2" class="hidden">Dit duurt alleen de eerste keer.</p>
+  </div>
+</div>
+<script>
+/* v23.54. Een laadscherm is een gordijn dat je voor je eigen app hangt: blijft het hangen, dan heb
+   je de app niet traag gemaakt maar onbruikbaar. Dit stukje staat daarom los van het grote script
+   en direct onder het scherm zelf, en het heeft drie noodremmen. */
+(function(){
+  var el = document.getElementById("laadScherm");
+  if(!el) return;
+  var weg = function(){
+    if(!el || !el.parentNode) return;
+    var d = el; el = null;
+    d.style.opacity = "0";
+    setTimeout(function(){ if(d && d.parentNode) d.parentNode.removeChild(d); }, 240);
+  };
+  window.__laadWeg = weg;
+  /* De regel over "de eerste keer" komt pas na zes seconden. Meteen zou hij een probleem
+     aankondigen dat er op een snelle verbinding niet is: daar is dit scherm al weg. */
+  setTimeout(function(){
+    var b = document.getElementById("laadTxt2");
+    if(b) b.classList.remove("hidden");
+  }, 6000);
+  /* 1. een scriptfout betekende tot nu toe een half werkende app; met een gordijn ervoor zou het
+        een dode app worden. */
+  window.addEventListener("error", function(){ setTimeout(weg, 400); });
+  /* 2. en een noodrem voor het geval het grote script er nooit doorheen komt. */
+  setTimeout(weg, 30000);
+})();
+</script>
 <div class="wrap">
   <header>
-    <h1>¡Vamos <span id="userName" class="naamknop" title="Profiel & groepen">…</span>!</h1>
+    <!-- v23.54: hier stond "¡Vamos …!" met drie puntjes als plaatshouder voor een naam die er nog
+         niet is. Een vreemde leest daar geen plaatshouder in maar een fout. De spatie zit nu aan
+         de naam vast in plaats van in de HTML, anders staat er "¡Vamos !". -->
+    <h1>¡Vamos<span id="userName" class="naamknop" title="Profiel &amp; groepen"></span>!</h1>
     <!-- v19.64: hier stond "12 woordjes te doen". Dat getal groeit terwijl je wég bent, dus het
          verwelkomt je met een schuld: hoe langer je niet kwam, hoe groter het verwijt bovenaan het
          scherm. Precies de reden die Stefan noemde om te stoppen ("niet vol te houden, te lastig").
@@ -957,6 +1021,180 @@
     </div>
     <div class="card hidden" id="placeCard"></div>
   </section>
+<script>
+/* ================= HET VROEGE SCHERM (v23.55) =================
+
+   Gemeten op traag 4G (1,6 Mbit, 300 ms rtt, cpu 4x geremd), met gzip en de cacheheaders van
+   GitHub Pages: de statische HTML staat er na ~950 ms, het grote script pas na 4,3 seconden, en de
+   app is bruikbaar na 4,9. Het laadscherm van v23.54 maakte dat gat eerlijk; dit blok maakt het
+   leeg.
+
+   Want de vreemde hoeft helemaal niet op de app te wachten. Het eerste dat hij ziet is geen app,
+   het zijn drie woordjes met elk twee knoppen. Dat is 2,3 KB, en dat kan mee met de HTML.
+
+   Niets hieronder is een kopie. PROEF_WOORDEN, PROEF_TXT, UI_LANGS en de proef-opslag stonden in
+   het grote script en zijn hierheen verhuisd; het zijn globals, dus daar verandert niets. Het enige
+   nieuwe is vroegVraag(), en die dupliceert renderProef() niet maar schrijft in het formaat waar
+   renderProef() sinds v23.44 al uit hervat: {bezig:true, stand:{i,xp,res}}. De overdracht is dus
+   een koppeling die er al was.
+
+   Alles staat in een try/catch en bij twijfel doet dit blok niets. Dan gebeurt er precies wat er
+   voor v23.55 gebeurde, en dat is de reden dat dit twee dagen voor een lancering kan. */
+var UI_LANGS = {nl:{naam:"Nederlands", vlag:"🇳🇱", kort:"NL"}, en:{naam:"English", vlag:"🇬🇧", kort:"EN"}};
+/* Eén plek die een browsertaal omzet naar een taal die we echt spreken. Er waren er drie, met elk
+   hun eigen tabel, en dat is precies hoe ze uit elkaar konden lopen. */
+function taalWeHebben(bl){
+  try {
+    var k = String(bl || "").slice(0, 2).toLowerCase();
+    return UI_LANGS[k] ? k : "en";
+  } catch(e){ return "en"; }
+}
+function browserTaal(){
+  try { return taalWeHebben((typeof navigator !== "undefined" && navigator.language) || "nl"); }
+  catch(e){ return "en"; }
+}
+var PROEF_WOORDEN = [
+  {id:"b1", es:"hola",    c:0, opts:{nl:["hallo","tot ziens"], en:["hello","goodbye"], fr:["bonjour","au revoir"], de:["hallo","tschüss"]}},
+  {id:"b3", es:"gracias", c:1, opts:{nl:["alsjeblieft","dank je wel"], en:["please","thank you"], fr:["s'il te plaît","merci"], de:["bitte","danke"]}},
+  {id:"b2", es:"adiós",   c:0, opts:{nl:["tot ziens","goedemorgen"], en:["goodbye","good morning"], fr:["au revoir","bonjour"], de:["tschüss","guten Morgen"]}}
+];
+var PROEF_TXT = {
+ nl:{kop:"Leer nu je eerste woordje Spaans", sub:"Geen account, geen gedoe. Gewoon proberen:", vraag:"Wat betekent dit?",
+     goed:"¡Muy bien! +2 taco's", fout:"Het was: ", foutXp:". Fouten zijn goud: +1 taco!",
+     klaarKop:"Dat zijn je eerste 3 Spaanse woorden! 🎉", klaarSub:"In een halve minuut. Zo licht voelt de rest ook. Zal ik ze voor je bewaren?",
+     bewaar:"Bewaar mijn woorden →", heb:"Ik heb al een profiel of sync-code"},
+ en:{kop:"Learn your first Spanish word right now", sub:"No account, no fuss. Just try:", vraag:"What does this mean?",
+     goed:"¡Muy bien! +2 tacos", fout:"It was: ", foutXp:". Mistakes are gold: +1 taco!",
+     klaarKop:"Those are your first 3 Spanish words! 🎉", klaarSub:"In half a minute. The rest feels just as light. Shall I save them for you?",
+     bewaar:"Save my words →", heb:"I already have a profile or sync code"},
+ fr:{kop:"Apprends ton premier mot d'espagnol", sub:"Pas de compte, pas de tracas. Essaie :", vraag:"Qu'est-ce que ça veut dire ?",
+     goed:"¡Muy bien! +2 tacos", fout:"C'était : ", foutXp:". Les erreurs sont de l'or : +1 taco !",
+     klaarKop:"Voilà tes 3 premiers mots d'espagnol ! 🎉", klaarSub:"En trente secondes. Le reste est aussi léger. Je te les garde ?",
+     bewaar:"Garde mes mots →", heb:"J'ai déjà un profil ou un code de synchro"},
+ de:{kop:"Lern jetzt dein erstes spanisches Wort", sub:"Kein Konto, kein Aufwand. Einfach ausprobieren:", vraag:"Was bedeutet das?",
+     goed:"¡Muy bien! +2 Tacos", fout:"Es war: ", foutXp:". Fehler sind Gold: +1 Taco!",
+     klaarKop:"Das sind deine ersten 3 spanischen Wörter! 🎉", klaarSub:"In einer halben Minute. So leicht fühlt sich der Rest auch an. Soll ich sie dir aufheben?",
+     bewaar:"Meine Wörter speichern →", heb:"Ich habe schon ein Profil oder einen Sync-Code"}
+};
+function proefTaal(){
+  /* v23.49: hier stond PROEF_TXT[bl] ? bl : "en", en PROEF_TXT kent vier talen. Het eerste scherm
+     kwam dus in het Duits terwijl het tweede dat niet kon volgen. De drie vaste proefwoorden
+     blijven viertalig in de tabel staan (dat kost niets), maar we kiezen alleen wat de hele app
+     aankan. */
+  return browserTaal();
+}
+var proefStand = null, proefMem = null;
+function proefData(){
+  try{ var raw = localStorage.getItem("espanol-proef-v1"); if(raw) return JSON.parse(raw); }catch(e){}
+  return proefMem;
+}
+function proefBewaar(d){ proefMem = d; try{ localStorage.setItem("espanol-proef-v1", JSON.stringify(d)); }catch(e){} }
+function proefWis(){ proefMem = null; try{ localStorage.removeItem("espanol-proef-v1"); }catch(e){} }
+
+var vroegBezig = false;
+function vroegVraag(){
+  var card = document.getElementById("profCard");
+  if(!card) return;
+  var box = document.getElementById("proefBox");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "proefBox"; box.className = "card";
+    card.parentNode.insertBefore(box, card);
+  }
+  card.classList.add("hidden");
+  box.classList.remove("hidden");
+  var L = proefTaal(), d = PROEF_TXT[L] || PROEF_TXT.en;
+  var st = proefStand;
+  var i = st.i;
+  if(i >= PROEF_WOORDEN.length){
+    /* De drie zijn op en het grote script is er nog niet. Dat is zeldzaam (drie vragen met 850 ms
+       feedback kosten meer tijd dan er nog te wachten valt), maar niet onmogelijk op een hele
+       trage lijn. Dan staat hier de uitslag zonder de vervolgvraag, en neemt renderProef() het
+       over zodra hij er is. */
+    box.innerHTML = "<span class='kicker'>\u00a1Vamos!</span>" +
+      "<h2 style='margin:6px 0 2px'>" + d.klaarKop + "</h2>" +
+      "<p class='muted'>+" + st.xp + " taco's</p>";
+    return;
+  }
+  var w = PROEF_WOORDEN[i];
+  var opts = w.opts[L] || w.opts.en;
+  /* Het lege vak van 100 pixels is de plek van Chispa. petSVG() hangt aan S en aan de hele
+     tekenboom en verhuist dus niet mee; het ei verschijnt zodra het grote script er is. Zonder dit
+     vak zouden de knoppen op dat moment naar beneden springen. */
+  box.innerHTML = "<div style='text-align:center'><div style='width:100px; height:100px; margin:0 auto'></div></div>" +
+    "<span class='kicker'>\u00a1Vamos! \u00b7 " + (i + 1) + "/" + PROEF_WOORDEN.length + "</span>" +
+    (i === 0 ? "<h2 style='margin:6px 0 2px'>" + d.kop + "</h2><p class='muted' style='margin:0 0 8px'>" + d.sub + "</p>" : "") +
+    "<p style='font-size:1.7rem; margin:8px 0 2px; text-align:center'><b class='es'>" + w.es + "</b></p>" +
+    "<p class='muted' style='margin:0 0 10px; text-align:center'>" + d.vraag + "</p>" +
+    opts.map(function(o, oi){ return "<button class='opt' data-proef='" + oi + "' style='margin:4px 0'>" + o + "</button>"; }).join("") +
+    "<p id='vroegUit' class='muted' style='margin:10px 0 0; text-align:center; min-height:1.2em'></p>" +
+    "<p class='muted' style='margin-top:10px; text-align:center'><a href='#' id='lnkProefSkip'>" + d.heb + "</a></p>";
+  var knoppen = box.querySelectorAll("button[data-proef]");
+  for(var k = 0; k < knoppen.length; k++){
+    (function(b){
+      b.onclick = function(){
+        for(var x = 0; x < knoppen.length; x++){ knoppen[x].disabled = true; }
+        var goed = (+b.getAttribute("data-proef")) === w.c;
+        st.xp += goed ? 2 : 1;
+        st.res[w.id] = goed;
+        st.i++;
+        /* Precies het formaat waar renderProef() uit hervat. Meteen wegschrijven en niet pas aan
+           het eind: als het grote script tussen twee vragen door binnenkomt, pakt hij de stand op
+           in plaats van opnieuw bij nul te beginnen. */
+        proefBewaar({bezig:true, xp:st.xp, res:st.res, stand:st});
+        /* Geen toast en geen confetti: die zitten in het grote script. Op een telefoon is een regel
+           in het kaartje zelf trouwens beter zichtbaar dan een balk onderaan. */
+        var u = document.getElementById("vroegUit");
+        if(u) u.innerHTML = goed ? "<b>" + d.goed + "</b>" : d.fout + "<b>" + opts[w.c] + "</b>" + d.foutXp;
+        setTimeout(function(){
+          /* Is het grote script er inmiddels? Dan geeft het vroege blok het stokje door en verdwijnt
+             het uit beeld. renderProef() leest dezelfde stand terug. */
+          if(typeof renderProef === "function"){ vroegBezig = false; renderProef(); return; }
+          vroegVraag();
+        }, 850);
+      };
+    })(knoppen[k]);
+  }
+  var sk = document.getElementById("lnkProefSkip");
+  if(sk) sk.onclick = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    proefBewaar({overgeslagen:true});
+    vroegBezig = false;
+    box.classList.add("hidden");
+    card.classList.remove("hidden");
+    return false;
+  };
+}
+(function(){
+  try {
+    /* Dezelfde voorwaarden als normaalBegin() in het grote script, maar dan uit ruwe localStorage,
+       want profiles en proefData bestaan hier nog niet als objecten. normaalBegin() blijft gewoon
+       staan: dit blok vervangt hem niet, het loopt erop vooruit. */
+    if(location.search) return;                       // uitnodigingslink, ?beheer=, ?les= — dat regelt het grote script
+    var pr = localStorage.getItem("espanol-proef-v1");
+    if(pr){
+      var pd = JSON.parse(pr);
+      if(pd && (pd.klaar || pd.overgeslagen)) return;
+      if(pd && pd.stand && pd.stand.i >= PROEF_WOORDEN.length) return;   // de helling is aan de beurt
+    }
+    var pf = localStorage.getItem("espanol-profiles-v1");
+    if(pf){
+      var p = JSON.parse(pf);
+      if(p && p.list && p.list.length) return;        // geen vreemde
+    }
+    if(!document.getElementById("profCard")) return;
+    var bew = null;
+    try { bew = pr ? JSON.parse(pr) : null; } catch(e){ bew = null; }
+    proefStand = (bew && bew.bezig && bew.stand) ? bew.stand : {i:0, xp:0, res:{}};
+    vroegBezig = true;
+    vroegVraag();
+    /* Er staat nu iets echts, dus het gordijn van v23.54 mag open. Voor wie al een profiel heeft
+       gebeurt dat pas als boot() klaar is, en dat klopt: voor die bezoeker valt er niets eerder te
+       laten zien. */
+    if(window.__laadWeg) window.__laadWeg();
+  } catch(e){ vroegBezig = false; }
+})();
+</script>
   <div id="storageWarn" class="warn hidden">
     Let op: in deze omgeving kan voortgang niet automatisch bewaard worden. Gebruik bij Voortgang de knop
     "exporteer voortgang" voordat je afsluit, en plak die de volgende keer terug.
@@ -1207,7 +1445,7 @@
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.51";
+var APP_VERSIE = "v23.55";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -5759,43 +5997,6 @@ SIGNUP_TXT.de.wijzig = "ändern";
    SRS-start van die woorden verhuizen bij "Bewaar mijn woorden" mee naar het nieuwe profiel
    (verzilverd in selectProfile). De rondleiding slaat de oefenstappen daarna over (S.proefTour).
    Ervaren bezoekers (sync-code) kunnen de proeverij overslaan via de link onderaan. */
-var PROEF_WOORDEN = [
-  {id:"b1", es:"hola",    c:0, opts:{nl:["hallo","tot ziens"], en:["hello","goodbye"], fr:["bonjour","au revoir"], de:["hallo","tschüss"]}},
-  {id:"b3", es:"gracias", c:1, opts:{nl:["alsjeblieft","dank je wel"], en:["please","thank you"], fr:["s'il te plaît","merci"], de:["bitte","danke"]}},
-  {id:"b2", es:"adiós",   c:0, opts:{nl:["tot ziens","goedemorgen"], en:["goodbye","good morning"], fr:["au revoir","bonjour"], de:["tschüss","guten Morgen"]}}
-];
-var PROEF_TXT = {
- nl:{kop:"Leer nu je eerste woordje Spaans", sub:"Geen account, geen gedoe. Gewoon proberen:", vraag:"Wat betekent dit?",
-     goed:"¡Muy bien! +2 taco's", fout:"Het was: ", foutXp:". Fouten zijn goud: +1 taco!",
-     klaarKop:"Dat zijn je eerste 3 Spaanse woorden! 🎉", klaarSub:"In een halve minuut. Zo licht voelt de rest ook. Zal ik ze voor je bewaren?",
-     bewaar:"Bewaar mijn woorden →", heb:"Ik heb al een profiel of sync-code"},
- en:{kop:"Learn your first Spanish word right now", sub:"No account, no fuss. Just try:", vraag:"What does this mean?",
-     goed:"¡Muy bien! +2 tacos", fout:"It was: ", foutXp:". Mistakes are gold: +1 taco!",
-     klaarKop:"Those are your first 3 Spanish words! 🎉", klaarSub:"In half a minute. The rest feels just as light. Shall I save them for you?",
-     bewaar:"Save my words →", heb:"I already have a profile or sync code"},
- fr:{kop:"Apprends ton premier mot d'espagnol", sub:"Pas de compte, pas de tracas. Essaie :", vraag:"Qu'est-ce que ça veut dire ?",
-     goed:"¡Muy bien! +2 tacos", fout:"C'était : ", foutXp:". Les erreurs sont de l'or : +1 taco !",
-     klaarKop:"Voilà tes 3 premiers mots d'espagnol ! 🎉", klaarSub:"En trente secondes. Le reste est aussi léger. Je te les garde ?",
-     bewaar:"Garde mes mots →", heb:"J'ai déjà un profil ou un code de synchro"},
- de:{kop:"Lern jetzt dein erstes spanisches Wort", sub:"Kein Konto, kein Aufwand. Einfach ausprobieren:", vraag:"Was bedeutet das?",
-     goed:"¡Muy bien! +2 Tacos", fout:"Es war: ", foutXp:". Fehler sind Gold: +1 Taco!",
-     klaarKop:"Das sind deine ersten 3 spanischen Wörter! 🎉", klaarSub:"In einer halben Minute. So leicht fühlt sich der Rest auch an. Soll ich sie dir aufheben?",
-     bewaar:"Meine Wörter speichern →", heb:"Ich habe schon ein Profil oder einen Sync-Code"}
-};
-function proefTaal(){
-  /* v23.49: hier stond PROEF_TXT[bl] ? bl : "en", en PROEF_TXT kent vier talen. Het eerste scherm
-     kwam dus in het Duits terwijl het tweede dat niet kon volgen. De drie vaste proefwoorden
-     blijven viertalig in de tabel staan (dat kost niets), maar we kiezen alleen wat de hele app
-     aankan. */
-  return browserTaal();
-}
-var proefStand = null, proefMem = null;
-function proefData(){
-  try{ var raw = localStorage.getItem("espanol-proef-v1"); if(raw) return JSON.parse(raw); }catch(e){}
-  return proefMem;
-}
-function proefBewaar(d){ proefMem = d; try{ localStorage.setItem("espanol-proef-v1", JSON.stringify(d)); }catch(e){} }
-function proefWis(){ proefMem = null; try{ localStorage.removeItem("espanol-proef-v1"); }catch(e){} }
 /* ================= DE HELLING (v23.44) =================
    Het aanmeldscherm vroeg een vreemde naar zijn niveau. Dat is de enige vraag op dat scherm die hij
    niet kan beantwoorden: wie weet of hij A1 of A2 is, is niet de persoon die dit voor het eerst
@@ -6307,7 +6508,7 @@ function renderProfileScreen(){
   var ft2 = document.getElementById("appFooter");
   if(ft2) ft2.classList.add("hidden");
   TABS.forEach(function(t){ document.getElementById("tab-"+t.id).classList.add("hidden"); });
-  document.getElementById("userName").textContent = "…";
+  document.getElementById("userName").textContent = "";
   var list = document.getElementById("profileList");
   var kop = document.getElementById("profKiesKop");
   if(kop) kop.classList.toggle("hidden", !profiles.list.length);
@@ -6630,7 +6831,7 @@ function boot(){
   wQueue = []; wCur = null; wSessionDone = 0; sIdx = null; qState = null; bState = null; boekAudioEl = null;
   scopeLesson = null; curLesson = null; lesFlow = null;
   wRondeIds = null; wRondeTot = 0; wNetFout = {}; // v19.91
-  document.getElementById("userName").textContent = p.name;
+  document.getElementById("userName").textContent = p.name ? " " + p.name : "";
   document.getElementById("tab-profiel").classList.add("hidden");
   document.getElementById("goalLine").classList.remove("hidden");
   document.getElementById("nav").classList.remove("hidden");
@@ -10235,7 +10436,9 @@ var clSpel = null, clTimer = null;
 
 // Alleen concepten met genoeg patronen die precies twee keuzes geven: drie bakken is geen sorteerspel.
 function clConcepten(){
-  return GC_CONCEPTEN.filter(function(c){
+  /* v23.53: het sorteerspel bood op dag 1 ook porpara en perfindef aan. Snel kiezen tussen twee
+     bakken heeft alleen zin als je de regel kent; anders is het gokken op tijd. */
+  return gcGeordend().filter(function(c){ return gcConceptOpen(c.id); }).filter(function(c){
     var n = 0, paar = null;
     (c.patronen || []).forEach(function(p){
       var q = null;
@@ -12433,6 +12636,13 @@ function lesFlowGramId(){
   var vers = gramVersKandidaat(les);
   if(vers) return "concept-" + vers.id;
 
+  /* v23.53: deze stap is er bij gekomen. Als de spiekbrief van je les niets oplevert dat open
+     staat, pak dan gewoon het eerste onderwerp uit de leervolgorde dat je nog nooit hebt gedaan.
+     Zonder deze stap viel de dagles terug op de kandidatenlijst hieronder, en die begint met de
+     handgeschreven wizards: op dag 1 kreeg je dan klemtoon in plaats van el of la. */
+  var volgende = gcVolgendeOpen();
+  if(volgende) return "concept-" + volgende;
+
   var kandidaten = [];
   ((les && les.spiek) || []).forEach(function(i){
     var o = gwOnderwerpVoorSpiek(i);
@@ -12440,7 +12650,11 @@ function lesFlowGramId(){
   });
   // gcLijst() staat er nu bij: zonder dat waren de conceptlessen alleen bereikbaar via een fout,
   // en de handgeschreven wizards die aan geen enkele spiekbrief hangen waren onbereikbaar.
-  if(!kandidaten.length) kandidaten = GRAMWIZ.concat(gcLijst()).concat(gwGenLijst());
+  /* v23.53: GRAMWIZ ging hier ongefilterd in. Subjuntivo is een van de vijf, en die hoort niet in
+     de dagles van iemand die drie woorden kent. Wizards zonder eigen concept (klemtoon) hebben geen
+     voorwaarde en blijven dus gewoon open. */
+  if(!kandidaten.length) kandidaten = GRAMWIZ.filter(function(o){ return gcConceptOpen(o.id); })
+    .concat(gcLijst()).concat(gwGenLijst());
   if(!kandidaten.length) return null;
   // nog niet afgerond eerst, daarna het minst herhaalde: herhalen is precies de bedoeling
   kandidaten.sort(function(a, b){
@@ -12637,6 +12851,15 @@ function lesFlowVaardigheidOpen(){
     open = open.filter(function(v){ return v !== "lezen"; });
     if(!open.length) return null;
   }
+  /* v23.52: hier werd alleen gekeken of je die vaardigheid vandaag al had gedaan, niet of er
+     materiaal voor is. Op dag 1 stelde de app daardoor Escuchar voor, en dat doet mee vanaf twintig
+     geleerde woorden. Lezen keek al of er een hoofdstuk open staat; luisteren volgt nu dezelfde
+     poort als het spel. Schrijven blijft altijd kunnen: dat werkt met de zinnen van je eigen les. */
+  open = open.filter(function(v){
+    if(v !== "luisteren") return true;
+    try { return speelKlaar("audi"); } catch(e){ return true; }
+  });
+  if(!open.length) return null;
   return open[0];
 }
 
@@ -12675,7 +12898,15 @@ function lesFlowWinst(){
       knop:ct("Vijf minuten, doen", "Five minutes, go"),
       doe:function(){ show("spiekbrief"); gwStart("concept-" + c.id); }};
   }
-  var cd = corrDueHaalbaar();
+  /* v23.52: hier stond alleen corrDueHaalbaar().length >= 3, en dat telt hoeveel regels er op
+     herhaling staan. Dat zegt niets over of het spel kan draaien. Op dag 1 stelde de app hierdoor
+     El Corrector voor terwijl speelKlaar("corr") false is (acht vrijgespeelde zinnen nodig, een
+     vreemde heeft er vijf): de poort van v23.43 verbergt de tegel wél, maar dit voorstel roept
+     speelNaar("corr") rechtstreeks aan. Een tweede deur naar dezelfde gesloten kamer, precies op
+     het moment dat iemand besluit of hij doorgaat. */
+  var corrKan = true;
+  try { corrKan = speelKlaar("corr"); } catch(e){ corrKan = true; }
+  var cd = corrKan ? corrDueHaalbaar() : [];
   if(cd.length >= 3){
     return {icon:"\ud83d\udd75\ufe0f",
       kop:ct("El Corrector", "El Corrector"),
@@ -12710,13 +12941,22 @@ function lesFlowVoorstellen(){
   if(l) uit.push(l);
   return uit;
 }
-function lesFlowVoorstelHtml(v, i){
-  return "<div class='card' style='margin-top:10px'>" +
-    "<span class='kicker'>" + (i === 0 ? ct("Hier win je het meeste", "This is where you gain most")
-                                       : ct("Of gewoon leuk", "Or just fun")) + "</span>" +
-    "<p style='margin:4px 0 2px; font-size:1.05rem'><b>" + v.icon + " " + v.kop + "</b></p>" +
-    "<p class='muted' style='margin:0 0 10px; font-size:.9rem'>" + v.waarom + "</p>" +
-    "<button class='ghost' data-voorstel='" + i + "'>" + v.knop + " \u2192</button></div>";
+/* v23.52: dit waren twee losse kaarten, elk met een eigen kop, en de tweede begon op 859 pixels in
+   een venster van 844. Precies het antwoord op "en nu?" viel dus van het scherm. Het zijn ook geen
+   twee mededelingen maar één vraag met twee antwoorden, dus staan ze nu in één kaart. */
+function lesFlowVoorstellenHtml(vs){
+  if(!vs.length) return "";
+  return "<div class='card' style='margin-top:10px'><span class='kicker'>" +
+    ct("En nu?", "What now?") + "</span>" +
+    vs.map(function(v, i){
+      return "<div style='margin:" + (i ? "14px" : "4px") + " 0 0'>" +
+        "<p style='margin:0 0 2px; font-size:1.05rem'><b>" + v.icon + " " + v.kop + "</b>" +
+        "<span class='muted' style='font-size:.8rem'> \u00b7 " +
+          (i === 0 ? ct("hier win je het meeste", "this is where you gain most")
+                   : ct("of gewoon leuk", "or just fun")) + "</span></p>" +
+        "<p class='muted' style='margin:0 0 8px; font-size:.9rem'>" + v.waarom + "</p>" +
+        "<button class='ghost' data-voorstel='" + i + "'>" + v.knop + " \u2192</button></div>";
+    }).join("") + "</div>";
 }
 
 function lesFlowKlaarBonus(){
@@ -12756,15 +12996,21 @@ function lesFlowKlaar(){
       ct("Geef Chispa "+tapaHoy.es, "Give Chispa "+tapaHoy.es)+"</button>"+
     "<p class='muted' id='tapaUitleg' style='margin:0 0 4px; text-align:center; font-size:.85rem'>"+
       ct(tapaHoy.nl, tapaHoy.en)+"</p>"+
-    (eersteOoit ? "<p style='margin:8px 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
+
     // v19.60: staat het dagdoel er al op, dan is "nog een les" niet meer de hoofdknop. Doorgaan mag,
     // maar het hoort niet het eerste te zijn wat je ziet op het moment dat je klaar bent.
     // v20.5: de stopknop staat er nu altijd, altijd bovenaan de rij en altijd als primaire knop.
     // Dat is de zesde bevinding van zijn moeder ("ze wilde stoppen maar zag niet hoe") en het is
     // ook het eerlijke antwoord op de voorstellen hieronder: die zijn extra, dit is klaar.
     "<div class='row'><button class='primary' id='btnLesFlowTerug'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button>"+
-    "<button class='ghost' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button></div></div>"+
-    voorstellen.map(lesFlowVoorstelHtml).join("")+
+    "<button class='ghost' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button></div>"+
+    /* v23.52: deze zin stond boven de knoppen, en juist op dag 1 (de enige dag dat hij verschijnt)
+       duwde hij daarmee het antwoord op "en nu?" van het scherm af: de tweede voorstelkaart begon op
+       865 pixels in een venster van 844. Hij gaat over morgen, dus hij hoeft niet boven de dingen te
+       staan die over nu gaan. */
+    (eersteOoit ? "<p class='muted' style='margin:10px 0 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
+    "</div>"+
+    lesFlowVoorstellenHtml(voorstellen)+
     // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
     // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
     // v19.58: hoogstens ÉÉN vraag onder de felicitatie, gekozen door samenKaartNu().
@@ -17173,19 +17419,6 @@ function wsCellClick(r, c){
    viertalige TXT hangt) wél Duits of Frans wordt en de woordbetekenis terugvalt op Nederlands.
    Stefan kreeg op zijn Duitse telefoon alle drie tegelijk op één scherm. Twee vlaggen die kloppen
    zijn beter dan vier waarvan er twee half zijn. */
-var UI_LANGS = {nl:{naam:"Nederlands", vlag:"🇳🇱", kort:"NL"}, en:{naam:"English", vlag:"🇬🇧", kort:"EN"}};
-/* Eén plek die een browsertaal omzet naar een taal die we echt spreken. Er waren er drie, met elk
-   hun eigen tabel, en dat is precies hoe ze uit elkaar konden lopen. */
-function taalWeHebben(bl){
-  try {
-    var k = String(bl || "").slice(0, 2).toLowerCase();
-    return UI_LANGS[k] ? k : "en";
-  } catch(e){ return "en"; }
-}
-function browserTaal(){
-  try { return taalWeHebben((typeof navigator !== "undefined" && navigator.language) || "nl"); }
-  catch(e){ return "en"; }
-}
 var TRANS = {en:{"w1":"insecure","w2":"insecurity","w3":"anxious, tense","w4":"anxiety, tension","w5":"frustrated","w6":"frustration","w7":"easily scared, fearful","w8":"fear","w9":"excited, full of anticipation","w10":"joyful anticipation (not: illusion!)","w11":"ridiculous","w12":"enthusiastic","w13":"shy","w14":"funny, fun","w15":"happy, content","w16":"sad","w17":"free","w18":"to feel","w19":"to worry","w20":"to feel terrible","w21":"to learn","w22":"to forget","w23":"to remember","w24":"to repeat","w25":"to translate","w26":"to look up, to search","w27":"dictionary","w28":"word","w29":"sentence, phrase","w30":"sound","w31":"to pronounce","w32":"to improve","w33":"challenge","w34":"mistake, error","w35":"to be hard/difficult (for someone); to cost","w36":"to overcome the fear","w37":"vocabulary","w38":"grammar","w39":"to understand","w40":"Spanish speaker","w41":"to be born","w42":"to marry","w43":"to divorce","w44":"to die","w45":"to move (house)","w46":"to influence","w47":"to travel","w48":"life","w49":"death","w50":"painting","w51":"(artist's) work","w52":"era, time","w53":"famous","w54":"painter","w55":"suffering","w56":"exhibition","w57":"to stumble, to trip","w58":"to swim","w59":"sea","w60":"to make decisions","w61":"to discover","w62":"loved ones","w63":"country","w64":"everyone","w65":"biography","w66":"achievement","w67":"to be successful","w68":"prize, award","w69":"to begin (to)","w70":"to finish, to end","w71":"during","w72":"until","w73":"century","w74":"to retire","w75":"war","w76":"to flee","w77":"to compose","w78":"to direct, to lead","w79":"to star in","w80":"to achieve, to manage to","w81":"singer","w82":"to leave, to go away","w83":"hair","w84":"eyes","w85":"tall","w86":"short (height)","w87":"slim","w88":"handsome, pretty","w89":"to wear glasses","w90":"beard","w91":"to look like, to resemble","w92":"to get along well/badly with","w93":"character, personality","w94":"open (personality)","w95":"quiet (person)","w96":"funny","w97":"partner, couple","w98":"to know (someone), to meet","w99":"flat, apartment","w100":"bedroom","w101":"kitchen","w102":"bathroom","w103":"living room","w104":"terrace","w105":"balcony","w106":"garden","w107":"wardrobe, closet","w108":"bed","w109":"sofa (masculine, despite the -a!)","w110":"furniture","w111":"furnished","w112":"bright, light-filled","w113":"spacious","w114":"cosy, welcoming","w115":"noisy","w116":"quiet, calm","w117":"neighbourhood","w118":"the outskirts (always plural)","w119":"to rent (and rent out)","w120":"rent (price)","w121":"lift, elevator","w122":"to love (something) (me encanta)","b1":"hello","b2":"goodbye","b3":"thank you","b4":"please","b5":"yes / no","b6":"good morning","b7":"good evening, good night","b8":"see you tomorrow","b9":"my name is...","b10":"how are you?","b11":"house","b12":"dog","b13":"cat","b14":"book","b15":"school","b16":"friend","b17":"family","b18":"mother","b19":"father","b20":"brother / sister","b21":"to eat","b22":"to drink","b23":"to speak, to talk","b24":"to live","b25":"to be (essence/traits)","b26":"to be (place/state)","b27":"to have","b28":"to go","b29":"big","b30":"small","b31":"pretty, nice","b32":"nice, kind","b33":"water","b34":"food","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"the Netherlands","b38":"a little","b39":"where?","b40":"a lot, much","b41":"Dutch (person)","b42":"Spanish (person)","b43":"name","b44":"work, job","b45":"teacher","b46":"student","b47":"to work","b48":"to study","b49":"year","b50":"what's your name?","b51":"to read","b52":"to write","b53":"to listen","b54":"to understand","b55":"word","b56":"language","b57":"city","b58":"village","b59":"beach","b60":"mountain","b61":"river","b62":"sea","b63":"north","b64":"south","b65":"park","b66":"square","b67":"museum","b68":"church","b69":"climate (el, despite the -a)","b70":"it's hot","b71":"it's cold","b72":"it rains / it's raining","b73":"people (singular in Spanish!)","b74":"pretty, nice","w123":"to ask a favour","w124":"favour","w125":"to lend","w126":"to lend, to let","w127":"to borrow","w128":"could you...?","w129":"would you mind...?","w130":"excuse","w131":"to apologize","w132":"to forgive","w133":"I'm (so) sorry","w134":"noise","w135":"to bother, to disturb","w136":"neighbour","w137":"right now","w138":"at this moment","w139":"busy","w140":"key","w141":"mobile phone","w142":"permission","w143":"to have dinner","w144":"to take a shower","w145":"before, previously","w146":"now","w147":"not anymore","w148":"still","w149":"invention","w150":"discovery","w151":"electricity","w152":"wheel","w153":"writing","w154":"fire","w155":"custom, habit","w156":"to usually do (something)","w157":"to change","w158":"old, former, back then","w159":"modern","w160":"generation","w161":"grandparents","w162":"as a child, when I was little","w163":"trip, excursion","w164":"concert","w165":"play (theatre)","w166":"landscape","w167":"accommodation","w168":"to book","w169":"reservation","w170":"to be worth it","w171":"hassle, drag (informal)","w172":"luck","w173":"shame, pity","w174":"to seem, to think (opinion)","w175":"to plan","w176":"plan","w177":"to feel like (doing something)","w178":"to enjoy","w179":"relaxing","w180":"exciting","w181":"recipe","w182":"ingredient","w183":"to cook","w184":"to boil","w185":"to fry","w186":"to mix","w187":"to add","w188":"to cut","w189":"to peel","w190":"oven","w191":"frying pan","w192":"pot, pan","w193":"a pinch of","w194":"a little (of)","w195":"enough, quite a lot","w196":"too much","w197":"tablespoon (as a quantity)","w198":"flavour, taste","w199":"head","w200":"back","w201":"stomach","w202":"throat","w203":"to hurt","w204":"pain, ache","w205":"to be sick, ill","w206":"to have a fever","w207":"cough","w208":"a cold (illness)","w209":"to rest","w210":"to take (a pill)","w211":"pill","w212":"syrup (medicine)","w213":"healthy","w214":"serious","w215":"to get better, to improve","w216":"advice","w217":"moment","w218":"unforgettable","w219":"surprise","w220":"to surprise, to be surprised","w221":"anecdote, story","w222":"to tell (a story)","w223":"suddenly","w224":"while","w225":"in the end","w226":"memory","w227":"to remember","w228":"to get emotional","w229":"emotion","w230":"to celebrate","w231":"celebration","w232":"unexpected","w233":"to come true (a dream)","w234":"dream","w235":"egg","b187":"egg","w236":"beach","b188":"beach","w237":"crab","b189":"crab","w238":"wave","b190":"wave","w239":"to forget","b191":"to forget","w240":"seagull","b192":"seagull","w241":"whale","b193":"whale","w242":"cloud","b194":"cloud","w243":"beak","b195":"beak","w244":"clumsy","b196":"clumsy","w245":"turtle","b197":"turtle","w246":"to cry","b198":"to cry","w247":"heart","b199":"heart","w248":"rhythm","b200":"rhythm","w249":"smoke","b201":"smoke","w250":"street","b202":"street","w251":"empty","b203":"empty","w252":"to laugh","b204":"to laugh","w253":"to remember","b205":"to remember","w254":"back","b206":"back","w255":"leaf","b207":"leaf","w256":"to run","b208":"to run","w257":"tail","b209":"tail","w258":"to breathe","b210":"to breathe","w259":"strong","b211":"strong","w260":"accordion","b212":"accordion","w261":"bench","b213":"bench","w262":"to tremble","b214":"to tremble","w263":"tears","b215":"tears","w264":"enough","b216":"enough","w265":"fog","b217":"fog","w266":"corner (of a street)","b218":"corner (of a street)","w267":"nook","b219":"nook","w268":"scared","b220":"scared","w269":"to be missing","b221":"to be missing","w270":"tree","b222":"tree","w271":"barely","b223":"barely","w272":"silence","b224":"silence","w273":"windmill","b225":"windmill","w274":"confused","b226":"confused","w275":"giant","b227":"giant","w276":"to deserve","b228":"to deserve","w277":"foolish","b229":"foolish","w278":"to give up","b230":"to give up","w279":"to nod","b231":"to nod","w280":"badger","b232":"badger","w281":"cunning","b233":"cunning","w282":"to share","b234":"to share","w283":"trick","b235":"trick","w284":"mischievous","b236":"mischievous","w285":"fire","b237":"fire","w286":"to destroy","b238":"to destroy","w287":"thick (of fog, liquid)","b239":"thick (of fog, liquid)","w288":"old, ancient","b240":"old, ancient","w289":"fear","b241":"fear","w290":"put out, dimmed","b242":"put out, dimmed","w291":"brother","b243":"brother","w292":"too late","b244":"too late","w293":"to grow","b245":"to grow","w294":"golden","b246":"golden","w295":"season","b247":"season","w296":"shining","b248":"shining","w297":"to end","b249":"to end","w298":"to learn","b250":"to learn","w299":"memory","b251":"memory","k1":"man","k2":"woman","k3":"child, boy","k4":"girl","k5":"boy","k6":"girl","k7":"young","k8":"gentleman, Mr","k9":"lady, Mrs","k10":"ladies and gentlemen; Mr and Mrs","k11":"husband","k12":"age","k13":"nationality","k14":"address; direction","k15":"foreigner","k16":"German","k17":"Japanese","k18":"Mexican","k19":"Moroccan","k20":"divorced","k21":"separated","k22":"widower / widow","k23":"to be called","k24":"to sign","k25":"glasses","k26":"wallet, bag","k27":"avenue","k28":"walk; boulevard","k29":"car","k30":"train","k31":"bus","k32":"underground, metro","k33":"taxi","k34":"taxi driver","k35":"plane","k36":"airport","k37":"port, harbour","k38":"road, motorway","k39":"car park","k40":"garage","k41":"driver","k42":"hotel","k43":"campsite","k44":"suitcase","k45":"passport","k46":"map","k47":"street plan","k48":"timetable","k49":"tourist","k50":"holidays","k51":"advertising","k52":"room","k53":"flat, apartment","k54":"studio; study","k55":"bathroom, toilet","k56":"shower","k57":"washbasin","k58":"door","k59":"window","k60":"stairs","k61":"chair","k62":"armchair","k63":"bookcase","k64":"television","k65":"radio","k66":"video","k67":"DVD","k68":"new","k69":"old","k70":"class; classroom","k71":"lesson (chapter)","k72":"unit, chapter","k73":"exercise","k74":"exam, test","k75":"question","k76":"page","k77":"blackboard","k78":"pen","k79":"pencil","k80":"rubber, eraser","k81":"photocopy","k82":"library","k83":"secondary school","k84":"university","k85":"activity","k86":"to understand","k87":"to practise","k88":"sun","k89":"to rain","k90":"to snow","k91":"spring","k92":"summer","k93":"autumn, fall","k94":"winter","k95":"countryside; field","k96":"flower","k97":"plant; floor (of a building)","k98":"animal","k99":"place","k100":"east","k101":"west","k102":"primary school","k103":"restaurant","k104":"bar, cafe","k105":"baguette sandwich","k106":"sandwich","k107":"hamburger","k108":"salad","k109":"soup","k110":"omelette","k111":"paella","k112":"dessert","k113":"milk","k114":"beer","k115":"tea","k116":"afternoon snack","k117":"to have an afternoon snack","k118":"money","k119":"euro","k120":"cent","k121":"card","k122":"doctor","k123":"hospital","k124":"nurse (female)","k125":"police","k126":"firefighter","k127":"paper; role","k128":"stamp","k129":"envelope","k130":"postcard","k131":"market","k132":"to sell","k133":"seller","k134":"buyer","k135":"ticket; banknote","k136":"exit; departure","k137":"information","k138":"handbag","k139":"shirt","k140":"skirt","k141":"jumper, sweater","k142":"jeans","k143":"more","k144":"less","k145":"very","k146":"long","k147":"short","k148":"fat","k149":"hot, warm","k150":"cold","k151":"fast","k152":"slow","k153":"slowly, take it easy","k154":"kilometre","k155":"here","k156":"there","k157":"in, on","k158":"of, from","k159":"to go in","k160":"to leave, to go out","k161":"to arrive","k162":"to come","k163":"to come back, to go back","k164":"afterwards, later","k165":"to open","k166":"to close","k167":"entrance; entry ticket","k168":"to see, to watch","k169":"light; clear","k170":"dark","k171":"grey","k172":"brown","k173":"orange","k174":"today","k175":"yesterday","k176":"day","k177":"week","k178":"month","k179":"minute","k180":"soon, early","k181":"usually","k182":"when","k183":"well","k184":"good, tasty","k185":"bad","k186":"so-so, average","k187":"easy","k188":"difficult","k189":"ugly","k190":"interesting","k191":"to pay","k192":"cinema; film (as an art)","k193":"film, movie","k194":"theatre","k195":"actor","k196":"actress","k197":"photo","k198":"monument","k199":"cathedral","k200":"cheerful","k201":"serious","k202":"unfriendly","k203":"clever, intelligent","k204":"sociable, easy-going","k205":"hard-working","k206":"president, chairperson","k207":"king","k208":"queen","k209":"lawyer","k210":"capital city","k211":"religion, faith","k212":"Christian","k213":"Muslim","k214":"Jewish","k215":"Buddhist","k216":"kiosk, newsstand","k217":"at sign (@)","k218":"dot, full stop","k219":"hyphen; script","k220":"pharmacy","k221":"nurse (male)","k222":"soap","k223":"to have a bath; to swim","k224":"nose","k225":"colleague, mate","k226":"party","k227":"grandchild","k228":"nephew, niece","k229":"company","k230":"office","k231":"boss","k232":"director","k233":"profession","k234":"telephone","k235":"fax","k236":"computer","k237":"internet","k238":"number","k239":"game","k240":"to ski","k241":"with","k242":"without","k243":"maybe","k244":"to believe, to think","b75":"clothes","b76":"T-shirt","b77":"trousers, pants","b78":"dress","b79":"shoes","b80":"jacket","b81":"red","b82":"blue","b83":"green","b84":"yellow","b85":"black","b86":"white","b87":"shop, store","b88":"to buy","b89":"expensive","b90":"cheap","b91":"price","b92":"a hundred","b93":"how much is it?","b94":"to prefer","b95":"to wear","b96":"(clothing) size","b97":"grandfather / grandmother","b98":"uncle / aunt","b99":"cousin","b100":"son / daughter","b101":"my","b102":"your","b103":"his / her / their / your (formal)","b104":"our","b105":"to know, to meet (a person)","b106":"boyfriend / girlfriend","b107":"married","b108":"single","b109":"older","b110":"younger","b111":"sport","b112":"music","b113":"to play","b114":"football","b115":"to get up","b116":"to shower","b117":"to have breakfast","b118":"to have lunch","b119":"to have dinner","b120":"to go to bed","b121":"morning","b122":"afternoon","b123":"evening, night","b124":"hour, time","b125":"clock, watch","b126":"early","b127":"late","b128":"always","b129":"never","b130":"sometimes","b131":"every day","b132":"to wake up","b133":"breakfast","b134":"lunch","b135":"dinner","b136":"set menu","b137":"menu (in a restaurant)","b138":"waiter / waitress","b139":"to want","b140":"to order","b141":"to bring","b142":"table","b143":"dish, plate","b144":"drink","b145":"bread","b146":"fruit","b147":"vegetables","b148":"meat","b149":"fish","b150":"the bill","b151":"building","b152":"street","b153":"centre","b154":"near, close to","b155":"far (from)","b156":"next to, beside","b157":"opposite, in front of","b158":"between","b159":"safe","b160":"clean","b161":"dirty","b162":"modern","b163":"old, ancient","b164":"public transport","b165":"to walk","b166":"neighbour","b167":"quiet, peaceful","b168":"noisy","b169":"to know how to, can (skill)","b170":"to be able to, can (ability/permission)","b171":"to drive","b172":"to swim","b173":"to cook","b174":"to dance","b175":"to sing","b176":"to draw","b177":"to play (an instrument)","b178":"piano","b179":"guitar","b180":"to learn to","b181":"already","b182":"not yet","b183":"to have (auxiliary)","b184":"done, made (past participle of hacer)","b185":"seen (past participle of ver)","b186":"driving licence"}, fr:{"w1":"peu sûr de soi","w2":"l'insécurité","w3":"anxieux, tendu","w4":"l'anxiété","w5":"frustré","w6":"la frustration","w7":"peureux, craintif","w8":"la peur","w9":"enthousiaste, impatient","w10":"la joie anticipée (pas : illusion !)","w11":"ridicule","w12":"enthousiaste","w13":"timide","w14":"amusant, drôle","w15":"content","w16":"triste","w17":"libre","w18":"se sentir","w19":"s'inquiéter","w20":"se sentir très mal","w21":"apprendre","w22":"oublier","w23":"se souvenir de","w24":"répéter","w25":"traduire","w26":"chercher","w27":"le dictionnaire","w28":"le mot","w29":"la phrase","w30":"le son","w31":"prononcer","w32":"améliorer","w33":"le défi","w34":"l'erreur, la faute","w35":"coûter (de l'effort)","w36":"surmonter la peur","w37":"le vocabulaire","w38":"la grammaire","w39":"comprendre","w40":"l'hispanophone","w41":"naître","w42":"se marier (avec)","w43":"divorcer","w44":"mourir","w45":"déménager","w46":"influencer","w47":"voyager","w48":"la vie","w49":"la mort","w50":"le tableau","w51":"l'œuvre","w52":"l'époque","w53":"célèbre","w54":"le peintre / la peintre","w55":"la souffrance","w56":"l'exposition","w57":"trébucher","w58":"nager","w59":"la mer","w60":"prendre des décisions","w61":"découvrir","w62":"les proches, les êtres chers","w63":"le pays","w64":"tout le monde","w65":"la biographie","w66":"la réussite, l'exploit","w67":"avoir du succès","w68":"le prix (qu'on gagne)","w69":"commencer (à)","w70":"terminer, finir","w71":"pendant","w72":"jusqu'à","w73":"le siècle","w74":"prendre sa retraite","w75":"la guerre","w76":"fuir","w77":"composer","w78":"diriger, réaliser","w79":"jouer le rôle principal dans","w80":"réussir à, obtenir","w81":"le chanteur / la chanteuse","w82":"s'en aller, partir","w83":"les cheveux","w84":"les yeux","w85":"grand (de taille)","w86":"petit (de taille)","w87":"mince","w88":"beau, joli","w89":"porter des lunettes","w90":"la barbe","w91":"ressembler à","w92":"bien / mal s'entendre avec","w93":"le caractère","w94":"ouvert (caractère)","w95":"silencieux, réservé","w96":"drôle","w97":"le/la partenaire, le couple","w98":"connaître, rencontrer","w99":"l'appartement","w100":"la chambre","w101":"la cuisine","w102":"la salle de bains","w103":"le salon","w104":"la terrasse","w105":"le balcon","w106":"le jardin","w107":"l'armoire","w108":"le lit","w109":"le canapé (masculin malgré le -a !)","w110":"les meubles","w111":"meublé","w112":"lumineux","w113":"spacieux","w114":"accueillant, chaleureux","w115":"bruyant","w116":"tranquille, calme","w117":"le quartier","w118":"la banlieue (toujours pluriel en espagnol)","w119":"louer","w120":"le loyer","w121":"l'ascenseur","w122":"adorer (me encanta)","b1":"bonjour, salut","b2":"au revoir","b3":"merci","b4":"s'il te plaît / s'il vous plaît","b5":"oui / non","b6":"bonjour (le matin)","b7":"bonsoir, bonne nuit","b8":"à demain","b9":"je m'appelle...","b10":"comment ça va ?","b11":"la maison","b12":"le chien","b13":"le chat","b14":"le livre","b15":"l'école","b16":"l'ami / l'amie","b17":"la famille","b18":"la mère","b19":"le père","b20":"le frère / la sœur","b21":"manger","b22":"boire","b23":"parler","b24":"vivre, habiter","b25":"être (caractéristiques)","b26":"être (lieu/état)","b27":"avoir","b28":"aller","b29":"grand","b30":"petit","b31":"joli, beau","b32":"sympathique, gentil","b33":"l'eau","b34":"la nourriture","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"les Pays-Bas","b38":"un peu","b39":"où ?","b40":"beaucoup","b41":"néerlandais / néerlandaise","b42":"espagnol / espagnole","b43":"le nom","b44":"le travail","b45":"le professeur / la professeure","b46":"l'étudiant / l'étudiante","b47":"travailler","b48":"étudier","b49":"l'année, l'an","b50":"comment tu t'appelles ?","b51":"lire","b52":"écrire","b53":"écouter","b54":"comprendre","b55":"le mot","b56":"la langue (el idioma : masculin !)","b57":"la ville","b58":"le village","b59":"la plage","b60":"la montagne","b61":"la rivière, le fleuve","b62":"la mer","b63":"le nord","b64":"le sud","b65":"le parc","b66":"la place","b67":"le musée","b68":"l'église","b69":"le climat (el clima : masculin !)","b70":"il fait chaud","b71":"il fait froid","b72":"il pleut","b73":"les gens (singulier en espagnol !)","b74":"joli, beau","w123":"demander un service","w124":"le service, la faveur","w125":"prêter","w126":"prêter, laisser","w127":"emprunter","w128":"pourrais-tu... ?","w129":"ça te dérangerait de... ?","w130":"l'excuse","w131":"s'excuser","w132":"pardonner","w133":"je suis (vraiment) désolé","w134":"le bruit","w135":"déranger, gêner","w136":"le voisin / la voisine","w137":"tout de suite","w138":"en ce moment","w139":"occupé / occupée","w140":"la clé","w141":"le portable","w142":"la permission","w143":"dîner","w144":"se doucher","w145":"avant","w146":"maintenant","w147":"ne...plus","w148":"encore","w149":"l'invention","w150":"la découverte","w151":"l'électricité","w152":"la roue","w153":"l'écriture","w154":"le feu","w155":"la coutume, l'habitude","w156":"avoir l'habitude de","w157":"changer","w158":"ancien","w159":"moderne","w160":"la génération","w161":"les grands-parents","w162":"quand j'étais petit(e)","w163":"l'excursion","w164":"le concert","w165":"la pièce de théâtre","w166":"le paysage","w167":"le logement, l'hébergement","w168":"réserver","w169":"la réservation","w170":"valoir la peine","w171":"la corvée, l'ennui (familier)","w172":"la chance","w173":"le dommage, la peine","w174":"trouver, penser (opinion)","w175":"planifier","w176":"le plan, le projet","w177":"avoir envie de","w178":"profiter de","w179":"relaxant","w180":"passionnant","w181":"la recette","w182":"l'ingrédient","w183":"cuisiner","w184":"bouillir","w185":"frire","w186":"mélanger","w187":"ajouter","w188":"couper","w189":"éplucher","w190":"le four","w191":"la poêle","w192":"la casserole","w193":"une pincée de","w194":"un peu de","w195":"assez, pas mal de","w196":"trop de","w197":"la cuillère à soupe (quantité)","w198":"le goût, la saveur","w199":"la tête","w200":"le dos","w201":"l'estomac","w202":"la gorge","w203":"faire mal","w204":"la douleur","w205":"être malade","w206":"avoir de la fièvre","w207":"la toux","w208":"le rhume","w209":"se reposer","w210":"prendre (un médicament)","w211":"le comprimé, le cachet","w212":"le sirop (médicament)","w213":"sain, en bonne santé","w214":"grave","w215":"aller mieux, guérir","w216":"le conseil","w217":"le moment","w218":"inoubliable","w219":"la surprise","w220":"surprendre, être surpris","w221":"l'anecdote","w222":"raconter (une histoire)","w223":"soudain, tout à coup","w224":"pendant que","w225":"finalement","w226":"le souvenir","w227":"se souvenir de","w228":"être ému","w229":"l'émotion","w230":"fêter, célébrer","w231":"la fête, la célébration","w232":"inattendu","w233":"se réaliser (un rêve)","w234":"le rêve","b75":"les vêtements","b76":"le t-shirt","b77":"le pantalon","b78":"la robe","b79":"les chaussures","b80":"la veste","b81":"rouge","b82":"bleu","b83":"vert","b84":"jaune","b85":"noir","b86":"blanc","b87":"le magasin","b88":"acheter","b89":"cher","b90":"bon marché, pas cher","b91":"le prix","b92":"cent","b93":"combien ça coûte ?","b94":"préférer","b95":"porter","b96":"la taille","b97":"le grand-père / la grand-mère","b98":"l'oncle / la tante","b99":"le cousin / la cousine","b100":"le fils / la fille","b101":"mon/ma/mes","b102":"ton/ta/tes","b103":"son/sa/ses","b104":"notre/nos","b105":"connaître","b106":"le copain / la copine","b107":"marié","b108":"célibataire","b109":"plus âgé, aîné","b110":"plus jeune, cadet","b111":"le sport","b112":"la musique","b113":"jouer","b114":"le football","b115":"se lever","b116":"se doucher","b117":"prendre le petit-déjeuner","b118":"déjeuner","b119":"dîner","b120":"se coucher","b121":"le matin","b122":"l'après-midi","b123":"le soir, la nuit","b124":"l'heure","b125":"l'horloge, la montre","b126":"tôt","b127":"tard","b128":"toujours","b129":"jamais","b130":"parfois","b131":"tous les jours","b132":"se réveiller","b133":"le petit-déjeuner","b134":"le déjeuner","b135":"le dîner","b136":"le menu (fixe)","b137":"la carte","b138":"le serveur / la serveuse","b139":"vouloir","b140":"commander","b141":"apporter","b142":"la table","b143":"le plat","b144":"la boisson","b145":"le pain","b146":"le fruit","b147":"le légume","b148":"la viande","b149":"le poisson","b150":"l'addition","b151":"le bâtiment","b152":"la rue","b153":"le centre","b154":"près (de)","b155":"loin (de)","b156":"à côté de","b157":"en face de","b158":"entre","b159":"sûr, sécurisé","b160":"propre","b161":"sale","b162":"moderne","b163":"ancien","b164":"les transports en commun","b165":"marcher","b166":"le voisin / la voisine","b167":"tranquille, calme","b168":"bruyant","b169":"savoir (faire quelque chose)","b170":"pouvoir","b171":"conduire","b172":"nager","b173":"cuisiner","b174":"danser","b175":"chanter","b176":"dessiner","b177":"jouer (d'un instrument)","b178":"le piano","b179":"la guitare","b180":"apprendre à","b181":"déjà","b182":"pas encore","b183":"avoir (auxiliaire)","b184":"fait (participe passé de hacer)","b185":"vu (participe passé de ver)","b186":"le permis de conduire"}, de:{"w1":"unsicher","w2":"die Unsicherheit","w3":"angespannt, ängstlich","w4":"die Anspannung, die Angst","w5":"frustriert","w6":"die Frustration","w7":"schreckhaft, ängstlich veranlagt","w8":"die Angst","w9":"voller Vorfreude, begeistert","w10":"die Vorfreude (nicht: Illusion!)","w11":"lächerlich","w12":"begeistert","w13":"schüchtern","w14":"lustig, unterhaltsam","w15":"zufrieden, froh","w16":"traurig","w17":"frei","w18":"sich fühlen","w19":"sich Sorgen machen","w20":"sich elend fühlen","w21":"lernen","w22":"vergessen","w23":"sich erinnern, behalten","w24":"wiederholen","w25":"übersetzen","w26":"suchen, nachschlagen","w27":"das Wörterbuch","w28":"das Wort","w29":"der Satz","w30":"der Laut, der Klang","w31":"aussprechen","w32":"verbessern","w33":"die Herausforderung","w34":"der Fehler","w35":"schwerfallen (auch: kosten)","w36":"die Angst überwinden","w37":"der Wortschatz","w38":"die Grammatik","w39":"verstehen","w40":"der/die Spanischsprachige","w41":"geboren werden","w42":"heiraten","w43":"sich scheiden lassen","w44":"sterben","w45":"umziehen","w46":"beeinflussen","w47":"reisen","w48":"das Leben","w49":"der Tod","w50":"das Gemälde","w51":"das Werk (eines Künstlers)","w52":"die Epoche, die Zeit","w53":"berühmt","w54":"der Maler / die Malerin","w55":"das Leiden","w56":"die Ausstellung","w57":"stolpern","w58":"schwimmen","w59":"das Meer","w60":"Entscheidungen treffen","w61":"entdecken","w62":"die Liebsten, die Nahestehenden","w63":"das Land","w64":"alle, jeder","w65":"die Biografie","w66":"die Leistung, der Erfolg","w67":"Erfolg haben","w68":"der Preis (den man gewinnt)","w69":"anfangen (mit)","w70":"beenden, enden","w71":"während","w72":"bis","w73":"das Jahrhundert","w74":"in Rente gehen","w75":"der Krieg","w76":"fliehen","w77":"komponieren","w78":"Regie führen, leiten","w79":"die Hauptrolle spielen in","w80":"erreichen, schaffen","w81":"der Sänger / die Sängerin","w82":"weggehen, aufbrechen","w83":"das Haar","w84":"die Augen","w85":"groß (von Statur)","w86":"klein (von Statur)","w87":"schlank","w88":"gutaussehend, hübsch","w89":"eine Brille tragen","w90":"der Bart","w91":"ähneln, aussehen wie","w92":"sich gut/schlecht verstehen mit","w93":"der Charakter","w94":"offen (Charakter)","w95":"still, ruhig (Person)","w96":"witzig, lustig","w97":"der Partner / die Partnerin, das Paar","w98":"kennen, kennenlernen","w99":"die Wohnung","w100":"das Schlafzimmer","w101":"die Küche","w102":"das Badezimmer","w103":"das Wohnzimmer","w104":"die Terrasse","w105":"der Balkon","w106":"der Garten","w107":"der Schrank","w108":"das Bett","w109":"das Sofa (männlich, trotz -a!)","w110":"die Möbel","w111":"möbliert","w112":"hell, lichtdurchflutet","w113":"geräumig","w114":"gemütlich, einladend","w115":"laut","w116":"ruhig","w117":"das Viertel, die Nachbarschaft","w118":"die Vororte (immer Plural)","w119":"mieten (und vermieten)","w120":"die Miete","w121":"der Aufzug","w122":"etwas lieben (me encanta)","b1":"hallo","b2":"tschüss, auf Wiedersehen","b3":"danke","b4":"bitte","b5":"ja / nein","b6":"guten Morgen","b7":"guten Abend, gute Nacht","b8":"bis morgen","b9":"ich heiße...","b10":"wie geht's?","b11":"das Haus","b12":"der Hund","b13":"die Katze","b14":"das Buch","b15":"die Schule","b16":"der Freund / die Freundin","b17":"die Familie","b18":"die Mutter","b19":"der Vater","b20":"der Bruder / die Schwester","b21":"essen","b22":"trinken","b23":"sprechen, reden","b24":"wohnen, leben","b25":"sein (Eigenschaften)","b26":"sein (Ort/Zustand)","b27":"haben","b28":"gehen","b29":"groß","b30":"klein","b31":"schön, hübsch","b32":"nett, sympathisch","b33":"das Wasser","b34":"das Essen","b35":"1, 2, 3, 4, 5","b36":"6, 7, 8, 9, 10","b37":"die Niederlande","b38":"ein bisschen","b39":"wo?","b40":"viel","b41":"niederländisch / Niederländer(in)","b42":"spanisch / Spanier(in)","b43":"der Name","b44":"die Arbeit","b45":"der Lehrer / die Lehrerin","b46":"der Student / die Studentin","b47":"arbeiten","b48":"studieren, lernen","b49":"das Jahr","b50":"wie heißt du?","b51":"lesen","b52":"schreiben","b53":"zuhören","b54":"verstehen","b55":"das Wort","b56":"die Sprache (el idioma: männlich!)","b57":"die Stadt","b58":"das Dorf","b59":"der Strand","b60":"der Berg","b61":"der Fluss","b62":"das Meer","b63":"der Norden","b64":"der Süden","b65":"der Park","b66":"der Platz","b67":"das Museum","b68":"die Kirche","b69":"das Klima (el clima: männlich!)","b70":"es ist heiß","b71":"es ist kalt","b72":"es regnet","b73":"die Leute (im Spanischen Singular!)","b74":"schön, hübsch","w123":"um einen Gefallen bitten","w124":"der Gefallen","w125":"verleihen, ausleihen (an jemanden)","w126":"leihen, lassen","w127":"sich leihen (von jemandem)","w128":"könntest du...?","w129":"würde es dir etwas ausmachen...?","w130":"die Ausrede, die Entschuldigung","w131":"sich entschuldigen","w132":"verzeihen","w133":"es tut mir (sehr) leid","w134":"der Lärm","w135":"stören","w136":"der Nachbar / die Nachbarin","w137":"sofort, gerade jetzt","w138":"in diesem Moment","w139":"beschäftigt","w140":"der Schlüssel","w141":"das Handy","w142":"die Erlaubnis","w143":"zu Abend essen","w144":"duschen","w145":"früher, vorher","w146":"jetzt","w147":"nicht mehr","w148":"noch","w149":"die Erfindung","w150":"die Entdeckung","w151":"die Elektrizität","w152":"das Rad","w153":"die Schrift","w154":"das Feuer","w155":"die Gewohnheit","w156":"gewöhnlich tun, pflegen zu","w157":"ändern, sich verändern","w158":"alt, ehemalig","w159":"modern","w160":"die Generation","w161":"die Großeltern","w162":"als ich klein war","w163":"der Ausflug","w164":"das Konzert","w165":"das Theaterstück","w166":"die Landschaft","w167":"die Unterkunft","w168":"reservieren","w169":"die Reservierung","w170":"sich lohnen","w171":"der Ärger, die Mühe (umgangssprachlich)","w172":"das Glück","w173":"schade, das Bedauern","w174":"finden, meinen (Meinung)","w175":"planen","w176":"der Plan","w177":"Lust haben auf","w178":"genießen","w179":"entspannend","w180":"aufregend","w181":"das Rezept","w182":"die Zutat","w183":"kochen","w184":"kochen (Flüssigkeit), aufkochen","w185":"braten, frittieren","w186":"mischen","w187":"hinzufügen","w188":"schneiden","w189":"schälen","w190":"der Ofen","w191":"die Pfanne","w192":"der Topf","w193":"eine Prise","w194":"ein bisschen","w195":"genug, ziemlich viel","w196":"zu viel","w197":"der Esslöffel (als Menge)","w198":"der Geschmack","w199":"der Kopf","w200":"der Rücken","w201":"der Magen","w202":"der Hals","w203":"wehtun","w204":"der Schmerz","w205":"krank sein","w206":"Fieber haben","w207":"der Husten","w208":"die Erkältung","w209":"sich ausruhen","w210":"einnehmen (Medikament)","w211":"die Tablette","w212":"der Sirup (Medikament)","w213":"gesund","w214":"ernst","w215":"sich bessern, gesund werden","w216":"der Rat","w217":"der Moment","w218":"unvergesslich","w219":"die Überraschung","w220":"überraschen, überrascht sein","w221":"die Anekdote","w222":"erzählen (eine Geschichte)","w223":"plötzlich","w224":"während","w225":"schließlich, am Ende","w226":"die Erinnerung","w227":"sich erinnern","w228":"gerührt sein, bewegt sein","w229":"die Emotion","w230":"feiern","w231":"die Feier","w232":"unerwartet","w233":"in Erfüllung gehen (ein Traum)","w234":"der Traum","b75":"die Kleidung","b76":"das T-Shirt","b77":"die Hose","b78":"das Kleid","b79":"die Schuhe","b80":"die Jacke","b81":"rot","b82":"blau","b83":"grün","b84":"gelb","b85":"schwarz","b86":"weiß","b87":"das Geschäft, der Laden","b88":"kaufen","b89":"teuer","b90":"billig, günstig","b91":"der Preis","b92":"hundert","b93":"wie viel kostet das?","b94":"vorziehen, lieber mögen","b95":"tragen, anhaben","b96":"die (Kleider)Größe","b97":"der Großvater / die Großmutter","b98":"der Onkel / die Tante","b99":"der Cousin / die Cousine","b100":"der Sohn / die Tochter","b101":"mein","b102":"dein","b103":"sein / ihr / Ihr","b104":"unser","b105":"kennen, kennenlernen","b106":"der Freund / die Freundin (Beziehung)","b107":"verheiratet","b108":"Single, ledig","b109":"älter","b110":"jünger","b111":"der Sport","b112":"die Musik","b113":"spielen","b114":"der Fußball","b115":"aufstehen","b116":"duschen","b117":"frühstücken","b118":"zu Mittag essen","b119":"zu Abend essen","b120":"ins Bett gehen","b121":"der Morgen","b122":"der Nachmittag","b123":"der Abend, die Nacht","b124":"die Stunde, die Uhrzeit","b125":"die Uhr","b126":"früh","b127":"spät","b128":"immer","b129":"nie","b130":"manchmal","b131":"jeden Tag","b132":"aufwachen","b133":"das Frühstück","b134":"das Mittagessen","b135":"das Abendessen","b136":"das Tagesmenü","b137":"die Speisekarte","b138":"der Kellner / die Kellnerin","b139":"wollen","b140":"bestellen","b141":"bringen","b142":"der Tisch","b143":"das Gericht, der Teller","b144":"das Getränk","b145":"das Brot","b146":"das Obst","b147":"das Gemüse","b148":"das Fleisch","b149":"der Fisch","b150":"die Rechnung","b151":"das Gebäude","b152":"die Straße","b153":"das Zentrum","b154":"nahe (bei)","b155":"weit (von)","b156":"neben","b157":"gegenüber","b158":"zwischen","b159":"sicher","b160":"sauber","b161":"schmutzig","b162":"modern","b163":"alt","b164":"der öffentliche Nahverkehr","b165":"gehen, laufen","b166":"der Nachbar / die Nachbarin","b167":"ruhig","b168":"laut","b169":"können (Fähigkeit)","b170":"können (Möglichkeit/Erlaubnis)","b171":"Auto fahren","b172":"schwimmen","b173":"kochen","b174":"tanzen","b175":"singen","b176":"zeichnen","b177":"(ein Instrument) spielen","b178":"das Klavier","b179":"die Gitarre","b180":"lernen, etwas zu tun","b181":"schon, bereits","b182":"noch nicht","b183":"haben (Hilfsverb)","b184":"gemacht (Partizip von hacer)","b185":"gesehen (Partizip von ver)","b186":"der Führerschein"}};
 var TXT = {
   // v19.66: het eerste tabblad heet niet meer "Lessen" maar "Vandaag". Een lessenlijst nodigt uit om
@@ -25136,6 +25369,119 @@ var GC_CONCEPTEN = [
   ]}
 ];
 
+/* ================= DE VOLGORDE VAN DE GRAMMATICA (v23.53) =================
+
+   Stefan, telefoontest 11 aug: "de grammatica cual of que is veel te moeilijk. Je moet met de
+   makkelijkste als begonnen, dat is denk ik el of la" en "wat fout is dat ik alles kan doen, dus
+   dingen die nog ver boven mijn niveau liggen".
+
+   Tot hier had de app geen enkel idee welk grammaticaonderwerp makkelijk is. Waar er toch gekozen
+   moest worden, koos hij op de volgorde van het array of op wat er toevallig in de spiekbrief van je
+   les stond. Gemeten op een vers A0-profiel: vijftig onderwerpen open, en de grammatica-stap van je
+   eerste dagles was concept-quecual.
+
+   Ik heb eerst geprobeerd de volgorde uit de curriculumdata af te leiden (elke les verwijst naar
+   spiekbriefkaarten, elk concept hangt aan zo'n kaart). Die afgeleide volgorde zet quecual op
+   nummer 1 en genero op nummer 3, en elf concepten hangen aan geen enkele les. De lessenreeks is
+   geschreven om woorden te ordenen, niet om grammatica te ordenen.
+
+   Dus staat het hier met de hand. Dat is een oordeel, en dat hoort het te zijn: welk onderwerp
+   makkelijk is, is didactiek en geen meetwaarde. Maar de vorm is wel controleerbaar, en dat doet
+   test/suites/pw-gramorde.js: elk concept staat er precies een keer in, elke voorwaarde bestaat en
+   staat eerder in de rij, en op dag 1 staat er iets open. */
+var GC_ORDE = [
+  "genero",          // el of la: het eerste dat je bij elk zelfstandig naamwoord moet weten
+  "concordancia",    // en dan buigt de rest mee
+  "serestar",        // ser of estar: de kern van A1
+  "hayestar",        // hay of esta, een aftakking van estar
+  "negacion",        // no ... nada: een regel, geen keuze
+  "muymucho",        // muy of mucho: kijk naar het woord erachter
+  "tuusted",         // tu of usted
+  "futuroir",        // ir a + infinitief, je eerste toekomst
+  "gustar",          // gusta of gustan
+  "demostrativo",    // este, ese, aquel
+  "zapato",          // wisselt de klinker mee
+  "reflexivo",       // me, te, se
+  "comparar",        // mas que, tan como
+  "gerundio",        // presente of estar + gerundio
+  "apersonal",       // de persoonlijke a
+  "saberconocer",    // saber of conocer
+  "quecual",         // que of cual: hier zat Stefan, en hier hoort het pas
+  "saberpoder",      // saber of poder
+  "pedirpreguntar",  // pedir of preguntar
+  "pronombre",       // lo, la, le
+  "porpara",         // por of para
+  "perfindef",       // perfecto of indefinido
+  "indefimperf"      // indefinido of imperfecto
+];
+/* Hoogstens twee voorgangers per onderwerp, en alleen waar het onvermijdelijk is. Een lange lijst
+   voorwaarden zou een boom worden die niemand meer kan nalopen; dit zijn er vijf plus een wizard. */
+var GC_VOOR = {
+  concordancia: ["genero"],      // meebuigen kan niet zonder el/la
+  demostrativo: ["genero"],      // este/esta is hetzelfde probleem
+  hayestar:     ["serestar"],    // hay tegenover esta gaat over estar
+  pronombre:    ["apersonal"],   // lo/la/le vervangt precies wat de persoonlijke a markeert
+  indefimperf:  ["perfindef"],   // twee verledens vergelijken kan pas als je er een kent
+  subjuntivo:   ["indefimperf"]  // de handgeschreven diepe les
+};
+/* Hoeveel nieuwe onderwerpen er tegelijk open staan. Drie: genoeg om te kiezen, weinig genoeg om
+   niet weer een menu van vijftig te zijn. Alles wat je ooit hebt aangeraakt blijft daarnaast open,
+   want wat je fout deed moet terug kunnen komen. */
+var GC_VENSTER = 3;
+
+function gcRang(id){
+  var i = GC_ORDE.indexOf(String(id || "").replace(/^concept-/, ""));
+  return i === -1 ? 999 : i;
+}
+function gcGeordend(){
+  return GC_CONCEPTEN.slice().sort(function(a, b){ return gcRang(a.id) - gcRang(b.id); });
+}
+// "goed gedaan" en niet "aangeraakt": een voorwaarde die je vier keer fout deed is geen voorwaarde
+// waar je op mag bouwen. Blijft hij hangen, dan haalt gramFoutTop() hem vanzelf terug.
+function gcGedaan(id){
+  try { return (gramLees(String(id).replace(/^concept-/, "")).goed || 0) > 0; } catch(e){ return false; }
+}
+function gcVoorOk(id){
+  var v = GC_VOOR[String(id || "").replace(/^concept-/, "")] || [];
+  for(var i = 0; i < v.length; i++){ if(!gcGedaan(v[i])) return false; }
+  return true;
+}
+function gcOpenSet(){
+  var open = {}, nieuw = 0;
+  GC_ORDE.forEach(function(id){
+    var st = {};
+    try { st = gramLees(id) || {}; } catch(e){ st = {}; }
+    if(((st.goed || 0) + (st.fout || 0)) > 0){ open[id] = 1; return; }
+    if(nieuw >= GC_VENSTER) return;
+    // een onderwerp dat op zijn voorganger wacht slaat zijn beurt over en verbruikt geen plek:
+    // anders zou het venster op dag 1 half leeg staan (concordancia en hayestar wachten allebei)
+    if(!gcVoorOk(id)) return;
+    open[id] = 1; nieuw++;
+  });
+  return open;
+}
+function gcConceptOpen(id){
+  id = String(id || "").replace(/^concept-/, "");
+  if(GC_ORDE.indexOf(id) === -1) return gcVoorOk(id);   // handgeschreven wizard zonder concept
+  return !!gcOpenSet()[id];
+}
+// Het eerste open onderwerp dat je nog nooit hebt gedaan: waar de dagles op terugvalt.
+function gcVolgendeOpen(){
+  var open = gcOpenSet(), uit = null;
+  GC_ORDE.forEach(function(id){
+    if(uit || !open[id]) return;
+    var st = {};
+    try { st = gramLees(id) || {}; } catch(e){ st = {}; }
+    if(((st.goed || 0) + (st.fout || 0)) > 0) return;
+    uit = id;
+  });
+  return uit;
+}
+function gcDichtAantal(){
+  var open = gcOpenSet(), n = 0;
+  GC_ORDE.forEach(function(id){ if(!open[id]) n++; });
+  return n;
+}
 function gcConcept(id){
   for(var i = 0; i < GC_CONCEPTEN.length; i++){ if(GC_CONCEPTEN[i].id === id) return GC_CONCEPTEN[i]; }
   return null;
@@ -25215,9 +25561,14 @@ function gramFoutTop(){
 function gramVersKandidaat(les){
   var tk = (typeof gwTrackKey === "function") ? gwTrackKey() : "a2";
   var idxs = (les && les.spiek) || [], uit = null;
-  GC_CONCEPTEN.forEach(function(c){
+  /* v23.53: hier kwam concept-quecual vandaan op dag 1. Les 1 verwijst naar spiekbriefkaart 4, en
+     daar hangt que-of-cual aan. De les koos dus een grammaticaonderwerp waar hij nooit voor
+     geschreven is. De volgorde van GC_ORDE gaat hier voor: een kaart mag een onderwerp naar voren
+     halen, maar geen onderwerp openen dat nog dicht staat. */
+  gcGeordend().forEach(function(c){
     if(uit) return;
     if(gramAangeraakt(c.id)) return;
+    if(!gcConceptOpen(c.id)) return;
     var lijst = (c.spiek && c.spiek[tk]) || [];
     for(var i = 0; i < idxs.length; i++){ if(lijst.indexOf(idxs[i]) !== -1){ uit = c; return; } }
   });
@@ -25283,7 +25634,10 @@ function gcVernieuw(id){
   return gcOnderwerp(id);
 }
 function gcLijst(){
-  return GC_CONCEPTEN.map(function(c){ return gcOnderwerp("concept-" + c.id); }).filter(Boolean);
+  /* v23.53: dit gaf alle drieentwintig concepten in arrayvolgorde. Nu in leervolgorde, en alleen
+     wat open staat. Stefan: "wat fout is dat ik alles kan doen." */
+  return gcGeordend().filter(function(c){ return gcConceptOpen(c.id); })
+    .map(function(c){ return gcOnderwerp("concept-" + c.id); }).filter(Boolean);
 }
 /* ================= EINDE LEERMACHINE ================= */
 
@@ -26734,13 +27088,34 @@ function gwGenLijst(){
     var lijst = o.spiek && o.spiek[tk];
     if(lijst) lijst.forEach(function(i){ bezet[i] = true; });
   });
-  var out = [];
+  /* v23.53: hier gingen alle drieentwintig spiekbriefkaarten van je track in, ongeacht waar je in
+     de lessenreeks staat. Elke kaart wordt door minstens een les genoemd (nagemeten: 23 van de 23),
+     dus die lespositie is er gewoon en hoeft niet verzonnen te worden. Een onderwerp verschijnt als
+     de les die ernaar verwijst is aangebroken. */
+  var out = [], grens = gwLesIndex(), lessen = [];
+  try { lessen = tLessons() || []; } catch(e){ lessen = []; }
+  function kaartOpen(i){
+    for(var k = 0; k < lessen.length; k++){
+      if(((lessen[k] && lessen[k].spiek) || []).indexOf(i) !== -1) return k <= grens;
+    }
+    return true;   // geen enkele les noemt hem: niet verstoppen, want dan komt hij nooit
+  }
   CHEATSHEET.forEach(function(c, i){
     if(bezet[i]) return;
+    if(!kaartOpen(i)) return;
     var o = gwVanSpiek(i);
     if(o) out.push(o);
   });
   return out;
+}
+// Waar sta je in de lessenreeks? huidigeLes() geeft het lesobject, hier is de plek in de rij nodig.
+function gwLesIndex(){
+  try {
+    var ls = tLessons() || [], les = huidigeLes();
+    if(!les) return 0;
+    for(var i = 0; i < ls.length; i++){ if(ls[i].id === les.id) return i; }
+  } catch(e){}
+  return 0;
 }
 
 function gwOnderwerpVoorSpiek(i){
@@ -26926,9 +27301,15 @@ function gcKaartHtml(o){
 }
 
 function gcVandaagKaartjes(con){
-  var kies = {};
-  gcVandaagLijst().forEach(function(c){ kies["concept-" + c.id] = 1; });
-  return con.filter(function(o){ return kies[o.id]; }).map(gcKaartHtml).join("");
+  /* v23.53: dit filterde con (de volledige lijst) op wat vandaag telt, en gaf dus de volgorde van
+     die lijst terug in plaats van de volgorde van gcVandaagLijst(). Zolang GC_CONCEPTEN toevallig
+     op arrayvolgorde stond viel dat niet op; met GC_ORDE ervoor kwam het nieuwe onderwerp boven de
+     fout van gisteren te staan. De volgorde van gcVandaagLijst is niet willekeurig: eerst wat fout
+     ging, dan wat terugkomt, dan iets nieuws. */
+  var index = {};
+  con.forEach(function(o){ index[o.id] = o; });
+  return gcVandaagLijst().map(function(c){ return index["concept-" + c.id]; })
+    .filter(Boolean).map(gcKaartHtml).join("");
 }
 
 // De onderwerpkaartjes bovenaan de Grammatica-tab
@@ -26947,8 +27328,20 @@ function gwLijstHtml(){
             "<button type='button' class='ghost' id='gcToggleAlles' style='margin-top:8px; font-size:.85rem'>" +
               ct("Alle " + con.length + " onderwerpen \u2192", "All " + con.length + " topics \u2192") + "</button>")
       : "") +
-    "<p style='margin:14px 0 4px'><b>" + ct("De diepe lessen", "The deep dives") + "</b> <span class='muted'>\u00b7 " + ct("meer stappen, meer valkuilen, apart geschreven", "more steps, more pitfalls, written by hand") + "</span></p>" +
-    GRAMWIZ.map(gwKaartHtml).join("") +
+    /* v23.53: verstoppen zonder te zeggen dat je verstopt is precies de fout die de onboarding in
+       v23.45 maakte. Het aantal blijft dus zichtbaar. */
+    (gcDichtAantal()
+      ? "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>" +
+        ct("Nog " + gcDichtAantal() + " onderwerpen komen later, als je verder bent.",
+           gcDichtAantal() + " more topics unlock as you get further.") + "</p>"
+      : "") +
+    /* v23.53: hier stonden alle vijf de diepe lessen onvoorwaardelijk, subjuntivo incluis. Ze volgen
+       nu dezelfde poort als de concepten: perfindef, serestar en porpara via hun eigen concept,
+       subjuntivo via GC_VOOR, en klemtoon heeft geen voorwaarde en staat dus altijd open. */
+    (function(){
+      var wz = GRAMWIZ.filter(function(o){ return gcConceptOpen(o.id); });
+      return wz.length ? "<p style='margin:14px 0 4px'><b>" + ct("De diepe lessen", "The deep dives") + "</b> <span class='muted'>\u00b7 " + ct("meer stappen, meer valkuilen, apart geschreven", "more steps, more pitfalls, written by hand") + "</span></p>" + wz.map(gwKaartHtml).join("") : "";
+    })() +
     (gen.length
       ? "<p style='margin:18px 0 4px'><b>" + ct("Alle onderwerpen", "All topics") + "</b> <span class='muted'>\u00b7 " + gen.length + " \u00b7 " + ct("uit je eigen lessen, met de bijbehorende toetsvragen", "from your own lessons, with their matching quiz questions") + "</span></p>" + gen.map(gwKaartHtml).join("")
       : "") +
@@ -26962,10 +27355,14 @@ function gwLijstHtml(){
    vandaag terugkomt, en een nieuwe. De machine wist dat allang, die kennis lag ongebruikt.
    De knop eronder klapt alles uit, en die keuze onthoudt de app. */
 function gcVandaagLijst(){
-  var t = today(), fout = [], due = [], nieuw = [];
-  GC_CONCEPTEN.forEach(function(c){
+  /* v23.53: dit liep over GC_CONCEPTEN in arrayvolgorde, en "iets nieuws" was daarmee het eerste
+     onderwerp in het bestand (muymucho). Nu de leervolgorde, en alleen wat open staat. Wat je al
+     hebt aangeraakt telt altijd mee, ook als het inmiddels buiten het venster valt: fouten moeten
+     terug kunnen komen. */
+  var t = today(), fout = [], due = [], nieuw = [], open = gcOpenSet();
+  gcGeordend().forEach(function(c){
     var st = gramLees(c.id);
-    if(!st.goed && !st.fout){ nieuw.push(c); return; }
+    if(!st.goed && !st.fout){ if(open[c.id]) nieuw.push(c); return; }
     if(st.fout && (st.box || 0) === 0){ fout.push({c:c, st:st}); return; }
     if(!st.due || st.due <= t) due.push({c:c, st:st});
   });
@@ -26975,7 +27372,7 @@ function gcVandaagLijst(){
   // anders zou een slechte week je nooit meer iets nieuws laten zien
   var uit = fout.concat(due).slice(0, 2).map(function(x){ return x.c; });
   if(nieuw.length) uit.push(nieuw[0]);
-  if(!uit.length) uit = GC_CONCEPTEN.slice(0, 3);
+  if(!uit.length) uit = gcGeordend().filter(function(c){ return open[c.id]; }).slice(0, 3);
   return uit;
 }
 function gcVandaagReden(){
@@ -28162,6 +28559,10 @@ function show(tabId, skipPush){
   var avp = document.getElementById("appVerProf");
   if(avp) avp.textContent = "App-versie: " + APP_VERSIE + " · zie je hier een lager nummer dan verwacht, ververs dan de pagina hard";
   if(profiles.active && activeProfile()){ boot(); } else { renderProfileScreen(); }
+  /* v23.54: derde noodrem is dat dit de normale weg is. Pas hier staat er echt iets achter het
+     gordijn: boot() heeft de knoppen aangesloten of renderProfileScreen() heeft het aanmeldscherm
+     getekend. Alles daarvoor weghalen zou het probleem terugbrengen dat we net hebben opgelost. */
+  try { if(window.__laadWeg) window.__laadWeg(); } catch(e){}
 })();
 </script>
 </body>

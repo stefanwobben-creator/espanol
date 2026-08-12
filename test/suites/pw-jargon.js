@@ -36,6 +36,20 @@ const { chromium } = require('playwright');
   if (await skip.count()) await skip.first().click();
   await page.waitForTimeout(300);
 
+  /* v23.53: de grammatica heeft sinds deze versie een volgorde (GC_ORDE) en die volgorde is een
+     poort: op dag 1 staan er drie onderwerpen open en twintig dicht. Deze suite gaat niet over de
+     poort maar over het markeren van vaktermen, dus is dit profiel een gevorderde: alles al een keer goed gedaan.
+     De poort zelf staat in pw-gramorde.js. */
+  await page.evaluate(() => {
+    GC_ORDE.forEach((id) => gramBij(id, true));
+    // en de gegenereerde onderwerpen volgen sinds v23.53 je lespositie; de vaktermen die deze suite
+    // zoekt staan in die spiekbriefteksten, dus staat dit profiel ook in de lessenreeks vooraan
+    (tLessons() || []).forEach((l) => {
+      S.lessons[l.id] = Object.assign(S.lessons[l.id] || {}, { done: true });
+    });
+    try { persist(); } catch (e) {}
+  });
+
   // --- 1. De map is de bron, niet de code ---
   const map = await page.evaluate(() => {
     const verwacht = ['infinitief', 'gerundio', 'participio', 'indicativo', 'subjuntivo', 'imperativo',
