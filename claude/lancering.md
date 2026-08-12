@@ -67,6 +67,14 @@ kost dat niemand wilde uitgeven. Alles in dit document is op die twee dingen ges
   zodat het nooit blijft hangen. En "¡Vamos …!" is "¡Vamos!" geworden.
 - **v23.55** het proefscherm zit in een eigen klein scriptblok bóven het grote: de eerste knop
   waar je op kunt tikken staat er na 567 ms in plaats van na 4911.
+- **v23.56** v23.50 en v23.51 alsnog: bij het herbouwen van de tak na een botsing met de
+  avondrun waren die twee overgeslagen, en de poort ging daarom rood in CI.
+- **v23.57** na Controleer klapt de invoer dicht: geen dode rode knop meer boven de levende.
+- **v23.58** het eindscherm wijst je niet meer naar de uitgang: "En nu?" staat in dezelfde
+  kaart en heeft de primaire knop, stoppen blijft rustig en boven de vouw.
+- **v23.59** de grammatica is drie micro-stappen: voorbeeld, keuze, één zin waarom.
+- **v23.60** één knop die controleert en dan vanzelf doorgaat, één rode knop per moment, een
+  voortgangsbalk bij de zin, en de moeilijkheidskeuze als schakelaar in plaats van als rode knop.
 
 ## Wat er open staat, op volgorde van hoe erg het is
 
@@ -549,6 +557,108 @@ of vier opties zijn geen fout: Clasificador filtert zelf op twee, de Grammatica-
 dat klopt in "Als kind woonde ik in Sevilla" maar niet in "Dit jaar heb ik veel gewoond" (daar is
 *he vivido mucho* eerder "geleefd"). Eén werkwoord met twee betekenissen in één veld. Kleine
 verbetering, eigen versie waard, en niet urgent: de zin is niet fout, alleen houterig.
+
+## 8. De telefoontest van 12 aug: drie bevindingen, en twee reparaties die het verkeerde raakten
+
+Stefan testte v23.56 op zijn telefoon. "Hola komt snel en el of la komt daarna" — die twee zijn af.
+Wat er bleef staan:
+
+    1. "die zin maken en dan controleer en knop volgende eronder nog steeds verwarrend"
+    2. "mijn feedback over de grammatica (nog meer micro) nu veel lezen, blijft ook staan"
+    3. "als ik klaar ben loopt het nog steeds dood, geen follow up, niet van hier staat Chispa
+        of je kunt de spelletjes doen"
+
+**1 en 3 had ik op 11 augustus al "opgelost" (v23.51 en v23.52), en allebei verkeerd.** Deze keer
+eerst een schermafdruk gemaakt in plaats van de code gelezen, en toen was het meteen te zien.
+
+### 1. De zinnen — AF in v23.57
+
+Ná Controleer bleef de héle invoermachine staan: het lege tegelvak ("Tik hieronder een woord aan"),
+de losse woordtegels, én een grote rode **Controleer**-knop die niets meer doet. Daaronder een
+tweede grote rode knop, **Volgende zin**. Twee primaire knoppen op één scherm, en de bovenste dood.
+In v23.51 had ik alleen de Volgende-knop naar boven geschoven en nooit gekeken naar wat eromheen
+bleef staan.
+
+De invoer zit nu in één omhulsel (`#sInvoer`) dat na Controleer dichtklapt tot één regel: *"Jouw
+antwoord: ella se llama marta"*. Gemeten: paginahoogte van 1028 naar 903, de knop van 650 naar 478,
+en precies één primaire knop over.
+
+### 3. Het eindscherm — AF in v23.58
+
+De voorstellen stónden er wel. Maar erbóven stond een grote rode knop **"Klaar voor vandaag ✓"**,
+en het antwoord op "en nu?" stond eronder in een aparte kaart, met "Even spelen →" op 802 pixels,
+achter de navigatiebalk. **De opvallendste knop van het scherm zei stop.** Tik hem en je landt op de
+lessenlijst, en daar is niets.
+
+De bevinding van v20.5 (Stefans moeder: "ze wilde stoppen maar zag niet hoe") blijft staan, maar
+vindbaar en dominant zijn niet hetzelfde. Alles staat nu in één kaart: viering, tapa, dan de rustige
+rij [Klaar voor vandaag ✓] [Nog een les doen] op 405 en 457 pixels, en daaronder "En nu?" met de
+enige primaire knop van het scherm ("Vijf minuten, doen →" op 666).
+
+Eerst geprobeerd met de voorstellen bóven die rij: dan viel stoppen op 797 en 849, achter de
+navigatiebalk. Dan had ik de ene bevinding met de andere geruild.
+
+### 2. De grammatica — AF in v23.59
+
+Gemeten op *el of la*: **stap 1 van 1**, vijf alinea's, 544 tekens, en pas dáárna een vraag.
+
+Wat ervoor nodig was lag er al. Elk concept heeft `patronen` die een vers voorbeeld genereren, elk
+mét een uitleg van precies één zin (het veld `w`), en `renderGramWiz()` toont die zin al na elk
+antwoord. De wizard kan ook al meerdere stappen aan. Alleen `gcBouw()` maakte er altijd één van.
+
+    stap 1/3   Probeer eens        één regel kader, dan 2 verse voorbeelden
+    stap 2/3   Nog twee            geen tekst, meteen 2 verse voorbeelden
+    stap 3/3   Waarom dat zo is    de begripsvraag, met de hele regel als naslag eronder
+
+Geen letter nieuwe content: alleen een andere volgorde en andere porties. De begripsvraag ("wat is
+het echte verschil tussen ser en estar?") stond op plek één en staat nu op plek vijf, want dat is
+een vraag die je pas kúnt beantwoorden als je vier voorbeelden hebt gezien.
+
+Eén ding dat pas zichtbaar werd toen de voorbeelden vooraan stonden: `gcMaakVragen()` koos een
+willekeurig beginpatroon, en de allereerste vraag die een vreemde kreeg was **"___ tema"** — precies
+de uitzondering (Grieks, ziet er vrouwelijk uit, is mannelijk). De uitzondering vóór de regel. De
+patronen staan bij elk concept al in de goede volgorde; wie een concept voor het eerst doet begint
+nu bij patroon nul, wie het al eens deed krijgt weer variatie.
+
+### En daarna vier ontwerpregels — AF in v23.60
+
+Stefan gaf ze als principes en niet als bugs, en dat is nuttiger dan een lijst symptomen:
+
+    1. "er moet altijd een knop zijn die controleert en dan automatisch doorgaat naar volgende"
+    2. "dat je altijd in beeld moet zien waar je bent en hoeveel je nog moet"
+    3. "een toggle bijv makkelijk of moeilijk zou een toggle ofzo moeten zijn"
+    4. "na Check zie je drie rode buttons als call to action. Dat is vragen om moeilijkheden"
+
+Punt 4 was te tellen en het klopte: de actieve moduskeuze rendert als `.primary`, dus **Tegels**,
+**Controleer** en **Volgende zin** waren alle drie rood, en twee ervan deden op dat moment niets.
+v23.57 haalde er twee weg; v23.60 haalt de derde weg.
+
+**De knop.** Eén knop op één plek: "Controleer", die na het antwoord "Volgende zin →" wordt. Bij een
+goed antwoord gaat hij vanzelf door na 1,9 seconde, met een dun balkje dat aftelt. Gemeten: 1906 ms.
+Bij een fout antwoord niet — dan staat het juiste antwoord er net en moet je kunnen kijken. En elke
+tik in het feedbackblok zet de klok stil, dus wie de zin nog wil horen houdt zijn moment. Dat was
+het bezwaar tegen automatisch doorgaan in v23.51, en zo blijft het bestaan voor wie het wil zonder
+dat iedereen erop moet wachten.
+
+**Waar je bent.** Onder "ZIN 1/3" staat nu dezelfde balk als bij de helling.
+
+**De schakelaar.** Twee losse knoppen waarvan de actieve rood is, leest als twee acties waarvan er
+één aanstaat. Het is één instelling met twee standen, dus is het één pil (`.segrij`) in de zachte
+accentkleur.
+
+*Bijvangst uit het meten:* het aftelbalkje stond eerst ín de knoppenrij, en dat is een flexbox, dus
+een balkje van drie pixels werd platgedrukt tot niets. De suite toetst nu ook dat hij echt hoogte en
+breedte heeft, niet alleen dat hij bestaat.
+
+### Vier suites die de oude belofte vastlegden
+
+`pw-dagclose` eiste dat stoppen de primaire knop is, `pw-leermachine` dat een microles één stap met
+de begripsvraag vooraan is, `pw-naronde` dat "En nu?" een eigen kaart is, en `pw-zintegels` viel om
+op een `#sInput` die niet meer bestaat na het dichtklappen. En één test die ik zelf schreef klopte
+niet: hij klikte "de eerste knop in het feedbackblok" om te bewijzen dat de doorloop stopt, en dat
+is juist de knop die doorgaat. Groen solo, rood in de volle poort, en terecht. Alle vier zijn bijgewerkt naar de
+bevinding in plaats van naar de opmaak die hem toen invulde — bijvoorbeeld: stoppen moet er *met
+zoveel woorden staan en boven de vouw*, niet per se rood zijn.
 
 ## 7. De telefoontest van 11 aug: zes bevindingen (WERKLIJST VOOR WOENSDAG)
 

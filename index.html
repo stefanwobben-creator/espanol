@@ -870,6 +870,23 @@
   details.gwdiep{margin:4px 0 0; border-top:1px solid var(--border); padding-top:6px;}
   details.gwdiep summary{cursor:pointer; font-size:.88rem; color:var(--muted); font-weight:600;}
   details.gwdiep .inner{font-size:.92rem; line-height:1.5; padding-top:8px;}
+  /* --- schakelaar v23.60 ---
+     Stefan: "een toggle bijv makkelijk of moeilijk zou een toggle ofzo moeten zijn." Het waren twee
+     losse knoppen waarvan de actieve .primary kreeg, en dat is de knalkleur die in deze app "doe
+     dit nu" betekent. Na Controleer stonden er daardoor drie rode knoppen op één scherm, waarvan
+     twee niets meer deden. Het is geen actie maar een instelling met twee standen, dus is het nu
+     één pil in de zachte accentkleur. */
+  .segrij{display:inline-flex; border:1.5px solid var(--border); border-radius:999px;
+          overflow:hidden; margin:2px 0 10px; background:var(--card);}
+  .segrij button{border:none; background:none; padding:5px 13px; font-size:.82rem; font-weight:700;
+                 color:var(--muted); cursor:pointer; white-space:nowrap;}
+  .segrij button.aan{background:var(--accent-soft); color:var(--accent);}
+  .segrij button + button{border-left:1.5px solid var(--border);}
+  /* de dunne balk die aftelt tot de volgende zin; tikken waar dan ook zet hem stil */
+  .doorbalk{height:3px; border-radius:2px; background:var(--border); overflow:hidden; margin:8px 0 0;}
+  .doorbalk > div{height:100%; width:0; background:var(--accent); animation:doorloop 1.9s linear forwards;}
+  @keyframes doorloop{from{width:0} to{width:100%}}
+  @media (prefers-reduced-motion: reduce){ .doorbalk > div{animation:none; width:100%; opacity:.4;} }
   /* --- laadscherm v23.54 ---
      Gemeten op traag 4G (1,6 Mbit, 300 ms rtt, cpu 4x geremd): de statische HTML staat er na 964 ms,
      het script is pas na 13,6 seconden klaar. In dat gat zag je "¡Vamos …! Chispa ↑" en verder
@@ -1445,7 +1462,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.56";
+var APP_VERSIE = "v23.60";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9325,11 +9342,16 @@ function moeilijkModusHtml(rowId, modus, metTegels){
      raden op lengte; tegels leggen kan dat niet, want elk woord moet je aanraken en de fout die je
      zou maken ligt als afleider naast het goede woord. Bij losse woorden en bij de Conjugador
      bestaat die tussentrede niet, dus daar blijft het bij twee knoppen. */
-  return "<div class='row' id='"+rowId+"' style='gap:6px; margin:2px 0 10px'>"+
-    (metTegels
-      ? "<button type='button' class='"+(modus==="tegels"?"primary":"ghost")+" modus-toets' data-m='tegels' style='padding:6px 13px; font-size:0.85rem'>🧩 "+ct("Tegels","Tiles")+"</button>"
-      : "<button type='button' class='"+(modus==="makkelijk"?"primary":"ghost")+" modus-toets' data-m='makkelijk' style='padding:6px 13px; font-size:0.85rem'>🟢 "+ct("Makkelijk","Easy")+"</button>")+
-    "<button type='button' class='"+(modus==="moeilijk"?"primary":"ghost")+" modus-toets' data-m='moeilijk' style='padding:6px 13px; font-size:0.85rem'>🔴 "+ct("Moeilijk","Hard")+"</button>"+
+  /* v23.60: dit was een rij losse knoppen waarvan de actieve .primary kreeg. Zie de stijl bij
+     .segrij voor het waarom; kort: het is een instelling, geen call to action. */
+  function seg(m, label){
+    return "<button type='button' class='modus-toets"+(modus===m?" aan":"")+"' data-m='"+m+"'"+
+      (modus===m?" aria-pressed='true'":"")+">"+label+"</button>";
+  }
+  return "<div class='segrij' id='"+rowId+"' role='group'>"+
+    (metTegels ? seg("tegels", "🧩 "+ct("Tegels","Tiles"))
+               : seg("makkelijk", "🟢 "+ct("Makkelijk","Easy")))+
+    seg("moeilijk", "🔴 "+ct("Moeilijk","Hard"))+
     "</div>";
 }
 function wireMoeilijkToggle(rowId, onKies){
@@ -9568,7 +9590,18 @@ function renderSentence(fresh){
   var inFlowVertalen = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "vertalen");
   var el = document.getElementById("sCard");
   el.innerHTML = (inFlowVertalen ? lesFlowBannerHtml() : "")+
+    /* v23.60. Stefan: "dat je altijd in beeld moet zien waar je bent en hoeveel je nog moet."
+       Het stond er wel ("Zin 1/3") maar als grijs kopregeltje zonder vorm. Nu met dezelfde balk als
+       de helling erbij, zodat je het ziet zonder te lezen. */
     "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+((lesFlow.vertalenTotaal||5)-lesFlow.vertalenTeGaan+1)+"/"+(lesFlow.vertalenTotaal||5) : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
+    (function(){
+      var nu, tot;
+      if(inFlowVertalen){ tot = lesFlow.vertalenTotaal || 5; nu = tot - lesFlow.vertalenTeGaan; }
+      else { tot = allowIds.length; nu = doneCount; }
+      if(!tot) return "";
+      return "<div class='progressbar' style='margin:2px 0 8px'><div style='width:"+
+        Math.round(100 * Math.max(0, Math.min(nu, tot)) / tot)+"%'></div></div>";
+    })()+
     "<p class='big'>"+zinPrompt(s)+"</p>"+
     "<div id='sBody'></div>";
   lesFlowWireBanner();
@@ -9580,15 +9613,20 @@ function renderSentenceBody(){
   var modus = sHuidigeModus(s);
   var el = document.getElementById("sBody");
   if(!el) return;
-  var html = moeilijkModusHtml("sModus", modus, true);
+  /* v23.57: alles wat bij het invullen hoort zit nu in één omhulsel (#sInvoer), zodat het na
+     Controleer in zijn geheel dicht kan. Daarvoor bleef het gewoon staan: een leeg tegelvak, de
+     tegels, en een rode Controleer-knop die niets meer deed, met daaronder een tweede rode knop.
+     De moduskeuze gaat mee, want van Tegels naar Moeilijk wisselen terwijl je antwoord al
+     beoordeeld is slaat nergens op. */
+  var html = "<div id='sInvoer'>" + moeilijkModusHtml("sModus", modus, true);
   if(modus === "tegels"){
     if(!zTegel || zTegel.id !== s.id) zinTegelsZet(s);
-    html += zinTegelsHtml() + "<input type='hidden' id='sInput' value=''>" + "<div id='sFeedback'></div>";
+    html += zinTegelsHtml() + "<input type='hidden' id='sInput' value=''>" + "</div><div id='sFeedback'></div>";
   } else {
     html += "<input type='text' id='sInput' autocomplete='off' autocapitalize='off' placeholder='"+ct("Typ de Spaanse zin...","Type the Spanish sentence...")+"'>"+
       accentToetsenHtml("sAccent")+
       "<div class='row'><button class='primary' id='btnCheck'>"+ct("Controleer","Check")+"</button></div>"+
-      "<div id='sFeedback'></div>";
+      "</div><div id='sFeedback'></div>";
   }
   el.innerHTML = html;
   wireMoeilijkToggle("sModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = m; sModusOverride = m; zTegel = null; persist(); renderSentenceBody(); });
@@ -9603,7 +9641,56 @@ function renderSentenceBody(){
   }
 }
 
+/* v23.57: de invoer dicht, en in plaats daarvan één regel met wat je hebt ingevuld. Zonder dit
+   bleef er na Controleer een dode primaire knop boven de levende staan, en dat is precies wat Stefan
+   twee telefoontests achter elkaar "verwarrend" noemde.
+
+   Bewust geen aparte opmaak of kleur: het is geen uitslag (die staat eronder), het is alleen een
+   herinnering aan wat je deed. En bewust wél zichtbaar, want zonder die regel weet je bij een fout
+   antwoord niet meer wat je precies had ingevuld terwijl het juiste antwoord er inmiddels staat.
+
+   "Probeer opnieuw" hoeft hier niets terug te draaien: die roept renderSentence(false) aan en dan
+   wordt #sBody in zijn geheel opnieuw getekend. */
+function zinInvoerDicht(given){
+  var inv = document.getElementById("sInvoer");
+  if(!inv) return;
+  var tekst = String(given || "").trim();
+  inv.innerHTML = tekst
+    ? "<p class='muted' style='margin:2px 0 10px'>" + ct("Jouw antwoord: ", "Your answer: ") +
+      "<b style='color:var(--ink)'>" + tekst.replace(/[&<>]/g, function(c){
+        return {"&":"&amp;", "<":"&lt;", ">":"&gt;"}[c]; }) + "</b></p>"
+    : "";
+}
+/* v23.60: de doorloop naar de volgende zin. Hij telt zichtbaar af met een dun balkje, en elke tik
+   in het feedbackblok zet hem stil. Dat laatste is het antwoord op het bezwaar uit v23.51: wie de
+   zin nog wil horen tikt de luisterknop en houdt daarmee vanzelf de tijd stil. Wie niets doet gaat
+   door, en dat is verreweg de meeste mensen. */
+var zinDoorTimer = null;
+function zinDoorStop(){
+  if(zinDoorTimer){ clearTimeout(zinDoorTimer); zinDoorTimer = null; }
+  var b = document.querySelector(".doorbalk");
+  if(b && b.parentNode) b.parentNode.removeChild(b);
+}
+function zinDoorloop(fb, bn){
+  zinDoorStop();
+  if(!fb || !bn) return;
+  var balk = document.createElement("div");
+  balk.className = "doorbalk";
+  balk.innerHTML = "<div></div>";
+  /* na de hele knoppenrij en niet naast de knop: de rij is een flexbox, en een balkje van drie
+     pixels dat daarin belandt wordt platgedrukt tot niets. Eerst gemeten, toen pas verplaatst. */
+  var rij = bn.parentNode;
+  if(rij && rij.parentNode) rij.parentNode.insertBefore(balk, rij.nextSibling);
+  else if(rij) rij.appendChild(balk);
+  fb.addEventListener("click", zinDoorStop, true);
+  zinDoorTimer = setTimeout(function(){
+    zinDoorTimer = null;
+    var k = document.getElementById("btnNext");
+    if(k) k.click();
+  }, 1900);
+}
 function checkSentence(){
+  zinDoorStop();
   var s = sIdx;
   var modus = sHuidigeModus(s);
   var given = norm(document.getElementById("sInput").value || "");
@@ -9659,6 +9746,7 @@ function checkSentence(){
   html += "<div class='row' style='margin-top:6px'>"+ct("<span class='muted' style='font-size:.85rem; align-self:center'>Zo klinkt hij:</span>","<span class='muted' style='font-size:.85rem; align-self:center'>This is how it sounds:</span>")+zinLuisterKnopHtml()+"</div>";
   html += "<div id='aiFb'></div>";
   fb.innerHTML = html;
+  zinInvoerDicht(given);
   persist();
   if(gehaald){ checkLessonComplete(); }
   zinLuisterWire(s);
@@ -9673,6 +9761,11 @@ function checkSentence(){
   };
   var br = document.getElementById("btnRetry");
   if(br) br.onclick = function(){ renderSentence(false); };
+  /* v23.60. Stefan: "er moet altijd een knop zijn die controleert en dan automatisch doorgaat naar
+     volgende." Twee tikken voor één handeling is er een te veel. Alleen bij een goed antwoord: bij
+     een fout staat het juiste antwoord er net, en dat is het moment waarop je even moet kunnen
+     kijken. */
+  if(gehaald && !retryable) zinDoorloop(fb, bn);
   var ba = document.getElementById("btnAiCheck");
   if(ba) ba.onclick = function(){
     ba.disabled = true; ba.textContent = "🤖 Claude denkt na...";
@@ -12962,10 +13055,16 @@ function lesFlowVoorstellen(){
 /* v23.52: dit waren twee losse kaarten, elk met een eigen kop, en de tweede begon op 859 pixels in
    een venster van 844. Precies het antwoord op "en nu?" viel dus van het scherm. Het zijn ook geen
    twee mededelingen maar één vraag met twee antwoorden, dus staan ze nu in één kaart. */
-function lesFlowVoorstellenHtml(vs){
+/* v23.58: dit maakte een eigen kaart, en die kwam dus ná de knoppenrij van het eindscherm te
+   staan. Met "kaal" erbij kan hetzelfde blok binnen de vieringskaart, boven die knoppen. Eén kaart
+   in plaats van twee scheelt een rand, een kop en twee marges, en dat is precies wat nodig was om
+   "Klaar voor vandaag" boven de vouw te houden.
+
+   Het eerste voorstel krijgt de primaire knop: dat is het antwoord op "en nu?". Tot v23.58 was de
+   enige primaire knop op dit scherm "Klaar voor vandaag ✓", en dan wijst de app je zelf de deur. */
+function lesFlowVoorstellenHtml(vs, kaal){
   if(!vs.length) return "";
-  return "<div class='card' style='margin-top:10px'><span class='kicker'>" +
-    ct("En nu?", "What now?") + "</span>" +
+  var binnen = "<span class='kicker'>" + ct("En nu?", "What now?") + "</span>" +
     vs.map(function(v, i){
       return "<div style='margin:" + (i ? "14px" : "4px") + " 0 0'>" +
         "<p style='margin:0 0 2px; font-size:1.05rem'><b>" + v.icon + " " + v.kop + "</b>" +
@@ -12973,8 +13072,11 @@ function lesFlowVoorstellenHtml(vs){
           (i === 0 ? ct("hier win je het meeste", "this is where you gain most")
                    : ct("of gewoon leuk", "or just fun")) + "</span></p>" +
         "<p class='muted' style='margin:0 0 8px; font-size:.9rem'>" + v.waarom + "</p>" +
-        "<button class='ghost' data-voorstel='" + i + "'>" + v.knop + " \u2192</button></div>";
-    }).join("") + "</div>";
+        "<button class='" + (kaal && i === 0 ? "primary" : "ghost") + "' data-voorstel='" + i + "'>" +
+        v.knop + " \u2192</button></div>";
+    }).join("");
+  return kaal ? "<div style='margin-top:14px'>" + binnen + "</div>"
+              : "<div class='card' style='margin-top:10px'>" + binnen + "</div>";
 }
 
 function lesFlowKlaarBonus(){
@@ -13020,15 +13122,26 @@ function lesFlowKlaar(){
     // v20.5: de stopknop staat er nu altijd, altijd bovenaan de rij en altijd als primaire knop.
     // Dat is de zesde bevinding van zijn moeder ("ze wilde stoppen maar zag niet hoe") en het is
     // ook het eerlijke antwoord op de voorstellen hieronder: die zijn extra, dit is klaar.
-    "<div class='row'><button class='primary' id='btnLesFlowTerug'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button>"+
+    /* v23.58: hier stond "Klaar voor vandaag ✓" als primaire knop bovenaan, met de voorstellen in
+       een aparte kaart eronder. De opvallendste knop van het scherm zei dus "stop", en wie hem tikte
+       landde op de lessenlijst waar niets staat. Stefan, 12 aug: "als ik klaar ben loopt het nog
+       steeds dood, geen follow up."
+
+       De bevinding van v20.5 (Stefans moeder: "ze wilde stoppen maar zag niet hoe") blijft staan,
+       maar vindbaar en dominant zijn niet hetzelfde. De rij blijft dus staan waar hij stond en is
+       alleen niet meer de luidste knop; de voorstellen eronder hebben nu de primaire knop.
+
+       Met de voorstellen erbóven gemeten viel deze rij op 797 en 849 pixels, achter de
+       navigatiebalk. Dan had ik de ene bevinding met de andere geruild. */
+    "<div class='row' style='margin-top:12px'><button class='ghost' id='btnLesFlowTerug'>"+ct("Klaar voor vandaag ✓","Done for today ✓")+"</button>"+
     "<button class='ghost' id='btnLesFlowNogEens'>"+ct("Nog een les doen","Do another session")+"</button></div>"+
+    lesFlowVoorstellenHtml(voorstellen, true)+
     /* v23.52: deze zin stond boven de knoppen, en juist op dag 1 (de enige dag dat hij verschijnt)
        duwde hij daarmee het antwoord op "en nu?" van het scherm af: de tweede voorstelkaart begon op
        865 pixels in een venster van 844. Hij gaat over morgen, dus hij hoeft niet boven de dingen te
        staan die over nu gaan. */
     (eersteOoit ? "<p class='muted' style='margin:10px 0 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
     "</div>"+
-    lesFlowVoorstellenHtml(voorstellen)+
     // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
     // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
     // v19.58: hoogstens ÉÉN vraag onder de felicitatie, gekozen door samenKaartNu().
@@ -25634,7 +25747,20 @@ function gramDueTop(){
 function gcMaakVragen(c, n){
   // roteer over de patronen: vier keer hetzelfde patroon leert de oppervlakte, vier verschillende
   // patronen dwingen de beslissing af. Dat is het hele idee van minimale paren.
-  var uit = [], gezien = {}, ronde = 0, poging = 0, start = Math.floor(Math.random() * c.patronen.length);
+  /* v23.59: het beginpunt was altijd willekeurig, en met de voorbeelden vooraan (in plaats van na
+     vijf alinea's uitleg) gaat dat opeens pijn doen. Gemeten op el-of-la: de allereerste vraag die
+     een vreemde kreeg was "___ tema", en dat is juist de uitzondering (Grieks, ziet er vrouwelijk
+     uit, is mannelijk). De uitzondering vóór de regel.
+
+     De patronen staan bij elk concept al in de volgorde waarin ze horen: bij genero eerst GC_GEN_LA
+     (de regel), dan pas GC_GEN_TRAP (de val). Dus wie een concept voor het eerst doet, begint bij
+     patroon nul. Wie het al eens deed krijgt weer een willekeurig beginpunt, want dan is variatie
+     meer waard dan volgorde. De inhoud blijft in beide gevallen vers gegenereerd: je kunt nog
+     steeds geen antwoord onthouden. */
+  var eerder = false;
+  try { var g = gramLees(c.id); eerder = ((g.goed || 0) + (g.fout || 0)) > 0; } catch(e){ eerder = false; }
+  var uit = [], gezien = {}, ronde = 0, poging = 0,
+      start = eerder ? Math.floor(Math.random() * c.patronen.length) : 0;
   while(uit.length < n && poging < n * 25){
     poging++;
     var p = c.patronen[(start + ronde) % c.patronen.length];
@@ -25647,22 +25773,60 @@ function gcMaakVragen(c, n){
   }
   return uit;
 }
+/* v23.59: de enige tekst die hierbij is gekomen. Vier koppen en één zin, gedeeld door alle
+   drieentwintig concepten, zodat de micro-stappen geen nieuwe content per concept vragen. */
+var GC_STAP_TXT = {
+  nl:{k1:"Probeer eens", u1:"Eerst een voorbeeld, en gok gerust: het antwoord komt er meteen achteraan, met in één zin waarom.",
+      k2:"Nog twee", k3:"Waarom dat zo is", d:"De hele regel"},
+  en:{k1:"Give it a go", u1:"An example first, and feel free to guess: the answer comes right after, with one line on why.",
+      k2:"Two more", k3:"Why that is", d:"The full rule"}
+};
 function gcBouw(id){
   var c = gcConcept(id);
   if(!c) return null;
   var begrip = gcSchud({v:c.begrip.v, vEn:c.begrip.vEn, o:c.begrip.o.slice(), oEn:c.begrip.oEn ? c.begrip.oEn.slice() : null,
                         g:c.begrip.g, w:c.begrip.w, wEn:c.begrip.wEn});
-  var vragen = [begrip].concat(gcMaakVragen(c, GC_VOORBEELDEN));
+  /* v23.59. Stefan, twee telefoontests achter elkaar: "veel tekst, weinig voorbeelden, weinig stap
+     voor stap, dat kan denk ik nog meer micro steps." Gemeten op el-of-la: stap 1 van 1, vijf
+     alinea's, 544 tekens, en pas dáárna een vraag.
+
+     Wat ervoor nodig was lag er al. Elk patroon genereert een vers voorbeeld mét een uitleg van
+     precies één zin (het veld w), en renderGramWiz toont die zin al na elk antwoord. De wizard kan
+     ook al meerdere stappen aan. Alleen gcBouw maakte er altijd één van, met de lange tekst ervoor.
+
+     Nu: voorbeeld, keuze, één zin waarom. Drie keer. En de lange tekst achteraan als naslag, want
+     daar is hij goed voor. De begripsvraag ("wat is het echte verschil tussen ser en estar?") stond
+     op plek één en staat nu op plek vijf: dat is een vraag die je pas kúnt beantwoorden als je vier
+     voorbeelden hebt gezien.
+
+     Geen letter nieuwe content. Alleen een andere volgorde en andere porties. */
+  var vb = gcMaakVragen(c, GC_VOORBEELDEN);
   var st = gramLees(c.id);
   var pitch = st.fout ? "Hier ging je " + st.fout + (st.fout === 1 ? " keer" : " keer") + " de mist in. Nieuwe voorbeelden."
-                      : "De beslissing, en dan " + GC_VOORBEELDEN + " verse voorbeelden.";
+                      : "Vier verse voorbeelden, en de regel erachter.";
   var pitchEn = st.fout ? "You slipped up here " + st.fout + (st.fout === 1 ? " time" : " times") + ". Fresh examples."
-                        : "The decision, then " + GC_VOORBEELDEN + " fresh examples.";
+                        : "Four fresh examples, and the rule behind them.";
+  var stappen = [];
+  // stap 1: meteen een voorbeeld. Eén regel kader, zodat niemand denkt dat hij iets gemist heeft.
+  if(vb.length){
+    stappen.push({kop:GC_STAP_TXT.nl.k1, kopEn:GC_STAP_TXT.en.k1,
+      uitleg:"<p>" + GC_STAP_TXT.nl.u1 + "</p>", uitlegEn:"<p>" + GC_STAP_TXT.en.u1 + "</p>",
+      vragen:vb.slice(0, 2)});
+  }
+  // stap 2: geen tekst meer, alleen doen
+  if(vb.length > 2){
+    stappen.push({kop:GC_STAP_TXT.nl.k2, kopEn:GC_STAP_TXT.en.k2,
+      uitleg:"", uitlegEn:"", vragen:vb.slice(2)});
+  }
+  // stap 3: nu pas de vraag naar de regel zelf, met de hele uitleg eronder als naslag
+  stappen.push({kop:GC_STAP_TXT.nl.k3, kopEn:GC_STAP_TXT.en.k3,
+    uitleg:"", uitlegEn:"",
+    diep:c.uitleg, diepEn:c.uitlegEn,
+    diepKop:GC_STAP_TXT.nl.d, diepKopEn:GC_STAP_TXT.en.d,
+    vragen:[begrip]});
   return {id:"concept-" + c.id, concept:c.id, icon:c.icon,
     titel:c.naam, titelEn:c.naamEn, pitch:pitch, pitchEn:pitchEn,
-    stappen:[{kop:c.naam, kopEn:c.naamEn,
-      uitleg:c.uitleg, uitlegEn:c.uitlegEn,
-      vragen:vragen}]};
+    stappen:stappen};
 }
 /* De vragen worden bij elke start opnieuw gemaakt, maar BINNEN een sessie moet het object stil
    blijven staan: gwKies() en gwVolgende() halen het onderwerp opnieuw op, en zonder cache zou de
@@ -27197,6 +27361,14 @@ function gwVraagTekst(q){ return ct(q.v, q.vEn || q.v); }
 function gwOpties(q){ return (profLang() === "nl" || !q.oEn) ? q.o : q.oEn; }
 function gwWaarom(q){ return ct(q.w, q.wEn || q.w); }
 
+// v23.59: heeft deze stap iets te lezen? Zo niet, dan is de leesfase een leeg scherm met een knop.
+function gwStapHeeftTekst(o, i){
+  try {
+    var s = o && o.stappen && o.stappen[i];
+    if(!s) return true;
+    return !!String(ct(s.uitleg, s.uitlegEn) || "").replace(/<[^>]*>/g, "").trim();
+  } catch(e){ return true; }
+}
 function gwStart(id, stap){
   // v20.5: een conceptles wordt bij elke start opnieuw gegenereerd. Je kunt geen antwoord
   // onthouden van een vraag die nog niet bestond.
@@ -27205,7 +27377,10 @@ function gwStart(id, stap){
   if(!o) return;
   var v = gwVoortgang(id);
   var s = typeof stap === "number" ? stap : Math.min(v.stap, o.stappen.length - 1);
-  gwSess = {id:id, stap:s, fase:"uitleg", vraag:0, goed:0, fout:0, gekozen:null};
+  /* v23.59: stappen zonder uitleg bestaan sinds deze versie (de voorbeeldstappen gaan meteen naar
+     de vraag). Zonder deze regel kreeg je daar een leeg scherm met een knop "Toets me". */
+  gwSess = {id:id, stap:s, fase:gwStapHeeftTekst(o, s) ? "uitleg" : "toets",
+            vraag:0, goed:0, fout:0, gekozen:null};
   navPush({t:"gramwiz", id:id});
   renderCheat();
 }
@@ -27310,7 +27485,9 @@ function gwVolgende(){
 function gwVolgendeStap(){
   var o = gwOnderwerp(gwSess.id);
   if(gwSess.stap + 1 < o.stappen.length){
-    gwSess.stap++; gwSess.fase = "uitleg"; gwSess.vraag = 0; gwSess.goed = 0; gwSess.fout = 0; gwSess.gekozen = null;
+    gwSess.stap++;
+    gwSess.fase = gwStapHeeftTekst(o, gwSess.stap) ? "uitleg" : "toets";
+    gwSess.vraag = 0; gwSess.goed = 0; gwSess.fout = 0; gwSess.gekozen = null;
     renderCheat();
   } else {
     gwSess.fase = "klaar";

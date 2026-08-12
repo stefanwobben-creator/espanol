@@ -171,17 +171,39 @@ const { chromium } = require('playwright');
       S.dag = {}; S.ritme = { wanneer: 'stil' }; S.xp = {}; S.xp[today()] = xp;
       S.lesFlow = {}; lesFlow = { stap: 'produceren' };
       lesFlowKlaar();
-      const p = document.querySelector('#lessonList .card .row button.primary');
-      const g = document.querySelector('#lessonList .card .row button.ghost');
+      const p = document.querySelector('#lessonList .card button.primary');
       const feest = document.getElementById('feestWrap');
       if (feest && feest.remove) feest.remove();
-      return { primair: p ? p.textContent : '', ghost: g ? g.textContent : '' };
+      const stop = document.getElementById('btnLesFlowTerug');
+      const door = document.getElementById('btnLesFlowNogEens');
+      const y = (e) => (e ? Math.round(e.getBoundingClientRect().top) : -1);
+      return {
+        primair: p ? p.textContent : '',
+        stop: stop ? stop.textContent : '', stopY: y(stop), stopGhost: !!(stop && /ghost/.test(stop.className)),
+        door: door ? door.textContent : '', doorY: y(door),
+        venster: window.innerHeight
+      };
     }
     return { onder: meten(0), boven: meten(dagdoel() + 10) };
   });
-  ok(/Klaar voor vandaag|Done for today/.test(knoppen.onder.primair), 'onder het dagdoel is stoppen al de hoofdknop');
-  ok(/Klaar voor vandaag|Done for today/.test(knoppen.boven.primair), 'boven het dagdoel is stoppen de hoofdknop');
-  ok(/Nog een les|another session/.test(knoppen.onder.ghost), 'doorgaan blijft bereikbaar, maar als tweede keus');
+  /* v23.58: hier stond dat stoppen de primaire knop moet zijn. Dat was de bevinding van Stefans
+     moeder ("ze wilde stoppen maar zag niet hoe"), en die staat nog steeds. Maar op 12 augustus
+     bleek de keerzijde: als de opvallendste knop van het scherm "stop" zegt, tikt iedereen die, en
+     dan loopt het dood op de lessenlijst. Vindbaar en dominant zijn niet hetzelfde.
+     Wat hier nu getoetst wordt is de bevinding zelf en niet de opmaak die hem toen invulde:
+     stoppen staat er met zoveel woorden, staat boven de vouw, en staat boven doorgaan. */
+  [['onder', knoppen.onder], ['boven', knoppen.boven]].forEach(([naam, k]) => {
+    ok(/Klaar voor vandaag|Done for today/.test(k.stop), naam + ' het dagdoel staat stoppen er met zoveel woorden');
+    ok(k.stopY > 0 && k.stopY < k.venster - 80,
+      naam + ' het dagdoel staat stoppen boven de vouw (' + k.stopY + ' van ' + k.venster + ')');
+    ok(k.stopGhost === true, naam + ' het dagdoel is stoppen niet meer de luidste knop van het scherm');
+  });
+  // >= en niet >: op een breed scherm passen ze naast elkaar in dezelfde rij, en dan is de
+  // y-waarde gelijk. Wat niet mag is dat doorgaan bóven stoppen komt te staan.
+  ok(/Nog een les|another session/.test(knoppen.onder.door) && knoppen.onder.doorY >= knoppen.onder.stopY,
+    'doorgaan blijft bereikbaar, maar nooit boven stoppen');
+  ok(/Vijf minuten|Five minutes|Even spelen|quick game|→/.test(knoppen.onder.primair),
+    'en de primaire knop is een voorstel: het antwoord op "en nu?" (' + knoppen.onder.primair.trim() + ')');
 
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED/.test(e));
   ok(relevanteErrors.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + relevanteErrors.length + ' gevonden)');

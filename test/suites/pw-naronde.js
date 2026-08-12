@@ -168,19 +168,32 @@ const { chromium } = require('playwright');
   const plek = await page.evaluate(() => {
     S.lesFlow = {}; S.lesFlowEerste = null;   // dag 1: dan is de kaart het langst
     lesFlowKlaar();
-    const kaarten = Array.prototype.map.call(document.querySelectorAll('#lessonList .card'), c => ({
-      kicker: ((c.querySelector('.kicker') || {}).innerText || '').trim(),
-      top: Math.round(c.getBoundingClientRect().top)
+    /* v23.58: "En nu?" is geen eigen kaart meer maar een blok bínnen de vieringskaart, boven de
+       knoppenrij. Twee kaarten waren twee randen, twee koppen en twee marges, en precies die
+       pixels waren nodig om zowel het voorstel als "Klaar voor vandaag" boven de vouw te houden. */
+    const kickers = Array.prototype.map.call(document.querySelectorAll('#lessonList .kicker'), k => ({
+      tekst: (k.innerText || '').trim(), top: Math.round(k.getBoundingClientRect().top)
     }));
     const knoppen = Array.prototype.map.call(document.querySelectorAll('[data-voorstel]'),
       b => Math.round(b.getBoundingClientRect().top));
-    return { kaarten: kaarten, knoppen: knoppen, hoogte: window.innerHeight };
+    return {
+      kickers: kickers, knoppen: knoppen, hoogte: window.innerHeight,
+      kaarten: document.querySelectorAll('#lessonList .card').length,
+      primair: ((document.querySelector('#lessonList .card button.primary') || {}).innerText || '').trim()
+    };
   });
-  console.log('  kaarten ::', plek.kaarten.map(k => k.kicker + '@' + k.top).join(' · '), '· venster', plek.hoogte);
-  const enNu = plek.kaarten.filter(k => /EN NU|WHAT NOW/i.test(k.kicker))[0];
-  ok(!!enNu, 'de voorstellen staan in één kaart "En nu?" in plaats van twee losse kaarten');
+  console.log('  koppen ::', plek.kickers.map(k => k.tekst + '@' + k.top).join(' · '), '· venster', plek.hoogte);
+  const enNu = plek.kickers.filter(k => /EN NU|WHAT NOW/i.test(k.tekst))[0];
+  ok(!!enNu, 'het blok "En nu?" staat er');
+  ok(plek.kaarten === 1, 'en het staat in dezelfde kaart als de viering, niet in een tweede (' + plek.kaarten + ')');
   ok(enNu && enNu.top < plek.hoogte,
-    'die kaart begint binnen het scherm (' + (enNu ? enNu.top : '?') + ' van ' + plek.hoogte + ' px)');
+    'het begint binnen het scherm (' + (enNu ? enNu.top : '?') + ' van ' + plek.hoogte + ' px)');
+  ok(plek.knoppen.length > 0 && plek.knoppen[0] < plek.hoogte,
+    'en de eerste voorstelknop ook (' + (plek.knoppen[0] === undefined ? '?' : plek.knoppen[0]) + ')');
+  /* v23.58: de primaire knop is het voorstel en niet "Klaar voor vandaag". Zolang de stopknop de
+     enige rode knop was, tikte iedereen die, en dan is er geen vervolg. */
+  ok(!/Klaar voor vandaag|Done for today/.test(plek.primair),
+    'de primaire knop wijst niet naar de uitgang (' + plek.primair + ')');
   ok(plek.knoppen.length >= 1, 'er staat minstens één knop in (' + plek.knoppen.length + ')');
 
   await browser.close();

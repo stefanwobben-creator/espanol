@@ -97,17 +97,30 @@ const { chromium } = require('playwright');
   ok(keuze.zonder !== keuze.met, 'zonder fout had hij iets anders gekozen (' + keuze.zonder + ')');
 
   /* ---------------- 3. de voorbeelden worden gemaakt, niet opgeslagen ---------------- */
+  /* v23.59: een conceptles is geen één stap met een lange uitleg meer maar drie micro-stappen:
+     twee voorbeelden, nog twee voorbeelden, en pas dan de vraag naar de regel zelf met de hele
+     tekst als naslag eronder. Stefan, twee telefoontests achter elkaar: "veel tekst, weinig
+     voorbeelden, weinig stap voor stap." Deze suite toetst dus niet meer op één stap maar op de
+     belofte eronder: voorbeeld eerst, regelvraag laatst, en het totaal blijft vijf vragen. */
+  const alleV = (o) => o.stappen.reduce((a, st) => a.concat(st.vragen), []);
   const vers = await page.evaluate(() => {
-    const a = gcVernieuw('concept-muymucho').stappen[0].vragen.map((q) => q.v).join('|');
-    const b = gcVernieuw('concept-muymucho').stappen[0].vragen.map((q) => q.v).join('|');
+    const plat = (o) => o.stappen.reduce((a, st) => a.concat(st.vragen), []);
+    const a = plat(gcVernieuw('concept-muymucho')).map((q) => q.v).join('|');
+    const b = plat(gcVernieuw('concept-muymucho')).map((q) => q.v).join('|');
     const les = gcOnderwerp('concept-muymucho');
-    const vr = les.stappen[0].vragen;
-    const stil = gcOnderwerp('concept-muymucho').stappen[0].vragen[1].v === vr[1].v;
+    const vr = plat(les);
+    const stil = plat(gcOnderwerp('concept-muymucho'))[1].v === vr[1].v;
+    const begripV = gcConcept('muymucho').begrip.v;
     return {
       anders: a !== b,
       aantal: vr.length,
-      begripEerst: vr[0].v === gcConcept('muymucho').begrip.v,
-      uniek: vr.slice(1).map((q) => q.v).filter((v, i, arr) => arr.indexOf(v) === i).length,
+      begripEerst: vr[0].v === begripV,
+      begripLaatst: vr[vr.length - 1].v === begripV,
+      eersteHeeftUitleg: !!String(les.stappen[0].uitleg || '').trim(),
+      tekstEersteStap: String(les.stappen[0].uitleg || '').replace(/<[^>]*>/g, '').trim().length,
+      naslag: !!String(les.stappen[les.stappen.length - 1].diep || '').trim(),
+      uniek: vr.slice(0, -1).map((q) => q.v).filter((v, i, arr) => arr.indexOf(v) === i).length,
+      elkeVraagEenRegel: vr.slice(0, -1).every((q) => !!q.w),
       stil: stil,
       concept: les.concept,
       stappen: les.stappen.length
@@ -115,11 +128,16 @@ const { chromium } = require('playwright');
   });
   ok(vers.anders === true, 'twee keer starten geeft twee keer andere voorbeelden');
   ok(vers.stil === true, 'maar binnen een sessie staat de vraag stil: hij verandert niet onder je handen');
-  ok(vers.aantal === 1 + GC_VOORBEELDEN_VERWACHT(), 'een microles is een begripsvraag plus vier voorbeelden (' + vers.aantal + ')');
-  ok(vers.begripEerst === true, 'en de eerste vraag gaat over de regel zelf, niet over een zin');
+  ok(vers.aantal === 1 + GC_VOORBEELDEN_VERWACHT(), 'een microles is vier voorbeelden plus de vraag naar de regel (' + vers.aantal + ')');
+  ok(vers.begripEerst === false && vers.begripLaatst === true,
+    'de vraag naar de regel staat achteraan, niet vooraan: die kun je pas beantwoorden als je de voorbeelden hebt gezien');
   ok(vers.uniek === vers.aantal - 1, 'de vier voorbeelden zijn onderling verschillend');
+  ok(vers.elkeVraagEenRegel === true, 'en bij elk voorbeeld hoort een uitleg van één zin — dát is de micro-stap');
   ok(vers.concept === 'muymucho', 'de les weet bij welk concept hij hoort, dus de fout komt terug bij de bron');
-  ok(vers.stappen === 1, 'het is een microles: een stap, geen wizard van zes');
+  ok(vers.stappen >= 2 && vers.stappen <= 4, 'het zijn micro-stappen, geen wizard van zes (' + vers.stappen + ')');
+  ok(vers.eersteHeeftUitleg === true && vers.tekstEersteStap < 200,
+    'de eerste stap opent met hoogstens één regel kader, niet met vijf alinea\'s (' + vers.tekstEersteStap + ' tekens)');
+  ok(vers.naslag === true, 'en de hele regel staat als naslag bij de laatste stap, niet als toegangspoort bij de eerste');
 
   // de derde voeder: fout in de microles zelf
   const inLes = await page.evaluate(() => {
@@ -215,7 +233,12 @@ const { chromium } = require('playwright');
   ok(/mucho/i.test(voorstel.eerste), 'het eerste voorstel is de fout van net, niet een willekeurig spel');
   ok(/de mist in|wrong/i.test(voorstel.eerste), 'en er staat bij waarom juist dit voorstel (Stefan: "waarom een bepaald spel goed voor je is")');
   ok(voorstel.kaarten.some((k) => /leuk|fun/i.test(k)), 'daarnaast staat er iets wat gewoon leuk is');
-  ok(/Klaar voor vandaag|Done for today/.test(voorstel.primair), 'en stoppen blijft de hoofdknop, ook met voorstellen erbij');
+  /* v23.58: hier stond dat stoppen de hoofdknop blijft. Dat is precies wat er misging: als de
+     enige rode knop "Klaar voor vandaag" heet, tikt iedereen die en loopt het dood op de
+     lessenlijst. Stoppen blijft vindbaar en boven de vouw (zie pw-dagclose.js), maar het voorstel
+     heeft nu de primaire knop. */
+  ok(!/Klaar voor vandaag|Done for today/.test(voorstel.primair),
+    'de hoofdknop is een voorstel en niet de uitgang (' + voorstel.primair.trim() + ')');
 
   // het voorstel doet ook echt wat het belooft
   const gedrukt = await page.evaluate(() => {
@@ -243,7 +266,7 @@ const { chromium } = require('playwright');
     const stuk = [];
     GC_CONCEPTEN.forEach((c) => {
       const o = gcVernieuw('concept-' + c.id);
-      const vr = (o && o.stappen[0].vragen) || [];
+      const vr = (o ? o.stappen.reduce((a2, st) => a2.concat(st.vragen), []) : []);
       const heel = vr.length === 5 && vr.every((q) =>
         q.o && q.o.length >= 2 && q.g >= 0 && q.g < q.o.length && q.o[q.g] && q.w &&
         q.o.filter((x, i, a) => a.indexOf(x) === i).length === q.o.length);

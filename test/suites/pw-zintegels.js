@@ -140,6 +140,9 @@ const { chromium } = require('playwright');
   // op de knop volgende zin klikken, dat vind je niet." Hij stond ná de uitleg én de luisterknoppen,
   // en dat is op 390 pixels onder de vouw.
   const plek = await page.evaluate(() => {
+    /* v23.57: de vorige stap heeft al gecontroleerd, en sindsdien klapt de invoer daarna dicht.
+       Zonder deze hertekening bestaat #sInput niet meer en viel deze meting om op een null. */
+    renderSentence(false);
     const s = sIdx;
     document.getElementById('sInput').value = s.es;
     checkSentence();
@@ -152,10 +155,23 @@ const { chromium } = require('playwright');
       uitleg: idx(c => /uitleg/.test(c.className || '')),
       volgorde: kids.map(c => (c.className || c.id || c.tagName)).join(' | '),
       knopY: (function () { const b = document.getElementById('btnNext'); return b ? Math.round(b.getBoundingClientRect().top) : -1; })(),
-      hoogte: window.innerHeight
+      hoogte: window.innerHeight,
+      /* v23.57: na Controleer bleef de hele invoermachine staan — een leeg tegelvak, de tegels, en
+         een rode Controleer-knop die niets meer deed, met daaronder een tweede rode knop. Twee
+         primaire knoppen op één scherm en de bovenste dood. Dat is wat Stefan twee telefoontests
+         achter elkaar "verwarrend" noemde; het verschuiven van de knop in v23.51 raakte het niet. */
+      invoerDicht: !document.getElementById('btnZTegelCheck') && !document.getElementById('btnCheck') &&
+                   !document.querySelector('.dsleep-bank'),
+      antwoordRegel: /Jouw antwoord|Your answer/.test((document.getElementById('sInvoer') || {}).innerText || ''),
+      primair: Array.prototype.map.call(document.querySelectorAll('#sCard button.primary'), b => b.id || b.innerText.trim())
     };
   });
-  console.log('  volgorde ::', plek.volgorde);
+  console.log('  volgorde ::', plek.volgorde, '· primair ::', plek.primair.join(','));
+  ok(plek.invoerDicht === true,
+    'na Controleer staan de tegels, de invoer en de Controleer-knop er niet meer');
+  ok(plek.antwoordRegel === true, 'maar wat je invulde staat er nog wel, als regel');
+  ok(plek.primair.length === 1 && plek.primair[0] === 'btnNext',
+    'en er is precies één primaire knop over: die naar de volgende zin (' + plek.primair.join(',') + ')');
   ok(plek.uitslag !== -1 && plek.knoppen !== -1 && plek.uitleg !== -1, 'uitslag, knoppen en uitleg staan er alle drie');
   ok(plek.knoppen === plek.uitslag + 1,
     'de knoppenrij staat direct onder de uitslag (uitslag ' + plek.uitslag + ', knoppen ' + plek.knoppen + ')');
@@ -165,6 +181,94 @@ const { chromium } = require('playwright');
     'Volgende zin staat binnen het scherm (' + plek.knopY + ' van ' + plek.hoogte + ' px)');
 
   ok(errors.length === 0, 'geen js-fouten: ' + errors.slice(0, 3).join(' | '));
+
+  // ---- 7. v23.60: één knop, één rode knop, en hij gaat vanzelf door ----
+  /* Stefan, 12 aug, als ontwerpregels: "er moet altijd een knop zijn die controleert en dan
+     automatisch doorgaat naar volgende", "je moet altijd in beeld zien waar je bent en hoeveel je
+     nog moet", "een toggle makkelijk/moeilijk zou een toggle moeten zijn", en "na Check zie je drie
+     rode buttons als call to action, dat is vragen om moeilijkheden".
+     Die laatste was te tellen: de actieve moduskeuze rendeerde als .primary, dus Tegels + Controleer
+     + Volgende zin waren alle drie rood, en twee ervan deden niets meer. */
+  console.log('\n-- v23.60: één rode knop per moment --');
+  const knop = await page.evaluate(() => {
+    renderSentence(false);
+    const rood = () => [].slice.call(document.querySelectorAll('#sCard button.primary'))
+      .map((b) => (b.innerText || '').trim());
+    const voor = rood();
+    const seg = document.querySelector('#sCard .segrij');
+    const segRood = !!(seg && seg.querySelector('button.primary'));
+    const balk = document.querySelector('#sCard .progressbar');
+    document.getElementById('sInput').value = sIdx.es;
+    checkSentence();
+    return {
+      voor: voor, na: rood(),
+      segrij: !!seg, segRood: segRood,
+      voortgang: !!balk,
+      doorbalk: !!document.querySelector('.doorbalk'),
+      doorbalkZichtbaar: (function () {
+        const d = document.querySelector('.doorbalk');
+        if (!d) return false;
+        const r = d.getBoundingClientRect();
+        return r.height >= 2 && r.width > 50;   // in een flexrij werd hij platgedrukt tot niets
+      })()
+    };
+  });
+  ok(knop.voor.length === 1 && /Controleer|Check/.test(knop.voor[0]),
+    'vóór het controleren is er precies één rode knop, en dat is Controleer (' + knop.voor.join(',') + ')');
+  ok(knop.na.length === 1 && /Volgende zin|Next sentence/.test(knop.na[0]),
+    'erna precies één, en dat is de volgende zin (' + knop.na.join(',') + ')');
+  ok(knop.segrij === true && knop.segRood === false,
+    'de moduskeuze is een schakelaar en geen rode knop: het is een instelling, geen call to action');
+  ok(knop.voortgang === true, 'en er staat een balkje bij "zin 1/3", zodat je ziet waar je bent');
+  ok(knop.doorbalk === true && knop.doorbalkZichtbaar === true,
+    'na een goed antwoord telt een zichtbaar balkje af naar de volgende zin');
+
+  console.log('\n-- en hij gaat vanzelf door, behalve waar dat schaadt --');
+  const auto = await page.evaluate(() => new Promise((klaar) => {
+    renderSentence(false);
+    const oud = sIdx.id;
+    const t0 = Date.now();
+    document.getElementById('sInput').value = sIdx.es;
+    checkSentence();
+    const t = setInterval(() => {
+      if (sIdx && sIdx.id !== oud) { clearInterval(t); klaar(Date.now() - t0); }
+      if (Date.now() - t0 > 6000) { clearInterval(t); klaar(-1); }
+    }, 50);
+  }));
+  console.log('  goed antwoord :: doorgelopen na ' + auto + ' ms');
+  ok(auto > 800 && auto < 4000,
+    'een goed antwoord gaat vanzelf door, maar niet zo snel dat je de uitslag mist (' + auto + ' ms)');
+
+  const fout = await page.evaluate(() => new Promise((klaar) => {
+    renderSentence(false);
+    const oud = sIdx.id;
+    document.getElementById('sInput').value = 'zzz qqq xxx';
+    checkSentence();
+    setTimeout(() => klaar({ zelfdeZin: sIdx.id === oud, balk: !!document.querySelector('.doorbalk') }), 3200);
+  }));
+  ok(fout.zelfdeZin === true && fout.balk === false,
+    'een fout antwoord blijft staan: dan staat het juiste antwoord er net en moet je kunnen kijken');
+
+  const geluid = await page.evaluate(() => new Promise((klaar) => {
+    let klaar0 = false;
+    renderSentence(false);
+    const oud = sIdx.id;
+    document.getElementById('sInput').value = sIdx.es;
+    checkSentence();
+    /* De zin willen horen zet de doorloop stil — dat was het bezwaar tegen automatisch doorgaan.
+       Expliciet de luisterknop en niet "de eerste knop in het feedbackblok": dat is btnNext, en die
+       gaat juist wél door. Groen solo en rood in de volle poort, en terecht: de test klopte niet. */
+    const l = document.getElementById('btnZinLuister');
+    klaar0 = !l;
+    if (l) l.click();
+    setTimeout(() => klaar({
+      erWasEenLuisterknop: !!l,
+      zelfdeZin: sIdx.id === oud, balk: !!document.querySelector('.doorbalk')
+    }), 3200);
+  }));
+  ok(geluid.erWasEenLuisterknop === true, 'de luisterknop staat er na een goed antwoord');
+  ok(geluid.zelfdeZin === true && geluid.balk === false,
+    'en wie hem aantikt houdt de doorloop stil: het moment om de zin te horen blijft bestaan');
 
   await browser.close();
   console.log(fails === 0 ? 'ALLES GROEN' : fails + ' FOUT');

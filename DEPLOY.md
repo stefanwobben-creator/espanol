@@ -39,6 +39,31 @@ Veranderingen aan `index.html` gaan via een idempotent pythonscript in `claude/`
 `rep(anker, nieuw, n=1)` die vastloopt als het anker niet precies n keer voorkomt. Nooit los zoeken
 en vervangen: dat bestand is te groot om te overzien en een halve treffer merk je niet.
 
+**Meerdere patches achter elkaar: `sh tools/patches.sh v23.50`.** Nooit met de hand in één blok
+plakken. Wat er op 12 augustus gebeurde: na een botsing met de avondrun is de tak opnieuw opgebouwd
+door zes patches in één blok te plakken. Twee ervan faalden precies zoals het hoort, met een melding
+welk anker ontbrak en exitcode 1 — maar in een blok van zes scrolt zo'n melding voorbij en de rest
+liep gewoon door. v23.50 en v23.51 stonden daardoor niet in het bestand, de poort ging rood in CI,
+en er ging een uur in het zoeken zitten. De patches waren niet stuk; de manier waarop ze gedraaid
+werden was stuk. Dat script draait ze één voor één, stopt bij de eerste fout, en doet daarna de
+syntaxcheck.
+
+**Anker niet op `APP_VERSIE` als de avondrun ertussen kan zitten.** Die hoogt het versienummer
+onderweg op, en dan mist een patch die op `var APP_VERSIE = "v23.49";` mikt zijn anker terwijl er
+inhoudelijk niets aan de hand is. Anker op de code die je verandert; het versienummer bijwerken kan
+met een regex.
+
+**Botst je werk met de avondrun, rebase dan niet.** Vier commits × een bestand van 2,5 MB is twaalf
+keer met de hand in iets wat je niet kunt overzien. In plaats daarvan:
+
+    git branch backup-<datum>                    # veiligheidsnet, kost niets
+    git reset --soft origin/main                 # commits los, werkmap blijft
+    git checkout origin/main -- index.html versie.txt tools/avondrun-hart.json
+    sh tools/patches.sh v23.50 .                 # jouw wijzigingen er opnieuw overheen
+    git add -A && git commit && git push
+
+Daar zijn de patchscripts voor gemaakt: ze zijn de wijziging, en `index.html` is maar een uitkomst.
+
 Drie dingen die zo'n script moet doen, alle drie geleerd op 10 aug:
 
 - **Twee keer draaien mag niets stukmaken.** Vandaar de idempotentiecheck bovenaan.
