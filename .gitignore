@@ -5,6 +5,7 @@
 
 test/uitvoer/
 test/node_modules/
+server/node_modules/
 
 _to_delete/
 .claude/

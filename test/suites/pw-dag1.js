@@ -208,9 +208,15 @@ async function verseBezoeker(page, niveau) {
     'wat er wel staat: de les en de twee spellen die echt kunnen draaien');
   ok(vandaag.kaarten === 2, 'twee kaarten op dag 1, niet drie');
 
-  console.log('\n-- maar zodra de tegel iets te zeggen heeft, staat hij er --');
+  /* v23.64: de twee tegels (kracht en foutpercentage) staan niet meer op Vandaag. Stefan: "leuk
+     statistieken maar hoe moet ik die lezen wat zeggen die?" Ze staan op je profiel, elk met een
+     alinea uitleg eronder, en die uitleg kan op Vandaag niet mee.
+
+     Wat deze plek bewaakt verschuift dus mee: het getal moet nog steeds bestaan en het moet nog
+     steeds ergens te vinden zijn. Niet meer: het moet op je eerste scherm staan. */
+  console.log('\n-- het getal is niet weg, het staat op je profiel --');
   const metKracht = await page.evaluate(() => {
-    // doosje 4 met een echte check eronder: dan telt hij mee in kracht (zie stevigDrempel/st.k)
+    // doosje 5 met een echte check eronder: dan telt hij mee in kracht (zie stevigDrempel/st.k)
     allowedWordIds().slice(0, 12).forEach(id => {
       S.srs[id] = { box: 5, due: '2020-01-01', n: 5, k: 1 };
     });
@@ -219,8 +225,19 @@ async function verseBezoeker(page, niveau) {
     return { kracht: voortgangCijfers().kracht, tekst: document.getElementById('lessonList').innerText };
   });
   console.log('  kracht ::', metKracht.kracht);
-  ok(metKracht.kracht > 0 && /gewogen naar hoe lang je ze onthoudt/.test(metKracht.tekst),
-    'de tegel verschijnt zodra hij niet meer nul is (het is een drempel, geen verwijdering)');
+  ok(metKracht.kracht > 0, 'de kracht is niet meer nul (' + metKracht.kracht + ')');
+  ok(!/gewogen naar hoe lang je ze onthoudt/.test(metKracht.tekst),
+    'en hij staat niet op Vandaag: dat scherm gaat over vandaag');
+  await page.evaluate(() => show('voortgang'));
+  await page.waitForTimeout(700);
+  const vgTekst = await page.evaluate(() => {
+    const tab = document.getElementById('tab-voortgang') || document.body;
+    return tab.innerText;
+  });
+  ok(/gewogen naar hoe lang je ze onthoudt/.test(vgTekst),
+    'maar wel op Voortgang, met een alinea uitleg erbij');
+  await page.evaluate(() => { show('lessen'); renderLessons(); });
+  await page.waitForTimeout(300);
 
   console.log('\n-- de teksten zijn meegegroeid met de app (v23.47) --');
   const teksten = await page.evaluate(() => {

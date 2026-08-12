@@ -348,14 +348,61 @@ Alles staat in localStorage. Er zijn synccodes, dus herstel kán, maar een vreem
 leegt weet niet dat die code bestond. Het synccode-moment hoort ná de eerste voltooide les, niet
 ervoor.
 
-### 5. Kleine dingen die wel opvallen
+### 3. De taal van het eerste scherm — NAGEMETEN 13 aug, geen probleem
 
-- Bij een geblokkeerde AI-aanroep zegt de app "De AI is even niet bereikbaar". Sinds het slot op de
-  server klopt dat niet meer: de echte reden staat in `res.fout` en die is vriendelijker.
-- ~~De titel toont "¡Vamos …!" met een naam die er nog niet is.~~ **AF in v23.54:** het is
-  "¡Vamos!" tot je een naam hebt. De spatie zit nu aan de naam vast in plaats van in de HTML.
-- `/api/sync` en `/api/log` staan open. Kosten geen geld, wel rommel in de database.
-- De privacytekst moet kloppen met wat de server echt bewaart.
+Gemeten met vijf browsers tegen een echte pagina: `nl-NL` krijgt Nederlands, en `en-US`, `de-DE`,
+`es-ES` en een browser zonder taalvoorkeur krijgen Engels. `browserTaal()` en `proefTaal()` geven
+allebei hetzelfde antwoord, en dat gebeurt in het vroege scriptblok van v23.55, dus vóór het grote
+script. Dat is de eerlijke uitkomst: de app heeft precies twee talen. Het oude symptoom kwam uit een
+testomgeving zonder Nederlandse instelling.
+
+### 4. Progressie kwijtraken — AF in v23.71
+
+Nagekeken waar de code stond: `<b id="syncCode">` zit in `#instelBlok`, en dat blok is standaard
+`hidden`. Meer, dan Profiel, dan Instellingen. De code bestónd dus wel, maar de enige die hem
+tegenkwam was iemand die al wist dat hij bestond.
+
+Nu staat er na je les één blok onder de viering, met je echte code, een kopieerknop en "Ik heb hem".
+Hij blijft staan tot je hem wegtikt (`S.codeGezien`) en komt anders na de volgende les terug: dit is
+het enige in de app waarvan het missen onherstelbaar is, en één keer knipperen vlak na de confetti is
+geen mededeling. Niet eerder dan de eerste les, want daarvóór heb je niets te verliezen en vraagt een
+app die om een code zwaait vertrouwen dat hij nog niet verdiend heeft.
+
+Vastgelegd in `pw-lancering.js`, dat ook controleert dat hij terugkomt als je hem laat staan.
+
+### 5. Kleine dingen die wel opvallen — ALLE VIER AF
+
+- ~~Bij een geblokkeerde AI-aanroep zegt de app "De AI is even niet bereikbaar".~~ **AF in v23.70.**
+  Twee dingen klopten niet aan het briefje. Het veld heet `error` en niet `fout` (`server/index.js`
+  regel 279), dus een patch die op `fout` had gemikt had een leeg scherm opgeleverd. En de vier
+  serverredenen zijn Nederlands, altijd, terwijl de app twee talen spreekt. De server stuurt nu een
+  korte code mee (`uit`, `herkomst`, `dagplafond`, `tempo`, `stuk`) en de app vertaalt die zelf.
+  Terugvalvolgorde: code, dan de zin van de server, dan een algemene zin — daardoor mag de app vóór
+  de server live. Bij "uit" en "dagplafond" komt de knop niet terug, want opnieuw proberen kan tot
+  morgen niet lukken.
+- ~~De titel toont "¡Vamos …!" met een naam die er nog niet is.~~ **AF in v23.54.**
+- ~~`/api/sync` en `/api/log` staan open.~~ **AF in `claude/patch-server-slot2.py`.** Beide achter
+  dezelfde machinerie als de AI-knoppen, gedeeld in plaats van gekopieerd: herkomstcontrole plus een
+  teller per IP (sync 120/uur en 600/dag, log 60 en 300). `GET /api/state/:code` blijft met opzet
+  open: die is beveiligd met de sync-code zelf, en een browser stuurt bij een GET niet altijd een
+  Origin mee. Noodrem `POORT_UIT=1`, zichtbaar in `/health`. Rooktest: `sh server/rooktest-slot.sh`,
+  13/13, zonder database nodig.
+- ~~De privacytekst moet kloppen met wat de server echt bewaart.~~ **AF in v23.72.** Elke
+  schrijfopdracht in `server/index.js` opgezocht: zeven tabellen, en twee ervan werden niet genoemd.
+  `duels` bewaart je naam en elk woord dat je speelt, `krabbels` bewaart wie wie een schouderklopje
+  gaf. Er is een blok bijgekomen, en de zin over verwijderen is eerlijker: dat klopt voor je profiel,
+  maar logs, duels en krabbels worden nergens opgeruimd.
+
+### De rollback, gerepeteerd op 13 aug
+
+`actions/checkout@v4` zonder `ref` pakt de `github.sha` van de gebeurtenis, en die verandert niet bij
+een re-run: een re-run publiceert dus echt de oude code. En de vraag die ertoe doet, want de poort
+draait opnieuw mee: is de vorige goede versie vandaag nog groen? Voor `6ee6cdb` (v23.61, wat er nu
+live staat) 67/67 groen in 679 s.
+
+De valkuil, ook getest: `30ea03b` is vandaag rood. Terecht, want daar ontbraken v23.50 en v23.51 en
+hij is nooit live geweest. Kies dus een run die groen wás, niet een commit die goed voelde. Staat nu
+zo in `DEPLOY.md`.
 
 ## De architectuur die eraan komt: koppelen in plaats van produceren
 

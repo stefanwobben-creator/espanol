@@ -9,7 +9,8 @@
 // Wat hier vastligt:
 //   - de badge bovenin bestaat niet meer, in geen enkele toestand van de app
 //   - de ritmekaart toont geen "N herhalingen open" en geen "N grammatica-herhalingen open"
-//   - het chipje "herhalingen bij" verschijnt alleen als je bíj bent (schouderklopje, geen saldo)
+//   - en sinds v23.64 ook geen vinkje "herhalingen bij" meer: dat meldde de afwezigheid van een
+//     probleem, in jargon, in de vorm van een knop
 //   - het toetsjesmenu heeft geen "Nog niet gedaan" en geen aantal achter "Tijd voor herhaling"
 //   - en, net zo belangrijk: de SRS zelf rekent gewoon door. Verstoppen is niet hetzelfde als
 //     afschaffen; de planning moet blijven kloppen, anders is dit geen ontwerpkeuze maar dataverlies.
@@ -117,15 +118,23 @@ const { chromium } = require('playwright');
   ok(!/dagdoel|daily goal/i.test(metDoel.ritme),
     'en niet ook nog eens als chipje op de leskaart ("' + metDoel.ritme.replace(/\n/g, ' | ') + '")');
 
-  // --- 6. ben je wél bij, dan verschijnt het schouderklopje ---
+  /* --- 6. ben je wél bij, dan staat er niets ---
+     v23.64: hier stond een chipje "✓ herhalingen bij". Stefan, 12 aug: "herhaling bij? waarom
+     staat dat hier is dat ook een extra knop? verwarrend." Het was een span en geen knop, maar het
+     stond in dezelfde band als de rode knop eronder. En het meldde de afwezigheid van een
+     probleem, in jargon.
+
+     Wat deze suite bewaakt verandert niet en wordt hier zelfs strenger: geen saldo, geen open
+     teller, en nu ook geen vinkje dat je bij bent. */
   const bij = await page.evaluate(() => {
     const t = today();
     WORDS.forEach(function (w) { if (S.srs[w.id]) S.srs[w.id].due = addDays(t, 3); });
     show('lessen');
-    return document.querySelector('.ritme').innerText;
+    const el = document.querySelector('.ritme');
+    return el ? el.innerText : '';
   });
   await page.waitForTimeout(300);
-  ok(/herhaling(en)? bij|reviews done/i.test(bij), 'wie bij is krijgt "herhalingen bij" te zien ("' + bij.replace(/\n/g, ' | ') + '")');
+  ok(!/herhaling(en)? bij|reviews done/i.test(bij), 'wie bij is krijgt daar geen chipje meer over ("' + bij.replace(/\n/g, ' | ') + '")');
   ok(!/\bopen\b/i.test(bij), 'en nergens het woord "open"');
 
   // --- 7. het toetsjesmenu ---

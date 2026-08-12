@@ -104,10 +104,39 @@ zet die versie terug live. Geen revert-commit, geen haast, geen keuzes op het ve
 
 Daarna pas uitzoeken wat er mis was. De site staat dan al weer goed, en dat scheelt in het hoofd.
 
+**Gerepeteerd op 13 aug, en het werkt.** Twee dingen nagemeten, want een noodprocedure die je nooit
+hebt uitgevoerd is een aanname:
+
+- *Krijgt een re-run de oude code te pakken?* Ja. `actions/checkout@v4` zonder `ref` pakt de
+  `github.sha` van de gebeurtenis, en die verandert niet als je een run opnieuw draait. De
+  publicatiestap print dat commit-nummer, dus je ziet het ook in het logboek.
+- *Is de vorige goede versie vandaag nog groen?* Voor `6ee6cdb` (v23.61, wat er nu live staat):
+  67/67 groen, 679 s. Dat is de vraag die ertoe doet, want "Re-run all jobs" draait de poort
+  opnieuw. Is die inmiddels rood, dan publiceert de re-run niets en sta je met lege handen op het
+  slechtste moment.
+
+**En daar zit de valkuil.** De poort van een oude commit kan vandaag rood zijn zonder dat er iets
+mis is met die versie: een suite met een datum erin verloopt (dat is op 12 aug twee keer gebeurd),
+of een suite is later strenger geworden. Ook getest: commit `30ea03b` is vandaag rood, en terecht,
+want daar ontbraken v23.50 en v23.51 en hij is nooit live geweest.
+
+Daarom, in deze volgorde:
+
+1. **Kies een run die groen was, niet een commit die goed voelde.** In Actions zie je dat meteen.
+2. Re-run all jobs. Blijft hij groen: klaar, ongeveer drie minuten.
+3. Wordt hij rood op een suite die niets met jouw probleem te maken heeft, ga dan niet repareren
+   in de oude commit. Draai in plaats daarvan de slechte verandering terug op `main`
+   (`git revert <sha> && git push`): dan draait de poort op de huidige suites, en die zijn per
+   definitie niet verlopen.
+
 Let op: alleen de gepubliceerde map gaat terug. Wat de gebruiker in localStorage heeft staat er
 gewoon nog, dus een terugdraai raakt zijn profiel niet, maar een verandering die de opslagvorm
 verbouwt, is niet zomaar terug te draaien. Zulke veranderingen horen in een eigen push met een eigen
 versienummer, en het is het waard om er even bij stil te staan voordat je hem doet.
+
+Voor de server (Render) is terugdraaien iets anders: daar staat een knop "Rollback" bij een eerdere
+deploy. En als het om een slot gaat dat te streng staat, is de omgevingsvariabele sneller dan een
+deploy: `POORT_UIT=1` voor sync en log, `AI_UIT=1` voor de AI-knoppen. Zie `server/README.md`.
 
 ## De avondrun
 

@@ -272,6 +272,10 @@
   .lfsay{margin:4px 0 0; font-size:.86rem;}
   .lfsay .es{font-weight:700;}
   .lfsay .nl{display:block; color:var(--muted); font-size:.78rem; font-weight:400;}
+  /* v23.68: de eerste zeven dagen staat de regel die je kunt lezen boven en in het grote formaat.
+     Zelfde zinnen, zelfde kleur, alleen de volgorde en de maat draaien om. */
+  .lfsay.omgekeerd .nl{display:block; color:var(--ink); font-size:.9rem; font-weight:700;}
+  .lfsay.omgekeerd .es{display:block; font-size:.8rem; font-weight:400; margin-top:2px;}
   .zorglabel{font-size:.74rem; color:var(--muted); text-align:center;}
   .wensrij{display:flex; align-items:center; gap:8px; justify-content:center; font-size:.86rem; font-weight:700; margin:8px 0 2px; text-align:center;}
   .wensrij.vervuld{color:var(--green);}
@@ -852,6 +856,18 @@
              color:var(--ink); font-weight:700; font-size:.9rem; cursor:pointer;}
   .speelknop .spe{font-size:1.5rem; line-height:1;}
   .speelknop:hover{border-color:var(--accent); background:var(--accent-soft);}
+  /* v23.65: de dagkaart toont regels in plaats van tegels, want een tegel heeft geen plek voor de
+     zin die zegt wat je gaat doen. Zelfde vorm als de lesregels, zodat je hem herkent. */
+  .speellijst{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .speelrij{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px 12px;
+            border-radius:var(--radius); border:1.5px solid var(--border); background:var(--card);
+            color:var(--ink); cursor:pointer;}
+  .speelrij .spe{flex:0 0 auto; font-size:1.35rem; line-height:1;}
+  .speelrij .sprij{flex:1; min-width:0;}
+  .speelrij .sprij b{display:block; font-size:.98rem;}
+  .speelrij .sprij span{display:block; font-size:.82rem; color:var(--muted); font-weight:400;}
+  .speelrij .sppijl{flex:0 0 auto; color:var(--muted); font-size:.8rem;}
+  .speelrij:hover{border-color:var(--accent); background:var(--accent-soft);}
   /* --- vitrine v19.70: twee verzamelingen naast elkaar, elk met een eigen vak --- */
   .vitrinevak{border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; margin-top:10px;}
   .vitrinevak > .kicker{display:block; margin-bottom:4px;}
@@ -1462,7 +1478,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.61";
+var APP_VERSIE = "v23.72";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8536,6 +8552,47 @@ function dagPortie(){
           totaal:herhaal.length + nieuw.length};
 }
 
+/* ================= WAT ER MORGEN GEBEURT (v23.67) =================
+   Stefan: "niet duidelijk of je morgen een reminder krijgt of je morgen terug moet komen voor een
+   nieuwe les of je nu al door kan." Geteld: nul aanroepen van Notification, serviceWorker of
+   showNotification in de hele app, en geen enkele regel over morgen op het dagscherm.
+
+   Het getal komt uit dezelfde som als dagPortie(): alles wat op of vóór morgen op herhaling staat,
+   met dezelfde bovengrens en dezelfde ruimte die voor nieuwe woorden wordt vrijgehouden. Een getal
+   dat morgen niet klopt is erger dan geen getal, want dan leer je dat de app maar wat zegt. */
+function morgenTerug(){
+  var m = addDays(today(), 1), due = 0, id, st;
+  for(id in S.srs){
+    st = S.srs[id];
+    if(!st || typeof st !== "object") continue;
+    if(st.due <= m) due++;
+  }
+  var ruimteNieuw = 0;
+  try { ruimteNieuw = Math.min(nieuwPerDag(), nieuwPlafond()); } catch(e){ ruimteNieuw = 0; }
+  var cap = 20;
+  try { cap = portieMax(); } catch(e){ cap = 20; }
+  return Math.min(due, Math.max(0, cap - ruimteNieuw));
+}
+/* De zin die daarbij hoort. De clausule over de herinnering staat er alleen in je eerste drie
+   dagen: het is een feit dat je één keer moet horen, en elke dag melden dat er niets gaat gebeuren
+   is zelf een vorm van zeuren. Regels die je niet meer leest, maken de regel ernaast ook onzichtbaar. */
+function morgenZin(){
+  var n = morgenTerug(), dg = 0;
+  try { dg = dagenTotaal(); } catch(e){ dg = 0; }
+  var z = n > 0
+    ? ct("Morgen komen er "+n+" "+(n === 1 ? "woordje" : "woordjes")+" terug.",
+         "Tomorrow "+n+" "+(n === 1 ? "word comes" : "words come")+" back.")
+    : ct("Morgen staat er nog niets op herhaling, dus je begint met nieuwe woordjes.",
+         "Nothing is due for review tomorrow, so you will start with new words.");
+  if(dg <= 3){
+    z += " " + ct("Je krijgt geen herinnering, dus kom terug wanneer het jou uitkomt.",
+                  "You will not get a reminder, so come back whenever it suits you.");
+  }
+  return z;
+}
+function morgenZinHtml(marge){
+  return "<p class='muted' style='margin:"+(marge || "8px")+" 0 0'>"+morgenZin()+"</p>";
+}
 function buildQueue(){
   var p = dagPortie();
   wQueue = p.herhaal.concat(p.nieuw);
@@ -9221,6 +9278,7 @@ function renderWord(){
     wBalkHtml()+
     "<p class='big'>"+front+"</p>"+
     "<p class='muted'>"+(S.dir==="es-nl"?tt("watBetekent"):tt("hoeZegJe"))+"</p>"+
+    kaartUitlegHtml("voor")+
     "<div class='row'><button class='primary' id='btnShow'>"+tt("toonAntwoord")+"</button></div>"+
     wWaaromHtml()+
     "<button class='mini' id='btnDir'>↔ "+(S.dir==="es-nl"
@@ -9237,6 +9295,30 @@ function renderWord(){
   document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
 }
 
+/* ================= HET KAARTJE LEGT ZICHZELF UIT (v23.69) =================
+   Stefan: "hier als je niet bekend met flashcards weet je niet wat je moet doen of hoe dit werkt.
+   Je mist hier uitleg."
+
+   Twee regels, allebei over iets wat de app wel doet maar niet zegt. Op de voorkant: dat je het
+   antwoord eerst zelf moet proberen, ook als je twijfelt, want zonder die poging is omdraaien
+   gewoon lezen. Op de achterkant: wat de twee knoppen kosten. "Wist ik" duwt het woord verder weg,
+   "wist niet" brengt het morgen terug. Zonder die zin klinkt "wist niet" als toegeven dat je iets
+   fout deed, en kiest een beginner de vriendelijke knop.
+
+   Alleen zolang je je eerste les nog niet hebt afgerond. Dat is precies de groep waar het om gaat,
+   het verdwijnt vanzelf, en er hoeft nergens een teller voor bij te worden gehouden. */
+function kaartEersteKeer(){
+  try { return !S.lesFlowEerste; } catch(e){ return false; }
+}
+function kaartUitlegHtml(kant){
+  if(!kaartEersteKeer()) return "";
+  var t = kant === "achter"
+    ? ct("Beoordeel jezelf eerlijk. <b>Wist ik</b> laat dit woord langer weg; <b>wist niet</b> brengt het morgen terug. Er kijkt niemand mee, en eerlijk zijn kost je niets.",
+         "Judge yourself honestly. <b>Knew it</b> keeps this word away longer; <b>didn't know</b> brings it back tomorrow. Nobody is watching, and being honest costs you nothing.")
+    : ct("Probeer het antwoord eerst zelf te bedenken, ook als je twijfelt. Die poging is wat het laat plakken; alleen lezen werkt niet.",
+         "Try to come up with the answer yourself first, even if you are unsure. That attempt is what makes it stick; just reading does not.");
+  return "<p class='muted' style='margin:8px 2px; font-size:.84rem; line-height:1.5'>"+t+"</p>";
+}
 function showWord(){
   wShown = true;
   var el = document.getElementById("wCard");
@@ -9253,6 +9335,7 @@ function showWord(){
     // Een los woord onthoud je als losse tegel; in een zin zie je wat het doet.
     (wCur.ej ? "<p class='muted' style='margin:10px 2px 0; line-height:1.5'>"+wCur.ej+
       (profLang()==="nl" && wCur.ejnl ? "<br><span style='opacity:.65'>"+wCur.ejnl+"</span>" : "")+"</p>" : "")+
+    kaartUitlegHtml("achter")+
     "<div class='row'><button class='good' id='btnGood'>"+tt("wistIk")+"</button>"+
     "<button class='bad' id='btnBad'>"+tt("wistNiet")+"</button></div>"+
     wStopHtml();
@@ -9772,7 +9855,14 @@ function checkSentence(){
     api("/api/ai/check", "POST", {nl:s.nl, verwacht:s.es, gegeven:rauw}).then(function(res){
       var af = document.getElementById("aiFb");
       if(!af) return;
-      if(!res || !res.ok){ af.innerHTML = "<div class='feedback bijna'>De AI is even niet bereikbaar, probeer het straks nog eens.</div>"; ba.disabled=false; ba.textContent="🤖 Is mijn variant ook goed?"; return; }
+      if(!res || !res.ok){
+        /* v23.70: hier stond "De AI is even niet bereikbaar, probeer het straks nog eens." Dat was
+           sinds het slot op de server bijna altijd onwaar. Zie aiFoutTekst(). */
+        af.innerHTML = "<div class='feedback bijna'>\ud83e\udd16 "+aiFoutTekst(res)+"</div>";
+        if(aiNogEensZin(res)){ ba.disabled=false; ba.textContent="🤖 Is mijn variant ook goed?"; }
+        else { ba.classList.add("hidden"); }
+        return;
+      }
       if(res.goed){
         S.done[s.id] = true; addXP(4); persist(); checkLessonComplete();
         af.innerHTML = "<div class='feedback ok'>🤖 Claude: ja, jouw variant is ook goed Spaans! (+4 "+xpw()+")<br>"+res.uitleg+"</div>";
@@ -9790,7 +9880,7 @@ function checkSentence(){
       var af = document.getElementById("aiFb");
       if(!af) return;
       af.innerHTML = (res && res.ok) ? "<div class='uitleg'>🤖 "+res.uitleg+"</div>" :
-        "<div class='feedback bijna'>De AI is even niet bereikbaar.</div>";
+        "<div class='feedback bijna'>\ud83e\udd16 "+aiFoutTekst(res)+"</div>";
       bu.classList.add("hidden");
     });
   };
@@ -12574,6 +12664,26 @@ function lesFlowStapNum(f){
   if(f.stap === "produceren") return 4;
   return 0;
 }
+/* ================= CHISPA SPREEKT EERST JOUW TAAL (v23.68) =================
+   Stefan over "Cinco minutos y ya está." op zijn dagscherm: "onduidelijk wat 'cinco minutos....'
+   dit doet en waarom dat hier staat." De Spaanse zin stond rood, vet en op 0,86 rem; de vertaling
+   eronder grijs op 0,78 rem. De opvallendste regel van het scherm was dus onleesbaar voor wie hier
+   net binnenkomt, en de leesbare regel stond in het formaat van de kleine lettertjes.
+
+   De eerste zeven dagen draait dat om. Daarna niet meer: Spaans-eerst is de bedoeling van een
+   taalapp, en dan heb je de vertaling zeven keer onder dezelfde zin zien staan.
+
+   Zeven en niet drie, want drie dagen is te kort om een zin te leren herkennen. En niet altijd,
+   want dan verstopt een taalapp zijn eigen taal. */
+function chispaOmgekeerd(){
+  try { return dagenTotaal() <= 7; } catch(e){ return false; }
+}
+function chispaZegHtml(es, nl){
+  var om = chispaOmgekeerd();
+  return "<p class='lfsay"+(om ? " omgekeerd" : "")+"'>"+
+    (om ? "<span class='nl'>"+nl+"</span><span class='es'>"+es+"</span>"
+        : "<span class='es'>"+es+"</span><span class='nl'>"+nl+"</span>")+"</p>";
+}
 function lesFlowBannerHtml(){
   if(!lesFlow) return "";
   var f = lesFlowChispaFrase();
@@ -12582,7 +12692,7 @@ function lesFlowBannerHtml(){
       "<button class='lfchispa' id='btnLesFlowChispa' title='Chispa'>"+chispaMiniSvg()+"</button>"+
       "<div class='lfmid'>"+
         "<span class='kicker'>🚦 "+ct("Start je les","Start your session")+" · "+ct("stap","step")+" "+lesFlowStapNum()+"/4 · "+lesFlowStapNaam()+"</span>"+
-        "<p class='lfsay'><span class='es'>"+f.es+"</span><span class='nl'>"+ct(f.nl, f.en || f.nl)+"</span></p>"+
+        chispaZegHtml(f.es, ct(f.nl, f.en || f.nl))+
       "</div>"+
     "</div>"+
   "</div>";
@@ -13039,11 +13149,80 @@ function lesFlowLeuk(uit){
   var keus = dagSpelKeuze().filter(function(k){ return !uit || k.v !== uit; });
   if(!keus.length) return null;
   var k = keus[0];
-  return {icon:k.e, kop:k.n,
+  /* v23.65: hier stond k.n. De spellijst heette DAGSPELLEN en had een veld n; spelInfo() noemt dat
+     veld t, want zo heet het in de speeltuin ook. Zonder deze regel stond er "undefined" als kop
+     boven het spelvoorstel op het eindscherm van je les. */
+  return {icon:k.e, kop:k.t,
     waarom:ct("Dezelfde woorden, maar je moet ze anders ophalen. Dat is waarom spelen blijft plakken: je geheugen leert het woord los van het kaartje waar je het op zag staan.",
               "The same words, but you have to retrieve them differently. That's why playing sticks: your memory learns the word apart from the card you first saw it on."),
     knop:ct("Even spelen", "Play a round"),
     doe:function(){ speelNaar(k.v); }};
+}
+/* ================= DE HERSTELCODE, NA JE EERSTE LES (v23.71) =================
+   Van de lanceerlijst: "een vreemde die zijn browser leegt weet niet dat die code bestond."
+   Nagekeken: de code staat in #instelBlok, en dat blok is standaard hidden. Meer, dan Profiel, dan
+   Instellingen. De enige die hem tegenkomt is iemand die al weet dat hij bestaat.
+
+   Waarom ná de les en niet eerder: daarvóór heb je niets te verliezen, en om een code zwaaien op
+   scherm één vraagt vertrouwen dat de app nog niet verdiend heeft. Waarom geen pop-up: die klik je
+   weg zonder te lezen, en dat is precies de handeling die je hier niet wilt oefenen.
+
+   Hij blijft staan tot je hem wegtikt. Dit is het enige in de app waarvan het missen onherstelbaar
+   is, en één keer knipperen vlak na de confetti is geen mededeling. */
+function lesFlowCodeHtml(){
+  if(S.codeGezien) return "";
+  var p = null;
+  try { p = activeProfile(); } catch(e){ p = null; }
+  if(!p) return "";
+  var code = "";
+  try { code = ensureCode(p); } catch(e){ code = ""; }
+  if(!code) return "";
+  return "<div class='card' id='codeKaart' style='margin-top:10px'>"+
+    "<span class='kicker'>\ud83d\udd11 "+ct("Bewaar dit even","Keep this somewhere")+"</span>"+
+    "<p style='margin:6px 0 0'>"+
+      ct("Je voortgang staat in deze browser. Wis je die, of wil je verder op je telefoon, dan heb je deze code nodig.",
+         "Your progress lives in this browser. If you clear it, or want to carry on from your phone, you need this code.")+"</p>"+
+    "<p style='margin:10px 0 6px'><b id='codeTekst' style='font-size:1.05rem; letter-spacing:.03em; word-break:break-all'>"+code+"</b></p>"+
+    "<div class='row'>"+
+      "<button class='ghost' id='btnCodeKopieer'>"+ct("Kopieer","Copy")+"</button>"+
+      "<button class='ghost' id='btnCodeGezien'>"+ct("Ik heb hem","Got it")+"</button>"+
+    "</div>"+
+    "<p class='muted' style='margin:8px 0 0; font-size:.84rem'>"+
+      ct("Hij staat later ook bij Meer, Profiel, Instellingen.",
+         "You can find it later under More, Profile, Settings.")+"</p></div>";
+}
+function lesFlowCodeWire(){
+  var weg = function(){
+    S.codeGezien = true;
+    try { persist(); } catch(e){}
+    var k = document.getElementById("codeKaart");
+    if(k && k.parentNode) k.parentNode.removeChild(k);
+  };
+  var bg = document.getElementById("btnCodeGezien");
+  if(bg) bg.onclick = weg;
+  var bk = document.getElementById("btnCodeKopieer");
+  if(bk) bk.onclick = function(){
+    var t = document.getElementById("codeTekst");
+    var code = t ? t.textContent : "";
+    /* navigator.clipboard bestaat niet op http en kan geweigerd worden. Dan selecteren we de code,
+       zodat kopiëren met de hand nog één handeling is in plaats van overtypen. */
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(code).then(function(){
+        toast(ct("Gekopieerd \u2713","Copied \u2713")); weg();
+      }).catch(function(){ codeSelecteer(t); });
+    } else { codeSelecteer(t); }
+  };
+}
+function codeSelecteer(t){
+  if(!t) return;
+  try {
+    var r = document.createRange();
+    r.selectNodeContents(t);
+    var s = window.getSelection();
+    s.removeAllRanges(); s.addRange(r);
+    toast(ct("Kopieer hem met je toetsenbord of houd hem ingedrukt.",
+             "Copy it with your keyboard, or press and hold."));
+  } catch(e){}
 }
 function lesFlowVoorstellen(){
   var uit = [], w = lesFlowWinst();
@@ -13140,12 +13319,20 @@ function lesFlowKlaar(){
        duwde hij daarmee het antwoord op "en nu?" van het scherm af: de tweede voorstelkaart begon op
        865 pixels in een venster van 844. Hij gaat over morgen, dus hij hoeft niet boven de dingen te
        staan die over nu gaan. */
-    (eersteOoit ? "<p class='muted' style='margin:10px 0 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time — that's how they stick. Five minutes, no more.")+"</p>" : "")+
+    /* v23.67: hier stond alleen op je állereerste dag iets over morgen, en daarna nooit meer. De
+       zin die er nu staat geldt elke dag en noemt het echte aantal; de "tot morgen"-belofte blijft
+       op dag 1 staan, want die gaat over waarom herhalen werkt en niet over hoeveel. En het
+       gedachtestreepje in de Engelse zin is een komma geworden: die staan hier verder nergens. */
+    (eersteOoit ? "<p class='muted' style='margin:10px 0 0'><b>"+ct("Tot morgen?","See you tomorrow?")+"</b> "+ct("Dan komen de woordjes van vandaag precies op tijd terug: zó blijven ze plakken. Vijf minuutjes, meer niet.","Today's words will come back right on time, that's how they stick. Five minutes, no more.")+"</p>" : "")+
+    morgenZinHtml(eersteOoit ? "4px" : "10px")+
     "</div>"+
+    /* v23.71: de herstelcode, één blok onder de viering, tot je hem wegtikt. Zie lesFlowCodeHtml(). */
+    lesFlowCodeHtml()+
     // v19.57: net klaar met een les is het moment waarop je het idee leuk vindt, niet halverwege
     // een oefening. Vanaf de tweede sessie, en daarna nooit meer zodra je gedeeld hebt.
     // v19.58: hoogstens ÉÉN vraag onder de felicitatie, gekozen door samenKaartNu().
     samenKaartNu(false);
+  lesFlowCodeWire();
   document.getElementById("btnLesFlowNogEens").onclick = function(){ lesFlowStart(); };
   document.getElementById("btnLesFlowTerug").onclick = function(){ renderLessons(); };
   el.querySelectorAll("[data-voorstel]").forEach(function(b){
@@ -13850,7 +14037,10 @@ function ritmeCard(){
      niets doet, straft wegblijven af en maakt terugkomen duurder naarmate je langer weg was. */
   var chipsHtml = "";
   if(rel.chipNieuw) chipsHtml += chip(nieuw >= dagPortieVloer(), ct("nieuwe woorden ","new words ")+nieuw+"/"+dagPortieVloer()+" (max "+nieuwPlafond()+")");
-  if(rel.chipHerhaal) chipsHtml += chip(true, ct("herhalingen bij","reviews done"));
+  /* v23.64: hier stond een chipje "\u2713 herhalingen bij". Stefan: "herhaling bij? waarom staat
+     dat hier is dat ook een extra knop? verwarrend." Het was een span en geen knop, maar het stond
+     in dezelfde band als de rode knop eronder, dus het las als knop. En er viel niets mee te doen:
+     het meldde de afwezigheid van een probleem, in jargon ("bij" van bijhouden). Weg. */
   /* v23.31: het dagdoel-chipje weg. Datzelfde getal staat bovenin het scherm al in de strook
      ("9/90 taco's"), en twee weergaven van een getal is de fout waar dit hele scherm mee bezig was.
      rel.chipDoel blijft bestaan; hij wordt op andere plekken gelezen. */
@@ -13887,11 +14077,12 @@ function ritmeCard(){
         "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓")
           : hervat ? "🚦 "+ct("Verder waar je was","Pick up where you left off")+" · "+ct("stap","step")+" "+hStap+"/4 · "+hNaam
           : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : "🚦 "+ct("Start je les","Start your session"))+"</span>"+
-        "<p class='lfsay'><span class='es'>"+(afgesloten ? "Hasta mañana." : hervat ? "Seguimos donde lo dejamos." : gedaanVandaag ? "¡Muy bien!" : groet.es)+"</span>"+
-          "<span class='nl'>"+(afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.")
+        chispaZegHtml(
+          (afgesloten ? "Hasta mañana." : hervat ? "Seguimos donde lo dejamos." : gedaanVandaag ? "¡Muy bien!" : groet.es),
+          (afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.")
             : hervat ? ct("We gaan verder waar we gebleven waren.","We pick up where we left off.")
             : gedaanVandaag ? ct("Chispa is trots op je.","Chispa is proud of you.")
-            : ct(groet.nl, groet.en))+"</span></p>"+
+            : ct(groet.nl, groet.en)))+
       "</div>"+
     "</div>"+
     (afgesloten || (gedaanVandaag && !hervat) ? "" :
@@ -13899,6 +14090,9 @@ function ritmeCard(){
                                                               "You stopped at step "+hStap+" of 4: "+hNaam+". The rest of your session is waiting.") : portieTxt)+"</p>"+
       "<p class='muted' style='margin:2px 0 0'>"+ct("Daarna mag je Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> geven.",
                                                     "Then you get to give Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b>.")+"</p>")+
+    /* v23.67: klaar voor vandaag betekende tot nu toe: geen enkel bericht over morgen, op het
+       scherm waar die vraag juist opkomt. */
+    (afgesloten ? morgenZinHtml("8px") : "")+
     (afgesloten
       ? "<p class='muted' style='margin:8px 0 0'><span id='btnDagToch' style='text-decoration:underline; cursor:pointer'>"+ct("toch nog een les doen","do another session anyway")+"</span></p>"
       : "<div class='row'><button class='primary' id='btnStartLesFlow'>"+
@@ -13992,7 +14186,7 @@ function dagRelevantie(){
     lijn: dagenMetXp >= 2,
     // deze drie stonden er ook als ze nul waren, en nul is geen bericht
     chipNieuw: newToday() > 0,
-    chipHerhaal: open === 0 && tel.geoefend > 0,
+    /* v23.64: chipHerhaal is weg. Zie de toelichting bij het chipsblok in dagRitmeHtml(). */
     chipDoel: ((S.xp && S.xp[t]) || 0) > 0,
     niveau: niv
   };
@@ -14098,13 +14292,24 @@ function dagLijnHtml(){
   // v20.1: de balk en de staafjes zijn twee aparte berichten en verschijnen apart. Zegt geen van
   // beide iets, dan is er ook geen kaart, en geen knop naar cijfers die nog nergens over gaan.
   var rel = dagRelevantie();
-  var basis = rel.basis ? dagBasisRegelHtml() : "";
-  // v23.14: de twee kerncijfers horen bij de balk en niet in een eigen kaart. Ze kunnen er ook
-  // staan als de balk zwijgt (wie geoefend heeft zonder dat er al iets onderweg is), dus ze zijn
-  // een eigen reden om deze kaart te tonen.
-  var kern = dagKerncijfersHtml();
-  if(!basis && !kern && !rel.lijn) return "";
-  return "<div class='card' id='lijnKaart'>"+basis+kern+
+  /* v23.64. Hier stond dagBasisRegelHtml(): de grote teller, de balk in drie tinten, de legenda van
+     vier woorden en de noemer. Plus dagKerncijfersHtml() met kracht en foutpercentage. Samen negen
+     van de elf getallen die op dit scherm stonden.
+
+     Stefan: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?" Dat is de juiste vraag,
+     en het antwoord stond nergens op dit scherm. De vier woorden van de legenda zijn namen van
+     SRS-doosjes; "vast" is doos 5 en die kost 25 dagen.
+
+     Er gaat niets verloren. De hele kaart staat op Voortgang (vgVastKaart, mét legenda) en de twee
+     tegels staan lager op datzelfde scherm uitgesplitst, elk met een alinea eronder. De knop
+     "Alle cijfers" hieronder brengt je er in één tik heen.
+
+     Wat blijft is de reden waarom v19.99 die balk hier neerzette: Stefans kritiek op Duolingo was
+     "ik doe de habit maar ik leer niks", en een dagscherm met alleen staafjes is precies dat. Maar
+     bewijs hoeft geen dashboard te zijn. Eén zin doet hetzelfde werk. */
+  var basis = rel.basis ? dagBasisZinHtml() : "";
+  if(!basis && !rel.lijn) return "";
+  return "<div class='card' id='lijnKaart'>"+basis+
     /* v23.2: de veertien staafjes gaan onder een vouw. Ze meten hoe vaak je kwam, niet wat je kunt,
        en dit blok gaat over de vraag "waar sta ik". Niet weg, wel weg van je eerste blik. */
     (rel.lijn
@@ -14210,10 +14415,114 @@ function dagBasisRegelHtml(opt){
       (sm.nivs.length > 1
         ? ct("van de "+n+" woorden op "+nivTxt, "of the "+n+" words in "+nivTxt)
         : ct("van de "+n+" "+niv+"-woorden", "of the "+n+" "+niv+" words"))+"</p>"+
+    /* v23.66: staat de legenda er, dan staat de uitleg erbij. Op je profiel staat de legenda niet
+       (daar staat de lange uitsplitsing eronder), dus daar ook geen uitklapper. */
+    ((opt && opt.legenda === false) ? "" : vgLegendaUitlegHtml(n))+
     stap+
     (aanbod ? dagPeilKnopHtml(aanbod) : "");
 }
-/* ================= DE TWEE KERNCIJFERS OP VANDAAG (v23.14) =================
+/* ================= WAAR JE STAAT, IN ÉÉN ZIN (v23.64) =================
+   Dezelfde som als de balk: wat je actief bijhoudt plus wat de peiling erbij schat, gedeeld door de
+   noemer van je niveau. Alleen niet als percentage en niet als balk, maar als een van vijf standen
+   in woorden. Een percentage zegt niet wélk deel het meet (dat was de fout van vóór v23.0); een
+   stand in woorden hoeft dat ook niet te zeggen.
+
+   De grenzen zijn met opzet grof. Ze mogen niet zo fijn zijn dat de zin van dag tot dag verspringt,
+   want dan is hij weer een getal. */
+/* ================= WAT DIE VIER WOORDEN BETEKENEN (v23.66) =================
+   Stefan over de balk: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?" De legenda
+   gebruikt vier namen van SRS-doosjes, en die zijn scherp gedefinieerd maar nergens uitgelegd.
+
+   Dicht, want je stelt deze vraag één keer en niet elke week. En de laatste regel gaat niet over
+   definities maar over rekenen: de vier tellen op tot de noemer, en dat kun je met je ogen
+   controleren. Dat is de reden dat de balk drie tinten heeft in plaats van één. */
+function vgLegendaRij(kop, uitleg){
+  return "<p style='margin:8px 0 0; font-size:.84rem'><b>"+kop+"</b><br>"+
+    "<span class='muted'>"+uitleg+"</span></p>";
+}
+function vgLegendaUitlegHtml(n){
+  var top = INTERVALS.length - 1;
+  var dagen = 0, i;
+  for(i = 0; i < top; i++){ dagen += INTERVALS[i]; }
+  var r = "";
+  r += vgLegendaRij(ct("bewezen vast","proven solid"),
+    ct("Je had dit woord "+top+" keer goed, verspreid over minstens "+dagen+" dagen, en de laatste "+
+       "keer was een check die je niet zelf beoordeelde. Dat duurt dus lang: dit getal zegt net zo "+
+       "goed hoe lang je bezig bent als hoeveel je kent.",
+       "You got this word right "+top+" times, spread over at least "+dagen+" days, and the last "+
+       "time was a check you did not grade yourself. That takes a while: this number says as much "+
+       "about how long you have been at it as about how much you know."));
+  r += vgLegendaRij(ct("onderweg","on the way"),
+    ct("Het woord staat op een herhaalinterval van een week of langer. Het komt nog terug, en het "+
+       "kan nog wegzakken.",
+       "The word is on a review interval of a week or more. It still comes back, and it can still "+
+       "slip away."));
+  r += vgLegendaRij(ct("geschat al gekend","estimated already known"),
+    ct("Afgeleid uit je peiling, niet uit wat je hier gedaan hebt. Waarschijnlijk waar, niet bewezen.",
+       "Derived from your level check, not from what you did here. Probably true, not proven."));
+  r += vgLegendaRij(ct("nog niet gezien","not seen yet"),
+    ct("Woorden die het Cervantes op dit niveau meetelt en die jij hier nog niet bent tegengekomen.",
+       "Words the Cervantes list counts at this level that you have not run into here yet."));
+  r += "<p class='muted' style='margin:10px 0 0; font-size:.82rem'>"+
+    ct("De vier tellen samen op tot "+n+". Daarom heeft de balk drie tinten: je kunt de som narekenen.",
+       "The four add up to "+n+". That is why the bar has three shades: you can check the sum yourself.")+"</p>";
+  return "<details style='margin-top:10px'><summary class='muted' style='cursor:pointer; font-size:.85rem'>"+
+    ct("Wat betekenen deze woorden?","What do these words mean?")+"</summary>"+r+"</details>";
+}
+function dagBasisStand(pct){
+  if(pct < 8) return 0;
+  if(pct < 40) return 1;
+  if(pct < 70) return 2;
+  if(pct < 95) return 3;
+  return 4;
+}
+function dagBasisZinHtml(){
+  var c = voortgangCijfers();
+  var sm = c.samen;
+  var n = sm.noem || 390;
+  var w = sm.actief;
+  var aanbod = null;
+  try { aanbod = peilAanbod(); } catch(e){ aanbod = null; }
+  if(w <= 0 && !c.schat && !aanbod) return "";
+  var nivTxt = samenNivTekst(sm.nivs) || c.niv;
+  var pct = n ? Math.round(100 * Math.min(n, w + sm.geschat) / n) : 0;
+  var stand = dagBasisStand(pct);
+  var zinNl = [
+    "Je bent net begonnen aan " + nivTxt + ".",
+    "Je bent onderweg in " + nivTxt + ".",
+    "Je bent over de helft van " + nivTxt + ".",
+    nivTxt + " is bijna rond.",
+    nivTxt + " is zo goed als rond."
+  ][stand];
+  var zinEn = [
+    "You have just started on " + nivTxt + ".",
+    "You are on your way in " + nivTxt + ".",
+    "You are past the halfway point of " + nivTxt + ".",
+    nivTxt + " is nearly complete.",
+    nivTxt + " is as good as complete."
+  ][stand];
+  /* Eén getal erbij, en het is het enige getal op dit scherm dat over jouw werk gaat in plaats van
+     over de administratie: hoeveel woorden je op dit moment actief bijhoudt. Staat er nul, dan
+     staat er niets: nul is geen bericht (zie dagRelevantie).
+
+     En als de peiling het zware werk doet, staat dat erbij. Anders leest "je bent over de helft van
+     A1, je houdt er 7 actief bij" als een tegenspraak, en dan gaat de lezer aan allebei de helften
+     twijfelen. Op de balk was dat opgelost met een aparte tint en het woord "geschat"; in een zin
+     moet het met woorden. */
+  if(w > 0 && sm.geschat > w){
+    zinNl = zinNl.replace(/\.$/, "") + ", volgens je peiling. Zelf houd je er " + w + " actief bij.";
+    zinEn = zinEn.replace(/\.$/, "") + ", according to your check. You are actively keeping up " + w + " yourself.";
+  } else if(w > 0){
+    zinNl += " Je houdt er " + w + " actief bij.";
+    zinEn += " You are actively keeping up " + w + " of them.";
+  }
+  /* Geen niveau in de kop: dat staat in de zin eronder, en twee weergaven van hetzelfde getal is
+     precies de fout waar dit scherm sinds v23.0 mee bezig is. */
+  return "<span class='kicker'>"+ct("Waar je staat","Where you are")+"</span>"+
+    "<p style='margin:6px 0 0'>"+ct(zinNl, zinEn)+"</p>"+
+    (aanbod ? "<div style='margin-top:10px'>"+dagPeilKnopHtml(aanbod)+"</div>" : "");
+}
+/* ================= DE TWEE KERNCIJFERS (v23.14, sinds v23.64 alleen nog op je profiel) =========
    Punt 1 van de werklijst. Naast de balk hoort op Vandaag te staan hoeveel woorden je geoefend
    hebt en hoe vaak je fout zit. De geoefend-teller is met opzet de teller die alleen oploopt: dat
    is het enige getal op dit scherm dat nooit tegenvalt, en het meet precies wat jij gedaan hebt.
@@ -14288,54 +14597,132 @@ function dagPeilKnopHtml(a){
       ct(PEIL_ITEMS+" woorden, ongeveer een minuut. Telt niet mee voor je punten.",
          PEIL_ITEMS+" words, about a minute. Does not count towards your points.")+"</p>";
 }
-/* vier spelletjes, recht erin. Aventura staat vast (dat is het grote spel), de andere drie
-   wisselen per dag, zodat je niet elke ochtend dezelfde drie ziet. */
-var DAGSPELLEN = [
-  {v:"ws",      e:"\ud83d\udd0d", n:"Sopa de letras"},
-  {v:"kruis",   e:"\u270f\ufe0f", n:"Crucigrama"},
-  {v:"audi",    e:"\ud83d\udc42", n:"Escuchar"},
-  {v:"conj",    e:"\ud83e\udde9", n:"Rompecabezas"},
-  {v:"letras",  e:"\ud83d\udd24", n:"Letras"},
-  {v:"adiv",    e:"\ud83d\udfe9", n:"Adivina"},
-  {v:"clas",    e:"\u26a1", n:"Clasificador"},
-  {v:"mem",     e:"\ud83c\udccf", n:"Memory"},
-  {v:"corr",    e:"\ud83d\udd75\ufe0f", n:"El Corrector"}
-];
-function dagSpelKeuze(){
+/* ================= DE SPELLEN, OP ÉÉN PLEK (v23.65) =================
+   Hier stond een lijst van negen met een emoji en een naam, en op het speeltuinscherm een lijst van
+   negen met een emoji, een naam én een regel uitleg. Overlappend maar niet gelijk, en de dagkaart
+   miste juist de regel die zegt wat een spel is.
+
+   Stefan: "niet duidelijk wat een spelen is, wat gebeurt er als ik daar klik, waarom zou ik dat
+   doen ik snap het concept nog niet." De uitleg bestond al, hij stond alleen op het andere scherm.
+
+   Eén lijst dus, en beide schermen lezen eruit. De naam is die van het scherm waar je op landt:
+   meestal Spaans, bij de woordenzoeker niet, want die heet daar Woordenzoeker.
+
+   Het is een functie en geen var, omdat fx() en ct() de taal van het profiel nodig hebben en dat
+   profiel er bij het inladen van het script nog niet is. */
+function spelInfo(){
+  return [
+    {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f",     t:"Aventura",              s:fx("avS")},
+    {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",            t:"M\u00fasica",            s:fx("muS")},
+    {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS")},
+    {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",            t:"Crucigrama",            s:fx("krS")},
+    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",            t:"Letras",                s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock.")},
+    {v:"adiv",    id:"ftAdiv",    e:"\ud83d\udfe9",            t:"Adivina",               s:ct("Raad het woord in vijf pogingen. De eerste letter krijg je.","Guess the word in five tries. You get the first letter.")},
+    {v:"clas",    id:"ftClas",    e:"\u26a1",                  t:"Clasificador",          s:ct("Links of rechts, en het gaat steeds sneller.","Left or right, and it keeps speeding up.")},
+    {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",            t:"Memory \u00b7 Parejas",  s:fx("meS")},
+    {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",            t:"Palabra Duel",          s:fx("duS")}
+  ];
+}
+function spelInfoVan(v){
+  var L = spelInfo(), i;
+  for(i = 0; i < L.length; i++){ if(L[i].v === v) return L[i]; }
+  return null;
+}
+/* De regels komen uit twee generaties tekst: sommige beginnen met een kleine letter en missen een
+   punt ("puzzel met jouw geleerde woorden"), andere zijn hele zinnen. Onder elkaar in een lijst
+   valt dat meteen op. Repareren bij het tonen en niet in de teksten zelf, want die staan ook in de
+   vertaaltabel en daar zijn ze fragmenten. */
+function spelZin(s){
+  s = String(s || "").trim();
+  if(!s) return "";
+  s = s.charAt(0).toUpperCase() + s.slice(1);
+  if(!/[.!?]$/.test(s)) s += ".";
+  return s;
+}
+/* Aventura staat vast op de dagkaart (dat is het grote spel) en Palabra Duel heeft een tweede
+   speler nodig. De rest wisselt per dag, Música inbegrepen: die heeft geen materiaal nodig en is
+   daarmee op dag 1 het enige wat naast Aventura echt kan draaien. */
+var DAGSPEL_UIT = {avt:1, duel:1};
+/* v23.65, en dit was een echte fout. In DAGSPELLEN stonden Escuchar, El Corrector en Rompecabezas,
+   dus de kaart met de kop "Even spelen" bood drie oefeningen aan. De regel van v21.5 is in één zin
+   te zeggen (Stefan: "lessen, dat zijn de oefeningen, die zitten nu ook onder speeltuin"): onder
+   Oefenen telt het mee voor je niveau, onder Spelen niet. De speeltuin hield zich daaraan, de
+   dagkaart niet. Het eindscherm van de les wist het trouwens al wel: lesFlowWinst() biedt El
+   Corrector aan als "hier win je het meeste" en lesFlowLeuk() een spel als "of gewoon leuk". */
+function dagSpellen(){
+  return spelInfo().filter(function(x){ return !DAGSPEL_UIT[x.v]; });
+}
+/* v23.65: het aantal is een parameter geworden. De dagkaart toont sinds deze versie regels met
+   een zin erbij in plaats van tegels, en dan zijn drie voorstellen naast Aventura te veel scherm.
+   Het eindscherm van de les (lesFlowLeuk) vraagt er nog steeds gewoon één. */
+function dagSpelKeuze(n){
+  var doel = n || 3;
   // v19.92: alleen spellen aanbieden die vandaag ook echt iets kunnen tonen. Een knop op je
   // dagscherm die uitkomt op "leer eerst wat meer woordjes" is een knop die je leert dat de
   // knoppen hier niet betrouwbaar zijn.
-  var kan = DAGSPELLEN.filter(function(x){
+  var alles = dagSpellen();
+  var kan = alles.filter(function(x){
     try { return speelKlaar(x.v); } catch(e){ return true; }
   });
-  if(!kan.length) kan = DAGSPELLEN;
+  /* v23.65: hier stond "if(!kan.length) kan = alles;". Dat sprak de regel erboven tegen: als niets
+     kon, bood de kaart alsnog iets aan dat niet kan. Het viel niet op omdat Rompecabezas geen
+     materiaal-eis heeft en dus altijd meetelde; nu dat een oefening is en geen spel, staat de
+     dagrotatie op dag 1 leeg en werd de noodgreep zichtbaar. Niets aanbieden is het eerlijke
+     antwoord: dagSpeelHtml() zet er dan "nog N spellen komen erbij" onder, en lesFlowLeuk() slaat
+     zijn voorstel over. */
   var h = dayHash("spel");
   var uit = [];
   // De stap van 2 geeft de afwisseling per dag zolang de lijst lang genoeg is; de tweede ronde
   // met stap 1 vult aan als die stap in zichzelf terugvalt. Zonder die tweede ronde stond er op
   // dag 1 twee keer hetzelfde spel, en ontbrak het spel dat wel kon.
-  for(var i = 0; i < kan.length && uit.length < 3; i++){
+  for(var i = 0; i < kan.length && uit.length < doel; i++){
     var k1 = kan[(h + i * 2) % kan.length];
     if(uit.indexOf(k1) === -1) uit.push(k1);
   }
-  for(var j = 0; j < kan.length && uit.length < 3; j++){
+  for(var j = 0; j < kan.length && uit.length < doel; j++){
     var k2 = kan[(h + j) % kan.length];
     if(uit.indexOf(k2) === -1) uit.push(k2);
   }
   return uit;
 }
+/* v23.65: van tegels naar regels. Een tegel heeft plek voor een emoji en een naam, en Stefan wist
+   bij "Sopa de letras" niet wat hij zou krijgen. De regel die dat uitlegt stond al op het
+   speeltuinscherm; nu staat hij hier ook, uit dezelfde bron. */
+function dagSpeelRij(g){
+  if(!g) return "";
+  return "<button class='speelrij' data-speel='"+g.v+"'>"+
+      "<span class='spe'>"+g.e+"</span>"+
+      "<span class='sprij'><b>"+g.t+"</b><span class='muted'>"+spelZin(g.s)+"</span></span>"+
+      "<span class='sppijl'>\u25b6</span></button>";
+}
 function dagSpeelHtml(){
-  var keus = dagSpelKeuze();
-  var knoppen = "<button class='speelknop' data-speel='avt'><span class='spe'>\ud83d\uddfa\ufe0f</span>Aventura</button>";
-  keus.forEach(function(k){
-    knoppen += "<button class='speelknop' data-speel='"+k.v+"'><span class='spe'>"+k.e+"</span>"+k.n+"</button>";
-  });
+  var keus = dagSpelKeuze(2);
+  var knoppen = dagSpeelRij(spelInfoVan("avt"));
+  keus.forEach(function(k){ knoppen += dagSpeelRij(k); });
+  /* v23.65. Stefan: "waarom heb ik die unlocked? dan wil ik toch alle spellen zien maar met eentje
+     die niet locked is." Het antwoord stond op het volgende scherm en niet hier: daar staan de
+     dichte spellen grijs onder de open, met de eis erbij (v19.92). Alleen wist je op deze kaart
+     niet dat dat scherm bestond, en waarom deze er stonden en andere niet. */
+  var dicht = 0;
+  try {
+    dicht = dagSpellen().filter(function(x){ return !speelKlaar(x.v); }).length;
+  } catch(e){ dicht = 0; }
   return "<div class='card' id='speelKaart'><span class='kicker'>"+ct("Even spelen","Play something")+"</span>"+
-    "<div class='speelgrid'>"+knoppen+"</div>"+
+    "<div class='speellijst'>"+knoppen+"</div>"+
+    (dicht > 0
+      ? "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
+          ct("Nog "+dicht+" "+(dicht === 1 ? "spel komt" : "spellen komen")+" erbij als je meer woorden kent.",
+             "Another "+dicht+" "+(dicht === 1 ? "game joins" : "games join")+" in once you know more words.")+"</p>"
+      : "")+
     "<div class='row' style='margin-top:8px'><button class='ghost' id='btnAlleSpellen'>"+ct("Alle spelletjes","All the games")+" \u2192</button></div></div>";
 }
 function speelNaar(v){
   funView = v;
+  /* v23.65: Música staat sinds deze versie ook in de dagrotatie (op dag 1 is het naast Aventura het
+     enige dat echt kan draaien). Maar het is geen speeltuinweergave: het heeft een eigen tabblad,
+     en renderFun() kent geen tak voor "musica". Zonder deze regel landde je op het speeltuinmenu.
+     De speeltuin zelf deed dit al goed, met show("musica") in zijn eigen draadje. */
+  if(v === "musica"){ show("musica"); return; }
   if(v === "dictado"){ dIdx = null; dRonde = null; }
   if(v === "conj"){ conjIdx = null; conjRonde = null; }
   if(v === "hu"){ huIdx = null; huRonde = null; }
@@ -17445,6 +17832,44 @@ function renderSongQuiz(sg, i, score){
 }
 
 /* ================= VERVOEGINGS-POPUP ================= */
+/* ================= WAAROM DE AI NIET ANTWOORDT (v23.70) =================
+   Er stond overal "De AI is even niet bereikbaar", en sinds het slot op de server (11 aug) is dat
+   bijna nooit de reden. De server weigert om vier redenen, en drie daarvan kun je zelf oplossen of
+   ze zijn tijdelijk op een manier die je wilt weten.
+
+   Het veld heet `error` en niet `fout`; dat laatste stond in de werklijst en klopte niet. Zie
+   server/index.js: `const bad = (res, code, msg) => res.status(code).json({ok:false, error:msg})`.
+
+   De volgorde van terugvallen is met opzet: eerst de code die de server meestuurt, dan zijn eigen
+   zin, en pas dan de algemene. Zo kan deze app vóór de server live: een oude server stuurt geen
+   reden mee, en dan staat er nog altijd iets waars. */
+var AI_REDEN_NL = {
+  uit:        "De AI-hulp staat even uit. De rest van de app werkt gewoon.",
+  dagplafond: "De AI-hulp is voor vandaag op. Morgen kan het weer.",
+  tempo:      "Even rustig aan met de AI-hulp. Over een uur kan het weer.",
+  herkomst:   "De AI-hulp doet het hier niet.",
+  stuk:       "De AI kon dit even niet nakijken. Probeer het straks nog eens."
+};
+var AI_REDEN_EN = {
+  uit:        "The AI help is switched off for now. The rest of the app works as usual.",
+  dagplafond: "The AI help is used up for today. Tomorrow it works again.",
+  tempo:      "Easy does it with the AI help. In an hour it works again.",
+  herkomst:   "The AI help does not work here.",
+  stuk:       "The AI could not check this just now. Try again later."
+};
+function aiFoutTekst(res){
+  var r = res && res.reden;
+  if(r && AI_REDEN_NL[r]) return ct(AI_REDEN_NL[r], AI_REDEN_EN[r]);
+  if(res && res.error) return String(res.error);
+  return ct(AI_REDEN_NL.stuk, AI_REDEN_EN.stuk);
+}
+/* Bij "uit" en "dagplafond" heeft opnieuw proberen geen zin tot morgen. Een knop die terugkomt
+   nodigt uit tot iets wat gegarandeerd niet werkt, en dat is precies hoe je iemand leert dat de
+   knoppen in deze app niets betekenen. */
+function aiNogEensZin(res){
+  var r = res && res.reden;
+  return r !== "uit" && r !== "dagplafond";
+}
 function verbPopup(term){
   var bestaand = document.getElementById("vpop");
   if(bestaand) bestaand.remove();
@@ -17471,7 +17896,7 @@ function verbPopup(term){
       b2.innerHTML = txt;
       S.vcache[term] = txt; persist();
     } else {
-      b2.textContent = "AI even niet bereikbaar. Probeer het straks nog eens.";
+      b2.textContent = aiFoutTekst(res);
     }
   });
 }
@@ -22787,22 +23212,15 @@ function renderFun(){
   if(funView === "duel"){ renderFunDuel(); return; }
   // v19.92: de spellen die nu iets kunnen tonen staan boven; de rest staat eronder in het grijs
   // met de eis erbij. Zie de toelichting bij SPEEL_EIS.
-  var SPEELMENU = [
-    {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f", t:"Aventura",           s:fx("avS")},
-    {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",        t:"M\u00fasica",         s:fx("muS")},
-    {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",        t:fx("wsT"),            s:fx("wsS")},
-    {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",        t:"Crucigrama",         s:fx("krS")},
-    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",        t:"Letras",             s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock.")},
-    {v:"adiv",    id:"ftAdiv",    e:"\ud83d\udfe9",        t:"Adivina",            s:ct("Raad het woord in vijf pogingen. De eerste letter krijg je.","Guess the word in five tries. You get the first letter.")},
-    {v:"clas",    id:"ftClas",    e:"\u26a1",              t:"Clasificador",       s:ct("Links of rechts, en het gaat steeds sneller","Left or right, and it keeps speeding up")},
-    {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",        t:"Memory \u00b7 Parejas", s:fx("meS")},
-    {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",        t:"Palabra Duel",       s:fx("duS")}
-  ];
+  /* v23.65: uit spelInfo(), zodat dit scherm en de dagkaart niet meer uit elkaar kunnen lopen.
+     De inhoud van deze lijst verandert niet: precies dezelfde negen spellen als hiervoor. Wat
+     verandert is dat de dagkaart nu uit dezelfde bron leest, en dat de oefeningen daar weg zijn. */
+  var SPEELMENU = spelInfo();
   var nuHtml = "", straksHtml = "";
   SPEELMENU.forEach(function(g){
     var kop = "<div class='lnum'>"+g.e+"</div><div class='lbody'><b>"+g.t+"</b><span>";
     if(speelKlaar(g.v)){
-      nuHtml += "<div class='lesson' id='"+g.id+"'>"+kop+g.s+"</span></div><div class='lstatus'>\u25b6</div></div>";
+      nuHtml += "<div class='lesson' id='"+g.id+"'>"+kop+spelZin(g.s)+"</span></div><div class='lstatus'>\u25b6</div></div>";
     } else {
       straksHtml += "<div class='lesson' style='opacity:.5'>"+kop+speelWacht(g.v)+"</span></div><div class='lstatus'>\u00b7</div></div>";
     }
@@ -27258,6 +27676,10 @@ function gwSpiekIcon(c){
   return "\ud83d\udccc";
 }
 
+/* v23.62: hoogstens zoveel vragen per stap in een gegenereerde microles. Drie en niet twee, want
+   deze stappen dragen meer tekst dan een concept; de concepten zelf blijven op twee, en die werken
+   (gemeten: 1,7 gemiddeld). */
+var GW_VRAGEN_PER_STAP = 3;
 function gwVanSpiek(idx){
   var id = gwSpiekId(idx);
   var cache = gwGenCache[id];
@@ -27280,6 +27702,18 @@ function gwVanSpiek(idx){
      volgende, met de vragen erover ertussenin. */
   var brok = gwPlak(blokken);
   var k = Math.min(brok.length, 4, vragen.length);
+  /* v23.62. Stefan over de microstappen van de concepten: "dan heb je focus op een stap en komt de
+     kennis gedoseerd binnen, dat werkt veel beter." Geteld: de concepten zitten op 1,7 vragen per
+     stap, de gegenereerde onderwerpen op 3,2 met een uitschieter van 8.
+
+     Die uitschieter was Hoeveelheden, en die heb ik in v23.61 zelf gemaakt: door de blokken die bij
+     elkaar horen aan elkaar te plakken werd het één brok, dus één stap, dus alle acht de vragen
+     erachter elkaar. De dubbeling was weg en het rijtje stond vooraan, maar de dosering was ik kwijt.
+
+     Meer vragen dan stappen maal drie gebruikt de microles niet. Die blijven gewoon in het echte
+     toetsje staan, en dat is één knop verderop ("Doe het hele toetsje"). Een microles is een portie,
+     geen tentamen. */
+  if(vragen.length > k * GW_VRAGEN_PER_STAP) vragen = vragen.slice(0, k * GW_VRAGEN_PER_STAP);
   var bGroep = gwVerdeel(brok.length, k);
   var vGroep = gwVerdeel(vragen.length, k);
   var stappen = bGroep.map(function(g, i){
@@ -27753,12 +28187,23 @@ function renderGramWiz(){
         ct("Stap klaar: ","Step done: ")+gwSess.goed+"/"+totaal+
       "</div>"+
       (perfect ? "" : "<p class='muted'>"+ct("Klik gerust nog een keer door deze stap heen, dat is precies waar hij voor is.","Feel free to run through this step again, that's exactly what it's for.")+"</p>")+
+      /* v23.63. Stefan: "wat me hier echt opvalt zou de vele call to actions, dat is verwarrend ook
+         al is de primaire rood." Hier stonden er vier: "Verder met je les" (rood), "Volgende stap",
+         "Deze stap opnieuw" en "Terug". Op stap 1 van 3 bood de app dus drie manieren om weg te gaan
+         en één om door te gaan, en die laatste was de minst opvallende. Dezelfde fout als op het
+         eindscherm vóór v23.58.
+
+         Nu: de primaire knop is altijd doorgaan met waar je mee bezig bent, weggaan is de tweede
+         knop, en "opnieuw" is een tekstlink — het is geen stap vooruit maar een correctie op wat je
+         net deed. "Skip" is weg: die deed hetzelfde als "verder met je les". */
       "<div class='row' style='margin-top:10px'>"+
-        gwFlowKnopHtml()+
-        "<button class='"+(inFlow ? "ghost" : "primary")+"' id='gwVolgendeStap'>"+(laatste ? ct("Afronden \u2192","Wrap up \u2192") : ct("Volgende stap \u2192","Next step \u2192"))+"</button>"+
-        "<button class='ghost' id='gwHerhaal'>"+ct("Deze stap opnieuw","Redo this step")+"</button>"+
-        "<button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button>"+
-      "</div>" + voet;
+        (inFlow && laatste
+          ? gwFlowKnopHtml()
+          : "<button class='primary' id='gwVolgendeStap'>"+(laatste ? ct("Afronden \u2192","Wrap up \u2192") : ct("Volgende stap \u2192","Next step \u2192"))+"</button>"+
+            (inFlow ? "<button class='ghost' id='gwFlowVerder'>"+ct("Verder met je les \u2192","On with your session \u2192")+"</button>"
+                    : "<button class='ghost' id='gwSluit'>"+gwTerugLabel()+"</button>"))+
+      "</div>"+
+      "<button class='mini' id='gwHerhaal'>"+ct("Deze stap opnieuw","Redo this step")+"</button>" + voet;
   }
 
   // fase "klaar"
@@ -28209,9 +28654,9 @@ function cijferLijstHtml(){
      rest van het scherm ook twijfelen. */
   var nivT = samenNivTekst(c.samen.nivs);
   r += cijferRij(c.samen.actief, ct("woorden houd je actief bij op "+nivT, "words you actively keep up at "+nivT),
-    ct("Dit is het getal dat op Vandaag boven de balk staat: bewezen vast plus onderweg, van de "+
+    ct("Het getal boven de balk hierboven: bewezen vast plus onderweg, van de "+
        c.samen.noem+" woorden die het Instituto Cervantes voor "+nivT+" telt.",
-       "This is the number above the bar on Today: proven solid plus on the way, out of the "+
+       "The number above the bar above: proven solid plus on the way, out of the "+
        c.samen.noem+" words the Instituto Cervantes counts for "+nivT+"."));
   r += cijferRij(c.samen.vast, ct("bewezen vast","proven solid"),
     ct("Vijf goede beurten over vijfentwintig dagen, met een check die je niet zelf beoordeelt. "+
@@ -28264,11 +28709,11 @@ function cijferLijstHtml(){
          (tv.dagen === 1 ? "day" : "days")+". A pause longer than two minutes does not count. " + oordeel));
   }
   r += cijferRij(c.kracht, ct("gewogen naar hoe lang je ze onthoudt","weighted by how long you remember them"),
-    ct("Het getal dat op Vandaag staat. Een woord in het weekdoosje telt voor "+
+    ct("Hoe stevig je woorden erin zitten. Een woord in het weekdoosje telt voor "+
        Math.round(100 * krachtGewicht(3))+" procent mee, in het maanddoosje voor honderd. Anders dan "+
        "bewezen vast beweegt dit elke dag, want elk woord dat een doosje opschuift telt direct mee. "+
        "De uitsplitsing staat onderaan bij de herhaalintervallen.",
-       "The number shown on Today. A word in the one week box counts for "+
+       "How solidly your words are lodged. A word in the one week box counts for "+
        Math.round(100 * krachtGewicht(3))+" percent, in the one month box for a hundred. Unlike "+
        "proven solid this moves every day, because every word that moves up a box counts straight "+
        "away. The breakdown is at the bottom, with the review intervals."));
@@ -28642,8 +29087,21 @@ function renderPrivacy(){
       "<p>"+ct("In een familie of groep zien de anderen je naam en je punten. Je oefeningen, je fouten en je antwoorden blijven van jou; die krijgt niemand te zien.","In a family or group the others see your name and your points. Your exercises, your mistakes and your answers stay yours; nobody gets to see those.")+"</p>"+
       "<p class='muted'>"+ct("Een groep of familie verlaten kan altijd, en dan ben je daar meteen weg.","You can leave a group or family at any time, and then you're gone from it straight away.")+"</p>")+
 
-    blok("🧹 "+ct("Weg is weg","Gone is gone"),
-      "<p>"+ct("De kopie op je toestel wis je door de browsergegevens van deze site te wissen. Voor de kopie op de server is er nog geen knop: stuur een mailtje met je sync-code en hij wordt verwijderd.","You erase the copy on your device by clearing this site's browser data. For the copy on the server there's no button yet: send an email with your sync code and it gets deleted.")+"</p>"+
+    /* v23.72: dit blok ontbrak. Palabra Duel bewaart je naam en elk woord dat je speelt in de tabel
+       `duels`, en krabbels bewaren wie wie een schouderklopje gaf. Allebei dingen die je naar een
+       ander stuurt en waarvan je niet verwacht dat ze blijven staan. */
+    blok("\u2694\ufe0f "+ct("Als je met iemand speelt","When you play with someone"),
+      "<p>"+ct("Doe je een Palabra Duel, dan gaan de naam die je daar invult en elk woord dat je speelt naar de server, met de punten erbij. Je tegenstander ziet die woorden, en ze blijven bij het duel staan.","If you play a Palabra Duel, the name you enter there and every word you play go to the server, with the points. Your opponent sees those words, and they stay with the duel.")+"</p>"+
+      "<p class='muted'>"+ct("Je woord gaat ook langs een taalmodel, want dat is de scheidsrechter die bepaalt of het bestaat. Verder gaat er niets van je mee.","Your word also goes past a language model, because that is the referee deciding whether it exists. Nothing else of yours goes with it.")+"</p>"+
+      "<p class='muted'>"+ct("Een krabbel bij een familielid bewaart wie wie een schouderklopje gaf en op welke dag. De tekst zelf staat op de server en kies je uit een lijstje, dus er kan niets anders in.","A note left for a family member records who gave whom a pat on the back and on what day. The text itself lives on the server and you pick it from a list, so nothing else can go into it.")+"</p>")+
+
+    /* v23.72: hier stond dat een mailtje met je sync-code je gegevens verwijdert. Dat klopt voor je
+       profiel, maar niet voor de rest: /api/admin/schoon gooit alleen lege profielen weg, en logs,
+       duels en krabbels worden nergens opgeruimd. Zolang dat zo is hoort er te staan hoe lang iets
+       blijft staan, en het eerlijke antwoord is: totdat je het vraagt. */
+    blok("🧹 "+ct("Wat er blijft staan, en hoe lang","What is kept, and for how long"),
+      "<p>"+ct("De kopie op je toestel wis je door de browsergegevens van deze site te wissen. Op de server is er nog geen knop: stuur een mailtje met je sync-code en je profiel wordt verwijderd.","You erase the copy on your device by clearing this site's browser data. On the server there is no button yet: send an email with your sync code and your profile is deleted.")+"</p>"+
+      "<p class='muted'>"+ct("Eerlijk over de rest: er wordt niets automatisch opgeruimd. De logregels van je afgeronde lessen, je duels en je krabbels blijven staan totdat iemand ze weghaalt. Vraag je erom, dan gaan die ook weg.","Honestly about the rest: nothing is cleaned up automatically. The log lines from your finished sessions, your duels and your notes stay until someone removes them. Ask, and those go too.")+"</p>"+
       "<p class='muted'>"+ct("Je kunt je voortgang ook zelf exporteren naar een bestand via Profiel, en die overal naartoe meenemen.","You can also export your progress to a file yourself via Profile, and take it anywhere.")+"</p>")+
 
     "<div class='card'><p class='muted' style='margin:0'>"+

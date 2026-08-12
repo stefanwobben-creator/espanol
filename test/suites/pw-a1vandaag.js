@@ -1,6 +1,9 @@
-// v19.99: de A1-balk op Vandaag. Het verhaal was één zin: op het eerste scherm hoort te staan wat
-// je kunt, niet alleen hoe vaak je kwam. Deze suite meet dat als volgordekwestie, niet als
-// aanwezigheidskwestie: de balk bestond al, hij stond alleen op de verkeerde plek.
+// v19.99: op het eerste scherm hoort te staan wat je kunt, niet alleen hoe vaak je kwam.
+//
+// v23.64: dat blijft, maar de vorm niet. De balk met de legenda van vier doosnamen is naar
+// Voortgang verhuisd (Stefan: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?") en op
+// Vandaag staat één zin in woorden. Deze suite meet nu allebei de plekken, en vooral de grens
+// ertussen: op Vandaag hoogstens twee getallen, op Voortgang de balk mét de uitleg erbij.
 const { chromium } = require('playwright');
 let fout = 0;
 function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); }
@@ -77,35 +80,77 @@ async function nieuwProfiel(page) {
     try { persist(); } catch (e) {}
   });
 
-  console.log('\n-- de balk staat op Vandaag --');
+  console.log('\n-- op Vandaag staat een zin, geen dashboard (v23.64) --');
   await page.evaluate(() => show('lessen'));
   await page.waitForTimeout(500);
-  const er = await page.evaluate(() => {
+  const opDag = await page.evaluate(() => {
+    const kaart = document.getElementById('lijnKaart');
+    return {
+      kaart: !!kaart,
+      balk: !!document.getElementById('dagBasisBalk'),
+      legenda: !!document.querySelector('#lijnKaart .vgLegenda'),
+      tegels: !!document.querySelector('#lijnKaart .statgrid'),
+      tekst: kaart ? kaart.innerText.replace(/\s+/g, ' ') : ''
+    };
+  });
+  ok(opDag.kaart, 'er staat een blok "waar je staat" op het dagscherm');
+  /* Stefan, 12 aug: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?" Geteld op zijn
+     scherm: negen getallen in deze ene kaart, waarvan er vier namen van SRS-doosjes droegen. Die
+     kaart staat nu op Voortgang, met de uitleg erbij (v23.66). Hier blijft één zin over. */
+  ok(!opDag.balk, 'maar geen balk meer');
+  ok(!opDag.legenda, 'geen legenda met vier doosnamen');
+  ok(!opDag.tegels, 'en geen tegels met kracht en foutpercentage');
+  /* Niveaucodes eerst weg: "A1" is geen getal maar een naam, en die hoort er juist te staan.
+     Wat overblijft mag er hoogstens één zijn. Op Stefans scherm stonden er negen. */
+  const getallen = (opDag.tekst.replace(/\b[ABC][12]\b/g, '') .match(/\d+/g) || []);
+  ok(getallen.length <= 1, 'hoogstens één getal in het hele blok (' + getallen.join(',') + ')');
+  ok(/A1/.test(opDag.tekst), 'de zin noemt je niveau (' + opDag.tekst + ')');
+  /* v19.99 staat overeind en dat is precies waarom hier een zin staat en niet niets. Stefans
+     kritiek op Duolingo was "ik doe de habit maar ik leer niks"; een dagscherm met alleen staafjes
+     is dat. Bewijs hoeft alleen geen dashboard te zijn. */
+  ok(/begonnen|onderweg|helft|rond/i.test(opDag.tekst),
+     'en hij zegt in woorden hoe ver je bent, niet in een percentage');
+
+  console.log('\n-- wat je kunt staat boven hoe vaak je kwam --');
+  const volgorde = await page.evaluate(() => {
+    const k = document.querySelector('#lijnKaart .kicker');
+    const strook = document.querySelector('#lijnKaart .lijnstrook');
+    if (!k || !strook) return null;
+    return { basis: Math.round(k.getBoundingClientRect().top), habit: Math.round(strook.getBoundingClientRect().top) };
+  });
+  ok(!!volgorde, 'de veertiendaagse strook staat in dezelfde kaart');
+  ok(volgorde && volgorde.basis < volgorde.habit,
+    'de zin staat boven de staafjes (' + (volgorde ? volgorde.basis + ' vs ' + volgorde.habit : '-') + ')');
+
+  console.log('\n-- en de balk zelf staat op Voortgang, mét uitleg --');
+  await page.evaluate(() => show('voortgang'));
+  await page.waitForTimeout(500);
+  const opVg = await page.evaluate(() => {
     const b = document.getElementById('dagBasisBalk');
     if (!b) return null;
     const kaart = b.closest('.card');
     const r = b.getBoundingClientRect();
-    return { kaart: kaart ? kaart.id : '', breed: Math.round(r.width), hoog: Math.round(r.height) };
+    const det = kaart ? kaart.querySelector('details') : null;
+    if (det) det.open = true;
+    return {
+      kaart: kaart ? kaart.id : '',
+      breed: Math.round(r.width), hoog: Math.round(r.height),
+      uitklapper: !!det,
+      tekst: kaart ? kaart.innerText.replace(/\s+/g, ' ') : ''
+    };
   });
-  ok(!!er, 'er staat een A1-balk op het dagscherm');
-  ok(er && er.kaart === 'lijnKaart', 'hij zit in de kaart die er al was, er is geen blok bijgekomen');
-  ok(er && er.breed > 100 && er.hoog > 4, 'hij is echt zichtbaar (' + (er ? er.breed + 'x' + er.hoog : '-') + ')');
-
-  console.log('\n-- wat je kunt staat boven hoe vaak je kwam --');
-  const volgorde = await page.evaluate(() => {
-    const b = document.getElementById('dagBasisBalk');
-    const strook = document.querySelector('#lijnKaart .lijnstrook');
-    if (!b || !strook) return null;
-    return { basis: Math.round(b.getBoundingClientRect().top), habit: Math.round(strook.getBoundingClientRect().top) };
-  });
-  ok(!!volgorde, 'de veertiendaagse strook staat in dezelfde kaart');
-  ok(volgorde && volgorde.basis < volgorde.habit,
-    'de A1-balk staat boven de staafjes (' + (volgorde ? volgorde.basis + ' vs ' + volgorde.habit : '-') + ')');
+  ok(!!opVg, 'er staat een A1-balk op het voortgangsscherm');
+  ok(opVg && opVg.breed > 100 && opVg.hoog > 4, 'hij is echt zichtbaar (' + (opVg ? opVg.breed + 'x' + opVg.hoog : '-') + ')');
+  ok(opVg && /bewezen vast|proven solid/i.test(opVg.tekst), 'met de legenda erbij');
+  // v23.66: Stefans vraag "hoe moet ik die lezen" hoort een antwoord te hebben op dezelfde plek.
+  ok(opVg && opVg.uitklapper, 'en een uitklapper die de vier woorden uitlegt');
+  ok(opVg && /doosje|herhaalinterval|peiling|Cervantes/i.test(opVg.tekst),
+     'die ook echt uitlegt waar de woorden vandaan komen');
 
   console.log('\n-- de balk zegt hetzelfde als de voortgangspagina --');
   const cijfers = await page.evaluate(() => {
     const t = voortgangTellers();
-    const tekst = document.getElementById('lijnKaart').innerText;
+    const tekst = document.getElementById('vgVastKaart').innerText;
     return { dek: t.dek.A1 || 0, noemer: PCIC_NOEMER.A1,
              sleutels: Object.keys(pcicKeysApp().A1 || {}).length,
              tekst: tekst.replace(/\s+/g, ' ') };
@@ -118,22 +163,20 @@ async function nieuwProfiel(page) {
   ok(cijfers.noemer > 0 && cijfers.sleutels / cijfers.noemer >= 0.9,
      'de noemer is de A1-telling van het Cervantes en de app heeft er minstens 90 procent van ('
      + cijfers.sleutels + '/' + cijfers.noemer + ')');
-  // v23.2: de zin met het bewezen aantal erin is weg (dat getal staat in de legenda). Wat deze test
-  // bewaakt blijft hetzelfde: de noemer moet zichtbaar zijn, anders is de legenda maatloos.
   ok(cijfers.tekst.indexOf('van de ' + cijfers.noemer + ' A1-woorden') !== -1,
     'de noemer staat erbij: ' + cijfers.tekst.slice(0, 90));
   ok(cijfers.tekst.indexOf(String(cijfers.dek)) !== -1,
     'de teller in de zin (' + cijfers.dek + ') komt uit voortgangTellers, niet uit een eigen sommetje');
 
   console.log('\n-- geen tempo, geen einddatum, op dit scherm --');
-  const tekst = await page.evaluate(() => document.getElementById('lijnKaart').innerText);
-  ok(!/(week|weken|maand|maanden|klaar in|over \d)/i.test(tekst),
+  const tekst = await page.evaluate(() => document.getElementById('vgVastKaart').innerText);
+  ok(!/(klaar in|over \d+ (week|weken|maand|maanden))/i.test(tekst),
     'er staat geen belofte over wanneer A1 vol is');
   ok(!/[—–]|--/.test(tekst), 'geen streepjes in de kaart');
 
   console.log('\n-- hij verandert mee als je iets leert --');
   const na = await page.evaluate(() => {
-    const voor = document.getElementById('lijnKaart').innerText.match(/(\d+) (?:bewezen vast|proven solid)/);
+    const voor = document.getElementById('vgVastKaart').innerText.match(/(\d+) (?:bewezen vast|proven solid)/);
     // stevig = de bovenste box (vijf goede beurten over 25 dagen). Hier rechtstreeks gezet op een
     // woord waarvan de Cervantes-sleutel op A1 staat, want 25 dagen wachten kan een test niet.
     // v20.0: de bovenste box telt alleen mee met k:1, het vinkje van de check die je niet zelf
@@ -147,8 +190,8 @@ async function nieuwProfiel(page) {
     S.srs = S.srs || {};
     S.srs[id] = { box: stevigDrempel(), due: '2020-01-01', k: 1 };
     try { persist(); } catch (e) {}
-    renderLessons();
-    const nu = document.getElementById('lijnKaart').innerText.match(/(\d+) (?:bewezen vast|proven solid)/);
+    show('voortgang');
+    const nu = document.getElementById('vgVastKaart').innerText.match(/(\d+) (?:bewezen vast|proven solid)/);
     return { voor: voor ? Number(voor[1]) : -1, nu: nu ? Number(nu[1]) : -1 };
   });
   console.log('   ', JSON.stringify(na));

@@ -179,13 +179,37 @@ const { chromium } = require('playwright');
     return {
       kickers: kickers, knoppen: knoppen, hoogte: window.innerHeight,
       kaarten: document.querySelectorAll('#lessonList .card').length,
+      /* v23.71: welke kaart bevat "En nu?", en waar begint een eventuele volgende. Zie de
+         toelichting bij de bewering hieronder. */
+      enNuInEerste: (function () {
+        const eerste = document.querySelector('#lessonList .card');
+        return !!(eerste && /EN NU|WHAT NOW/i.test(eerste.innerText || ''));
+      })(),
+      extraKaartTop: (function () {
+        const alle = document.querySelectorAll('#lessonList .card');
+        return alle.length > 1 ? Math.round(alle[1].getBoundingClientRect().top) : -1;
+      })(),
+      vieringTop: (function () {
+        const eerste = document.querySelector('#lessonList .card');
+        return eerste ? Math.round(eerste.getBoundingClientRect().top) : -1;
+      })(),
       primair: ((document.querySelector('#lessonList .card button.primary') || {}).innerText || '').trim()
     };
   });
   console.log('  koppen ::', plek.kickers.map(k => k.tekst + '@' + k.top).join(' · '), '· venster', plek.hoogte);
   const enNu = plek.kickers.filter(k => /EN NU|WHAT NOW/i.test(k.tekst))[0];
   ok(!!enNu, 'het blok "En nu?" staat er');
-  ok(plek.kaarten === 1, 'en het staat in dezelfde kaart als de viering, niet in een tweede (' + plek.kaarten + ')');
+  /* v23.58 zei hier: precies één kaart. Dat was een hulpmaat voor wat er echt moest gelden, namelijk
+     dat het antwoord op "en nu?" binnen het scherm valt; met twee kaarten begon het tweede voorstel
+     destijds op 865 pixels in een venster van 844.
+
+     v23.71 zet de herstelcode in een eigen kaart ónder de viering. Die duwt "En nu?" dus niet naar
+     beneden. De bewering meet vanaf nu het eigenlijke: "En nu?" hoort in de eerste kaart, en wat
+     erna komt hoort er echt na te komen. De drie beweringen hieronder over het venster blijven
+     staan, en die doen het echte werk. */
+  ok(plek.enNuInEerste, 'en het staat in de kaart van de viering zelf, niet in een blok eronder');
+  ok(plek.extraKaartTop === -1 || plek.extraKaartTop > plek.vieringTop,
+    'een eventuele extra kaart komt erna en niet ertussen (' + plek.extraKaartTop + ' na ' + plek.vieringTop + ')');
   ok(enNu && enNu.top < plek.hoogte,
     'het begint binnen het scherm (' + (enNu ? enNu.top : '?') + ' van ' + plek.hoogte + ' px)');
   ok(plek.knoppen.length > 0 && plek.knoppen[0] < plek.hoogte,

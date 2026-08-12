@@ -53,11 +53,37 @@ async function dagOpnieuw(page) {
   await page.waitForTimeout(350);
 }
 
+/* v23.64: de balk met de legenda staat niet meer op het dagscherm maar op Voortgang. Op Vandaag
+   staat één zin en, als hij aangeboden wordt, de knop naar de peiling. Deze suite kijkt dus op twee
+   plekken: basis() voor het dagscherm, balk() voor de balk zelf. */
+async function balk(page) {
+  await page.evaluate(() => show('voortgang'));
+  await page.waitForTimeout(450);
+  const r = await page.evaluate(() => {
+    const b = document.getElementById('dagBasisBalk');
+    const kaart = b ? b.closest('.card') : null;
+    return {
+      balk: !!b,
+      kop: b ? (b.querySelector('b') || {}).innerText || '' : '',
+      lagen: b ? b.querySelectorAll('.bar > div').length : -1,
+      merk: b ? b.querySelectorAll('.bar .merk').length : -1,
+      kopGroot: kaart ? ((kaart.querySelector('.vgGroot') || {}).innerText || '') : '',
+      tekst: kaart ? kaart.innerText.replace(/\s+/g, ' ') : ''
+    };
+  });
+  await page.evaluate(() => { scopeLesson = null; show('lessen'); });
+  await page.waitForTimeout(350);
+  return r;
+}
+
 // de basisregel zoals hij op het dagscherm staat
 async function basis(page) {
   return page.evaluate(() => {
     const balk = document.getElementById('dagBasisBalk');
-    const kaart = balk ? balk.closest('.card') : null;
+    /* v23.64: de kaart heet nog steeds lijnKaart, maar de balk zit er niet meer in. De tekst die
+       deze suite leest (de knop, de uitleg eronder, de stapzin) hoort bij de kaart en niet bij de
+       balk, dus wordt de kaart rechtstreeks opgezocht. */
+    const kaart = document.getElementById('lijnKaart') || (balk ? balk.closest('.card') : null);
     const knop = document.getElementById('btnPeilStart');
     return {
       balk: !!balk,
@@ -250,12 +276,14 @@ async function beantwoord(page, aantal) {
   }));
   ok(uit.log === 1, 'nu staat er wel een uitslag in het logboek (' + uit.log + ')');
   ok(uit.eerste && uit.eerste.niv === 'A1' && uit.eerste.punt > 0, 'met het geschatte aantal erin (' + (uit.eerste && uit.eerste.punt) + ')');
-  ok(/geschat al gekend|estimated already known/i.test(uit.tekst), 'het slotscherm toont dezelfde balk als het dagscherm');
+  ok(/geschat al gekend|estimated already known/i.test(uit.tekst), 'het slotscherm toont dezelfde balk als het voortgangsscherm');
   ok(!/—|–|--/.test(uit.tekst), 'geen streepjes op het slotscherm');
 
   await dagOpnieuw(page);
-  const bal = await basis(page);
-  ok(bal.balk, 'de balk staat op het dagscherm');
+  const dagNa = await basis(page);
+  const bal = await balk(page);
+  ok(!dagNa.balk, 'op het dagscherm staat geen balk meer (v23.64)');
+  ok(bal.balk, 'de balk staat op het voortgangsscherm');
   ok(bal.lagen === 3, 'met drie lagen: bewezen, onderweg en geschat (' + bal.lagen + ')');
   /* v23.31: het streepje van je eerste peiling is weg. Het stond op een schaal van een niveau, en
      de balk telt nu alle niveaus tot en met het jouwe bij elkaar op; op die schaal is er geen enkel
@@ -289,10 +317,10 @@ async function beantwoord(page, aantal) {
   const rest = schat.punt - opweg;
   ok(new RegExp('\\b' + rest + '\\b').test(bal.tekst), 'de legenda noemt de schatting als restant (' + rest + ')');
   ok(/geschat al gekend|estimated already known/i.test(bal.tekst), 'met een naam erbij, zodat je ziet welk stuk het is');
-  ok(!bal.knop, 'binnen veertien dagen wordt er geen nieuwe peiling gevraagd');
+  ok(!dagNa.knop, 'binnen veertien dagen wordt er geen nieuwe peiling gevraagd');
 
   console.log('\n-- de stap staat in dezelfde balk --');
-  const zonder = await basis(page);
+  const zonder = await balk(page);
   ok(!/Sinds je eerste peiling/i.test(zonder.tekst), 'zonder verschil staat er geen stapzin: stilstand is geen bericht');
   await page.evaluate(() => {
     S.peil.log[0].punt = Math.max(0, S.peil.log[0].punt - 40);
@@ -300,7 +328,7 @@ async function beantwoord(page, aantal) {
     try { persist(); } catch (e) {}
   });
   await dagOpnieuw(page);
-  const met = await basis(page);
+  const met = await balk(page);
   ok(/Sinds je eerste peiling/i.test(met.tekst), 'is er wel verschil, dan staat de stap er (' + met.tekst.slice(0, 120) + ')');
   ok(/ging de schatting van/i.test(met.tekst), 'met beide getallen erin, zodat het na te rekenen is');
   ok(met.tekst.indexOf('Sinds je eerste peiling') < met.tekst.indexOf('Alle cijfers') ||
@@ -320,9 +348,11 @@ async function beantwoord(page, aantal) {
   await page.waitForTimeout(600);
   await page.click('#btnPeilStop');
   await page.waitForTimeout(400);
-  const gestopt = await page.evaluate(() => ({ nu: peilNu, balk: !!document.getElementById('dagBasisBalk') }));
+  /* v23.64: waar de balk stond staat nu de kaart met de zin, en die draagt hetzelfde id. Wat deze
+     regel bewaakt is onveranderd: stoppen brengt je terug op je dagscherm en niet in het niets. */
+  const gestopt = await page.evaluate(() => ({ nu: peilNu, lijn: !!document.getElementById('lijnKaart') }));
   ok(gestopt.nu === null, 'de peiling is weg');
-  ok(gestopt.balk, 'en je staat gewoon terug op je dagscherm');
+  ok(gestopt.lijn, 'en je staat gewoon terug op je dagscherm');
 
   ok(errs.length === 0, 'geen javascriptfouten: ' + errs.slice(0, 3).join(' | '));
   await browser.close();

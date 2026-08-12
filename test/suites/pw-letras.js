@@ -243,7 +243,9 @@ const { chromium } = require('playwright');
   const weg = await page.evaluate(() => ({
     spel: typeof renderFunRueda,
     tegel: !!document.getElementById('ftRueda'),
-    dag: DAGSPELLEN.some((g) => g.v === 'rueda'),
+    // v23.65: de lijst heet dagSpellen() en komt uit spelInfo(). Wat hier gemeten wordt is
+    // onveranderd: Rueda mag nergens meer in de dagrotatie opduiken.
+    dag: dagSpellen().some((g) => g.v === 'rueda'),
     eis: !!SPEEL_EIS.rueda
   }));
   ok(weg.spel === 'undefined' && !weg.tegel && !weg.dag && !weg.eis,
