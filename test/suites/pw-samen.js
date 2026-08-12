@@ -143,7 +143,10 @@ const { chromium } = require('playwright');
 
   // --- 5. Hij verdwijnt zodra je gedeeld hebt, en zodra er iemand naast je zit ---
   const stil = await page.evaluate(() => {
-    S.samen = { gedeeld: '2026-07-29' };
+    // today() en niet een vaste datum: de kaart komt bewust na UITNODIG_RUST (14 dagen) één keer
+    // terug, dus een hardgecodeerde datum maakt van deze test een tijdbom die precies 14 dagen
+    // na het schrijven afgaat (gebeurde op 12 aug met '2026-07-29').
+    S.samen = { gedeeld: today() };
     renderLessons();
     const na = !!document.getElementById('uitnodigKaart');
     S.samen = { gezien: '2026-07-29' };
