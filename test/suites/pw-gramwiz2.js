@@ -143,6 +143,39 @@ const { chromium } = require('playwright');
   ok(echte.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + echte.length + ' gevonden, ' + (errors.length - echte.length) + ' netwerkruis genegeerd)');
   if (echte.length) console.log(echte.join('\n'));
 
+  // ---- v23.61: de gegenereerde onderwerpen tonen hun materiaal vóór de vraag, en één keer ----
+  /* Stefan, 12 aug: "ik kan niet helemaal zeggen waarom, maar op deze manier heb ik niet het idee
+     van ah nu snap ik het." Gemeten over alle 24 gegenereerde onderwerpen, 81 stappen:
+     100% van de stappen herhaalde zijn eigen tekst in "De hele spiekbrief erbij" (diep was altijd
+     de hele kaart), en een blok dat op een dubbele punt eindigt raakte gescheiden van het rijtje
+     dat het aankondigde — met de vragen erover ertussenin. */
+  console.log('\n-- v23.61: materiaal eerst, en niet dubbel --');
+  const gen = await page.evaluate(() => {
+    const plat = (h) => String(h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    (tLessons() || []).forEach((l) => { S.lessons[l.id] = Object.assign(S.lessons[l.id] || {}, { done: true }); });
+    const lijst = gwGenLijst();
+    let stappen = 0, dubbel = 0, losseAankondiging = 0, tabelZonderAanloop = 0;
+    lijst.forEach((o) => {
+      o.stappen.forEach((s, i) => {
+        stappen++;
+        const eigen = plat(s.uitleg);
+        // de uitklapper mag niet herhalen wat er al op deze stap staat
+        if (s.diep && eigen && plat(s.diep).indexOf(eigen) !== -1) dubbel++;
+        // een stap die eindigt op een dubbele punt kondigt iets aan dat op dezelfde stap hoort
+        if (/:$/.test(eigen) && i < o.stappen.length - 1) losseAankondiging++;
+        // een stap die alleen uit een tabel bestaat, zonder een woord ervoor
+        if (/^\s*<table/i.test(String(s.uitleg || '').trim()) && i > 0) tabelZonderAanloop++;
+      });
+    });
+    return { n: lijst.length, stappen, dubbel, losseAankondiging, tabelZonderAanloop };
+  });
+  console.log('  ' + gen.n + ' onderwerpen, ' + gen.stappen + ' stappen');
+  ok(gen.n > 0, 'er zijn gegenereerde onderwerpen om te toetsen (' + gen.n + ')');
+  ok(gen.dubbel === 0,
+    'geen enkele stap herhaalt zijn eigen tekst in de uitklapper (' + gen.dubbel + ' van ' + gen.stappen + ')');
+  ok(gen.losseAankondiging === 0,
+    'geen stap eindigt op een dubbele punt met het aangekondigde in de volgende stap (' + gen.losseAankondiging + ')');
+
   await browser.close();
   console.log(fails === 0 ? '\nALLE PLAYWRIGHT-TESTS GESLAAGD' : '\n' + fails + ' FAILURES');
   process.exit(fails === 0 ? 0 : 1);

@@ -75,6 +75,8 @@ kost dat niemand wilde uitgeven. Alles in dit document is op die twee dingen ges
 - **v23.59** de grammatica is drie micro-stappen: voorbeeld, keuze, één zin waarom.
 - **v23.60** één knop die controleert en dan vanzelf doorgaat, één rode knop per moment, een
   voortgangsbalk bij de zin, en de moeilijkheidskeuze als schakelaar in plaats van als rode knop.
+- **v23.61** de gegenereerde grammaticalessen tonen hun rijtje vóór de vragen in plaats van erna,
+  en de uitklapper herhaalt niet meer wat er al op het scherm staat (was 81 van 81 stappen).
 
 ## Wat er open staat, op volgorde van hoe erg het is
 
@@ -649,6 +651,40 @@ accentkleur.
 *Bijvangst uit het meten:* het aftelbalkje stond eerst ín de knoppenrij, en dat is een flexbox, dus
 een balkje van drie pixels werd platgedrukt tot niets. De suite toetst nu ook dat hij echt hoogte en
 breedte heeft, niet alleen dat hij bestaat.
+
+### En de andere soort grammaticales — AF in v23.61
+
+Stefan, na het testen: *"ik kan niet helemaal zeggen waarom, maar op deze manier heb ik niet het
+idee van ah nu snap ik het ofzo."*
+
+Belangrijk: hij keek naar een **ander soort les** dan v23.59 verbouwde. Dat ging over de 23
+concepten. Dit zijn de gegenereerde onderwerpen, waar `gwVanSpiek()` een spiekbriefkaart in blokken
+knipt en er toetsvragen bij plakt. Gemeten over alle 24, samen 81 stappen:
+
+    elke stap herhaalt zijn eigen tekst in "De hele spiekbrief erbij"   81 van 81   (100%)
+    uitleg korter dan 140 tekens                                       48 van 81   (59%)
+    stappen die uit een tabel bestaan                                   19
+
+**Alles stond dubbel.** `diep` was altijd `c.html`, de héle kaart, ook op de stap die diezelfde
+tabel al toonde. Nu bevat de uitklapper alleen wat níét op die stap staat, en is hij er niet als dat
+niets is. Van 100% naar 0%.
+
+**Het materiaal kwam ná de vraag.** Stefans stap 1 bestond uit één zin: *"Vaste uitdrukkingen om
+hoeveelheden aan te geven, met of zonder 'de':"* — de titel nog een keer, eindigend op een dubbele
+punt. Het aangekondigde rijtje stond in stap 2, met vier vragen erover ertussenin. Twee snijregels
+erbij, allebei precies te formuleren en dus te toetsen: knip nooit tussen een blok dat op een
+dubbele punt eindigt en het blok erna, en knip nooit vlak vóór een tabel. Zijn onderwerp is daarmee
+van twee stappen naar één gegaan: de aankondiging én het rijtje, en pas dan de acht vragen.
+
+Resultaat over alle 24: 81 stappen → 65, dubbeling 100% → 0%, en "uitleg korter dan 140 tekens" van
+59% naar 42%.
+
+**Wat dit bewust niet oplost.** *Hoeveelheden* is geen regel maar een lijstje. Die klik kan alleen
+ontstaan waar een keuze zit met iets eronder: el of la, ser of estar, por of para. Bij *una pizca de
+/ un poco de / una cucharada de* valt niets te snappen, alleen te kennen. Deze versie zorgt dat je
+het rijtje ziet vóór je erover wordt bevraagd; hij maakt er geen inzicht van, want dat zit er niet
+in. **Het onderscheid regel-versus-lijst expliciet maken in de app (een lijst vraagt "ken je ze?",
+een concept vraagt "snap je 'm?") staat op de lijst voor na de lancering.**
 
 ### Vier suites die de oude belofte vastlegden
 

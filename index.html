@@ -1462,7 +1462,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.60";
+var APP_VERSIE = "v23.61";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -27158,6 +27158,31 @@ function gwBlokken(html){
   return String(html || "").match(/<(p|table|ul|ol|h3|h4)\b[^>]*>[\s\S]*?<\/\1>/g) || [];
 }
 
+/* v23.61: sommige blokken horen bij elkaar en mogen niet over twee stappen verdeeld worden.
+   Stefan kreeg als hele uitleg van stap 1: "Vaste uitdrukkingen om hoeveelheden aan te geven, met
+   of zonder 'de':" — de titel nog een keer, eindigend op een dubbele punt. Het aangekondigde rijtje
+   stond in stap 2, en daartussen kreeg hij er vier vragen over.
+
+   Twee regels, allebei precies te formuleren:
+     - een blok dat eindigt op een dubbele punt kondigt het volgende aan en hoort eraan vast
+     - vlak vóór een tabel knippen mag niet: die hoort bij de tekst die hem aankondigt
+
+   Het resultaat is een lijst brokken in plaats van losse blokken; die brokken gaan daarna gewoon
+   door gwVerdeel(). */
+function gwPlak(blokken){
+  var plat = function(h){ return String(h || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); };
+  var brok = [], huidig = [];
+  for(var i = 0; i < blokken.length; i++){
+    huidig.push(i);
+    var deze = blokken[i], volgende = blokken[i + 1];
+    var kondigtAan = /[:\u003a]\s*$/.test(plat(deze));
+    var volgendeIsTabel = !!volgende && /^<table\b/i.test(volgende);
+    if(volgende && (kondigtAan || volgendeIsTabel)) continue;   // aan elkaar plakken
+    brok.push(huidig); huidig = [];
+  }
+  if(huidig.length) brok.push(huidig);
+  return brok;
+}
 function gwVerdeel(n, k){
   // n dingen zo eerlijk mogelijk over k groepen, waarbij de LAATSTE groepen de extra's krijgen:
   // de eerste alinea is bijna altijd de introductie en verdient een eigen stap.
@@ -27250,22 +27275,45 @@ function gwVanSpiek(idx){
   // zonder uitleg of zonder vragen valt er niets op te knippen: dat onderwerp blijft gewoon een
   // spiekbrief in de naslaglijst
   if(!blokken.length || !vragen.length) return null;
-  var k = Math.min(blokken.length, 4, vragen.length);
-  var bGroep = gwVerdeel(blokken.length, k);
+  /* v23.61: eerst blokken die bij elkaar horen aan elkaar plakken (zie gwPlak), en pas daarna
+     verdelen. Anders belandt een aankondiging in de ene stap en het aangekondigde rijtje in de
+     volgende, met de vragen erover ertussenin. */
+  var brok = gwPlak(blokken);
+  var k = Math.min(brok.length, 4, vragen.length);
+  var bGroep = gwVerdeel(brok.length, k);
   var vGroep = gwVerdeel(vragen.length, k);
   var stappen = bGroep.map(function(g, i){
-    var eigen = blokken.slice(g[0], g[1]).join("");
-    return {
-      kop: gwKopUit(blokken[g[0]], i, false),
-      kopEn: gwKopUit((zelfdeVorm ? blokkenEn : blokken)[g[0]], i, true),
+    // van brokindex naar blokindex
+    var idx = [];
+    for(var b = g[0]; b < g[1]; b++){ idx = idx.concat(brok[b]); }
+    var eerste = idx[0];
+    var eigen = idx.map(function(j){ return blokken[j]; }).join("");
+    var eigenEn = zelfdeVorm ? idx.map(function(j){ return blokkenEn[j]; }).join("") : eigen;
+    /* v23.61: diep was c.html, de héle kaart, op élke stap. Dus de stap die de tabel toont had
+       diezelfde tabel er nog een keer onder staan in de uitklapper. Gemeten: 81 van 81 stappen.
+       Een uitklapper die belooft dat er meer is en dan hetzelfde geeft, leert je hem nooit meer
+       open te doen. Nu staat er alleen in wat niet al op deze stap staat, en is hij er niet als
+       dat niets is. */
+    var rest = [], restEn = [];
+    for(var j = 0; j < blokken.length; j++){
+      if(idx.indexOf(j) !== -1) continue;
+      rest.push(blokken[j]);
+      restEn.push(zelfdeVorm ? blokkenEn[j] : blokken[j]);
+    }
+    var s = {
+      kop: gwKopUit(blokken[eerste], i, false),
+      kopEn: gwKopUit((zelfdeVorm ? blokkenEn : blokken)[eerste], i, true),
       uitleg: eigen,
-      uitlegEn: zelfdeVorm ? blokkenEn.slice(g[0], g[1]).join("") : eigen,
-      diepKop: "De hele spiekbrief erbij",
-      diepKopEn: "The whole cheat sheet",
-      diep: c.html,
-      diepEn: c.htmlEn || c.html,
+      uitlegEn: eigenEn,
       vragen: vragen.slice(vGroep[i][0], vGroep[i][1])
     };
+    if(rest.length){
+      s.diepKop = "De rest van de spiekbrief";
+      s.diepKopEn = "The rest of the cheat sheet";
+      s.diep = rest.join("");
+      s.diepEn = restEn.join("");
+    }
+    return s;
   });
   // twee tabellen in hetzelfde onderwerp leveren twee keer "Het rijtje" op: nummer die dan
   var gezien = {};
