@@ -140,13 +140,39 @@ deploy: `POORT_UIT=1` voor sync en log, `AI_UIT=1` voor de AI-knoppen. Zie `serv
 
 ## De avondrun
 
-`curriculum.yml` schrijft 's nachts in `index.html` en pushte dat tot nu toe zonder dat er ooit een
-browser naar het resultaat had gekeken. Nu draait de poort er twee keer omheen: één keer voordat de
-bot iets schrijft (stond `main` al rood, dan is het niet zijn schuld) en één keer over zijn eigen
+`curriculum.yml` schrijft 's nachts in `index.html` en pushte dat tot voor kort zonder dat er ooit
+een browser naar het resultaat had gekeken. Nu draait de poort er twee keer omheen: één keer voordat
+de bot iets schrijft (stond `main` al rood, dan is het niet zijn schuld) en één keer over zijn eigen
 resultaat. Alleen bij groen wordt er gepusht.
 
 Gaten dichten gaat direct live. Een compleet nieuwe les komt als pull request, want dat is
 curriculum-uitbreiding en daar wil je zelf naar kijken.
+
+**13 augustus, drie structurele reparaties.** Stefan: "avondrun gaat niet goed en doe ik in github
+re-run jobs dan gaat het wel goed."
+
+- *Een re-run is geen herkansing maar een nieuwe worp.* "Re-run all jobs" draait `curriculum.js`
+  opnieuw, en die vraagt een taalmodel om nieuwe zinnen. De run was dus een machine die je 's
+  ochtends met de hand moest aanzwengelen. `tools/avondrun.sh` doet die tweede worp nu zelf,
+  hoogstens één keer. Twee en niet vijf: gaat het twee keer op rij mis, dan is er iets anders aan de
+  hand dan een ongelukkige zin en wil je het zien.
+- *Het bewijs werd weggegooid.* De stap die de kapotte poging moest bewaren kopieerde hem naar
+  `/tmp/mislukt` en er stond nergens een `upload-artifact`. Die map gaat met de runner de prullenbak
+  in. Nu hangt bij elke run een artefact `avondrun-afgekeurd-<id>` met per poging de diff van wat de
+  bot schreef, het poortlog, de schermafdrukken en de hartslag. Veertien dagen bewaard.
+- *De hartslag loog.* `curriculum.js` schrijft `gelukt` als hij klaar is met genereren, niet als er
+  iets gepubliceerd is. Twee nachten op rij stond er "gelukt: true, geleverd: 5 zinnen" terwijl er
+  niets op `main` stond. `tools/hartslag-af.js` zet er nu de uitkomst van de héle run in:
+  `gegenereerd` (de oude betekenis), `gepubliceerd`, `pogingen` en een `reden` in gewone taal.
+
+En één ding dat geen bug was maar wel meespeelde: een GitHub-runner heeft twee kernen en de poort
+start standaard vier browsers. De avondrun draait de hele poort in één job, dus daar vecht hij met
+zichzelf om processortijd. `TEGELIJK: 2` staat nu in de workflow. `poort.yml` heeft dat probleem
+niet, want die verdeelt de suites over vier machines.
+
+Wat je 's ochtends doet als de run rood is: open het artefact, lees `poging-1/poort.log` (daar staat
+welke suite rood was) en `poging-1/wat-de-bot-schreef.diff` (daar staat waarom). Dat is genoeg om te
+weten of het aan de content lag of aan de app.
 
 ## Wat er live komt
 

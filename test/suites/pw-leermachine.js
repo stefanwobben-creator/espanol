@@ -84,17 +84,37 @@ const { chromium } = require('playwright');
   ok(dozen.box === 3, 'drie keer goed is doosje drie');
   ok(dozen.due === dozen.verwacht, 'en dan komt hij pas over ' + 'GRAM_BOX[3]' + ' dagen terug');
 
-  /* ---------------- 2. de keuze volgt je fout ---------------- */
+  /* ---------------- 2. de keuze volgt je fout ----------------
+     v23.73: de grammaticastap is een lijstje van hoogstens twee dingen geworden, en een fout komt
+     terug als opfrisvraag in plaats van als hele microles. Stefans regel ("alle fouten die maak
+     moeten weer terug") verandert daarmee niet, alleen de vorm: één vraag in plaats van vijf, want
+     de les zelf had je gisteren al. Pas bij twee missers komt de hele les terug (punt 2b). */
   const keuze = await page.evaluate(() => {
     S.gram = {};
     lesFlow = { stap: null, quizzesTeDoen: [] };
-    const zonder = lesFlowGramId();
+    const zonder = lesFlowGramLijst();
     corrSrsBij('muymucho', false);
-    const met = lesFlowGramId();
+    const met = lesFlowGramLijst();
     return { zonder: zonder, met: met };
   });
-  ok(keuze.met === 'concept-muymucho', 'na die fout gaat de grammatica van vandaag over muy/mucho (' + keuze.met + ')');
-  ok(keuze.zonder !== keuze.met, 'zonder fout had hij iets anders gekozen (' + keuze.zonder + ')');
+  ok(keuze.met.indexOf('opfris-muymucho') === 0 || keuze.met[0] === 'opfris-muymucho',
+    'na die fout begint de grammatica van vandaag met muy/mucho (' + keuze.met.join(', ') + ')');
+  ok(keuze.zonder.indexOf('opfris-muymucho') === -1,
+    'zonder die fout stond hij er niet (' + keuze.zonder.join(', ') + ')');
+  ok(keuze.met.length === 2,
+    'en er staat nog steeds iets nieuws achter: opfrissen vervangt het leren niet (' + keuze.met.join(', ') + ')');
+
+  /* 2b. twee keer mis op hetzelfde is geen geheugenkwestie meer, dan komt de hele les terug */
+  const tweeKeer = await page.evaluate(() => {
+    S.gram = {};
+    corrSrsBij('muymucho', false);
+    corrSrsBij('muymucho', false);
+    return { lijst: lesFlowGramLijst(), id: lesFlowGramId() };
+  });
+  ok(tweeKeer.id === 'concept-muymucho',
+    'na twee missers is het onderwerp van vandaag de hele microles (' + tweeKeer.id + ')');
+  ok(tweeKeer.lijst.indexOf('opfris-muymucho') === -1,
+    'en dan geen opfrisvraag erbij over hetzelfde (' + tweeKeer.lijst.join(', ') + ')');
 
   /* ---------------- 3. de voorbeelden worden gemaakt, niet opgeslagen ---------------- */
   /* v23.59: een conceptles is geen één stap met een lange uitleg meer maar drie micro-stappen:
@@ -350,12 +370,20 @@ const { chromium } = require('playwright');
     S.gram = {};
     corrSrsBij('reflexivo', false);
     lesFlow = { stap: null, quizzesTeDoen: [] };
-    const id = lesFlowGramId();
-    gwStart(id);
-    return { id: id, sess: gwSess ? gwSess.id : null, lees: gcLeesId };
+    const lijst = lesFlowGramLijst();
+    gwStart(lijst[0]);
+    return { lijst: lijst, sess: gwSess ? gwSess.id : null, lees: gcLeesId,
+             stappen: gwSess ? (gwOnderwerp(gwSess.id).stappen || []).length : -1,
+             vragen: gwSess ? ((gwOnderwerp(gwSess.id).stappen || [])[0] || {}).vragen.length : -1 };
   });
-  ok(inFlow.id === 'concept-reflexivo', 'een fout op reflexivo kiest nu ook echt die les (' + inFlow.id + ')');
-  ok(inFlow.sess === 'concept-reflexivo' && inFlow.lees === null, 'en in de dagelijkse les kom je nog steeds meteen in de oefening');
+  ok(inFlow.lijst[0] === 'opfris-reflexivo',
+    'een fout op reflexivo zet die vooraan in de dagles (' + inFlow.lijst.join(', ') + ')');
+  ok(inFlow.sess === 'opfris-reflexivo' && inFlow.lees === null,
+    'en in de dagelijkse les kom je nog steeds meteen in de oefening');
+  /* De opfrisser is het verschil tussen herhalen en opnieuw leren: één stap, één vraag, geen
+     uitleg. Zonder die eis is hij een tweede microles en wordt de dag alleen maar langer. */
+  ok(inFlow.stappen === 1 && inFlow.vragen === 1,
+    'en het is één stap met één vraag, geen tweede les (' + inFlow.stappen + ' stappen, ' + inFlow.vragen + ' vragen)');
   await page.evaluate(() => { gwSluit(); });
 
   /* ---------------- 9. de tab opent kort (v20.7) ----------------

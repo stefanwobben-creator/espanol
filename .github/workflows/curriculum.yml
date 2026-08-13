@@ -11,6 +11,24 @@
 # poort.yml draait op elke push naar main; dat is dubbelop maar het kost niets en het houdt de regel
 # simpel: er is precies één weg naar live.
 #
+# 13 AUGUSTUS: DRIE STRUCTURELE REPARATIES
+#
+# Stefan: "avondrun gaat niet goed en doe ik in github re-run jobs dan gaat het wel goed. fix it
+# structureel." Wat er aan de hand was, in volgorde van hoe erg:
+#
+#   1. Een re-run is geen herkansing maar een nieuwe worp. "Re-run all jobs" draait curriculum.js
+#      opnieuw, en die vraagt een taalmodel om nieuwe zinnen. De run was dus een machine die je 's
+#      ochtends met de hand moest aanzwengelen. tools/avondrun.sh doet die tweede worp nu zelf,
+#      hoogstens één keer.
+#   2. Het bewijs werd weggegooid. De stap "Kapotte poging bewaren" kopieerde de mislukte poging naar
+#      /tmp/mislukt en er stond nergens een upload-artifact. Die map gaat met de runner de prullenbak
+#      in. De stap die het bewijs moest bewaren, gooide het dus weg, en 's ochtends was de enige
+#      informatie "er is niets gepusht".
+#   3. De hartslag loog. curriculum.js schrijft `gelukt` als hij klaar is met genereren, niet als er
+#      iets gepubliceerd is. Twee nachten op rij (12 en 13 aug) stond er "gelukt: true, geleverd:
+#      5 zinnen" terwijl er niets op main stond. tools/hartslag-af.js zet er nu de uitkomst van de
+#      héle run in.
+#
 # Benodigd secret: ADMIN_KEY — hetzelfde secret dat logboek.yml al gebruikt. De LLM-ladder en de
 # LLM-sleutels staan namelijk op de server (Render), niet hier; de run leent die via
 # POST /api/admin/llm. Zo staan de sleutels op één plek en hoeft er niets gedupliceerd te worden.
@@ -34,6 +52,13 @@ on:
 concurrency:
   group: curriculum
   cancel-in-progress: false
+
+env:
+  # Een GitHub-runner heeft twee kernen. Met de standaard van vier browsers vecht de poort met
+  # zichzelf om processortijd en lopen suites tegen hun eigen tijdslimiet aan; dat is precies het
+  # soort rood dat bij een re-run vanzelf weggaat en waar je dus niets van leert. poort.yml heeft
+  # dit probleem niet omdat die de suites over vier machines verdeelt.
+  TEGELIJK: 2
 
 jobs:
   curriculum:
@@ -68,63 +93,65 @@ jobs:
 
       - name: Stond main al rood?
         if: steps.vooraf.outcome == 'failure'
-        run: echo "::warning::De poort was al rood op main vóórdat de avondrun iets deed. Wat hierna misgaat, is niet per se van de bot."
+        run: |
+          echo "::warning::De poort was al rood op main vóórdat de avondrun iets deed. Wat hierna misgaat, is niet per se van de bot."
+          echo "### De poort stond vooraf al rood op main" >> $GITHUB_STEP_SUMMARY
 
-      - name: Run
+      # Genereren en keuren zitten in één script, want ze horen bij elkaar: een afgekeurde poging
+      # wordt teruggedraaid en er volgt een nieuwe worp. Zie de kop van tools/avondrun.sh.
+      - name: Genereren en keuren (hoogstens twee pogingen)
         id: run
+        continue-on-error: true
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          RUNNER_TEMP: ${{ runner.temp }}
         run: |
           if [ -z "$ADMIN_KEY" ]; then
             echo "ADMIN_KEY-secret ontbreekt, dus er valt vannacht niets te genereren."
             echo "Dat is een mislukte run en geen geslaagde; logboek.yml doet hier hetzelfde."
+            echo "wat=geen-sleutel" >> $GITHUB_OUTPUT
             exit 1
           fi
           VLAGGEN=""
           [ "${{ inputs.droog }}" = "true" ] && VLAGGEN="$VLAGGEN --droog"
           [ "${{ inputs.nieuwe_les }}" = "true" ] && VLAGGEN="$VLAGGEN --nieuwe-les"
-          node tools/curriculum.js $VLAGGEN
+          sh tools/avondrun.sh "$VLAGGEN"
 
-      # Een nieuwe les is curriculum-uitbreiding: die gaat langs Stefan. Herkenbaar doordat
-      # curriculum.js zijn plan wegschrijft met een gevuld "nieuweLes"-veld.
-      - name: Wat is er veranderd?
-        id: soort
-        run: |
-          # De hartslag verandert per definitie elke nacht en telt hier dus niet mee. Anders zou
-          # "er is iets veranderd" altijd waar zijn en draaide de poort achteraf elke nacht voor niets.
-          if git diff --quiet -- . ':(exclude)tools/avondrun-hart.json'; then echo "wat=niets" >> $GITHUB_OUTPUT; exit 0; fi
-          if [ -f tools/curriculum-laatste.json ] && \
-             node -e "process.exit(require('./tools/curriculum-laatste.json').nieuweLes ? 0 : 1)"; then
-            echo "wat=nieuwe-les" >> $GITHUB_OUTPUT
-            echo "titel=$(node -e "console.log(require('./tools/curriculum-laatste.json').nieuweLes.titel)")" >> $GITHUB_OUTPUT
-          else
-            echo "wat=reparatie" >> $GITHUB_OUTPUT
-          fi
+      # Dít ontbrak. Zonder deze stap staat het bewijs van een afgekeurde nacht op een machine die
+      # daarna wordt opgeruimd.
+      - name: Afgekeurde pogingen bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: avondrun-afgekeurd-${{ github.run_id }}
+          path: ${{ runner.temp }}/mislukt
+          retention-days: 14
+          if-no-files-found: ignore
 
-      # Hier zat het gat: de bot schreef in index.html en pushte, zonder dat er ooit een browser naar
-      # het resultaat had gekeken. Een stukgeschreven quiz stond dan tot de volgende ochtend live.
-      # Nu draait de regressiekern over de zojuist geschreven app. Rood betekent: niet pushen, wel
-      # de kapotte poging bewaren als artefact zodat je 's ochtends ziet wat hij probeerde.
-      - name: Poort achteraf (deugt wat de bot geschreven heeft?)
-        id: poort
-        if: steps.soort.outputs.wat != 'niets'
-        continue-on-error: true
+      # Vóór het publiceren, want de publicatiestap commit de hartslag mee. Zo staat er één commit
+      # met de juiste meting in plaats van twee waarvan de eerste nog de oude betekenis draagt.
+      - name: Hartslag afmaken
+        if: always()
         run: |
-          node tools/syntaxcheck.js index.html
-          node test/poort.js
-
-      - name: Kapotte poging bewaren en stoppen
-        if: steps.soort.outputs.wat != 'niets' && steps.poort.outcome == 'failure'
-        run: |
-          mkdir -p /tmp/mislukt
-          cp index.html versie.txt /tmp/mislukt/ 2>/dev/null || true
-          cp -r test/uitvoer /tmp/mislukt/schermen 2>/dev/null || true
-          echo "De poort ging dicht op wat de avondrun schreef. Er is niets gepusht."
-          echo "Stond de poort vooraf al rood? ${{ steps.vooraf.outcome }}"
-          exit 1
+          STATUS=geklapt
+          case "${{ steps.run.outputs.wat }}" in
+            reparatie)    STATUS=gepubliceerd ;;
+            nieuwe-les)   STATUS=pull-request ;;
+            niets)        STATUS=niets-te-doen ;;
+            afgekeurd)    STATUS=poort-dicht ;;
+            geen-sleutel) STATUS=geen-sleutel ;;
+          esac
+          node tools/hartslag-af.js "$STATUS" "${{ steps.run.outputs.pogingen || 1 }}"
+          {
+            echo "### Hartslag"
+            echo ""
+            echo '```json'
+            cat tools/avondrun-hart.json
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
 
       - name: Reparatie direct live
-        if: steps.soort.outputs.wat == 'reparatie' && steps.poort.outcome == 'success'
+        if: steps.run.outputs.wat == 'reparatie'
         run: |
           git config user.name "curriculum-bot"
           git config user.email "actions@users.noreply.github.com"
@@ -139,7 +166,7 @@ jobs:
           git push
 
       - name: Nieuwe les als pull request
-        if: steps.soort.outputs.wat == 'nieuwe-les' && steps.poort.outcome == 'success'
+        if: steps.run.outputs.wat == 'nieuwe-les'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -148,7 +175,7 @@ jobs:
           TAK="curriculum/les-$(date +%Y%m%d)"
           git checkout -b "$TAK"
           git add index.html versie.txt tools/curriculum-laatste.json
-          git commit -m "curriculum: nieuwe les \"${{ steps.soort.outputs.titel }}\""
+          git commit -m "curriculum: nieuwe les \"${{ steps.run.outputs.titel }}\""
           git push -u origin "$TAK"
           # De kop van de PR komt uit het plan (één regel node, geen meerregelige JS: die liep uit het
           # YAML-blok en dan kan GitHub het workflowbestand niet meer lezen).
@@ -162,19 +189,17 @@ jobs:
           Wat te doen: lees de zinnen en de spiekbrief even door. Klopt het, dan mergen. De les staat
           achter je huidige lessen en gaat pas open als je die af hebt.
           MD
-          gh pr create --title "Nieuwe les: ${{ steps.soort.outputs.titel }}" --body-file /tmp/pr.md --base main --head "$TAK"
+          gh pr create --title "Nieuwe les: ${{ steps.run.outputs.titel }}" --body-file /tmp/pr.md --base main --head "$TAK"
 
       - name: Niets veranderd
-        if: steps.soort.outputs.wat == 'niets'
+        if: steps.run.outputs.wat == 'niets'
         run: |
-          # Hier stond "geen gaten om te dichten en genoeg voorraad", ook op nachten waarop de analyse
-          # zes regels hoger 0 dagen voorraad meldde. Die zin is nooit gecontroleerd tegen de analyse.
-          # Nu zegt de run zelf wat er aan de hand was, in zijn eigen woorden.
           echo "Er is niets weggeschreven. Wat de run daar zelf over zegt:"
           cat tools/avondrun-hart.json
 
-      # Altijd, en juist ook als het hierboven is geklapt. Zonder dit bestand is de enige manier om te
-      # zien of de avondrun ooit iets heeft geleverd: commits van de bot tellen. Dat is geen meting.
+      # De hartslag staat er ook als er niets is gepubliceerd; juist dan. Zonder dit bestand is de
+      # enige manier om te zien of de avondrun ooit iets deed: commits van de bot tellen, en dat is
+      # geen meting maar archeologie.
       - name: Hartslag wegschrijven
         if: always()
         run: |
@@ -183,6 +208,15 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add tools/avondrun-hart.json
           if git diff --cached --quiet; then echo "hartslag ongewijzigd"; exit 0; fi
-          git commit -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gelukt ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
+          git commit -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
           git pull --rebase --autostash
           git push
+
+      # Pas hier valt de run om. Alles hierboven heeft dan zijn werk gedaan: het bewijs is bewaard,
+      # de hartslag staat op main, en de samenvatting vertelt welke suites rood waren.
+      - name: Rood afsluiten als er niets gepubliceerd is
+        if: steps.run.outcome == 'failure'
+        run: |
+          echo "De avondrun heeft niets gepubliceerd (${{ steps.run.outputs.wat }})."
+          echo "Het spoor van elke afgekeurde poging staat als artefact bij deze run."
+          exit 1
