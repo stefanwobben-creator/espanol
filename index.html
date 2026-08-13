@@ -1478,7 +1478,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.72";
+var APP_VERSIE = "v23.74";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1798,7 +1798,21 @@ var WORDS = [
  {"id":"w310","es":"la vida social","nl":"het sociale leven","en":"social life","tag":"general"},
  {"id":"w311","es":"el ritmo de vida","nl":"het levensritme","en":"pace of life","tag":"general"},
  {"id":"w312","es":"la vivienda","nl":"de woning","en":"housing","tag":"general"},
- {"id":"w313","es":"el ocio","nl":"de vrije tijd","en":"leisure","tag":"general"}
+ {"id":"w313","es":"el ocio","nl":"de vrije tijd","en":"leisure","tag":"general"},
+ {"id":"w314","es":"el trabajo","nl":"het werk","en":"the job","tag":"trabajo"},
+ {"id":"w315","es":"la universidad","nl":"de universiteit","en":"the university","tag":"universidad"},
+ {"id":"w316","es":"el horario","nl":"de werktijden","en":"the schedule","tag":"horario"},
+ {"id":"w317","es":"el sueldo","nl":"het salaris","en":"the salary","tag":"sueldo"},
+ {"id":"w318","es":"el jefe","nl":"de baas","en":"the boss","tag":"jefe"},
+ {"id":"w319","es":"el compañero de trabajo","nl":"de collega","en":"the colleague","tag":"compañero"},
+ {"id":"w320","es":"el examen","nl":"het examen","en":"the exam","tag":"examen"},
+ {"id":"w321","es":"la reunión","nl":"de vergadering","en":"the meeting","tag":"reunión"},
+ {"id":"w322","es":"el descanso","nl":"de pauze","en":"the break","tag":"descanso"},
+ {"id":"w323","es":"la formación","nl":"de opleiding","en":"the training","tag":"formación"},
+ {"id":"w324","es":"el proyecto","nl":"het project","en":"the project","tag":"proyecto"},
+ {"id":"w325","es":"la presión","nl":"de druk","en":"the pressure","tag":"presión"},
+ {"id":"w326","es":"el horario flexible","nl":"de flexibele werktijden","en":"the flexible schedule","tag":"horario-flexible"},
+ {"id":"w327","es":"el teletrabajo","nl":"het thuiswerken","en":"the remote work","tag":"teletrabajo"}
 ];
 
 var SENTENCES = [
@@ -1986,7 +2000,20 @@ var SENTENCES = [
  {"id":"s172","lvl":2,"nl":"Op het platteland is het levensritme rustiger, maar je hebt minder winkels.","en":"The pace of life is slower in the countryside, but there are fewer shops.","es":"En el campo el ritmo de vida es más tranquilo, pero hay menos tiendas.","alt":["en el campo el ritmo de vida es mas tranquilo pero hay menos tiendas","en el campo se vive más despacio pero hay menos comercios"],"uitleg":"Menos is het spiegelbeeld van más en werkt precies hetzelfde: menos tiendas. Vergelijk je met iets anders, dan komt er que achter: menos tiendas que en la ciudad.","ue":"Menos is the mirror image of más and works exactly the same: menos tiendas. If you compare with something else, que follows: menos tiendas que en la ciudad.","tag":"campo"},
  {"id":"s173","lvl":2,"nl":"Ik woon liever in de stad omdat ik van de sfeer hou.","en":"I prefer to live in the city because I love the atmosphere.","es":"Prefiero vivir en la ciudad porque me gusta el ambiente.","alt":["prefiero vivir en la ciudad porque me gusta el ambiente","me gusta más vivir en la ciudad por el ambiente"],"uitleg":"Preferir wordt in de ik-vorm prefiero: de e verandert in ie, net als bij quiero en pienso. Na preferir komt een infinitief: prefiero vivir, en niet prefiero que vivo.","ue":"Preferir becomes prefiero in the I-form: the e changes to ie, just like quiero and pienso. Preferir is followed by an infinitive: prefiero vivir, not prefiero que vivo.","tag":"general"},
  {"id":"s174","lvl":2,"nl":"Op het platteland is er meer ruimte, maar je moet zelf alles regelen.","en":"There’s more space in the countryside, but you have to arrange everything yourself.","es":"En el campo hay más espacio, pero tienes que organizar todo tú mismo.","alt":["en el campo hay mas espacio pero tienes que organizar todo tu mismo","en el campo hay más sitio pero todo depende de ti"],"uitleg":"Hay más espacio staat in het enkelvoud, want espacio is niet te tellen, ook niet met más ervoor. Tienes que plus infinitief zegt wél wie het moet doen, anders dan hay que in de zin hierboven.","ue":"Hay más espacio is singular, because espacio cannot be counted, not even with más in front. Tienes que plus infinitive does say who has to do it, unlike hay que in the sentence above.","tag":"campo"},
- {"id":"s176","lvl":2,"tag":"les2","nl":"Ik haalde mijn rijbewijs op mijn achttiende.","en":"I got my driving licence when I was eighteen.","es":"Me saqué el carnet de conducir a los dieciocho años.","alt":["me saqué el carnet de conducir a los dieciocho años","me saque el carnet de conducir a los dieciocho anos","me saqué el carné de conducir a los dieciocho años"],"uitleg":"El carnet de conducir (het rijbewijs) ging deze week twee keer mis bij de woordjes — hier zit hij in een zin. Sacarse el carnet = je rijbewijs halen; in het indefinido wordt dat me saqué: één afgerond moment in je leven (a los dieciocho años), precies het soort biografiezin van deze les.","ue":"El carnet de conducir (the driving licence) tripped you up twice this week in word practice — here it is in a sentence. Sacarse el carnet = to get your licence; in the indefinido that becomes me saqué: one completed life event (a los dieciocho años), exactly the kind of biography sentence this lesson is about."}
+ {"id":"s176","lvl":2,"tag":"les2","nl":"Ik haalde mijn rijbewijs op mijn achttiende.","en":"I got my driving licence when I was eighteen.","es":"Me saqué el carnet de conducir a los dieciocho años.","alt":["me saqué el carnet de conducir a los dieciocho años","me saque el carnet de conducir a los dieciocho anos","me saqué el carné de conducir a los dieciocho años"],"uitleg":"El carnet de conducir (het rijbewijs) ging deze week twee keer mis bij de woordjes — hier zit hij in een zin. Sacarse el carnet = je rijbewijs halen; in het indefinido wordt dat me saqué: één afgerond moment in je leven (a los dieciocho años), precies het soort biografiezin van deze les.","ue":"El carnet de conducir (the driving licence) tripped you up twice this week in word practice — here it is in a sentence. Sacarse el carnet = to get your licence; in the indefinido that becomes me saqué: one completed life event (a los dieciocho años), exactly the kind of biography sentence this lesson is about."},
+ {"id":"s177","lvl":2,"nl":"Ik voel me moe als ik te laat naar bed ga.","en":"I feel tired when I go to bed too late.","es":"Me siento cansado si me acuesto demasiado tarde.","alt":["me siento cansado si me acuesto demasiado tarde","me siento cansada si me acuesto demasiado tarde"],"uitleg":"Het werkwoord 'sentirse' wordt gevolgd door een bijvoeglijk naamwoord dat het gevoel beschrijft (cansado/cansada). Het geslacht van het bijvoeglijk naamwoord past zich aan aan het onderwerp (ik).","ue":"The verb 'sentirse' is followed by an adjective describing the feeling (cansado/cansada). The gender of the adjective matches the subject (I).","tag":"sentirse"},
+ {"id":"s178","lvl":2,"nl":"Ze voelt zich blij als ze haar vrienden ziet.","en":"She feels happy when she sees her friends.","es":"Se siente contenta cuando ve a sus amigos.","alt":["se siente contenta cuando ve a sus amigos","se siente feliz cuando ve a sus amigos"],"uitleg":"Het wederkerend voornaamwoord 'se' staat voor 'zij' (vrouwelijk) en het bijvoeglijk naamwoord 'contenta' past zich aan aan het vrouwelijk geslacht.","ue":"The reflexive pronoun 'se' refers to 'she' (feminine) and the adjective 'contenta' matches the feminine gender.","tag":"sentirse"},
+ {"id":"s179","lvl":2,"nl":"Het kost me moeite om de weg te vinden in deze buurt.","en":"Finding the way in this neighborhood is hard for me.","es":"Me cuesta encontrar el camino en este barrio.","alt":["me cuesta encontrar el camino en este barrio"],"uitleg":"Bij 'costar' is het onderwerp de activiteit (encontrar), dus enkelvoud: cuesta. Het woord 'barrio' is mannelijk.","ue":"With 'costar' the subject is the activity (encontrar), so it is singular: cuesta. The word 'barrio' is masculine.","tag":"costar"},
+ {"id":"s180","lvl":2,"nl":"Het kost ons moeite om de rekening te betalen.","en":"Paying the bill is hard for us.","es":"Nos cuesta pagar la cuenta.","alt":["nos cuesta pagar la cuenta"],"uitleg":"Bij 'costar' is het onderwerp de activiteit (pagar), dus enkelvoud: cuesta. Het woord 'cuenta' is vrouwelijk.","ue":"With 'costar' the subject is the activity (pagar), so it is singular: cuesta. The word 'cuenta' is feminine.","tag":"costar"},
+ {"id":"s181","lvl":2,"nl":"Het kost haar moeite om de kinderen naar school te brengen.","en":"Taking the kids to school is hard for her.","es":"Le cuesta llevar a los niños al colegio.","alt":["le cuesta llevar a los ninos al colegio","a ella le cuesta llevar a los niños al colegio"],"uitleg":"Bij 'costar' is het onderwerp de activiteit (llevar), dus enkelvoud: cuesta. Het woord 'niños' is mannelijk meervoud.","ue":"With 'costar' the subject is the activity (llevar), so it is singular: cuesta. The word 'niños' is masculine plural.","tag":"costar"},
+ {"id":"s182","lvl":2,"nl":"Ik vind het leuk om nieuwe collega’s te leren kennen.","en":"I enjoy meeting new colleagues.","es":"Me gusta conocer a nuevos compañeros de trabajo.","alt":["me gusta conocer a nuevos companeros de trabajo","me gusta conocer a compañeros nuevos"],"uitleg":"Bij gustar is het onderwerp de activiteit (conocer), dus enkelvoud: gusta.","ue":"With gustar the subject is the activity (conocer), so it is singular: gusta.","tag":"gustar"},
+ {"id":"s183","lvl":2,"nl":"De baas wil dat ik vandaag de presentatie afmaak.","en":"The boss wants me to finish the presentation today.","es":"El jefe quiere que termine la presentación hoy.","alt":["el jefe quiere que termine la presentacion hoy"],"uitleg":"Na querer + que gebruik je de subjuntivo (termine) omdat het om een wens gaat.","ue":"After querer + que you use the subjunctive (termine) because it's a wish.","tag":"subjuntivo-wens"},
+ {"id":"s184","lvl":2,"nl":"Thuiswerken heeft als voordeel dat je geen files hebt.","en":"Working from home has the advantage that you don’t have traffic jams.","es":"El teletrabajo tiene la ventaja de que no tienes atascos.","alt":["el teletrabajo tiene la ventaja de que no tienes atascos","el teletrabajo tiene como ventaja que no hay atascos"],"uitleg":"De zin gebruikt het zelfstandig naamwoord ventaja met het lidwoord la, omdat ventaja vrouwelijk is.","ue":"The sentence uses the noun ventaja with the article la, because ventaja is feminine.","tag":"lidwoord-vrouwelijk"},
+ {"id":"s185","lvl":2,"nl":"Ik vind het vervelend dat de vergadering zo lang duurt.","en":"I’m annoyed that the meeting lasts so long.","es":"Me molesta que la reunión dure tanto.","alt":["me molesta que la reunion dure tanto"],"uitleg":"Na molestar gebruik je de subjuntivo (dure) omdat het om een gevoel gaat.","ue":"After molestar you use the subjunctive (dure) because it's about a feeling.","tag":"subjuntivo-gevoel"},
+ {"id":"s186","lvl":2,"nl":"Mijn collega’s zeggen dat ik te veel koffie drink.","en":"My colleagues say that I drink too much coffee.","es":"Mis compañeros dicen que bebo demasiado café.","alt":["mis companeros dicen que bebo demasiado cafe","mis compañeros dicen que tomo demasiado café"],"uitleg":"De zin gebruikt het werkwoord decir in de tegenwoordige tijd (dicen) omdat het om een feit gaat.","ue":"The sentence uses the verb decir in the present tense (dicen) because it's a fact.","tag":"tegenwoordige-tijd"},
+ {"id":"s187","lvl":2,"nl":"De universiteit biedt gratis cursussen aan voor studenten.","en":"The university offers free courses for students.","es":"La universidad ofrece cursos gratuitos para los estudiantes.","alt":["la universidad ofrece cursos gratuitos para los estudiantes","la universidad da cursos gratis a los estudiantes"],"uitleg":"De zin gebruikt het werkwoord ofrecer in de tegenwoordige tijd (ofrece) omdat het om een algemene waarheid gaat.","ue":"The sentence uses the verb ofrecer in the present tense (ofrece) because it's a general truth.","tag":"tegenwoordige-tijd-algemeen"},
+ {"id":"s188","lvl":2,"nl":"Ik zou graag een baan met flexibele werktijden willen.","en":"I would like a job with flexible hours.","es":"Me gustaría un trabajo con horario flexible.","alt":["me gustaria un trabajo con horario flexible","me gustaria tener un trabajo con horario flexible"],"uitleg":"De zin gebruikt de condicional (gustaría) om een wens uit te drukken.","ue":"The sentence uses the conditional (gustaría) to express a wish.","tag":"condicional"},
+ {"id":"s189","lvl":2,"nl":"De druk op het werk is soms te hoog.","en":"The pressure at work is sometimes too high.","es":"La presión en el trabajo a veces es demasiado alta.","alt":["la presion en el trabajo a veces es demasiado alta","a veces la presión en el trabajo es demasiado alta"],"uitleg":"De zin gebruikt het zelfstandig naamwoord presión met het lidwoord la, omdat presión vrouwelijk is.","ue":"The sentence uses the noun presión with the article la, because presión is feminine.","tag":"lidwoord-vrouwelijk"}
 ];
 
 var QUIZZES = [
@@ -2049,7 +2076,8 @@ var CHEATSHEET = [
  {"titel":"Een verhaal vertellen: indefinido + imperfecto samen","titelEn":"Telling a story: indefinido and imperfecto together","html":"<p>Een goed verhaal combineert bijna altijd twee tijden: <b>imperfecto</b> voor de achtergrond/scène, <b>indefinido</b> voor wat er dan gebeurde.</p><table><tr><th>rol in het verhaal</th><th>tijd</th><th>voorbeeld</th></tr><tr><td>achtergrond/omstandigheid</td><td>imperfecto</td><td>Mientras cenábamos... (terwijl we aten...)</td></tr><tr><td>de gebeurtenis die de scène onderbreekt</td><td>indefinido</td><td>...alguien llamó a la puerta. (klopte iemand)</td></tr></table><p>Vuistregel: imperfecto is de camera die stilstaat op de scène, indefinido is wat er dan ineens gebeurt. De twee werken bijna altijd samen in een goed verteld verhaal.</p>","htmlEn":"<p>A good story almost always combines two tenses: <b>imperfecto</b> for the background/scene, <b>indefinido</b> for what happened then.</p><table><tr><th>role in the story</th><th>tense</th><th>example</th></tr><tr><td>background/circumstance</td><td>imperfecto</td><td>Mientras cenábamos... (while we were having dinner...)</td></tr><tr><td>the event that interrupts the scene</td><td>indefinido</td><td>...alguien llamó a la puerta. (someone knocked)</td></tr></table><p>Rule of thumb: imperfecto is the camera holding steady on the scene, indefinido is what suddenly happens in it. The two almost always work together in a well-told story.</p>"},
  {"titel":"Perfecto of indefinido: welk tijdvak?","titelEn":"Perfecto or indefinido: which time frame?","html":"<p>Bij het navertellen van momenten maakt het uit of het tijdvak nog loopt of al voorbij is:</p><table><tr><th>pretérito perfecto</th><th>pretérito indefinido</th></tr><tr><td>tijdvak loopt nog: esta semana, hoy, este año</td><td>tijdvak is afgesloten: el año pasado, ayer, en 2020</td></tr><tr><td>ervaring tot nu toe: nunca, alguna vez, todavía no</td><td>één moment in het verleden: el sábado pasado, aquel día</td></tr></table><p>Dit is dezelfde regel als eerder in het lijstje (Indefinido of perfecto), nu toegepast op het navertellen van bijzondere momenten.</p>","htmlEn":"<p>When recounting moments, it matters whether the time frame is still ongoing or already over:</p><table><tr><th>pretérito perfecto</th><th>pretérito indefinido</th></tr><tr><td>time frame still ongoing: esta semana, hoy, este año</td><td>time frame is closed: el año pasado, ayer, en 2020</td></tr><tr><td>experience up to now: nunca, alguna vez, todavía no</td><td>one moment in the past: el sábado pasado, aquel día</td></tr></table><p>This is the same rule as earlier in this list (Indefinido or perfecto), now applied to recounting specific moments.</p>"},
  {"titel":"Nuttige woorden om een anekdote te vertellen","titelEn":"Useful words for telling an anecdote","html":"<p>Vaste verbindingswoorden die een verhaal soepel laten lopen:</p><table><tr><th>woord</th><th>gebruik</th></tr><tr><td>un día / una vez</td><td>opening: op een dag, op een keer</td></tr><tr><td>mientras</td><td>gelijktijdigheid: terwijl</td></tr><tr><td>de repente</td><td>plotselinge wending: plotseling</td></tr><tr><td>al final</td><td>afsluiting: uiteindelijk</td></tr></table><p>Combineer deze met de indefinido/imperfecto-vuistregel hierboven en je kunt een compleet anekdote vertellen.</p>","htmlEn":"<p>Set connecting words that make a story flow smoothly:</p><table><tr><th>word</th><th>use</th></tr><tr><td>un día / una vez</td><td>opening: one day, once</td></tr><tr><td>mientras</td><td>simultaneity: while</td></tr><tr><td>de repente</td><td>sudden turn: suddenly</td></tr><tr><td>al final</td><td>closing: in the end</td></tr></table><p>Combine these with the indefinido/imperfecto rule of thumb above and you can tell a complete anecdote.</p>"},
- {"titel":"Vergelijken met 'más ... que' en 'menos ... que'","titelEn":"Comparing with 'más ... que' and 'menos ... que'","html":"<p><b>Regel:</b> Gebruik <i>más ... que</i> om iets groter, beter of meer te vergelijken. Gebruik <i>menos ... que</i> voor het tegenovergestelde.</p>\n\n<p><b>Voorbeelden:</b></p>\n<table>\n<tr><th>Spaans</th><th>Nederlands</th></tr>\n<tr><td>En la ciudad <i>hay más ruido</i> <i>que</i> en el campo.</td><td>In de stad is <i>er meer lawaai</i> <i>dan</i> op het platteland.</td></tr>\n<tr><td>En el campo <i>hay menos tiendas</i> <i>que</i> en la ciudad.</td><td>Op het platteland zijn <i>er minder winkels</i> <i>dan</i> in de stad.</td></tr>\n</table>\n\n<p><b>Valkuil:</b> Vergeet niet dat <i>que</i> altijd na <i>más</i> of <i>menos</i> komt. Zeg niet <i>*más que ruido</i> of <i>*menos que tiendas</i>.</p>\n\n<p><b>Ezelsbruggetje:</b> Denk aan <i>‘meer dan’</i> en <i>‘minder dan’</i> in het Nederlands. Het Spaans doet precies hetzelfde: <i>más ... que</i> = meer ... dan, <i>menos ... que</i> = minder ... dan.</p>","htmlEn":"<p><b>Rule:</b> Use <i>más ... que</i> to compare something as bigger, better, or more. Use <i>menos ... que</i> for the opposite.</p>\n\n<p><b>Examples:</b></p>\n<table>\n<tr><th>Spanish</th><th>English</th></tr>\n<tr><td>En la ciudad <i>hay más ruido</i> <i>que</i> en el campo.</td><td>In the city <i>there is more noise</i> <i>than</i> in the countryside.</td></tr>\n<tr><td>En el campo <i>hay menos tiendas</i> <i>que</i> en la ciudad.</td><td>In the countryside <i>there are fewer shops</i> <i>than</i> in the city.</td></tr>\n</table>\n\n<p><b>Pitfall:</b> Don’t forget that <i>que</i> always comes after <i>más</i> or <i>menos</i>. Don’t say <i>*más que ruido</i> or <i>*menos que tiendas</i>.</p>\n\n<p><b>Memory trick:</b> Think of <i>‘more than’</i> and <i>‘less than’</i> in English. Spanish does the same: <i>más ... que</i> = more ... than, <i>menos ... que</i> = less ... than.</p>"}
+ {"titel":"Vergelijken met 'más ... que' en 'menos ... que'","titelEn":"Comparing with 'más ... que' and 'menos ... que'","html":"<p><b>Regel:</b> Gebruik <i>más ... que</i> om iets groter, beter of meer te vergelijken. Gebruik <i>menos ... que</i> voor het tegenovergestelde.</p>\n\n<p><b>Voorbeelden:</b></p>\n<table>\n<tr><th>Spaans</th><th>Nederlands</th></tr>\n<tr><td>En la ciudad <i>hay más ruido</i> <i>que</i> en el campo.</td><td>In de stad is <i>er meer lawaai</i> <i>dan</i> op het platteland.</td></tr>\n<tr><td>En el campo <i>hay menos tiendas</i> <i>que</i> en la ciudad.</td><td>Op het platteland zijn <i>er minder winkels</i> <i>dan</i> in de stad.</td></tr>\n</table>\n\n<p><b>Valkuil:</b> Vergeet niet dat <i>que</i> altijd na <i>más</i> of <i>menos</i> komt. Zeg niet <i>*más que ruido</i> of <i>*menos que tiendas</i>.</p>\n\n<p><b>Ezelsbruggetje:</b> Denk aan <i>‘meer dan’</i> en <i>‘minder dan’</i> in het Nederlands. Het Spaans doet precies hetzelfde: <i>más ... que</i> = meer ... dan, <i>menos ... que</i> = minder ... dan.</p>","htmlEn":"<p><b>Rule:</b> Use <i>más ... que</i> to compare something as bigger, better, or more. Use <i>menos ... que</i> for the opposite.</p>\n\n<p><b>Examples:</b></p>\n<table>\n<tr><th>Spanish</th><th>English</th></tr>\n<tr><td>En la ciudad <i>hay más ruido</i> <i>que</i> en el campo.</td><td>In the city <i>there is more noise</i> <i>than</i> in the countryside.</td></tr>\n<tr><td>En el campo <i>hay menos tiendas</i> <i>que</i> en la ciudad.</td><td>In the countryside <i>there are fewer shops</i> <i>than</i> in the city.</td></tr>\n</table>\n\n<p><b>Pitfall:</b> Don’t forget that <i>que</i> always comes after <i>más</i> or <i>menos</i>. Don’t say <i>*más que ruido</i> or <i>*menos que tiendas</i>.</p>\n\n<p><b>Memory trick:</b> Think of <i>‘more than’</i> and <i>‘less than’</i> in English. Spanish does the same: <i>más ... que</i> = more ... than, <i>menos ... que</i> = less ... than.</p>"},
+ {"titel":"Werk en studie: voordelen, nadelen en meningen","titelEn":"Work and study: advantages, disadvantages and opinions","html":"<p><b>Hoe praat je over werk en studie?</b></p>\n\n<p>Gebruik deze structuren om voordelen, nadelen en meningen uit te drukken:</p>\n\n<p><i>Tener la ventaja de que...</i> + <b>subjuntivo</b><br>\n<small>El teletrabajo tiene la ventaja de que no tienes atascos.</small></p>\n\n<p><i>Es un inconveniente que...</i> + <b>subjuntivo</b><br>\n<small>Es un inconveniente que la presión sea tan alta.</small></p>\n\n<p><i>Me gusta / no me gusta que...</i> + <b>subjuntivo</b><br>\n<small>Me gusta que los compañeros sean amables.</small></p>\n\n<p><i>Es importante / necesario / bueno / malo que...</i> + <b>subjuntivo</b><br>\n<small>Es necesario que termines el proyecto hoy.</small></p>\n\n<p><b>Valkuil:</b> Verwar <i>gustar</i> niet met <i>querer</i>. Bij <i>gustar</i> is het onderwerp de activiteit of het ding, niet de persoon. Bij <i>querer</i> is het onderwerp de persoon die iets wil.</p>\n\n<p><b>Ezelsbruggetje:</b> Stel je voor dat je <i>gustar</i> vervangt door <i>agradar</i>. Dan wordt het duidelijk: <i>Me agrada el café</i> (de koffie bevalt me). Het onderwerp is de koffie, niet ik.</p>","htmlEn":"<p><b>How to talk about work and study?</b></p>\n\n<p>Use these structures to express advantages, disadvantages and opinions:</p>\n\n<p><i>Tener la ventaja de que...</i> + <b>subjunctive</b><br>\n<small>El teletrabajo tiene la ventaja de que no tienes atascos.</small></p>\n\n<p><i>Es un inconveniente que...</i> + <b>subjunctive</b><br>\n<small>Es un inconveniente que la presión sea tan alta.</small></p>\n\n<p><i>Me gusta / no me gusta que...</i> + <b>subjunctive</b><br>\n<small>Me gusta que los compañeros sean amables.</small></p>\n\n<p><i>Es importante / necesario / bueno / malo que...</i> + <b>subjunctive</b><br>\n<small>Es necesario que termines el proyecto hoy.</small></p>\n\n<p><b>Pitfall:</b> Don’t confuse <i>gustar</i> with <i>querer</i>. With <i>gustar</i> the subject is the activity or thing, not the person. With <i>querer</i> the subject is the person who wants something.</p>\n\n<p><b>Mnemonic:</b> Imagine replacing <i>gustar</i> with <i>agradar</i>. Then it becomes clear: <i>Me agrada el café</i> (the coffee pleases me). The subject is the coffee, not me.</p>"}
 ];
 
 /* ================= BEGINNERSTRACK ================= */
@@ -4786,7 +4814,12 @@ var EXTRA_CONTENT = {
     "s153",
     "s154",
     "s162",
-    "s163"
+    "s163",
+    "s177",
+    "s178",
+    "s179",
+    "s180",
+    "s181"
    ],
    "quizzes": []
   },
@@ -4858,6 +4891,44 @@ var EXTRA_CONTENT = {
     "s172",
     "s173",
     "s174"
+   ],
+   "quizzes": []
+  },
+  {
+   "id": "b1-12",
+   "num": 12,
+   "niveau": "B1",
+   "titel": "En el trabajo o en la universidad",
+   "doel": "Leren praten over werk en studie, inclusief voordelen, nadelen, verplichtingen en meningen.",
+   "doelEn": "Learn to talk about work and study, including advantages, disadvantages, obligations and opinions.",
+   "spiek": [
+    30
+   ],
+   "words": [
+    "w314",
+    "w315",
+    "w316",
+    "w317",
+    "w318",
+    "w319",
+    "w320",
+    "w321",
+    "w322",
+    "w323",
+    "w324",
+    "w325",
+    "w326",
+    "w327"
+   ],
+   "sents": [
+    "s182",
+    "s183",
+    "s184",
+    "s185",
+    "s186",
+    "s187",
+    "s188",
+    "s189"
    ],
    "quizzes": []
   }

@@ -1,63 +1,63 @@
 {
- "wanneer": "2026-08-11T03:29:36.395Z",
- "versie": "v23.41",
+ "wanneer": "2026-08-13T06:05:18.527Z",
+ "versie": "v23.74",
  "gaten": [
   {
-   "tag": "basis",
+   "tag": "sentirse",
    "soort": "verschijnsel",
-   "fouten": 9
+   "fouten": 20
   },
   {
-   "tag": "les3",
-   "soort": "woorden",
-   "fouten": 43
+   "tag": "costar",
+   "soort": "verschijnsel",
+   "fouten": 16
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s162",
-   "s163",
-   "s164",
-   "s165",
-   "s166",
-   "s167"
+   "s177",
+   "s178",
+   "s179",
+   "s180",
+   "s181"
   ],
   "toetsjes": []
  },
  "nieuweLes": {
-  "id": "b1-11",
-  "num": 11,
+  "id": "b1-12",
+  "num": 12,
   "niveau": "B1",
-  "titel": "En la ciudad o en el campo",
-  "doel": "Leren praten over verschillen tussen leven in de stad en op het platteland, inclusief voor- en nadelen.",
-  "doelEn": "Learning to talk about differences between city and countryside life, including pros and cons.",
+  "titel": "En el trabajo o en la universidad",
+  "doel": "Leren praten over werk en studie, inclusief voordelen, nadelen, verplichtingen en meningen.",
+  "doelEn": "Learn to talk about work and study, including advantages, disadvantages, obligations and opinions.",
   "spiek": [
-   29
+   30
   ],
   "words": [
-   "w300",
-   "w301",
-   "w302",
-   "w303",
-   "w304",
-   "w305",
-   "w306",
-   "w307",
-   "w308",
-   "w309",
-   "w310",
-   "w311",
-   "w312",
-   "w313"
+   "w314",
+   "w315",
+   "w316",
+   "w317",
+   "w318",
+   "w319",
+   "w320",
+   "w321",
+   "w322",
+   "w323",
+   "w324",
+   "w325",
+   "w326",
+   "w327"
   ],
   "sents": [
-   "s168",
-   "s169",
-   "s170",
-   "s171",
-   "s172",
-   "s173",
-   "s174"
+   "s182",
+   "s183",
+   "s184",
+   "s185",
+   "s186",
+   "s187",
+   "s188",
+   "s189"
   ],
   "quizzes": []
  }
