@@ -1499,7 +1499,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.85";
+var APP_VERSIE = "v23.87";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6181,7 +6181,9 @@ function sweepBewaar(uit){
   return S.sweep;
 }
 
-function persist(){ mijlpaalCheck(); oogstBij(); store.save(S); scheduleSync(); }
+function persist(){
+  // v23.86: één keer vastleggen en daarna met rust laten. Wie hem al heeft, houdt hem.
+  if(S && !S.bron){ try{ S.bron = bronNu(); }catch(e){} } mijlpaalCheck(); oogstBij(); store.save(S); scheduleSync(); }
 
 /* ================= SERVER-SYNC ================= */
 var API = "https://espanol-qbm8.onrender.com";
@@ -14531,8 +14533,25 @@ function ritmeCard(){
     (afgesloten || (gedaanVandaag && !hervat) ? "" :
       "<p class='muted' style='margin:6px 0 0'>"+(hervat ? ct("Je stopte bij stap "+hStap+" van 4: "+hNaam+". De rest van je portie staat klaar.",
                                                               "You stopped at step "+hStap+" of 4: "+hNaam+". The rest of your session is waiting.") : portieTxt)+"</p>"+
-      "<p class='muted' style='margin:2px 0 0'>"+ct("Daarna mag je Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> geven.",
-                                                    "Then you get to give Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b>.")+"</p>")+
+      /* v23.87: op dag 1 stond hier "Daarna mag je Chispa 🐙 el pulpo a la gallega geven", en dat
+         waren drie onbekenden in één zin: wie Chispa is (ze stelt zich pas in de les voor), wat het
+         gerecht is (onvertaald), en waarom het een beloning zou zijn.
+
+         Dus: op dag 1 staat erbij wie ze is en wat het gerecht is, plus één regel over taco's, want
+         de balk telt ze vanaf de eerste seconde terwijl de uitleg pas op slide 2 van de rondleiding
+         komt, en die kun je overslaan. Vanaf dag 2 is het weer één korte regel. */
+      (dagenTotaal() <= 1
+        ? "<p class='muted' style='margin:6px 0 0'>"+ct(
+            "Taco's zijn je punten van vandaag. Ook een fout antwoord levert er een op.",
+            "Tacos are today's points. A wrong answer earns one too.")+"</p>"+
+          "<p class='muted' style='margin:2px 0 0'>"+ct(
+            "Chispa is het diertje bovenin; ze groeit mee met jou. Na je les mag je haar iets lekkers geven: "+
+              tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.nl+").",
+            "Chispa is the little creature up top; she grows along with you. After your session you get to give her a treat: "+
+              tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.en+").")+"</p>"
+        : "<p class='muted' style='margin:2px 0 0'>"+ct(
+            "Daarna mag je Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.nl+") geven.",
+            "Then you get to give Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.en+").")+"</p>"))+
     /* v23.67: klaar voor vandaag betekende tot nu toe: geen enkel bericht over morgen, op het
        scherm waar die vraag juist opkomt. */
     (afgesloten ? morgenZinHtml("8px") : "")+
@@ -24468,6 +24487,30 @@ function joinViaLink(gcode, poging){
 var pendingGroep = null;
 var pendingDuel = null; // v19.57: een duel-uitnodiging is nu ook een link, niet alleen een code
 var pendingBeheer = false; // v19.92: de muziekbeheerrol, pas toepassen als S geladen is
+
+/* v23.86: waar kwam iemand vandaan? Eén keer, bij het eerste bezoek, en daarna nooit meer.
+
+   Stefan deelt de app op LinkedIn en wil weten of mensen terugkomen op dag 2. Die twee bijten
+   elkaar: een LinkedIn-klik is nieuwsgierigheid, een link die je iemand persoonlijk geeft is een
+   afspraak. Zonder etiket is de terugkomst een gemiddelde van twee groepen die niets met elkaar te
+   maken hebben, en dan weet je bij een tegenvallend getal niet of de app tegenviel of dat er veel
+   nieuwsgierigen langskwamen.
+
+   Alleen de host van de verwijzer, nooit het volledige adres. Dat is genoeg om twee groepen te
+   scheiden en niets meer; welke pagina iemand daarvoor las gaat de app niets aan. Met ?van=... in
+   de link kun je het zelf benoemen, zodat een appje en een mailtje ook uit elkaar te houden zijn. */
+function bronNu(){
+  try{
+    var m = (location.search || "").match(/[?&]van=([a-z0-9_-]{1,16})/i);
+    if(m) return m[1].toLowerCase();
+    var r = document.referrer || "";
+    if(!r) return "direct";
+    var h = r.split("/")[2] || "";
+    h = h.replace(/^www\./, "").toLowerCase();
+    if(!h || h === location.hostname) return "direct";
+    return h.slice(0, 40);
+  }catch(e){ return "direct"; }
+}
 try{
   if(typeof location !== "undefined" && location.search){
     var gm = location.search.match(/[?&]groep=([a-z0-9]+)/i);
@@ -30009,7 +30052,11 @@ function show(tabId, skipPush){
   var av = document.getElementById("appVer");
   if(av) av.textContent = "App-versie: " + APP_VERSIE;
   var avp = document.getElementById("appVerProf");
-  if(avp) avp.textContent = "App-versie: " + APP_VERSIE + " · zie je hier een lager nummer dan verwacht, ververs dan de pagina hard";
+  /* v23.87: hier stond "· zie je hier een lager nummer dan verwacht, ververs dan de pagina hard".
+     Dat is ontwikkelaarstaal op het scherm van iemand die nog niet eens een naam heeft ingevuld, en
+     het zaait twijfel voordat er iets gebeurd is. Het nummer blijft, want daar heb je iets aan als
+     iemand een probleem meldt; de instructie gaat weg. */
+  if(avp) avp.textContent = "App-versie: " + APP_VERSIE;
   if(profiles.active && activeProfile()){ boot(); } else { renderProfileScreen(); }
   /* v23.54: derde noodrem is dat dit de normale weg is. Pas hier staat er echt iets achter het
      gordijn: boot() heeft de knoppen aangesloten of renderProfileScreen() heeft het aanmeldscherm

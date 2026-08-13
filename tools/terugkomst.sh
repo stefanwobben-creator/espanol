@@ -13,9 +13,16 @@
 #
 # WAT JE ZIET
 #     dag1        de dag waarop een groep mensen begon
+#     bron        waar ze vandaan kwamen: li, linkedin.com, direct, of wat je zelf in ?van= zette
 #     starters    hoeveel er die dag echt iets deden (aanmelden zonder iets doen telt niet mee)
 #     dag2        hoeveel daarvan de dag erna terugkwamen
 #     week        hoeveel daarvan binnen zeven dagen ooit terugkwamen
+#
+# WAAROM ER EEN KOLOM BRON IS
+# Een klik uit een tijdlijn is nieuwsgierigheid, een link die je iemand persoonlijk geeft is een
+# afspraak. Bij elkaar opgeteld krijg je een gemiddelde van twee groepen die niets met elkaar te
+# maken hebben, en dan weet je bij een tegenvallend getal niet of de app tegenviel of dat er veel
+# nieuwsgierigen langskwamen. Vergelijk dus rijen met dezelfde bron, nooit het totaal.
 #
 # WELK GETAL JE MOET GELOVEN
 # Allebei, en ze zeggen iets anders. dag2 is de strenge: heeft de app een plek in iemands dag
@@ -49,10 +56,10 @@ process.stdin.on("end", () => {
   const r = j.perDag || [];
   if (!r.length) { console.log("Nog geen enkele starter. Dat is geen fout, dat is dag nul."); return; }
   console.log("");
-  console.log("dag1         starters   dag2          week          dagen gem.");
+  console.log("dag1         bron         starters   dag2          week          dagen gem.");
   r.forEach(x => {
     const pad = (s,n) => String(s).padEnd(n);
-    console.log(pad(String(x.dag1).slice(0,10), 13) + pad(x.starters, 11) +
+    console.log(pad(String(x.dag1).slice(0,10), 13) + pad(String(x.bron||"onbekend").slice(0,11), 13) + pad(x.starters, 11) +
       pad(x.terugDag2 + " (" + x.pctDag2 + "%)", 14) +
       pad(x.terugWeek + " (" + x.pctWeek + "%)", 14) + x.dagenGem);
   });

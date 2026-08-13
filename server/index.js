@@ -801,12 +801,13 @@ app.get("/api/admin/terugkomst", async (req, res) => {
         SELECT code,
                (SELECT min(k) FROM jsonb_object_keys(state->'xp') k)::date AS dag1,
                (SELECT count(*) FROM jsonb_object_keys(state->'xp'))       AS dagen,
-               (SELECT array_agg(k::date) FROM jsonb_object_keys(state->'xp') k) AS lijst
+               (SELECT array_agg(k::date) FROM jsonb_object_keys(state->'xp') k) AS lijst,
+               COALESCE(state->>'bron', 'onbekend')                          AS bron
           FROM profiles
          WHERE jsonb_typeof(state->'xp') = 'object'
            AND (SELECT count(*) FROM jsonb_object_keys(state->'xp')) > 0
       )
-      SELECT dag1,
+      SELECT dag1, bron,
              count(*)                                                        AS starters,
              count(*) FILTER (WHERE dag1 + 1 = ANY(lijst))                   AS terug_dag2,
              count(*) FILTER (WHERE EXISTS (
@@ -814,12 +815,12 @@ app.get("/api/admin/terugkomst", async (req, res) => {
              ))                                                              AS terug_week,
              round(avg(dagen), 2)                                            AS dagen_gem
         FROM d
-       GROUP BY dag1
-       ORDER BY dag1 DESC
+       GROUP BY dag1, bron
+       ORDER BY dag1 DESC, starters DESC
        LIMIT 30
     `);
     const rijen = r.rows.map((x) => ({
-      dag1: x.dag1, starters: Number(x.starters),
+      dag1: x.dag1, bron: x.bron, starters: Number(x.starters),
       terugDag2: Number(x.terug_dag2), terugWeek: Number(x.terug_week),
       dagenGem: Number(x.dagen_gem),
       pctDag2: Number(x.starters) ? Math.round((Number(x.terug_dag2) / Number(x.starters)) * 100) : 0,
