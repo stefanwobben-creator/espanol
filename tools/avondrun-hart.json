@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-12T03:58:39.678Z",
+ "wanneer": "2026-08-13T04:04:35.236Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -9,17 +9,15 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 5,
-  "toetsjes": 0,
-  "nieuweLes": 0
+  "zinnen": 6,
+  "toetsjes": 1,
+  "nieuweLes": 1
  },
- "versie": "v23.50",
+ "versie": "v23.74",
  "klachten": [
-  "s179: afgekeurd — De zin is grammaticaal correct maar inhoudelijk onnatuurlijk: 'contento' is te formeel voor een algemene vraag over gevoelens; 'feliz' of 'alegre' zijn natuurlijker.",
-  "toetsje afgekeurd (poging 1): Vraag 4: De uitleg klopt niet volledig. 'Estaban' is correct voor de beschrijving in het verleden, maar de zin 'Ellos ___ muy contentos cuando ganaron el partido' beschrijft een toestand die duurde tot het moment van de wedstrijd (een beschrijving in het verleden), niet een gewoonte. De uitleg suggereert dat 'estaban' alleen voor gewoontes is, wat onjuist is. De uitleg moet zijn: 'Imperfecto voor beschrijvingen in het verleden. 'Estaban' is de juiste vorm van estar in de 3e persoon meervoud imperfecto (-aban).'; Vraag 4: De Nederlandse vertaling 'Zij waren heel blij toen ze de wedstrijd wonnen' is onnauwkeurig. Een betere vertaling zou zijn: 'Zij waren heel blij toen ze de wedstrijd wonnen' (kan blijven), maar de uitleg van de context is onjuist omdat de zin een beschrijving in het verleden beschrijft, niet een gewoonte.; Vraag 7: De uitleg bevat een fout: 'Valkuil: 'estuvimos' is indefinido' is onjuist. 'Estuvimos' is de preterito indefinido van estar, maar de zin beschrijft een gewoonte ('lagen vaak'), dus is 'estábamos' correct. De uitleg is wel correct in de kern, maar de formulering is misleidend.",
-  "toetsje afgekeurd (poging 2): Vraag 2: Uitleg klopt niet. 'Eras' is de juiste vorm van 'ser' in de 2e persoon enkelvoud imperfecto, maar de uitleg geeft '-ías' (welke vervoeging hoort bij 'ir/er'-werkwoorden) in plaats van '-ías' (welke vervoeging hoort bij 'ser'). De uitleg moet zijn: 'Eras' is de juiste vorm van ser in de 2e persoon enkelvoud imperfecto (-ías).; Vraag 5: Uitleg klopt niet. 'Eras' is de juiste vorm van 'ser' in de 2e persoon enkelvoud imperfecto, maar de uitleg geeft '-ías' (welke vervoeging hoort bij 'ir/er'-werkwoorden) in plaats van '-ías' (welke vervoeging hoort bij 'ser'). De uitleg moet zijn: 'Eras' is de juiste vorm van ser in de 2e persoon enkelvoud imperfecto (-ías).",
-  "toetsje van de nieuwe les afgekeurd, de les gaat door zonder",
-  "nieuwe les AFGEKEURD:\n - zin 3 (s184): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam"
+  "s183: afgekeurd — De zin 'Cojeo el tren a Barcelona porque es más barato que volar' is onnatuurlijk Spaans: 'cojeo' (ik hink) is geen correcte vertaling van 'ik neem'. De alternatieven zijn wel correct.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les afgekeurd, de les gaat door zonder"
  ],
  "reden": null
 }
