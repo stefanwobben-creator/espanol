@@ -776,6 +776,68 @@ app.get("/api/admin/schoon", async (req, res) => {
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 
+// GET /api/admin/terugkomst?key=... -> komen ze terug op dag 2?
+//
+// Stefan, 13 aug, op de vraag wat hij als eerste van een vreemde wil weten: "terugkomt op dag 2".
+// Dat is te meten zonder iets te bouwen, want het staat er al. S.xp is een map van datum naar
+// punten, dus de sleutels zijn precies de dagen waarop iemand iets heeft gedaan, en /api/sync zet
+// die hele state hier neer.
+//
+// Twee getallen, want er zijn twee eerlijke definities en ze zeggen iets anders:
+//
+//   terug_dag2  actief op de kalenderdag ná de eerste. Streng, en dat is met opzet: dit is de
+//               vraag "heeft de app een plek in zijn dag gekregen".
+//   terug_week  ooit een tweede dag binnen zeven dagen. Milder, en dichter bij wat je wil weten
+//               van iemand die vrijdagavond begint en zondag terugkomt.
+//
+// De eerste dag komt uit de data en niet uit created_at: dat is de dag waarop iemand écht iets
+// deed, en niet de dag waarop er een rij is aangemaakt. Wie zich aanmeldt en meteen weggaat, telt
+// hier dus niet mee als starter, en dat hoort ook niet.
+app.get("/api/admin/terugkomst", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  try {
+    const r = await pool.query(`
+      WITH d AS (
+        SELECT code,
+               (SELECT min(k) FROM jsonb_object_keys(state->'xp') k)::date AS dag1,
+               (SELECT count(*) FROM jsonb_object_keys(state->'xp'))       AS dagen,
+               (SELECT array_agg(k::date) FROM jsonb_object_keys(state->'xp') k) AS lijst
+          FROM profiles
+         WHERE jsonb_typeof(state->'xp') = 'object'
+           AND (SELECT count(*) FROM jsonb_object_keys(state->'xp')) > 0
+      )
+      SELECT dag1,
+             count(*)                                                        AS starters,
+             count(*) FILTER (WHERE dag1 + 1 = ANY(lijst))                   AS terug_dag2,
+             count(*) FILTER (WHERE EXISTS (
+               SELECT 1 FROM unnest(lijst) x WHERE x > dag1 AND x <= dag1 + 7
+             ))                                                              AS terug_week,
+             round(avg(dagen), 2)                                            AS dagen_gem
+        FROM d
+       GROUP BY dag1
+       ORDER BY dag1 DESC
+       LIMIT 30
+    `);
+    const rijen = r.rows.map((x) => ({
+      dag1: x.dag1, starters: Number(x.starters),
+      terugDag2: Number(x.terug_dag2), terugWeek: Number(x.terug_week),
+      dagenGem: Number(x.dagen_gem),
+      pctDag2: Number(x.starters) ? Math.round((Number(x.terug_dag2) / Number(x.starters)) * 100) : 0,
+      pctWeek: Number(x.starters) ? Math.round((Number(x.terug_week) / Number(x.starters)) * 100) : 0
+    }));
+    const tot = rijen.reduce((a, x) => ({
+      starters: a.starters + x.starters, dag2: a.dag2 + x.terugDag2, week: a.week + x.terugWeek
+    }), { starters: 0, dag2: 0, week: 0 });
+    ok(res, {
+      perDag: rijen,
+      totaal: Object.assign(tot, {
+        pctDag2: tot.starters ? Math.round((tot.dag2 / tot.starters) * 100) : 0,
+        pctWeek: tot.starters ? Math.round((tot.week / tot.starters) * 100) : 0
+      })
+    });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
 // ---- AI-feedback via de LLM-ladder (goedkoop eerst, duur als vangnet) ----
 async function vraagLadder(system, user, maxTokens, jsonMode, callSite) {
   const res = await reason(system + "\n\n" + user, { maxTokens: maxTokens || 400, jsonMode: !!jsonMode, callSite });

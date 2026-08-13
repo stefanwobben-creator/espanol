@@ -789,6 +789,27 @@
          display:flex; align-items:center; justify-content:center; flex:0 0 26px; font-size:.9rem;}
   .vgBol.uit{background:#f2eee6; color:var(--muted);}
   /* v23.26: de boekenplank. Een kaart per boek, met de balk die je van Vandaag kent. */
+  /* v23.77: de plank. Dezelfde vorm als de boekenplank hieronder, maar los van het boek, zodat
+     Escuchar, de toetsjes, de spellen en de lessen hem allemaal kunnen gebruiken. Zie plankHtml(). */
+  .plankRij{display:flex; align-items:flex-start; gap:10px; padding:11px 0; border-top:1px solid var(--border);}
+  .plankRij:first-of-type{border-top:0;}
+  .plankRij.dicht{opacity:.62;}
+  .plankMerk{width:26px; height:26px; border-radius:50%; flex:0 0 26px; font-size:.85rem;
+             display:flex; align-items:center; justify-content:center;
+             background:var(--accent-soft); color:var(--accent);}
+  .plankMerk.klaar{background:var(--accent); color:#fff;}
+  .plankMerk.dicht{background:#f2eee6; color:var(--muted);}
+  .plankTekst{flex:1 1 auto; min-width:0;}
+  /* display:block, want dit zijn spans in een span. Zonder deze twee regels lopen de titel en de
+     regel eronder aan elkaar vast ("Een ontmoeting3 vragen"), en dat zag ik pas op de schermafdruk.
+     Het staat er dus omdat het gemeten is en niet omdat het netjes leek. */
+  .plankTitel{display:block; font-weight:600; line-height:1.25;}
+  .plankOnder{display:block; font-size:.82rem; color:var(--muted); margin-top:2px;}
+  .plankStand{font-size:.78rem; color:var(--muted); white-space:nowrap;}
+  .plankRij button{flex:0 0 auto; align-self:center;}
+  .plankKopje{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+              margin:16px 0 2px;}
+  .plankKopje:first-child{margin-top:0;}
   .plankKop{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
   .plankSoort{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);}
   .plankBalk{height:8px; border-radius:4px; background:var(--border); overflow:hidden; margin:8px 0 6px;}
@@ -1478,7 +1499,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.75";
+var APP_VERSIE = "v23.85";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -1989,7 +2010,13 @@ var SENTENCES = [
  {"id":"s176","lvl":2,"tag":"les2","nl":"Ik haalde mijn rijbewijs op mijn achttiende.","en":"I got my driving licence when I was eighteen.","es":"Me saqué el carnet de conducir a los dieciocho años.","alt":["me saqué el carnet de conducir a los dieciocho años","me saque el carnet de conducir a los dieciocho anos","me saqué el carné de conducir a los dieciocho años"],"uitleg":"El carnet de conducir (het rijbewijs) ging deze week twee keer mis bij de woordjes — hier zit hij in een zin. Sacarse el carnet = je rijbewijs halen; in het indefinido wordt dat me saqué: één afgerond moment in je leven (a los dieciocho años), precies het soort biografiezin van deze les.","ue":"El carnet de conducir (the driving licence) tripped you up twice this week in word practice — here it is in a sentence. Sacarse el carnet = to get your licence; in the indefinido that becomes me saqué: one completed life event (a los dieciocho años), exactly the kind of biography sentence this lesson is about."},
  {"id":"s177","lvl":2,"nl":"Op het platteland is er meer ruimte, maar in de stad is er meer vrijetijdsaanbod.","en":"There's more space in the countryside, but more leisure on offer in the city.","es":"En el campo hay más espacio, pero en la ciudad hay más ocio.","alt":["en el campo hay mas espacio pero en la ciudad hay mas ocio","en el campo hay más espacio pero en la ciudad hay más oferta de ocio"],"uitleg":"'Er is' plus een zelfstandig naamwoord is altijd hay, nooit es: 'es más espacio' is precies de val van deze les. Hay verandert ook nooit mee: hay más tiendas, nooit han. En el ocio is de vrije tijd als aanbod — het woord dat hier steeds wegglipt.","ue":"'There is' plus a noun is always hay, never es: 'es más espacio' is exactly the trap of this lesson. Hay never changes either: hay más tiendas, never han. And el ocio is leisure as what's on offer — the word that keeps slipping away here.","tag":"general"},
  {"id":"s178","lvl":2,"nl":"In het centrum is er altijd veel verkeer, daarom neem ik liever het openbaar vervoer.","en":"There's always a lot of traffic in the centre, so I prefer to take public transport.","es":"En el centro siempre hay mucho tráfico, por eso prefiero el transporte público.","alt":["en el centro siempre hay mucho trafico por eso prefiero el transporte publico","en el centro hay siempre mucho tráfico y por eso prefiero el transporte público"],"uitleg":"Druk verkeer is in het Spaans gewoon mucho tráfico: el tráfico está ocupado bestaat niet, want ocupado hoort bij een persoon of een bezette plek. Let ook op de vorm van el transporte público: mét slot-e en accent op público.","ue":"Heavy traffic is simply mucho tráfico in Spanish: el tráfico está ocupado doesn't exist, since ocupado describes a person or an occupied seat. Also mind the form el transporte público: with the final -e and an accent on público.","tag":"ciudad"},
- {"id":"s179","lvl":2,"nl":"Het levensritme op het platteland is rustiger dan in de stad.","en":"The pace of life in the countryside is calmer than in the city.","es":"El ritmo de vida en el campo es más tranquilo que en la ciudad.","alt":["el ritmo de vida en el campo es mas tranquilo que en la ciudad","en el campo el ritmo de vida es más tranquilo que en la ciudad"],"uitleg":"Vergelijk je echt met iets, dan hoort er que achter: más tranquilo que en la ciudad. En kies het werkwoord op wat je zegt: es bij een eigenschap (el ritmo es tranquilo), hay bij aanwezigheid (hay menos tiendas).","ue":"When you actually compare with something, que follows: más tranquilo que en la ciudad. And pick the verb by what you're saying: es for a quality (el ritmo es tranquilo), hay for presence (hay menos tiendas).","tag":"general"}
+ {"id":"s179","lvl":2,"nl":"Het levensritme op het platteland is rustiger dan in de stad.","en":"The pace of life in the countryside is calmer than in the city.","es":"El ritmo de vida en el campo es más tranquilo que en la ciudad.","alt":["el ritmo de vida en el campo es mas tranquilo que en la ciudad","en el campo el ritmo de vida es más tranquilo que en la ciudad"],"uitleg":"Vergelijk je echt met iets, dan hoort er que achter: más tranquilo que en la ciudad. En kies het werkwoord op wat je zegt: es bij een eigenschap (el ritmo es tranquilo), hay bij aanwezigheid (hay menos tiendas).","ue":"When you actually compare with something, que follows: más tranquilo que en la ciudad. And pick the verb by what you're saying: es for a quality (el ritmo es tranquilo), hay for presence (hay menos tiendas).","tag":"general"},
+ {"id":"s180","lvl":2,"nl":"Schil ze niet, het vel gaat weg met de blender.","en":"Don't peel them, the skin goes away in the blender.","es":"No los peles, la piel se va con la batidora.","alt":["no los peles, la piel se va con la batidora","no los peles la piel se va con la batidora"],"uitleg":"Bij een verbod staat het voornaamwoord vóór het werkwoord: no los peles. Bij een gebod komt het er juist achter vast: pélalos.","ue":"In a negative command the pronoun goes before the verb: no los peles. In a positive command it attaches to the end: pélalos.","tag":"receta"},
+ {"id":"s181","lvl":2,"nl":"Haal de pan van het vuur voordat je het paprikapoeder toevoegt.","en":"Take the pan off the heat before you add the paprika.","es":"Aparta la sartén del fuego antes de echar el pimentón.","alt":["aparta la sarten del fuego antes de echar el pimenton","aparta la sartén del fuego antes de echar el pimentón"],"uitleg":"Antes de wordt gevolgd door een infinitief, ook als er in het Nederlands 'voordat je' staat. Del is de samentrekking van de + el.","ue":"Antes de is followed by an infinitive, even where Dutch and English use a full clause. Del is de + el contracted.","tag":"receta"},
+ {"id":"s182","lvl":2,"nl":"Als je alles in één keer toevoegt, schift de gazpacho.","en":"If you add it all at once, the gazpacho splits.","es":"Si lo echas todo de golpe, el gazpacho se corta.","alt":["si lo echas todo de golpe, el gazpacho se corta","si lo echas todo de golpe el gazpacho se corta"],"uitleg":"Na si komt gewoon de tegenwoordige tijd, en in de gevolgzin ook. Se corta is wederkerend: het schift vanzelf, niemand doet het.","ue":"After si you use the plain present, and so does the result clause. Se corta is reflexive: it splits by itself, nobody does it.","tag":"receta"},
+ {"id":"s183","lvl":2,"nl":"Het brood moet warm zijn als je de knoflook erover wrijft.","en":"The bread has to be hot when you rub the garlic on it.","es":"El pan tiene que estar caliente cuando frotas el ajo.","alt":["el pan tiene que estar caliente cuando frotas el ajo"],"uitleg":"Tener que + infinitief is de gewone manier om moeten te zeggen. Estar caliente en niet ser: warm zijn is een toestand van nu, geen eigenschap van brood.","ue":"Tener que + infinitive is the usual way to say must. Estar caliente, not ser: being hot is a current state, not a property of bread.","tag":"receta"},
+ {"id":"s184","lvl":3,"nl":"Met te veel champignons tegelijk laten ze water los.","en":"With too many mushrooms at once they release water.","es":"Con demasiados champiñones a la vez sueltan agua.","alt":["con demasiados champinones a la vez sueltan agua","con demasiados champiñones a la vez sueltan agua"],"uitleg":"Demasiado buigt mee met wat erachter staat: demasiados champiñones, demasiada agua. Soltar is een schoenwerkwoord: o wordt ue, dus sueltan.","ue":"Demasiado agrees with the noun: demasiados champiñones, demasiada agua. Soltar is stem-changing: o becomes ue, hence sueltan.","tag":"receta"},
+ {"id":"s185","lvl":2,"nl":"Laat het deeg een half uur rusten.","en":"Let the dough rest for half an hour.","es":"Deja reposar la masa media hora.","alt":["deja reposar la masa media hora"],"uitleg":"Dejar + infinitief betekent laten: deja reposar, zonder que ertussen. Media hora heeft geen lidwoord, net als in 'een half uur' zonder de.","ue":"Dejar + infinitive means to let: deja reposar, with no que in between. Media hora takes no article.","tag":"receta"}
 ];
 
 var QUIZZES = [
@@ -3266,7 +3293,43 @@ var K_WORDS = [
   {id:"k241", es:"con", nl:"met", tag:"kern-bestaan", ej:"Voy con mi hermana.", ejnl:"Ik ga met mijn zus."},
   {id:"k242", es:"sin", nl:"zonder", tag:"kern-bestaan", ej:"Tomo el café sin azúcar.", ejnl:"Ik drink mijn koffie zonder suiker."},
   {id:"k243", es:"quizá / quizás", nl:"misschien", tag:"kern-bestaan", ej:"Este verano quizá vayamos a Cádiz.", ejnl:"Deze zomer gaan we misschien naar Cádiz."},
-  {id:"k244", es:"creer", nl:"geloven, denken", tag:"kern-bestaan", ej:"Creo que tienes razón.", ejnl:"Ik denk dat je gelijk hebt."}
+  {id:"k244", es:"creer", nl:"geloven, denken", tag:"kern-bestaan", ej:"Creo que tienes razón.", ejnl:"Ik denk dat je gelijk hebt."},
+ {id:"k245", es:"la batidora", nl:"de staafmixer, de blender", tag:"receta-1", ej:"Tritura los tomates con la batidora.", ejnl:"Maal de tomaten fijn met de blender."},
+ {id:"k246", es:"el pepino", nl:"de komkommer", tag:"receta-1", ej:"Pela el pepino antes de triturarlo.", ejnl:"Schil de komkommer voor je hem fijnmaalt."},
+ {id:"k247", es:"el vinagre", nl:"de azijn", tag:"receta-1", ej:"Una cucharada de vinagre es suficiente.", ejnl:"Eén eetlepel azijn is genoeg."},
+ {id:"k248", es:"la nevera", nl:"de koelkast", tag:"receta-1", ej:"El gazpacho tiene que estar en la nevera dos horas.", ejnl:"De gazpacho moet twee uur in de koelkast."},
+ {id:"k249", es:"maduro", nl:"rijp", tag:"receta-1", ej:"Busca tomates muy maduros, saben mucho mejor.", ejnl:"Zoek heel rijpe tomaten, die smaken veel beter."},
+ {id:"k250", es:"triturar", nl:"fijnmalen, pureren", tag:"receta-1", ej:"Tritura todo dos minutos.", ejnl:"Maal alles twee minuten fijn."},
+ {id:"k251", es:"la rebanada", nl:"de snee (brood)", tag:"receta-2", ej:"Necesitas cuatro rebanadas de pan.", ejnl:"Je hebt vier sneetjes brood nodig."},
+ {id:"k252", es:"tostar", nl:"roosteren", tag:"receta-2", ej:"Tuesta el pan hasta que esté dorado.", ejnl:"Rooster het brood tot het goudbruin is."},
+ {id:"k253", es:"frotar", nl:"wrijven", tag:"receta-2", ej:"Frota el ajo sobre el pan caliente.", ejnl:"Wrijf de knoflook over het warme brood."},
+ {id:"k254", es:"el chorro", nl:"de scheut", tag:"receta-2", ej:"Echa un chorro de aceite por encima.", ejnl:"Giet er een scheut olie overheen."},
+ {id:"k255", es:"la pizca", nl:"het snufje", tag:"receta-2", ej:"Una pizca de sal y ya está.", ejnl:"Een snufje zout en klaar."},
+ {id:"k256", es:"crujiente", nl:"knapperig", tag:"receta-2", ej:"El pan tiene que quedar crujiente.", ejnl:"Het brood moet knapperig blijven."},
+ {id:"k257", es:"la sartén", nl:"de koekenpan", tag:"receta-3", ej:"Calienta el aceite en una sartén grande.", ejnl:"Verhit de olie in een grote koekenpan."},
+ {id:"k258", es:"sofreír", nl:"aanfruiten", tag:"receta-3", ej:"Sofríe la cebolla cinco minutos.", ejnl:"Fruit de ui vijf minuten aan."},
+ {id:"k259", es:"el calabacín", nl:"de courgette", tag:"receta-3", ej:"Corta el calabacín en dados.", ejnl:"Snijd de courgette in blokjes."},
+ {id:"k260", es:"la berenjena", nl:"de aubergine", tag:"receta-3", ej:"La berenjena tarda un poco más.", ejnl:"De aubergine doet er iets langer over."},
+ {id:"k261", es:"a fuego lento", nl:"op laag vuur", tag:"receta-3", ej:"Deja el pisto a fuego lento quince minutos.", ejnl:"Laat de pisto vijftien minuten op laag vuur staan."},
+ {id:"k262", es:"espesar", nl:"indikken", tag:"receta-3", ej:"Espera hasta que la salsa espese.", ejnl:"Wacht tot de saus indikt."},
+ {id:"k263", es:"la patata", nl:"de aardappel", tag:"receta-4", ej:"Pela un kilo de patatas.", ejnl:"Schil een kilo aardappels."},
+ {id:"k264", es:"freír", nl:"bakken, frituren", tag:"receta-4", ej:"Fríe las patatas dos veces.", ejnl:"Bak de aardappels twee keer."},
+ {id:"k265", es:"el pimentón", nl:"het paprikapoeder", tag:"receta-4", ej:"El pimentón se quema muy rápido.", ejnl:"Paprikapoeder verbrandt heel snel."},
+ {id:"k266", es:"la harina", nl:"de bloem", tag:"receta-4", ej:"Añade una cucharada de harina.", ejnl:"Voeg een eetlepel bloem toe."},
+ {id:"k267", es:"el caldo", nl:"de bouillon", tag:"receta-4", ej:"Usa caldo de verduras, no de carne.", ejnl:"Gebruik groentebouillon, geen vleesbouillon."},
+ {id:"k268", es:"amargar", nl:"bitter maken, bitter worden", tag:"receta-4", ej:"Si se quema, amarga toda la salsa.", ejnl:"Als het verbrandt, wordt de hele saus bitter."},
+ {id:"k269", es:"la almendra", nl:"de amandel", tag:"receta-5", ej:"El ajoblanco es una sopa de almendra.", ejnl:"Ajoblanco is een amandelsoep."},
+ {id:"k270", es:"la corteza", nl:"de korst", tag:"receta-5", ej:"Quita la corteza del pan.", ejnl:"Haal de korst van het brood."},
+ {id:"k271", es:"escurrir", nl:"uitlekken, uitknijpen", tag:"receta-5", ej:"Escurre el pan con la mano.", ejnl:"Knijp het brood uit met je hand."},
+ {id:"k272", es:"en hilo", nl:"in een dun straaltje", tag:"receta-5", ej:"Añade el aceite en hilo, poco a poco.", ejnl:"Voeg de olie in een dun straaltje toe, beetje bij beetje."},
+ {id:"k273", es:"la uva", nl:"de druif", tag:"receta-5", ej:"Sírvelo con unas uvas frías.", ejnl:"Serveer het met een paar koude druiven."},
+ {id:"k274", es:"reposar", nl:"rusten (van een gerecht)", tag:"receta-5", ej:"Deja reposar la masa media hora.", ejnl:"Laat het deeg een half uur rusten."},
+ {id:"k275", es:"el champiñón", nl:"de champignon", tag:"receta-6", ej:"Limpia los champiñones con un papel.", ejnl:"Maak de champignons schoon met een doekje."},
+ {id:"k276", es:"el diente de ajo", nl:"het teentje knoflook", tag:"receta-6", ej:"Corta tres dientes de ajo en láminas.", ejnl:"Snijd drie teentjes knoflook in plakjes."},
+ {id:"k277", es:"la guindilla", nl:"het pepertje", tag:"receta-6", ej:"Una guindilla pequeña es bastante.", ejnl:"Eén klein pepertje is genoeg."},
+ {id:"k278", es:"el perejil", nl:"de peterselie", tag:"receta-6", ej:"Echa perejil picado por encima.", ejnl:"Strooi er gehakte peterselie overheen."},
+ {id:"k279", es:"la lámina", nl:"het plakje", tag:"receta-6", ej:"Corta los champiñones en láminas gruesas.", ejnl:"Snijd de champignons in dikke plakjes."},
+ {id:"k280", es:"dorar", nl:"bruin bakken", tag:"receta-6", ej:"Dora los ajos treinta segundos.", ejnl:"Bak de knoflook dertig seconden bruin."}
 ];
 
 /* ================= DE CERVANTES-WOORDEN (v23.15) =================
@@ -3344,7 +3407,7 @@ var C_WORDS = [
  {id:"cv64", es:"oír", nl:"horen", tag:"cerv-lichaam", sl:"oir"},
  {id:"cv65", es:"cliente", nl:"klant", tag:"cerv-werk", sl:"cliente"},
  {id:"cv66", es:"pedir", nl:"vragen (om iets), bestellen", tag:"cerv-wie-je-bent", sl:"pedir"},
- {id:"cv67", es:"planeta", nl:"planeet (el planeta!)", tag:"cerv-natuur", sl:"planeta"},
+ {id:"cv67", es:"el planeta", nl:"planeet", tag:"cerv-natuur", sl:"planeta"},
  {id:"cv68", es:"estrella", nl:"ster", tag:"cerv-natuur", sl:"estrella"},
  {id:"cv69", es:"color", nl:"kleur", tag:"cerv-hoe", sl:"color"},
  {id:"cv70", es:"juez", nl:"rechter", tag:"cerv-politiek", sl:"juez"},
@@ -3932,7 +3995,7 @@ var C_WORDS = [
  {id:"cv652", es:"adentro", nl:"binnen, naar binnen", tag:"cerv-waar", sl:"adentro"},
  {id:"cv653", es:"cargo", nl:"functie; hacerse cargo = zich ontfermen over", tag:"cerv-economie", sl:"cargo"},
  {id:"cv654", es:"víctima", nl:"slachtoffer", tag:"cerv-politiek", sl:"victima"},
- {id:"cv655", es:"tema", nl:"onderwerp, thema (el tema!)", tag:"cerv-kunst", sl:"tema"},
+ {id:"cv655", es:"el tema", nl:"onderwerp, thema", tag:"cerv-kunst", sl:"tema"},
  {id:"cv656", es:"destino", nl:"bestemming; lot", tag:"cerv-waar", sl:"destino"},
  {id:"cv657", es:"juicio", nl:"rechtszaak; oordeel", tag:"cerv-politiek", sl:"juicio"},
  {id:"cv658", es:"equivocado", nl:"fout, verkeerd; estar equivocado = het mis hebben", tag:"cerv-oordeel", sl:"equivocado"},
@@ -4355,7 +4418,7 @@ var C_WORDS = [
  {id:"cv1075", es:"jamás", nl:"nooit (nadrukkelijk)", tag:"cerv-wanneer", sl:"jamas"},
  {id:"cv1076", es:"fuerza", nl:"kracht", tag:"cerv-techniek", sl:"fuerza"},
  {id:"cv1077", es:"dolor", nl:"pijn", tag:"cerv-gezondheid", sl:"dolor"},
- {id:"cv1078", es:"sistema", nl:"systeem (el sistema!)", tag:"cerv-school", sl:"sistema"},
+ {id:"cv1078", es:"el sistema", nl:"systeem", tag:"cerv-school", sl:"sistema"},
  {id:"cv1079", es:"propio", nl:"eigen", tag:"cerv-bestaan", sl:"propio"},
  {id:"cv1080", es:"personal", nl:"persoonlijk; personeel", tag:"cerv-gezondheid", sl:"personal"},
  {id:"cv1081", es:"oficial", nl:"officieel; officier", tag:"cerv-politiek", sl:"oficial"},
@@ -5061,6 +5124,222 @@ var AUDICIONES = [
     optsEn:["Because dinner is so late","Because lunch is small","Because children sleep early","Because the shops are shut"], c:0,
     waarom:"Por eso = daarom. Hij noemt de merienda als gevolg van dat late avondeten.",
     waaromEn:"Por eso = that's why. He gives la merienda as a consequence of that late dinner."}
+ ]},
+ {id:"e7", nivel:"a0", tema:"taxi", titel:"In de taxi", titelEn:"In the taxi",
+  lineas:[
+   {v:"a", es:"Buenas noches. ¿A dónde vamos?"},
+   {v:"b", es:"A la estación de Atocha, por favor. Tengo un tren a las diez."},
+   {v:"a", es:"Con este tráfico, mejor por el paseo. Llegamos en veinte minutos."},
+   {v:"b", es:"Perfecto, entonces me sobra tiempo."}
+  ],
+  vragen:[
+   {q:"Hoe laat gaat de trein?", qEn:"What time is the train?",
+    opts:["Om tien uur","Om acht uur","Om twee uur","Om elf uur"],
+    optsEn:["At ten","At eight","At two","At eleven"], c:0,
+    waarom:"A las diez = om tien uur. Diez is tien, dos is twee.",
+    waaromEn:"A las diez = at ten. Diez is ten, dos is two."},
+   {q:"Waarom kiest de chauffeur een andere route?", qEn:"Why does the driver take another route?",
+    opts:["Het is druk op de weg","De weg is afgesloten","Het is korter zo","Hij kent de stad niet"],
+    optsEn:["The traffic is bad","The road is closed","It is shorter","He does not know the city"], c:0,
+    waarom:"Con este tráfico = met dit verkeer. Dat is de reden die hij zelf geeft.",
+    waaromEn:"Con este tráfico = with this traffic. That's the reason he gives himself."},
+   {q:"Wat zegt de passagier over zijn tijd?", qEn:"What does the passenger say about his time?",
+    opts:["Hij komt ruim op tijd","Hij moet zich haasten","Hij mist zijn trein","Hij wil een andere weg"],
+    optsEn:["He'll be there in time","He has to hurry","He'll miss his train","He wants another route"], c:0,
+    waarom:"Me sobra tiempo = ik heb tijd over. Sobrar is overblijven, en dat zegt hij pas nadat hij de twintig minuten heeft gehoord.",
+    waaromEn:"Me sobra tiempo = I have time to spare. Sobrar is to be left over, and he says it only after hearing the twenty minutes."}
+  ]},
+ {id:"e8", nivel:"a0", tema:"mercado", titel:"Op de markt", titelEn:"At the market",
+  lineas:[
+   {v:"a", es:"¿Qué le pongo?"},
+   {v:"b", es:"Un kilo de tomates y medio de cebollas."},
+   {v:"a", es:"Los tomates están muy buenos hoy. ¿Algo más?"},
+   {v:"b", es:"No, nada más. ¿Cuánto es todo?"}
+  ],
+  vragen:[
+   {q:"Hoeveel uien worden er gekocht?", qEn:"How many onions are bought?",
+    opts:["Een halve kilo","Een hele kilo","Twee kilo","Geen uien"],
+    optsEn:["Half a kilo","A whole kilo","Two kilos","No onions"], c:0,
+    waarom:"Medio de cebollas = een half (kilo) uien. Medio slaat terug op het kilo van daarvoor.",
+    waaromEn:"Medio de cebollas = half a (kilo of) onions. Medio refers back to the kilo mentioned before."},
+   {q:"Wat zegt de verkoper over de tomaten?", qEn:"What does the seller say about the tomatoes?",
+    opts:["Ze zijn vandaag goed","Ze zijn vandaag duur","Ze zijn bijna op","Ze zijn niet rijp"],
+    optsEn:["They are good today","They are dear today","They are almost gone","They are not ripe"], c:0,
+    waarom:"Están muy buenos hoy: met estar, dus hoe ze er nú bij staan. Son buenos zou over de soort gaan.",
+    waaromEn:"Están muy buenos hoy: with estar, so how they are right now. Son buenos would be about the kind."},
+   {q:"Wat gebeurt er direct hierna?", qEn:"What happens right after this?",
+    opts:["Er wordt afgerekend","Er komt nog fruit bij","De klant loopt weg","De markt gaat dicht"],
+    optsEn:["She pays for it","She adds some fruit","She walks away","The market closes"], c:0,
+    waarom:"¿Cuánto es todo? = hoeveel is het samen? Die vraag stel je vlak voor het betalen, en nada más sluit de bestelling af.",
+    waaromEn:"¿Cuánto es todo? = how much is it all? You ask that right before paying, and nada más closes the order."}
+  ]},
+ {id:"e9", nivel:"a0", tema:"farmacia", titel:"Bij de apotheek", titelEn:"At the pharmacy",
+  lineas:[
+   {v:"a", es:"Buenos días. Me duele mucho la cabeza desde ayer."},
+   {v:"b", es:"¿Tiene fiebre?"},
+   {v:"a", es:"No, fiebre no. Solo dolor."},
+   {v:"b", es:"Entonces esto cada ocho horas, y beba mucha agua."}
+  ],
+  vragen:[
+   {q:"Wat is er aan de hand?", qEn:"What is the matter?",
+    opts:["Hoofdpijn","Buikpijn","Keelpijn","Rugpijn"],
+    optsEn:["A headache","A stomach ache","A sore throat","A bad back"], c:0,
+    waarom:"Me duele la cabeza = mijn hoofd doet pijn. La cabeza is het hoofd.",
+    waaromEn:"Me duele la cabeza = my head hurts. La cabeza is the head."},
+   {q:"Hoe vaak moet het middel?", qEn:"How often should the medicine be taken?",
+    opts:["Om de acht uur","Om de vier uur","Twee keer per dag","Alleen 's avonds"],
+    optsEn:["Every eight hours","Every four hours","Twice a day","Only at night"], c:0,
+    waarom:"Cada ocho horas = elke acht uur. Ocho is acht, cuatro is vier.",
+    waaromEn:"Cada ocho horas = every eight hours. Ocho is eight, cuatro is four."},
+   {q:"Wat wordt er uitdrukkelijk uitgesloten?", qEn:"What is explicitly ruled out?",
+    opts:["Koorts","Hoofdpijn","Vermoeidheid","Slapeloosheid"],
+    optsEn:["Fever","Headache","Tiredness","Sleeplessness"], c:0,
+    waarom:"De apotheker vraagt ¿Tiene fiebre? en het antwoord is fiebre no. Er is dus pijn zonder koorts, en dat verandert het advies.",
+    waaromEn:"The pharmacist asks ¿Tiene fiebre? and the answer is fiebre no. So there is pain without fever, and that changes the advice."}
+  ]},
+ {id:"e10", nivel:"a0", tema:"calle", titel:"De weg vragen", titelEn:"Asking the way",
+  lineas:[
+   {v:"a", es:"Perdone, ¿hay una parada de autobús por aquí?"},
+   {v:"b", es:"Sí, la segunda calle a la derecha, al lado del banco."},
+   {v:"a", es:"¿Está lejos?"},
+   {v:"b", es:"Cinco minutos andando, no más."}
+  ],
+  vragen:[
+   {q:"Welke straat moet je nemen?", qEn:"Which street should you take?",
+    opts:["De tweede rechts","De eerste rechts","De tweede links","De eerste links"],
+    optsEn:["The second right","The first right","The second left","The first left"], c:0,
+    waarom:"La segunda calle a la derecha = de tweede straat rechts. Segunda is tweede, derecha is rechts.",
+    waaromEn:"La segunda calle a la derecha = the second street on the right. Segunda is second, derecha is right."},
+   {q:"Hoe lang duurt het lopen?", qEn:"How long is the walk?",
+    opts:["Vijf minuten","Vijftien minuten","Een half uur","Twee minuten"],
+    optsEn:["Five minutes","Fifteen minutes","Half an hour","Two minutes"], c:0,
+    waarom:"Cinco minutos andando = vijf minuten lopend. Cinco is vijf, quince is vijftien.",
+    waaromEn:"Cinco minutos andando = five minutes on foot. Cinco is five, quince is fifteen."},
+   {q:"Waaraan herken je de halte?", qEn:"How do you recognise the stop?",
+    opts:["Aan de bank ernaast","Aan het bord erboven","Aan de rij mensen","Aan de kleur"],
+    optsEn:["By the bank next to it","By the sign above it","By the queue","By its colour"], c:0,
+    waarom:"Al lado del banco = naast de bank. Dat is het enige herkenningspunt dat erbij wordt gegeven.",
+    waaromEn:"Al lado del banco = next to the bank. That's the only landmark given."}
+  ]},
+ {id:"e11", nivel:"a0", tema:"peluqueria", titel:"Bij de kapper", titelEn:"At the hairdresser",
+  lineas:[
+   {v:"a", es:"¿Cómo lo quiere?"},
+   {v:"b", es:"Corto por detrás, pero por delante casi igual."},
+   {v:"a", es:"¿Le lavo el pelo antes?"},
+   {v:"b", es:"No hace falta, lo lavé esta mañana."}
+  ],
+  vragen:[
+   {q:"Wat gebeurt er aan de voorkant?", qEn:"What happens at the front?",
+    opts:["Bijna niets","Alles eraf","Veel korter","Alleen wassen"],
+    optsEn:["Almost nothing","All of it off","Much shorter","Just a wash"], c:0,
+    waarom:"Casi igual = bijna hetzelfde. Alleen por detrás (achter) mag kort.",
+    waaromEn:"Casi igual = almost the same. Only por detrás (at the back) may go short."},
+   {q:"Wordt het haar in de kapsalon gewassen?", qEn:"Is the hair washed at the salon?",
+    opts:["Nee","Ja, eerst","Ja, daarna","Alleen voor"],
+    optsEn:["No","Yes, first","Yes, after","Only at the front"], c:0,
+    waarom:"No hace falta = het hoeft niet. Dat is een nette manier om nee te zeggen.",
+    waaromEn:"No hace falta = there's no need. That's a polite way of saying no."},
+   {q:"Waarom hoeft dat niet?", qEn:"Why is that not needed?",
+    opts:["Het is al gewassen","Het kost extra geld","Er is geen tijd","De kapper raadt het af"],
+    optsEn:["It was washed today","It costs extra","There is no time","The barber says no"], c:0,
+    waarom:"Lo lavé esta mañana = ik heb het vanmorgen gewassen. Lavé is indefinido: af, vanmorgen, klaar.",
+    waaromEn:"Lo lavé esta mañana = I washed it this morning. Lavé is the indefinido: done, this morning, finished."}
+  ]},
+ {id:"e12", nivel:"a2", tema:"cajero", titel:"Bij de pinautomaat", titelEn:"At the cash machine",
+  lineas:[
+   {v:"a", es:"Esta máquina no me da el dinero. Se ha quedado con mi tarjeta."},
+   {v:"b", es:"Tiene que llamar al número de atrás. Está abierto hasta las ocho."},
+   {v:"a", es:"¿Y mañana? Mañana es domingo."},
+   {v:"b", es:"Los domingos está cerrado, pero el número funciona igual."}
+  ],
+  vragen:[
+   {q:"Wat is er misgegaan?", qEn:"What went wrong?",
+    opts:["De kaart is ingeslikt","De kaart is gestolen","De pincode klopt niet","Het geld is op"],
+    optsEn:["The card is stuck","The card was stolen","The code is wrong","There is no money"], c:0,
+    waarom:"Se ha quedado con mi tarjeta = hij heeft mijn pas gehouden. Quedarse con iets = iets houden.",
+    waaromEn:"Se ha quedado con mi tarjeta = it kept my card. Quedarse con something = to keep something."},
+   {q:"Wat moet er gebeuren?", qEn:"What needs to be done?",
+    opts:["Bellen met een nummer","Morgen terugkomen","Naar een andere bank","Wachten tot acht uur"],
+    optsEn:["Call a number","Come back tomorrow","Go to another bank","Wait until eight"], c:0,
+    waarom:"Tiene que llamar = u moet bellen. Tener que + infinitief is de gewone manier om moeten te zeggen.",
+    waaromEn:"Tiene que llamar = you have to call. Tener que + infinitive is the usual way to say must."},
+   {q:"Kan het morgen ook nog?", qEn:"Can it still be done tomorrow?",
+    opts:["Ja, per telefoon wel","Ja, aan de balie","Nee, helemaal niet","Alleen 's ochtends"],
+    optsEn:["Yes, by phone","Yes, at the desk","No, not at all","Only in the morning"], c:0,
+    waarom:"Está cerrado maar el número funciona igual: het kantoor is dicht, het nummer werkt evengoed. Igual betekent hier toch, ondanks dat.",
+    waaromEn:"Está cerrado but el número funciona igual: the office is closed, the number works all the same. Igual here means anyway, despite that."}
+  ]},
+ {id:"e13", nivel:"a2", tema:"piso", titel:"Een kamer bekijken", titelEn:"Viewing a room",
+  lineas:[
+   {v:"a", es:"La habitación es pequeña, pero da al patio. Es muy tranquila."},
+   {v:"b", es:"¿Y la cocina la comparto?"},
+   {v:"a", es:"Sí, con dos personas. El baño también."},
+   {v:"b", es:"¿Y cuánto es al mes, con gastos?"}
+  ],
+  vragen:[
+   {q:"Wat wordt er als voordeel genoemd?", qEn:"What is mentioned as an advantage?",
+    opts:["Het is er stil","De kamer is groot","Er is een balkon","De huur is laag"],
+    optsEn:["It is quiet","The room is big","It has a balcony","The rent is low"], c:0,
+    waarom:"Da al patio, es muy tranquila = hij ligt aan de binnenplaats en is heel rustig. Dar a = uitkijken op.",
+    waaromEn:"Da al patio, es muy tranquila = it looks onto the courtyard and is very quiet. Dar a = to look out onto."},
+   {q:"Met hoeveel mensen deel je de keuken?", qEn:"With how many people is the kitchen shared?",
+    opts:["Twee","Eén","Drie","Niemand"],
+    optsEn:["Two","One","Three","Nobody"], c:0,
+    waarom:"Con dos personas = met twee mensen. Dos is twee, tres is drie.",
+    waaromEn:"Con dos personas = with two people. Dos is two, tres is three."},
+   {q:"Wat wil de bezoeker nog weten?", qEn:"What does the visitor still want to know?",
+    opts:["De prijs met kosten","De prijs zonder kosten","Wanneer het vrij is","Of er meubels zijn"],
+    optsEn:["The price with bills","The price without bills","When it is free","If it is furnished"], c:0,
+    waarom:"Con gastos = met de kosten erbij, dus gas, water en licht. Hij vraagt er expres naar, want al mes alleen zegt niets over de eindprijs.",
+    waaromEn:"Con gastos = including bills, so gas, water and electricity. He asks on purpose, because al mes alone says nothing about the final price."}
+  ]},
+ {id:"e14", nivel:"a2", tema:"devolucion", titel:"Iets terugbrengen", titelEn:"Returning something",
+  lineas:[
+   {v:"a", es:"Quería devolver esta camisa. Me queda pequeña."},
+   {v:"b", es:"¿Tiene el tique?"},
+   {v:"a", es:"Lo perdí. Pero pagué con tarjeta, aquí está el movimiento."},
+   {v:"b", es:"Entonces le doy un vale, no el dinero."}
+  ],
+  vragen:[
+   {q:"Wat is er mis met het overhemd?", qEn:"What is wrong with the shirt?",
+    opts:["Het is te klein","Het is te groot","Het is kapot","De kleur klopt niet"],
+    optsEn:["It is too small","It is too big","It is torn","The colour is wrong"], c:0,
+    waarom:"Me queda pequeña = hij zit me te klein. Quedar gaat hier over hoe iets past.",
+    waaromEn:"Me queda pequeña = it's too small on me. Quedar here is about how something fits."},
+   {q:"Wat krijgt de klant terug?", qEn:"What does the customer get back?",
+    opts:["Een tegoedbon","Het hele bedrag","Een ander hemd","Helemaal niets"],
+    optsEn:["A voucher","The money back","Another shirt","Nothing at all"], c:0,
+    waarom:"Un vale, no el dinero = een bon, niet het geld. Dat zegt de verkoper er expliciet bij.",
+    waaromEn:"Un vale, no el dinero = a voucher, not the money. The seller says so explicitly."},
+   {q:"Waarom geen geld terug?", qEn:"Why no money back?",
+    opts:["De bon is kwijt","Het is te laat","Het was afgeprijsd","Er is gepind"],
+    optsEn:["The receipt is lost","It is too late","It was on sale","She paid by card"], c:0,
+    waarom:"Lo perdí = ik ben hem kwijtgeraakt (perder, indefinido). Het bankafschrift bewijst wel de aankoop, maar zonder tique blijft het een vale.",
+    waaromEn:"Lo perdí = I lost it (perder, indefinido). The bank statement proves the purchase, but without the receipt it stays a voucher."}
+  ]},
+ {id:"e15", nivel:"a2", tema:"telefono", titel:"Een afspraak maken", titelEn:"Making an appointment",
+  lineas:[
+   {v:"a", es:"Clínica Sol, buenos días."},
+   {v:"b", es:"Quería pedir cita con el dentista."},
+   {v:"a", es:"¿Le viene bien el jueves a las cinco?"},
+   {v:"b", es:"El jueves no puedo. ¿Hay algo el viernes por la mañana?"}
+  ],
+  vragen:[
+   {q:"Welke dag wordt er afgewezen?", qEn:"Which day is turned down?",
+    opts:["Donderdag","Vrijdag","Dinsdag","Maandag"],
+    optsEn:["Thursday","Friday","Tuesday","Monday"], c:0,
+    waarom:"El jueves no puedo = donderdag kan ik niet. Jueves is donderdag, viernes is vrijdag.",
+    waaromEn:"El jueves no puedo = I can't on Thursday. Jueves is Thursday, viernes is Friday."},
+   {q:"Wanneer zou het wel schikken?", qEn:"When would it suit?",
+    opts:["Vrijdagochtend","Vrijdagmiddag","Donderdagochtend","Zaterdagochtend"],
+    optsEn:["Friday morning","Friday afternoon","Thursday morning","Saturday morning"], c:0,
+    waarom:"El viernes por la mañana = vrijdagochtend. Por la mañana is 's ochtends, por la tarde 's middags.",
+    waaromEn:"El viernes por la mañana = Friday morning. Por la mañana is in the morning, por la tarde in the afternoon."},
+   {q:"Staat de afspraak aan het eind vast?", qEn:"Is the appointment settled at the end?",
+    opts:["Nee, nog niet","Ja, donderdag","Ja, vrijdag","Ja, maar later"],
+    optsEn:["No, not yet","Yes, Thursday","Yes, Friday","Yes, but later"], c:0,
+    waarom:"¿Hay algo el viernes...? is een vraag, en er komt geen antwoord meer. De donderdag is afgewezen en de vrijdag is nog niet bevestigd.",
+    waaromEn:"¿Hay algo el viernes...? is a question, and no answer follows. Thursday was declined and Friday isn't confirmed yet."}
   ]}
 ];
 function audZwaarte(sc){
@@ -5535,7 +5814,85 @@ var BOOK = [
    {q:"¿Qué aceptan casi todos para que la Transición salga bien?", opts:["No mirar atrás","Salir del país","Cerrar los periódicos"], c:0},
    {q:"¿Quiénes empiezan a hacer preguntas más tarde?", opts:["Los militares","Los nietos","Los turistas"], c:1}
   ],
-  reflectie:"¿Es mejor olvidar para vivir juntos, o hablar aunque duela?"}
+  reflectie:"¿Es mejor olvidar para vivir juntos, o hablar aunque duela?"},
+
+ /* ================= LA COCINA, deel 1: lo que ya era vegano =================
+    Stefan, 13 aug: "typische spaanse recepten (en dan wel vegan gemaakt)", en op de vraag of het
+    ook echt kookbaar moet zijn: "ook kookbaar." Vandaar de hoeveelheden, de tijden en het vuur.
+    Deze zes zijn niet veganiseerd: ze stonden al zo op tafel. Deel 2 (tortilla zonder ei, paella
+    de verduras) is een ander verhaal en komt apart. */
+ {id:"receta-1", num:1, deel:"La cocina española", titel:"Gazpacho andaluz", drempel:0,
+  tekst:"Para 4 personas · 15 minutos · sin fuego\n\n"+
+   "INGREDIENTES\n1 kg de tomates muy maduros\n1 pepino pequeño\n1 pimiento verde\n1 diente de ajo\n50 ml de aceite de oliva virgen extra\n1 cucharada de vinagre de vino\n1 cucharadita de sal\n200 ml de agua muy fría\n\n"+
+   "PREPARACIÓN\n1. Lava los tomates y córtalos en cuatro. No los peles: la piel se va con la batidora.\n2. Pela el pepino y quítale las semillas al pimiento.\n3. Pon todo en la batidora con el ajo, la sal y el vinagre. Tritura dos minutos.\n4. Añade el aceite poco a poco, sin parar de batir. Así el gazpacho queda cremoso.\n5. Pasa la mezcla por un colador si la quieres muy fina.\n6. Añade el agua fría y prueba. ¿Falta sal? ¿Falta vinagre? Corrige ahora.\n7. Deja el gazpacho en la nevera dos horas como mínimo.\n\n"+
+   "EL TRUCO\nEl aceite al final y poco a poco. Si lo echas todo de golpe, el gazpacho se corta y queda aguado.",
+  vragen:[
+   {q:"¿Cuánto tiempo tiene que estar en la nevera?", opts:["Dos horas como mínimo","Diez minutos","No hace falta"], c:0},
+   {q:"¿Por qué se añade el aceite poco a poco?", opts:["Para que quede cremoso","Para gastar menos aceite","Para que sea más frío"], c:0},
+   {q:"¿Hay que pelar los tomates?", opts:["No, la piel se va con la batidora","Sí, siempre","Solo los verdes"], c:0}
+  ],
+  reflectie:"¿Qué plato de tu país cambia mucho de una casa a otra, como el gazpacho en España?"},
+
+ {id:"receta-2", num:2, deel:"La cocina española", titel:"Pan con tomate", drempel:0,
+  tekst:"Para 2 personas · 5 minutos\n\n"+
+   "INGREDIENTES\n4 rebanadas de pan rústico\n2 tomates maduros\n1 diente de ajo\naceite de oliva virgen extra\nsal\n\n"+
+   "PREPARACIÓN\n1. Tuesta el pan hasta que esté dorado y crujiente.\n2. Corta el ajo por la mitad y frota una mitad sobre el pan caliente.\n3. Corta el tomate por la mitad y frótalo también, con fuerza, hasta que solo quede la piel en la mano.\n4. Echa un chorro de aceite y una pizca de sal.\n5. Cómelo enseguida. El pan con tomate no espera.\n\n"+
+   "EL TRUCO\nEl pan tiene que estar caliente cuando frotas el ajo. Frío, el ajo resbala y no deja sabor.",
+  vragen:[
+   {q:"¿Qué se frota primero?", opts:["El ajo","El tomate","Los dos a la vez"], c:0},
+   {q:"¿Por qué el pan tiene que estar caliente?", opts:["Porque así el ajo deja sabor","Porque es más barato","Porque el tomate está frío"], c:0},
+   {q:"¿Qué queda en la mano al final?", opts:["La piel del tomate","Las semillas","Nada"], c:0}
+  ],
+  reflectie:"¿Cuál es el plato más simple que sabes hacer, y por qué te gusta?"},
+
+ {id:"receta-3", num:3, deel:"La cocina española", titel:"Pisto manchego", drempel:0,
+  tekst:"Para 4 personas · 45 minutos\n\n"+
+   "INGREDIENTES\n1 cebolla grande\n1 pimiento verde\n1 pimiento rojo\n1 calabacín\n1 berenjena\n400 g de tomate triturado\n4 cucharadas de aceite de oliva\n1 cucharadita de azúcar\nsal\n\n"+
+   "PREPARACIÓN\n1. Corta toda la verdura en dados del mismo tamaño. Así se hace todo a la vez.\n2. Calienta el aceite en una sartén grande y sofríe la cebolla cinco minutos, a fuego medio.\n3. Añade los pimientos y déjalos diez minutos más.\n4. Echa el calabacín y la berenjena. Remueve de vez en cuando, quince minutos.\n5. Añade el tomate triturado, la sal y el azúcar. El azúcar quita la acidez del tomate.\n6. Baja el fuego y deja el pisto a fuego lento quince minutos, sin tapar, hasta que espese.\n\n"+
+   "EL TRUCO\nSin tapa al final. Con tapa el agua no se va y el pisto queda como una sopa.",
+  vragen:[
+   {q:"¿Por qué se corta toda la verdura del mismo tamaño?", opts:["Para que se haga todo a la vez","Para que sea más bonito","Para gastar menos aceite"], c:0},
+   {q:"¿Para qué sirve el azúcar?", opts:["Para quitar la acidez del tomate","Para que sea un postre","Para que espese antes"], c:0},
+   {q:"¿Qué pasa si tapas la sartén al final?", opts:["Queda como una sopa","Se quema","Sabe a ajo"], c:0}
+  ],
+  reflectie:"¿Prefieres cocinar rápido o dejar algo a fuego lento mientras haces otra cosa?"},
+
+ {id:"receta-4", num:4, deel:"La cocina española", titel:"Patatas bravas", drempel:0,
+  tekst:"Para 4 personas · 40 minutos\n\n"+
+   "INGREDIENTES\n1 kg de patatas\naceite de oliva para freír\nsal\n\n"+
+   "PARA LA SALSA BRAVA\n2 cucharadas de aceite\n1 cucharada de harina\n1 cucharada de pimentón dulce\n1 cucharadita de pimentón picante\n300 ml de caldo de verduras\n1 cucharada de vinagre\n\n"+
+   "PREPARACIÓN\n1. Pela las patatas y córtalas en trozos grandes e irregulares, no en dados perfectos.\n2. Fríelas en aceite no muy caliente quince minutos, hasta que estén blandas por dentro.\n3. Sácalas, sube el fuego y fríelas otra vez tres minutos. Así quedan crujientes por fuera.\n4. Para la salsa, calienta el aceite y añade la harina. Remueve un minuto.\n5. Aparta la sartén del fuego y echa los dos pimentones. Fuera del fuego, o el pimentón se quema y amarga.\n6. Vuelve al fuego, añade el caldo poco a poco y el vinagre. Deja que espese cinco minutos.\n7. Sirve las patatas con la salsa por encima y cómelas enseguida.\n\n"+
+   "EL TRUCO\nFreír dos veces. Una vez a fuego suave para el interior, otra vez fuerte para la corteza.",
+  vragen:[
+   {q:"¿Cuántas veces se fríen las patatas?", opts:["Dos veces","Una vez","Tres veces"], c:0},
+   {q:"¿Por qué se aparta la sartén antes de echar el pimentón?", opts:["Porque se quema y amarga","Porque salpica","Porque pierde el color"], c:0},
+   {q:"¿Cómo se cortan las patatas?", opts:["En trozos grandes e irregulares","En dados pequeños","En rodajas finas"], c:0}
+  ],
+  reflectie:"¿Hay algo que en tu casa se coma siempre de pie, como las bravas en un bar?"},
+
+ {id:"receta-5", num:5, deel:"La cocina española", titel:"Ajoblanco malagueño", drempel:0,
+  tekst:"Para 4 personas · 15 minutos · sin fuego\n\n"+
+   "INGREDIENTES\n150 g de almendras crudas peladas\n100 g de pan del día anterior, sin corteza\n1 diente de ajo pequeño\n750 ml de agua muy fría\n80 ml de aceite de oliva virgen extra\n2 cucharadas de vinagre de jerez\nsal\nuvas o melón para servir\n\n"+
+   "PREPARACIÓN\n1. Pon el pan en agua diez minutos y luego escúrrelo con la mano.\n2. Tritura las almendras con el ajo y un poco de agua, hasta que quede una pasta.\n3. Añade el pan y sigue batiendo. Echa el resto del agua poco a poco.\n4. Añade el aceite en hilo, sin parar la batidora, y después el vinagre y la sal.\n5. Prueba. Si el ajo es demasiado fuerte, añade más pan y más agua.\n6. Deja reposar el ajoblanco dos horas en la nevera. Sírvelo con unas uvas frías encima.\n\n"+
+   "EL TRUCO\nMedio diente de ajo es suficiente. El ajoblanco es de almendra, no de ajo, aunque el nombre diga otra cosa.",
+  vragen:[
+   {q:"¿De qué es el ajoblanco, sobre todo?", opts:["De almendra","De ajo","De pan"], c:0},
+   {q:"¿Qué se hace si el ajo está demasiado fuerte?", opts:["Añadir más pan y más agua","Añadir más ajo","Empezar otra vez"], c:0},
+   {q:"¿Con qué se sirve?", opts:["Con uvas o melón","Con pan tostado","Con patatas"], c:0}
+  ],
+  reflectie:"¿Te sorprende que un plato lleve el nombre de lo que menos tiene dentro?"},
+
+ {id:"receta-6", num:6, deel:"La cocina española", titel:"Champiñones al ajillo", drempel:0,
+  tekst:"Para 2 personas · 15 minutos\n\n"+
+   "INGREDIENTES\n400 g de champiñones\n3 dientes de ajo\n1 guindilla pequeña\n3 cucharadas de aceite de oliva\n50 ml de vino blanco\n1 cucharada de perejil picado\nsal\n\n"+
+   "PREPARACIÓN\n1. Limpia los champiñones con un papel húmedo. No los laves debajo del grifo: cogen agua y luego no se doran.\n2. Córtalos en láminas gruesas.\n3. Corta los ajos en láminas finas y la guindilla en trozos.\n4. Calienta el aceite y dora los ajos treinta segundos. Que no se pongan marrones.\n5. Sube el fuego y echa los champiñones. No los muevas mucho: déjalos dorarse.\n6. Añade el vino y deja que se evapore dos minutos.\n7. Sal, perejil por encima, y fuera del fuego.\n\n"+
+   "EL TRUCO\nFuego fuerte y la sartén no muy llena. Con demasiados champiñones a la vez sueltan agua y se cuecen en vez de dorarse.",
+  vragen:[
+   {q:"¿Por qué no se lavan los champiñones debajo del grifo?", opts:["Porque cogen agua y no se doran","Porque pierden el color","Porque se rompen"], c:0},
+   {q:"¿Cuánto tiempo se doran los ajos?", opts:["Treinta segundos","Cinco minutos","Diez minutos"], c:0},
+   {q:"¿Qué pasa con demasiados champiñones a la vez?", opts:["Se cuecen en vez de dorarse","Se queman","Saben a vino"], c:0}
+  ],
+  reflectie:"¿Cocinas con la sartén llena para ir más rápido, o en dos veces para que salga mejor?"}
 ];
 
 /* ================= OPSLAG ================= */
@@ -9649,15 +10006,34 @@ function zinTegelsWire(el){
    stand, geen keuze: een knopje dat de opname hergebruikt die er toch al ligt. Spreken is de enige
    competentie die nog volledig leeg staat, en dit is het goedkoopste stapje die kant op. */
 var zinAudioEl = null;
+/* v23.76: terugvallen in plaats van zwijgen.
+
+   Hier stond een lege catch. Ontbrak audio/dictado/<id>.mp3, dan gebeurde er niets: geen geluid,
+   geen melding, geen spoor in de console. Op 13 aug waren dat 50 van de 251 zinnen, want de
+   opnames stonden sinds 30 juli stil terwijl de zinnen doorgroeiden.
+
+   De browserstem is hoorbaar minder mooi dan de opname, en dat is precies de bedoeling: zo hoor
+   je dát er iets ontbreekt zonder dat de app het je hoeft te vertellen. Geen toast, geen uitleg,
+   de zin klinkt alleen anders. */
 function zinSpreek(zin, rate){
   try{
     if(zinAudioEl) zinAudioEl.pause();
     var a = new Audio("audio/dictado/" + zin.id + ".mp3");
     zinAudioEl = a;
     a.playbackRate = rate || 1;
+    var gevallen = false;
+    function valTerug(){
+      if(gevallen) return;
+      gevallen = true;
+      zinAudioEl = null;
+      spreekTTS(zin.es, (rate || 1) * 0.9);
+    }
+    a.addEventListener("error", valTerug);
     var p = a.play();
-    if(p && p.catch) p.catch(function(){});
-  }catch(e){}
+    if(p && p.catch) p.catch(valTerug);
+  }catch(e){
+    try{ spreekTTS(zin.es, (rate || 1) * 0.9); }catch(e2){}
+  }
 }
 function zinLuisterKnopHtml(){
   return "<button type='button' class='ghost' id='btnZinLuister' style='padding:5px 11px; font-size:.85rem; min-width:0'>🔊 " +
@@ -11988,11 +12364,15 @@ function boekEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&l
    Een reeks is een boek. Ze staan hier los van de hoofdstukken zelf, want een hoofdstuk hoort te
    weten waar het over gaat en niet hoe de kast eruitziet. */
 var LEES_REEKSEN = [
- {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa",
+ {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa", stem:true,
   soortNl:"verhaal", soortEn:"story",
   omNl:"Een wezentje zonder naam zoekt zijn eigen lied, van de kust tot het kasteel.",
   omEn:"A small creature without a name looks for its own song, from the coast to the castle."},
- {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco",
+ {id:"cocina", pre:"receta-", nl:"La cocina española", en:"La cocina española", stem:false,
+  soortNl:"recepten", soortEn:"recipes",
+  omNl:"Zes Spaanse gerechten die al vegan waren, met maten en tijden, zodat je ze naast het fornuis kunt leggen.",
+  omEn:"Six Spanish dishes that were already vegan, with quantities and times, so you can cook from them."},
+ {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true,
   soortNl:"geschiedenis", soortEn:"history",
   omNl:"Spanje van 1931 tot nu, in tien hoofdstukken: de oorlog, de honger, de stilte en de terugweg.",
   omEn:"Spain from 1931 until now, in ten chapters: the war, the hunger, the silence and the way back."}
@@ -12132,11 +12512,23 @@ function boekSpreek(h){
     /* v23.27: de geschiedenisreeks heeft een eigen verteller en dus een eigen map. Het voorvoegsel
        van het id bepaalt waar we zoeken, net zoals de boekenplank er de reeks aan herkent. Ontbreekt
        het bestand, dan valt de app terug op de voorleesstem van de browser; dat was al zo. */
-    var map = String(h.id).indexOf("hist-") === 0 ? "hist" : "boek";
+    /* v23.81: derde reeks. Elke reeks heeft zijn eigen verteller en dus zijn eigen map; het
+       voorvoegsel van het id bepaalt welke. */
+    var pre = String(h.id);
+    var map = pre.indexOf("hist-") === 0 ? "hist" : pre.indexOf("receta-") === 0 ? "receta" : "boek";
     var a = new Audio("audio/" + map + "/" + h.id + ".mp3");
     boekAudioEl = a;
     var teruggevallen = false;
-    function valTerug(){ if(teruggevallen) return; teruggevallen = true; }
+    /* v23.76: deze functie zette een vlag en verder niets, terwijl de opmerking erboven beweerde
+       dat de app terugviel op de browserstem. Dat deed hij dus niet: een ontbrekend hoofdstuk gaf
+       stilte. Nu doet hij wat er al stond beschreven. De alineascheiding gaat eruit, anders leest
+       de stem de lege regels als een hapering. */
+    function valTerug(){
+      if(teruggevallen) return;
+      teruggevallen = true;
+      boekAudioEl = null;
+      spreekTTS(String(h.tekst || "").replace(/\n+/g, " "), 0.95);
+    }
     a.addEventListener("error", valTerug);
     var p = a.play();
     if(p && p.catch) p.catch(valTerug);
@@ -12478,11 +12870,20 @@ function renderBoekLectura(){
   var el = document.getElementById("lezenCard");
   // v23.21: elk woord is aan te tikken. De alinea's blijven verder precies zoals ze waren.
   leesWoorden = [];
-  var paras = h.tekst.split("\n\n").map(function(p){ return "<p>"+leesTekstHtml(p)+"</p>"; }).join("");
+  /* v23.81: enkele regelovergangen worden <br>. Een recept heeft een ingrediëntenlijst, en zonder
+     dit wordt "1 kg de tomates 1 pepino 1 pimiento verde" één doorlopende zin. Voor de bestaande
+     hoofdstukken verandert er niets: geteld over alle drieëntwintig, nul enkele regelovergangen. */
+  var paras = h.tekst.split("\n\n").map(function(p){
+    return "<p>"+p.split("\n").map(leesTekstHtml).join("<br>")+"</p>";
+  }).join("");
   var inFlowBoek = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "boek");
   el.innerHTML = (inFlowBoek ? lesFlowBannerHtml() : "")+"<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
     "<h2>"+h.titel+"</h2>"+
-    "<div class='row' style='margin:6px 0 10px'><button class='ghost' id='btnBoekLuister'>🔊 "+ct("Luisteren","Listen")+"</button></div>"+
+    /* v23.82: alleen als de reeks een verteller heeft. Stefan, 13 aug: "recepten behoeft geen
+       audio." Zonder deze regel zou de browserstem een ingrediëntenlijst gaan voorlezen, en dat is
+       geen luisteroefening maar een boodschappenlijst met een stem. */
+    (function(){ var r = leesReeksVan(h); return (r && r.stem === false) ? "" :
+      "<div class='row' style='margin:6px 0 10px'><button class='ghost' id='btnBoekLuister'>🔊 "+ct("Luisteren","Listen")+"</button></div>"; })()+
     paras+
     "<p class='muted' style='font-size:.82rem; margin:10px 0 0'>"+
       ct("Tik op een woord dat je niet kent.","Tap a word you do not know.")+"</p>"+
@@ -12502,7 +12903,8 @@ function renderBoekLectura(){
     t.classList.add("aan");
     leesToon(t.getAttribute("data-lw"), t);
   };
-  document.getElementById("btnBoekLuister").onclick = function(){ boekSpreek(h); };
+  var bl = document.getElementById("btnBoekLuister");
+  if(bl) bl.onclick = function(){ boekSpreek(h); };
   document.getElementById("btnBoekVragen").onclick = function(){ boekStop(); bState.fase = "vragen"; bState.i = 0; bState.score = 0; renderBoekVraag(); };
   document.getElementById("btnBoekMenu").onclick = closeBoek;
 }
@@ -12846,17 +13248,39 @@ function huidigeLes(){
   return les;
 }
 
+/* v23.73: wat de grammaticastap vandaag doet, op volgorde. Hoogstens twee dingen: één opfrisvraag
+   en één onderwerp. De opfrisser valt weg als er niets op herhaling staat, het onderwerp als je
+   alles al hebt gezien; blijft er niets over, dan slaat de stap zichzelf over zoals altijd. */
+function lesFlowGramLijst(){
+  var uit = [];
+  var rij = [];
+  try { rij = gramWachtrij(); } catch(e){ rij = []; }
+  if(rij.length){
+    var top = rij[0];
+    /* Twee keer mis op hetzelfde is geen geheugenkwestie: dan geen opfrisvraag maar de hele
+       microles, en die komt uit lesFlowGramId() hieronder. */
+    if(!((top.st.box || 0) === 0 && (top.st.fout || 0) >= 2)){
+      var o = null;
+      try { o = gcOpfrisOnderwerp(gcOpfrisId(top.c.id)); } catch(e){ o = null; }
+      if(o) uit.push(o.id);
+    }
+  }
+  var gid = null;
+  try { gid = lesFlowGramId(); } catch(e){ gid = null; }
+  if(gid && uit.indexOf(gid) === -1) uit.push(gid);
+  return uit;
+}
 function lesFlowGramId(){
   // Welk grammatica-onderwerp hoort bij de les waar je nu bent? Binnen die les het onderwerp dat je
   // het minst hebt gedaan. Zo gaat de uitleg-stap altijd over iets wat je nu echt aan het leren bent.
   var les = huidigeLes();
   if(lesFlow) lesFlow.gramLes = les ? les.id : null;
 
-  // v20.5, in deze volgorde. Stefan: "alle fouten die maak moeten weer terug, mijn leermachine is".
-  // Dus eerst het concept waar je op struikelde en dat vandaag mag terugkomen. Dat is de enige
-  // reden waarom de les van vandaag anders is dan die van gisteren.
+  /* v23.73: de foutenpot is weg. Wat er op herhaling staat komt terug als opfrisvraag (zie
+     lesFlowGramLijst), en deze functie kiest alleen nog wat je erná leert. Wie twee keer op
+     hetzelfde struikelt krijgt wel de hele microles: dan is het geen geheugenkwestie meer. */
   var fout = gramFoutTop();
-  if(fout) return "concept-" + fout.c.id;
+  if(fout && (fout.st.box || 0) === 0 && (fout.st.fout || 0) >= 2) return "concept-" + fout.c.id;
 
   // Daarna een concept uit de les van vandaag dat je hier nog nooit hebt gedaan. Nieuw voor je,
   // en het hoort bij de woorden die je net hebt geleerd.
@@ -12956,15 +13380,28 @@ function lesFlowVolgendeKern(){
     // v19.47 (Stefan: "en ik de daglessen terug laten komen"): na de woordjes een uitleg-stap over
     // het grammatica-onderwerp van je huidige les, in dezelfde opgeknipte vorm als de wizards.
     lesFlow.stap = "grammatica";
-    var gid = lesFlowGramId();
-    if(gid){
-      lesFlow.gramId = gid;
+    /* v23.73: de grammaticastap is een lijstje geworden in plaats van één ding. Eerst hoogstens één
+       opfrisvraag over wat vandaag op herhaling staat, dan het nieuwe onderwerp. Twee items, samen
+       korter dan de ene les die er stond, want een opfrisser is één vraag. */
+    lesFlow.gramLijst = lesFlowGramLijst();
+    lesFlow.gramId = lesFlow.gramLijst[0] || null;
+    if(lesFlow.gramId){
       show("spiekbrief");
-      gwStart(gid);
+      gwStart(lesFlow.gramId);
       return;
     }
   }
   if(lesFlow.stap === "grammatica"){
+    /* v23.73: staat er nog een tweede grammatica-item klaar (de opfrisser was de eerste), dan gaat
+       de stap door in plaats van af. */
+    if(lesFlow.gramLijst && lesFlow.gramLijst.length > 1){
+      lesFlow.gramLijst = lesFlow.gramLijst.slice(1);
+      lesFlow.gramId = lesFlow.gramLijst[0];
+      show("spiekbrief");
+      gwStart(lesFlow.gramId);
+      lesFlowBewaar();
+      return;
+    }
     gwSess = null; // anders blijft de wizard het Grammatica-tabblad overnemen
     // v19.92: hiermee is de spiekbrief van deze les gelezen. Dat vinkje kon je vroeger alleen zetten
     // met de knop "Gelezen!" in de lesweergave, en de dagles kwam daar nooit langs — waardoor de les
@@ -14729,7 +15166,11 @@ function speelNaar(v){
      en renderFun() kent geen tak voor "musica". Zonder deze regel landde je op het speeltuinmenu.
      De speeltuin zelf deed dit al goed, met show("musica") in zijn eigen draadje. */
   if(v === "musica"){ show("musica"); return; }
-  if(v === "dictado"){ dIdx = null; dRonde = null; }
+  /* v23.77: hier stond een regel voor dictado, die twee variabelen leegzette die nergens
+     meer bestaan: het scherm is er sinds v21.4 niet meer. Stefan, 13 aug: "dictado kan weg en werd
+     vervangen door escuchar." In de plaats daarvan land je bij Escuchar altijd op de plank, ook als
+     je er net een scene af had; dat is precies het moment waarop je wil zien wat dat opende. */
+  if(v === "audi"){ audMenu = true; }
   if(v === "conj"){ conjIdx = null; conjRonde = null; }
   if(v === "hu"){ huIdx = null; huRonde = null; }
   if(v === "corr"){ corrOpg = null; corrRonde = null; }
@@ -22750,6 +23191,77 @@ function speelGezien(v){
 }
 var funView = null;
 
+/* ================= DE PLANK (v23.77) =================
+   Stefan, 13 aug: "misschien wil ik bij dictado ook zien welke ik al heb gehad, welke ik nog moet
+   doen, welke unlocked zijn bij mijn huidige niveau (zelfde design principle) toepassen op alles."
+
+   De boekenplank deed dit al, en alleen daar. Elk ander scherm loste het opnieuw op, en de
+   speeltuin loste het verkeerd op: een spel dat nog niet kan verdwijnt daar. Verdwijnen vertelt je
+   dat er niets is; een slot vertelt je dat er iets is en wat je ervoor moet doen. Dat verschil is
+   waarom dit bestaat.
+
+   Drie toestanden, en niet meer:
+     klaar   gehad. Vinkje, en de knop heet "nog eens".
+     open    kan nu. Primaire knop.
+     dicht   nog niet. De reden in gewone taal, plus waar je staat ("3/5").
+
+   Een item:
+     { id, titel, onder, staat:"klaar"|"open"|"dicht", slot, nu, van, knop, merk }
+
+   De volgorde is open, klaar, dicht. Wat je nu kunt doen bovenaan; wat er nog komt onderaan, waar
+   het niet in de weg zit maar wel te zien is. Wie een eigen volgorde wil geeft opt.ruw mee. */
+function plankRijHtml(it){
+  var staat = it.staat || "open";
+  var merk = it.merk || (staat === "klaar" ? "\u2713" : staat === "dicht" ? "\ud83d\udd12" : "\u25b8");
+  var h = "<div class='plankRij " + staat + "'>" +
+    "<span class='plankMerk " + staat + "'>" + merk + "</span>" +
+    "<span class='plankTekst'><span class='plankTitel'>" + it.titel + "</span>" +
+    (it.onder ? "<span class='plankOnder'>" + it.onder + "</span>" : "");
+  if(staat === "dicht"){
+    var stand = (typeof it.nu === "number" && typeof it.van === "number") ? " \u00b7 " + it.nu + "/" + it.van : "";
+    h += "<span class='plankOnder'>" + (it.slot || ct("Nog niet open","Not open yet")) + stand + "</span>";
+  }
+  h += "</span>";
+  if(staat !== "dicht"){
+    h += "<button type='button' class='" + (staat === "klaar" ? "ghost" : "primary") + "' data-plank='" +
+      String(it.id).replace(/'/g, "") + "'>" +
+      (it.knop || (staat === "klaar" ? ct("Nog eens","Again") : ct("Doen","Start"))) + "</button>";
+  }
+  return h + "</div>";
+}
+function plankHtml(items, opt){
+  opt = opt || {};
+  var lijst = items.slice();
+  if(!opt.ruw){
+    var orde = {open:0, klaar:1, dicht:2};
+    /* v23.80: binnen "dicht" op afstand, dichtstbijzijnde eerst. Met zes scenes viel dat niet op,
+       met vijftien wel: dan lees je een lijst van twaalf sloten waarin de scene die je morgen kunt
+       doen ergens in het midden staat. `wacht` is optioneel; wie het niet meegeeft houdt de oude
+       volgorde, want de sortering is stabiel op de oorspronkelijke index. */
+    lijst = lijst.map(function(it, i){ return {it:it, i:i}; }).sort(function(a, b){
+      var d = (orde[a.it.staat] || 0) - (orde[b.it.staat] || 0);
+      if(d) return d;
+      if(a.it.staat === "dicht" && typeof a.it.wacht === "number" && typeof b.it.wacht === "number"
+         && a.it.wacht !== b.it.wacht) return a.it.wacht - b.it.wacht;
+      return a.i - b.i;
+    }).map(function(x){ return x.it; });
+  }
+  /* De telling staat erboven en niet eronder, want dit is het antwoord op "hoeveel zijn er en waar
+     sta ik". Onderaan zou je hem pas zien na alles wat je nog niet kunt. */
+  var klaar = lijst.filter(function(x){ return x.staat === "klaar"; }).length;
+  var dicht = lijst.filter(function(x){ return x.staat === "dicht"; }).length;
+  var kop = opt.kop === false ? "" :
+    "<div class='plankKopje'>" + klaar + "/" + lijst.length + ct(" gehad"," done") +
+    (dicht ? " \u00b7 " + dicht + ct(" nog op slot"," still locked") : "") + "</div>";
+  return kop + "<div class='plank'>" + lijst.map(plankRijHtml).join("") + "</div>";
+}
+function plankWire(el, fn){
+  if(!el) return;
+  el.querySelectorAll("[data-plank]").forEach(function(b){
+    b.onclick = function(){ fn(b.getAttribute("data-plank")); };
+  });
+}
+
 /* ================= ESCUCHAR: de motor ================= */
 var audSc = null, audStap = 0, audGoed = 0, audGehoord = 0, audAnt = [], audGeenAudio = false;
 var audAudioEl = null, audRegel = -1;
@@ -22768,6 +23280,8 @@ function audKies(){
 }
 function audNieuw(){
   audSc = audKies(); audStap = 0; audGoed = 0; audGehoord = 0; audAnt = []; audGeenAudio = false; audRegel = -1;
+  // v23.77: wie hier komt heeft al een scene, dus geen menu. Zie renderFunAudicion().
+  audMenu = false;
 }
 function audStop(){
   try{ if(audAudioEl){ audAudioEl.pause(); audAudioEl.onended = null; } }catch(e){}
@@ -22817,9 +23331,82 @@ function audRegelsHtml(toon){
       "<span class='aud-tekst'>" + (toon ? l.es : "· · ·") + "</span></div>";
   }).join("") + "</div>";
 }
+/* v23.77: Escuchar opent op de plank in plaats van op een willekeurige scene. audKies() bestaat
+   nog, want de lesflow kiest zelf en "Verras me" doet hetzelfde als vroeger; wat erbij komt is dat
+   je kunt zien wat er is. */
+var audMenu = true;
+/* Wat "open" betekent is niet audPlafond() maar audLijst(), en dat verschil is precies waar deze
+   patch bijna in trapte.
+
+   Gemeten op een vers profiel: audPlafond() geeft 10 en de lichtste scene weegt 13. Op het plafond
+   alléén afgaand staan dus alle zes de scenes op slot en is Escuchar op dag 1 onspeelbaar. Dat was
+   nooit zo, want audLijst() heeft een vangnet: valt de pool onder de twee, dan pakt hij de drie
+   lichtste en negeert hij het plafond. Het plafond gatet in de praktijk dus niets op dag 1; het
+   vangnet bepaalt wat je krijgt.
+
+   Dat is dezelfde vorm als de lege spelpool van v23.65: een stille terugval die het echte gedrag
+   bepaalt terwijl de zichtbare regel iets anders zegt. Een plank die de zichtbare regel toont zou
+   zes sloten laten zien op een oefening die gewoon open is. Dus vragen we het aan de pool zelf. */
+function audOpen(sc){
+  return audLijst().some(function(x){ return x.id === sc.id; });
+}
+/* Hoeveel scenes moet je nog afmaken voordat deze opengaat? audPlafond() is 10 + 2 per afgeronde
+   scene, dus de rekensom is terug te draaien. Dat getal is te begrijpen ("nog 2 scenes"); het
+   plafond zelf ("10/13") is dat niet, want zwaarte is geen woord dat de gebruiker kent. */
+function audNodig(sc){
+  var af = Object.keys(S.audDone || {}).length;
+  var moet = Math.ceil((audZwaarte(sc) - 10) / 2);
+  return Math.max(1, moet - af);
+}
+function audPlankItems(){
+  return AUDICIONES.map(function(sc){
+    var gehad = !!(S.audDone || {})[sc.id];
+    var open = audOpen(sc);
+    var keer = (S.audLuister || {})[sc.id] || 0;
+    var nodig = audNodig(sc);
+    return {
+      id: sc.id,
+      titel: profLang() === "nl" ? sc.titel : sc.titelEn,
+      onder: sc.vragen.length + ct(" vragen"," questions") +
+             (keer ? " \u00b7 " + keer + ct(" keer geluisterd"," listens") : ""),
+      staat: gehad ? "klaar" : open ? "open" : "dicht",
+      slot: nodig === 1
+        ? ct("Gaat open als je nog \u00e9\u00e9n scene afmaakt", "Opens when you finish one more scene")
+        : ct("Gaat open als je nog " + nodig + " scenes afmaakt", "Opens when you finish " + nodig + " more scenes"),
+      wacht: nodig,
+      knop: gehad ? ct("Nog eens","Again") : ct("Luisteren","Listen")
+    };
+  });
+}
+function renderAudPlank(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  var items = audPlankItems();
+  var open = items.filter(function(x){ return x.staat !== "dicht"; }).length;
+  el.innerHTML = "<h2>Escuchar \ud83d\udc42</h2>" +
+    "<p class='muted'>" + ct("Een gesprek horen en zeggen waar het over ging.",
+                             "Hear a conversation and say what it was about.") + "</p>" +
+    plankHtml(items) +
+    (open > 1 ? "<div class='row' style='margin-top:10px'><button class='ghost' id='btnAudGok'>" +
+      ct("Verras me","Surprise me") + "</button></div>" : "");
+  plankWire(el, function(id){
+    var sc = AUDICIONES.filter(function(x){ return x.id === id; })[0];
+    if(!sc) return;
+    audStop(); audSc = sc; audStap = 0; audGoed = 0; audGehoord = 0; audAnt = []; audGeenAudio = false; audRegel = -1;
+    audMenu = false; renderFunAudicion();
+  });
+  var bg = document.getElementById("btnAudGok");
+  if(bg) bg.onclick = function(){ audStop(); audNieuw(); audMenu = false; renderFunAudicion(); };
+}
+
 function renderFunAudicion(){
   var el = document.getElementById("funCard");
   if(!el) return;
+  /* v23.77: de plank is het beginscherm van Escuchar. De lesflow zet audMenu zelf op false via
+     audNieuw(), want daar heb je geen keuze: die scene hoort bij je les. */
+  if(audMenu && !(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "audi")){
+    renderAudPlank(); return;
+  }
   if(!audSc) audNieuw();
   var sc = audSc;
   var klaar = audStap >= sc.vragen.length;
@@ -22862,7 +23449,9 @@ function renderFunAudicion(){
   var bp = document.getElementById("btnAudSpeel");
   if(bp) bp.onclick = function(){ audGehoord++; audSpeel(); };
   var bn = document.getElementById("btnAudNieuw");
-  if(bn) bn.onclick = function(){ audStop(); audNieuw(); renderFunAudicion(); };
+  /* v23.77: terug naar de plank in plaats van blind de volgende scene. Je hebt er net een af; dit
+     is precies het moment waarop je wil zien wat dat opende. */
+  if(bn) bn.onclick = function(){ audStop(); audMenu = true; renderFunAudicion(); };
   var bf = document.getElementById("btnAudFlowDoor");
   if(bf) bf.onclick = function(){ audStop(); persist(); lesFlowVolgende(); };
   naRondeWire();
@@ -24680,8 +25269,8 @@ function gcSchud(q){
 var GC_ADJ_SER = [
  {es:"alto", nl:"lang", en:"tall"}, {es:"simpático", nl:"aardig", en:"nice"},
  {es:"rubio", nl:"blond", en:"blond"}, {es:"delgado", nl:"slank", en:"slim"},
- {es:"tímido", nl:"verlegen", en:"shy"}, {es:"generoso", nl:"gul", en:"generous"},
- {es:"inteligente", nl:"slim", en:"clever", inv:1}, {es:"amable", nl:"vriendelijk", en:"kind", inv:1}
+ {es:"tímido", nl:"verlegen", en:"shy"}, {es:"generoso", nl:"gul", en:"generous", nlc:"guller"},
+ {es:"inteligente", nl:"slim", en:"clever", inv:1, nlc:"slimmer"}, {es:"amable", nl:"vriendelijk", en:"kind", inv:1}
 ];
 var GC_ADJ_ESTAR = [
  {es:"cansado", nl:"moe", en:"tired"}, {es:"contento", nl:"blij", en:"happy"},
@@ -24694,12 +25283,63 @@ var GC_ADV = [
  {es:"temprano", nl:"vroeg", en:"early"}, {es:"despacio", nl:"langzaam", en:"slowly"},
  {es:"rápido", nl:"snel", en:"fast"}
 ];
+/* v23.83: dl en mvnl erbij. Vijf generatoren schreven "Het " voor s.nl, ongeacht het woord
+   erachter, want er was geen Nederlands lidwoord om mee te kiezen: alleen g, het Spaanse geslacht.
+   Zo ontstond "Het vraag is blond" en "net zoveel staden als jij". De data wist het antwoord niet,
+   dus verzon de code er een - dezelfde soort fout als de ontbrekende lidwoorden in de
+   Cervantes-brug (v23.78), alleen acht woorden groot in plaats van 1376.
+
+   abs markeert wat geen kleur, prijs of formaat heeft. Een vraag is niet rood en niet duur, dus die
+   doet niet mee bij concordancia. Bij gustar kan hij prima mee: een vraag leuk vinden kan wel. */
 var GC_SUST = [
- {es:"libro", nl:"boek", en:"book", g:"m"}, {es:"coche", nl:"auto", en:"car", g:"m"},
- {es:"piso", nl:"appartement", en:"flat", g:"m"}, {es:"perro", nl:"hond", en:"dog", g:"m"},
- {es:"casa", nl:"huis", en:"house", g:"f"}, {es:"pregunta", nl:"vraag", en:"question", g:"f"},
- {es:"ciudad", nl:"stad", en:"city", g:"f"}, {es:"mesa", nl:"tafel", en:"table", g:"f"}
+ /* v23.84: plek en hand. Eén lijst bedient alle generatoren en die stellen verschillende eisen:
+    een stad staat niet in een keuken en een tafel past niet in je hand. Dat het er nu twee keer
+    achter elkaar bij moet (abs in v23.83, deze twee nu) zegt iets: een woordenlijst die alle
+    contexten bedient, is in elke context een beetje verkeerd. */
+ {es:"libro", nl:"boek", en:"book", g:"m", dl:"het", mvnl:"boeken", plek:1, hand:1},
+ {es:"coche", nl:"auto", en:"car", g:"m", dl:"de", mvnl:"auto's", plek:1},
+ {es:"piso", nl:"appartement", en:"flat", g:"m", dl:"het", mvnl:"appartementen"},
+ {es:"perro", nl:"hond", en:"dog", g:"m", dl:"de", mvnl:"honden", plek:1},
+ {es:"casa", nl:"huis", en:"house", g:"f", dl:"het", mvnl:"huizen"},
+ {es:"pregunta", nl:"vraag", en:"question", g:"f", dl:"de", mvnl:"vragen", abs:1},
+ {es:"ciudad", nl:"stad", en:"city", g:"f", dl:"de", mvnl:"steden"},
+ {es:"mesa", nl:"tafel", en:"table", g:"f", dl:"de", mvnl:"tafels", plek:1}
 ];
+/* Alles wat ergens kan staan, en alles wat je kunt vasthouden. Twee aparte vragen, dus twee
+   aparte functies; wie er later een woord bij zet, hoeft alleen de vlaggen goed te zetten. */
+function gcOpPlek(){ return GC_SUST.filter(function(x){ return x.plek; }); }
+function gcInHand(){ return GC_SUST.filter(function(x){ return x.hand; }); }
+/* Halverwege een zin hoort "Mijn baas" klein. Eigennamen niet, en die zijn te herkennen aan het
+   Spaans: "Mi " ervoor betekent geen naam. */
+function gcKlein(p){
+  var n = String((p && p.nl) || "");
+  return /^Mi /.test(String((p && p.es) || "")) ? n.charAt(0).toLowerCase() + n.slice(1) : n;
+}
+/* v23.85: en hetzelfde voor het Spaans, want daar stond "Marta es mas rubia que Mi hermano" met
+   een hoofdletter midden in de zin. Dat is de taal die geleerd wordt, dus daar telt het dubbel. */
+function gcKleinEs(p){
+  var n = String((p && p.es) || "");
+  return /^Mi /.test(n) ? "mi" + n.slice(2) : n;
+}
+function gcKleinEn(p){
+  var n = String((p && p.en) || "");
+  return /^My /.test(n) ? n.charAt(0).toLowerCase() + n.slice(1) : n;
+}
+/* De vergrotende trap. a.nl + "er" klopt voor lang, aardig, blond, slank, verlegen en vriendelijk,
+   maar niet voor slim en gul: daar verdubbelt de medeklinker. Die twee dragen hun eigen vorm. */
+function gcVergroot(a){ return (a && a.nlc) || ((a && a.nl) || "") + "er"; }
+/* Bijvoeglijke naamwoorden die bij een ding passen. GC_ADJ_SER is een lijst voor personen (rubio,
+   tímido, generoso) en concordancia trok daaruit, met "La pregunta es rubia" tot gevolg.
+   Grammaticaal klopt dat precies, en dat is juist het gevaar: het onderwerp is verbuiging, dus aan
+   de vorm is niets te zien. */
+var GC_ADJ_COSA = [
+ {es:"rojo", nl:"rood", en:"red"}, {es:"nuevo", nl:"nieuw", en:"new"},
+ {es:"pequeño", nl:"klein", en:"small"}, {es:"caro", nl:"duur", en:"expensive"},
+ {es:"viejo", nl:"oud", en:"old"},
+ {es:"grande", nl:"groot", en:"big", inv:1}, {es:"verde", nl:"groen", en:"green", inv:1}
+];
+/* Het Nederlandse lidwoord met een hoofdletter, voor aan het begin van een zin. */
+function gcDlH(s){ var d = (s && s.dl) || "de"; return d.charAt(0).toUpperCase() + d.slice(1); }
 var GC_MASS = [
  {es:"trabajo", nl:"werk", en:"work", g:"m"}, {es:"tiempo", nl:"tijd", en:"time", g:"m"},
  {es:"dinero", nl:"geld", en:"money", g:"m"}, {es:"miedo", nl:"angst", en:"fear", g:"m"},
@@ -24944,8 +25584,8 @@ var GC_CONCEPTEN = [
              o:["es","está"], g:0,
              w:"Een beroep zegt wat iemand is, dus ser.",
              wEn:"A job says what someone is, so ser."}; },
-   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "La" : "El";
-     return {v:art+" "+s.es+" ___ "+l.es+". (Het "+s.nl+" is "+l.nl+".)",
+   function(){ var s = gcKies(gcOpPlek()), l = gcKies(GC_LUGAR), art = s.g === "f" ? "La" : "El";
+     return {v:art+" "+s.es+" ___ "+l.es+". ("+gcDlH(s)+" "+s.nl+" is "+l.nl+".)",
              vEn:art+" "+s.es+" ___ "+l.es+". (The "+s.en+" is "+l.en+".)",
              o:["es","está"], g:1,
              w:"Waar iets zich bevindt: estar.",
@@ -25020,14 +25660,16 @@ var GC_CONCEPTEN = [
     w:"Hay introduceert iets nieuws (un, una, dos, muchos), está zegt waar iets bekends staat (el, la, mi).",
     wEn:"Hay introduces something new (un, una, dos, muchos), está says where something known is (el, la, mi)."},
   patronen:[
-   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "una" : "un";
-     return {v:l.es+" ___ "+art+" "+s.es+". ("+gcHoofd(l.nl)+" is een "+s.nl+".)",
-             vEn:l.es+" ___ "+art+" "+s.es+". (There is a "+s.en+" "+l.en+".)",
+   function(){ var s = gcKies(gcOpPlek()), l = gcKies(GC_LUGAR), art = s.g === "f" ? "una" : "un";
+     /* v23.84: gcHoofd ook op het Spaans (hier stond "en la cocina ___ un perro." met een kleine
+        letter), en alleen zelfstandige naamwoorden die ergens kunnen staan. */
+     return {v:gcHoofd(l.es)+" ___ "+art+" "+s.es+". ("+gcHoofd(l.nl)+" is een "+s.nl+".)",
+             vEn:gcHoofd(l.es)+" ___ "+art+" "+s.es+". (There is a "+s.en+" "+l.en+".)",
              o:["hay","está","están"], g:0,
              w:"Onbepaald lidwoord ("+art+"), dus hay. Je introduceert het ding.",
              wEn:"Indefinite article ("+art+"), so hay. You are introducing the thing."}; },
-   function(){ var s = gcKies(GC_SUST), l = gcKies(GC_LUGAR), art = s.g === "f" ? "La" : "El";
-     return {v:art+" "+s.es+" ___ "+l.es+". (Het "+s.nl+" staat "+l.nl+".)",
+   function(){ var s = gcKies(gcOpPlek()), l = gcKies(GC_LUGAR), art = s.g === "f" ? "La" : "El";
+     return {v:art+" "+s.es+" ___ "+l.es+". ("+gcDlH(s)+" "+s.nl+" staat "+l.nl+".)",
              vEn:art+" "+s.es+" ___ "+l.es+". (The "+s.en+" is "+l.en+".)",
              o:["hay","está","están"], g:1,
              w:"Bepaald lidwoord ("+art.toLowerCase()+"), enkelvoud: está.",
@@ -25205,7 +25847,7 @@ var GC_CONCEPTEN = [
     wEn:"The thing is the subject. That is why it is me gustan los libros, not me gusto."},
   patronen:[
    function(){ var s = gcKies(GC_SUST), art = s.g === "f" ? "la" : "el";
-     return {v:"Me ___ "+art+" "+s.es+". (Ik vind het "+s.nl+" leuk.)",
+     return {v:"Me ___ "+art+" "+s.es+". (Ik vind "+(s.dl||"de")+" "+s.nl+" leuk.)",
              vEn:"Me ___ "+art+" "+s.es+". (I like the "+s.en+".)",
              o:["gusta","gustan"], g:0,
              w:"Een ding in het enkelvoud, dus gusta.",
@@ -25248,9 +25890,13 @@ var GC_CONCEPTEN = [
     w:"Geslacht en aantal komen van het zelfstandig naamwoord. Het lidwoord doet precies hetzelfde.",
     wEn:"Gender and number come from the noun. The article does exactly the same."},
   patronen:[
-   function(){ var s = gcKies(GC_SUST), a = gcKies(GC_ADJ_SER.filter(function(x){ return !x.inv; })),
+   /* v23.83: GC_ADJ_COSA in plaats van GC_ADJ_SER, en geen abstracte zelfstandige naamwoorden.
+      Hier stond "La pregunta es ___. (Het vraag is blond.)": twee fouten in één zin, en allebei
+      onzichtbaar voor wie het onderwerp nog leert. */
+   function(){ var s = gcKies(GC_SUST.filter(function(x){ return !x.abs; })),
+                   a = gcKies(GC_ADJ_COSA.filter(function(x){ return !x.inv; })),
                    art = s.g === "f" ? "La" : "El", goed = gcAdj(a, s.g, "sg");
-     return {v:art+" "+s.es+" es ___. (Het "+s.nl+" is "+a.nl+".)",
+     return {v:art+" "+s.es+" es ___. ("+gcDlH(s)+" "+s.nl+" is "+a.nl+".)",
              vEn:art+" "+s.es+" es ___. (The "+s.en+" is "+a.en+".)",
              o:[gcAdj(a,"m","sg"), gcAdj(a,"f","sg"), gcAdj(a,"m","pl"), gcAdj(a,"f","pl")],
              g:[gcAdj(a,"m","sg"), gcAdj(a,"f","sg"), gcAdj(a,"m","pl"), gcAdj(a,"f","pl")].indexOf(goed),
@@ -25398,8 +26044,11 @@ var GC_CONCEPTEN = [
     wEn:"Next to me is este, next to you is ese, far from both is aquel. Only then do you look at the form."},
   patronen:[
    function(){ var s = gcKies(GC_SUST);
-     return {v:"___ "+s.es+" que tengo en la mano. (dit/deze "+s.nl+" hier bij mij)",
-             vEn:"___ "+s.es+" que tengo en la mano. (this "+s.en+" here in my hand)",
+     /* v23.85: "que tengo en la mano" kon maar bij een boek, en met de hand-filter van v23.84
+        hield dit patroon precies een zin over. "Que esta aqui" zegt hetzelfde (dit hier, dichtbij)
+        en past bij alles. */
+     return {v:"___ "+s.es+" que est\u00e1 aqu\u00ed. (dit/deze "+s.nl+" hier vlakbij)",
+             vEn:"___ "+s.es+" que est\u00e1 aqu\u00ed. (this "+s.en+" right here)",
              o:["este","esta"], g:(s.g === "f" ? 1 : 0),
              w:"Hier bij mij is este, en "+s.es+" is "+(s.g === "f" ? "vrouwelijk, dus esta" : "mannelijk, dus este")+".",
              wEn:"Here with me is este, and "+s.es+" is "+(s.g === "f" ? "feminine, so esta" : "masculine, so este")+"."}; },
@@ -25421,7 +26070,7 @@ var GC_CONCEPTEN = [
              w:"Meervoud en hier bij mij: "+(s.g === "f" ? "estas" : "estos")+" "+mv+".",
              wEn:"Plural and here with me: "+(s.g === "f" ? "estas" : "estos")+" "+mv+"."}; },
    function(){ var s = gcKies(GC_SUST);
-     return {v:"Het "+s.nl+" ligt daar op jouw tafel. Welk woord kies je?",
+     return {v:gcDlH(s)+" "+s.nl+" ligt daar op jouw tafel. Welk woord kies je?",
              vEn:"The "+s.en+" is over there on your table. Which word do you pick?",
              o:["ese","este","aquel"], g:0,
              w:"Bij jou, niet bij mij en niet ver weg: dat is ese.",
@@ -25641,20 +26290,24 @@ var GC_CONCEPTEN = [
     w:"Tan alto como, maar tantos libros como. En tanto past zich aan in geslacht en getal, tan nooit.",
     wEn:"Tan alto como, but tantos libros como. And tanto agrees in gender and number, tan never does."},
   patronen:[
-   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER);
-     return {v:p.es+" es ___ "+gcAdj(a, p.g, "sg")+" que Pablo. ("+p.nl+" is "+a.nl+"er)",
-             vEn:p.es+" es ___ "+gcAdj(a, p.g, "sg")+" que Pablo. ("+p.en+" is more "+a.en+")",
+   /* v23.83: de tweede persoon werd hardgecodeerd op Pablo terwijl de eerste uit GC_PERS kwam.
+      Eén op de zes keer stond er dus "Pablo es más simpático que Pablo". */
+   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER),
+                   q = gcKies(GC_PERS.filter(function(x){ return x.es !== p.es; }));
+     return {v:p.es+" es ___ "+gcAdj(a, p.g, "sg")+" que "+gcKleinEs(q)+". ("+p.nl+" is "+gcVergroot(a)+" dan "+gcKlein(q)+")",
+             vEn:p.es+" es ___ "+gcAdj(a, p.g, "sg")+" que "+gcKleinEs(q)+". ("+p.en+" is more "+a.en+" than "+gcKleinEn(q)+")",
              o:["más","tan"], g:0,
              w:"Er staat que achter, en que hoort bij más of menos. Tan vraagt om como.",
              wEn:"There is que behind it, and que goes with más or menos. Tan asks for como."}; },
-   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER);
-     return {v:p.es+" es tan "+gcAdj(a, p.g, "sg")+" ___ Pablo. (net zo "+a.nl+" als)",
-             vEn:p.es+" es tan "+gcAdj(a, p.g, "sg")+" ___ Pablo. (just as "+a.en+" as)",
+   function(){ var p = gcKies(GC_PERS), a = gcKies(GC_ADJ_SER),
+                   q = gcKies(GC_PERS.filter(function(x){ return x.es !== p.es; }));
+     return {v:p.es+" es tan "+gcAdj(a, p.g, "sg")+" ___ "+gcKleinEs(q)+". (net zo "+a.nl+" als "+gcKlein(q)+")",
+             vEn:p.es+" es tan "+gcAdj(a, p.g, "sg")+" ___ "+gcKleinEs(q)+". (just as "+a.en+" as "+gcKleinEn(q)+")",
              o:["como","que"], g:0,
              w:"Tan hoort altijd bij como. Tan ... que bestaat niet in een vergelijking.",
              wEn:"Tan always goes with como. Tan ... que does not exist in a comparison."}; },
    function(){ var s = gcKies(GC_SUST), mv = gcMv(s.es), goed = s.g === "f" ? "tantas" : "tantos";
-     return {v:"Tengo ___ "+mv+" como tú. (net zoveel "+s.nl+"en als jij)",
+     return {v:"Tengo ___ "+mv+" como tú. (net zoveel "+(s.mvnl||s.nl)+" als jij)",
              vEn:"Tengo ___ "+mv+" como tú. (as many "+s.en+"s as you)",
              o:["tantos","tantas","tan"], g:["tantos","tantas","tan"].indexOf(goed),
              w:"Voor een zelfstandig naamwoord staat tanto, en die past zich aan: "+goed+" "+mv+". Tan kan hier niet.",
@@ -25975,16 +26628,12 @@ var GC_ORDE = [
   "concordancia",    // en dan buigt de rest mee
   "serestar",        // ser of estar: de kern van A1
   "hayestar",        // hay of esta, een aftakking van estar
-  "negacion",        // no ... nada: een regel, geen keuze
   "muymucho",        // muy of mucho: kijk naar het woord erachter
-  "tuusted",         // tu of usted
-  "futuroir",        // ir a + infinitief, je eerste toekomst
   "gustar",          // gusta of gustan
   "demostrativo",    // este, ese, aquel
   "zapato",          // wisselt de klinker mee
   "reflexivo",       // me, te, se
   "comparar",        // mas que, tan como
-  "gerundio",        // presente of estar + gerundio
   "apersonal",       // de persoonlijke a
   "saberconocer",    // saber of conocer
   "quecual",         // que of cual: hier zat Stefan, en hier hoort het pas
@@ -25993,7 +26642,17 @@ var GC_ORDE = [
   "pronombre",       // lo, la, le
   "porpara",         // por of para
   "perfindef",       // perfecto of indefinido
-  "indefimperf"      // indefinido of imperfecto
+  "indefimperf",     // indefinido of imperfecto
+  /* v23.83, en dit is uitstel en geen reparatie. Deze vier leveren elk precies één unieke oefenzin
+     op zestig trekkingen: hun patroonlijst bestaat uit een handvol vaste zinnen in plaats van een
+     generator. Vooraan (plek 5, 7, 8 en 14) betekende dat een nieuwe gebruiker in zijn eerste week
+     een onderwerp kreeg waarvan elke herhaling letterlijk dezelfde zin is. Achteraan koop je tijd
+     om er echte patronen bij te schrijven. Weglaten mag niet: pw-gramorde.js eist dat elk concept
+     precies één keer in deze rij staat, en dat is precies de bedoeling. */
+  "negacion",        // no ... nada
+  "tuusted",         // tu of usted
+  "futuroir",        // ir a + infinitief
+  "gerundio"         // presente of estar + gerundio
 ];
 /* Hoogstens twee voorgangers per onderwerp, en alleen waar het onvermijdelijk is. Een lange lijst
    voorwaarden zou een boom worden die niemand meer kan nalopen; dit zijn er vijf plus een wizard. */
@@ -26118,24 +26777,59 @@ function gramAangeraakt(cid){
   var st = gramLees(cid);
   return (st.goed || 0) + (st.fout || 0) > 0;
 }
-/* Het concept waar je op struikelde en dat vandaag mag terugkomen. Laagste doosje eerst, en bij
-   gelijke stand de verste fout eerst, want die is het langst blijven liggen. */
-function gramFoutTop(){
+/* ================= ÉÉN WACHTRIJ VOOR GRAMMATICA (v23.73) =================
+   Hier stonden twee lijsten naast elkaar: een foutenpot (gramFoutTop) en een herhaallijst
+   (gramDueTop). De eerste bepaalde alles, de tweede werd nergens aangeroepen.
+
+   Twee dingen gemeten die daaruit volgden. Dertig dagen gesimuleerd met alles goed: elk van de
+   drieentwintig concepten precies één keer, daarna zeven dagen dezelfde uitspraakkaart. Geen enkel
+   concept kwam ooit terug, want de vervaldatum die gramBij() netjes schreef werd door niemand
+   gelezen. En met een foutkans van 25%: negen dagen achter elkaar hetzelfde onderwerp, omdat
+   st.fout nooit gewist wordt en de foutenpot dus levenslang is.
+
+   De pot is weg. gramBij() geeft een fout al "morgen" mee en een goed antwoord een langere adem,
+   dus een wachtrij op vervaldatum zet fouten vanzelf vooraan. De tellers st.goed en st.fout blijven
+   bestaan voor de cijfers op je profiel; ze sturen alleen niets meer aan. */
+function gramWachtrij(){
   var t = today(), uit = [];
+  GC_CONCEPTEN.forEach(function(c){
+    if(!gramAangeraakt(c.id)) return;          // nooit gedaan is geen herhaling maar kennismaking
+    try { if(!gcConceptOpen(c.id)) return; } catch(e){}
+    var st = gramLees(c.id);
+    /* Een openstaande fout (doosje nul) wacht niet op zijn datum. Dat stond al zo in de oude
+       foutenpot en de reden klopt nog steeds: anders komt de fout die je net maakte pas morgen aan
+       bod, en dat is precies de dag dat je hem al vergeten bent. Het verschil met vroeger is dat
+       één goed antwoord het doosje op één zet en de rekening daarmee sluit; vroeger bleef st.fout
+       staan en bleef het onderwerp levenslang vooraan. */
+    var open = (st.box || 0) === 0 && (st.fout || 0) > 0;
+    if(!open && st.due && st.due > t) return;
+    uit.push({c:c, st:st});
+  });
+  uit.sort(function(a, b){
+    if((a.st.box || 0) !== (b.st.box || 0)) return (a.st.box || 0) - (b.st.box || 0);
+    return (a.st.due || "") < (b.st.due || "") ? -1 : 1;
+  });
+  return uit;
+}
+/* Twee functies, twee vragen, en dat onderscheid was er niet.
+
+   gramWachtrij() beantwoordt "wat staat er vandaag op herhaling" en stuurt het dagritme. Die kijkt
+   naar de vervaldatum, want dat is wat een doosje betekent.
+
+   gramFoutTop() beantwoordt "waar ben je zojuist op gestruikeld" en voedt het eindscherm ("Nog een
+   keer: ser of estar") en de regel dat twee missers de hele microles terugbrengen. Die mag juist
+   níét op de datum wachten: het moment om het nog eens aan te bieden is meteen erna, niet morgen.
+   Een concept met doosje nul en minstens één fout is een openstaande rekening. */
+function gramFoutTop(){
+  var uit = [];
   GC_CONCEPTEN.forEach(function(c){
     var st = gramLees(c.id);
     if(!st.fout) return;
-    // Een fout staat op doosje nul tot je hem een keer goed hebt gedaan. Zolang dat niet gebeurd is,
-    // telt de wachttijd niet: hij mag vandaag nog terugkomen. Anders zou de fout die je net maakte
-    // pas morgen aan bod komen, en dat is precies de dag dat je hem al vergeten bent.
-    if((st.box || 0) > 0 && st.due && st.due > t) return;
+    if((st.box || 0) > 0) return;           // je had hem daarna weer goed: geen openstaande rekening
     uit.push({c:c, st:st});
   });
   if(!uit.length) return null;
-  uit.sort(function(a, b){
-    if((a.st.box || 0) !== (b.st.box || 0)) return (a.st.box || 0) - (b.st.box || 0);
-    return (a.st.laatst || "") < (b.st.laatst || "") ? -1 : 1;
-  });
+  uit.sort(function(a, b){ return (a.st.laatst || "") < (b.st.laatst || "") ? 1 : -1; });
   return uit[0];
 }
 /* Een concept dat bij je huidige les hoort en dat je hier nog nooit hebt gedaan. */
@@ -26155,16 +26849,45 @@ function gramVersKandidaat(les){
   });
   return uit;
 }
-/* Elk concept dat vandaag op herhaling staat, ongeacht of het ooit fout ging. */
+/* v23.73: leest uit de wachtrij, zodat er één plek is waar de volgorde bepaald wordt. */
 function gramDueTop(){
-  var t = today(), uit = [];
-  GC_CONCEPTEN.forEach(function(c){
-    var st = gramLees(c.id);
-    if(st.due && st.due > t) return;
-    uit.push({c:c, st:st});
-  });
-  uit.sort(function(a, b){ return (a.st.box || 0) - (b.st.box || 0); });
-  return uit.length ? uit[0] : null;
+  var rij = gramWachtrij();
+  return rij.length ? rij[0] : null;
+}
+/* ---- de opfrisser: herhalen mag geen les zijn ----
+   De eerste versie van v23.73 zette de wachtrij vóór het nieuwe onderwerp. Gesimuleerd over zestig
+   dagen: acht verschillende onderwerpen in twee maanden, de andere vijftien nooit gezien. Op de
+   lage doosjes (1 en 3 dagen) staat er altijd wel iets open, dus kennismaken kwam nooit meer aan
+   de beurt.
+
+   Dat is dezelfde spanning die de woordenkant allang heeft opgelost: woorden krijgen een portie met
+   herhalingen én nieuwe, grammatica had één plek per dag. Elke volgorde binnen één plek is een
+   nulsomspel tussen leren en onthouden.
+
+   Dus: herhalen kost één vraag en geen les. Staat er iets op herhaling, dan begint de
+   grammaticastap daarmee en gaat daarna door naar het nieuwe onderwerp. Fout? Dan staat het concept
+   morgen vooraan in de wachtrij, en dan wél als hele microles: twee keer mis is geen geheugenkwestie
+   meer. */
+function gcOpfrisId(cid){ return "opfris-" + String(cid || "").replace(/^concept-/, ""); }
+function gcOpfrisOnderwerp(id){
+  var cid = String(id || "").replace(/^opfris-/, "");
+  var c = gcConcept(cid);
+  if(!c) return null;
+  var vragen = [];
+  try { vragen = gcMaakVragen(c, 1); } catch(e){ vragen = []; }
+  if(!vragen.length) return null;
+  var naam = ct(c.naam, c.naamEn || c.naam);
+  return {
+    id: id, concept: cid, opfris: true,
+    titel: ct("Even opfrissen: " + naam, "Quick refresher: " + naam),
+    titelEn: "Quick refresher: " + (c.naamEn || c.naam),
+    pitch: ct("Eén vraag. Je had dit al een keer goed.", "One question. You had this right before."),
+    pitchEn: "One question. You had this right before.",
+    stappen: [{ kop: ct("Even opfrissen", "Quick refresher"),
+                kopEn: "Quick refresher",
+                uitleg: "", uitlegEn: "",
+                vragen: vragen }]
+  };
 }
 
 /* ---- van concept naar microles ---- */
@@ -27729,17 +28452,17 @@ function gwVanSpiek(idx){
     var eerste = idx[0];
     var eigen = idx.map(function(j){ return blokken[j]; }).join("");
     var eigenEn = zelfdeVorm ? idx.map(function(j){ return blokkenEn[j]; }).join("") : eigen;
-    /* v23.61: diep was c.html, de héle kaart, op élke stap. Dus de stap die de tabel toont had
-       diezelfde tabel er nog een keer onder staan in de uitklapper. Gemeten: 81 van 81 stappen.
-       Een uitklapper die belooft dat er meer is en dan hetzelfde geeft, leert je hem nooit meer
-       open te doen. Nu staat er alleen in wat niet al op deze stap staat, en is hij er niet als
-       dat niets is. */
-    var rest = [], restEn = [];
-    for(var j = 0; j < blokken.length; j++){
-      if(idx.indexOf(j) !== -1) continue;
-      rest.push(blokken[j]);
-      restEn.push(zelfdeVorm ? blokkenEn[j] : blokken[j]);
-    }
+    /* v23.61 haalde de dubbeling uit deze uitklapper: hij bevatte daarna alleen nog de blokken die
+       níét op deze stap staan.
+
+       v23.74 haalt hem helemaal weg, en de reden is precies die inhoud. Wat er níét op deze stap
+       staat, staat op de andere stappen van dezelfde microles. De uitklapper was dus een
+       vooruitblik op je eigen les, en gemeten 1,9 keer zo lang als de stap zelf (250 tegen 135
+       tekens, op 60 van de 61 stappen).
+
+       Stefan, 13 aug: "de spiekbriefje is beetje veel tekst, dat kan korter of gedoseerder en dan
+       kan de les met klap spiekbrief in of uit ook weg." Er gaat niets verloren: je krijgt het in
+       stap twee of drie, en de hele kaart staat op het grammaticascherm. */
     var s = {
       kop: gwKopUit(blokken[eerste], i, false),
       kopEn: gwKopUit((zelfdeVorm ? blokkenEn : blokken)[eerste], i, true),
@@ -27747,12 +28470,6 @@ function gwVanSpiek(idx){
       uitlegEn: eigenEn,
       vragen: vragen.slice(vGroep[i][0], vGroep[i][1])
     };
-    if(rest.length){
-      s.diepKop = "De rest van de spiekbrief";
-      s.diepKopEn = "The rest of the cheat sheet";
-      s.diep = rest.join("");
-      s.diepEn = restEn.join("");
-    }
     return s;
   });
   // twee tabellen in hetzelfde onderwerp leveren twee keer "Het rijtje" op: nummer die dan
@@ -27833,6 +28550,8 @@ function gwOnderwerp(id){
   // handgeschreven wizards eerst, daarna de automatisch opgeknipte spiekbrief-onderwerpen
   var hand = GRAMWIZ.filter(function(o){ return o.id === id; })[0];
   if(hand) return hand;
+  // v23.73: de opfrisser is een onderwerp van één stap met één vraag en geen uitleg.
+  if(/^opfris-/.test(id || "")) return gcOpfrisOnderwerp(id);
   if(/^concept-/.test(id || "")) return gcOnderwerp(id);
   var m = /^spiek-(a2|a0)-(\d+)$/.exec(id || "");
   if(m && m[1] === gwTrackKey()) return gwVanSpiek(parseInt(m[2], 10));

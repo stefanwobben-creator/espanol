@@ -85,12 +85,41 @@ const { chromium } = require('playwright');
   const bron = await page.content();
   ok(!/compMark\("luisteren", s\.id\)/.test(bron), 'dictado schrijft geen luisteren meer weg');
 
-  // ---- 4. het scherm: geen transcript voor je geantwoord hebt ----
+  // ---- 4. de plank (v23.76): je ziet wat je had, wat je kunt en wat er nog komt ----
+  // Stefan, 13 aug: "bij dictado ook zien welke ik al heb gehad, welke ik nog moet doen, welke
+  // unlocked zijn bij mijn huidige niveau." Escuchar opende tot v23.76 op een willekeurige scene,
+  // dus je zag nooit hoeveel er waren of wat er nog kwam.
   await page.evaluate(() => {
     S.speelAlles = true;
-    show('speeltuin'); funView = 'audi'; audSc = null; audStop(); renderFun();
+    show('speeltuin'); funView = 'audi'; audSc = null; audMenu = true; audStop(); renderFun();
   });
   await page.waitForTimeout(400);
+  const plank = await page.evaluate(() => ({
+    rijen: document.querySelectorAll('#funCard .plankRij').length,
+    open: document.querySelectorAll('#funCard .plankRij:not(.dicht) [data-plank]').length,
+    dicht: document.querySelectorAll('#funCard .plankRij.dicht').length,
+    tekst: (document.getElementById('funCard') || {}).innerText || ''
+  }));
+  ok(plank.rijen === vorm.aantal, 'elke scene staat op de plank, ook de gesloten (' + plank.rijen + '/' + vorm.aantal + ')');
+  /* Dit is de assertie die ertoe doet. De eerste versie van de plank leidde "open" af uit
+     audPlafond(), en dat geeft op een vers profiel 10 terwijl de lichtste scene 13 weegt: alle zes
+     op slot, Escuchar onspeelbaar op dag 1. Dat was nooit het echte gedrag, want audLijst() valt
+     terug op de drie lichtste zodra de pool onder de twee komt. Zelfde vorm als de lege spelpool
+     van v23.65: een stille terugval die het gedrag bepaalt terwijl de zichtbare regel iets anders
+     zegt. */
+  ok(plank.open >= 1, 'er is altijd minstens één scene die je nu kunt doen (' + plank.open + ')');
+  // Deze suite draait op de standaardtaal van de browser en dat is hier Engels, dus beide talen.
+  if (plank.dicht) ok(/nog (\d+ scenes|één scene) afmaakt|finish (\d+ more scenes|one more scene)/.test(plank.tekst),
+    'een gesloten scene zegt in gewone taal wat je ervoor moet doen: ' +
+      (plank.tekst.split('\n').filter(function (r) { return /open/i.test(r); })[0] || '(niets gevonden)'));
+
+  // ---- 4b. het scherm: geen transcript voor je geantwoord hebt ----
+  await page.evaluate(() => {
+    const eerste = document.querySelector('#funCard [data-plank]');
+    if (eerste) eerste.click();
+  });
+  await page.waitForTimeout(400);
+  ok(await page.evaluate(() => !!audSc), 'een tik op de plank opent die scene');
   ok(await page.locator('#btnAudSpeel').count() === 1, 'er staat een afspeelknop');
   ok(await page.locator('.audOpt').count() === 4, 'de eerste vraag staat met vier opties op het scherm');
   const verborgen = await page.evaluate(() => {

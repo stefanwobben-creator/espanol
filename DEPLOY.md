@@ -48,6 +48,21 @@ en er ging een uur in het zoeken zitten. De patches waren niet stuk; de manier w
 werden was stuk. Dat script draait ze één voor één, stopt bij de eerste fout, en doet daarna de
 syntaxcheck.
 
+**Herbouwen begint bij een versienummer, niet bij `git checkout`.** De juiste herbouw is:
+
+    git checkout index.html versie.txt
+    sh tools/patches.sh v23.57 .              # de eerste patch die nog niet gecommit is
+
+Die tweede regel is niet optioneel en het versienummer is niet vrij te kiezen. Op 13 augustus deed
+ik alleen de `git checkout` en daarna de twee nieuwe patches. `HEAD` stond op v23.56, dus dat gooide
+achttien versies weg — en het viel niet op, want beide nieuwe patches vonden hun ankers ook in
+v23.56 en meldden gewoon succes. Het enige verschil was de bestandsgrootte: 2.383.813 tekens in
+plaats van 2.428.446. Het aantal tekens uit de syntaxcheck is dus de goedkoopste controle die er
+is; kijk er na elke herbouw even naar.
+
+En let op wat het argument betekent: `sh tools/patches.sh v23.76` draait **alleen** v23.76, niet
+alles tot en met v23.76. Het is een beginpunt, geen eindpunt.
+
 **Anker niet op `APP_VERSIE` als de avondrun ertussen kan zitten.** Die hoogt het versienummer
 onderweg op, en dan mist een patch die op `var APP_VERSIE = "v23.49";` mikt zijn anker terwijl er
 inhoudelijk niets aan de hand is. Anker op de code die je verandert; het versienummer bijwerken kan
@@ -173,6 +188,46 @@ niet, want die verdeelt de suites over vier machines.
 Wat je 's ochtends doet als de run rood is: open het artefact, lees `poging-1/poort.log` (daar staat
 welke suite rood was) en `poging-1/wat-de-bot-schreef.diff` (daar staat waarom). Dat is genoeg om te
 weten of het aan de content lag of aan de app.
+
+### De avondrun spreekt zijn eigen zinnen in
+
+Stefan, 13 augustus: "hij moet ook eleven labs gebruiken om de zinnen in te spreken." Dat deed
+niets, en dat was geen storing maar een gat: `tools/generate-audio.js` is handwerk met een sleutel
+uit je eigen terminal, en geen enkele workflow raakte het aan. `audio/dictado/` stond daardoor sinds
+30 juli stil op 201 bestanden terwijl `SENTENCES` doorgroeide van 132 naar 178. Vijftig zinnen
+zonder opname, 20% van het corpus, en de app zei er niets over.
+
+`tools/avondrun-audio.js` draait nu in de workflow, ná de poort en vóór het publiceren, voor de drie
+groepen die 's nachts kunnen groeien: `dictado`, `dialogo-a` en `dialogo-b`. Het boek staat er
+bewust niet bij: een nieuw hoofdstuk is een besluit dat jij neemt, en dan draai je
+`tools/generate-boek-audio.js` met de hand.
+
+Drie regels die het veilig houden:
+
+- *Publiceren gaat altijd door.* Een mislukte opname is vervelend, een tegengehouden les is erger.
+  Het script eindigt op exitcode 0, ook als er niets lukte; het manifest `audio/stemmen.json` zorgt
+  dat de rest morgen weer op de lijst staat.
+- *Een uitschieter wordt geweigerd, niet gecapt, en de bel telt alleen opnieuw inspreken.* Boven
+  `AUDIO_ALARM` (standaard 80) wordt er níéts ingesproken. De eerste versie van die regel telde
+  alles wat op de lijst stond, en sloeg meteen aan toen er negen luisterscenes bijkwamen: 86
+  bestanden, terwijl dat precies is waar deze stap voor bestaat. Het verschil zit in de reden. Een
+  bestand dat er niet is hoort ingesproken te worden, hoeveel het er ook zijn. Een bestand dat er
+  wél is en tóch opnieuw moet, betekent dat de stem of het model is gewijzigd of dat het manifest
+  kwijt is, en dán trekt een cronjob je tegoed leeg voor iets wat al bestond.
+- *Geen sleutel is geen storing.* Ontbreekt `ELEVENLABS_API_KEY`, dan zegt de stap dat en gaat de
+  les gewoon live. De app valt dan terug op de browserstem (v23.75).
+
+**Nodig secret: `ELEVENLABS_API_KEY`**, naast de `ADMIN_KEY` die er al is.
+
+Nakijken zonder iets te verbruiken:
+
+    node tools/avondrun-audio.js --droog
+
+En `test/suites/pw-audiogaten.js` bewaakt het van de andere kant: die telt zin-ids tegen mp3's en
+gaat rood boven de zestig. Niet boven de nul, want de volgorde maakt dat onmogelijk — de poort
+oordeelt vóór er is ingesproken, dus een verse zin heeft op dat moment per definitie geen opname.
+Zestig is ruim twee weken stilte: laat genoeg om nooit een gewone nacht te blokkeren, vroeg genoeg
+om het te zien voordat het weer een vijfde van de app is.
 
 ## Wat er live komt
 

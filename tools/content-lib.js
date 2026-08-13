@@ -253,6 +253,24 @@ function heeftLidwoord(es) {
   return /^(el|la|los|las) /i.test(String(es || "").trim());
 }
 
+/* Het Spaanse woord mag niet op de vraagkant staan. Stefan, 13 aug, met een schermafdruk erbij:
+   "soms staat het spaanse woord er ook bij ... de spaanse zin mag nooit al worden getoond."
+
+   Wat er stond, drie keer, alle drie een Grieks -ma-woord dat mannelijk is:
+
+       cv67    es=planeta   nl=planeet (el planeta!)
+
+   Iemand heeft het geslacht als geheugensteun in het antwoordveld gezet. Daarmee staat het antwoord
+   op de vraag: je hoeft niets meer te weten om die kaart goed te doen. De juiste plek voor dat
+   lidwoord is de Spaanse kant, en daar zegt "el planeta" het al.
+
+   De controle is met opzet smal: alleen een haakje met een lidwoord plus een woord erin. Ruimer kan
+   niet, want "de piano" is een prima vertaling van "el piano" en een cognaat is geen lek. */
+const LEKT = /\((el|la|los|las)\s+[a-zà-ÿ]+!?\)/i;
+function lektHetAntwoord(w) {
+  return LEKT.test(String(w.nl || "")) || LEKT.test(String(w.en || ""));
+}
+
 function valideer(nieuw, inv) {
   const fouten = [];
   const bestaandeIds = new Set([].concat(
@@ -279,6 +297,8 @@ function valideer(nieuw, inv) {
     if (w.es && w.es.length > 60) fouten.push(`${waar}: es is verdacht lang`);
     if (heeftLidwoordNodig(w) && !heeftLidwoord(w.es))
       fouten.push(`${waar}: zelfstandig naamwoord zonder lidwoord ("${w.es}"); schrijf "el ${w.es}" of "la ${w.es}"`);
+    if (lektHetAntwoord(w))
+      fouten.push(`${waar}: de vertaling verklapt het Spaanse woord ("${w.nl}"). Het lidwoord hoort op de Spaanse kant.`);
   });
 
   (nieuw.sentences || []).forEach((s, i) => {

@@ -117,6 +117,32 @@ jobs:
           [ "${{ inputs.nieuwe_les }}" = "true" ] && VLAGGEN="$VLAGGEN --nieuwe-les"
           sh tools/avondrun.sh "$VLAGGEN"
 
+      # 13 AUGUSTUS: DE RUN SPREEKT ZIJN EIGEN ZINNEN IN
+      #
+      # Stefan: "hij moet ook eleven labs gebruiken om de zinnen in te spreken." Tot vandaag deed
+      # niets dat. audio/dictado/ stond sinds 30 juli stil op 201 bestanden terwijl er 50 zinnen
+      # bij waren gekomen; op 20% van het corpus deed de "Hoor hem"-knop dus niets, en niets zei
+      # dat. Zie de kop van tools/avondrun-audio.js.
+      #
+      # Ná de poort, met opzet: dan kost een afgekeurde poging geen tekens. Wordt er afgekeurd, dan
+      # staat de tekst terug op die van main en spreekt deze stap gewoon de achterstand in. Faalt
+      # hij zelf, dan gaat het publiceren door: de tekst is het leermateriaal en het geluid is de
+      # garnering. Vandaar continue-on-error én een script dat op 0 eindigt.
+      - name: De nieuwe zinnen inspreken
+        id: audio
+        if: always() && steps.run.outputs.wat != 'geen-sleutel'
+        continue-on-error: true
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: |
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::warning::ELEVENLABS_API_KEY-secret ontbreekt, dus er wordt niets ingesproken."
+            echo "De zinnen gaan wel live; de app valt bij een ontbrekend bestand terug op de browserstem."
+            echo "audio=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          node tools/avondrun-audio.js
+
       # Dít ontbrak. Zonder deze stap staat het bewijs van een afgekeurde nacht op een machine die
       # daarna wordt opgeruimd.
       - name: Afgekeurde pogingen bewaren
@@ -161,7 +187,16 @@ jobs:
             const z = (p.reparatie.zinnen||[]).length, t = (p.reparatie.toetsjes||[]).length;
             console.log(\`\${z} oefenzinnen\${t ? ' en ' + t + ' toetsje(s)' : ''} bij: \${g}\`);
           ")
-          git add index.html versie.txt tools/curriculum-laatste.json tools/avondrun-hart.json
+          # audio/ hoort hierbij: de mp3's van de zinnen die in deze commit zitten. Los committen
+          # zou een moment opleveren waarop de zin op main staat en de opname niet.
+          # audio/ hoort in dezelfde commit: los committen zou een moment opleveren waarop de zin
+          # op main staat en de opname niet, en dat is precies de toestand die we aan het opruimen
+          # zijn. De telling erbij, zodat je aan de commitregel ziet of er is ingesproken.
+          OPNAMES="${{ steps.audio.outputs.audio }}"
+          if [ -n "$OPNAMES" ] && [ "$OPNAMES" != "0" ]; then
+            SAMENVATTING="$SAMENVATTING (+$OPNAMES opnames)"
+          fi
+          git add index.html versie.txt tools/curriculum-laatste.json tools/avondrun-hart.json audio
           git commit -m "avondrun: $SAMENVATTING"
           git push
 
@@ -174,7 +209,7 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           TAK="curriculum/les-$(date +%Y%m%d)"
           git checkout -b "$TAK"
-          git add index.html versie.txt tools/curriculum-laatste.json
+          git add index.html versie.txt tools/curriculum-laatste.json audio
           git commit -m "curriculum: nieuwe les \"${{ steps.run.outputs.titel }}\""
           git push -u origin "$TAK"
           # De kop van de PR komt uit het plan (één regel node, geen meerregelige JS: die liep uit het
@@ -200,14 +235,19 @@ jobs:
       # De hartslag staat er ook als er niets is gepubliceerd; juist dan. Zonder dit bestand is de
       # enige manier om te zien of de avondrun ooit iets deed: commits van de bot tellen, en dat is
       # geen meting maar archeologie.
-      - name: Hartslag wegschrijven
+      #
+      # En audio hoort hier ook thuis, want dit is de enige commitstap die altijd draait. Was er
+      # niets te dichten (wat=niets) of ging de poort dicht (wat=afgekeurd), dan is er geen
+      # publicatiestap, maar de achterstand aan opnames is er dan nog steeds. Publiceerde de
+      # reparatiestap hierboven de audio al, dan valt er hier gewoon niets meer toe te voegen.
+      - name: Hartslag en audio wegschrijven
         if: always()
         run: |
           [ -f tools/avondrun-hart.json ] || exit 0
           git config user.name "curriculum-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add tools/avondrun-hart.json
-          if git diff --cached --quiet; then echo "hartslag ongewijzigd"; exit 0; fi
+          git add tools/avondrun-hart.json audio
+          if git diff --cached --quiet; then echo "hartslag en audio ongewijzigd"; exit 0; fi
           git commit -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
           git pull --rebase --autostash
           git push
