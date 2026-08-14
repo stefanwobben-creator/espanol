@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.98";
+var APP_VERSIE = "v23.99";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6837,7 +6837,7 @@ function renderProfileScreen(){
   var kop = document.getElementById("profKiesKop");
   if(kop) kop.classList.toggle("hidden", !profiles.list.length);
   var nk = document.getElementById("profNieuwKop");
-  if(nk && !profiles.list.length) nk.textContent = "Welkom! Maak je profiel";
+  if(nk && !profiles.list.length) nk.textContent = ct("Welkom! Maak je profiel","Welcome! Create your profile");
   list.innerHTML = profiles.list.map(function(p){
     return "<button class='profbtn' data-prof='"+p.name+"'>"+p.name+"<small>niveau: "+(TRACKS[p.track]?TRACKS[p.track].label:p.track)+"</small></button>";
   }).join("");
@@ -6906,14 +6906,14 @@ function renderProfileScreen(){
   if(bh) bh.onclick = function(){
     var m = (document.getElementById("herstelMail").value || "").trim();
     var uit = document.getElementById("herstelUit");
-    if(!m || m.indexOf("@") === -1){ if(uit) uit.innerHTML = "<p class='muted'>Vul eerst een geldig e-mailadres in.</p>"; return; }
+    if(!m || m.indexOf("@") === -1){ if(uit) uit.innerHTML = "<p class='muted'>"+ct("Vul eerst een geldig e-mailadres in.","Please enter a valid e-mail address first.")+"</p>"; return; }
     bh.disabled = true; bh.textContent = "Zoeken...";
     api("/api/herstel", "POST", {mail:m}).then(function(res){
       bh.disabled = false; bh.textContent = "Zoek mijn voortgang";
       if(!uit) return;
       if(!res || !res.ok){ uit.innerHTML = "<p class='muted'>"+(res && res.error ? res.error : "Server even niet bereikbaar, probeer zo opnieuw.")+"</p>"; return; }
-      if(!res.profielen || !res.profielen.length){ uit.innerHTML = "<p class='muted'>Geen voortgang gevonden bij dit e-mailadres. Check de spelling, of was het profiel zonder e-mail aangemaakt?</p>"; return; }
-      uit.innerHTML = "<p class='muted'>Gevonden! Kies je profiel:</p>" + res.profielen.map(function(pr){
+      if(!res.profielen || !res.profielen.length){ uit.innerHTML = "<p class='muted'>"+ct("Geen voortgang gevonden bij dit e-mailadres. Check de spelling, of was het profiel zonder e-mail aangemaakt?","No progress found for this e-mail address. Check the spelling, or was the profile created without an e-mail?")+"</p>"; return; }
+      uit.innerHTML = "<p class='muted'>"+ct("Gevonden! Kies je profiel:","Found it! Pick your profile:")+"</p>" + res.profielen.map(function(pr){
         return "<button class='profbtn' data-herstel='"+pr.code+"'>"+pr.naam+"<small>tik om te herstellen</small></button>";
       }).join("");
       uit.querySelectorAll("button[data-herstel]").forEach(function(b){
@@ -6929,11 +6929,11 @@ function renderProfileScreen(){
   var bs = document.getElementById("btnSyncLogin");
   if(bs) bs.onclick = function(){
     var code = (document.getElementById("syncCodeIn").value||"").trim().toLowerCase();
-    if(code.length < 8){ document.getElementById("profHint").textContent = "Die code lijkt te kort, check hem even."; return; }
+    if(code.length < 8){ document.getElementById("profHint").textContent = ct("Die code lijkt te kort, check hem even.","That code looks too short, have another look."); return; }
     bs.disabled = true; bs.textContent = "Ophalen...";
     api("/api/state/"+code).then(function(res){
       bs.disabled = false; bs.textContent = "Haal mijn voortgang op";
-      if(!res || !res.ok){ document.getElementById("profHint").textContent = "Code niet gevonden (of de server slaapt even, probeer zo nog eens)."; return; }
+      if(!res || !res.ok){ document.getElementById("profHint").textContent = ct("Code niet gevonden (of de server slaapt even, probeer zo nog eens).","Code not found (or the server is asleep, try again shortly)."); return; }
       var naam = res.name;
       var bestaand = profiles.list.filter(function(p){ return p.code === code; })[0];
       if(!bestaand){
@@ -6957,8 +6957,8 @@ function renderProfileScreen(){
   };
   document.getElementById("btnNewProf").onclick = function(){
     var name = (document.getElementById("newProfName").value || "").trim();
-    if(!name){ document.getElementById("profHint").textContent = "Vul eerst een naam in."; return; }
-    if(!newTrack){ document.getElementById("profHint").textContent = "Kies eerst een niveau (Beginner of A2)."; return; }
+    if(!name){ document.getElementById("profHint").textContent = ct("Vul eerst een naam in.","Please enter a name first."); return; }
+    if(!newTrack){ document.getElementById("profHint").textContent = ct("Kies eerst een niveau (Beginner of A2).","Pick a level first (Beginner or A2)."); return; }
     var exists = profiles.list.some(function(p){ return p.name.toLowerCase() === name.toLowerCase(); });
     if(exists){ document.getElementById("profHint").textContent = "Die naam bestaat al, kies hem hierboven of verzin een andere."; return; }
     var slug = name.toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -6994,7 +6994,7 @@ var pIdx = 0, pScore = null, pName = "";
 
 function startPlacement(){
   pName = (document.getElementById("newProfName").value || "").trim();
-  if(!pName){ document.getElementById("profHint").textContent = "Vul eerst een naam in, dan start de test."; return; }
+  if(!pName){ document.getElementById("profHint").textContent = ct("Vul eerst een naam in, dan start de test.","Enter a name first, then the test starts."); return; }
   var exists = profiles.list.some(function(p){ return p.name.toLowerCase() === pName.toLowerCase(); });
   if(exists){ document.getElementById("profHint").textContent = "Die naam bestaat al, kies hem hierboven of verzin een andere."; return; }
   pIdx = 0; pScore = {1:0, 2:0};
@@ -22932,7 +22932,7 @@ function duelJoin(code){
 }
 function duelOpen(id, skipPush){
   api("/api/duel/" + id).then(function(res){
-    if(!res || !res.ok){ toast("Duel niet gevonden."); return; }
+    if(!res || !res.ok){ toast(ct("Duel niet gevonden.","Duel not found.")); return; }
     duelCur = res.duel;
     if(!skipPush) navPush({t:"duel", id:id});
     renderDuel();
@@ -23039,11 +23039,11 @@ function renderDuel(){
     var w = (document.getElementById("duelIn").value||"").toLowerCase().trim();
     try{ w = w.normalize("NFC"); }catch(e){}
     if(w.length < 2){
-      if(fb) fb.innerHTML = "<div class='feedback bijna'>Typ of tik eerst een woord van minstens 2 letters.</div>";
+      if(fb) fb.innerHTML = "<div class='feedback bijna'>"+ct("Typ of tik eerst een woord van minstens 2 letters.","Type or tap a word of at least 2 letters first.")+"</div>";
       return;
     }
     if(!duelCanMake(w, d.letters[ronde])){
-      if(fb) fb.innerHTML = "<div class='feedback fout'>Dat past niet in deze letters (elke letter mag maar zo vaak als hij er ligt).</div>";
+      if(fb) fb.innerHTML = "<div class='feedback fout'>"+ct("Dat past niet in deze letters (elke letter mag maar zo vaak als hij er ligt).","That does not fit these letters (each letter only as often as it is there).")+"</div>";
       return;
     }
     if(knop){ knop.disabled = true; knop.textContent = "🤖 Scheidsrechter kijkt..."; }
@@ -23051,7 +23051,7 @@ function renderDuel(){
       var knop2 = document.getElementById("btnDuelZet");
       if(knop2){ knop2.disabled = false; knop2.textContent = "Speel woord"; }
       var fb2 = document.getElementById("duelFb");
-      if(!res){ if(fb2) fb2.innerHTML = "<div class='feedback bijna'>Server even niet bereikbaar, probeer zo opnieuw.</div>"; return; }
+      if(!res){ if(fb2) fb2.innerHTML = "<div class='feedback bijna'>"+ct("Server even niet bereikbaar, probeer zo opnieuw.","Server briefly unreachable, try again in a moment.")+"</div>"; return; }
       if(!res.ok){ if(fb2) fb2.innerHTML = "<div class='feedback fout'>"+(res.error||"Er ging iets mis.")+"</div>"; return; }
       if(!res.geldig){
         if(fb2) fb2.innerHTML = "<div class='feedback fout'>De scheidsrechter keurt \""+w+"\" af: "+(res.betekenis||"geen bestaand Spaans woord")+". Probeer een ander woord!</div>";
@@ -24364,7 +24364,7 @@ function renderPerfil(){
     var m = (mi.value || "").trim();
     if(m && m.indexOf("@") === -1){ toast(ct("Dat lijkt geen e-mailadres.","That does not look like an e-mail address.")); return; }
     S.mail = m; persist(); syncUp();
-    toast(m ? "E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden." : "E-mail verwijderd.");
+    toast(m ? ct("E-mail bewaard ✓ Hiermee kun je je voortgang altijd terugvinden.","E-mail saved ✓ This lets you find your progress again any time.") : ct("E-mail verwijderd.","E-mail removed."));
   };
   renderNivClaim();
   renderGroepen();
@@ -24528,7 +24528,7 @@ function joinViaLink(gcode, poging){
       // sync-code bestaat mogelijk nog niet op de server; even wachten en opnieuw
       setTimeout(function(){ joinViaLink(gcode, (poging||0)+1); }, 5000);
     } else {
-      toast("Meedoen met de groep lukte nog niet. Ga naar Profiel 👤 en vul code "+gcode+" in.");
+      toast(ct("Meedoen met de groep lukte nog niet. Ga naar Profiel 👤 en vul code "+gcode+" in.","Joining the group did not work yet. Go to Profile 👤 and enter code "+gcode+"."));
     }
   });
 }
@@ -25030,7 +25030,7 @@ function renderGroepen(){
     api("/api/groep/"+groepCur.gcode).then(function(res){
       var st = document.getElementById("grStatus"), lijst = document.getElementById("grLijst");
       if(!lijst) return;
-      if(!res || !res.ok || !res.spelers){ if(st) st.textContent = "Server even niet bereikbaar, probeer zo opnieuw."; return; }
+      if(!res || !res.ok || !res.spelers){ if(st) st.textContent = ct("Server even niet bereikbaar, probeer zo opnieuw.","Server briefly unreachable, try again in a moment."); return; }
       if(st) st.textContent = res.spelers.length + " " + (res.spelers.length===1?gt("deelnemer"):gt("deelnemers")) + " · " + gt("privacy");
       // v19.57: zodra je hier ooit een tweede naam ziet, ben je niet meer alleen en stopt de app
       // met vragen of je iemand wil uitnodigen. v19.58: en dán pas komen de tapas.
@@ -25129,7 +25129,7 @@ function renderGroepen(){
   var bn = document.getElementById("btnGrNieuw");
   if(bn) bn.onclick = function(){
     var naam = (document.getElementById("grNaam").value || "").trim();
-    if(!naam){ toast("Geef je groep eerst een naam."); return; }
+    if(!naam){ toast(ct("Geef je groep eerst een naam.","Give your group a name first.")); return; }
     bn.disabled = true; bn.textContent = "...";
     api("/api/groep/nieuw", "POST", {naam:naam, code:mijnSyncCode()}).then(function(res){
       bn.disabled = false; bn.textContent = gt("startKnop");
@@ -25144,14 +25144,14 @@ function renderGroepen(){
   var bj = document.getElementById("btnGrJoin");
   if(bj) bj.onclick = function(){
     var code = (document.getElementById("grCode").value || "").trim().toLowerCase();
-    if(!code){ toast("Vul eerst een groepscode in."); return; }
+    if(!code){ toast(ct("Vul eerst een groepscode in.","Enter a group code first.")); return; }
     bj.disabled = true;
     api("/api/groep/join", "POST", {gcode:code, code:mijnSyncCode()}).then(function(res){
       bj.disabled = false;
       if(!res || !res.ok || !res.groep){ toast(res && res.error ? res.error : "Groep niet gevonden."); return; }
       groepBewaar(res.groep);
       groepCur = res.groep;
-      toast("Je doet mee met '"+res.groep.naam+"'! 🎉");
+      toast(ct("Je doet mee met '"+res.groep.naam+"'! 🎉","You have joined '"+res.groep.naam+"'! 🎉"));
       renderGroepen();
     });
   };
@@ -29869,7 +29869,7 @@ function importProgress(){
     var parsed = JSON.parse(ta.value);
     if(parsed && parsed.srs){ S = parsed; persist(); renderStats(); updateBadge(); buildQueue(); renderWord();
       document.getElementById("btnImportProgress").textContent = "Geïmporteerd ✓"; }
-  }catch(e){ alertBox("Dat lijkt geen geldige voortgang. Plak precies wat je eerder exporteerde."); }
+  }catch(e){ alertBox(ct("Dat lijkt geen geldige voortgang. Plak precies wat je eerder exporteerde.","That does not look like valid progress. Paste exactly what you exported earlier.")); }
 }
 function alertBox(msg){
   var ta = document.getElementById("progressDump");
