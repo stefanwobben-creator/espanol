@@ -266,9 +266,49 @@ function heeftLidwoord(es) {
 
    De controle is met opzet smal: alleen een haakje met een lidwoord plus een woord erin. Ruimer kan
    niet, want "de piano" is een prima vertaling van "el piano" en een cognaat is geen lek. */
+/* 14 aug (v23.100): deze controle keek alleen naar "(el coche)" tussen haakjes, en dat was de vorm
+   die op 13 augustus toevallig was opgevallen. Er waren er drie meer, en samen zaten ze op 80 van de
+   1376 Cervantes-kaarten:
+
+     "a pesar de = ondanks; wegen"                        -> antwoord: pesar
+     "overblijven; afspreken; quedar bien = goed staan"   -> antwoord: quedar
+     "vinger; teen: dedo del pie"                         -> antwoord: dedo
+
+   Alle drie vragen ze je een woord te raden dat er al staat. De regel is nu algemener: de vraagkant
+   mag geen woord delen met het antwoord, en geen "=" bevatten (dat is altijd een Spaanse uitdrukking
+   met haar vertaling erachter).
+
+   Met één uitzondering, en die is belangrijk: een leenwoord is geen lek. "virus", "club", "motor",
+   "crisis", "chorizo" zijn in beide talen hetzelfde woord, en zo'n kaart is gewoon makkelijk, niet
+   kapot. */
 const LEKT = /\((el|la|los|las)\s+[a-zà-ÿ]+!?\)/i;
+function kaal(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+function woordenVanKant(s) {
+  return kaal(s).split(/[^a-z]+/).filter((w) => w.length > 2);
+}
+function zelfdeWoordAlsAntwoord(kant, es) {
+  // Aan beide kanten het lidwoord eraf, anders geldt "de metro" tegenover "el metro" als lek terwijl
+  // het gewoon hetzelfde leenwoord is. Gemeten: zonder deze regel vallen er tientallen goede kaarten
+  // uit de app.
+  const b = kaal(es).replace(/^(el|la|los|las|un|una) /, "").replace(/[^a-z ]/g, "").trim();
+  return kant.split(",").some(function (deel) {
+    return kaal(deel).replace(/\([^)]*\)/g, "").replace(/^(de|het|een) /, "")
+      .replace(/[^a-z ]/g, "").trim() === b;
+  });
+}
 function lektHetAntwoord(w) {
-  return LEKT.test(String(w.nl || "")) || LEKT.test(String(w.en || ""));
+  if (LEKT.test(String(w.nl || "")) || LEKT.test(String(w.en || ""))) return true;
+  const es = String(w.es || "");
+  if (!es) return false;
+  const esWoorden = new Set(woordenVanKant(es));
+  return ["nl", "en"].some(function (k) {
+    const kant = String(w[k] || "");
+    if (!kant || zelfdeWoordAlsAntwoord(kant, es)) return false;
+    if (/=/.test(kant)) return true;
+    return woordenVanKant(kant).some((t) => esWoorden.has(t));
+  });
 }
 
 function valideer(nieuw, inv) {
@@ -452,7 +492,7 @@ function pasToe(nieuw, opties) {
 module.exports = { altWaarschuwingen, altVoornaamwoorden,
                    INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
                    valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie,
-                   altNorm, altKaal, herstelAlt };
+                   altNorm, altKaal, herstelAlt, lektHetAntwoord };
 
 /* ---------- zelftest ---------- */
 
