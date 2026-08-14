@@ -1038,7 +1038,7 @@
         <button class="ghost trackpick" data-track="beginner" data-lvl="A0">A0 · helemaal nieuw</button>
         <button class="ghost trackpick" data-track="beginner" data-lvl="A1">A1 · een paar woorden</button>
         <button class="ghost trackpick" data-track="a2" data-lvl="A2">A2 · ik ken de basis</button>
-        <button class="ghost" disabled style="opacity:.45">B1 · binnenkort</button>
+        <button class="ghost" id="btnB1Straks" disabled style="opacity:.45">B1 · binnenkort</button>
       </div>
       <p class="muted" style="margin:10px 0 4px"><a href="#" id="lnkTaal">Moedertaal: 🇳🇱 Nederlands · wijzigen</a></p>
       <div id="taalBox" class="hidden">
@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.96";
+var APP_VERSIE = "v23.97";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6746,8 +6746,12 @@ function applySignupLang(){
   zet("lnkHerstel", d.herstel);
   ph("herstelMail", d.herstelPh);
   zet("btnHerstel", d.herstelKnop);
-  // B1-knop (heeft geen data-lvl)
-  document.querySelectorAll("#tab-profiel .row button[disabled]").forEach(function(b){ b.textContent = d.b1; });
+  /* v23.97: hier stond een selector op élke uitgeschakelde knop in dit tabblad. btnSyncLogin staat
+     tijdens het synchroniseren op disabled, en dan veranderde die knop ineens in "B1 · binnenkort".
+     Dat ziet eruit alsof de app stuk is, op precies het scherm waar iemand voor het eerst iets
+     probeert. De knop heeft nu een eigen id. */
+  var b1 = document.getElementById("btnB1Straks");
+  if(b1) b1.textContent = d.b1;
 }
 
 function renderLangRow(){
@@ -12262,7 +12266,18 @@ function renderQuestion(){
     var prev = S.quiz[qz.id];
     if(prev===undefined || st.score>prev){ S.quiz[qz.id] = st.score; persist(); }
     quizSrsBij(qz, pct); quizSpreid(); persist();
-    if(pct === 1){ S.tapas = (S.tapas||0) + 2; persist(); confetti(["⭐️","🌮","🎉"], 20); }
+    /* v23.97: dit gaf twee tapa's per foutloze ronde, met "Opnieuw" er direct onder. Chispa voeren
+       werd daarmee gratis, en een beloning die gratis is telt niet meer. Eén keer per toetsje per
+       dag; de confetti blijft altijd, want die kost niets en die is de bedoeling. */
+    if(pct === 1){
+      S.tapaToets = S.tapaToets || {};
+      if(S.tapaToets[qz.id] !== today()){
+        S.tapaToets[qz.id] = today();
+        S.tapas = (S.tapas||0) + 2;
+        persist();
+      }
+      confetti(["⭐️","🌮","🎉"], 20);
+    }
     checkLessonComplete();
     var msg = pct===1 ? ct("¡Perfecto! Foutloos. +2 tapas 🫒","¡Perfecto! Flawless. +2 tapas 🫒") : pct>=0.8 ? ct("¡Muy bien! Bijna foutloos.","¡Muy bien! Nearly flawless.") :
               pct>=0.6 ? ct("Goede basis, kijk de uitleg van je fouten nog even terug.","Good basis; do reread the explanations of your mistakes.") :
@@ -12277,11 +12292,18 @@ function renderQuestion(){
       document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
       return;
     }
+    /* v23.97: onder een matig toetsje stond "lees de spiekbrief en probeer opnieuw", en er was geen
+       knop daarheen. Een opdracht die je zelf moet uitvoeren doet niemand, dus stond die zin er voor
+       niets. Nu een knop ernaast, alleen als er ook echt een kaart bij dit toetsje hoort. */
+    var heeftSpiek = !!(qz.spiek && qz.spiek.length);
     el.innerHTML = "<span class='kicker'>"+quizTitel(qz)+"</span>"+
       "<p class='big'>"+st.score+" / "+gesteld+"</p><p>"+msg+"</p>"+
       "<div class='row'><button class='primary' id='btnRetry'>"+ct("Opnieuw","Again")+"</button>"+
+      (heeftSpiek ? "<button class='ghost' id='btnNaarSpiek'>"+ct("Spiekbrief","Cheat sheet")+"</button>" : "")+
       "<button class='ghost' id='btnMenu'>"+ct("Terug naar toetsjes","Back to quizzes")+"</button></div>";
     document.getElementById("btnRetry").onclick = function(){ startQuiz(qz.id); };
+    var bns = document.getElementById("btnNaarSpiek");
+    if(bns) bns.onclick = function(){ closeQuiz(); show("spiekbrief"); };
     document.getElementById("btnMenu").onclick = closeQuiz;
     return;
   }
@@ -14583,7 +14605,7 @@ function dagSnapOchtend(){
 }
 /* de krabbels die vandaag voor jou binnenkwamen. famCache is het antwoord van /api/familia; als
    dat er nog niet is halen we het één keer per sessie op en tekenen we alleen dit blok opnieuw. */
-var dagKrabGehaald = false;
+var dagKrabGehaald = 0;   // v23.97: het tijdstip van de laatste ophaal, niet meer een ja/nee
 function dagKrabbels(){
   var mij = "";
   try { mij = krabbelIkBen(); } catch(e){}
@@ -15195,9 +15217,14 @@ function dagBordWire(el){
   });
   var ba = document.getElementById("btnAlleSpellen");
   if(ba) ba.onclick = function(){ funView = null; show("speeltuin"); };
-  // krabbels komen van de server; één keer per sessie ophalen en dan alleen het nieuwsblok verversen
-  if(!dagKrabGehaald && !famCache && typeof api === "function"){
-    dagKrabGehaald = true;
+  /* v23.97: hier stond "één keer per sessie ophalen". Wie 's ochtends de app opende en 's middags
+     een schouderklopje kreeg, zag dat pas de volgende dag. Voor het enige sociale dat de app heeft is
+     dat fataal: een reactie die een dag te laat komt is geen reactie.
+     Nu opnieuw ophalen zodra er tien minuten voorbij zijn. Niet bij elke schermwissel, want dan wordt
+     het een verzoek per tik. */
+  var krabOud = !dagKrabGehaald || (Date.now() - dagKrabGehaald) > 10 * 60 * 1000;
+  if(krabOud && typeof api === "function"){
+    dagKrabGehaald = Date.now();
     try {
       api("/api/familia").then(function(res){
         if(res && res.ok && res.spelers) famCache = res;
@@ -22729,7 +22756,12 @@ function showTour(stap){
         var goed = (+b.getAttribute("data-toefen")) === t.oefen.c;
         // woordje meteen echt het herhaalsysteem in
         if(!S.srs[t.oefen.id]) S.srs[t.oefen.id] = {box: goed ? 1 : 0, due: goed ? addDays(today(), 1) : today(), n:1, f: goed ? 0 : 1};
-        addXP(goed ? 2 : 1);
+        /* v23.97: dit gaf punten, confetti en een toast, elke keer. De rondleiding is opnieuw te
+           openen vanuit de voettekst, dus je dagdoel was te halen zonder iets te leren. Nu telt hij
+           één keer. Het woordje gaat hierboven nog wel gewoon je herhaalsysteem in, ook bij een
+           tweede rondje: dat is geen beloning maar boekhouding. */
+        var eersteRonde = !S.tourBeloond;
+        if(eersteRonde){ S.tourBeloond = 1; addXP(goed ? 2 : 1); persist(); }
         confetti(goed ? ["🎉","⭐️"] : ["💛"], goed ? 14 : 8);
         toast(goed ? (nl?"¡Muy bien! +2 "+xpw()+"":"¡Muy bien! +2 "+xpw()+"")
                    : (nl?"Het was: "+t.oefen.opts[t.oefen.c]+". Fouten zijn goud: +1 "+xpw()+"!":"It was: "+t.oefen.opts[t.oefen.c]+". Mistakes are gold: +1 "+xpw()+"!"));
