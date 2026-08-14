@@ -300,6 +300,30 @@ const VOORBEELD_VRAAG = {
   ue: "Aprender is an infinitive. One activity = singular = cuesta."
 };
 
+/* ---------- de vorm van een woordkaart (14 aug, v23.101) ----------
+   Op 14 augustus bleek van de 1376 Cervantes-woorden dat er 80 het Spaanse antwoord al op de
+   Nederlandse kant hadden staan en 295 meerdere betekenissen op elkaar stapelden ("vinger; teen:
+   dedo del pie"). Dat kwam niet door slordigheid maar door herkomst: in een frequentielijst is het
+   nl-veld een woordenboekvertaling en hoort het alles te vermelden, op een kaart is het een vraag.
+
+   Die kaarten zijn in v23.100 gesplitst in `nl` (één betekenis) en `meer` (de rest, zichtbaar pas ná
+   het antwoord). Als de avondrun dat niet weet, levert hij vanaf vannacht weer de oude vorm en begint
+   het opnieuw. Vandaar dit blok, en de twee regels in valideer() die hetzelfde machinaal afdwingen:
+   dit is geen advies aan het model maar een harde eis. */
+const WOORDVORM = `De vorm van een woordkaart (dit wordt machinaal gecontroleerd; een fout hier laat de
+levering afkeuren):
+- "nl" is de VRAAG, niet een woordenboekregel. Precies één betekenis, geen puntkomma's.
+  Fout:  "vinger; teen: dedo del pie"
+  Goed:  "de vinger", en dan "meer": "teen is el dedo del pie"
+- "nl" en "en" mogen het Spaanse antwoord niet verklappen. Staat er een woord uit "es" in de
+  Nederlandse of Engelse kant, dan is de kaart geen vraag meer.
+  Fout:  es "pesar", nl "a pesar de = ondanks; wegen"
+  Goed:  es "pesar", nl "wegen", meer: "a pesar de betekent ondanks"
+  (Een leenwoord dat in beide talen hetzelfde is, zoals el virus / virus, mag uiteraard wel.)
+- "meer" is optioneel en is tekst, geen lijst. Daar hoort wat interessant is maar niet gevraagd wordt:
+  een tweede betekenis, een vaste uitdrukking, een valkuil. Eén korte zin, Nederlands. Laat het veld
+  weg als er niets te melden valt.`;
+
 const STIJL = `Stijl-eisen (belangrijk):
 - Alledaags, natuurlijk Spaans zoals in Spanje gesproken wordt. Geen letterlijk vertaald Nederlands.
 - De zin moet ergens over gaan. Iets wat een mens op een gewone dag tegen een ander zegt. Grammaticaal
@@ -651,6 +675,8 @@ geweest. De les bestaat uit:
 
 ${STIJL}
 
+${WOORDVORM}
+
 Gebruik exact deze ids:
 - woorden: ${ids.words.join(", ")}
 - zinnen: ${ids.sents.join(", ")}
@@ -659,7 +685,7 @@ Gebruik exact deze ids:
 Antwoord met UITSLUITEND JSON in deze vorm:
 {"titel":"Spaanse titel","doel":"Nederlands lesdoel","doelEn":"English lesson goal",
  "niveau":"${niveau}",
- "words":[{"id":"${ids.words[0]}","es":"...","nl":"...","en":"...","tag":"<thema-slug>"}],
+ "words":[{"id":"${ids.words[0]}","es":"el dedo","nl":"de vinger","en":"finger","tag":"<thema-slug>","meer":"teen is el dedo del pie"}],
  "sentences":[${JSON.stringify(VOORBEELD_ZIN)}],
  "quiz":{"id":"${ids.quiz}","titel":"...","titelEn":"...","vragen":[${JSON.stringify(VOORBEELD_VRAAG)}]},
  "cheat":{"titel":"...","titelEn":"...","html":"<p>…</p>","htmlEn":"<p>…</p>"}}`;

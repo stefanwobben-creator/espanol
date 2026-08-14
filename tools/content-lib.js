@@ -114,6 +114,10 @@ function volgendeId(bestaande, prefix) {
 
 /* ---------- valideren ---------- */
 
+/* Dit zijn de VERPLICHTE velden, niet alle toegestane. Extra velden mogen en gaan ongewijzigd mee
+   naar index.html (voegToeAanArray schrijft het hele object weg). Zo is "meer" optioneel: een kaart
+   zonder tweede betekenis hoort het veld gewoon niet te hebben, en een lege string zou hier dan ook
+   als ontbrekend gelden. */
 const NL_VELDEN = { woord: ["id", "es", "nl", "en", "tag"],
                     zin: ["id", "lvl", "nl", "en", "es", "alt", "uitleg", "ue", "tag"],
                     toets: ["id", "titel", "titelEn", "spiek", "vragen"] };
@@ -298,6 +302,17 @@ function zelfdeWoordAlsAntwoord(kant, es) {
       .replace(/[^a-z ]/g, "").trim() === b;
   });
 }
+// Puntkomma's die echt een tweede betekenis inleiden, dus niet die binnen een haakje staan.
+function topPuntkomma(s) {
+  const uit = [];
+  let diep = 0, cur = "";
+  for (const ch of String(s || "")) {
+    if (ch === "(") diep++; else if (ch === ")") diep--;
+    if (ch === ";" && diep === 0) { uit.push(cur.trim()); cur = ""; } else cur += ch;
+  }
+  if (cur.trim()) uit.push(cur.trim());
+  return uit;
+}
 function lektHetAntwoord(w) {
   if (LEKT.test(String(w.nl || "")) || LEKT.test(String(w.en || ""))) return true;
   const es = String(w.es || "");
@@ -338,7 +353,16 @@ function valideer(nieuw, inv) {
     if (heeftLidwoordNodig(w) && !heeftLidwoord(w.es))
       fouten.push(`${waar}: zelfstandig naamwoord zonder lidwoord ("${w.es}"); schrijf "el ${w.es}" of "la ${w.es}"`);
     if (lektHetAntwoord(w))
-      fouten.push(`${waar}: de vertaling verklapt het Spaanse woord ("${w.nl}"). Het lidwoord hoort op de Spaanse kant.`);
+      fouten.push(`${waar}: de vertaling verklapt het Spaanse woord ("${w.nl}"). Zet het Spaans op de Spaanse kant, of in "meer".`);
+    /* v23.100: één betekenis op de vraagkant. Een puntkomma betekende tot vandaag "en hier komt nog
+       een betekenis", en dan vraagt de kaart niet meer welk woord je zoekt maar welke van drie er
+       bedoeld wordt. Dat is geen taalvraag. De rest hoort in `meer`, dat pas ná het antwoord
+       verschijnt. Puntkomma's binnen haakjes tellen niet mee: "pakken, nemen (Spanje; grof in
+       Lat-Am!)" is één betekenis met een gebruiksnotitie. */
+    if (topPuntkomma(String(w.nl || "")).length > 1)
+      fouten.push(`${waar}: meerdere betekenissen op de vraagkant ("${w.nl}"). Zet de eerste in "nl" en de rest in "meer".`);
+    if (w.meer !== undefined && typeof w.meer !== "string")
+      fouten.push(`${waar}: "meer" moet tekst zijn`);
   });
 
   (nieuw.sentences || []).forEach((s, i) => {
@@ -492,7 +516,7 @@ function pasToe(nieuw, opties) {
 module.exports = { altWaarschuwingen, altVoornaamwoorden,
                    INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
                    valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie,
-                   altNorm, altKaal, herstelAlt, lektHetAntwoord };
+                   altNorm, altKaal, herstelAlt, lektHetAntwoord, topPuntkomma };
 
 /* ---------- zelftest ---------- */
 
@@ -540,6 +564,22 @@ if (require.main === module && process.argv.includes("--zelftest")) {
   stuk.words[0].id = inv.words[0].id;
   const f2 = valideer(stuk, inv);
   console.log("validatie van een kapotte levering vindt", f2.length, "fouten:", f2.join(" | "));
+  /* De woordkaartvorm (14 aug, v23.100/101). Twee regels die de avondrun vannacht voor het eerst moet
+     halen. Beide zijn triviaal "groen" te krijgen door ze nooit te laten toeslaan, dus staan de
+     controlegevallen ernaast: een leenwoord en een kaart mét meer-veld moeten er glad doorheen. */
+  const kaartGeval = (w, wat) => {
+    const f3 = valideer({ words: [Object.assign({ id: idW(1), tag: "zelftest" }, w)] }, inv);
+    const raak = f3.some(x => /verklapt|meerdere betekenissen|"meer" moet/.test(x));
+    console.log("  " + wat + ": " + (raak ? "gezien" : "doorgelaten"));
+    return raak;
+  };
+  const kaartGoed =
+    kaartGeval({ es: "pesar", nl: "a pesar de = ondanks", en: "to weigh" }, "een kaart die het antwoord verklapt") &&
+    kaartGeval({ es: "el dedo", nl: "vinger; teen", en: "finger" }, "een kaart met twee betekenissen op de vraagkant") &&
+    kaartGeval({ es: "la mesa", nl: "de tafel", en: "table", meer: ["lijst"] }, "een meer-veld dat geen tekst is") &&
+    !kaartGeval({ es: "el virus", nl: "het virus", en: "virus" }, "CONTROLE: een leenwoord") &&
+    !kaartGeval({ es: "el dedo", nl: "de vinger", en: "finger", meer: "teen is el dedo del pie" }, "CONTROLE: een goede kaart met meer");
+  console.log("woordkaartvorm: " + (kaartGoed ? "klopt ✓" : "FOUT"));
   /* herstelAlt (9 aug). De avondrun keurde twee nachten op rij al zijn eigen zinnen af op het
      alt-veld. Deze vier gevallen zijn precies wat het model aanleverde: geen alt, hoofdletters,
      accenten laten staan, en een echte variant die moet blijven. */
