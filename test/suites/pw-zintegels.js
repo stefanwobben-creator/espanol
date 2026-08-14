@@ -55,7 +55,7 @@ const { chromium } = require('playwright');
 
   // ---- 2. de tegelstand rendert, met afleiders en zonder invoerveld ----
   await page.evaluate(() => {
-    S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = 'tegels'; sModusOverride = 'tegels';
+    S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.zin = 'tegels';
     zTegel = null; renderSentenceBody();
   });
   await page.waitForTimeout(300);
@@ -121,7 +121,7 @@ const { chromium } = require('playwright');
   });
   ok(paden === 'audio/dictado/' + uit.id + '.mp3', 'de knop speelt de bestaande opname van die zin (' + paden + ')');
 
-  await page.evaluate(() => { S.modusKeuze.zin = 'moeilijk'; sModusOverride = 'moeilijk'; renderSentence(true); });
+  await page.evaluate(() => { S.modusKeuze.zin = 'moeilijk'; renderSentence(true); });
   await page.waitForTimeout(300);
   ok(await page.locator('#btnZinLuister').count() === 0, 'voordat je geantwoord hebt staat de luisterknop er niet');
 
