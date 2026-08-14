@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.100";
+var APP_VERSIE = "v23.101";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9881,16 +9881,111 @@ function bestDiff(given, s){
   var best = null;
   answers.forEach(function(a){
     var aTok = norm(a).split(" ");
-    var m = 0, html = [];
+    var m = 0, html = [], paren = [];
     for(var i=0;i<aTok.length;i++){
       var g = gTok[i] || "";
       if(stripAcc(g) === stripAcc(aTok[i])){ html.push(aTok[i]); }
-      else { m++; html.push("<span class='diffword'>"+aTok[i]+"</span>"); }
+      else {
+        m++; html.push("<span class='diffword'>"+aTok[i]+"</span>");
+        /* v23.101: welk woord hoorde er, en wat schreef jij. Dat paar was er altijd al; het ging
+           alleen meteen in HTML om te onderstrepen en daarna weg. Zonder paar is een diff iets om
+           te tonen, met paar is hij een aanwijzing. Zie foutRegel() hieronder.
+           Een leeg g betekent dat je zin korter was: dan mist er een woord en is er geen keuze
+           gemaakt, dus daar valt niets te diagnosticeren. */
+        if(g) paren.push({v:aTok[i], g:g});
+      }
     }
     m += Math.max(0, gTok.length - aTok.length);
-    if(best === null || m < best.m) best = {m:m, len:aTok.length, html:html.join(" ")};
+    if(best === null || m < best.m) best = {m:m, len:aTok.length, html:html.join(" "), paren:paren};
   });
   return best;
+}
+
+/* ================= VAN FOUT NAAR REGEL (v23.101, punt 34 en 23) =================
+
+   "dit foutje es está die maak ik vaker, wordt dat inhoudelijk goed gelogd?" — nee. De fout ging
+   naar S.errors op de zín, dus de app wist dat zin s142 fout was en niet dat ser en estar door
+   elkaar liepen. Dat is een strafregister, geen diagnose.
+
+   Deze tabel maakt er een diagnose van, maar alleen waar hij het zeker weet. De eis is dat allebei
+   de woorden in hetzelfde paar staan: jij schreef de ene, er hoorde de andere. Dan is het geen
+   woordje dat je miste maar een keuze die je verkeerd maakte, en daar hoort een regel bij.
+
+   Waarom paren en geen woordgroepen: met een groep ["es","esta","hay"] zou "hay" tegenover "esta"
+   op ser-of-estar uitkomen terwijl het hay-of-está is. Paren kunnen dat niet verwarren, en dat is
+   het meer typwerk waard.
+
+   Wat er bewust NIET in staat, zie de kop van patch-v23.101: perfindef en apersonal zijn een woord
+   meer of minder (dan schuift de hele zin op en ziet een woord-voor-woordvergelijking vijf
+   verschillen in plaats van één keuze), concordancia en gerundio zijn niet te onderscheiden van
+   een tikfout.
+
+   Accenten komen hier nooit langs: bestDiff() vergelijkt met stripAcc, dus "esta" voor "está" is
+   geen verschil. Alles wat hier binnenkomt is een woordkeuze. */
+var FOUT_REGEL = [
+  {cid:"serestar", p:[["es","esta"],["son","estan"],["soy","estoy"],["eres","estas"],
+                      ["somos","estamos"],["ser","estar"],["fue","estuvo"],["era","estaba"],
+                      ["sido","estado"],["sea","este"]]},
+  {cid:"hayestar", p:[["hay","esta"],["hay","estan"],["hay","es"],["hay","son"],["habia","estaba"]]},
+  {cid:"indefimperf", p:[["fue","era"],["fueron","eran"],["tuvo","tenia"],["estuvo","estaba"],
+                         ["hizo","hacia"],["hubo","habia"],["quiso","queria"],["supo","sabia"],
+                         ["pudo","podia"],["dijo","decia"],["vino","venia"],["fui","iba"],
+                         ["tuve","tenia"],["estuve","estaba"],["empezo","empezaba"]]},
+  {cid:"porpara", p:[["por","para"]]},
+  {cid:"muymucho", p:[["muy","mucho"],["muy","mucha"],["muy","muchos"],["muy","muchas"],
+                      ["mucho","mucha"],["muchos","muchas"]]},
+  {cid:"gustar", p:[["gusta","gustan"],["gustaba","gustaban"],["encanta","encantan"],
+                    ["duele","duelen"],["interesa","interesan"],["parece","parecen"],
+                    ["queda","quedan"]]},
+  {cid:"quecual", p:[["que","cual"],["que","cuales"],["cual","cuales"]]},
+  {cid:"comparar", p:[["que","como"],["mas","tan"],["mas","menos"],["tan","tanto"],
+                      ["tanta","tan"],["tantos","tan"]]},
+  /* genero vóór pronombre: "el" tegenover "la" is het lidwoord, "lo" tegenover "la" is het
+     voornaamwoord. De paren overlappen niet, de volgorde is er voor de lezer. */
+  {cid:"genero", p:[["el","la"],["los","las"],["un","una"],["unos","unas"],["el","los"],["la","las"]]},
+  {cid:"pronombre", p:[["lo","la"],["lo","le"],["la","le"],["los","les"],["las","les"],["le","les"]]},
+  {cid:"reflexivo", p:[["me","te"],["me","se"],["te","se"],["se","nos"],["me","nos"]]},
+  {cid:"demostrativo", p:[["este","ese"],["esta","esa"],["estos","esos"],["estas","esas"],
+                          ["ese","aquel"],["esa","aquella"],["esto","eso"],["eso","aquello"]]},
+  {cid:"saberconocer", p:[["se","conozco"],["sabe","conoce"],["saber","conocer"],
+                          ["sabes","conoces"],["sabemos","conocemos"],["saben","conocen"]]},
+  {cid:"saberpoder", p:[["se","puedo"],["sabe","puede"],["saber","poder"],["sabes","puedes"],
+                        ["sabemos","podemos"],["saben","pueden"]]},
+  {cid:"pedirpreguntar", p:[["pido","pregunto"],["pide","pregunta"],["pedir","preguntar"],
+                            ["pides","preguntas"],["pedi","pregunte"],["pidio","pregunto"]]},
+  {cid:"tuusted", p:[["tu","usted"],["tus","sus"],["tuyo","suyo"],["contigo","con"]]},
+  {cid:"negacion", p:[["nada","algo"],["nadie","alguien"],["nunca","siempre"],["ningun","algun"],
+                      ["ninguna","alguna"],["tampoco","tambien"],["nada","nadie"]]},
+  {cid:"futuroir", p:[["voy","ire"],["va","ira"],["vamos","iremos"],["van","iran"],["vas","iras"]]},
+  /* De klassieke uitkomst van "de klinker wisselt niet mee": een leerling schrijft de stam van de
+     infinitief. Dit is de enige plek waar de tabel een vorm bevat die geen goed Spaans is, en dat
+     hoort zo: het is precies de vorm die je typt als je de regel niet kent. */
+  {cid:"zapato", p:[["quiero","quero"],["quiere","quere"],["puedo","podo"],["puede","pode"],
+                    ["tiene","tene"],["tienes","tenes"],["vuelvo","volvo"],["vuelve","volve"],
+                    ["empieza","empeza"],["duermo","dormo"],["pienso","penso"],["juega","juga"],
+                    ["cierra","cerra"],["sigue","sige"]]}
+];
+function foutRegelKaal(w){ return stripAcc(String(w || "").toLowerCase()); }
+/* Geeft {cid, v, g, naam} terug, of null. Null is het normale geval: een woord dat je niet kende is
+   geen regel, en daar hoort de app niets over te beweren. */
+function foutRegel(d){
+  var paren = (d && d.paren) || [];
+  for(var i = 0; i < paren.length; i++){
+    var v = foutRegelKaal(paren[i].v), g = foutRegelKaal(paren[i].g);
+    if(!v || !g || v === g) continue;
+    for(var j = 0; j < FOUT_REGEL.length; j++){
+      var lijst = FOUT_REGEL[j].p;
+      for(var k = 0; k < lijst.length; k++){
+        var a = lijst[k][0], b = lijst[k][1];
+        if((v === a && g === b) || (v === b && g === a)){
+          var c = gcConcept(FOUT_REGEL[j].cid);
+          if(!c) continue;
+          return {cid:c.id, v:paren[i].v, g:paren[i].g, naam:ct(c.naam, c.naamEn)};
+        }
+      }
+    }
+  }
+  return null;
 }
 
 /* Zwaarte van een zin, zodat een beginner geen negen woorden met een jaartal krijgt. Woorden wegen
@@ -10137,7 +10232,7 @@ function checkSentence(){
   var answers = [norm(s.es)].concat(s.alt.map(norm));
   var exact = answers.indexOf(given) !== -1;
   var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
-  var html = "", gehaald = false, retryable = false;
+  var html = "", gehaald = false, retryable = false, fregel = null;   // v23.101: zie foutRegel()
   if(exact){
     /* Drie treden, drie prijzen. Meerkeuze is het lichtste bewijs (je kunt raden op lengte),
        tegels zitten ertussen (elk woord moet je aanraken, met afleiders ernaast), zelf typen is
@@ -10155,6 +10250,14 @@ function checkSentence(){
     foutGoedeBeurt(s.id, "zin");   // v23.94
   } else {
     var d = bestDiff(given, s);
+    /* v23.101 (punt 34): hier eindigde het. De zin kreeg een strafregistratie en de regel erachter
+       bleef ongenoemd, ook als hij overduidelijk was. gramBij(cid, false) zet dit onderwerp op doos
+       0 met vervaldatum morgen; struikel je er twee keer over, dan opent lesFlowGramId() je dagles
+       er morgen mee. Die weg bestond al en kreeg alleen nooit iets binnen uit het echte werk.
+       Dit gebeurt ook als je de knop hieronder nooit aanraakt, en dat is met opzet het belangrijkste
+       deel: je hoeft niet te weten dat je iets fout doet om er beter in te worden. */
+    fregel = foutRegel(d);
+    if(fregel) gramBij(fregel.cid, false);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
       html = "<div class='feedback bijna'>"+ct("Zó dichtbij! "+d.m+" woord"+(d.m>1?"en":"")+" wijkt af (onderstreept): ","So close! "+d.m+" word"+(d.m>1?"s":"")+" differ"+(d.m>1?"":"s")+" (underlined): ")+"<b>"+d.html+"</b> (+2 "+xpw()+")</div>"+
         "<p class='muted' style='margin-top:6px'>"+ct("Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak meer goede vertalingen. Vraag het in de les of aan Claude.","Think your version might also be correct Spanish? Quite possible: there are often several good translations. Ask in class or ask Claude.")+"</p>";
@@ -10174,8 +10277,20 @@ function checkSentence(){
      Bewust geen automatische doorloop: dan pak je het moment af waarop je de zin nog kunt horen, en
      dat moment staat er met opzet. Het probleem was dat je de knop niet zag, niet dat je erop moest
      tikken. */
+  /* v23.101 (punt 23): een toetsje is iets dat naar je toe hoort te komen, niet iets dat je
+     opzoekt. Wie 's avonds bedenkt "ik ga een toetsje maken" oefent voor de uitslag; wie de fout
+     net gemaakt heeft, oefent voor de regel. Dit is dat moment.
+     veiligHtml() om fregel.g heen: dat is letterlijk wat de gebruiker heeft ingetypt, en dit is de
+     enige plek in de app waar dat weer op het scherm komt. */
+  if(fregel){
+    var fgV = "<b>"+veiligHtml(fregel.v)+"</b>", fgG = "<b>"+veiligHtml(fregel.g)+"</b>";
+    html += "<p class='muted' style='margin:8px 2px 0; font-size:.9rem'>"+
+      ct("Je schreef "+fgG+" waar "+fgV+" hoort. Dat is geen woordje dat je miste maar een keuze, en daar hoort een regel bij: <b>"+fregel.naam+"</b>.",
+         "You wrote "+fgG+" where "+fgV+" belongs. That is not a word you were missing but a choice, and there is a rule behind it: <b>"+fregel.naam+"</b>.")+"</p>";
+  }
   html += "<div class='row'>"+
     (retryable ? "<button class='primary' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
+    (fregel ? "<button class='ghost' id='btnFoutRegel'>\ud83d\udcd8 "+ct("Oefen "+fregel.naam,"Practise "+fregel.naam)+"</button>" : "")+
                  "<button class='ghost' id='btnAiCheck'>🤖 "+ct("Is mijn variant ook goed?","Is my version also correct?")+"</button>"+
                  "<button class='ghost' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
                : "<button class='primary' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button><button class='ghost' id='btnAiUitleg'>🤖 "+ct("Meer uitleg","More explanation")+"</button>")+
@@ -10201,6 +10316,11 @@ function checkSentence(){
   };
   var br = document.getElementById("btnRetry");
   if(br) br.onclick = function(){ renderSentence(false); };
+  /* v23.101: rechtstreeks de microles in, niet naar een overzicht met kaartjes. Wie eerst nog moet
+     zoeken welk kaartje het was, is de fout al vergeten. gwStart regenereert de vragen (v20.5), dus
+     je krijgt niet het toetsje dat je vorige week uit je hoofd hebt geleerd. */
+  var bfr = document.getElementById("btnFoutRegel");
+  if(bfr) bfr.onclick = function(){ zinDoorStop(); show("spiekbrief"); gwStart("concept-"+fregel.cid); };
   /* v23.60. Stefan: "er moet altijd een knop zijn die controleert en dan automatisch doorgaat naar
      volgende." Twee tikken voor één handeling is er een te veel. Alleen bij een goed antwoord: bij
      een fout staat het juiste antwoord er net, en dat is het moment waarop je even moet kunnen
