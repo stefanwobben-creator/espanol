@@ -405,16 +405,60 @@ Antwoord met UITSLUITEND JSON: {"oordelen":[{"id":"...","ok":true,"reden":""}]} 
 bij ok:false in "reden" één zin over wat er mis is.`;
 }
 
-function promptTegenlezerToets(qz) {
+/* 14 AUGUSTUS: DE CORRECTOR OORDEELT PER VRAAG, EN HIJ KRIJGT DE REGEL ERBIJ
+
+   Hier stond "Keur het hele toetsje af zodra één vraag fout is". Drie nachten op rij ging daar het
+   toetsje op stuk, en steeds op de uitleg bij imperfecto tegenover indefinido. Kijk naar de nacht
+   van 14 aug: poging 1 werd afgekeurd op alléén vraag 6, poging 2 op vraag 4, 6 en 7. Met een
+   oordeel per vraag was poging 1 met zeven vragen doorgekomen; valideer() vraagt er minstens vier.
+   Acht vragen ineens goedkeuren is bovendien een weddenschap die je bij elke poging opnieuw moet
+   winnen, en een tweede poging is een compleet nieuw toetsje, dus acht verse kansen om één keer te
+   struikelen.
+
+   En hij krijgt nu dezelfde spiekbriefkaart als de schrijver. Zonder die kaart redeneerde de
+   corrector de regel elke keer opnieuw uit het niets, en dat ging mis: zijn eigen bezwaar bij vraag
+   6 van poging 2 luidde letterlijk "de uitleg zegt 'indefinido is de gebeurtenis die de scène
+   onderbreekt' terwijl het juist 'indefinido' is". Dat is geen bezwaar, dat is een zin die zichzelf
+   tegenspreekt. Op zo'n oordeel kun je geen enkele beslissing baseren. */
+function promptTegenlezerToets(qz, kaart) {
   return `Je bent corrector Spaans (Spanje, A2/B1) voor een leerapp. Hieronder een grammatica-toetsje.
-Controleer per vraag: is het Spaans correct, is er precies één juist antwoord, wijst "c" naar dat
+Controleer PER VRAAG: is het Spaans correct, is er precies één juist antwoord, wijst "c" naar dat
 antwoord, klopt de uitleg, en SLAAT DE ZIN ERGENS OP? Een vraag als "Las mesas son ___ (de tafels zijn
 verlegen)" is grammaticaal in orde en toch fout: niemand zegt dat. Ook: staan er geen twee identieke
-opties tussen. Keur het hele toetsje af zodra één vraag fout is.
+opties tussen.
+${kaart ? `
+De regel waar dit toetsje over gaat, zoals de leerling hem in de app leest. Toets de uitleg hieraan;
+een uitleg die hetzelfde zegt als deze kaart is goed, ook als jij het anders zou formuleren:
+${kaart}
+` : ""}
+Keur alleen de vragen af die echt fout zijn. Een vraag die klopt maar die jij anders had geschreven,
+is goed. Twijfel je, dan is de vraag goed: een onterechte afkeuring kost de leerling zijn oefening.
 
 ${JSON.stringify(qz, null, 1)}
 
-Antwoord met UITSLUITEND JSON: {"ok":true,"problemen":["..."]}`;
+Antwoord met UITSLUITEND JSON: {"oordelen":[{"n":1,"ok":true,"reden":""}]} — één oordeel per vraag,
+"n" is het vraagnummer vanaf 1, en bij ok:false in "reden" één zin over wat er mis is.`;
+}
+
+/* De controlemeting, en de reden dat hij er is: op 13 augustus is er een halve dag verspild aan het
+   repareren van iets dat niet stuk was, omdat de méting stuk was. Zie pw-gramvariatie.js, dat
+   dezelfde truc gebruikt met serestar.
+
+   Hier is het controlegeval het toetsje dat al maanden in de app staat en dat Stefan zelf heeft
+   gemaakt. Keurt de corrector dáár twee of meer vragen van af, dan is niet de nieuwe content stuk
+   maar de corrector, en dan mag zijn oordeel over het nieuwe toetsje niets beslissen. We publiceren
+   dan niet (ongelezen grammatica-uitleg naar een leerling sturen is erger dan een nacht niets), maar
+   de hartslag noemt wél de juiste reden. Dat scheelt de volgende ochtend een verkeerde reparatie. */
+async function keurToets(qz, kaart, motor) {
+  const uit = await vraagModel(motor, promptTegenlezerToets(qz, kaart), 2500);
+  const oordelen = uit && Array.isArray(uit.oordelen) ? uit.oordelen : null;
+  if (!oordelen) return null;
+  const slecht = [];
+  (qz.vragen || []).forEach((v, i) => {
+    const o = oordelen.find(x => Number(x.n) === i + 1);
+    if (o && o.ok === false) slecht.push({ n: i + 1, reden: o.reden || "geen reden" });
+  });
+  return slecht;
 }
 
 async function vraagModel(motor, prompt, maxTokens) {
@@ -519,6 +563,9 @@ async function maakToets(gat, inv, motor) {
   /* De corrector had gelijk toen hij dit toetsje afkeurde (drie keer "comía" tussen de opties), maar
      een terecht bezwaar was ook meteen het einde van de nacht. Nu krijgt het model zijn eigen bezwaar
      terug en mag het er nog een keer overheen. Twee pogingen, daarna is het klaar. */
+  const kaart = inv.cheat[gat.spiek[0]]
+    ? String(inv.cheat[gat.spiek[0]].html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 1200)
+    : "";
   let bezwaren = null;
   for (let poging = 1; poging <= 2; poging++) {
     const extra = bezwaren
@@ -535,10 +582,43 @@ async function maakToets(gat, inv, motor) {
       bezwaren = ["te veel vragen hadden dubbele opties; geef per vraag vier verschillende opties"];
       continue;
     }
-    const uit = await vraagModel(motor, promptTegenlezerToets(schoon.qz), 2000);
-    if (uit && uit.ok === true) return schoon.qz;
-    bezwaren = (uit && uit.problemen) || ["de corrector gaf geen bruikbaar oordeel"];
-    console.error(`    toetsje afgekeurd (poging ${poging}): ${bezwaren.join("; ")}`);
+
+    const slecht = await keurToets(schoon.qz, kaart, motor);
+    if (!slecht) {
+      bezwaren = ["de corrector gaf geen bruikbaar oordeel"];
+      console.error(`    corrector onleesbaar (poging ${poging})`);
+      continue;
+    }
+    if (!slecht.length) return schoon.qz;
+
+    /* Er is iets afgekeurd. Vóórdat we dat geloven: ijk de corrector op het toetsje dat al in de app
+       staat. Dat kost één modelaanroep, en alleen op de nachten waarop er iets af te keuren viel. */
+    if (oud && Array.isArray(oud.vragen) && oud.vragen.length >= 4) {
+      const controle = await keurToets(oud, kaart, motor);
+      if (!controle || controle.length >= 2) {
+        const hoeveel = controle ? controle.length : "onleesbaar";
+        // console.error schrijft zichzelf al in de hartslag (zie boven), dus dit is meteen de reden
+        // die Stefan 's ochtends leest.
+        console.error(`CONTROLE MISLUKT: de corrector keurde ook ${hoeveel} vragen af van "${oud.id}", ` +
+          `dat al in de app staat. Niet de nieuwe content is verdacht maar de corrector; ` +
+          `er is vannacht met opzet geen toetsje geleverd.`);
+        return null;
+      }
+      console.log(`    corrector geijkt op "${oud.id}": ${controle.length} van de ${oud.vragen.length} afgekeurd, dat is binnen de marge`);
+    }
+
+    /* De corrector is betrouwbaar bevonden, dus de afgekeurde vragen gaan eruit en de rest blijft.
+       Alles-of-niets was hier de fout: zeven goede vragen weggooien om één slechte is duurder dan
+       een toetsje van zeven vragen, en valideer() laat er vanaf vier door. */
+    const houd = schoon.qz.vragen.filter((v, i) => !slecht.some(s => s.n === i + 1));
+    console.error(`    ${slecht.length} vraag/vragen afgekeurd (poging ${poging}): ` +
+      slecht.map(s => `vraag ${s.n}: ${s.reden}`).join("; "));
+    if (houd.length >= 4) {
+      console.error(`toetsje ${id}: ${houd.length} van de ${schoon.qz.vragen.length} vragen blijven staan, ` +
+        `het toetsje gaat door zonder ${slecht.map(s => "vraag " + s.n).join(", ")}`);
+      return Object.assign({}, schoon.qz, { vragen: houd });
+    }
+    bezwaren = slecht.map(s => `vraag ${s.n}: ${s.reden}`);
   }
   return null;
 }
@@ -627,10 +707,21 @@ async function maakNieuweLes(inv, motor) {
          toetsje kostte tot nu toe de hele les, veertien woorden en acht zinnen erbij. De
          lesindeling kan een les zonder toetsje aan, en jij leest de pull request toch na. */
       if (les.quiz) {
-        const uit = await vraagModel(motor, promptTegenlezerToets(les.quiz), 2000);
-        if (!uit || uit.ok !== true) {
-          console.error("    toetsje van de nieuwe les afgekeurd, de les gaat door zonder");
+        // 14 aug: ook hier per vraag in plaats van alles-of-niets. De spiekbriefkaart van de nieuwe
+        // les bestaat op dit moment nog niet in inv.cheat, dus die kan de corrector niet meekrijgen;
+        // hij doet het hier zonder. Dat mag, want een nieuwe les komt als pull request en Stefan
+        // leest hem na. Alleen bij het direct-live-pad moest de ijking erbij.
+        const slecht = await keurToets(les.quiz, les.cheat && les.cheat.html
+          ? String(les.cheat.html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 1200) : "", motor);
+        if (!slecht) {
+          console.error("    corrector gaf geen bruikbaar oordeel over het toetsje, de les gaat door zonder");
           les.quiz = null;
+        } else if (slecht.length) {
+          const houd = les.quiz.vragen.filter((v, i) => !slecht.some(s => s.n === i + 1));
+          console.error(`    toetsje van de nieuwe les: ${slecht.length} vraag/vragen afgekeurd (` +
+            slecht.map(s => `vraag ${s.n}: ${s.reden}`).join("; ") + ")");
+          les.quiz = houd.length >= 4 ? Object.assign({}, les.quiz, { vragen: houd }) : null;
+          if (!les.quiz) console.error("    te weinig vragen over, de les gaat door zonder toetsje");
         }
       }
     }

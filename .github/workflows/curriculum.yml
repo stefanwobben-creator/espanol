@@ -141,6 +141,17 @@ jobs:
             echo "audio=0" >> $GITHUB_OUTPUT
             exit 0
           fi
+          # 14 augustus: eerst kijken wat er intussen op main staat.
+          #
+          # Run #14 liep hier op stuk. Een re-run checkt de commit uit waarmee de run begon, dus de
+          # stand van vóór de push van de eerste poging. De 92 mp3's die poging 1 al had ingesproken
+          # en gepubliceerd stonden niet in de werkmap, en het overslaan kijkt naar de werkmap.
+          # Gevolg: alles nog een keer ingesproken (tekens weg) en daarna een botsing bij het pushen,
+          # want twee opnames van dezelfde zin zijn nooit byte-gelijk.
+          #
+          # Wat al gepubliceerd is, wint. Bestanden die alleen hier bestaan blijven staan.
+          git fetch origin main --quiet || true
+          git checkout FETCH_HEAD -- audio 2>/dev/null || true
           node tools/avondrun-audio.js
 
       # Dít ontbrak. Zonder deze stap staat het bewijs van een afgekeurde nacht op een machine die
@@ -246,6 +257,10 @@ jobs:
           [ -f tools/avondrun-hart.json ] || exit 0
           git config user.name "curriculum-bot"
           git config user.email "actions@users.noreply.github.com"
+          # Zelfde reden als bij de audiostap hierboven: wat al op main staat wint, zodat een re-run
+          # niet met zijn eigen eerdere push gaat vechten. Dit is waar run #14 rood op ging.
+          git fetch origin main --quiet || true
+          git checkout FETCH_HEAD -- audio 2>/dev/null || true
           git add tools/avondrun-hart.json audio
           if git diff --cached --quiet; then echo "hartslag en audio ongewijzigd"; exit 0; fi
           git commit -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"

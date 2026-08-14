@@ -457,6 +457,30 @@ module.exports = { altWaarschuwingen, altVoornaamwoorden,
 /* ---------- zelftest ---------- */
 
 if (require.main === module && process.argv.includes("--zelftest")) {
+  /* 14 aug: deze zelftest stond FOUT te printen en eindigde op 0, elke nacht, ongezien. Twee
+     proefzinnen hadden `uitleg: "Proef."` uit de tijd vóór uitlegZegtIets() bestond, dus de
+     "correcte proeflevering" was al een tijd niet meer correct. De inhoud van de app was niet stuk;
+     de test was verouderd.
+
+     Dat is nu tweemaal gerepareerd. De proefzinnen leggen echt iets uit, en het belangrijkste:
+     `mis` telt de regels die schoon hadden moeten zijn en de test eindigt rood als er één bij zit.
+     Een controle die alleen praat is geen controle. */
+  let mis = 0;
+  const zegGewoon = console.log;
+  console.log = function () {
+    const regel = Array.prototype.map.call(arguments, String).join(" ");
+    if (/\b(FOUT|MISLUKT|GEMIST)\b/.test(regel)) mis++;
+    zegGewoon.apply(console, arguments);
+  };
+  process.on("exit", function () {
+    console.log = zegGewoon;
+    if (mis) {
+      zegGewoon("\n" + mis + " van de controles hierboven zou schoon moeten zijn. Dit is rood.");
+      process.exitCode = 1;
+    } else {
+      zegGewoon("\nalles goed");
+    }
+  });
   const inv = inventaris();
   console.log("gelezen:", inv.words.length, "leswoorden,", (inv.kern||[]).length, "kernwoorden,", inv.sentences.length, "zinnen,",
               inv.quizzes.length, "toetsjes,", inv.cheat.length, "spiekkaarten,", inv.perLes.length, "lessen");
@@ -464,7 +488,9 @@ if (require.main === module && process.argv.includes("--zelftest")) {
   const proef = {
     words: [{ id: idW(1), es: "la prueba", nl: "de proef", en: "the test", tag: "zelftest" }],
     sentences: [{ id: idS(1), lvl: 1, nl: "Dit is een proef.", en: "This is a test.", es: "Esta es una prueba.",
-                  alt: ["esta es una prueba"], uitleg: "Proef.", ue: "Test.", tag: "zelftest" }],
+                  alt: ["esta es una prueba"],
+                  uitleg: "Prueba is vrouwelijk, dus una prueba en niet un prueba.",
+                  ue: "Prueba is feminine, so una prueba and not un prueba.", tag: "zelftest" }],
     lessen: { [inv.perLes[0].id]: { words: [idW(1)], sents: [idS(1)] } }
   };
   const f = valideer(proef, inv);
@@ -489,7 +515,9 @@ if (require.main === module && process.argv.includes("--zelftest")) {
     && altProef[2].alt.length === 2;           // de echte variant blijft staan
   console.log("herstelAlt op de vier gevallen van 9 aug:", altGoed ? "schoon \u2713" : "FOUT: " + JSON.stringify(altProef.map(z => z.alt)));
   const alsZin = valideer({ sentences: [{ id: idS(2), lvl: 1, nl: "Proef twee.", en: "Test two.",
-      uitleg: "Proef.", ue: "Test.", tag: "zelftest", ...herstelAlt({ es: "Me cuesta hablar rápido.", alt: [] }) }] }, inv);
+      uitleg: "Bij costar is het onderwerp de activiteit (hablar), dus enkelvoud: cuesta.",
+      ue: "With costar the subject is the activity (hablar), so singular: cuesta.",
+      tag: "zelftest", ...herstelAlt({ es: "Me cuesta hablar rápido.", alt: [] }) }] }, inv);
   console.log("een herstelde zin komt door de poort:", alsZin.length ? "FOUT: " + alsZin.join("; ") : "ja \u2713");
 
   const altFout = altWaarschuwingen({ sentences: [{ id: "s158", es: "Mi hija se parece a mi.",
