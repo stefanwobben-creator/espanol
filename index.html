@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.97";
+var APP_VERSIE = "v23.98";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -18440,7 +18440,9 @@ function wsStart(){
         if(horiz) grid[row][col+j] = g.woord[j];
         else grid[row+j][col] = g.woord[j];
       }
-      geplaatst.push({woord:g.woord, nl:g.nl, es:g.es, found:false, hint:false});
+      // v23.98: het id gaat mee. wsWoordPool() zette het er netjes in en hier werd het weggegooid,
+      // dus de app wist welk woord je vond en deed er niets mee.
+      geplaatst.push({woord:g.woord, nl:g.nl, es:g.es, id:g.id, found:false, hint:false});
       break;
     }
   });
@@ -18468,6 +18470,10 @@ function wsCellClick(r, c){
   if(hit){
     hit.found = true;
     cells.forEach(function(k){ ws.foundCells[k] = true; });
+    /* v23.98: herkennen versterkt wel degelijk, alleen anders dan produceren. spelSrsBij() is met
+       opzet de lichte weg: SPEL_PLAFOND is 3, dus hier kom je nooit verder dan doos 3, de dagrem van
+       v23.92 geldt, en st.sp blijft aan zodat "werkt de app" en "werkt spelen" apart leesbaar zijn. */
+    if(hit.id){ try{ spelSrsBij(hit.id); }catch(e){} }
     addXP(2);
     if(ws.woorden.every(function(w){ return w.found; })){
       S.tapas = (S.tapas||0) + 1; persist();
@@ -22813,7 +22819,9 @@ function memStart(){
     cards.push({pid:i, txt:p.nl, lang:"nl"});
   });
   cards.sort(function(){ return Math.random() - 0.5; });
-  mem = {cards:cards, open:[], matched:{}, beurten:0, lock:false, klaar:false};
+  // v23.98: de paren blijven bewaard, want de kaartjes dragen alleen nog een pid en de tekst.
+  // Zonder deze regel weet memClick() niet welk wóórd er zojuist gematcht is.
+  mem = {cards:cards, paren:paren, open:[], matched:{}, beurten:0, lock:false, klaar:false};
   funView = "mem"; renderFun();
 }
 function memClick(i){
@@ -22826,6 +22834,9 @@ function memClick(i){
     if(a.pid === b.pid){
       mem.matched[mem.open[0]] = true; mem.matched[mem.open[1]] = true;
       mem.open = [];
+      // v23.98: zelfde als bij de Woordenzoeker, en om dezelfde reden. Zie spelSrsBij().
+      var mp = (mem.paren || [])[a.pid];
+      if(mp && mp.id){ try{ spelSrsBij(mp.id); }catch(e){} }
       addXP(2);
       if(Object.keys(mem.matched).length === mem.cards.length){
         mem.klaar = true;
@@ -23078,7 +23089,7 @@ function renderDuel(){
 }
 
 var FUN_TXT = {
- nl:{kop:"Speeltuin \ud83e\udde9", intro:"Leren, vermomd als spelen. Kies je vermaak:",
+ nl:{kop:"Speeltuin \ud83e\udde9", intro:"Leren, vermomd als spelen. Kies je vermaak:", meetelt:"Alles hier telt mee voor je woorden, maar niet even zwaar: spellen waarin je het Spaans zelf intikt brengen een woord het verst, herkennen brengt het tot halverwege.",
      avS:"een echte mini-game: red de vier werelden van de Olvidos, met muziek en eindbazen",
      muS:"liedjes kijken en de taal eruit oogsten",
      wsT:"Woordenzoeker", wsS:"puzzel met jouw geleerde woorden",
@@ -23109,7 +23120,7 @@ var FUN_TXT = {
      coT:"El Corrector", coS:"rondes van 8 zinnen, tik het woord aan dat niet klopt",
      coIntro:"In de Spaanse zin hieronder zit hoogstens één fout. Tik het woord aan dat niet klopt, of zeg dat de zin al goed is.",
      coTodo:"De zin klopt ✓", coSkip:"Volgende zin"},
- en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:",
+ en:{kop:"Playground \ud83e\udde9", intro:"Learning, disguised as play. Pick your fun:", meetelt:"Everything here counts towards your words, but not equally: games where you type the Spanish yourself take a word furthest, recognising takes it halfway.",
      avS:"a real mini-game: free the four worlds from the Olvidos, with music and bosses",
      muS:"watch songs and harvest the language from them",
      wsT:"Word search", wsS:"a puzzle with the words you've learned",
@@ -23872,7 +23883,11 @@ function renderFun(){
       straksHtml += "<div class='lesson' style='opacity:.5'>"+kop+speelWacht(g.v)+"</span></div><div class='lstatus'>\u00b7</div></div>";
     }
   });
+  /* v23.98: er stond niet wat een spel oplevert, terwijl Oefenen dat wel zegt. Je kon dus niet
+     weten welk spel je verder helpt en welk puur vermaak is, en dat verschil is er wel degelijk:
+     zie spelSrsBij() en SPEL_PLAFOND. */
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
+    "<p class='muted' style='margin:-4px 0 10px; font-size:.86rem'>" + fx("meetelt") + "</p>"+
     nuHtml+
     (straksHtml
       ? "<p class='muted' style='margin:14px 0 4px'><b>"+ct("Komt er straks bij","Joining in later")+"</b></p>"+
