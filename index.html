@@ -1511,7 +1511,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.93";
+var APP_VERSIE = "v23.94";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7803,6 +7803,11 @@ function voortgangTellers(){
   for(id in S.srs){
     st = S.srs[id];
     if(!st || typeof st !== "object") continue;
+    /* v23.94: een geclaimde rij is geen geoefend woord. niveauClaim() zet bij het instellen een paar
+       honderd rijen neer met claim:1, en die telden hier gewoon mee als "ooit geoefend". Bij Stefan
+       scheelde dat ruim vierhonderd. answerWord haalt de vlag weg zodra je het woord echt een keer
+       hebt gehad, dus vanaf dat moment telt hij wel. */
+    if(st.claim && !(st.n > 0)) continue;
     geoefend++;
     b = st.box || 0;
     // v20.0: de laatste doos telt pas als vast wanneer er een echte check onder ligt (st.k).
@@ -8290,6 +8295,27 @@ function logOpnameMisschien(){
     logServer("opname", {fouten:S.errors, gram:S.gram, quizScores:S.quiz, txp:S.txp});
   }catch(e){}
 }
+/* v23.94: fouten mochten slijten, en dat konden ze niet.
+
+   S.errors had één schrijfplek (logError) en geen enkele afbouw. Eén typefout zette een zin voorgoed
+   in tegelmodus (zie sModus) en liet hem 40 procent van de tijd terugkomen (zie de zinnenpool), ook
+   als je hem daarna twintig keer goed had. Dat is geen leersysteem maar een strafregister.
+
+   Drie goede beurten en de fout is weg. Drie en niet één: één keer goed kan geluk zijn, drie keer
+   achter elkaar niet. Wie opnieuw de fout in gaat, begint weer bij nul (zie logError).
+
+   foutWeg() is de harde variant, voor het geval dat er helemaal geen fout wás: het taalmodel dat
+   zegt dat jouw variant ook goed Spaans is. Zie punt 7. */
+function foutGoedeBeurt(id, type){
+  var k = type + ":" + id, e = S.errors && S.errors[k];
+  if(!e) return;
+  e.goed = (e.goed || 0) + 1;
+  if(e.goed >= 3) delete S.errors[k];
+}
+function foutWeg(id, type){
+  var k = type + ":" + id;
+  if(S.errors && S.errors[k]) delete S.errors[k];
+}
 function logError(id, type, tag, extra){
   /* v22.0. Het veld laatst bevatte twee verschillende dingen: bij een woord of zin wat je typte
      ("la mujer"), bij El Corrector een datum. En bijnaGoedIds() vergeleek dat met een datum. In
@@ -8301,6 +8327,7 @@ function logError(id, type, tag, extra){
   var k = type+":"+id;
   if(!S.errors[k]) S.errors[k] = {id:id, type:type, tag:tag, count:0, laatst:"", dag:""};
   S.errors[k].count++;
+  S.errors[k].goed = 0;   // v23.94: een nieuwe fout zet de teller van goede beurten terug op nul
   S.errors[k].laatst = extra || today();
   S.errors[k].dag = today();
   trackPoging(true);
@@ -8919,7 +8946,16 @@ function dagPortie(){
     });
     var binnen = [], buiten = [];
     fresh.forEach(function(w){ (inLes[w.id] || woordNiveau(w.id) <= poort ? binnen : buiten).push(w); });
-    fresh = binnen.concat(buiten.slice(0, 1));
+    /* v23.94: hier stond `buiten.slice(0, 1)` — precies één woord van buiten de poort per dag.
+       Dat klopt zolang er lessen open staan (leswoorden gaan altijd door de poort), maar wie zijn
+       lespad af heeft, houdt een lege eerste stapel over en krijgt dan één nieuw woord per dag
+       terwijl zijn instelling er twintig belooft. Gemeten bij Stefan: 814 woorden geleerd, nul dagen
+       voorraad, één nieuw woord per dag.
+       Nu vullen we aan tot het dagbudget. fresh is al op niveau gesorteerd, dus dat zijn automatisch
+       de makkelijkste van buiten, en niet zomaar zeldzame woorden. Er blijft altijd minstens die ene
+       kruimel, ook als je dagbudget nul zou zijn. */
+    var ruimte = Math.max(1, Math.min(nieuwPerDag(), newAllowance()) - binnen.length);
+    fresh = binnen.concat(buiten.slice(0, ruimte));
   }
   var ruimteNieuw = Math.min(fresh.length, nieuwPerDag(), newAllowance());
   var cap = scopeLesson ? Math.max(due.length + fresh.length, dagPortieCap()) : portieMax();
@@ -9749,6 +9785,7 @@ function answerWord(good){
     if(good) S.sweep.goed = (S.sweep.goed || 0) + 1; else S.sweep.fout = (S.sweep.fout || 0) + 1;
   }
   if(good){
+    foutGoedeBeurt(wCur.id, "woord");   // v23.94: drie goede beurten en de oude fout is weg
     // v20.0: de laatste doos hoort bij een check die je niet zelf beoordeelt. Zonder die check
     // blijft een woord op de een-na-laatste staan, hoe vaak je ook "wist ik" zegt. Zodra hij daar
     // staat biedt renderWord de check aan; zie wCheckNodig.
@@ -10191,11 +10228,13 @@ function checkSentence(){
     var xpExact = modus === "tegels" ? 3 : 5;
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" "+xpw()+")</div>";
     S.done[s.id] = true; gehaald = true; addXP(xpExact);
+    foutGoedeBeurt(s.id, "zin");   // v23.94
     if(modus === "moeilijk"){ compMark("schrijven", s.id); S.getypt = getyptN() + 1; }
     trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
     S.done[s.id] = true; gehaald = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
+    foutGoedeBeurt(s.id, "zin");   // v23.94
   } else {
     var d = bestDiff(given, s);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
@@ -10264,6 +10303,10 @@ function checkSentence(){
         return;
       }
       if(res.goed){
+        /* v23.94: en de fout die drie regels eerder is genoteerd gaat weg. Je variant was goed
+           Spaans, dus er was geen fout. Tot nu toe bleef die staan, en sinds S.errors nergens werd
+           afgebouwd betekende dat: voorgoed in tegelmodus, voor een antwoord dat klopte. */
+        foutWeg(s.id, "zin");
         S.done[s.id] = true; addXP(4); persist(); checkLessonComplete();
         af.innerHTML = "<div class='feedback ok'>🤖 Claude: ja, jouw variant is ook goed Spaans! (+4 "+xpw()+")<br>"+veiligHtml(res.uitleg)+"</div>";
         confetti(["🤖","✅","🎉"], 10);
@@ -14497,7 +14540,14 @@ function ritmeCard(){
      v19.64 staat nog: "14 herhalingen open" komt nooit meer terug. Een getal dat groeit terwijl je
      niets doet, straft wegblijven af en maakt terugkomen duurder naarmate je langer weg was. */
   var chipsHtml = "";
-  if(rel.chipNieuw) chipsHtml += chip(nieuw >= dagPortieVloer(), ct("nieuwe woorden ","new words ")+nieuw+"/"+dagPortieVloer()+" (max "+nieuwPlafond()+")");
+  /* v23.94: dit chipje telde met drie getallen tegelijk. De teller kwam uit newToday(), de noemer
+     uit dagPortieVloer() en het maximum uit nieuwPlafond(). Bij dertig minuten stond er "5/12
+     (max 23)" terwijl de portie er vijftien geeft: drie functies, drie antwoorden, één chipje.
+     Nu één bron: wat je vandaag beloofd is, en hoeveel daarvan je hebt gehad. */
+  if(rel.chipNieuw){
+    var beloofd = Math.max(1, Math.min(nieuwPerDag(), nieuwPlafond()));
+    chipsHtml += chip(nieuw >= beloofd, ct("nieuwe woorden ","new words ")+Math.min(nieuw, beloofd)+"/"+beloofd);
+  }
   /* v23.64: hier stond een chipje "\u2713 herhalingen bij". Stefan: "herhaling bij? waarom staat
      dat hier is dat ook een extra knop? verwarrend." Het was een span en geen knop, maar het stond
      in dezelfde band als de rode knop eronder, dus het las als knop. En er viel niets mee te doen:
