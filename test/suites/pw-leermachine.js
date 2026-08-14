@@ -74,14 +74,28 @@ const { chromium } = require('playwright');
   ok(quiz.gevonden === true, 'minstens een toetsje is aan een concept te koppelen');
   ok(quiz.box === 1, 'een gehaald toetsje schuift het concept een doosje op');
 
-  // en goed blijven antwoorden schuift hem verder weg, precies volgens GRAM_BOX
+  /* en goed blijven antwoorden schuift hem verder weg, precies volgens GRAM_BOX.
+
+     v23.92: maar niet meer binnen één sessie. Hier stond dat drie keer goed doosje drie oplevert,
+     en zo werkte het ook: vijf goede antwoorden op één avond zetten een onderwerp van doos 0 naar
+     doos 5, en dan zag je het 55 dagen niet meer. Dat meet een goede bui, geen kennis. De ladder
+     klimt nu hoogstens één doos per dag; de teller van goede antwoorden loopt gewoon door.
+
+     Daarom twee metingen in plaats van één. Alleen de rem meten zou groen blijven als de ladder
+     helemaal stilstaat, en dan is de app stuk terwijl de suite tevreden is. */
   const dozen = await page.evaluate(() => {
     S.gram = {};
     gramBij('serestar', true); gramBij('serestar', true); gramBij('serestar', true);
+    const eenDag = S.gram.serestar.box, goed = S.gram.serestar.goed;
+    // en nu alsof het drie verschillende dagen waren
+    S.gram = {};
+    for (let i = 0; i < 3; i++) { gramBij('serestar', true); S.gram.serestar.bd = '2000-01-0' + (i + 1); }
     const st = S.gram.serestar;
-    return { box: st.box, due: st.due, verwacht: addDays(today(), GRAM_BOX[3]) };
+    return { eenDag: eenDag, goed: goed, box: st.box, due: st.due, verwacht: addDays(today(), GRAM_BOX[3]) };
   });
-  ok(dozen.box === 3, 'drie keer goed is doosje drie');
+  ok(dozen.eenDag === 1, 'drie keer goed op een dag is een doosje, geen drie (nu: ' + dozen.eenDag + ')');
+  ok(dozen.goed === 3, 'de teller van goede antwoorden loopt wel gewoon door (nu: ' + dozen.goed + ')');
+  ok(dozen.box === 3, 'drie keer goed op drie dagen is wel doosje drie (nu: ' + dozen.box + ')');
   ok(dozen.due === dozen.verwacht, 'en dan komt hij pas over ' + 'GRAM_BOX[3]' + ' dagen terug');
 
   /* ---------------- 2. de keuze volgt je fout ----------------

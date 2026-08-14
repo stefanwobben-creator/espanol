@@ -528,11 +528,29 @@ app.get("/api/familia", async (_req, res) => {
       if (!perNaam[k] || s.txp > perNaam[k].txp) perNaam[k] = s;
     });
     const lijst = Object.values(perNaam).sort((a, b) => b.txp - a.txp);
-    // krabbels van vandaag meesturen: het klassement en de schouderklopjes horen bij elkaar
+    /* Krabbels meesturen: het klassement en de schouderklopjes horen bij elkaar.
+
+       14 AUGUSTUS, TWEE REPARATIES IN DEZE ENE QUERY
+
+       1. Hier stond geen enkel filter op naam. Dit eindpunt vraagt geen sleutel, dus iedereen die
+          het adres kende kreeg álle schouderklopjes van vandaag terug, van de hele app, met beide
+          namen erbij. De spelerslijst eronder was allang dichtgezet op FAMILIA_NAMEN en dit stukje
+          niet. En omdat de app aan de andere kant alleen op vóórnaam filtert, zag een tweede Ilona
+          de aanmoedigingen van de eerste. Bij vijftig gebruikers gebeurt dat een keer.
+          Nu: alleen krabbels waarvan afzender én ontvanger in dezelfde lijst staan als het
+          klassement erboven. Dat is precies de reikwijdte die dit eindpunt zegt te hebben.
+
+       2. `dag = current_date` gooide de helft van de aanmoedigingen weg. De muur toont ook de regel
+          van gisteren en /api/krabbel accepteert daar bewust een krabbel op (zie v22.5 hierboven),
+          maar dit haalde alleen vandaag op. Wie op de regel van gisteren reageerde, stuurde in het
+          niets: de afzender zag zijn eigen klopje staan en de ontvanger kreeg nooit iets. */
     let krabbels = [];
     try {
       const kr = await pool.query(
-        "SELECT van, naar, sleutel FROM krabbels WHERE dag = current_date ORDER BY created_at");
+        "SELECT van, naar, sleutel FROM krabbels " +
+        "WHERE dag >= current_date - 1 AND lower(naar) = ANY($1) AND lower(van) = ANY($1) " +
+        "ORDER BY created_at",
+        [namen]);
       krabbels = kr.rows;
     } catch (e2) { console.error(e2); }
     ok(res, { spelers: lijst, krabbels });

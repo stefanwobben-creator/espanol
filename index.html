@@ -1502,7 +1502,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.91";
+var APP_VERSIE = "v23.92";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7529,6 +7529,10 @@ function spelSrsBij(id){
   if(!st || typeof st !== "object") return false;
   if((st.box || 0) >= SPEL_PLAFOND) return false;
   var t = today();
+  // v23.92: de dagrem. Zie de kop van avtSrsBij: drie spellen op één middag brachten een woord
+  // van doos 0 naar doos 3 zonder dat je het ooit hebt hoeven ophalen.
+  if(st.bd === t) return false;
+  st.bd = t;
   st.box = Math.min((st.box || 0) + 1, SPEL_PLAFOND);
   st.due = addDays(t, INTERVALS[st.box]);
   st.n = (st.n || 0) + 1;
@@ -10252,10 +10256,10 @@ function checkSentence(){
       }
       if(res.goed){
         S.done[s.id] = true; addXP(4); persist(); checkLessonComplete();
-        af.innerHTML = "<div class='feedback ok'>🤖 Claude: ja, jouw variant is ook goed Spaans! (+4 "+xpw()+")<br>"+res.uitleg+"</div>";
+        af.innerHTML = "<div class='feedback ok'>🤖 Claude: ja, jouw variant is ook goed Spaans! (+4 "+xpw()+")<br>"+veiligHtml(res.uitleg)+"</div>";
         confetti(["🤖","✅","🎉"], 10);
       } else {
-        af.innerHTML = "<div class='feedback fout'>🤖 Claude: helaas, niet helemaal. "+res.uitleg+"</div>";
+        af.innerHTML = "<div class='feedback fout'>🤖 Claude: helaas, niet helemaal. "+veiligHtml(res.uitleg)+"</div>";
       }
       ba.classList.add("hidden");
     });
@@ -18326,6 +18330,13 @@ var AI_REDEN_EN = {
   herkomst:   "The AI help does not work here.",
   stuk:       "The AI could not check this just now. Try again later."
 };
+/* v23.92: wat een taalmodel terugstuurt is tekst, geen opmaak. Het ging hier rechtstreeks als
+   innerHTML het scherm op, dus stond er per ongeluk opmaakcode in, dan werd die uitgevoerd in
+   plaats van getoond. */
+function veiligHtml(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 function aiFoutTekst(res){
   var r = res && res.reden;
   if(r && AI_REDEN_NL[r]) return ct(AI_REDEN_NL[r], AI_REDEN_EN[r]);
@@ -21684,17 +21695,29 @@ function vormFeedback(inp, es){
   if(!anders.length || anders.length === vormen.length) return "";
   return " · " + at("ookGoed") + " <b class='es'>" + anders.join(", ") + "</b>";
 }
-function avtSrsBij(w, goed){
+/* v23.92: `getypt` erbij, en het is geen detail.
+
+   Hier stond onvoorwaardelijk `st.k = 1` met de toelichting "hier typ je het woord zelf". Dat gold
+   voor twee van de vijf aanroepers. De andere drie zijn een klik op een meerkeuze-optie en het
+   galgje. Een klik uit vier is geen productie, en `k` is definitief: `wCheckNodig()` slaat de
+   Laatste stap over zodra hij bestaat, en `answerWord` mag er de laatste doos mee halen op een
+   zelfbeoordeling. Eén klik in Aventura zette de hele bewijsvoering van v20.0 uit voor dat woord.
+
+   En de dagrem (`st.bd`): de doos mag hoogstens één keer per dag stijgen. Zonder die rem brachten
+   drie spellen achter elkaar hetzelfde woord in tien minuten naar doos 3. Het wachten is wat werkt;
+   dat kun je niet inhalen door meer te spelen. Punten en plezier blijven, de doos niet. */
+function avtSrsBij(w, goed, getypt){
   var t = today();
   var st = S.srs[w.id];
   if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0) + 1; }
   st.n = (st.n||0) + 1;
   if(goed){
-    // v20.0: hier typ je het woord zelf, zonder het antwoord voor je. Dat is precies de check die
-    // de flashcard niet kan geven, dus die telt ook.
-    st.k = 1;
-    st.box = Math.min(st.box + 1, INTERVALS.length - 1);
-    st.due = addDays(t, INTERVALS[st.box]);
+    if(getypt) st.k = 1;
+    if(st.bd !== t){
+      st.bd = t;
+      st.box = Math.min(st.box + 1, getypt ? INTERVALS.length - 1 : Math.max(0, INTERVALS.length - 2));
+      st.due = addDays(t, INTERVALS[st.box]);
+    }
     addXP(2); trackPoging(false);
   } else {
     st.box = 0; st.due = t; st.f = (st.f||0) + 1;
@@ -21727,7 +21750,7 @@ function avtHartKwijt(){
   persist();
   return false;
 }
-function avtAntwoord(op){
+function avtAntwoord(op, getypt){
   var g = avt.gevecht; if(!g) return;
   if(g.baas){
     if(op.goed){
@@ -21769,7 +21792,7 @@ function avtAntwoord(op){
     avt.combo = (avt.combo||0) + 1;
     if(g.vraagG){ addXP(2); persist(); updateBadge(); trackPoging(false); }
     else if(g.zin){ addXP(3); persist(); updateBadge(); trackPoging(false); }
-    else { avtSrsBij(w, true); }
+    else { avtSrsBij(w, true, getypt); }
     avtSfx("goed");
     g.v.hp--;
     if(g.v.hp <= 0){
@@ -21799,7 +21822,7 @@ function avtAntwoord(op){
     avt.combo = 0;
     if(g.vraagG){ addXP(1); persist(); updateBadge(); trackPoging(true); }
     else if(g.zin){ logError(g.zin.id, "zin", g.zin.tag, g.zin.es); addXP(1); persist(); updateBadge(); }
-    else { avtSrsBij(w, false); }
+    else { avtSrsBij(w, false, getypt); }
     avtSfx("fout");
     var juistTxt = g.vraagG ? (g.vraagG.o[g.vraagG.a] + " · " + g.vraagG.u) : (g.zin ? g.zin.es : (g.naarEs ? w.es : wTrans(w)));
     if(avtHartKwijt()) return;
@@ -21980,7 +22003,7 @@ function avtAhorGok(ch){
     var compleet = kern.split("").every(function(l){ return a.gok[l]; });
     if(compleet){
       a.af = "goed"; a.reeks++;
-      if(wOrig) avtSrsBij(wOrig, true); else { addXP(2); updateBadge(); }
+      if(wOrig) avtSrsBij(wOrig, true, false); else { addXP(2); updateBadge(); }
       avtSfx("goed"); confetti(["🪵","✨"], 8);
       if(a.reeks >= 3 && !a.beloond){
         a.beloond = true;
@@ -22097,7 +22120,7 @@ function renderKruisUI(el, kr, opts){
         var wOrig = WORDS.filter(function(x){ return x.id === wo.k.id; })[0];
         if(stripAcc(norm(inp)).replace(/[^a-z]/g, "") === wo.k.woord){
           wo.klaar = true;
-          if(wOrig) avtSrsBij(wOrig, true); else { addXP(2); updateBadge(); }
+          if(wOrig) avtSrsBij(wOrig, true, true); else { addXP(2); updateBadge(); }
           avtSfx("goed");
           if(kr.woorden.every(function(w5){ return w5.klaar; })){
             opts.beloond();
@@ -22253,7 +22276,7 @@ function renderFunAvt(){
         if(!norm(inp)) return;
         var chkD = woordGetypt(inp, dw.es);
         var goedc = chkD.goed;
-        avtSrsBij(dw, goedc);
+        avtSrsBij(dw, goedc, true);
         if(goedc){ dr.goed++; avtSfx("goed"); dr.fb = at("cronGoed") + " <b class='es'>" + dw.es + "</b>" + vormFeedback(inp, dw.es); dr.fbGoed = true; }
         else { avtSfx("fout"); dr.fb = at("cronFout") + " <b class='es'>" + dw.es + "</b> · " + wTrans(dw); dr.fbGoed = false; }
         dr.i++;
@@ -22540,7 +22563,7 @@ function renderFunAvt(){
       "</div>";
     el.innerHTML = html2;
     el.querySelectorAll("[data-avto]").forEach(function(b){
-      b.onclick = function(){ avtAntwoord(g.opties[+b.getAttribute("data-avto")]); };
+      b.onclick = function(){ avtAntwoord(g.opties[+b.getAttribute("data-avto")], false); };
     });
     if(typ){
       var si = document.getElementById("avtInp");
@@ -22561,7 +22584,7 @@ function renderFunAvt(){
         }
         if(accentMis){ toast(at("accent") + doel); }
         else if(goedb && vormFb){ toast("✓ " + vormFb.replace(/<[^>]+>/g, "").replace("· ", "")); }
-        avtAntwoord({goed:goedb});
+        avtAntwoord({goed:goedb}, true);
       };
       document.getElementById("btnAvtSchrijf").onclick = schrijfCheck;
       si.addEventListener("keydown", function(e){ if(e.key === "Enter") schrijfCheck(); });
@@ -26933,8 +26956,14 @@ function gramBij(cid, goed){
   var st = S.gram[cid] || {box:0, due:"", goed:0, fout:0, laatst:""};
   if(goed){
     st.goed++;
-    st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
-    st.due = addDays(today(), GRAM_BOX[st.box]);
+    /* v23.92: dezelfde dagrem als bij de woorden. Vijf goede antwoorden in één sessie zetten dit
+       onderwerp van doos 0 naar doos 5, en dan zag je het 55 dagen niet meer, na één goede bui.
+       Het aantal goede antwoorden loopt gewoon door; alleen de doos wacht op morgen. */
+    if(st.bd !== today()){
+      st.bd = today();
+      st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
+      st.due = addDays(today(), GRAM_BOX[st.box]);
+    }
   } else {
     // Stefan: "alle fouten die maak moeten weer terug". Niet over een week, morgen.
     st.fout++;
