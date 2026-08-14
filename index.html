@@ -1511,7 +1511,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.94";
+var APP_VERSIE = "v23.95";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8270,15 +8270,34 @@ function quizSpreid(){
 // Bewaart per vraag de ORIGINELE index (oi), want de foutenlog-key ("quiz:<id>#<index>") moet
 // aan de vraag zelf blijven hangen, niet aan zijn wisselende weergavepositie (anders raakt de
 // foutenlog na een eerste herschikking los van de juiste vraag).
+/* v23.95: hier zat de steekproef die geen steekproef was.
+
+   Deze sortering zette je foute vragen vooraan en deed verder niets. Array.sort is stabiel, dus wie
+   niets fout had staan kreeg de vragen in hun oorspronkelijke volgorde, en een dagtoets van vier
+   vragen leverde dan vraag 1 tot en met 4. Elke dag. Altijd dezelfde vier. Wat er gemeten werd was
+   niet of je de regel snapt maar of je je die vier vragen herinnert, en dat wordt met de dag
+   makkelijker: het cijfer steeg terwijl het begrip stilstond.
+
+   Nu drie lagen: fout eerst, dan wat je het langst niet hebt gehad, en gelijkspel wordt geschud.
+   S.qzGezien onthoudt per vraag de dag waarop je hem voor het laatst kreeg. */
 function quizVraagVolgorde(qz){
-  var out = qz.vragen.map(function(v,i){ return {v:v, oi:i}; });
+  var gz = S.qzGezien || {};
+  var out = qz.vragen.map(function(v,i){
+    return {v:v, oi:i, laatst: gz[qz.id+"#"+i] || "", munt: Math.random()};
+  });
   out.sort(function(a,b){
     var ea = S.errors["quiz:"+qz.id+"#"+a.oi], eb = S.errors["quiz:"+qz.id+"#"+b.oi];
     var wa = !!(ea && ea.count > 0), wb = !!(eb && eb.count > 0);
-    if(wa === wb) return 0;
-    return wa ? -1 : 1;
+    if(wa !== wb) return wa ? -1 : 1;
+    if(a.laatst !== b.laatst) return a.laatst < b.laatst ? -1 : 1;   // langst niet gehad eerst
+    return a.munt - b.munt;
   });
   return out;
+}
+// De dag waarop deze vraag voor het laatst is gesteld. Zonder dit blijft de rotatie hierboven raden.
+function quizVraagGezien(qzId, oi){
+  S.qzGezien = S.qzGezien || {};
+  S.qzGezien[qzId+"#"+oi] = today();
 }
 
 /* De foutenkaart ging tot nu toe alleen mee in twee logregels: als je je dagdoel haalde en als je
@@ -9498,75 +9517,79 @@ function wCheckNodig(st){
   return (st.box || 0) === stevigDrempel() - 1;
 }
 
-function wCheckOpties(w){
-  // afleiders het liefst uit dezelfde categorie: dan gaat de vraag over het woord en niet over
-  // welke van de vier er toevallig bij het onderwerp past.
-  var pool = WORDS.filter(function(x){ return x.id !== w.id && x.es !== w.es; });
-  var zelfde = pool.filter(function(x){ return x.tag === w.tag; });
-  var bron = zelfde.length >= 3 ? zelfde : pool;
-  var g = geschud(bron), gezien = {}, af = [], i;
-  for(i = 0; i < g.length && af.length < 3; i++){
-    if(gezien[g[i].es]) continue;
-    gezien[g[i].es] = 1;
-    af.push(g[i].es);
-  }
-  return geschud([w.es].concat(af));
-}
-
 function renderWordCheck(){
   var el = document.getElementById("wCard");
   var w = wCur;
-  if(!wCheck || wCheck.id !== w.id) wCheck = {id:w.id, opties:wCheckOpties(w), gekozen:null, goed:false};
+  if(!wCheck || wCheck.id !== w.id) wCheck = {id:w.id, gekozen:null, goed:false, accentMis:false};
   var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
   var html = (inFlow ? lesFlowBannerHtml() : "")+
     "<span class='kicker'>"+ct("Laatste stap","Last step")+"</span>"+
     wBalkHtml()+
     "<p class='big'>"+wTrans(w)+"</p>"+
     "<p class='muted'>"+ct("Hoe zeg je dat in het Spaans?","How do you say that in Spanish?")+"</p>"+
-    "<div style='display:flex; flex-direction:column; gap:8px' id='wCheckOpties'>"+
-      wCheck.opties.map(function(o){
-        var cls = "ghost";
-        if(wCheck.gekozen){
-          if(o === w.es) cls = "good";
-          else if(o === wCheck.gekozen) cls = "bad";
-        }
-        return "<button type='button' class='"+cls+"' data-wcheck=\""+o.replace(/"/g,"&quot;")+
-          "\" style='text-align:left'>"+o+"</button>";
-      }).join("")+
-    "</div>";
-  if(wCheck.gekozen){
+    /* v23.95: hier stonden vier knoppen. Zie de kop van de patch: een op vier gokt zich erdoor en
+       st.k is definitief, dus een gokje kostte je die check voorgoed. Typen kan sinds v23.x prima op
+       een telefoon, want accentToetsenHtml() staat eronder. */
+    (wCheck.gekozen === null
+      ? "<input type='text' id='wCheckInp' autocomplete='off' autocapitalize='off' spellcheck='false' placeholder='"+
+          ct("Typ het Spaanse woord...","Type the Spanish word...")+"'>"+
+        accentToetsenHtml("wCheckAccent")+
+        "<div class='row'><button class='primary' id='btnWCheckOk'>"+ct("Controleer","Check")+"</button></div>"+
+        "<button class='mini' id='btnWCheckWeetNiet'>"+ct("Ik weet het niet","I don't know")+"</button>"
+      : "<p class='big es' style='margin:2px 0 0'>"+w.es+"</p>");
+  if(wCheck.gekozen !== null){
     html += "<p class='waarom'>"+(wCheck.goed
-      ? ct("Goed. <b class='es'>"+w.es+"</b> staat vanaf nu vast en telt mee in je A1-balk.",
-           "Correct. <b class='es'>"+w.es+"</b> is solid from now on and counts towards your A1 bar.")
+      ? (wCheck.accentMis
+          ? ct("Goed, alleen de accenten: het is <b class='es'>"+w.es+"</b>. Hij staat vanaf nu vast en telt mee in je A1-balk.",
+               "Correct, just the accents: it is <b class='es'>"+w.es+"</b>. It is solid from now on and counts towards your A1 bar.")
+          : ct("Goed. <b class='es'>"+w.es+"</b> staat vanaf nu vast en telt mee in je A1-balk.",
+               "Correct. <b class='es'>"+w.es+"</b> is solid from now on and counts towards your A1 bar."))
       : ct("Het was <b class='es'>"+w.es+"</b>. Dit woord gaat een doosje terug en komt zo nog een keer langs.",
            "It was <b class='es'>"+w.es+"</b>. This word steps back one box and comes by again shortly."))+"</p>"+
       "<div class='row'><button class='primary' id='btnWCheckVerder'>"+ct("Verder","Next")+"</button></div>";
   } else {
     html += "<p class='waarom'>"+
-      ct("Dit woord heb je vaak genoeg goed gehad. Vind je hem nu terug zonder dat het antwoord op het scherm staat, dan telt hij mee in je A1-balk.",
-         "You have had this word right often enough. Find it now without the answer on screen and it counts towards your A1 bar.")+"</p>";
+      ct("Dit woord heb je vaak genoeg goed gehad. Typ hem nu zelf, zonder dat het antwoord op het scherm staat, en hij telt mee in je A1-balk. Accenten mag je weglaten.",
+         "You have had this word right often enough. Type it yourself now, without the answer on screen, and it counts towards your A1 bar. Accents may be left out.")+"</p>";
   }
   html += wStopHtml();
   el.innerHTML = html;
   lesFlowWireBanner();
   wStopWire();
-  el.querySelectorAll("[data-wcheck]").forEach(function(b){
-    b.onclick = function(){
-      if(wCheck && wCheck.gekozen) return;
-      wCheckAntwoord(b.getAttribute("data-wcheck"));
+  var wi = document.getElementById("wCheckInp");
+  if(wi){
+    wireAccentToetsen("wCheckAccent", "wCheckInp");
+    var stuur = function(){
+      if(wCheck && wCheck.gekozen !== null) return;
+      wCheckAntwoord(wi.value || "");
     };
-  });
+    document.getElementById("btnWCheckOk").onclick = stuur;
+    wi.addEventListener("keydown", function(e){ if(e.key === "Enter") stuur(); });
+    /* Zonder deze knop is een leeg invoerveld een val: je weet het niet, je kunt geen kant op, en je
+       zit vast op precies het scherm dat je wilde belonen. Hij telt als fout, net als een verkeerd
+       antwoord, dus een doosje terug en vandaag nog een keer. */
+    document.getElementById("btnWCheckWeetNiet").onclick = function(){
+      if(wCheck && wCheck.gekozen !== null) return;
+      wCheckAntwoord("");
+    };
+    try{ wi.focus(); }catch(e){}
+  }
   var bv = document.getElementById("btnWCheckVerder");
   if(bv) bv.onclick = function(){ wCheck = null; renderWord(); };
   updateBadge();
 }
 
-function wCheckAntwoord(keuze){
+function wCheckAntwoord(gegeven){
   var w = wCur, t = today(), st = S.srs[w.id];
   if(!st || typeof st !== "object") st = {box:0, due:t};
-  var goed = (keuze === w.es);
-  wCheck.gekozen = keuze;
+  /* v23.95: getypt in plaats van gekozen. woordGetypt() doet hier het werk dat het ook bij de zinnen
+     doet: accentloos goedrekenen, en "el pintor / la pintora" telt aan beide kanten. Een leeg
+     antwoord ("Ik weet het niet") is per definitie fout. */
+  var chk = String(gegeven).trim() ? woordGetypt(gegeven, w.es) : {goed:false, accentMis:false};
+  var goed = chk.goed;
+  wCheck.gekozen = String(gegeven);
   wCheck.goed = goed;
+  wCheck.accentMis = !!chk.accentMis;
   st.n = (st.n||0) + 1;
   st.p = (st.p||0) + 1;   // dit is produceren: van jouw taal naar het Spaans
   if(st.sp) delete st.sp; // deze stap kwam van jou, niet van een spel
@@ -12342,10 +12365,15 @@ function renderQuestion(){
   var gesteld = st.volgorde.length;               // kan een steekproef zijn, zie startQuiz()
   if(st.i >= gesteld){
     var pct = st.score/gesteld;
-    // score terugrekenen naar de volle lengte, zodat een korte dagles je lesvoortgang niet blokkeert
-    var geschat = Math.round(pct * qz.vragen.length);
+    /* v23.95: hier werd de score teruggerekend naar de volle lengte, dus 4/4 werd 10/10. Dat was
+       nodig omdat een korte dagles anders je lespad zou blokkeren, maar het betekende ook dat vier
+       vragen konden doorgaan voor een volledig beheerst toetsje.
+       Dat blokkeren gebeurt niet: lessonProgress() opent de volgende les op `qa` (heb je dit toetsje
+       ooit gemaakt) en zet het vinkje op `q` (minstens 80 procent). Dus we slaan gewoon op wat je
+       echt haalde. De les gaat open, en het vinkje vraagt voortaan wat het altijd al beloofde: de
+       hele toets, goed gemaakt. */
     var prev = S.quiz[qz.id];
-    if(prev===undefined || geschat>prev){ S.quiz[qz.id] = geschat; persist(); }
+    if(prev===undefined || st.score>prev){ S.quiz[qz.id] = st.score; persist(); }
     quizSrsBij(qz, pct); quizSpreid(); persist();
     if(pct === 1){ S.tapas = (S.tapas||0) + 2; persist(); confetti(["⭐️","🌮","🎉"], 20); }
     checkLessonComplete();
@@ -12371,6 +12399,7 @@ function renderQuestion(){
     return;
   }
   var v = st.volgorde[st.i].v;
+  quizVraagGezien(qz.id, st.volgorde[st.i].oi);   // v23.95: voor de rotatie, zie quizVraagVolgorde
   st.locked = false;
   var inFlowQuiz = !!(lesFlow && lesFlow.stap === "toetsjes");
   var html = (inFlowQuiz ? lesFlowBannerHtml() : "")+
@@ -29892,7 +29921,34 @@ function renderStats(){
      zette dezelfde getallen nog eens in een zin (Stefan: "dit voelt overbodig of verwarrend, denk
      dat we dit al hebben"). Allebei weg. basisHtml() en bandHtml() blijven bestaan; ze worden alleen
      hier niet meer aangeroepen. */
+  /* v23.95: hier stond `var koersHtml = "";` en daarboven werden nieuw14, tempo en venster
+     uitgerekend om vervolgens weggegooid te worden. Ondertussen is "ik zie nergens dat ik iets leer"
+     de klacht die Stefan het vaakst heeft. Het getal lag er dus al.
+
+     Deze week tegenover vorige week, want een getal zonder vergelijking zegt niets, en daarnaast
+     hoeveel er vaststaan. Nieuwe woorden opgepakt is met opzet niet hetzelfde als geleerd: het eerste
+     kun je vandaag zien, het tweede duurt vijfentwintig dagen.
+
+     Let op de volgorde: dit staat NA `var vast`/`var opweg` en op de plek waar koersHtml werd
+     gedeclareerd. Vullen vóór de declaratie werkt niet, want `var koersHtml = ""` hoist en zet hem
+     daarna weer leeg. */
+  var nieuw7 = 0, nieuw7v = 0;
+  for(var d7 = 0; d7 < 14; d7++){
+    var dg7 = addDays(t2, -d7), n7 = (S.newIntro && S.newIntro[dg7]) || 0;
+    if(d7 < 7) nieuw7 += n7; else nieuw7v += n7;
+  }
   var koersHtml = "";
+  if(nieuw7 || nieuw7v || vast){
+    koersHtml = "<div class='card'><span class='kicker'>"+ct("Deze week","This week")+"</span>"+
+      "<p style='margin:6px 0 0'><b>"+nieuw7+"</b> "+
+        ct(nieuw7 === 1 ? "nieuw woord opgepakt" : "nieuwe woorden opgepakt",
+           nieuw7 === 1 ? "new word started" : "new words started")+
+        (nieuw7v ? " <span class='muted'>("+ct("vorige week","last week")+" "+nieuw7v+")</span>" : "")+"</p>"+
+      "<p class='muted' style='margin:4px 0 0'>"+
+        ct(vast+" staan vast, "+opweg+" bijna. Vaststaan kost vijfentwintig dagen, dus dat getal loopt achter op vandaag.",
+           vast+" solid, "+opweg+" nearly there. Solid takes twenty-five days, so that number lags behind today.")+
+      "</p></div>";
+  }
   // ---- foutpercentage-tegel + trendzin (28 juli, verving het oude opgetelde "fouten gelogd") ----
   /* v23.14. Hier werd de foutpercentage-tegel en de zin eronder opgebouwd. Allebei staan ze nu in
      de lange lijst, waar het getal ook een regel uitleg krijgt in plaats van alleen een label. */

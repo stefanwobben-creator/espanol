@@ -5,9 +5,14 @@
 // "wist niet", en dus was de A1-balk op Vandaag een optelsom van hoe goed je over jezelf denkt.
 //
 // Wat deze suite bewaakt, in die volgorde: dat "wist ik" je niet meer voorbij de een-na-laatste doos
-// brengt, dat je op dat punt een check krijgt met vier mogelijkheden in de productieve richting, dat
-// goed het woord vastzet en de A1-teller laat stijgen, dat fout een doosje terugzet zonder de hele
-// rij weg te gooien, en dat wie van voor v20.0 komt niets kwijtraakt.
+// brengt, dat je op dat punt een check krijgt in de productieve richting, dat goed het woord vastzet
+// en de A1-teller laat stijgen, dat fout een doosje terugzet zonder de hele rij weg te gooien, en dat
+// wie van voor v20.0 komt niets kwijtraakt.
+//
+// v23.95: die check was een keuze uit vier en is nu typen. De reden staat in de patch: een op vier
+// gokt zich erdoor en st.k is definitief, dus een gokje kostte je die check voorgoed. Accenten worden
+// goedgerekend (zoals overal in de app) en er is een uitweg ("Ik weet het niet") die als fout telt,
+// want zonder die knop is een leeg invoerveld een val.
 const { chromium } = require('playwright');
 let fout = 0;
 function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); }
@@ -101,11 +106,13 @@ async function zetKlaar(page, box, gecheckt) {
   console.log('\n-- op doos 4 krijg je de check --');
   const klaar4 = await zetKlaar(page, 4, false);
   const kaart = await page.evaluate(() => {
-    const opties = Array.from(document.querySelectorAll('[data-wcheck]')).map((b) => b.getAttribute('data-wcheck'));
     const groot = document.querySelector('#wCard .big');
     return {
-      opties: opties,
-      uniek: new Set(opties).size,
+      invoer: !!document.getElementById('wCheckInp'),
+      accent: !!document.getElementById('wCheckAccent'),
+      knop: !!document.getElementById('btnWCheckOk'),
+      weetNiet: !!document.getElementById('btnWCheckWeetNiet'),
+      opties: document.querySelectorAll('[data-wcheck]').length,
       vraag: groot ? groot.innerText.trim() : '',
       show: !!document.getElementById('btnShow'),
       stop: !!document.getElementById('btnWStop'),
@@ -113,9 +120,12 @@ async function zetKlaar(page, box, gecheckt) {
       tekst: document.getElementById('wCard').innerText.replace(/\s+/g, ' ')
     };
   });
-  ok(kaart.opties.length === 4, 'er staan vier mogelijkheden (' + kaart.opties.length + ')');
-  ok(kaart.uniek === 4, 'ze zijn alle vier verschillend');
-  ok(kaart.opties.indexOf(klaar4.es) !== -1, 'het goede antwoord zit erbij');
+  ok(kaart.invoer, 'je typt het woord zelf in');
+  ok(kaart.accent, 'de accenttoetsen staan eronder, want typen op een telefoon moet kunnen');
+  ok(kaart.knop, 'er is een knop om te controleren');
+  ok(kaart.weetNiet, 'en een uitweg voor wie het niet weet');
+  ok(kaart.opties === 0, 'er staat geen keuze uit vier meer (' + kaart.opties + ')');
+  ok(kaart.tekst.indexOf(klaar4.es) === -1, 'het antwoord staat nergens op het scherm');
   ok(!kaart.show, 'er is geen knop die het antwoord voor je omdraait');
   ok(kaart.vraag === klaar4.nl, 'de vraag staat in jouw taal, het antwoord is Spaans: dit is produceren');
   ok(kaart.stop, 'stoppen kan hier net zo goed als op een gewoon kaartje');
@@ -123,10 +133,10 @@ async function zetKlaar(page, box, gecheckt) {
   ok(!/[—–]|--/.test(kaart.tekst), 'geen streepjes op de kaart');
 
   console.log('\n-- goed: vast, en de A1-teller loopt op --');
-  await page.evaluate((es) => {
-    const b = Array.from(document.querySelectorAll('[data-wcheck]')).find((x) => x.getAttribute('data-wcheck') === es);
-    if (b) b.click();
-  }, klaar4.es);
+  // accentloos intikken: dat hoort goed gerekend te worden, net als overal in de app
+  const zonderAccent = klaar4.es.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  await page.fill('#wCheckInp', zonderAccent);
+  await page.click('#btnWCheckOk');
   await page.waitForTimeout(300);
   const naGoed = await page.evaluate((id) => ({
     box: S.srs[id].box, k: S.srs[id].k || 0, p: S.srs[id].p || 0,
@@ -138,14 +148,13 @@ async function zetKlaar(page, box, gecheckt) {
   ok(naGoed.k === 1, 'het vinkje staat, en alleen deze check kan dat zetten');
   ok(naGoed.p >= 1, 'de beurt telt als produceren (st.p = ' + naGoed.p + ')');
   ok(naGoed.dek === klaar4.dek + 1, 'de A1-teller staat een hoger (' + klaar4.dek + ' -> ' + naGoed.dek + ')');
-  ok(naGoed.verder, 'je ziet wat je gekozen had en gaat zelf verder');
+  ok(naGoed.verder, 'je ziet het goede woord staan en gaat zelf verder');
+  ok(naGoed.zegt.indexOf(klaar4.es) !== -1, 'de vorm met accenten staat in de uitslag, want daar leer je hem');
 
   console.log('\n-- fout: een doosje terug, niet helemaal opnieuw --');
   const klaarF = await zetKlaar(page, 4, false);
-  await page.evaluate((es) => {
-    const b = Array.from(document.querySelectorAll('[data-wcheck]')).find((x) => x.getAttribute('data-wcheck') !== es);
-    if (b) b.click();
-  }, klaarF.es);
+  await page.fill('#wCheckInp', 'ditisgeenspaans');
+  await page.click('#btnWCheckOk');
   await page.waitForTimeout(300);
   const naFout = await page.evaluate((id) => ({
     box: S.srs[id].box, k: S.srs[id].k || 0,
@@ -155,11 +164,19 @@ async function zetKlaar(page, box, gecheckt) {
   ok(!naFout.k, 'zonder goede check geen vinkje');
   ok(naFout.zegt.indexOf(klaarF.es) !== -1, 'het goede antwoord staat er daarna wel bij');
 
+  console.log('\n-- "Ik weet het niet" is een uitweg, geen gratis punt --');
+  const klaarW = await zetKlaar(page, 4, false);
+  await page.click('#btnWCheckWeetNiet');
+  await page.waitForTimeout(300);
+  const naWeetNiet = await page.evaluate((id) => ({ box: S.srs[id].box, k: S.srs[id].k || 0 }), klaarW.id);
+  ok(naWeetNiet.box === 3, 'wie het niet weet zakt een doosje, net als bij een fout antwoord (' + naWeetNiet.box + ')');
+  ok(!naWeetNiet.k, 'en krijgt geen vinkje');
+
   console.log('\n-- met vinkje is het weer een gewoon kaartje --');
   await zetKlaar(page, 4, true);
   const metVink = await page.evaluate(() => ({
     show: !!document.getElementById('btnShow'),
-    check: document.querySelectorAll('[data-wcheck]').length
+    check: document.getElementById('wCheckInp') ? 1 : 0
   }));
   ok(metVink.show && metVink.check === 0, 'wie de check gehad heeft, krijgt hem niet elke keer opnieuw');
 

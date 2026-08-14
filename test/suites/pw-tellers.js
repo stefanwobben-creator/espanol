@@ -78,6 +78,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     window.poortRang = echtePoort; window.lessonUnlocked = echteLes;
     S.srs = bewaard;
 
+    // --- punt 9: de weekkaart op Voortgang ---
+    S.newIntro[today()] = 7;
+    S.newIntro[addDays(today(), -9)] = 4;
+    try { renderStats(); } catch (e) { u.statsFout = String(e && e.message); }
+    const kaart = document.getElementById('statsCard');
+    u.week = kaart ? (kaart.innerText || '').replace(/\s+/g, ' ') : 'GEEN statsCard';
+
     return u;
   });
 
@@ -100,6 +107,17 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.levert === r.belooft,
     'met een af lespad levert de portie nog steeds ' + r.belooft + ' nieuwe woorden (nu: ' + r.levert + ')');
   ok(r.belooft > 1, 'en die belofte is meer dan één (nu: ' + r.belooft + ')');
+
+  console.log('\n-- je week krijgt een getal --');
+  // v23.95: koersHtml stond leeg sinds v23.37, terwijl nieuw14 en tempo er wel voor werden
+  // uitgerekend. En let op de volgorde in de code: vullen vóór `var koersHtml = ""` werkt niet,
+  // want die hoist en zet hem daarna weer leeg. Deze meting is er om dat te zien.
+  // De taal hangt af van het profiel; deze suite draait zonder, dus ct() valt terug op Engels.
+  // Daarom op allebei matchen: het gaat hier om het getal, niet om de vertaling.
+  ok(/7 ?(nieuwe woorden opgepakt|new words started)/.test(r.week),
+    'het aantal nieuwe woorden van deze week staat op Voortgang');
+  ok(/(vorige week|last week) 4/.test(r.week),
+    'en de week ervoor staat ernaast, want een getal zonder vergelijking zegt niets');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
