@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.108";
+var APP_VERSIE = "v23.109";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15610,6 +15610,212 @@ function renderFunBrok(){
   wire("btnFunTerug", function(){ funView = null; brokSpel = null; renderFun(); });
 }
 
+/* ================= DE OMKERING (v23.109) =================
+
+   "hablamos -> wie?" in plaats van "nosotros + hablar -> ?".
+
+   Zie de kop van patch-v23.109 voor het waarom. Kort: de Conjugador zet de persoon in de vraag,
+   dus de uitgang draagt daar geen informatie. Dit scherm haalt die aanwijzing weg, zodat de
+   uitgang het enige is wat je hebt. Dat is de voortrainingsconditie uit Cintrón-Valentín & Ellis,
+   en stap 2 uit de ladder van het ontwerpadvies: begrip vóór productie.
+
+   Alles hieronder leest uit de bestaande bronnen (CONJ_FASES, VERBOS, conjVorm, CONJ_TIEMPOS).
+   Er staat geen enkele werkwoordsvorm in deze code. Architectuurregel 15 augustus. */
+var OMKEER_ID = "vorm.persoon";
+var OMKEER_LEN = 12;
+var omkeerSpel = null;
+
+/* de tijden die je open hebt staan. "mix" is geen tijd maar een fase-instelling, dus die valt af. */
+function omkeerTijden(){
+  var open = conjOpenMax(), uit = [];
+  for(var i = 0; i <= open && i < CONJ_FASES.length; i++){
+    var t = CONJ_FASES[i].tijd;
+    if(t && t !== "mix" && uit.indexOf(t) === -1) uit.push(t);
+  }
+  return uit.length ? uit : ["presente"];
+}
+
+/* Het hart van dit scherm. Een vraag met twee goede antwoorden meet niets, en dit scherm bestaat
+   juist omdat de app te vaak iets anders meet dan hij belooft. Dus: alleen vormen die binnen hun
+   eigen werkwoord én tijd bij precies één persoon horen.
+
+   Dat "hablaba" zowel yo als él/ella is, is geen fout in de data maar een feit over het Spaans.
+   Het wordt geteld en op het eindscherm gezet, want het is precies waarom er in het imperfecto zo
+   vaak wél een voornaamwoord bij staat. */
+function omkeerPool(){
+  var tijden = omkeerTijden(), pool = [], dubbel = 0, totaal = 0;
+  tijden.forEach(function(t){
+    var verbs = conjVerbPool(t);
+    verbs.forEach(function(v){
+      var vormen = conjAlleVormen(v, t);
+      for(var p = 0; p < vormen.length; p++){
+        var vorm = vormen[p];
+        if(!vorm) continue;
+        totaal++;
+        var uniek = true;
+        for(var q = 0; q < vormen.length; q++) if(q !== p && vormen[q] === vorm) uniek = false;
+        if(uniek) pool.push({v:v, p:p, t:t, vorm:vorm});
+        else dubbel++;
+      }
+    });
+  });
+  return {items:pool, dubbel:dubbel, totaal:totaal};
+}
+
+/* Een ronde van twaalf. Twee dingen bewust geregeld:
+     - niet twee keer dezelfde vorm in één ronde
+     - gespreid over de personen, want een ronde van acht keer "yo" meet één uitgang en niet zes.
+   Zonder die spreiding zou de score omhoog kunnen zonder dat je meer weet, en dat is precies het
+   soort meting waar deze week aan opgegaan is. */
+function omkeerStart(){
+  var pool = omkeerPool();
+  var perPersoon = [[], [], [], [], [], []];
+  geschud(pool.items).forEach(function(x){ perPersoon[x.p].push(x); });
+  var rij = [], ronde = 0;
+  while(rij.length < OMKEER_LEN && ronde < 40){
+    var iets = false;
+    for(var p = 0; p < 6 && rij.length < OMKEER_LEN; p++){
+      if(perPersoon[p].length > ronde){ rij.push(perPersoon[p][ronde]); iets = true; }
+    }
+    if(!iets) break;
+    ronde++;
+  }
+  omkeerSpel = {rij:geschud(rij), i:0, goed:0, gekozen:null, dubbel:pool.dubbel, totaal:pool.totaal};
+  return omkeerSpel;
+}
+function omkeerAntwoord(p){
+  if(!omkeerSpel || omkeerSpel.gekozen !== null) return;
+  omkeerSpel.gekozen = p;
+  if(p === omkeerSpel.rij[omkeerSpel.i].p) omkeerSpel.goed++;
+  renderFunOmkeer();
+}
+function omkeerVolgende(){
+  if(!omkeerSpel) return;
+  omkeerSpel.i++;
+  omkeerSpel.gekozen = null;
+  if(omkeerSpel.i >= omkeerSpel.rij.length) brokRonde(OMKEER_ID, omkeerSpel.goed, omkeerSpel.rij.length);
+  renderFunOmkeer();
+}
+
+/* De vergelijking die dit scherm de moeite waard maakt. S.conjLaatste houdt per fase de laatste
+   tien antwoorden bij (1 goed, 0 fout). Opgeteld over alle fasen is dat je recente score in de
+   Conjugador, waar de persoon wél in de vraag staat. Twee getallen naast elkaar, en het verschil
+   is het antwoord op de vraag of de Conjugador meet wat hij belooft. */
+function omkeerConjScore(){
+  var r = S.conjLaatste || {}, n = 0, goed = 0;
+  for(var k in r){
+    if(!Object.prototype.hasOwnProperty.call(r, k)) continue;
+    var lijst = r[k] || [];
+    for(var i = 0; i < lijst.length; i++){ n++; goed += lijst[i] ? 1 : 0; }
+  }
+  return {n:n, goed:goed};
+}
+function omkeerUitslag(goed, totaal){
+  var pct = Math.round((goed / totaal) * 100);
+  if(pct >= 90) return ct("Je kent de uitgangen echt, niet alleen de voornaamwoorden. Dit is de stap waarop je door mag naar typen zonder tabel.",
+                          "You really know the endings, not just the pronouns. This is the step that lets you move on to typing without the table.");
+  if(pct >= 60) return ct("Het zit er half in. Sommige uitgangen herken je, andere gok je. Dat is normaal op deze stap en het is precies wat herhaling oplost.",
+                          "It is half there. You recognise some endings and guess others. That is normal at this step, and it is exactly what repetition fixes.");
+  return ct("Hier zit het gat. Je kunt de vorm wél maken als de persoon erbij staat, maar je herkent hem niet zonder. Meer vervoegingen typen helpt hier niet: dit is een andere oefening.",
+            "This is the gap. You can produce the form when the person is given, but you do not recognise it without. Typing more conjugations will not help: this is a different exercise.");
+}
+
+function renderFunOmkeer(){
+  var el = document.getElementById("funCard");
+  if(!el) return;
+  if(!omkeerSpel) omkeerStart();
+  var totaal = omkeerSpel.rij.length;
+  var kop = "<h2>" + ct("Wie is dit? \ud83d\udd0e", "Who is this? \ud83d\udd0e") + "</h2>";
+
+  if(!totaal){
+    el.innerHTML = kop + "<p class='muted'>" +
+      ct("Er zijn nog geen vormen om te herkennen. Speel eerst een ronde Conjugador.",
+         "There are no forms to recognise yet. Play a round of Conjugador first.") + "</p>" +
+      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    var bt = document.getElementById("btnFunTerug");
+    if(bt) bt.onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
+    return;
+  }
+
+  if(omkeerSpel.i >= totaal){
+    var st = brokLees(OMKEER_ID);
+    var cj = omkeerConjScore();
+    var pctDub = omkeerSpel.totaal ? Math.round((omkeerSpel.dubbel / omkeerSpel.totaal) * 100) : 0;
+    el.innerHTML = kop +
+      "<div class='feedback " + (omkeerSpel.goed >= totaal - 1 ? "ok" : omkeerSpel.goed >= totaal - 4 ? "bijna" : "fout") + "' id='omkUitslag'>" +
+        omkeerSpel.goed + " / " + totaal + "</div>" +
+      "<p class='muted'>" + omkeerUitslag(omkeerSpel.goed, totaal) + "</p>" +
+      (cj.n >= 5
+        ? "<p class='muted' id='omkVergelijk' style='font-size:.9rem'><b>" +
+            ct("Naast elkaar: ", "Side by side: ") + "</b>" +
+            ct("in de Conjugador, waar de persoon in de vraag staat, had je ", "in Conjugador, where the person is given in the question, you got ") +
+            Math.round((cj.goed / cj.n) * 100) + "% " + ct("van je laatste ", "of your last ") + cj.n +
+            ct(" goed. Hier, zonder die aanwijzing, ", " correct. Here, without that clue, ") +
+            Math.round((omkeerSpel.goed / totaal) * 100) + "%.</p>"
+        : "") +
+      (st.rondes > 1 ? "<p class='muted' style='font-size:.85rem'>" +
+        ct("Je beste ronde tot nu toe: ", "Your best round so far: ") + st.beste + " / " + totaal + "</p>" : "") +
+      "<p class='muted' id='omkDubbel' style='font-size:.85rem'>" +
+        ct("Weetje: " + pctDub + "% van de vormen in je open fasen hoort bij méér dan één persoon (hablaba is zowel yo als él). Die staan hier niet tussen, want een vraag met twee goede antwoorden meet niets. En dát is de reden dat er in het imperfecto zo vaak wél een voornaamwoord bij staat.",
+           "Did you know: " + pctDub + "% of the forms in your open phases belong to more than one person (hablaba is both yo and él). Those are left out here, because a question with two correct answers measures nothing. And that is exactly why the imperfecto so often keeps the pronoun.") + "</p>" +
+      "<div class='row' style='margin-top:10px'>" +
+        "<button class='primary' id='btnOmkNieuw'>" + ct("Nog een ronde", "Another round") + "</button>" +
+        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    document.getElementById("btnOmkNieuw").onclick = function(){ omkeerStart(); renderFunOmkeer(); };
+    document.getElementById("btnFunTerug").onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
+    return;
+  }
+
+  var q = omkeerSpel.rij[omkeerSpel.i];
+  var af = omkeerSpel.gekozen !== null;
+  var goed = af && omkeerSpel.gekozen === q.p;
+  var rijtje = "";
+  if(af){
+    /* het hele rijtje als feedback. Dat is stap 1 uit de ladder (opbouwen): de zes vormen als
+       groep zien in plaats van als losse cellen. Zonder deze stap is een fout alleen een rood
+       kruisje en leer je er niets van. */
+    rijtje = "<table style='width:100%; margin-top:10px'>" +
+      conjAlleVormen(q.v, q.t).map(function(vorm, i){
+        var mij = i === q.p;
+        return "<tr" + (mij ? " style='background:var(--green-soft)'" : "") + ">" +
+          "<td class='muted' style='font-size:.85rem'>" + CONJ_PRONOMBRES[i] + "</td>" +
+          "<td" + (mij ? " style='font-weight:700'" : "") + ">" + vorm + (mij ? " \u2190" : "") + "</td></tr>";
+      }).join("") + "</table>";
+  }
+
+  el.innerHTML = kop +
+    "<span class='kicker'>" + ct("Vorm ", "Form ") + (omkeerSpel.i + 1) + "/" + totaal + "</span>" +
+    (omkeerSpel.i === 0 && !af
+      ? "<p class='muted'>" + ct("Er staat geen voornaamwoord bij. De uitgang is het enige wat je hebt, en dat is precies het punt: in de Conjugador staat de persoon in de vraag, dus daar hoef je de uitgang nooit te lezen.",
+                                 "There is no pronoun. The ending is all you get, and that is the point: in Conjugador the person is given in the question, so you never have to read the ending.") + "</p>"
+      : "") +
+    "<div class='card' style='text-align:center; margin:10px 0'>" +
+      "<p class='big' style='margin:4px 0' id='omkVorm'>" + q.vorm + "</p>" +
+      "<p class='muted' style='margin:0; font-size:.85rem'>" + q.v.inf + " <span style='font-weight:400'>(" + conjGloss(q.v) + ")</span></p>" +
+      "<p class='muted' style='margin:2px 0 0; font-size:.8rem' id='omkTijd'>" + conjTiempoNaam(q.t) + "</p>" +
+    "</div>" +
+    (af
+      ? "<div class='feedback " + (goed ? "ok" : "fout") + "'>" +
+          (goed ? ct("Goed \u2713", "Correct \u2713")
+                : ct("Nog niet. Het is: ", "Not yet. It is: ") + "<b>" + CONJ_PRONOMBRES[q.p] + "</b>") +
+        "</div>" + rijtje +
+        "<div class='row' style='margin-top:10px'><button class='primary' id='btnOmkVerder'>" +
+          (omkeerSpel.i + 1 >= totaal ? ct("Uitslag \u2192", "Result \u2192") : ct("Volgende \u2192", "Next \u2192")) + "</button></div>"
+      : "<div id='omkKnoppen' style='display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px'>" +
+          CONJ_PRONOMBRES.map(function(pr, i){
+            return "<button type='button' class='ghost omk-p' data-p='" + i + "' style='min-height:52px'>" + pr + "</button>";
+          }).join("") + "</div>") +
+    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+
+  Array.prototype.forEach.call(el.querySelectorAll(".omk-p"), function(b){
+    b.onclick = function(){ omkeerAntwoord(Number(b.getAttribute("data-p"))); };
+  });
+  var vb = document.getElementById("btnOmkVerder");
+  if(vb) vb.onclick = omkeerVolgende;
+  var tb = document.getElementById("btnFunTerug");
+  if(tb) tb.onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
+}
+
 function spelInfo(){
   return [
     {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f",     t:"Aventura",              s:fx("avS")},
@@ -15623,6 +15829,10 @@ function spelInfo(){
        kunt doen dat geen dagportie is. Zodra het brokkenmodel staat verhuist hij naar stap 1
        van indefinido-tegenover-imperfecto. */
     {v:"brok",    id:"ftBrok",    e:"\ud83c\udfad",            t:ct("Achtergrond of gebeurtenis","Background or event"), s:ct("Twaalf Nederlandse zinnen, twee bakjes. Geen Spaans: dit meet of je de regel snapt, los van de vormen.","Twelve English sentences, two bins. No Spanish: this measures whether you get the rule, apart from the forms.")},
+    /* v23.109: net als de brok geen spel maar een meting, en om dezelfde reden hier: dit is de
+       plek waar je iets kunt doen dat geen dagportie is. Zodra het brokkenmodel staat wordt dit
+       stap 2 van de vormladder. */
+    {v:"omkeer",  id:"ftOmkeer",  e:"\ud83d\udd0e",            t:ct("Wie is dit?","Who is this?"), s:ct("Een vervoegde vorm zonder voornaamwoord: wie is het? De omgekeerde richting van de Conjugador.","A conjugated form with no pronoun: who is it? The reverse direction of Conjugador.")},
     {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",            t:"Memory \u00b7 Parejas",  s:fx("meS")},
     {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",            t:"Palabra Duel",          s:fx("duS")}
   ];
@@ -15646,7 +15856,9 @@ function spelZin(s){
 /* Aventura staat vast op de dagkaart (dat is het grote spel) en Palabra Duel heeft een tweede
    speler nodig. De rest wisselt per dag, Música inbegrepen: die heeft geen materiaal nodig en is
    daarmee op dag 1 het enige wat naast Aventura echt kan draaien. */
-var DAGSPEL_UIT = {avt:1, duel:1, brok:1};   // v23.106: zie de kop van deze patch
+/* v23.109: omkeer erbij, om dezelfde reden als brok. Dit zijn metingen, geen dagportie: ze
+   horen niet mee te tellen in het dagritme en het dagscherm hoort er niet naar te wijzen. */
+var DAGSPEL_UIT = {avt:1, duel:1, brok:1, omkeer:1};
 /* v23.65, en dit was een echte fout. In DAGSPELLEN stonden Escuchar, El Corrector en Rompecabezas,
    dus de kaart met de kop "Even spelen" bood drie oefeningen aan. De regel van v21.5 is in één zin
    te zeggen (Stefan: "lessen, dat zijn de oefeningen, die zitten nu ook onder speeltuin"): onder
@@ -24423,6 +24635,7 @@ function renderFun(){
   if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   if(funView === "brok"){ renderFunBrok(); return; }   // v23.106
+  if(funView === "omkeer"){ renderFunOmkeer(); return; }   // v23.109
   // v19.92: de spellen die nu iets kunnen tonen staan boven; de rest staat eronder in het grijs
   // met de eis erbij. Zie de toelichting bij SPEEL_EIS.
   /* v23.65: uit spelInfo(), zodat dit scherm en de dagkaart niet meer uit elkaar kunnen lopen.

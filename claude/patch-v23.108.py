@@ -54,7 +54,7 @@ Dit gaat alleen over hoe de dingen heten.
 
 Idempotent.
 """
-import io, sys, os
+import io, sys, os, re
 
 WORTEL = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/espanol")
 PAD = os.path.join(WORTEL, "index.html")
@@ -68,7 +68,11 @@ with io.open(PAD, encoding="utf-8") as f:
 DOE_APP = "v23.108" not in src
 with io.open(PAD_VER, encoding="utf-8") as f:
     huidig_ver = f.read().strip()
-DOE_VER = huidig_ver != NIEUW
+def _num(v):
+    return tuple(int(x) for x in re.findall(r"\d+", v or ""))
+# versie.txt mag alleen vooruit. Zonder deze regel zet een oudere patch die je per ongeluk nog
+# eens draait het versienummer terug, en dan denkt de app dat hij ouder is dan hij is.
+DOE_VER = huidig_ver != NIEUW and (DOE_APP or _num(huidig_ver) < _num(NIEUW))
 
 if not DOE_APP and not DOE_VER:
     print("al toegepast, niets te doen")
@@ -77,6 +81,11 @@ if not DOE_APP and not DOE_VER:
 
 def rep(anker, nieuw, n=1):
     global src
+    # Staat de app al op deze versie, dan is er niets te vervangen en loopt hoogstens versie.txt
+    # nog achter (dat gebeurt als de avondrun er tussendoor een nieuwer nummer in heeft gezet).
+    # Zonder deze regel valt een oudere patch om zodra er een nieuwere overheen is gegaan.
+    if not DOE_APP:
+        return
     gevonden = src.count(anker)
     assert gevonden == n, "anker komt %d keer voor in plaats van %d:\n%s" % (gevonden, n, anker[:220])
     src = src.replace(anker, nieuw, n)
@@ -256,8 +265,8 @@ rep(A_FASEKOP, N_FASEKOP)
 
 # ---------------------------------------------------------------- wegschrijven
 if DOE_APP:
-    import re as _re
-    src = _re.sub(r'var APP_VERSIE = "[^"]+"', 'var APP_VERSIE = "%s"' % NIEUW, src, count=1)
+
+    src = re.sub(r'var APP_VERSIE = "[^"]+"', 'var APP_VERSIE = "%s"' % NIEUW, src, count=1)
     with io.open(PAD, "w", encoding="utf-8") as f:
         f.write(src)
     print("index.html bijgewerkt naar %s" % NIEUW)
