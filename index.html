@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.111";
+var APP_VERSIE = "v23.112";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15881,25 +15881,33 @@ function renderFunOmkeer(){
   if(tb) tb.onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
 }
 
+/* v23.112: elke tegel draagt zelf wat er bij hem anders is. De klikafhandeling onder aan
+   renderFun() leest dit; daarvoor stond daar een handgeschreven rij van tien regels naast deze
+   lijst, en die twee liepen uit elkaar (de omkering-tegel van v23.109 stond wel in deze lijst en
+   niet in die rij, dus hij deed niets).
+
+     verse    maakt de spelstand leeg voor je begint
+     gezien   false voor spellen die niet in SPEEL_EIS staan en dus niets te "zien" hebben
+     open     een eigen afhandeling, voor het enige spel dat geen funView is */
 function spelInfo(){
   return [
-    {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f",     t:"Aventura",              s:fx("avS")},
-    {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",            t:"M\u00fasica",            s:fx("muS")},
+    {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f",     t:"Aventura",              s:fx("avS"), gezien:false},
+    {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",            t:"M\u00fasica",            s:fx("muS"), open:function(){ show("musica"); }},
     {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS")},
-    {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",            t:"Crucigrama",            s:fx("krS")},
-    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",            t:"Letras",                s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock.")},
-    {v:"adiv",    id:"ftAdiv",    e:"\ud83d\udfe9",            t:"Adivina",               s:ct("Raad het woord in vijf pogingen. De eerste letter krijg je.","Guess the word in five tries. You get the first letter.")},
-    {v:"clas",    id:"ftClas",    e:"\u26a1",                  t:"Clasificador",          s:ct("Links of rechts, en het gaat steeds sneller.","Left or right, and it keeps speeding up.")},
+    {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",            t:"Crucigrama",            s:fx("krS"), verse:function(){ kruisLos = null; }},
+    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",            t:"Letras",                s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock."), verse:function(){ ltSpel = null; }},
+    {v:"adiv",    id:"ftAdiv",    e:"\ud83d\udfe9",            t:"Adivina",               s:ct("Raad het woord in vijf pogingen. De eerste letter krijg je.","Guess the word in five tries. You get the first letter."), verse:function(){ adivSpel = null; }},
+    {v:"clas",    id:"ftClas",    e:"\u26a1",                  t:"Clasificador",          s:ct("Links of rechts, en het gaat steeds sneller.","Left or right, and it keeps speeding up."), verse:function(){ clNieuwSpel(); }},
     /* v23.106: geen spel maar een meting, en hij staat hier omdat dit de plek is waar je iets
        kunt doen dat geen dagportie is. Zodra het brokkenmodel staat verhuist hij naar stap 1
        van indefinido-tegenover-imperfecto. */
-    {v:"brok",    id:"ftBrok",    e:"\ud83c\udfad",            t:ct("Achtergrond of gebeurtenis","Background or event"), s:ct("Twaalf Nederlandse zinnen, twee bakjes. Geen Spaans: dit meet of je de regel snapt, los van de vormen.","Twelve English sentences, two bins. No Spanish: this measures whether you get the rule, apart from the forms.")},
+    {v:"brok",    id:"ftBrok",    e:"\ud83c\udfad",            t:ct("Achtergrond of gebeurtenis","Background or event"), s:ct("Twaalf Nederlandse zinnen, twee bakjes. Geen Spaans: dit meet of je de regel snapt, los van de vormen.","Twelve English sentences, two bins. No Spanish: this measures whether you get the rule, apart from the forms."), gezien:false, verse:function(){ brokSpel = null; }},
     /* v23.109: net als de brok geen spel maar een meting, en om dezelfde reden hier: dit is de
        plek waar je iets kunt doen dat geen dagportie is. Zodra het brokkenmodel staat wordt dit
        stap 2 van de vormladder. */
-    {v:"omkeer",  id:"ftOmkeer",  e:"\ud83d\udd0e",            t:ct("Wie is dit?","Who is this?"), s:ct("Een vervoegde vorm zonder voornaamwoord: wie is het? De omgekeerde richting van de Conjugador.","A conjugated form with no pronoun: who is it? The reverse direction of Conjugador.")},
+    {v:"omkeer",  id:"ftOmkeer",  e:"\ud83d\udd0e",            t:ct("Wie is dit?","Who is this?"), s:ct("Een vervoegde vorm zonder voornaamwoord: wie is het? De omgekeerde richting van de Conjugador.","A conjugated form with no pronoun: who is it? The reverse direction of Conjugador."), gezien:false, verse:function(){ omkeerSpel = null; }},
     {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",            t:"Memory \u00b7 Parejas",  s:fx("meS")},
-    {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",            t:"Palabra Duel",          s:fx("duS")}
+    {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",            t:"Palabra Duel",          s:fx("duS"), gezien:false}
   ];
 }
 function spelInfoVan(v){
@@ -24735,16 +24743,20 @@ function renderFun(){
     "<p class='muted' style='font-size:.85rem; margin-top:6px'>" + fx("klassement") + "</p>";
   bindUitnodig("speeltuin");
   function wire(id, fn){ var b = document.getElementById(id); if(b) b.onclick = fn; }
-  wire("ftAvt", function(){ funView = "avt"; navPush({t:"fun", v:"avt"}); renderFun(); });
-  wire("ftMusica", function(){ show("musica"); });
-  wire("ftWs", function(){ speelGezien("ws"); funView = "ws"; navPush({t:"fun", v:"ws"}); renderFun(); });
-  wire("ftKruis", function(){ speelGezien("kruis"); funView = "kruis"; kruisLos = null; navPush({t:"fun", v:"kruis"}); renderFun(); });
-  wire("ftLetras", function(){ speelGezien("letras"); funView = "letras"; ltSpel = null; navPush({t:"fun", v:"letras"}); renderFun(); });
-  wire("ftAdiv", function(){ speelGezien("adiv"); funView = "adiv"; adivSpel = null; navPush({t:"fun", v:"adiv"}); renderFun(); });
-  wire("ftClas", function(){ speelGezien("clas"); funView = "clas"; clNieuwSpel(); navPush({t:"fun", v:"clas"}); renderFun(); });
-  wire("ftMem", function(){ speelGezien("mem"); funView = "mem"; navPush({t:"fun", v:"mem"}); renderFun(); });
-  wire("ftDuel", function(){ funView = "duel"; navPush({t:"fun", v:"duel"}); renderFun(); });
-  wire("ftBrok", function(){ funView = "brok"; brokSpel = null; navPush({t:"fun", v:"brok"}); renderFun(); });
+  /* v23.112: hier stond een handgeschreven rij van tien wire-regels naast SPEELMENU. Twee lijsten
+     met dezelfde tegels erin, met de hand synchroon gehouden, en dus liepen ze uit elkaar: de
+     omkering-tegel van v23.109 stond wel in spelInfo() en niet in die rij, dus hij tekende netjes
+     en deed niets. Nu loopt de koppeling over SPEELMENU, en is een tegel zonder afhandeling
+     onmogelijk. Wat per spel anders is staat als data bij dat spel (zie spelInfo). */
+  SPEELMENU.forEach(function(g){
+    wire(g.id, g.open || function(){
+      if(g.gezien !== false) speelGezien(g.v);
+      if(g.verse) g.verse();
+      funView = g.v;
+      navPush({t:"fun", v:g.v});
+      renderFun();
+    });
+  });
   var sa = document.getElementById("speelAlles");
   if(sa) sa.onclick = function(ev){
     if(ev && ev.preventDefault) ev.preventDefault();

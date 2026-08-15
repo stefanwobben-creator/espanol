@@ -131,9 +131,18 @@ async function ronde(page, keuze) {
     'CONTROLE: gespreid over de personen, niet acht keer dezelfde uitgang (hoogste: ' + opzet.maxPerPersoon + ')');
 
   // ---- 3. de meting keurt niet alles goed en niet alles fout ----
+  // v23.112: KLIKKEN, niet tellen. Hiervoor stond hier alleen of het element bestond, en daarna
+  // werd het scherm geopend met funView = "omkeer". Zo bleef deze check groen terwijl de tegel
+  // geen onclick had en dus niets deed. Stefan vond dat, niet de poort.
+  await page.evaluate(() => { funView = null; S.speelAlles = true; renderFun(); });
   await page.click('#nav button[data-tab="speeltuin"]');
   await page.waitForTimeout(300);
+  await page.evaluate(() => { funView = null; renderFun(); });
+  await page.waitForTimeout(200);
   const tegel = await page.locator('#ftOmkeer').count();
+  if (tegel) await page.click('#ftOmkeer');
+  await page.waitForTimeout(300);
+  const viaTegel = await page.evaluate(() => funView);
 
   const altijd0 = await ronde(page, 0);
   const altijd3 = await ronde(page, 3);
@@ -141,6 +150,7 @@ async function ronde(page, keuze) {
 
   console.log('\n-- de meting --');
   ok(tegel === 1, 'de tegel staat in de Speeltuin');
+  ok(viaTegel === 'omkeer', 'en klikken erop opent het scherm ook echt (nu: ' + viaTegel + ')');
   ok(altijd0.goed < altijd0.n && altijd3.goed < altijd3.n,
     'CONTROLE: altijd dezelfde knop geeft nooit alles goed (' + altijd0.goed + '/' + altijd0.n + ' en ' + altijd3.goed + '/' + altijd3.n + ')');
   ok(echt.goed === echt.n, 'CONTROLE: het juiste antwoord per vraag geeft alles goed (' + echt.goed + '/' + echt.n + ')');
