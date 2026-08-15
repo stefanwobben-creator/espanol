@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-15T02:50:13.112Z",
+ "wanneer": "2026-08-15T10:22:31.323Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -9,19 +9,21 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 4,
+  "zinnen": 5,
   "toetsjes": 1,
   "nieuweLes": 0
  },
- "versie": "v23.102",
+ "versie": "v23.104",
  "klachten": [
-  "s187: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onnatuurlijk: 'estar listo' (klaar zijn) wordt in het Spaans zelden gebruikt voor een leraar die zijn werk afrondt; 'terminar' of 'acabar' zou natuurlijker zijn.",
-  "nieuwe les AFGEKEURD:\n - zin 1 (s190): veld \"tag\" ontbreekt\n - zin 2 (s191): veld \"tag\" ontbreekt\n - zin 3 (s192): veld \"tag\" ontbreekt\n - zin 4 (s193): veld \"tag\" ontbreekt\n - zin 5 (s194): veld \"tag\" ontbreekt\n - zin 6 (s195): veld \"tag\" ontbreekt\n - zin 7 (s196): veld \"tag\" ontbreekt\n - zin 8 (s197): veld \"tag\" ontbreekt"
+  "s197: afgekeurd — De zin 'Nos cuesta preguntar el camino' is grammaticaal correct maar inhoudelijk onzin: niemand vraagt 'el camino' (de weg) met het voorzetsel 'el', maar met 'por el camino' of gewoon 'el camino' zonder voorzetsel. De correcte formulering is 'Nos cuesta preguntar el camino' (zonder voorzetsel) of 'Nos cuesta preguntar por el camino'.",
+  "s206: afgekeurd — De zin 'Llevo mi tiempo libre leyendo y cocinando' is grammaticaal correct maar inhoudelijk onlogisch: je brengt je vrije tijd niet letterlijk mee (llevo), maar besteedt het eraan. Een natuurlijke zin zou zijn: 'Paso mi tiempo libre leyendo y cocinando'.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "nieuwe les AFGEKEURD:\n - zin 4 (s202): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam"
  ],
  "reden": null,
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-08-15T02:55:08.387Z"
+ "afgemaakt": "2026-08-15T10:27:41.993Z"
 }

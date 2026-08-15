@@ -1652,6 +1652,72 @@
       "model": "eleven_multilingual_v2",
       "hash": "16e50a26dde391bf",
       "tekens": 24
+    },
+    "s190": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6ddebd7b7b50da44",
+      "tekens": 54
+    },
+    "s191": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "31c815c40ceae3b5",
+      "tekens": 60
+    },
+    "s192": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2f10601cef983671",
+      "tekens": 65
+    },
+    "s193": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "24dc165033e1cba1",
+      "tekens": 39
+    },
+    "s194": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f11871f4cb186218",
+      "tekens": 49
+    },
+    "s195": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "1361b1ec977f55c5",
+      "tekens": 24
+    },
+    "s196": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "ddcb5f0d09dd3efb",
+      "tekens": 39
+    },
+    "s198": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "72bbf3915e1b6145",
+      "tekens": 26
+    },
+    "bs74": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2ef9d6191d0886a6",
+      "tekens": 36
+    },
+    "bs75": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "85e5735c494e848c",
+      "tekens": 42
+    },
+    "bs76": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "22932177403494c8",
+      "tekens": 32
     }
   },
   "dialogo-a": {

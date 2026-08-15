@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-08-15T02:50:13.112Z",
- "versie": "v23.102",
+ "wanneer": "2026-08-15T10:22:31.323Z",
+ "versie": "v23.104",
  "gaten": [
   {
    "tag": "basis",
@@ -8,20 +8,21 @@
    "fouten": 23
   },
   {
-   "tag": "sentirse",
+   "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 20
+   "fouten": 16
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s186",
-   "s187",
-   "s188",
-   "s189"
+   "s193",
+   "s194",
+   "s195",
+   "s196",
+   "s198"
   ],
   "toetsjes": [
-   "q-relatar-extra1"
+   "q-relatar-extra2"
   ]
  },
  "nieuweLes": null
