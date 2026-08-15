@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.106";
+var APP_VERSIE = "v23.107";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10722,6 +10722,18 @@ var CONJ_FASES = [
    uitNl:"Hetzelfde indefinido, nu met de onregelmatige vormen erbij. Fui, hice, tuve.",
    uitEn:"The same indefinido, now with the irregular forms too. Fui, hice, tuve.",
    pool:function(v){ return true; }},
+  /* v23.107: twee fasen erbij, hier en niet eerder. AULA 2 doet het indefinido in hoofdstuk 2 en
+     het imperfecto in hoofdstuk 9, en Stefan volgt AULA. Eerst alles behalve de drie
+     onregelmatige, dan de drie erbij: dat zijn er precies drie in de hele taal, en dat mag je
+     weten voordat je eraan begint. */
+  {id:"imperfreg", tijd:"imperfecto", personen:[0,1,2,3,4,5], nl:"hoe het was", en:"how things were",
+   uitNl:"Het pret\u00e9rito imperfecto: achtergrond, gewoonte, hoe het w\u00e1s. Volledig regelmatig, en -er en -ir zijn hier gelijk.",
+   uitEn:"The pret\u00e9rito imperfecto: background, habit, how things were. Fully regular, and -er and -ir are identical here.",
+   pool:function(v){ return !VERBOS_IMPERF[v.inf]; }},
+  {id:"imperf", tijd:"imperfecto", personen:[0,1,2,3,4,5], nl:"hoe het was, compleet", en:"how things were, complete",
+   uitNl:"Nu met ser, ir en ver erbij. Meer onregelmatige zijn er niet in deze tijd, in de hele taal niet.",
+   uitEn:"Now with ser, ir and ver added. There are no more irregulars in this tense, not in the whole language.",
+   pool:function(v){ return true; }},
   {id:"perfecto", tijd:"perfecto", personen:[0,1,2,3,4,5], nl:"verleden tijd 2", en:"past tense 2",
    uitNl:"Het pret\u00e9rito perfecto: haber plus het voltooid deelwoord. He hablado, has comido.",
    uitEn:"The pret\u00e9rito perfecto: haber plus the past participle. He hablado, has comido.",
@@ -10742,7 +10754,22 @@ function conjFaseIdx(id){
 // Wat je gisteren al kon, neemt een update je niet af. Wie al met de Conjugador heeft geoefend (of in
 // v19.67 al breder had gekozen) krijgt de hele ladder open; alleen wie hier nieuw binnenkomt begint
 // onderaan. Een update die je terugzet naar af is precies zo'n reden om te stoppen.
+/* v23.107: de volgorde van de ladder vóór deze versie. Staat hier omdat hij nergens anders meer
+   te vinden is, en dit is de enige plek die hem nog nodig heeft. */
+var CONJ_FASES_OUD11 = ["ar","er","ir","seis","onreg","presente","indefreg","indef","perfecto","subjuntivo","mix"];
+var CONJ_LADDER_NU = 13;
+function conjLadderMigratie(){
+  if(S.conjLadder === CONJ_LADDER_NU) return;
+  if(typeof S.conjOpen === "number"){
+    var oudId = CONJ_FASES_OUD11[S.conjOpen];
+    var n = oudId ? conjFaseIdx(oudId) : -1;
+    if(n >= 0) S.conjOpen = n;
+  }
+  S.conjLadder = CONJ_LADDER_NU;
+  try { persist(); } catch(e){}
+}
 function conjOpenInit(){
+  conjLadderMigratie();
   if(typeof S.conjOpen === "number") return S.conjOpen;
   var open = 0, geoefend = false;
   try {
@@ -10796,16 +10823,42 @@ function cjMkStaat(v, p, t){
 // ("drill dit in het indefinido"), maar hij stuurt de drill niet meer buiten de ladder om.
 // "mix" is nu de laatste fase in plaats van een knop: alle tijden door elkaar is de eindstand, want
 // dat is de echte moeilijkheid (niet elke vorm los kennen, maar ze uit elkaar houden).
-var CONJ_TIEMPOS = ["presente","indefinido","perfecto","subjuntivo","mix"];
+var CONJ_TIEMPOS = ["presente","indefinido","imperfecto","perfecto","subjuntivo","mix"];
 function conjTiempoKeuze(){ return conjFaseNu().tijd; }
 function conjTiempoActief(){
   var k = conjTiempoKeuze();
   if(k !== "mix") return k;
-  var opts = ["presente","indefinido","perfecto","subjuntivo"];
+  // v23.107: de imperfecto doet mee in de mix, want die fase is de eindstand: niet elke vorm los
+  // kennen maar ze uit elkaar houden. En dat is precies waar indefinido tegenover imperfecto zit.
+  var opts = ["presente","indefinido","imperfecto","perfecto","subjuntivo"];
   return opts[Math.floor(Math.random()*opts.length)];
+}
+/* ---- de imperfecto (v23.107, brok 3, 4 en 5) ----
+   De enige tijd in het Spaans die volledig regelmatig is op precies drie werkwoorden na. Dus geen
+   tabel van 33 zoals VERBOS_PASADO, maar een rekenregel en drie uitzonderingen. Elk werkwoord dat
+   morgen aan VERBOS wordt toegevoegd kan meteen mee: het feit staat al in de infinitief en hoort
+   dus niet nog een keer opgeschreven te worden.
+   Meevaller die de moeite van het vermelden waard is en die ook in de uitleg staat: -er en -ir
+   zijn hier gelijk. Dat is de enige tijd waarin dat zo is. */
+var CONJ_IMPERF_UIT = {
+  ar: ["aba", "abas", "aba", "\u00e1bamos", "abais", "aban"],
+  er: ["\u00eda", "\u00edas", "\u00eda", "\u00edamos", "\u00edais", "\u00edan"]
+};
+var VERBOS_IMPERF = {
+  ser: ["era", "eras", "era", "\u00e9ramos", "erais", "eran"],
+  ir:  ["iba", "ibas", "iba", "\u00edbamos", "ibais", "iban"],
+  ver: ["ve\u00eda", "ve\u00edas", "ve\u00eda", "ve\u00edamos", "ve\u00edais", "ve\u00edan"]
+};
+function conjImperfecto(v, p){
+  var vast = VERBOS_IMPERF[v.inf];
+  if(vast) return vast[p];
+  var g = conjGroep(v);
+  var u = CONJ_IMPERF_UIT[g === "ar" ? "ar" : "er"];   // -er en -ir vallen hier samen
+  return v.inf.slice(0, -2) + u[p];
 }
 function conjVorm(v, p, t){
   if(t === "subjuntivo"){ var sv = VERBOS_SUBJ[v.inf]; if(sv) return sv[p]; return v.presente[p]; }
+  if(t === "imperfecto") return conjImperfecto(v, p);
   var d = VERBOS_PASADO[v.inf];
   if(t === "indefinido" && d) return d.i[p];
   if(t === "perfecto" && d) return HABER_PRES[p] + " " + d.part;
@@ -10821,6 +10874,7 @@ function conjErrKey(v, p, t){ return (t && t !== "presente") ? v.inf+"-"+p+"-"+t
 function conjTiempoLabel(t){
   if(t === "subjuntivo") return "presente de subjuntivo";
   if(t === "indefinido") return "pret\u00e9rito indefinido";
+  if(t === "imperfecto") return "pret\u00e9rito imperfecto";   // v23.107
   if(t === "perfecto") return "pret\u00e9rito perfecto";
   return "presente";
 }
@@ -10841,6 +10895,10 @@ function conjVerbPool(t){
   // genoeg om ze na een paar rondes \u00e9cht te kennen in plaats van ze allemaal een beetje te herkennen.
   var basis = conjFasePool();
   if(t === "presente") return basis;
+  // v23.107: de imperfecto is voor elk werkwoord te berekenen, dus daar valt niets te filteren.
+  // Zonder deze regel zou hij de pool langs VERBOS_PASADO leggen en werkwoorden weglaten die hij
+  // prima aankan.
+  if(t === "imperfecto") return basis;
   var tabel = (t === "subjuntivo") ? VERBOS_SUBJ : VERBOS_PASADO;
   var pool = basis.filter(function(v){ return !!tabel[v.inf]; });
   return pool.length ? pool : basis;
@@ -15322,6 +15380,40 @@ var BROK_TIJD = [
    w:"Vorige week, één aankoop, klaar: gebeurtenis.",
    wEn:"Last week, one purchase, done: event."}
 ];
+/* v23.107, brok 9: de signaalwoorden. De goedkoopste brok van het hele model, en hij bestond niet
+   terwijl in de helft van de zinnen het antwoord er gewoon bij staat zodra je ze kent. */
+var BROK_SIGNAAL = [
+  {es:"mientras",        s:"a", w:"Mientras zet iets neer dat doorloopt terwijl er iets anders gebeurt: imperfecto.",
+   wEn:"Mientras sets up something ongoing while something else happens: imperfect."},
+  {es:"siempre",         s:"a", w:"Altijd, dus een gewoonte: imperfecto.", wEn:"Always, so a habit: imperfect."},
+  {es:"todos los d\u00edas", s:"a", w:"Elke dag: gewoonte, dus imperfecto.", wEn:"Every day: habit, so imperfect."},
+  {es:"antes",           s:"a", w:"Vroeger, hoe het toen was: imperfecto.", wEn:"Before, how things were: imperfect."},
+  {es:"ayer",            s:"g", w:"Gisteren is afgesloten: indefinido.", wEn:"Yesterday is closed off: preterite."},
+  {es:"un d\u00eda",         s:"g", w:"Op een dag kondigt een gebeurtenis aan: indefinido.", wEn:"One day announces an event: preterite."},
+  {es:"de repente",      s:"g", w:"Ineens: precies \u00e9\u00e9n moment, dus indefinido.", wEn:"Suddenly: exactly one moment, so preterite."},
+  {es:"el a\u00f1o pasado",  s:"g", w:"Vorig jaar is een afgesloten periode: indefinido.", wEn:"Last year is a closed period: preterite."}
+];
+/* Een sorteervraag met twee bakjes is gewoon een meerkeuzevraag met twee opties, dus de wizard kan
+   dit al. Geen tweede vraagrenderer, geen tweede plek waar hetzelfde fout kan gaan.
+   De opties worden bewust niet geschud: bij sorteren horen de bakjes op hun plek te blijven staan,
+   en dat is het verschil tussen sorteren en raden. */
+function brokStapSignaal(n){
+  return {kop:"De signaalwoorden", kopEn:"The signal words",
+    brok:"indefimperf.signaal",
+    uitleg:"<p>Sommige woorden verraden welke tijd erachter komt. Ken je deze acht, dan staat in de helft van de zinnen het antwoord er gewoon bij.</p>",
+    uitlegEn:"<p>Some words give away which tense follows. Know these eight and half the time the answer is right there in the sentence.</p>",
+    vragen:geschud(BROK_SIGNAAL.slice()).slice(0, n).map(function(z){
+      return {v:z.es, vEn:z.es, o:["imperfecto","indefinido"],
+              g:(z.s === "a" ? 0 : 1), w:z.w, wEn:z.wEn};
+    })};
+}
+/* Stappen die v\u00f3\u00f3r de patroonvragen van een onderwerp komen. Alleen indefimperf heeft er nu een,
+   met opzet: eerst bewijzen dat het brokkenmodel klopt op \u00e9\u00e9n onderwerp. Klopt het, dan is het voor
+   de andere 22 data en geen code. */
+var GC_VOORSTAPPEN = {
+  indefimperf: [function(){ return brokStapSignaal(8); }]
+};
+
 var BROK_ID = "indefimperf.betekenis";
 var brokSpel = null;   // {rij:[indexen], i, goed, fout, gekozen}
 
@@ -15332,7 +15424,17 @@ function brokLees(id){
   S.brok = S.brok || {};
   return S.brok[id] || {goed:0, fout:0, beste:0, laatst:"", rondes:0};
 }
-function brokBij(id, goed, totaal){
+/* v23.107: er zijn nu twee aanroepers met een verschillend ritme. Het losse schermpje scoort per
+   ronde, de wizard per vraag. Dus twee ingangen op dezelfde pot, en persist() blijft bij de
+   aanroeper: gwKies() doet dat toch al na elk antwoord. */
+function brokBij(id, goed){
+  S.brok = S.brok || {};
+  var st = brokLees(id);
+  if(goed) st.goed++; else st.fout++;
+  st.laatst = today();
+  S.brok[id] = st;
+}
+function brokRonde(id, goed, totaal){
   S.brok = S.brok || {};
   var st = brokLees(id);
   st.goed += goed; st.fout += (totaal - goed);
@@ -15358,7 +15460,7 @@ function brokAntwoord(keuze){
 function brokVolgende(){
   if(!brokSpel) return;
   brokSpel.i++; brokSpel.gekozen = null;
-  if(brokSpel.i >= brokSpel.rij.length) brokBij(BROK_ID, brokSpel.goed, brokSpel.rij.length);
+  if(brokSpel.i >= brokSpel.rij.length) brokRonde(BROK_ID, brokSpel.goed, brokSpel.rij.length);
   renderFunBrok();
 }
 /* De uitslag is het punt van dit scherm. Niet "8/12" maar wat 8/12 betekent voor wat je morgen
@@ -26275,7 +26377,7 @@ var GC_CONCEPTEN = [
   ]},
 
  {id:"indefimperf", icon:"🎬", naam:"Indefinido of imperfecto", naamEn:"Preterite or imperfect",
-  corr:[], spiek:{a2:[14,15,16,26]}, wizard:null,
+  corr:[], spiek:{a2:[14,15,16,26]}, wizard:null, drill:"imperfecto",
   uitleg:"<p>Allebei verleden tijd, maar ze doen iets anders in een verhaal. Denk aan een film.</p>"+
     "<p><b>indefinido</b> is wat er GEBEURT: de gebeurtenissen die het verhaal vooruit duwen, een voor een, af. <i>Llegué, abrí la puerta y vi a Marta.</i></p>"+
     "<p><b>imperfecto</b> is het DECOR: hoe het eruitzag, hoe laat het was, hoe je je voelde, en wat je vroeger altijd deed. <i>Era tarde, llovía y estaba cansado.</i></p>"+
@@ -27593,6 +27695,11 @@ function gcBouw(id){
   var pitchEn = st.fout ? "You slipped up here " + st.fout + (st.fout === 1 ? " time" : " times") + ". Fresh examples."
                         : "Four fresh examples, and the rule behind them.";
   var stappen = [];
+  /* v23.107: de brokken staan vooraan. Een onderwerp is niet één ding maar een stapel dingen, en
+     de patroonvragen hieronder zijn de laatste ervan, niet de eerste. */
+  (GC_VOORSTAPPEN[c.id] || []).forEach(function(maak){
+    try { stappen.push(maak()); } catch(e){ /* een kapotte voorstap mag het onderwerp niet slopen */ }
+  });
   // stap 1: meteen een voorbeeld. Eén regel kader, zodat niemand denkt dat hij iets gemist heeft.
   if(vb.length){
     stappen.push({kop:GC_STAP_TXT.nl.k1, kopEn:GC_STAP_TXT.en.k1,
@@ -27610,7 +27717,9 @@ function gcBouw(id){
     diep:c.uitleg, diepEn:c.uitlegEn,
     diepKop:GC_STAP_TXT.nl.d, diepKopEn:GC_STAP_TXT.en.d,
     vragen:[begrip]});
-  return {id:"concept-" + c.id, concept:c.id, icon:c.icon,
+  // v23.107: drill gaat mee, zodat een concept net als een handgeschreven wizard een knop naar de
+  // vormdrill kan hebben. Zonder dit veld bestond die doorsteek alleen op papier.
+  return {id:"concept-" + c.id, concept:c.id, icon:c.icon, drill:c.drill || null,
     titel:c.naam, titelEn:c.naamEn, pitch:pitch, pitchEn:pitchEn,
     stappen:stappen};
 }
@@ -29303,7 +29412,15 @@ function gwKies(i){
     // iets mee kan doen; trackPoging(true) zit al in logError()
     logError(gwSess.id + "-" + gwSess.stap + "-" + gwSess.vraag, "gramwiz", gwSess.id, gwOpties(q)[i]);
   }
-  if(o.concept) gramBij(o.concept, i === q.g);
+  /* v23.107, en dit is de kern. Hier stond onvoorwaardelijk gramBij(o.concept), dus elke vraag van
+     elke stap van elk onderwerp ging naar één doos per onderwerp: 23 dozen voor 122 patronen.
+     "indefimperf doos 2" kan daardoor vier verschillende dingen betekenen (de regel niet snappen,
+     de vormen missen, alleen de onregelmatige missen, of het niet tegelijk kunnen), en met één
+     cijfer houd je die niet uit elkaar.
+     Draagt een stap een brok-id, dan gaat het antwoord daarheen. Anders naar het onderwerp, zoals
+     altijd, zodat de bestaande boekhouding niet verandert. */
+  if(stap.brok) brokBij(stap.brok, i === q.g);
+  else if(o.concept) gramBij(o.concept, i === q.g);
   persist();
   renderCheat();
 }
@@ -29629,8 +29746,11 @@ function wireGramWiz(el){
     // bijbehorende fase nog op slot, dan gaat hij hier open. De app heeft je zelf op deze knop laten
     // klikken; je dan tegen een slotje aan laten lopen is de gebruiker straffen voor het volgen van
     // je eigen advies.
+    // v23.107: imperfecto erbij. Zonder deze regel belooft de knop een tijd en land je in het
+    // presente, en dat is precies waarvoor deze doorsteek ooit gebouwd is.
     var fid = drill === "indefinido" ? "indef" : (drill === "perfecto" ? "perfecto" :
-              (drill === "subjuntivo" ? "subjuntivo" : "presente"));
+              (drill === "subjuntivo" ? "subjuntivo" :
+              (drill === "imperfecto" ? "imperf" : "presente")));
     var fi = conjFaseIdx(fid);
     if(fi > conjOpenMax()) S.conjOpen = fi;
     S.conjFase = fid;

@@ -50,8 +50,10 @@ const { chromium } = require('playwright');
     regelmatig: ['hablar', 'comer', 'vivir'].map((i) => conjRegelmatig(VERBOS.filter((v) => v.inf === i)[0])),
     onregelmatig: ['ser', 'tener', 'poder'].map((i) => conjRegelmatig(VERBOS.filter((v) => v.inf === i)[0]))
   }));
-  ok(JSON.stringify(ladder.ids) === JSON.stringify(['ar', 'er', 'ir', 'seis', 'onreg', 'presente', 'indefreg', 'indef', 'perfecto', 'subjuntivo', 'mix']),
-    'de elf fasen staan in oplopende zwaarte: ' + ladder.ids.join(' → '));
+  // v23.107: imperfreg en imperf erbij, tussen het indefinido en het perfecto. Dat is de volgorde
+  // van AULA 2 (indefinido in hoofdstuk 2, imperfecto in hoofdstuk 9).
+  ok(JSON.stringify(ladder.ids) === JSON.stringify(['ar', 'er', 'ir', 'seis', 'onreg', 'presente', 'indefreg', 'indef', 'imperfreg', 'imperf', 'perfecto', 'subjuntivo', 'mix']),
+    'de fasen staan in oplopende zwaarte: ' + ladder.ids.join(' → '));
   ok(ladder.tijden.slice(0, 6).every((t) => t === 'presente'),
     'de eerste zes fasen blijven allemaal in het presente — eerst de personen, dan pas de tijden');
   ok(JSON.stringify(ladder.eersteDrie) === '[3,3,3]', 'fase 1 t/m 3 drillen alleen yo, tú en él/ella');
@@ -211,11 +213,14 @@ const { chromium } = require('playwright');
     };
   });
   ok(scherm.kaart === true, 'de fasekaart staat boven de opgave');
-  ok(/2\/11/.test(scherm.kop), 'de kop zegt waar je staat op de ladder ("' + scherm.kop.trim() + '")');
+  // v23.107: afgeleid uit CONJ_FASES in plaats van een 11 die je met de hand moet bijhouden. De
+  // suite hoort te breken als de ladder van gedrag verandert, niet als er een fase bij komt.
+  const N = ladder.ids.length;
+  ok(new RegExp('2\\/' + N).test(scherm.kop), 'de kop zegt waar je staat op de ladder ("' + scherm.kop.trim() + '")');
   ok(scherm.uitleg.length > 15, 'en eronder staat in één zin wat deze fase inhoudt');
   ok(scherm.meter === true && /4/.test(scherm.doel), 'een meter laat zien hoe ver je van de volgende fase af bent ("' + scherm.doel.trim() + '")');
   ok(JSON.stringify(scherm.open) === '["ar","er"]', 'alleen de vrijgespeelde fasen zijn aanklikbaar (' + (scherm.open || []).join(',') + ')');
-  ok(scherm.sloten === 9, 'de negen fasen erboven staan zichtbaar op slot — je ziet waar je heen gaat (' + scherm.sloten + ')');
+  ok(scherm.sloten === N - 2, 'de fasen erboven staan zichtbaar op slot, je ziet waar je heen gaat (' + scherm.sloten + ' van ' + (N - 2) + ')');
   ok(scherm.actief === 'er', 'de fase waar je staat is gemarkeerd');
   ok(scherm.tijdrij === false, 'de losse tijdknoppenrij bestaat niet meer: de fase ís de tijdkeuze');
 
@@ -258,7 +263,7 @@ const { chromium } = require('playwright');
   ok(echt.open === 1 && echt.fase === 'er', 'het tiende antwoord doet de sleutel vallen, gewoon door te oefenen (open=' + echt.open + ')');
   ok(echt.feedback.indexOf('🔓') !== -1, 'en je ziet het meteen bij je antwoord staan, niet pas aan het eind van de ronde');
   ok(echt.tapas === 1, 'de viering is een tapa voor Chispa, precies één (' + echt.tapas + ')');
-  ok(/2\/11/.test(echt.kop), 'de fasekaart loopt meteen mee naar de nieuwe fase ("' + echt.kop.trim() + '")');
+  ok(new RegExp('2\\/' + N).test(echt.kop), 'de fasekaart loopt meteen mee naar de nieuwe fase ("' + echt.kop.trim() + '")');
 
   // ---------- 9. de vertaling op de kaart ----------
   const gloss = await page.evaluate(() => ({

@@ -300,8 +300,14 @@ const { chromium } = require('playwright');
     const stuk = [];
     GC_CONCEPTEN.forEach((c) => {
       const o = gcVernieuw('concept-' + c.id);
-      const vr = (o ? o.stappen.reduce((a2, st) => a2.concat(st.vragen), []) : []);
-      const heel = vr.length === 5 && vr.every((q) =>
+      /* v23.107: een onderwerp kan sinds deze versie voorstappen hebben (brokken), en die dragen
+         een eigen id en een eigen pot. Die tellen niet mee in de vijf van de patroonvragen, maar
+         ze worden hieronder wél op dezelfde eisen gecontroleerd: een kapotte brokvraag is net zo
+         erg als een kapotte patroonvraag. */
+      const stappen = o ? o.stappen : [];
+      const vr = stappen.filter((st) => !st.brok).reduce((a2, st) => a2.concat(st.vragen), []);
+      const brokVr = stappen.filter((st) => st.brok).reduce((a2, st) => a2.concat(st.vragen), []);
+      const heel = vr.length === 5 && vr.concat(brokVr).every((q) =>
         q.o && q.o.length >= 2 && q.g >= 0 && q.g < q.o.length && q.o[q.g] && q.w &&
         q.o.filter((x, i, a) => a.indexOf(x) === i).length === q.o.length);
       const uitleg = !!(c.uitleg && c.uitlegEn && c.naam && c.naamEn && c.icon);
