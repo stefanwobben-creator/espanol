@@ -143,7 +143,11 @@ function aiStand() {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  /* Render eist SSL, een testdatabase op je eigen machine spreekt het niet. PGSSL=uit zet het af.
+     Die stand kan in productie niet per ongeluk aangaan: daar bestaat de variabele niet, en de
+     standaard hieronder is dus altijd mét SSL. Toegevoegd 15 aug omdat de keten-query anders
+     nergens te proberen was voordat hij live stond. */
+  ssl: process.env.PGSSL === "uit" ? false : { rejectUnauthorized: false },
   max: 5,
 });
 
@@ -203,7 +207,45 @@ async function init() {
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
+    /* 15 aug — WIE HEEFT WIE BINNENGEHAALD.
+       Twee kolommen, en verder niets. Alles wat je over een ketting wil weten (hoeveel generaties,
+       hoe groot elke generatie, wie er niets doorgaf) volgt hieruit; zie /api/admin/keten.
+
+       Waarom een aparte rcode en niet gewoon de profielcode in de link: "code" is de sync-code, en
+       GET /api/state/:code geeft daarmee de hele state weg. Een code die je in een WhatsApp-groep
+       plakt mag dat nooit kunnen. Deze rcode kan precies één ding, namelijk "schrijf mijn naam bij
+       de aanmelding van iemand anders", en dat is de goedkoopste vorm van fraude die er bestaat.
+
+       generatie staat er expres NIET bij. Dat is af te leiden uit verwijzer en dus af te leiden ná
+       de meting; een opgeslagen generatienummer kan verkeerd blijven staan als er later iets
+       verandert, en dan geloof je een getal dat niemand meer nakijkt. */
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS rcode     text;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS verwijzer text;
+    CREATE UNIQUE INDEX IF NOT EXISTS profiles_rcode ON profiles (rcode) WHERE rcode IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS profiles_verwijzer ON profiles (verwijzer);
   `);
+}
+
+/* Vastleggen wie wie heeft binnengehaald. Bewust een eigen functie met een eigen try om de sync
+   heen: dit is boekhouding, en boekhouding mag nooit een profielsync laten mislukken.
+   Allebei de updates zijn eenmalig (`IS NULL` in de WHERE), zodat een tweede sync met andere
+   waarden niets meer verandert. Wie eenmaal aan iemand hangt, blijft daar hangen. */
+const CODE_OK = /^[a-z0-9]{6,24}$/;
+async function verwijzingVast(code, rcode, via) {
+  const schoon = (s) => (typeof s === "string" ? s.trim().toLowerCase().slice(0, 24) : "");
+  const mijn = schoon(rcode), erlangs = schoon(via);
+  if (CODE_OK.test(mijn)) {
+    await pool.query(
+      "UPDATE profiles SET rcode=$2 WHERE code=$1 AND rcode IS NULL " +
+      "AND NOT EXISTS (SELECT 1 FROM profiles p2 WHERE p2.rcode=$2)", [code, mijn]);
+  }
+  if (CODE_OK.test(erlangs)) {
+    // w.code <> $1: je kunt jezelf niet binnenhalen, ook niet door je eigen link te openen
+    await pool.query(
+      "UPDATE profiles SET verwijzer = w.code FROM profiles w " +
+      "WHERE profiles.code=$1 AND profiles.verwijzer IS NULL AND w.rcode=$2 AND w.code <> $1",
+      [code, erlangs]);
+  }
 }
 
 /* ---- Palabra Duel ---- */
@@ -338,7 +380,7 @@ app.get("/health", (_req, res) => ok(res, { tijd: new Date().toISOString(), ai: 
 app.post("/api/sync", async (req, res) => {
   const slot = gewoonSlot(req, syncTeller, SYNC_PER_UUR, SYNC_PER_DAG);
   if (slot) return badReden(res, slot.code, slot.tekst, slot.reden);
-  const { code, name, track, state } = req.body || {};
+  const { code, name, track, state, rcode, via } = req.body || {};
   if (!code || typeof code !== "string" || code.length < 8) return bad(res, 400, "ongeldige code");
   if (!name || !track || typeof state !== "object") return bad(res, 400, "name/track/state verplicht");
   try {
@@ -349,6 +391,9 @@ app.post("/api/sync", async (req, res) => {
        RETURNING updated_at`,
       [code, String(name).slice(0, 60), String(track).slice(0, 20), state]
     );
+    // 15 aug: na de upsert en in een eigen try. Zie verwijzingVast(): een fout in de boekhouding
+    // mag de sync zelf nooit rood maken, want dan verliest iemand zijn voortgang om een cijfer.
+    try { await verwijzingVast(code, rcode, via); } catch (e) { console.error("verwijzing:", e.message); }
     ok(res, { updated_at: r.rows[0].updated_at });
   } catch (e) {
     console.error(e);
@@ -854,6 +899,84 @@ app.get("/api/admin/terugkomst", async (req, res) => {
         pctWeek: tot.starters ? Math.round((tot.week / tot.starters) * 100) : 0
       })
     });
+  } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
+});
+
+/* GET /api/admin/keten?key=ADMIN_KEY — hoe ver draagt een uitnodiging?
+   15 aug. Bij een uitnodigingsketting is er precies één getal dat telt: hoeveel mensen levert een
+   generatie op in de volgende. Dat heet k, en het is geen mening:
+
+       k = starters in generatie n+1 gedeeld door starters in generatie n
+
+   k onder de 1 betekent dat elke generatie kleiner is en de ketting uitdooft. Dat is niet erg en
+   het is het normale geval: bij k=0,4 leveren 100 mensen van LinkedIn er in totaal ongeveer 167 op,
+   en dat is twee derde gratis groei. k boven de 1 is oneindige groei en dat haalt vrijwel niemand.
+
+   Waarom per generatie en niet in totaal: een totaal kan er goed uitzien terwijl generatie 2 nul is.
+   Dan heb je geen ketting maar één goede LinkedIn-post, en dat is een heel ander bedrijf.
+
+   Generatie 0 is iedereen die op eigen kracht binnenkwam. De diepte is afgekapt op 20; een kring in
+   de gegevens (A haalde B, B haalde A) zou een recursieve query anders eeuwig laten lopen. */
+app.get("/api/admin/keten", async (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) return bad(res, 403, "geen toegang");
+  try {
+    const r = await pool.query(`
+      WITH RECURSIVE kern AS (
+        SELECT code, verwijzer,
+               (SELECT min(k) FROM jsonb_object_keys(state->'xp') k)::date          AS dag1,
+               (SELECT array_agg(k::date) FROM jsonb_object_keys(state->'xp') k)    AS lijst,
+               COALESCE(state->>'bron', 'onbekend')                                 AS bron
+          FROM profiles
+         WHERE jsonb_typeof(state->'xp') = 'object'
+           AND (SELECT count(*) FROM jsonb_object_keys(state->'xp')) > 0
+      ),
+      wortel AS (
+        SELECT code, 0 AS gen FROM kern k
+         WHERE k.verwijzer IS NULL
+            OR NOT EXISTS (SELECT 1 FROM kern o WHERE o.code = k.verwijzer)
+      ),
+      boom AS (
+        SELECT code, gen FROM wortel
+        UNION ALL
+        SELECT k.code, b.gen + 1 FROM kern k JOIN boom b ON k.verwijzer = b.code WHERE b.gen < 20
+      )
+      SELECT b.gen,
+             count(*)                                                         AS starters,
+             count(*) FILTER (WHERE k.dag1 + 1 = ANY(k.lijst))                AS terug_dag2,
+             count(*) FILTER (WHERE EXISTS (
+               SELECT 1 FROM unnest(k.lijst) x WHERE x > k.dag1 AND x <= k.dag1 + 7
+             ))                                                               AS terug_week,
+             count(*) FILTER (WHERE EXISTS (
+               SELECT 1 FROM kern c WHERE c.verwijzer = k.code
+             ))                                                               AS bracht_iemand
+        FROM boom b JOIN kern k ON k.code = b.code
+       GROUP BY b.gen
+       ORDER BY b.gen
+    `);
+    // Wezen: iemand hangt aan een verwijzer die zelf nooit iets heeft gedaan. Die staan hierboven
+    // als generatie 0 en dat is te gunstig, dus ze worden apart geteld en apart gemeld.
+    const w = await pool.query(`
+      SELECT count(*) AS n FROM profiles p
+       WHERE p.verwijzer IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM profiles o
+            WHERE o.code = p.verwijzer
+              AND jsonb_typeof(o.state->'xp') = 'object'
+              AND (SELECT count(*) FROM jsonb_object_keys(o.state->'xp')) > 0)`);
+    const rijen = r.rows.map((x) => ({
+      generatie: Number(x.gen), starters: Number(x.starters),
+      terugDag2: Number(x.terug_dag2), terugWeek: Number(x.terug_week),
+      brachtIemand: Number(x.bracht_iemand),
+      pctDag2: Number(x.starters) ? Math.round((Number(x.terug_dag2) / Number(x.starters)) * 100) : 0,
+      pctWeek: Number(x.starters) ? Math.round((Number(x.terug_week) / Number(x.starters)) * 100) : 0
+    }));
+    // k van generatie n staat OP de rij van generatie n: zoveel leverde deze generatie op.
+    rijen.forEach((x, i) => {
+      const volgende = rijen[i + 1];
+      x.k = volgende && x.starters ? Math.round((volgende.starters / x.starters) * 100) / 100 : null;
+    });
+    ok(res, { perGeneratie: rijen, wezen: Number(w.rows[0].n),
+              totaal: rijen.reduce((a, x) => a + x.starters, 0) });
   } catch (e) { console.error(e); bad(res, 500, "database-fout"); }
 });
 

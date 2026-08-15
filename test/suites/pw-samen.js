@@ -185,14 +185,23 @@ const { chromium } = require('playwright');
       url: gedeeld[0] ? gedeeld[0].url : '',
       tekst: gedeeld[0] ? gedeeld[0].text : '',
       tapas: S.tapas,
-      gemarkeerd: !!S.samen.gedeeld
+      gemarkeerd: !!S.samen.gedeeld,
+      synccode: (activeProfile() || {}).code   // v23.105: mag niet in een deelbare link staan
     };
   });
   ok(eenTik.nieuw === 1, 'één tik maakt precies één groep aan (' + eenTik.nieuw + ')');
   ok(/PwSamen/.test(eenTik.naam || ''), 'met je eigen naam erin ("' + eenTik.naam + '")');
   ok(eenTik.groepen === 1, 'en die groep wordt lokaal bewaard');
   ok(eenTik.gedeeld === 1, 'daarna gaat het deelvenster van het toestel open');
-  ok(/\?groep=gtest99$/.test(eenTik.url), 'met de uitnodigingslink erin ("' + eenTik.url + '")');
+  /* v23.105: de link draagt sinds vandaag een afzender mee (&v=). Zonder afzender weet de app wel
+     in welke groep iemand terechtkomt maar niet wie hem stuurde, en dan is een tweede generatie
+     niet van een eerste te onderscheiden. Zie pw-herkomst.js voor de meting zelf.
+     Twee eisen, en de tweede is de belangrijkste: de groepscode klopt nog, én de afzender is niet
+     je sync-code. Met een sync-code geeft GET /api/state/:code je hele voortgang weg, en dit is een
+     link die in een WhatsApp-groep belandt. */
+  ok(/\?groep=gtest99&v=[a-z0-9]{6,}$/.test(eenTik.url), 'met de uitnodigingslink erin ("' + eenTik.url + '")');
+  ok(!!eenTik.synccode && eenTik.url.indexOf(eenTik.synccode) === -1,
+    'en je sync-code staat er níét in ("' + eenTik.synccode + '")');
   ok(/PwSamen/.test(eenTik.tekst) && !/\?groep=/.test(eenTik.tekst), 'de tekst noemt je naam en herhaalt de link niet');
   // v19.58: de beloning is omgedraaid. Betalen voor het versturen beloont de handeling die je
   // niet wilt (linkjes rondstrooien); betalen voor de aankomst beloont wat je wél wilt.
@@ -261,7 +270,9 @@ const { chromium } = require('playwright');
       isFn: typeof duelDeel === 'function'
     };
   });
-  ok(duel.link === 'https://vamos.stefanwobben.nl/?duel=d7x', 'duelLink() maakt een echte uitnodigingslink ("' + duel.link + '")');
+  // v23.105: ook hier een afzender, om dezelfde reden als hierboven.
+  ok(/^https:\/\/vamos\.stefanwobben\.nl\/\?duel=d7x&v=[a-z0-9]{6,}$/.test(duel.link),
+    'duelLink() maakt een echte uitnodigingslink ("' + duel.link + '")');
   ok(duel.isFn, 'en duelDeel() bestaat om hem te versturen');
 
   // --- 10. Zonder navigator.share valt hij terug op het klembord ---

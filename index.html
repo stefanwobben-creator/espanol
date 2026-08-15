@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.104";
+var APP_VERSIE = "v23.105";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6186,7 +6186,10 @@ function sweepBewaar(uit){
 
 function persist(){
   // v23.86: één keer vastleggen en daarna met rust laten. Wie hem al heeft, houdt hem.
-  if(S && !S.bron){ try{ S.bron = bronNu(); }catch(e){} } mijlpaalCheck(); oogstBij(); store.save(S); scheduleSync(); }
+  // v23.105: bronVast() in plaats van bronNu(). Die eerste onthoudt de herkomst van je eerste
+  // bezoek; opnieuw meten levert hier "direct" op voor iedereen die via een uitnodiging binnenkwam,
+  // want de zoekreeks is dan al van de adresbalk geveegd.
+  if(S && !S.bron){ try{ S.bron = bronVast(); }catch(e){} } mijlpaalCheck(); oogstBij(); store.save(S); scheduleSync(); }
 
 /* ================= SERVER-SYNC ================= */
 var API = "https://espanol-qbm8.onrender.com";
@@ -6219,10 +6222,19 @@ function scheduleSync(){
   if(syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(syncUp, 4000);
 }
+/* v23.105: je eigen verwijscode. Los van je sync-code, en dat is de hele reden dat hij bestaat:
+   met een sync-code geeft GET /api/state/:code je hele voortgang weg, en dit is een code die je in
+   een WhatsApp-groep plakt. Deze kan precies één ding, namelijk "ik heb deze persoon binnengehaald".
+   Client-side gemaakt, net als de sync-code zelf; de server neemt hem aan als hij nog vrij is. */
+function mijnVerwijsCode(){
+  if(!S.rcode){ S.rcode = randCode(); persist(); }
+  return S.rcode;
+}
 function syncUp(){
   var p = activeProfile();
   if(!p) return;
-  api("/api/sync", "POST", {code: ensureCode(p), name: p.name, track: p.track, state: S})
+  api("/api/sync", "POST", {code: ensureCode(p), name: p.name, track: p.track, state: S,
+                            rcode: mijnVerwijsCode(), via: viaNu()})
     .then(function(res){ if(res && res.ok){ lastSync = res.updated_at; var el = document.getElementById("syncStatus"); if(el) el.textContent = ct("Laatste sync: zojuist ✓","Last sync: just now ✓"); } });
 }
 function mergeServerGroepen(res){
@@ -24736,8 +24748,13 @@ var pendingBeheer = false; // v19.92: de muziekbeheerrol, pas toepassen als S ge
    de link kun je het zelf benoemen, zodat een appje en een mailtje ook uit elkaar te houden zijn. */
 function bronNu(){
   try{
-    var m = (location.search || "").match(/[?&]van=([a-z0-9_-]{1,16})/i);
+    var z = location.search || "";
+    var m = z.match(/[?&]van=([a-z0-9_-]{1,16})/i);
     if(m) return m[1].toLowerCase();
+    /* v23.105: een uitnodigingslink is een eigen herkomst en niet "direct". Een klik uit een
+       tijdlijn is nieuwsgierigheid, een link die iemand je persoonlijk stuurt is een afspraak, en
+       die twee horen in terugkomst.sh nooit op één hoop. */
+    if(/[?&](groep|duel|v)=/i.test(z)) return "uitnodiging";
     var r = document.referrer || "";
     if(!r) return "direct";
     var h = r.split("/")[2] || "";
@@ -24746,12 +24763,61 @@ function bronNu(){
     return h.slice(0, 40);
   }catch(e){ return "direct"; }
 }
+/* v23.105: hier zat de fout, en het was een volgorde. Het blok hieronder veegt de zoekreeks van de
+   adresbalk zodra het een uitnodigingslink ziet, en dat gebeurt tijdens het inlezen van dit script.
+   bronNu() draaide pas bij de eerste persist(), en keek dan naar een location.search die al leeg
+   was. Nagemeten: ?groep=g1 leverde "direct" op, en ?groep=g1&van=linkedin ook.
+
+   Twee dingen die ik hier eerst fout deed, allebei nagemeten in plaats van beredeneerd:
+
+   1. Ik zette de herkomst in een `var` hierboven en las die in persist(). Dat werkt niet: persist()
+      draait tijdens het laden al een keer vóór deze regel, en dan is die var nog undefined door
+      hoisting. Dit is dezelfde val als de weekkaart van v23.95. Daarom nu een functie: een
+      functiedeclaratie hoist compleet, dus persist() kan hem aanroepen wat de volgorde ook is.
+   2. Ik bewaarde niets. Tussen "de link openen" en "een profiel hebben" zit van alles: rondkijken,
+      de tab sluiten, terugkomen, herladen. En na het vegen hierboven staat er een schone adresbalk,
+      dus bij een herlaadbeurt is de herkomst weg. Nagemeten: "uitnodiging" werd alsnog "direct".
+
+   Alleen een echte herkomst wordt bewaard. "direct" is precies wat je ná zo'n herlaadbeurt meet, en
+   dat mag het eerste bezoek niet overschrijven.
+
+   Wat hier bewust niet gebeurt: de sleutel opruimen zodra hij bij een profiel staat. Ik heb dat
+   geprobeerd en het brak precies het geval waarvoor het bedoeld was, want persist() draait ook als
+   er nog helemaal geen profiel is. Het gevolg van laten staan: begint iemand op dezelfde telefoon
+   later een tweede profiel, dan erft dat dezelfde herkomst. Dat is een kleine onnauwkeurigheid en
+   die is het opruimen niet waard. */
+function bronVast(){
+  var sleutel = "vamos-bron-v1";   // met opzet hier en niet in een var erboven: zie punt 1
+  try{ var b = localStorage.getItem(sleutel); if(b) return b; }catch(e){}
+  var nu = "direct";
+  try{ nu = bronNu(); }catch(e){}
+  if(nu && nu !== "direct"){ try{ localStorage.setItem(sleutel, nu); }catch(e){} }
+  return nu;
+}
+/* En hier meteen één keer aanroepen, vóór het vegen hieronder. Zonder deze regel wordt de herkomst
+   pas vastgelegd bij de eerste persist(), en die komt er niet op het eerste scherm: nagemeten, wie
+   een uitnodigingslink opent en rondkijkt zonder zich aan te melden slaat niets op, en na een
+   herlaadbeurt is de link niet meer terug te vinden. */
+try{ bronVast(); }catch(e){}
+/* De verwijscode waarmee je hier binnenkwam: wie heeft je binnengehaald. Zelfde verhaal, zelfde
+   twee redenen: bewaren omdat aanmelden later kan gebeuren, en een functie omdat syncUp() eerder
+   kan draaien dan de regel die pendingVia vult. */
+var pendingVia = null;
+function viaNu(){
+  if(pendingVia) return pendingVia;
+  try{ return localStorage.getItem("vamos-via-v1") || null; }catch(e){ return null; }
+}
 try{
   if(typeof location !== "undefined" && location.search){
     var gm = location.search.match(/[?&]groep=([a-z0-9]+)/i);
     if(gm) pendingGroep = gm[1].toLowerCase();
     var dm = location.search.match(/[?&]duel=([a-z0-9]+)/i);
     if(dm) pendingDuel = dm[1].toLowerCase();
+    var vm = location.search.match(/[?&]v=([a-z0-9]{6,24})/i);
+    if(vm){
+      pendingVia = vm[1].toLowerCase();
+      try{ localStorage.setItem("vamos-via-v1", pendingVia); }catch(e){}
+    }
     // v19.92: eenmalig de muziekbeheerrol aanzetten. Staat in S, dus reist mee met je sync-code
     // naar je andere apparaten en blijft daar staan.
     var bm = location.search.match(/[?&]beheer=([a-z0-9]+)/i);
@@ -24761,7 +24827,9 @@ try{
     // in plaats van hem een profielformulier voor te schotelen dat hij niet nodig heeft.
     var mm = location.search.match(/[?&]maatje=([a-z0-9]+)/i);
     if(mm){ location.replace("maatje.html?m=" + mm[1].toLowerCase()); }
-    if((gm || dm || bm) && window.history && history.replaceState) history.replaceState(null, "", location.pathname);
+    // v23.105: vm staat er nu bij, anders blijft de verwijscode in de adresbalk staan en deelt
+    // iemand hem per ongeluk door alsof hij van hemzelf is.
+    if((gm || dm || bm || vm) && window.history && history.replaceState) history.replaceState(null, "", location.pathname);
   }
 }catch(e){}
 
@@ -24777,7 +24845,9 @@ function groepBewaar(g){
     S.groepen.push({gcode:g.gcode, naam:g.naam}); persist();
   }
 }
-function groepLink(g){ return "https://vamos.stefanwobben.nl/?groep=" + g.gcode; }
+/* v23.105: &v= erbij. Zonder afzender weet de app wel in welke groep iemand terechtkomt maar niet
+   wie hem stuurde, en dan is een tweede generatie niet van een eerste te onderscheiden. */
+function groepLink(g){ return "https://vamos.stefanwobben.nl/?groep=" + g.gcode + "&v=" + mijnVerwijsCode(); }
 
 /* ================= SAMEN LEREN: UITNODIGEN (v19.57) =================
    Stefan, 30 juli: "qua marktintroductie denk ik dat het 'nodig een vriend uit, samen leren is
@@ -25141,7 +25211,7 @@ function bindSamen(bron, opnieuw){
   bindUitnodig(bron);
   bindMaatje(bron);
 }
-function duelLink(d){ return "https://vamos.stefanwobben.nl/?duel=" + d.id; }
+function duelLink(d){ return "https://vamos.stefanwobben.nl/?duel=" + d.id + "&v=" + mijnVerwijsCode(); }
 function duelDeel(d){
   var naam = (activeProfile() || {}).name || "Iemand";
   var tekst = profLang()==="nl"
