@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.110";
+var APP_VERSIE = "v23.111";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10953,6 +10953,16 @@ function cjAdaptiefModus(v, p, t){
   var fout = S.errors["conj:"+conjErrKey(v, p, t)];
   return (fout && fout.count > 0) ? "makkelijk" : "moeilijk";
 }
+/* v23.111: "sta ik nu in meerkeuze?" voor schermdelen die geen opgave bij de hand hebben (de
+   fasekaart). Zelfde volgorde als cjHuidigeModus hieronder, met de opgave als die er is, zodat de
+   twee niet uit elkaar kunnen lopen. */
+function conjModusNu(){
+  if(S.modusKeuze && S.modusKeuze.conj) return S.modusKeuze.conj;
+  if(cjModusOverride) return cjModusOverride;
+  var c = conjIdx;
+  if(c && c.verb) return cjAdaptiefModus(c.verb, c.p, c.t || "presente");
+  return "moeilijk";
+}
 function cjHuidigeModus(v, p, t){ return (S.modusKeuze && S.modusKeuze.conj) || cjModusOverride || cjAdaptiefModus(v, p, t); }
 /* v23.110: de afleiders kwamen hiervoor uit de andere PERSONEN van hetzelfde werkwoord. Gemeten
    over alle 990 opgaven was de goede optie in 990 gevallen de enige die bij de gevraagde persoon
@@ -11081,7 +11091,15 @@ function conjFaseKaartHtml(){
          "<p class='muted' id='cjFaseDoel' style='margin:0 0 6px; font-size:0.8rem'>"+
            ct(CONJ_ONTGRENDEL_GOED+" van je laatste "+CONJ_ONTGRENDEL_N+" goed opent de volgende fase ("+vol+"/"+CONJ_ONTGRENDEL_GOED+")",
               CONJ_ONTGRENDEL_GOED+" out of your last "+CONJ_ONTGRENDEL_N+" correct opens the next phase ("+vol+"/"+CONJ_ONTGRENDEL_GOED+")")+
-         "</p>";
+         "</p>"+
+         /* v23.111: een stille regel is een valstrik. Deze zin verschijnt alleen als je op dit
+            moment in meerkeuze staat, want dan is hij van toepassing. */
+         (conjModusNu() === "makkelijk"
+           ? "<p class='muted' id='cjFaseTypen' style='margin:0 0 6px; font-size:0.78rem'>"+
+               ct("Aangeklikte antwoorden tellen niet mee voor de volgende fase. Typen wel.",
+                  "Answers you click do not count towards the next phase. Typed answers do.")+
+             "</p>"
+           : "");
   }
   h += "<div class='row' id='cjFaseRij' style='gap:5px; flex-wrap:wrap'>"+
     CONJ_FASES.map(function(x, n){
@@ -12070,8 +12088,19 @@ function checkConjugador(){
   // zelf en niet aan het einde van de ronde: Fogg's punt is dat een viering direct moet volgen op het
   // gedrag, anders koppelt je hoofd hem er niet aan. Geen toast erbij, want twee signalen tegelijk
   // voor \u00e9\u00e9n gebeurtenis leest als ruis in plaats van als feest.
-  conjLog(goedBeantwoord);
-  var nieuweFase = conjProbeerOntgrendelen();
+  /* v23.111: het plafond. Een aangeklikt antwoord telt niet mee voor de ontgrendeling.
+
+     "Geleerd" betekent in de Conjugador precies \u00e9\u00e9n ding: de volgende fase gaat open bij acht van
+     je laatste tien goed. Herkennen en produceren zijn verschillende vaardigheden die slecht naar
+     elkaar overdragen, dus klimmen op herkenning levert een ladder op waarvan de bovenste sport
+     niets waard is. De code wist dit al bij de XP hierboven ("meerkeuze telt als lichter bewijs")
+     maar niet bij de ladder, en de ladder is het enige wat er echt toe doet.
+
+     Alles behalve de ontgrendeling gaat gewoon door: feedback, XP, streak, tapa, en een fout gaat
+     het foutenboek in zodat de herhaling hem terugbrengt. */
+  var teltVoorLadder = modus !== "makkelijk";
+  if(teltVoorLadder) conjLog(goedBeantwoord);
+  var nieuweFase = teltVoorLadder ? conjProbeerOntgrendelen() : null;
   if(nieuweFase){
     S.tapas = (S.tapas||0) + 1;
     html += "<div class='feedback ok' style='margin-top:4px'>\ud83d\udd13 "+
