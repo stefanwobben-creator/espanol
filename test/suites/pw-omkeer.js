@@ -92,7 +92,7 @@ async function ronde(page, keuze) {
       totaal: p.totaal,
       dubbelzinnig: dubbelzinnig.length,
       voorbeeldFout: dubbelzinnig.slice(0, 2).map((x) => x.vorm + ' (' + x.v.inf + ', ' + x.t + ')'),
-      tijden: omkeerTijden(),
+      tijden: conjOpenTijden(),
       // elk item moet een vorm hebben die ook echt uit conjVorm komt: geen losse tekst in de code
       klopt: p.items.every((x) => x.vorm === conjVorm(x.v, x.p, x.t)),
       personen: Array.from(new Set(p.items.map((x) => x.p))).sort()

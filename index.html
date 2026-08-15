@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.109";
+var APP_VERSIE = "v23.110";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10954,12 +10954,46 @@ function cjAdaptiefModus(v, p, t){
   return (fout && fout.count > 0) ? "makkelijk" : "moeilijk";
 }
 function cjHuidigeModus(v, p, t){ return (S.modusKeuze && S.modusKeuze.conj) || cjModusOverride || cjAdaptiefModus(v, p, t); }
+/* v23.110: de afleiders kwamen hiervoor uit de andere PERSONEN van hetzelfde werkwoord. Gemeten
+   over alle 990 opgaven was de goede optie in 990 gevallen de enige die bij de gevraagde persoon
+   kon horen: je zocht de uitgang die bij het voornaamwoord in de vraag paste en je was klaar,
+   zonder ooit naar de stam of de tijd te kijken. Bovendien had de oude versie 81 opgaven met
+   minder dan vier knoppen, want hij filterde dubbelen weg en vulde niet aan.
+
+   Nieuwe regel: elke optie is een vorm van de GEVRAAGDE persoon. Dan draagt de persoonsuitgang
+   geen informatie meer en moet je wel naar de stam en de tijd kijken. Dat is de kern van learned
+   attention: haal de concurrerende aanwijzing weg, anders leert het brein de uitgang nooit.
+
+   Twee bronnen, in deze volgorde:
+     1. dit werkwoord, dezelfde persoon, een andere OPEN tijd   -> leert je de tijd aflezen
+     2. een ander werkwoord, dezelfde persoon, dezelfde tijd    -> leert je de stam aflezen
+
+   Er zijn 33 werkwoorden, dus bron 2 vult altijd aan tot vier. Een noodrem die alsnog een andere
+   persoon binnenlaat is daarom niet nodig, en die zou de hele regel ook weer weglekken. */
 function cjMeerkeuzeOpties(v, p, t){
-  var vormen = conjAlleVormen(v, t);
-  var correct = vormen[p];
-  var andereVormen = vormen.filter(function(vorm, i){ return i !== p && vorm !== correct; });
-  var afleiders = geschud(andereVormen).slice(0, 3);
-  return geschud([correct].concat(afleiders));
+  var correct = conjVorm(v, p, t);
+  var kaal = function(x){ return stripAcc(norm(x || "")); };
+  var correctKaal = kaal(correct);
+  var gezien = {}, afleiders = [];
+  gezien[correct] = 1;
+  function voegToe(vorm){
+    if(!vorm || gezien[vorm]) return;
+    // Een afleider die alleen in accenten verschilt mag niet: de nakijker telt een accentloos
+    // antwoord als goed, dus zo'n knop zou een tweede goede knop zijn. Zelfde vergelijking als de
+    // nakijker gebruikt, zodat de twee niet uit elkaar kunnen lopen.
+    if(kaal(vorm) === correctKaal) return;
+    gezien[vorm] = 1;
+    afleiders.push(vorm);
+  }
+  geschud(conjOpenTijden()).forEach(function(t2){
+    if(t2 === t || afleiders.length >= 2) return;
+    voegToe(conjVorm(v, p, t2));
+  });
+  geschud(VERBOS.slice()).forEach(function(v2){
+    if(v2.inf === v.inf || afleiders.length >= 3) return;
+    voegToe(conjVorm(v2, p, t));
+  });
+  return geschud([correct].concat(afleiders.slice(0, 3)));
 }
 function conjVerbPool(t){
   // v19.68: de bak werkwoorden komt uit de fase waar je staat. Fase 1 is er vier groot; dat is klein
@@ -15625,8 +15659,10 @@ var OMKEER_ID = "vorm.persoon";
 var OMKEER_LEN = 12;
 var omkeerSpel = null;
 
-/* de tijden die je open hebt staan. "mix" is geen tijd maar een fase-instelling, dus die valt af. */
-function omkeerTijden(){
+/* de tijden die je open hebt staan. "mix" is geen tijd maar een fase-instelling, dus die valt af.
+   v23.110: hernoemd van omkeerTijden. Twee schermen lezen dit nu (de omkering en de afleiders van
+   de Conjugador), dus een naam die naar één aanroeper verwijst klopt niet meer. */
+function conjOpenTijden(){
   var open = conjOpenMax(), uit = [];
   for(var i = 0; i <= open && i < CONJ_FASES.length; i++){
     var t = CONJ_FASES[i].tijd;
@@ -15643,7 +15679,7 @@ function omkeerTijden(){
    Het wordt geteld en op het eindscherm gezet, want het is precies waarom er in het imperfecto zo
    vaak wél een voornaamwoord bij staat. */
 function omkeerPool(){
-  var tijden = omkeerTijden(), pool = [], dubbel = 0, totaal = 0;
+  var tijden = conjOpenTijden(), pool = [], dubbel = 0, totaal = 0;
   tijden.forEach(function(t){
     var verbs = conjVerbPool(t);
     verbs.forEach(function(v){
