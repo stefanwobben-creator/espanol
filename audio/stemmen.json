@@ -1628,6 +1628,30 @@
       "model": "eleven_multilingual_v2",
       "hash": "9c6f8bdb4e0f1b4e",
       "tekens": 23
+    },
+    "s186": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "83931060bb68481e",
+      "tekens": 40
+    },
+    "s187": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "01c0e0c8302d2e42",
+      "tekens": 46
+    },
+    "s188": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5ada38d8d29efa81",
+      "tekens": 40
+    },
+    "s189": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "16e50a26dde391bf",
+      "tekens": 24
     }
   },
   "dialogo-a": {

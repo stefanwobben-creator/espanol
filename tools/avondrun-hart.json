@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-08-14T04:08:08.162Z",
- "gelukt": false,
+ "wanneer": "2026-08-15T02:50:13.112Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -10,22 +10,18 @@
  },
  "geleverd": {
   "zinnen": 4,
-  "toetsjes": 0,
-  "nieuweLes": 1
+  "toetsjes": 1,
+  "nieuweLes": 0
  },
- "versie": "v23.90",
+ "versie": "v23.102",
  "klachten": [
-  "s186: afgekeurd — De zin 'Suelo olvidar llevar el monedero' is grammaticaal correct maar inhoudelijk onnatuurlijk in het Spaans; niemand zegt dit zo. De natuurlijke vertaling van de Nederlandse zin is 'A menudo se me olvida llevar el monedero'.",
-  "toetsje afgekeurd (poging 1): Vraag 6: Optie 'c' (gritaron) is correct, maar de uitleg is onjuist. 'Gritar' is hier de hoofdgebeurenis (indefinido), niet de achtergrond. De uitleg suggereert dat de achtergrond ook indefinido is, wat niet klopt. Daarnaast is optie 'gritábamos' (wij schreeuwden) niet identiek aan 'todos gritaban' (zij schreeuwden), maar de zin is wel correct.",
-  "toetsje afgekeurd (poging 2): Vraag 4: De uitleg is incorrect. 'Llover in imperfecto' beschrijft de achtergrondtoestand op het moment van aankomst (imperfecto), niet indefinido. De uitleg verwijst naar indefinido terwijl de uitleg zelf over imperfecto gaat.; Vraag 6: De uitleg is incorrect. 'Sonar in indefinido' is de gebeurtenis die de scène onderbreekt (correct), maar de uitleg zegt 'indefinido is de gebeurtenis die de scène onderbreekt' terwijl het juist 'indefinido' is (preterite in de uitleg).; Vraag 7: De uitleg is onvolledig en misleidend. 'Preparar in indefinido is de gebeurtenis die de scène van de spreker onderbreekt' is incorrect. Beide activiteiten duren parallel (imperfecto voor beide) of de focus ligt op de broer (imperfecto voor beide). De uitleg suggereert dat indefinido correct is voor 'preparar', wat niet het geval is.; Vraag 7: Optie 'c' (2) is niet correct. Beide imperfecto-opties ('estudiaba, preparaba') zijn grammaticaal en contextueel juist. Er zijn twee juiste antwoorden, terwijl de vraag 'precies één juist antwoord' vereist.",
-  "s198: afgekeurd — De zin 'Hice una formación para subir el sueldo.' is grammaticaal correct, maar inhoudelijk onlogisch: niemand zegt 'hice una formación' om een opleiding te beschrijven, en 'subir el sueldo' is te informeel voor een neutrale zin. Een natuurlijkere versie zou 'He hecho un curso para aumentar mi sueldo.' zijn.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les afgekeurd, de les gaat door zonder"
+  "s187: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onnatuurlijk: 'estar listo' (klaar zijn) wordt in het Spaans zelden gebruikt voor een leraar die zijn werk afrondt; 'terminar' of 'acabar' zou natuurlijker zijn.",
+  "nieuwe les AFGEKEURD:\n - zin 1 (s190): veld \"tag\" ontbreekt\n - zin 2 (s191): veld \"tag\" ontbreekt\n - zin 3 (s192): veld \"tag\" ontbreekt\n - zin 4 (s193): veld \"tag\" ontbreekt\n - zin 5 (s194): veld \"tag\" ontbreekt\n - zin 6 (s195): veld \"tag\" ontbreekt\n - zin 7 (s196): veld \"tag\" ontbreekt\n - zin 8 (s197): veld \"tag\" ontbreekt"
  ],
- "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
+ "reden": null,
  "gegenereerd": true,
- "gepubliceerd": false,
- "status": "poort-dicht",
- "pogingen": 2,
- "afgemaakt": "2026-08-14T04:14:53.289Z"
+ "gepubliceerd": true,
+ "status": "gepubliceerd",
+ "pogingen": 1,
+ "afgemaakt": "2026-08-15T02:55:08.387Z"
 }
