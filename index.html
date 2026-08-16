@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.113";
+var APP_VERSIE = "v23.114";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2036,19 +2036,29 @@ var QUIZZES = [
 var CONJ_TIEMPOS = [
   {id:"presente",   es:"presente",
    nl:"tegenwoordige tijd (tt)",                    en:"present tense",
-   vb:"aprendo",      vbNl:"ik leer",                     vbEn:"I learn"},
+   vb:"aprendo",      vbNl:"ik leer",                     vbEn:"I learn",
+   vorm:"korte uitgang, geen accent: -o, -as/-es, -a/-e, -amos/-emos/-imos",
+   vormEn:"short ending, no accent: -o, -as/-es, -a/-e, -amos/-emos/-imos"},
   {id:"perfecto",   es:"pret\u00e9rito perfecto",
    nl:"voltooid tegenwoordige tijd (vtt)",          en:"present perfect",
-   vb:"he aprendido", vbNl:"ik heb geleerd",              vbEn:"I have learned"},
+   vb:"he aprendido", vbNl:"ik heb geleerd",              vbEn:"I have learned",
+   vorm:"twee woorden: he/has/ha/hemos/hab\u00e9is/han + -ado of -ido",
+   vormEn:"two words: he/has/ha/hemos/hab\u00e9is/han + -ado or -ido"},
   {id:"indefinido", es:"pret\u00e9rito indefinido",
    nl:"verleden tijd, afgesloten",                  en:"simple past, finished",
-   vb:"aprend\u00ed",  vbNl:"ik leerde (toen, \u00e9\u00e9n keer)",    vbEn:"I learned (once, back then)"},
+   vb:"aprend\u00ed",  vbNl:"ik leerde (toen, \u00e9\u00e9n keer)",    vbEn:"I learned (once, back then)",
+   vorm:"accent achteraan bij yo en \u00e9l: -\u00e9/-\u00ed en -\u00f3/-i\u00f3. Of een onregelmatige stam zonder accent (tuve, hice, fui)",
+   vormEn:"accent at the end for yo and \u00e9l: -\u00e9/-\u00ed and -\u00f3/-i\u00f3. Or an irregular stem with no accent (tuve, hice, fui)"},
   {id:"imperfecto", es:"pret\u00e9rito imperfecto",
    nl:"verleden tijd, achtergrond",                 en:"past continuous / used to",
-   vb:"aprend\u00eda", vbNl:"ik leerde (steeds, gewoonlijk)", vbEn:"I was learning / I used to learn"},
+   vb:"aprend\u00eda", vbNl:"ik leerde (steeds, gewoonlijk)", vbEn:"I was learning / I used to learn",
+   vorm:"altijd -aba- of -\u00eda- v\u00f3\u00f3r de uitgang. Slechts drie uitzonderingen: ser, ir, ver",
+   vormEn:"always -aba- or -\u00eda- before the ending. Only three exceptions: ser, ir, ver"},
   {id:"subjuntivo", es:"presente de subjuntivo",
    nl:"aanvoegende wijs",                           en:"present subjunctive",
-   vb:"aprenda",      vbNl:"(dat) ik leer",               vbEn:"(that) I learn"}
+   vb:"aprenda",      vbNl:"(dat) ik leer",               vbEn:"(that) I learn",
+   vorm:"de klinker is omgewisseld: -ar krijgt een e (hable), -er en -ir krijgen een a (aprenda)",
+   vormEn:"the vowel is swapped: -ar takes an e (hable), -er and -ir take an a (aprenda)"}
 ];
 function conjTiempo(t){
   for(var i=0; i<CONJ_TIEMPOS.length; i++) if(CONJ_TIEMPOS[i].id === t) return CONJ_TIEMPOS[i];
@@ -15954,11 +15964,54 @@ function tijdvormStart(){
                   dubbel:pool.dubbel, totaal:pool.totaal};
   return tijdvormSpel;
 }
+/* v23.114: "zes fout" zegt niet welke zes. Per antwoord onthouden we wat er stond en wat je koos,
+   als sleutel "getoond>gekozen". Dat is een verwarringsmatrix, en na een paar rondes wijst hij het
+   paar aan waar het werk heen moet. Zonder dit zouden we een les moeten bouwen voor een verwarring
+   die we alleen vermoeden. */
+function tijdvormVerwarBij(getoond, gekozen){
+  if(getoond === gekozen) return;
+  S.brok = S.brok || {};
+  var st = brokLees(TIJDVORM_ID);
+  st.verwar = st.verwar || {};
+  var k = getoond + ">" + gekozen;
+  st.verwar[k] = (st.verwar[k] || 0) + 1;
+  S.brok[TIJDVORM_ID] = st;
+}
+/* het paar dat het vaakst misgaat, over alle rondes heen. Geeft null als er nog niets te melden
+   is, zodat het scherm kan zwijgen in plaats van een toevalstreffer op te blazen. */
+function tijdvormTopVerwar(){
+  var st = brokLees(TIJDVORM_ID), v = st.verwar || {}, best = null;
+  for(var k in v){
+    if(!Object.prototype.hasOwnProperty.call(v, k)) continue;
+    if(!best || v[k] > best.n){
+      var d = k.split(">");
+      best = {getoond:d[0], gekozen:d[1], n:v[k]};
+    }
+  }
+  return (best && best.n >= 2) ? best : null;
+}
 function tijdvormAntwoord(t){
   if(!tijdvormSpel || tijdvormSpel.gekozen !== null) return;
   tijdvormSpel.gekozen = t;
-  if(t === tijdvormSpel.rij[tijdvormSpel.i].t) tijdvormSpel.goed++;
+  var q = tijdvormSpel.rij[tijdvormSpel.i];
+  if(t === q.t) tijdvormSpel.goed++;
+  else tijdvormVerwarBij(q.t, t);
   renderFunTijdvorm();
+}
+/* Waaraan je de twee tijden die JIJ door elkaar haalde uit elkaar houdt, aan de vorm. Niet aan de
+   betekenis: dat is een andere brok, en die zit al in "Achtergrond of gebeurtenis". Hier gaat het
+   puur om welke letters je moet zien.
+
+   De kenmerken staan per tijd in CONJ_TIEMPOS en niet als tabel met paren. Vijf tijden geven tien
+   paren, en tien met de hand geschreven regels lopen uit elkaar zodra er een zesde tijd bij komt. */
+function tijdvormVormHint(getoond, gekozen){
+  var a = conjTiempo(getoond), b = conjTiempo(gekozen);
+  if(!a || !b || !a.vorm || !b.vorm) return "";
+  return "<div class='card' style='margin-top:10px' id='tvHint'>" +
+    "<p class='muted' style='margin:0 0 6px; font-size:.85rem'><b>" +
+      ct("Hoe je deze twee uit elkaar houdt aan de vorm", "How to tell these two apart by their form") + "</b></p>" +
+    "<p style='margin:0 0 4px; font-size:.88rem'><b>" + a.es + "</b>: " + ct(a.vorm, a.vormEn) + "</p>" +
+    "<p style='margin:0; font-size:.88rem'><b>" + b.es + "</b>: " + ct(b.vorm, b.vormEn) + "</p></div>";
 }
 function tijdvormVolgende(){
   if(!tijdvormSpel) return;
@@ -16005,6 +16058,19 @@ function renderFunTijdvorm(){
       "<div class='feedback " + (tijdvormSpel.goed >= totaal - 1 ? "ok" : tijdvormSpel.goed >= totaal - 4 ? "bijna" : "fout") + "' id='tvUitslag'>" +
         tijdvormSpel.goed + " / " + totaal + "</div>" +
       "<p class='muted'>" + tijdvormUitslag(tijdvormSpel.goed, totaal) + "</p>" +
+      /* v23.114: "zes fout" is geen uitslag waar je morgen iets mee kunt. Dit wel. Pas vanaf twee
+         keer dezelfde verwisseling, want één keer is een vergissing en geen patroon. */
+      (function(){
+        var w = tijdvormTopVerwar();
+        if(!w) return "";
+        var a = conjTiempo(w.getoond), b = conjTiempo(w.gekozen);
+        if(!a || !b) return "";
+        return "<p class='muted' id='tvVerwar' style='font-size:.9rem'><b>" +
+          ct("Je struikelblok: ", "Your stumbling block: ") + "</b>" +
+          ct("je koos " + w.n + " keer <b>" + b.es + "</b> waar <b>" + a.es + "</b> stond. Daar zit je werk, niet in de tijden die je al ziet.",
+             "you picked <b>" + b.es + "</b> " + w.n + " times where <b>" + a.es + "</b> was shown. That is where your work is, not in the tenses you already see.") +
+          "</p>";
+      })() +
       /* de eerlijke vergelijking: twee keer herkennen, twaalf vragen, geen aanwijzing. De
          Conjugador ernaast leggen zou produceren tegenover herkennen zijn, en dat is geen
          vergelijking maar een verwarring. */
@@ -16061,6 +16127,9 @@ function renderFunTijdvorm(){
           (goed ? ct("Goed \u2713", "Correct \u2713")
                 : ct("Nog niet. Het is: ", "Not yet. It is: ") + "<b>" + conjTiempoNaam(q.t) + "</b>") +
         "</div>" + rijtje +
+        /* v23.114: alleen bij een fout, en alleen over de twee tijden die JIJ verwarde. Bij een
+           goed antwoord is dit ruis. */
+        (goed ? "" : tijdvormVormHint(q.t, tijdvormSpel.gekozen)) +
         "<div class='row' style='margin-top:10px'><button class='primary' id='btnTvVerder'>" +
           (tijdvormSpel.i + 1 >= totaal ? ct("Uitslag \u2192", "Result \u2192") : ct("Volgende \u2192", "Next \u2192")) + "</button></div>"
       : "<div id='tvKnoppen' style='display:flex; flex-direction:column; gap:8px; margin-top:6px'>" +

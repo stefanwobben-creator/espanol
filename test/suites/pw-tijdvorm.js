@@ -226,6 +226,82 @@ async function ronde(page, keuze) {
   ok(/10\/12/.test(met) && /5\/12/.test(met),
     'met een score staan beide er, en het is herkennen tegenover herkennen ("' + met.slice(0, 110) + '")');
 
+  // ---- 8. v23.114: de verwarring krijgt een naam ----
+  //
+  // "zes fout" zegt niet welke zes. Zonder deze telling zouden we een les moeten bouwen voor een
+  // verwarring die we alleen vermoeden. De controle hieronder is dat de matrix het JUISTE paar
+  // aanwijst en niet gewoon het eerste het beste.
+  const verwar = await page.evaluate(() => {
+    S.brok = {};
+    tijdvormStart();
+    // met opzet drie keer imperfecto kiezen waar indefinido stond, en één keer iets anders fout:
+    // de top hoort dan indefinido>imperfecto te zijn en niet die ene.
+    let gedaan = 0, andere = 0;
+    tijdvormSpel.rij.forEach((q) => {
+      if (q.t === 'indefinido' && gedaan < 3) { tijdvormVerwarBij('indefinido', 'imperfecto'); gedaan++; }
+      else if (andere < 1) { tijdvormVerwarBij('presente', 'subjuntivo'); andere++; }
+    });
+    const top = tijdvormTopVerwar();
+    return {
+      gedaan, andere, top,
+      sleutels: Object.keys((S.brok['vorm.tijd'] || {}).verwar || {}),
+      // één losse vergissing mag géén struikelblok heten
+      naEen: (function () {
+        S.brok = {};
+        tijdvormVerwarBij('presente', 'perfecto');
+        return tijdvormTopVerwar();
+      })()
+    };
+  });
+
+  console.log('\n-- de verwarringsmatrix --');
+  ok(verwar.gedaan === 3, 'de opzet kon drie keer indefinido→imperfecto noteren (nu: ' + verwar.gedaan + ')');
+  ok(verwar.sleutels.length === 2, 'twee verschillende verwisselingen genoteerd (' + verwar.sleutels.join(', ') + ')');
+  ok(verwar.top && verwar.top.getoond === 'indefinido' && verwar.top.gekozen === 'imperfecto' && verwar.top.n === 3,
+    'CONTROLE: de top wijst het juiste paar aan, niet het eerste het beste (' +
+    (verwar.top ? verwar.top.getoond + '→' + verwar.top.gekozen + ' ×' + verwar.top.n : 'geen') + ')');
+  ok(verwar.naEen === null,
+    'CONTROLE: één losse vergissing heet nog geen struikelblok (nu: ' + JSON.stringify(verwar.naEen) + ')');
+
+  // en hij komt op het eindscherm te staan
+  const eind = await page.evaluate(() => {
+    S.brok = {'vorm.tijd': {goed: 6, fout: 6, beste: 6, laatst: today(), rondes: 1,
+                            verwar: {'indefinido>imperfecto': 4}}};
+    tijdvormStart(); tijdvormSpel.i = tijdvormSpel.rij.length; tijdvormSpel.goed = 6;
+    funView = 'tijdvorm'; renderFun();
+    return (document.getElementById('tvVerwar') || {}).innerText || '';
+  });
+  ok(/indefinido/.test(eind) && /imperfecto/.test(eind) && /4/.test(eind),
+    'het eindscherm noemt het paar en hoe vaak ("' + eind.slice(0, 100) + '")');
+
+  // ---- 9. v23.114: een foute keuze krijgt uitleg over die twee tijden ----
+  const hint = await page.evaluate(() => {
+    funView = 'tijdvorm'; tijdvormSpel = null; renderFun();
+    // zet de eerste vraag op een indefinido-vorm en kies imperfecto
+    const idx = tijdvormSpel.rij.findIndex((x) => x.t === 'indefinido');
+    if (idx < 0) return null;
+    tijdvormSpel.i = idx;
+    tijdvormAntwoord('imperfecto');
+    const el = document.getElementById('tvHint');
+    const tekst = el ? el.innerText : '';
+    // en bij een GOED antwoord hoort hij er niet te staan
+    tijdvormSpel.gekozen = null;
+    tijdvormAntwoord('indefinido');
+    return { fout: tekst, goed: (document.getElementById('tvHint') || {}).innerText || '' };
+  });
+
+  console.log('\n-- uitleg bij een fout --');
+  ok(hint && /indefinido/i.test(hint.fout) && /imperfecto/i.test(hint.fout),
+    'bij een fout staat er hoe je die twee aan de VORM uit elkaar houdt');
+  ok(hint && /aba|ía/.test(hint.fout),
+    'en het gaat echt over de letters, niet over de betekenis ("' + (hint ? hint.fout.replace(/\s+/g, ' ').slice(0, 120) : '') + '")');
+  ok(hint && hint.goed === '',
+    'CONTROLE: bij een goed antwoord staat die uitleg er niet, want dan is het ruis');
+
+  // elke tijd moet een vormkenmerk hebben, anders valt de uitleg stil zodra er een tijd bij komt
+  const dekking = await page.evaluate(() => CONJ_TIEMPOS.filter((t) => !t.vorm || !t.vormEn).map((t) => t.id));
+  ok(dekking.length === 0, 'DEKKING: elke tijd heeft een vormkenmerk (mist: ' + (dekking.join(', ') || 'niets') + ')');
+
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
   await browser.close();
