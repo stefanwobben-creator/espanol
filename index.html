@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.119";
+var APP_VERSIE = "v23.118";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16161,7 +16161,7 @@ var GRAM_EIS = {
 };
 var GRAM_STAND = {
   betekenis: function(st){ return st.rondes ? (st.beste || 0) + "/12" : ""; },
-  les:       function(st){ return st.stapMax !== undefined ? ct("stap ", "step ") + ((st.stapMax || 0) + 1) + "/5" : ""; },
+  les:       function(st){ return st.stapMax !== undefined ? ct("stap ", "step ") + ((st.stapMax || 0) + 1) + "/" + LES_STAPPEN.length : ""; },
   herkennen: function(st){ return st.rondes ? ct("beste ", "best ") + (st.beste || 0) + "/12" : ""; },
   keuze:     function(st){ return st.rondes ? ct("beste ", "best ") + (st.beste || 0) + "/12" : ""; },
   hertoets:  function(st){
@@ -16342,8 +16342,39 @@ function renderFunPad(){
    en dus spreiden, niet meer blokken. De les hoort kort te zijn en terug te komen.
 
    Alles komt uit conjVorm en CONJ_TIEMPOS. Geen enkele vervoeging staat in deze code. */
-var LES_STAPPEN = ["ontmoeten", "opbouwen", "herkennen", "gat", "cel"];
+/* v23.118: de stappen droegen hun naam niet zelf. De namen stonden als twee losse arrays in de
+   rendercode en "/5" stond met de hand in twee teksten: vijf plekken die wisten hoeveel stappen er
+   zijn. Nu één. Dezelfde fout haalde pw-pad om toen de hertoets erbij kwam. */
+var LES_STAPPEN = [
+  {id:"ontmoeten", nl:"ontmoeten",  en:"meet it"},
+  {id:"opbouwen",  nl:"opbouwen",   en:"build it"},
+  {id:"herkennen", nl:"herkennen",  en:"recognise"},
+  {id:"gat",       nl:"\u00e9\u00e9n gat", en:"one gap"},
+  {id:"cel",       nl:"losse cel",  en:"single cell"},
+  /* v23.118: het bewijs. Wie alleen hablar kan, kent een woord en geen patroon. */
+  {id:"overdracht", nl:"nieuwe werkwoorden", en:"new verbs"}
+];
 var lesSpel = null;
+
+/* Volgt dit werkwoord het regelmatige patroon van zijn eigen groep IN DEZE TIJD? conjRegelmatig()
+   hiernaast kijkt alleen naar het presente; voor de overdrachtsstap moet het per tijd. Gemeten
+   verhoudingen: imperfecto 30 regelmatig om 3, indefinido 13 om 20, presente 11 om 22. */
+var LES_MODEL = {ar:"hablar", er:"comer", ir:"vivir"};
+function conjRegelmatigIn(v, t){
+  var m = VERBOS.filter(function(w){ return w.inf === LES_MODEL[conjGroep(v)]; })[0];
+  if(!m || !conjHeeftTijd(v, t) || !conjHeeftTijd(m, t)) return false;
+  var s = v.inf.slice(0, -2), ms = m.inf.slice(0, -2);
+  var verwacht = conjAlleVormen(m, t).map(function(f){ return f.split(ms).join(s); });
+  return JSON.stringify(verwacht) === JSON.stringify(conjAlleVormen(v, t));
+}
+/* De werkwoorden voor stap 4b: ongezien (niet het leswerkwoord), regelmatig in deze tijd, en uit
+   dezelfde groep. Dat laatste omdat overdracht van -ar naar -er een andere sprong is; die hoort bij
+   de groepen-as van de volgende ronde. */
+function lesOverdrachtPool(t, lesV){
+  return VERBOS.filter(function(v){
+    return v.inf !== lesV.inf && conjGroep(v) === conjGroep(lesV) && conjRegelmatigIn(v, t);
+  });
+}
 
 function lesId(t){ return "les." + t; }
 function lesWerkwoord(t){
@@ -16354,16 +16385,47 @@ function lesWerkwoord(t){
 }
 function lesStart(t){
   var v = lesWerkwoord(t);
-  lesSpel = {t:t, v:v, stap:0, i:0, goed:0, fout:0, gekozen:null, getypt:"", af:false, opties:null};
+  lesSpel = {t:t, v:v, stap:0, i:0, goed:0, fout:0, gekozen:null, getypt:"", af:false, opties:null, over:null};
   return lesSpel;
+}
+/* De rij van stap 4b wordt \u00e9\u00e9n keer per doorloop gemaakt en vastgehouden, anders zou elke render
+   een ander werkwoord kunnen tonen dan het antwoord dat je net gaf. */
+function lesOverNu(){
+  if(!lesSpel) return null;
+  if(!lesSpel.over) lesSpel.over = lesOverdrachtRij(lesSpel.t, lesSpel.v);
+  return lesSpel.over;
+}
+/* Bij stap 4b hoort de opgave bij het werkwoord uit die rij; bij alle andere stappen bij het
+   leswerkwoord. E\u00e9n plek die dat weet, zodat het scherm en de nakijker niet uit elkaar lopen. */
+function lesOpgaveNu(){
+  if(!lesSpel) return null;
+  var rij = lesPersoonRij(lesSpel.stap);
+  if(lesStapId(lesSpel.stap) === "overdracht"){
+    var o = lesOverNu();
+    return o.length ? o[lesSpel.i % o.length] : null;
+  }
+  return {v:lesSpel.v, p:rij[lesSpel.i % rij.length]};
 }
 /* De opgaven van stap 2 en 3: vier personen, zodat de les kort blijft. Stap 4 doet er zes, want
    dan is de tabel weg en telt elke cel. Samen veertien opgaven, dicht bij de zestien waarna
    proceduralisatie grotendeels rond is. */
-function lesOpgaven(stap){ return stap === 4 ? 6 : 4; }
+function lesStapId(stap){ return (LES_STAPPEN[stap] || {}).id; }
+function lesOpgaven(stap){
+  var id = lesStapId(stap);
+  return (id === "cel" || id === "overdracht") ? 6 : 4;
+}
 function lesPersoonRij(stap){
   var alle = [0, 1, 2, 3, 4, 5];
-  return stap === 4 ? alle : [0, 1, 3, 5];
+  return lesOpgaven(stap) === 6 ? alle : [0, 1, 3, 5];
+}
+/* Zes opgaven, alle zes de personen, met ongeziene werkwoorden. In het presente zijn er maar drie
+   ongeziene regelmatige -ar werkwoorden (trabajar, estudiar, comprar), dus zes verschillende
+   werkwoorden kan niet. De werkwoorden rouleren, de personen niet. */
+function lesOverdrachtRij(t, lesV){
+  var pool = geschud(lesOverdrachtPool(t, lesV));
+  var pers = geschud([0, 1, 2, 3, 4, 5]);
+  if(!pool.length) return [];
+  return pers.map(function(p, i){ return {v:pool[i % pool.length], p:p}; });
 }
 function lesKlaar(t){
   var st = brokLees(lesId(t));
@@ -16410,7 +16472,7 @@ function renderFunLes(){
         open.map(function(t){
           var x = conjTiempo(t);
           var st = brokLees(lesId(t));
-          var merk = lesKlaar(t) ? " \u2713" : (st.stapMax ? " \u00b7 " + ct("stap ", "step ") + ((st.stapMax || 0) + 1) + "/5" : "");
+          var merk = lesKlaar(t) ? " \u2713" : (st.stapMax ? " \u00b7 " + ct("stap ", "step ") + ((st.stapMax || 0) + 1) + "/" + LES_STAPPEN.length : "");
           return "<button type='button' class='" + (t === aanbevolen ? "primary" : "ghost") + " les-t' data-t='" + t + "' style='min-height:52px'>" +
             (x ? x.es : t) + merk + "<br><span class='muted' style='font-weight:400; font-size:.78rem'>" + (x ? ct(x.nl, x.en) : "") + "</span></button>";
         }).join("") + "</div>" +
@@ -16424,10 +16486,10 @@ function renderFunLes(){
   }
 
   var L = lesSpel, x = conjTiempo(L.t), v = L.v;
+  var sN = LES_STAPPEN[L.stap] || {};
   var kop = "<h2>" + (x ? x.es : L.t) + " \ud83d\udcd6</h2>" +
-    "<span class='kicker' id='lesKicker'>" + ct("Stap ", "Step ") + (L.stap + 1) + "/5 \u00b7 " +
-      ct(["ontmoeten","opbouwen","herkennen","\u00e9\u00e9n gat","losse cel"][L.stap],
-         ["meet it","build it","recognise","one gap","single cell"][L.stap]) + "</span>";
+    "<span class='kicker' id='lesKicker'>" + ct("Stap ", "Step ") + (L.stap + 1) + "/" + LES_STAPPEN.length +
+      " \u00b7 " + ct(sN.nl || "", sN.en || "") + "</span>";
   var html = kop;
 
   // ---- stap 0: ontmoeten. Geen vraag. ----
@@ -16474,20 +16536,50 @@ function renderFunLes(){
           "<button class='ghost' id='btnLesOpnieuw'>" + ct("Deze stap opnieuw", "This step again") + "</button></div>";
       el.innerHTML = html;
       var bv = document.getElementById("btnLesVerder");
-      if(bv) bv.onclick = function(){ lesStapAf(); L.stap++; L.i = 0; L.goed = 0; L.gekozen = null; L.opties = null; renderFunLes(); };
+      if(bv) bv.onclick = function(){ lesStapAf(); L.stap++; L.i = 0; L.goed = 0; L.gekozen = null; L.opties = null; L.over = null; renderFunLes(); };
       var bk = document.getElementById("btnLesKlaar");
       if(bk) bk.onclick = function(){ lesStapAf(); lesSpel = null; renderFunLes(); };
       var bo = document.getElementById("btnLesOpnieuw");
-      if(bo) bo.onclick = function(){ L.i = 0; L.goed = 0; L.gekozen = null; L.opties = null; renderFunLes(); };
+      if(bo) bo.onclick = function(){ L.i = 0; L.goed = 0; L.gekozen = null; L.opties = null; L.over = null; renderFunLes(); };
       return;
     }
 
-    var p = rij[L.i % rij.length];
-    var goedeVorm = conjVorm(v, p, L.t);
+    var q = lesOpgaveNu();
+    /* Geen ongeziene werkwoorden beschikbaar zou een lege stap opleveren. Gemeten: overal minstens
+       drie, dus dit hoort niet te gebeuren; als het toch gebeurt zeggen we het in plaats van een
+       leeg scherm te tonen. */
+    if(!q){
+      el.innerHTML = kop + "<p class='muted'>" +
+        ct("Er zijn hier geen andere regelmatige werkwoorden om mee te oefenen.",
+           "There are no other regular verbs to practise with here.") + "</p>" +
+        "<div class='row' style='margin-top:10px'><button class='primary' id='btnLesVerder'>" +
+          ct("Overslaan \u2192", "Skip \u2192") + "</button></div>";
+      var bx = document.getElementById("btnLesVerder");
+      if(bx) bx.onclick = function(){ lesStapAf(); L.stap++; L.i = 0; L.goed = 0; renderFunLes(); };
+      return;
+    }
+    var p = q.p, qv = q.v;
+    var goedeVorm = conjVorm(qv, p, L.t);
     var af = L.gekozen !== null;
     var isGoed = af && norm(String(L.gekozen)) === norm(goedeVorm);
 
-    if(L.stap === 2){
+    if(lesStapId(L.stap) === "overdracht"){
+      html += "<p class='muted'>" +
+        (L.i === 0
+          ? ct("Nu met werkwoorden die je in deze les niet gezien hebt. Hier blijkt of je het patroon kent of alleen " + v.inf + ".",
+               "Now with verbs you have not seen in this lesson. This is where it shows whether you know the pattern or just " + v.inf + ".")
+          : ct("Zonder tabel. <b>" + CONJ_PRONOMBRES[p] + "</b> van <b>" + qv.inf + "</b>.",
+               "No table. <b>" + CONJ_PRONOMBRES[p] + "</b> of <b>" + qv.inf + "</b>.")) + "</p>" +
+        "<div class='card' style='text-align:center; margin:10px 0'>" +
+          "<p class='muted' style='margin:0 0 2px' id='lesOverInf'>" + qv.inf +
+            " <span style='font-weight:400'>(" + conjGloss(qv) + ")</span></p>" +
+          "<p class='big' style='margin:4px 0'>" + CONJ_PRONOMBRES[p] + "</p>" +
+          "<p class='muted' style='margin:0; font-size:.8rem'>" + conjTiempoNaam(L.t) + "</p></div>" +
+        (af ? "" : "<input type='text' id='lesInput' autocomplete='off' autocapitalize='off' spellcheck='false' placeholder='" +
+             ct("Typ de vorm...", "Type the form...") + "' style='width:100%; padding:12px; font-size:1rem'>" +
+           "<div class='row' style='margin-top:8px'><button class='primary' id='btnLesCheck'>" + ct("Nakijken", "Check") + "</button></div>");
+    }
+    else if(L.stap === 2){
       // herkennen, tabel zichtbaar, kiezen uit de zes vormen van DEZE tijd (niet uit andere tijden:
       // dat is stap 4-materiaal en hier gaat het om het rijtje zelf)
       if(!L.opties) L.opties = geschud(conjAlleVormen(v, L.t).filter(function(f, i, a){ return a.indexOf(f) === i; })).slice(0, 4);
@@ -16498,12 +16590,12 @@ function renderFunLes(){
         (af ? "" : "<div id='lesOpties' style='display:flex; flex-direction:column; gap:8px; margin-top:6px'>" +
           L.opties.map(function(o){ return "<button type='button' class='ghost les-o' data-o='" + o + "'>" + o + "</button>"; }).join("") + "</div>");
     } else {
-      var verberg = (L.stap === 3) ? p : -1;
-      html += "<p class='muted'>" + (L.stap === 3
+      var verberg = (lesStapId(L.stap) === "gat") ? p : -1;
+      html += "<p class='muted'>" + (verberg >= 0
           ? ct("Vul het gat in: <b>" + CONJ_PRONOMBRES[p] + "</b>", "Fill the gap: <b>" + CONJ_PRONOMBRES[p] + "</b>")
           : ct("Zonder tabel. <b>" + CONJ_PRONOMBRES[p] + "</b> van <b>" + v.inf + "</b>, in de " + x.es + ".",
                "No table. <b>" + CONJ_PRONOMBRES[p] + "</b> of <b>" + v.inf + "</b>, in the " + x.es + ".")) + "</p>" +
-        (L.stap === 3 ? "<div class='card'>" + lesTabelHtml(v, L.t, verberg) + "</div>" : "") +
+        (verberg >= 0 ? "<div class='card'>" + lesTabelHtml(v, L.t, verberg) + "</div>" : "") +
         (af ? "" : "<input type='text' id='lesInput' autocomplete='off' autocapitalize='off' spellcheck='false' placeholder='" +
              ct("Typ de vorm...", "Type the form...") + "' style='width:100%; padding:12px; font-size:1rem'>" +
            "<div class='row' style='margin-top:8px'><button class='primary' id='btnLesCheck'>" + ct("Nakijken", "Check") + "</button></div>");
@@ -16546,8 +16638,9 @@ function lesAntwoord(gegeven){
   var g = String(gegeven || "").trim();
   if(!g) return;
   lesSpel.gekozen = g;
-  var p = lesPersoonRij(lesSpel.stap)[lesSpel.i % lesPersoonRij(lesSpel.stap).length];
-  var goedeVorm = conjVorm(lesSpel.v, p, lesSpel.t);
+  var q = lesOpgaveNu();
+  if(!q) return;
+  var goedeVorm = conjVorm(q.v, q.p, lesSpel.t);
   // zelfde soepelheid als de Conjugador: accenten mogen missen
   if(stripAcc(norm(g)) === stripAcc(norm(goedeVorm))) lesSpel.goed++; else lesSpel.fout++;
   renderFunLes();

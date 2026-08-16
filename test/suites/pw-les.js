@@ -58,14 +58,29 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     zonderLes: CONJ_TIEMPOS.filter((t) => !t.les).map((t) => t.id),
     // het lesbenoemde werkwoord moet echt bestaan, anders valt de les stil
     onbekend: CONJ_TIEMPOS.filter((t) => !VERBOS.some((v) => v.inf === t.les)).map((t) => t.id + '=' + t.les),
-    stappen: LES_STAPPEN.length
+    stappen: LES_STAPPEN.length,
+    stapNamen: LES_STAPPEN.filter((x) => !x.id || !x.nl || !x.en).map((x) => x.id || '?'),
+    laatste: LES_STAPPEN[LES_STAPPEN.length - 1].id,
+    // ongeziene regelmatige werkwoorden per tijd: zonder die pool valt stap 4b stil
+    overdracht: CONJ_TIEMPOS.map((t) => ({
+      t: t.id,
+      n: lesOverdrachtPool(t.id, VERBOS.filter((v) => v.inf === t.les)[0]).length
+    }))
   }));
 
   console.log('\n-- de data --');
   ok(data.zonderDoet.length === 0, 'DEKKING: elke tijd zegt wat hij doet (mist: ' + (data.zonderDoet.join(', ') || 'niets') + ')');
   ok(data.zonderLes.length === 0, 'DEKKING: elke tijd heeft een leswerkwoord (mist: ' + (data.zonderLes.join(', ') || 'niets') + ')');
   ok(data.onbekend.length === 0, 'DEKKING: dat werkwoord bestaat ook echt (fout: ' + (data.onbekend.join(', ') || 'niets') + ')');
-  ok(data.stappen === 5, 'vijf stappen (nu: ' + data.stappen + ')');
+  // v23.118: geen magisch getal. De suite hoort te breken als de les van gedrag verandert, niet
+  // als er een stap bij komt.
+  ok(data.stappen >= 5, 'minstens vijf stappen (nu: ' + data.stappen + ')');
+  ok(data.stapNamen.length === 0,
+    'DEKKING: elke stap draagt zijn eigen naam in beide talen (mist: ' + (data.stapNamen.join(', ') || 'niets') + ')');
+  ok(data.laatste === 'overdracht', 'en de laatste stap is de overdracht (nu: ' + data.laatste + ')');
+  ok(data.overdracht.every((x) => x.n >= 3),
+    'DEKKING: elke tijd heeft ongeziene regelmatige werkwoorden om mee te toetsen (' +
+    data.overdracht.map((x) => x.t + ':' + x.n).join(' ') + ')');
 
   // ---- 2. het keuzescherm en de aanbeveling ----
   await page.evaluate(() => { funView = null; renderFun(); });
@@ -245,6 +260,80 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'de hoogst bereikte stap wordt bewaard en gaat niet omlaag (nu: ' + (bewaard.st && bewaard.st.stapMax) + ')');
   ok(bewaard.klaar === false, 'en de les heet pas klaar bij de laatste stap');
   ok(bewaard.gram === 0, 'niets in S.gram: geen koppeling aan de SRS tot de les zich bewezen heeft');
+
+  // ---- 8. v23.118: DE OVERDRACHT ----
+  //
+  // Wie alleen hablar kan, kent een woord en geen patroon. Deze stap controleert dat, en de twee
+  // checks die ertoe doen zijn: de werkwoorden zijn ONGEZIEN, en ze zijn REGELMATIG. Zonder dat
+  // tweede meet de stap patroon en uitzondering tegelijk, en dat is precies de fout waar deze hele
+  // verbouwing over gaat.
+  const over = await page.evaluate(() => {
+    lesStart('imperfecto');
+    const stap = LES_STAPPEN.findIndex((x) => x.id === 'overdracht');
+    lesSpel.stap = stap; lesSpel.i = 0; lesSpel.over = null;
+    renderFunLes();
+    const rij = lesOverNu();
+    return {
+      stap,
+      n: rij.length,
+      personen: rij.map((x) => x.p).sort().join(','),
+      lesVerb: lesSpel.v.inf,
+      bevatLesVerb: rij.some((x) => x.v.inf === lesSpel.v.inf),
+      onregelmatig: rij.filter((x) => !conjRegelmatigIn(x.v, lesSpel.t)).map((x) => x.v.inf),
+      andereGroep: rij.filter((x) => conjGroep(x.v) !== conjGroep(lesSpel.v)).map((x) => x.v.inf),
+      opScherm: document.getElementById('funCard').innerText,
+      invoer: document.querySelectorAll('#lesInput').length,
+      tabellen: document.querySelectorAll('#funCard table').length,
+      getoond: (document.getElementById('lesOverInf') || {}).innerText || ''
+    };
+  });
+
+  console.log('\n-- DE OVERDRACHT --');
+  ok(over.n === 6, 'zes opgaven (nu: ' + over.n + ')');
+  ok(over.personen === '0,1,2,3,4,5', 'alle zes de personen komen langs (nu: ' + over.personen + ')');
+  ok(over.bevatLesVerb === false,
+    'CONTROLE: het leswerkwoord (' + over.lesVerb + ') zit er NIET tussen, anders is het geen overdracht');
+  ok(over.onregelmatig.length === 0,
+    'CONTROLE: alleen regelmatige werkwoorden, anders meet deze stap patroon én uitzondering tegelijk (fout: ' +
+    (over.onregelmatig.join(', ') || 'niets') + ')');
+  ok(over.andereGroep.length === 0,
+    'CONTROLE: dezelfde groep, want -ar naar -er is een andere sprong (fout: ' + (over.andereGroep.join(', ') || 'niets') + ')');
+  ok(over.tabellen === 0 && over.invoer === 1, 'geen tabel, wel typen');
+  ok(over.getoond.length > 0 && over.opScherm.indexOf(over.getoond.split(' ')[0]) !== -1,
+    'het werkwoord staat op het scherm ("' + over.getoond + '")');
+
+  // de nakijker kijkt het JUISTE werkwoord na, niet het leswerkwoord
+  const nakijken = await page.evaluate(() => {
+    lesStart('imperfecto');
+    lesSpel.stap = LES_STAPPEN.findIndex((x) => x.id === 'overdracht');
+    lesSpel.i = 0; lesSpel.over = null; renderFunLes();
+    const q = lesOpgaveNu();
+    const juist = conjVorm(q.v, q.p, lesSpel.t);
+    const vanLesVerb = conjVorm(lesSpel.v, q.p, lesSpel.t);
+    lesAntwoord(vanLesVerb);            // het antwoord van het LESwerkwoord: hoort fout te zijn
+    const naLes = {goed: lesSpel.goed, fout: lesSpel.fout};
+    lesSpel.gekozen = null; lesSpel.goed = 0; lesSpel.fout = 0;
+    lesAntwoord(juist);                 // het antwoord van het GETOONDE werkwoord: hoort goed
+    return {naLes, goed: lesSpel.goed, verschillend: juist !== vanLesVerb, juist, vanLesVerb};
+  });
+
+  ok(nakijken.verschillend === true,
+    'de vormen verschillen echt (' + nakijken.vanLesVerb + ' tegenover ' + nakijken.juist + ')');
+  ok(nakijken.naLes.fout === 1 && nakijken.naLes.goed === 0,
+    'CONTROLE: het antwoord van het leswerkwoord invullen is FOUT');
+  ok(nakijken.goed === 1, 'en het antwoord van het getoonde werkwoord is goed');
+
+  // en de les heet pas af na deze stap
+  const afNa = await page.evaluate(() => {
+    S.brok = {};
+    const laatste = LES_STAPPEN.length - 1;
+    lesStart('imperfecto'); lesSpel.stap = laatste - 1; lesStapAf();
+    const voor = lesKlaar('imperfecto');
+    lesStart('imperfecto'); lesSpel.stap = laatste; lesStapAf();
+    return { voor, na: lesKlaar('imperfecto') };
+  });
+  ok(afNa.voor === false && afNa.na === true,
+    'CONTROLE: de les heet pas af NA de overdrachtsstap');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
