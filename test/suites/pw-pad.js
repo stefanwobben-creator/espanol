@@ -66,7 +66,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   });
 
   console.log('\n-- de data --');
-  ok(data.stappen === 5, 'het pad heeft vijf stappen (nu: ' + data.stappen + ')');
+  // v23.117: geen magisch getal meer. Deze suite viel om toen de hertoets erbij kwam, precies zoals
+  // pw-conjfase omviel toen er een fase bij kwam. De suite hoort te breken als het pad van GEDRAG
+  // verandert, niet als er een stap bij komt.
+  ok(data.stappen >= 5, 'het pad heeft minstens vijf stappen (nu: ' + data.stappen + ')');
+  ok(data.soorten[data.soorten.length - 1] === 'hertoets',
+    'en de laatste stap is de hertoets (nu: ' + data.soorten[data.soorten.length - 1] + ')');
   ok(data.zonderEis.length === 0,
     'DEKKING: elk soort stap heeft een eis in GRAM_EIS (mist: ' + (data.zonderEis.join(', ') || 'niets') + ')');
   ok(data.zonderTekst.length === 0,
@@ -90,7 +95,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- verse gebruiker --');
   ok(vers.volgende === 0, 'de volgende stap is stap 1 (nu: ' + (vers.volgende + 1) + ')');
   ok(vers.klaar === false, 'en het pad is niet af');
-  ok(JSON.stringify(vers.opSlot) === '[false,true,true,true,true]',
+  ok(vers.opSlot[0] === false && vers.opSlot.slice(1).every((x) => x === true),
     'DE REGEL: alles behalve stap 1 zit op slot (' + vers.opSlot.map((x) => (x ? 'slot' : 'open')).join(',') + ')');
   ok(vers.klikbaar === 1, 'CONTROLE: precies één stap is aanklikbaar (nu: ' + vers.klikbaar + ')');
   ok(/Snap je het verschil/.test(vers.knop), 'de knop wijst naar stap 1 ("' + vers.knop + '")');
@@ -149,9 +154,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       'vorm.tijd': {beste: 12, rondes: 1}
     };
     funView = 'pad'; renderFun();
-    const laatste = p.stappen.length - 1;
+    const keuze = p.stappen.findIndex((x) => x.soort === 'keuze');
     return {
-      bestaat: gramPadStap(p, laatste).bestaat,
+      keuze,
+      bestaat: gramPadStap(p, keuze).bestaat,
+      volgendeIsKeuze: gramPadVolgende(p) === keuze,
       klaar: gramPadKlaar(p),
       volgende: gramPadVolgende(p),
       klaarMelding: (document.getElementById('padKlaar') || {}).innerText || '',
@@ -161,16 +168,18 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   });
 
   console.log('\n-- de stap die nog niet bestaat --');
-  ok(nietBestaand.bestaat === false, 'stap 5 heeft nog geen scherm');
-  ok(nietBestaand.volgende === -1 && nietBestaand.knop === 0,
-    'CONTROLE: hij wordt geen knop naar niets (volgende: ' + nietBestaand.volgende + ', knoppen: ' + nietBestaand.knop + ')');
-  ok(nietBestaand.klaar === true && /hele pad/.test(nietBestaand.klaarMelding),
-    'en het pad meldt zich klaar op wat er wél is ("' + nietBestaand.klaarMelding + '")');
-  ok(nietBestaand.klikbaar === 4, 'de vier bestaande stappen blijven aanklikbaar (nu: ' + nietBestaand.klikbaar + ')');
+  ok(nietBestaand.bestaat === false, 'de keuze-stap heeft nog geen scherm');
+  ok(nietBestaand.volgendeIsKeuze === false,
+    'CONTROLE: hij wordt nooit de volgende stap, dus ook geen knop naar niets');
+  // v23.117: met alles groen op de dag zelf is het pad NIET klaar meer, want de hertoets moet nog
+  // en die mag pas over drie dagen. Dat is precies het gedrag dat pw-gestold bewaakt.
+  ok(nietBestaand.klaar === false,
+    'en het pad is nog niet klaar, want de hertoets komt nog (v23.117)');
+  ok(nietBestaand.klikbaar >= 4, 'de bestaande stappen blijven aanklikbaar (nu: ' + nietBestaand.klikbaar + ')');
 
   // ---- 6. CONTROLE: het pad kantelt echt, het zegt niet altijd hetzelfde ----
-  ok(JSON.stringify(vers.af) !== JSON.stringify([true, true, true, true, false]),
-    'CONTROLE: vers was het pad leeg en nu vol, dus deze meting kan verschil zien');
+  ok(vers.af.every((x) => x === false),
+    'CONTROLE: vers stond het hele pad op nul, dus deze meting kan verschil zien');
 
   // ---- 7. de knop gaat naar de juiste plek ----
   await page.evaluate(() => { funView = null; renderFun(); });
