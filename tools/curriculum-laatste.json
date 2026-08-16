@@ -1,28 +1,30 @@
 {
- "wanneer": "2026-08-15T10:22:31.323Z",
- "versie": "v23.104",
+ "wanneer": "2026-08-16T02:59:30.694Z",
+ "versie": "v23.116",
  "gaten": [
   {
    "tag": "basis",
    "soort": "verschijnsel",
-   "fouten": 23
+   "fouten": 24
   },
   {
-   "tag": "costar",
+   "tag": "les5",
    "soort": "verschijnsel",
-   "fouten": 16
+   "fouten": 35
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s193",
-   "s194",
-   "s195",
-   "s196",
-   "s198"
+   "s199",
+   "s200",
+   "s201",
+   "s202",
+   "s203",
+   "s204",
+   "s206"
   ],
   "toetsjes": [
-   "q-relatar-extra2"
+   "q-relatar-extra3"
   ]
  },
  "nieuweLes": null

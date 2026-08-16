@@ -1718,6 +1718,48 @@
       "model": "eleven_multilingual_v2",
       "hash": "22932177403494c8",
       "tekens": 32
+    },
+    "s199": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "dee8d78a92b9e7f9",
+      "tekens": 54
+    },
+    "s200": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "c7cecb86ab0db9b5",
+      "tekens": 52
+    },
+    "s201": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "386004afc6953242",
+      "tekens": 35
+    },
+    "s202": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "e82961a9d848e39e",
+      "tekens": 68
+    },
+    "s203": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0b73635eea8cf685",
+      "tekens": 35
+    },
+    "s204": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "aa2c9c1b08689c6b",
+      "tekens": 40
+    },
+    "s206": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0846cebcba226cdb",
+      "tekens": 40
     }
   },
   "dialogo-a": {

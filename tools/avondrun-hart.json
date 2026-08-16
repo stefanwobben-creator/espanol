@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-15T10:22:31.323Z",
+ "wanneer": "2026-08-16T02:59:30.694Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -9,21 +9,19 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 5,
+  "zinnen": 7,
   "toetsjes": 1,
   "nieuweLes": 0
  },
- "versie": "v23.104",
+ "versie": "v23.116",
  "klachten": [
-  "s197: afgekeurd — De zin 'Nos cuesta preguntar el camino' is grammaticaal correct maar inhoudelijk onzin: niemand vraagt 'el camino' (de weg) met het voorzetsel 'el', maar met 'por el camino' of gewoon 'el camino' zonder voorzetsel. De correcte formulering is 'Nos cuesta preguntar el camino' (zonder voorzetsel) of 'Nos cuesta preguntar por el camino'.",
-  "s206: afgekeurd — De zin 'Llevo mi tiempo libre leyendo y cocinando' is grammaticaal correct maar inhoudelijk onlogisch: je brengt je vrije tijd niet letterlijk mee (llevo), maar besteedt het eraan. Een natuurlijke zin zou zijn: 'Paso mi tiempo libre leyendo y cocinando'.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "nieuwe les AFGEKEURD:\n - zin 4 (s202): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam"
+  "s205: afgekeurd — De zin '¿Puedes estar callado un momento?' is grammaticaal correct maar onnatuurlijk in deze context; 'estar callado' wordt zelden zo gebruikt in een directe vraag, en 'puedes callarte' (reflexief) is gebruikelijker.",
+  "nieuwe les AFGEKEURD:\n - zin 6 (s212): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam"
  ],
  "reden": null,
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-08-15T10:27:41.993Z"
+ "afgemaakt": "2026-08-16T03:05:26.695Z"
 }
