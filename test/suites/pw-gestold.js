@@ -18,6 +18,8 @@
 //   4. EN HIJ IS TE HALEN. Een toets die niemand haalt is net zo nutteloos als een die iedereen
 //      haalt.
 const { chromium } = require('playwright');
+// v23.120: gedeelde fixture, zie de kop van padvul.js.
+const { VUL } = require('./padvul.js');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -48,12 +50,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     try { persist(); } catch (e) {}
   });
 
-  // alles gehaald, vandaag
-  const allesGroen = `S.brok = {
-    'indefimperf.betekenis': {beste: 12, rondes: 1, laatst: today()},
-    'les.imperfecto': {stapMax: 4}, 'les.indefinido': {stapMax: 4},
-    'vorm.tijd': {beste: 12, rondes: 1, laatst: today()}
-  };`;
+  // alles gehaald behalve de hertoets zelf, vandaag. Afgeleid uit de padvorm: die stappen met de
+  // hand opsommen ging vier keer mis toen er er een bij kwam.
+  const allesGroen = VUL + `
+    vulPad(GRAM_PADEN[0], GRAM_PADEN[0].stappen.findIndex(function(s){ return s.soort === 'hertoets'; }));
+  `;
 
   // ---- 1. DE KERN: op de dag zelf kun je niet stollen ----
   const dag0 = await page.evaluate(new Function(allesGroen + `

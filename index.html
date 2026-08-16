@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.118";
+var APP_VERSIE = "v23.120";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16147,7 +16147,35 @@ function renderFunHertoets(){
 /* Wat "af" betekent, per SOORT stap en niet per stap. Elk scherm scoorde op zijn eigen manier
    (de brok in beste-van-twaalf, de les in hoogste stap) en zonder één definitie kan geen pad
    bestaan. Een zesde stap toevoegen is één regel data; de eis komt uit zijn soort. */
+/* v23.120: waar de stand van een stap vandaan komt. De brokken staan in S.brok, maar de bestaande
+   lessen houden hun eigen boekhouding bij in S.gramwiz. Zonder deze splitsing zou de route naar een
+   lege pot kijken en altijd "nog niet gedaan" zeggen, ook al staat de les op afgerond. */
+function gramSpiekIdx(titel){
+  for(var i = 0; i < CHEATSHEET.length; i++) if(CHEATSHEET[i].titel === titel) return i;
+  return -1;
+}
+/* Op titel en niet op indexnummer: "spiek-a2-14" schuift zodra er een spiekbrief tussen komt, en
+   dan wijst de route stilletjes naar een ander onderwerp. Wordt de titel herschreven dan vindt hij
+   niets, en dat ziet de poort (dekkingscheck). Fragiel-maar-gezien boven fragiel-en-stil. */
+function gramLesId(s){
+  if(!s || !s.spiek) return null;
+  var i = gramSpiekIdx(s.spiek);
+  if(i < 0) return null;
+  if(!gwVanSpiek(i)) return null;   // een spiekbrief zonder vragen levert geen les op
+  return gwSpiekId(i);
+}
+function gramStapStand(s){
+  if(s.soort === "bestaandeles"){
+    var id = gramLesId(s);
+    return id ? gwVoortgangLees(id) : {};
+  }
+  return brokLees(s.brok);
+}
+
 var GRAM_EIS = {
+  /* de bestaande lessen houden {stap, klaar, rondes} bij; "klaar" is precies het vinkje dat je in
+     de Oefenen-tab ziet staan. De route leest dat en claimt niets zelf. */
+  bestaandeles: function(st){ return !!st.klaar; },
   betekenis: function(st){ return (st.beste || 0) >= 11; },
   les:       function(st){ return (st.stapMax || 0) >= LES_STAPPEN.length - 1; },
   herkennen: function(st){ return (st.beste || 0) >= 10; },
@@ -16160,6 +16188,10 @@ var GRAM_EIS = {
   hertoets:  function(st){ return !!st.gestold; }
 };
 var GRAM_STAND = {
+  bestaandeles: function(st){
+    if(st.klaar) return ct("afgerond", "done");
+    return st.stap ? ct("stap ", "step ") + (st.stap + 1) : "";
+  },
   betekenis: function(st){ return st.rondes ? (st.beste || 0) + "/12" : ""; },
   les:       function(st){ return st.stapMax !== undefined ? ct("stap ", "step ") + ((st.stapMax || 0) + 1) + "/" + LES_STAPPEN.length : ""; },
   herkennen: function(st){ return st.rondes ? ct("beste ", "best ") + (st.beste || 0) + "/12" : ""; },
@@ -16179,15 +16211,30 @@ var GRAM_PADEN = [
    uitNl:"Het Nederlands heeft \u00e9\u00e9n verleden tijd, het Spaans heeft er twee die je uit elkaar moet houden. Dit is de route.",
    uitEn:"Dutch has one past tense, Spanish has two you need to tell apart. This is the route.",
    stappen:[
+     /* v23.120: de route wijst naar de bestaande uitleglessen in plaats van ze over te doen. Stefan
+        had "Pretérito imperfecto: de vorming" al op afgerond staan terwijl dit pad zei dat hij de
+        imperfecto nog moest leren. Verwijzing op titel, niet op indexnummer. */
+     {spiek:"Pretérito imperfecto: wanneer gebruik je hem?", soort:"bestaandeles",
+      nl:"Wanneer gebruik je het imperfecto?", en:"When do you use the imperfecto?",
+      subNl:"De bestaande uitleg met vragen. Eerst weten waarvoor hij dient.",
+      subEn:"The existing explanation with questions. First know what it is for."},
      {brok:"indefimperf.betekenis", soort:"betekenis", view:"brok",
       nl:"Snap je het verschil?", en:"Do you get the difference?",
-      subNl:"Twaalf Nederlandse zinnen, geen woord Spaans.", subEn:"Twelve English sentences, no Spanish at all."},
-     {brok:"les.imperfecto", soort:"les", view:"les", arg:"imperfecto",
-      nl:"De imperfecto leren", en:"Learn the imperfecto",
-      subNl:"Vijf stappen, \u00e9\u00e9n tijd. De eerste twee stellen geen vraag.", subEn:"Five steps, one tense. The first two ask nothing."},
-     {brok:"les.indefinido", soort:"les", view:"les", arg:"indefinido",
-      nl:"De indefinido leren", en:"Learn the indefinido",
-      subNl:"Zelfde vijf stappen, de andere tijd.", subEn:"Same five steps, the other tense."},
+      subNl:"Twaalf Nederlandse zinnen, geen woord Spaans. Dit meet of de regel zit.",
+      subEn:"Twelve English sentences, no Spanish at all. This measures whether the rule is in."},
+     {spiek:"Pretérito imperfecto: de vorming", soort:"bestaandeles",
+      nl:"Het imperfecto: de vorming", en:"The imperfecto: how it is formed",
+      subNl:"De bestaande uitleg over de vorm.", subEn:"The existing explanation of the form."},
+     {brok:"les.imperfecto", soort:"les", view:"les", arg:"imperfecto", vanaf:2,
+      nl:"Het imperfecto in je vingers", en:"The imperfecto in your fingers",
+      subNl:"Herkennen, gat vullen, zonder tabel typen, en dan met werkwoorden die je niet gezien hebt.",
+      subEn:"Recognise, fill the gap, type without the table, then with verbs you have not seen."},
+     {spiek:"Indefinido: alle vormen op een rij", soort:"bestaandeles",
+      nl:"Het indefinido: alle vormen", en:"The indefinido: all the forms",
+      subNl:"De bestaande uitleg, inclusief de onregelmatige.", subEn:"The existing explanation, irregulars included."},
+     {brok:"les.indefinido", soort:"les", view:"les", arg:"indefinido", vanaf:2,
+      nl:"Het indefinido in je vingers", en:"The indefinido in your fingers",
+      subNl:"Zelfde vier stappen, de andere tijd.", subEn:"Same four steps, the other tense."},
      {brok:"vorm.tijd", soort:"herkennen", view:"tijdvorm",
       nl:"Zie je welke tijd er staat?", en:"Can you see which tense it is?",
       subNl:"Nu pas door elkaar. Door elkaar is de laatste stap, niet de eerste.",
@@ -16205,11 +16252,13 @@ var GRAM_PADEN = [
 
 function gramPadStap(p, i){
   var s = p.stappen[i];
-  var st = brokLees(s.brok);
+  var st = gramStapStand(s);
   var eis = GRAM_EIS[s.soort];
   var af = !!(eis && eis(st));
   var stand = GRAM_STAND[s.soort] ? GRAM_STAND[s.soort](st) : "";
-  return {s:s, st:st, af:af, stand:stand, bestaat:!!s.view};
+  /* een bestaandeles bestaat als de spiekbrief hem oplevert; de rest als er een scherm bij hoort */
+  var bestaat = (s.soort === "bestaandeles") ? !!gramLesId(s) : !!s.view;
+  return {s:s, st:st, af:af, stand:stand, bestaat:bestaat};
 }
 /* De eerste stap die nog niet af is EN te doen is. Stappen die nog niet bestaan blokkeren het pad
    niet: die worden overgeslagen als volgende, maar staan wel in de lijst zodat je ziet wat er komt. */
@@ -16242,9 +16291,20 @@ function gramPadKlaar(p){
 
 function gramPadGa(p, i){
   var s = p.stappen[i];
+  /* v23.120: een bestaande les leeft in de spiekbrief-tab en niet in funView. Zelfde route als de
+     "Leg uit"-knop van de Corrector gebruikt sinds v19.88. */
+  if(s.soort === "bestaandeles"){
+    var lid = gramLesId(s);
+    if(!lid) return;
+    show("spiekbrief");
+    gwStart(lid);
+    return;
+  }
   if(!s.view) return;
-  if(s.view === "les"){ lesStart(s.arg); }
-  if(s.view === "brok"){ brokSpel = null; }
+  /* vanaf: de les hoeft niet bij stap 1 te beginnen als de uitleg net in de bestaande les stond.
+     Dat is de dubbeling die deze ronde eruit haalt. */
+  if(s.view === "les"){ lesStart(s.arg); if(typeof s.vanaf === "number") lesSpel.stap = s.vanaf; }
+  else if(s.view === "brok"){ brokSpel = null; }
   if(s.view === "tijdvorm"){ tijdvormSpel = null; }
   if(s.view === "hertoets"){ hertoetsStart(p); }
   funView = s.view;

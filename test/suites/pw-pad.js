@@ -21,6 +21,9 @@
 // En de controle die dit alles tanden geeft: als je de brokken vult alsof je alles gehaald hebt,
 // moet het pad kantelen. Een pad dat altijd hetzelfde zegt is geen pad.
 const { chromium } = require('playwright');
+// v23.120: de fixture staat in padvul.js, want vier suites hielden hun eigen lijstje bij en
+// vier keer viel er een om toen er een stap bij kwam. Zie de kop van dat bestand.
+const { VUL } = require('./padvul.js');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -51,6 +54,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     try { persist(); } catch (e) {}
   });
 
+
+
   // ---- 1. de data ----
   const data = await page.evaluate(() => {
     const p = GRAM_PADEN[0];
@@ -61,7 +66,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       zonderEis: p.stappen.filter((s) => !GRAM_EIS[s.soort]).map((s) => s.brok),
       zonderTekst: p.stappen.filter((s) => !s.nl || !s.en || !s.subNl || !s.subEn).map((s) => s.brok),
       // elke stap met een view moet naar een view wijzen die renderFun ook echt kent
-      views: p.stappen.filter((s) => s.view).map((s) => s.view)
+      views: p.stappen.filter((s) => s.view).map((s) => s.view),
+      // v23.120: elke verwijzing naar een bestaande les moet oplossen naar een les die bestaat.
+      // De verwijzing gaat op TITEL en niet op indexnummer, want dat nummer schuift zodra er een
+      // spiekbrief tussen komt. Wordt een titel herschreven, dan valt deze check om in plaats van
+      // dat de route stilletjes naar niets wijst.
+      spiekStappen: p.stappen.filter((s) => s.soort === 'bestaandeles').map((s) => s.spiek),
+      spiekKapot: p.stappen.filter((s) => s.soort === 'bestaandeles' && !gramLesId(s)).map((s) => s.spiek),
+      spiekIds: p.stappen.filter((s) => s.soort === 'bestaandeles').map((s) => gramLesId(s))
     };
   });
 
@@ -76,6 +88,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'DEKKING: elk soort stap heeft een eis in GRAM_EIS (mist: ' + (data.zonderEis.join(', ') || 'niets') + ')');
   ok(data.zonderTekst.length === 0,
     'DEKKING: elke stap heeft een titel en een uitleg, in beide talen (mist: ' + (data.zonderTekst.join(', ') || 'niets') + ')');
+  ok(data.spiekStappen.length >= 3,
+    'de route wijst naar bestaande lessen in plaats van ze over te doen (' + data.spiekStappen.length + ')');
+  ok(data.spiekKapot.length === 0,
+    'DEKKING: elke verwijzing naar een bestaande les lost op (kapot: ' + (data.spiekKapot.join(' | ') || 'niets') + ')');
 
   // ---- 2. verse gebruiker: alles dicht behalve stap 1 ----
   const vers = await page.evaluate(() => {
@@ -98,27 +114,27 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(vers.opSlot[0] === false && vers.opSlot.slice(1).every((x) => x === true),
     'DE REGEL: alles behalve stap 1 zit op slot (' + vers.opSlot.map((x) => (x ? 'slot' : 'open')).join(',') + ')');
   ok(vers.klikbaar === 1, 'CONTROLE: precies één stap is aanklikbaar (nu: ' + vers.klikbaar + ')');
-  ok(/Snap je het verschil/.test(vers.knop), 'de knop wijst naar stap 1 ("' + vers.knop + '")');
+  const eersteTitel = await page.evaluate(() => ct(GRAM_PADEN[0].stappen[0].nl, GRAM_PADEN[0].stappen[0].en));
+  ok(vers.knop.indexOf(eersteTitel) !== -1, 'de knop wijst naar stap 1 ("' + vers.knop + '")');
 
   // ---- 3. DE KERN: "alles door elkaar" kan niet je eerste oefening zijn ----
-  const doorElkaar = await page.evaluate(() => {
+  const doorElkaar = await page.evaluate(new Function(VUL + `
     const p = GRAM_PADEN[0];
-    const i = p.stappen.findIndex((s) => s.brok === 'vorm.tijd');
-    // alleen stap 1 gehaald: de herkentoets hoort nog dicht te zitten
-    S.brok = {'indefimperf.betekenis': {goed: 11, fout: 1, beste: 11, rondes: 1, laatst: today()}};
-    const naStap1 = gramPadOpSlot(p, i);
-    // ook de twee lessen af: nu pas open
-    S.brok['les.imperfecto'] = {stapMax: 4, laatst: today()};
-    S.brok['les.indefinido'] = {stapMax: 4, laatst: today()};
-    const naLessen = gramPadOpSlot(p, i);
-    return { i, naStap1, naLessen, volgende: gramPadVolgende(p) };
-  });
+    const i = p.stappen.findIndex((s) => s.soort === 'herkennen');
+    // alleen de allereerste stap gehaald: de herkentoets hoort nog dicht te zitten
+    vulPad(p, 1);
+    const naEerste = gramPadOpSlot(p, i);
+    // alles ervoor gehaald: nu pas open
+    vulPad(p, i);
+    const naAlles = gramPadOpSlot(p, i);
+    return { i, naEerste, naAlles, volgende: gramPadVolgende(p) };
+  `));
 
   console.log('\n-- DE KERN: door elkaar is de laatste stap --');
-  ok(doorElkaar.naStap1 === true,
-    'CONTROLE: met alleen het verschil gehaald zit "welke tijd is dit" nog op slot');
-  ok(doorElkaar.naLessen === false,
-    'CONTROLE: pas als beide lessen af zijn gaat hij open');
+  ok(doorElkaar.naEerste === true,
+    'CONTROLE: met alleen de eerste stap gehaald zit "welke tijd is dit" nog op slot');
+  ok(doorElkaar.naAlles === false,
+    'CONTROLE: pas als alles ervoor af is gaat hij open');
   ok(doorElkaar.volgende === doorElkaar.i,
     'en dan is hij ook de volgende stap (nu: ' + (doorElkaar.volgende + 1) + ')');
 
@@ -129,8 +145,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     return {
       betekenis10: afBij('indefimperf.betekenis', {beste: 10, rondes: 1}),
       betekenis11: afBij('indefimperf.betekenis', {beste: 11, rondes: 1}),
-      les3: afBij('les.imperfecto', {stapMax: 3}),
-      les4: afBij('les.imperfecto', {stapMax: 4}),
+      les3: afBij('les.imperfecto', {stapMax: LES_STAPPEN.length - 2}),
+      les4: afBij('les.imperfecto', {stapMax: LES_STAPPEN.length - 1}),
       herken9: afBij('vorm.tijd', {beste: 9, rondes: 1}),
       herken10: afBij('vorm.tijd', {beste: 10, rondes: 1})
     };
@@ -145,14 +161,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: de herkentoets kantelt tussen 9 en 10 van de 12');
 
   // ---- 5. een stap die nog niet bestaat is geen deur naar niets ----
-  const nietBestaand = await page.evaluate(() => {
+  const nietBestaand = await page.evaluate(new Function(VUL + `
     const p = GRAM_PADEN[0];
-    // alles gehaald wat bestaat
-    S.brok = {
-      'indefimperf.betekenis': {beste: 12, rondes: 1},
-      'les.imperfecto': {stapMax: 4}, 'les.indefinido': {stapMax: 4},
-      'vorm.tijd': {beste: 12, rondes: 1}
-    };
+    // alles gehaald BEHALVE de hertoets: die mag pas na de wachttijd (v23.117), dus het pad hoort
+    // nog niet klaar te zijn. Afgeleid uit de padvorm en niet uit een opgeschreven index.
+    vulPad(p, p.stappen.findIndex((s) => s.soort === 'hertoets'));
     funView = 'pad'; renderFun();
     const keuze = p.stappen.findIndex((x) => x.soort === 'keuze');
     return {
@@ -165,7 +178,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       knop: document.querySelectorAll('#btnPadVerder').length,
       klikbaar: Array.prototype.filter.call(document.querySelectorAll('.pad-stap'), (d) => d.style.cursor === 'pointer').length
     };
-  });
+  `));
 
   console.log('\n-- de stap die nog niet bestaat --');
   ok(nietBestaand.bestaat === false, 'de keuze-stap heeft nog geen scherm');
@@ -190,23 +203,93 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const tegel = await page.locator('#ftPad').count();
   if (tegel) await page.click('#ftPad');
   await page.waitForTimeout(300);
-  const route = await page.evaluate(() => {
-    S.brok = {};
+  const route = await page.evaluate(new Function(VUL + `
+    const p = GRAM_PADEN[0];
+    vulPad(p, 0);
+    funView = null; gwSess = null;
     funView = 'pad'; renderFun();
     document.getElementById('btnPadVerder').click();
-    const na1 = funView;
-    // stap 1 gehaald: de knop hoort nu naar de les te gaan, mét de goede tijd
-    S.brok = {'indefimperf.betekenis': {beste: 12, rondes: 1}};
+    const na1 = {view: funView, wiz: gwSess ? gwSess.id : null};
+    // de eerste twee stappen gehaald: de knop hoort nu naar de derde te gaan
+    vulPad(p, 2);
     funView = 'pad'; renderFun();
+    const derde = p.stappen[2];
     document.getElementById('btnPadVerder').click();
-    return { na1, na2: funView, tijd: lesSpel && lesSpel.t, stap: lesSpel && lesSpel.stap };
-  });
+    return { na1, na2: {view: funView, wiz: gwSess ? gwSess.id : null}, derde: derde.soort };
+  `));
 
   console.log('\n-- de knop --');
   ok(tegel === 1, 'de tegel staat in de Speeltuin');
-  ok(route.na1 === 'brok', 'stap 1 opent "Achtergrond of gebeurtenis" (nu: ' + route.na1 + ')');
-  ok(route.na2 === 'les' && route.tijd === 'imperfecto' && route.stap === 0,
-    'stap 2 opent de les met de JUISTE tijd, bij stap 0 (nu: ' + route.na2 + '/' + route.tijd + '/' + route.stap + ')');
+  ok(!!route.na1.wiz, 'stap 1 opent de bestaande uitleg (nu: ' + route.na1.wiz + ')');
+  ok(route.na2.view === 'brok' || !!route.na2.wiz,
+    'en met de eerste twee gehaald gaat de knop naar de derde stap, een ' + route.derde);
+
+  // ---- 8. v23.120: DE AFSTEMMING ----
+  //
+  // Stefan had "Pretérito imperfecto: de vorming" op afgerond staan terwijl het pad zei dat hij de
+  // imperfecto nog moest leren. Twee systemen die hetzelfde onderwerp claimen. De route hoort de
+  // bestaande les te LEZEN, niet over te doen.
+  const afstemming = await page.evaluate(() => {
+    const p = GRAM_PADEN[0];
+    const i = p.stappen.findIndex((s) => s.soort === 'bestaandeles');
+    const id = gramLesId(p.stappen[i]);
+    S.brok = {}; S.gramwiz = {};
+    const voor = gramPadStap(p, i);
+    // zet de bestaande les op afgerond, precies zoals de Oefenen-tab dat doet
+    S.gramwiz[id] = {stap: 9, klaar: true, rondes: 1};
+    const na = gramPadStap(p, i);
+    // en half af moet ook half af heten
+    S.gramwiz[id] = {stap: 1, klaar: false, rondes: 0};
+    const half = gramPadStap(p, i);
+    return { i, id, voor: {af: voor.af, stand: voor.stand}, na: {af: na.af, stand: na.stand},
+             half: {af: half.af, stand: half.stand} };
+  });
+
+  console.log('\n-- DE AFSTEMMING --');
+  ok(!!afstemming.id, 'de stap lost op naar een bestaande les ("' + afstemming.id + '")');
+  ok(afstemming.voor.af === false, 'onaangeroerd staat hij niet op af');
+  ok(afstemming.na.af === true && /afgerond|done/.test(afstemming.na.stand),
+    'DE REGEL: staat de bestaande les op afgerond, dan is de stap van de route ook af ("' + afstemming.na.stand + '")');
+  ok(afstemming.half.af === false && /stap|step/.test(afstemming.half.stand),
+    'CONTROLE: half af is niet af, en de route laat zien hoe ver ("' + afstemming.half.stand + '")');
+
+  // klikken opent de bestaande les en niet een eigen scherm
+  const opent = await page.evaluate(() => {
+    const p = GRAM_PADEN[0];
+    const i = p.stappen.findIndex((s) => s.soort === 'bestaandeles');
+    funView = null; gwSess = null;
+    gramPadGa(p, i);
+    return { sessie: gwSess ? gwSess.id : null, funView: funView };
+  });
+  ok(opent.sessie === afstemming.id,
+    'klikken opent de bestaande les zelf (nu: ' + opent.sessie + ')');
+
+  // de les-stap begint niet bij stap 1, want de uitleg is er net geweest
+  const vanaf = await page.evaluate(() => {
+    const p = GRAM_PADEN[0];
+    const i = p.stappen.findIndex((s) => s.view === 'les');
+    lesSpel = null;
+    gramPadGa(p, i);
+    return { vanaf: p.stappen[i].vanaf, stap: lesSpel ? lesSpel.stap : null,
+             stapId: lesSpel ? lesStapId(lesSpel.stap) : null, t: lesSpel ? lesSpel.t : null };
+  });
+  ok(typeof vanaf.vanaf === 'number' && vanaf.stap === vanaf.vanaf,
+    'CONTROLE: de les begint bij stap ' + (vanaf.vanaf + 1) + ' en niet bij 1, want de uitleg stond in de vorige stap');
+  ok(vanaf.stapId === 'herkennen', 'en dat is de herkenstap (nu: ' + vanaf.stapId + ')');
+  ok(vanaf.t === 'imperfecto', 'met de juiste tijd (nu: ' + vanaf.t + ')');
+
+  // en de volgorde klopt nog steeds: de uitleg vóór de drill
+  const volgorde = await page.evaluate(() => {
+    const p = GRAM_PADEN[0];
+    const uitleg = p.stappen.findIndex((s) => s.spiek === 'Pretérito imperfecto: de vorming');
+    const drill = p.stappen.findIndex((s) => s.view === 'les' && s.arg === 'imperfecto');
+    const herken = p.stappen.findIndex((s) => s.soort === 'herkennen');
+    return { uitleg, drill, herken, n: p.stappen.length };
+  });
+  ok(volgorde.uitleg < volgorde.drill,
+    'DE VOLGORDE: de uitleg staat vóór de drill (' + (volgorde.uitleg + 1) + ' voor ' + (volgorde.drill + 1) + ')');
+  ok(volgorde.drill < volgorde.herken,
+    'en de drill vóór het door elkaar herkennen (' + (volgorde.drill + 1) + ' voor ' + (volgorde.herken + 1) + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
