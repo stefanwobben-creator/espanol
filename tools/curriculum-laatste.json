@@ -1,11 +1,11 @@
 {
- "wanneer": "2026-08-16T02:59:30.694Z",
- "versie": "v23.116",
+ "wanneer": "2026-08-17T02:59:08.191Z",
+ "versie": "v23.122",
  "gaten": [
   {
-   "tag": "basis",
+   "tag": "indefinido",
    "soort": "verschijnsel",
-   "fouten": 24
+   "fouten": 17
   },
   {
    "tag": "les5",
@@ -15,17 +15,55 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s199",
-   "s200",
-   "s201",
-   "s202",
-   "s203",
-   "s204",
-   "s206"
+   "s212",
+   "s213",
+   "s214",
+   "s215",
+   "s216",
+   "s218"
   ],
   "toetsjes": [
-   "q-relatar-extra3"
+   "q-relatar-extra4"
   ]
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-12",
+  "num": 12,
+  "niveau": "B1",
+  "titel": "En el trabajo: rutinas y quejas",
+  "doel": "Leren over werkroutines, klachten en dagelijkse situaties op de werkvloer, inclusief het gebruik van het subjuntivo na uitdrukkingen van noodzaak of wens.",
+  "doelEn": "Learning about work routines, complaints, and daily situations at work, including the use of the subjunctive after expressions of necessity or desire.",
+  "spiek": [
+   30
+  ],
+  "words": [
+   "w314",
+   "w315",
+   "w316",
+   "w317",
+   "w318",
+   "w319",
+   "w320",
+   "w321",
+   "w322",
+   "w323",
+   "w324",
+   "w325",
+   "w326",
+   "w327"
+  ],
+  "sents": [
+   "s219",
+   "s220",
+   "s221",
+   "s222",
+   "s223",
+   "s224",
+   "s225",
+   "s226"
+  ],
+  "quizzes": [
+   "q-b1-12"
+  ]
+ }
 }
