@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-16T02:59:30.694Z",
+ "wanneer": "2026-08-17T02:59:08.192Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -9,19 +9,18 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 7,
+  "zinnen": 6,
   "toetsjes": 1,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
- "versie": "v23.116",
+ "versie": "v23.122",
  "klachten": [
-  "s205: afgekeurd — De zin '¿Puedes estar callado un momento?' is grammaticaal correct maar onnatuurlijk in deze context; 'estar callado' wordt zelden zo gebruikt in een directe vraag, en 'puedes callarte' (reflexief) is gebruikelijker.",
-  "nieuwe les AFGEKEURD:\n - zin 6 (s212): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam"
+  "s217: afgekeurd — De zin '¿Puedes estar callado un momento?' is grammaticaal correct maar onnatuurlijk in deze context. Een Spanjaard zou eerder '¿Puedes callarte un momento?' zeggen, omdat 'callarse' (zich stil houden) een reflexief werkwoord is in deze betekenis."
  ],
  "reden": null,
  "gegenereerd": true,
  "gepubliceerd": true,
- "status": "gepubliceerd",
+ "status": "pull-request",
  "pogingen": 1,
- "afgemaakt": "2026-08-16T03:05:26.695Z"
+ "afgemaakt": "2026-08-17T03:04:52.580Z"
 }
