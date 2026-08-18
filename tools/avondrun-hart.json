@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-16T02:59:30.694Z",
+ "wanneer": "2026-08-18T02:54:44.090Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -9,19 +9,21 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 7,
+  "zinnen": 5,
   "toetsjes": 1,
   "nieuweLes": 0
  },
- "versie": "v23.116",
+ "versie": "v23.121",
  "klachten": [
-  "s205: afgekeurd — De zin '¿Puedes estar callado un momento?' is grammaticaal correct maar onnatuurlijk in deze context; 'estar callado' wordt zelden zo gebruikt in een directe vraag, en 'puedes callarte' (reflexief) is gebruikelijker.",
-  "nieuwe les AFGEKEURD:\n - zin 6 (s212): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam"
+  "s214: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onzin: 'Hij vertelde me dat hij gisteren zijn sleutels verloor' is onwaarschijnlijk in een normale conversatie (mensen zeggen meestal 'ik ben mijn sleutels kwijt' of 'ik heb mijn sleutels verloren').",
+  "s217: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onnatuurlijk: 'verveeld' (aburrido) wordt in het Spaans zelden gebruikt voor mensen in een vergadering; men zegt eerder 'estar aburrido' of 'sentirse aburrido' in andere contexten, maar niet specifiek tijdens een vergadering.",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 1: De uitleg klopt niet: 'tenían' is geen imperfecto van 'tener' in deze context, maar een verkeerde optie. De uitleg noemt 'tenían' als imperfecto, maar dat is incorrect (juist is 'tenía' voor 'ik had').)",
+  "nieuwe les AFGEKEURD:\n - zin 1 (s217): veld \"tag\" ontbreekt\n - zin 2 (s218): veld \"tag\" ontbreekt\n - zin 2 (s218): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 3 (s219): veld \"tag\" ontbreekt\n - zin 4 (s220): veld \"tag\" ontbreekt\n - zin 5 (s221): veld \"tag\" ontbreekt\n - zin 5 (s221): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 6 (s222): veld \"tag\" ontbreekt\n - zin 7 (s223): veld \"tag\" ontbreekt\n - zin 8 (s224): veld \"tag\" ontbreekt"
  ],
  "reden": null,
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-08-16T03:05:26.695Z"
+ "afgemaakt": "2026-08-18T03:00:32.740Z"
 }

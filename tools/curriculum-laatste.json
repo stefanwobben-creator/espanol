@@ -1,30 +1,28 @@
 {
- "wanneer": "2026-08-16T02:59:30.694Z",
- "versie": "v23.116",
+ "wanneer": "2026-08-18T02:54:44.089Z",
+ "versie": "v23.121",
  "gaten": [
   {
-   "tag": "basis",
+   "tag": "indefinido",
    "soort": "verschijnsel",
-   "fouten": 24
+   "fouten": 17
   },
   {
-   "tag": "les5",
+   "tag": "sentirse",
    "soort": "verschijnsel",
-   "fouten": 35
+   "fouten": 22
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s199",
-   "s200",
-   "s201",
-   "s202",
-   "s203",
-   "s204",
-   "s206"
+   "s212",
+   "s213",
+   "s214",
+   "s215",
+   "s216"
   ],
   "toetsjes": [
-   "q-relatar-extra3"
+   "q-relatar-extra4"
   ]
  },
  "nieuweLes": null
