@@ -165,17 +165,21 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: de herkentoets kantelt tussen 9 en 10 van de 12');
 
   // ---- 5. een stap die nog niet bestaat is geen deur naar niets ----
+  // v23.128: sinds de zinstap bestaan alle stappen van dit pad. Deze meting zocht op soort 'keuze'
+  // en viel om toen die verdween. Nu zoekt hij op de eigenschap die telt (heeft deze stap een
+  // scherm?) in plaats van op de naam van een stapsoort die toevallig de laatste was.
   const nietBestaand = await page.evaluate(new Function(VUL + `
     const p = GRAM_PADEN[0];
     // alles gehaald BEHALVE de hertoets: die mag pas na de wachttijd (v23.117), dus het pad hoort
     // nog niet klaar te zijn. Afgeleid uit de padvorm en niet uit een opgeschreven index.
     vulPad(p, p.stappen.findIndex((s) => s.soort === 'hertoets'));
     padView = GRAM_PADEN[0].id; funView = 'pad'; renderFun();
-    const keuze = p.stappen.findIndex((x) => x.soort === 'keuze');
+    const zonder = [];
+    p.stappen.forEach(function (s, i) { if (!gramPadStap(p, i).bestaat) zonder.push(i); });
     return {
-      keuze,
-      bestaat: gramPadStap(p, keuze).bestaat,
-      volgendeIsKeuze: gramPadVolgende(p) === keuze,
+      zonder,
+      soorten: zonder.map((i) => p.stappen[i].soort),
+      volgendeIsZonder: zonder.indexOf(gramPadVolgende(p)) !== -1,
       klaar: gramPadKlaar(p),
       volgende: gramPadVolgende(p),
       klaarMelding: (document.getElementById('padKlaar') || {}).innerText || '',
@@ -185,9 +189,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   `));
 
   console.log('\n-- de stap die nog niet bestaat --');
-  ok(nietBestaand.bestaat === false, 'de keuze-stap heeft nog geen scherm');
-  ok(nietBestaand.volgendeIsKeuze === false,
-    'CONTROLE: hij wordt nooit de volgende stap, dus ook geen knop naar niets');
+  console.log('  · stappen zonder scherm: ' + (nietBestaand.soorten.join(', ') || 'geen'));
+  ok(nietBestaand.volgendeIsZonder === false,
+    'DE REGEL: een stap zonder scherm wordt nooit de volgende stap, dus nooit een knop naar niets');
   // v23.117: met alles groen op de dag zelf is het pad NIET klaar meer, want de hertoets moet nog
   // en die mag pas over drie dagen. Dat is precies het gedrag dat pw-gestold bewaakt.
   ok(nietBestaand.klaar === false,
