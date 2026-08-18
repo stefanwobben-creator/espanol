@@ -20,6 +20,11 @@
 //      en een patroon elkaars vinkje zetten.
 //   5. DE OVERDRACHTSSTAP BLIJFT IN DE RIJ. Stap 6 toetst of je het patroon kent en niet of je
 //      querer kent, dus moet hij werkwoorden uit dezelfde rij pakken en nooit het leswerkwoord.
+//   6. DE MENGRIJ MENGT ECHT (v23.127). Stap 7 van de presente-route is "de zes door elkaar", en
+//      dan moet élke vraagstap uit de pool van 22 trekken in plaats van uit één modelwerkwoord.
+//      Een mengrij die stiekem hetzelfde werkwoord blijft vragen is geen interleaving.
+//   7. HET SCHERM TOONT DE TABEL VAN DE OPGAVE. Stond fout sinds v23.115 en viel niet op omdat bij
+//      een gewone rij het leswerkwoord én het opgavewerkwoord hetzelfde zijn.
 const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
@@ -138,7 +143,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       }
       const st = brokLees(lesId(id));
       uit.push({
-        id, gestart: true, tijd: r.tijd, model: r.v.inf, t: r.t,
+        id, gestart: true, tijd: r.tijd, mix: !!r.mix, model: r.v.inf, t: r.t,
         klaar: lesKlaar(id), stapMax: st.stapMax,
         sleutels: Object.keys(S.brok),
         overWw: Object.keys(overWw), overP: Object.keys(overP).length,
@@ -149,7 +154,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     return uit;
   });
 
-  const patronen = uitslag.filter((u) => u.tijd === false);
+  // v23.127: een mengrij is ook geen tijd, maar hij put uit alle zes en heeft dus zijn eigen
+  // meting verderop. Deze blokken gaan over de zes patroonrijen.
+  const patronen = uitslag.filter((u) => u.tijd === false && !u.mix);
   ok(uitslag.every((u) => u.gestart), 'elke rij start (' + uitslag.filter((u) => !u.gestart).map((u) => u.id).join(', ') + ')');
   ok(uitslag.every((u) => u.klaar),
     'DE REGEL: elke rij loopt alle ' + (await page.evaluate(() => LES_STAPPEN.length)) + ' stappen uit (mis: ' +
@@ -176,6 +183,86 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(eigen.length === 0,
     'en nooit het leswerkwoord zelf, want dan meet hij niets nieuws (' +
     (eigen.map((u) => u.id).join(', ') || 'geen') + ')');
+
+  // ---- de mengrij ----
+  const mix = await page.evaluate(() => {
+    const uit = [];
+    LES_MIXRIJEN.forEach((m) => {
+      const r = lesRij(m.id);
+      if (!r) { uit.push({ id: m.id, bestaat: false }); return; }
+      S.brok = {};
+      lesStart(m.id);
+      const perStap = {}, alle = {};
+      let veilig = 0;
+      while (lesSpel && lesSpel.stap < LES_STAPPEN.length && veilig++ < 400) {
+        const id = lesStapId(lesSpel.stap);
+        if (id === 'ontmoeten' || id === 'opbouwen') { lesStapAf(); lesSpel.stap++; lesSpel.i = 0; continue; }
+        const q = lesOpgaveNu();
+        if (!q) { lesStapAf(); lesSpel.stap++; lesSpel.i = 0; lesSpel.goed = 0; lesSpel.over = null; continue; }
+        (perStap[id] = perStap[id] || {})[q.v.inf] = 1;
+        alle[q.v.inf] = 1;
+        // buiten de pool zou betekenen dat de mengrij ergens anders uit put
+        if (!m.pool().some((w) => w.inf === q.v.inf)) alle['BUITEN:' + q.v.inf] = 1;
+        lesAntwoord(conjVorm(q.v, q.p, lesSpel.t));
+        lesSpel.i++;
+        if (lesSpel.i >= lesOpgaven(lesSpel.stap)) {
+          lesStapAf();
+          lesSpel.stap++; lesSpel.i = 0; lesSpel.goed = 0; lesSpel.opties = null; lesSpel.over = null;
+        }
+      }
+      uit.push({
+        id: m.id, bestaat: true, mix: !!r.mix, pool: m.pool().length,
+        klaar: lesKlaar(m.id), sleutels: Object.keys(S.brok),
+        alle: Object.keys(alle).length,
+        buiten: Object.keys(alle).filter((k) => k.indexOf('BUITEN:') === 0),
+        perStap: Object.keys(perStap).map((k) => ({ stap: k, n: Object.keys(perStap[k]).length }))
+      });
+      lesSpel = null;
+    });
+    return uit;
+  });
+
+  console.log('\n-- de mengrij --');
+  ok(mix.length > 0 && mix.every((m) => m.bestaat), 'er is ' + mix.length + ' mengrij');
+  mix.forEach((m) => {
+    ok(m.mix === true, m.id + ' draagt mix:true');
+    ok(m.pool === som.onreg,
+      m.id + ' put uit alle ' + som.onreg + ' onregelmatige (nu: ' + m.pool + ')');
+    ok(m.klaar === true, m.id + ' loopt alle stappen uit');
+    ok(m.sleutels.length === 1 && m.sleutels[0] === 'les.' + m.id,
+      'en zet zijn eigen vinkje (' + m.sleutels.join(', ') + ')');
+    ok(m.buiten.length === 0,
+      'CONTROLE: geen werkwoord van buiten de pool (' + (m.buiten.join(', ') || 'geen') + ')');
+    const eenVerb = m.perStap.filter((x) => x.n < 2);
+    ok(eenVerb.length === 0,
+      'DE REGEL: élke vraagstap mengt echt, ook de eerste (' +
+      m.perStap.map((x) => x.stap + ':' + x.n).join(', ') + ')');
+    ok(m.alle >= 8, 'over één doorloop zie je ' + m.alle + ' verschillende werkwoorden');
+  });
+
+  // ---- het scherm toont de tabel van de opgave, niet van het leswerkwoord ----
+  const tabel = await page.evaluate(() => {
+    S.brok = {};
+    lesStart('presente.mix');
+    lesSpel.stap = LES_STAPPEN.map((x) => x.id).indexOf('gat');
+    lesSpel.i = 0; lesSpel.over = null;
+    funView = 'les'; show('speeltuin', true);
+    const q = lesOpgaveNu();
+    const kaart = document.getElementById('funCard').innerText;
+    const vormen = conjAlleVormen(q.v, lesSpel.t);
+    const model = lesSpel.v;
+    return {
+      opgave: q.v.inf, model: model.inf,
+      noemtOpgave: kaart.indexOf(q.v.inf) !== -1,
+      // minstens één vorm van het opgavewerkwoord staat in de tabel
+      tabelKlopt: vormen.some((f) => kaart.indexOf(f) !== -1)
+    };
+  });
+  console.log('\n-- de tabel hoort bij de opgave --');
+  ok(tabel.noemtOpgave === true,
+    'het scherm noemt het werkwoord van de opgave (' + tabel.opgave + ')');
+  ok(tabel.tabelKlopt === true,
+    'DE REGEL: en de tabel is die van ' + tabel.opgave + ', niet van het leswerkwoord ' + tabel.model);
 
   // ---- het modelwerkwoord ----
   // tener stond vooraan in schoen.ie en heeft óók een yo op -go, dus deed een les over e → ie zijn

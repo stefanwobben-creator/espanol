@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.126";
+var APP_VERSIE = "v23.127";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16344,10 +16344,13 @@ var GRAM_PADEN = [
       nl:"De twee losse", en:"The two loose ones",
       subNl:"S\u00e9 en veo volgen niets. Twee vormen om gewoon te onthouden, en dat mag: twee is te doen.",
       subEn:"S\u00e9 and veo follow nothing. Two forms to simply memorise, and that is fine: two is doable."},
-     {brok:"presente.patroon", soort:"keuze", view:null,
-      nl:"Welk patroon is dit?", en:"Which pattern is this?",
-      subNl:"Komt nog. Door elkaar herkennen is de laatste stap, niet de eerste.",
-      subEn:"Coming. Telling them apart comes last, not first."},
+     /* v23.127: hier stond "Welk patroon is dit?", en die stap gaat eruit. Vanuit de infinitief is
+        het patroon onleerbaar (pensar \u2192 pienso, pesar \u2192 peso) en vanuit de vervoegde vorm
+        triviaal, en labelen traint labelen. Wat de route mist is gemengd produceren. */
+     {brok:"les.presente.mix", soort:"les", view:"les", arg:"presente.mix",
+      nl:"De zes door elkaar", en:"The six, mixed",
+      subNl:"Alle onregelmatige werkwoorden uit alle zes de rijen, zonder tabel en zonder aankondiging welk patroon eraan komt.",
+      subEn:"All the irregular verbs from all six rows, with no table and no warning which pattern is coming."},
      {brok:"pad.presente", soort:"hertoets", view:"hertoets",
       nl:"Gestold?", en:"Has it set?",
       subNl:"Tien vormen uit de tweeëntwintig, op zijn vroegst drie dagen na de rest.",
@@ -16815,6 +16818,42 @@ function conjPatroonModel(id){
   return pool[0] || null;
 }
 
+/* De werkwoorden die in minstens \u00e9\u00e9n patroonrij staan: de 22 onregelmatige van het presente.
+   Niet geteld maar afgeleid, zodat het getal 22 nergens als getal in dit bestand staat. */
+function conjOnregPool(){
+  return VERBOS.filter(function(v){ return conjPatroonAantal(v) > 0; });
+}
+/* ===== v23.127: een rij hoeft geen patroon te zijn =====
+
+   Stefan: "ja als dat helpt om Spaans te leren ja dan wel. dus ga iedere keer weer terug naar deze
+   hoofdvraag."
+
+   Die vraag gesteld over de stap die hier stond ingepland, "Welk patroon is dit?", geeft nee. Welk
+   werkwoord een schoen draagt is lexicaal willekeurig (pensar \u2192 pienso, maar pesar \u2192 peso), dus
+   vanuit de infinitief is het onleerbaar; en vanuit de vervoegde vorm staat de ie gewoon te lezen,
+   dus dan is het triviaal. Bovendien traint labelen het labelen, en de vaardigheid die je wilt is
+   de vorm produceren.
+
+   Wat de route w\u00e9l mist is de stap tussen blokken en de hertoets in: gemengd produceren, zo vaak
+   als je wilt, vandaag. Interleaving verslaat blokken op de uitgestelde toets, maar alleen n\u00e1 het
+   blokken.
+
+   Dat is deze rij: geen patroon maar de vergaarbak van alle zes. Het enige wat een mengrij anders
+   doet is dat \u00e9lke vraagstap uit de pool trekt in plaats van uit \u00e9\u00e9n modelwerkwoord. */
+var LES_MIXRIJEN = [
+  {id:"presente.mix", t:"presente",
+   es:"las seis, mezcladas", nl:"de zes patronen door elkaar", en:"the six patterns, mixed",
+   doet:"Alle onregelmatige werkwoorden van het presente door elkaar, uit alle zes de rijen. Tot nu toe deed je \u00e9\u00e9n rij tegelijk; hier moet je bij elk werkwoord zelf weten welke kant het op gaat.",
+   doetEn:"All the irregular present-tense verbs mixed, from all six rows. Until now you did one row at a time; here you have to know for yourself which way each verb goes.",
+   vorm:"Geen tabel, en geen aankondiging welk patroon eraan komt. Dat is het punt: door elkaar is de laatste stap, niet de eerste.",
+   vormEn:"No table, and no warning which pattern is coming. That is the point: mixing comes last, not first.",
+   pool:function(){ return conjOnregPool(); }}
+];
+function lesMixVan(id){
+  for(var i = 0; i < LES_MIXRIJEN.length; i++) if(LES_MIXRIJEN[i].id === id) return LES_MIXRIJEN[i];
+  return null;
+}
+
 function lesId(t){ return "les." + t; }
 function lesWerkwoord(t){
   var x = conjTiempo(t);
@@ -16834,6 +16873,16 @@ function lesRij(id){
             vb:x.vb, vbNl:x.vbNl, vbEn:x.vbEn, v:lesWerkwoord(id),
             pool:function(lesV){ return lesOverdrachtPool(id, lesV); }};
   }
+  var mix = lesMixVan(id);
+  if(mix){
+    var mp = mix.pool();
+    if(mp.length < 2) return null;
+    var m0 = mp[0];
+    return {id:id, t:mix.t, tijd:false, mix:true, es:mix.es, nl:mix.nl, en:mix.en,
+            doet:mix.doet, doetEn:mix.doetEn, vorm:mix.vorm, vormEn:mix.vormEn,
+            vb:conjVorm(m0, 0, mix.t), vbNl:conjGloss(m0), vbEn:conjGloss(m0), v:m0,
+            pool:function(lesV){ return mp.filter(function(w){ return w.inf !== (lesV || {}).inf; }); }};
+  }
   var pat = conjPatroonVan(id);
   if(!pat) return null;
   var pool = conjPatroonPool(id);
@@ -16849,6 +16898,8 @@ function lesRij(id){
 function lesRijIds(){
   var uit = conjOpenTijden().slice();
   CONJ_PATRONEN.forEach(function(p){ if(conjPatroonPool(p.id).length) uit.push(p.id); });
+  /* de mengrijen achteraan: door elkaar is de laatste stap, niet de eerste */
+  LES_MIXRIJEN.forEach(function(m){ if(lesRij(m.id)) uit.push(m.id); });
   return uit;
 }
 function lesStart(t){
@@ -16869,7 +16920,10 @@ function lesOverNu(){
 function lesOpgaveNu(){
   if(!lesSpel) return null;
   var rij = lesPersoonRij(lesSpel.stap);
-  if(lesStapId(lesSpel.stap) === "overdracht"){
+  /* v23.127: bij een mengrij is er geen modelwerkwoord om op terug te vallen, dus trekt \u00e9lke
+     vraagstap uit de pool. Bij een gewone rij verandert er niets. */
+  var r = lesRij(lesSpel.rij);
+  if(lesStapId(lesSpel.stap) === "overdracht" || (r && r.mix)){
     var o = lesOverNu();
     return o.length ? o[lesSpel.i % o.length] : null;
   }
@@ -16981,8 +17035,12 @@ function renderFunLes(){
       "<p class='muted' style='margin:0'><b>" + x.vb + "</b> = " + ct(x.vbNl, x.vbEn) + "</p>" +
       (x.tijd ? "" :
         "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>" +
-          ct("In deze rij: ", "In this row: ") +
-          conjPatroonPool(L.rij).map(function(w){ return w.inf; }).join(", ") + "</p>") + "</div>" +
+          (x.mix
+            /* de 22 opsommen leest als een muur; de zes rijen zijn juist wat je hier moet zien */
+            ? ct("De zes rijen: ", "The six rows: ") +
+              CONJ_PATRONEN.map(function(pt){ return ct(pt.nl, pt.en) + " (" + conjPatroonPool(pt.id).length + ")"; }).join(", ")
+            : ct("In deze rij: ", "In this row: ") +
+              conjPatroonPool(L.rij).map(function(w){ return w.inf; }).join(", ")) + "</p>") + "</div>" +
       "<p class='muted' style='font-size:.85rem'>" +
         ct("Er komt hier geen vraag. Lees het, dan gaan we het rijtje bekijken.",
            "There is no question here. Read it, then we look at the row.") + "</p>" +
@@ -17067,20 +17125,25 @@ function renderFunLes(){
     else if(L.stap === 2){
       // herkennen, tabel zichtbaar, kiezen uit de zes vormen van DEZE tijd (niet uit andere tijden:
       // dat is stap 4-materiaal en hier gaat het om het rijtje zelf)
-      if(!L.opties) L.opties = geschud(conjAlleVormen(v, L.t).filter(function(f, i, a){ return a.indexOf(f) === i; })).slice(0, 4);
+      /* v23.127: qv en niet v. Dit stond er al fout: de tabel en de keuzes kwamen van het
+         leswerkwoord terwijl de vraag over het werkwoord van de opgave ging. Bij een gewone rij
+         zijn dat dezelfde twee, dus het viel niet op; bij een mengrij zou het scherm het antwoord
+         bij het verkeerde rijtje laten zoeken. */
+      if(!L.opties) L.opties = geschud(conjAlleVormen(qv, L.t).filter(function(f, i, a){ return a.indexOf(f) === i; })).slice(0, 4);
       if(L.opties.indexOf(goedeVorm) === -1) L.opties = geschud([goedeVorm].concat(L.opties.slice(0, 3)));
-      html += "<p class='muted'>" + ct("Welke vorm hoort bij <b>" + CONJ_PRONOMBRES[p] + "</b>?",
-                                       "Which form goes with <b>" + CONJ_PRONOMBRES[p] + "</b>?") + "</p>" +
-        "<div class='card'>" + lesTabelHtml(v, L.t, -1) + "</div>" +
+      html += "<p class='muted'>" + ct("Welke vorm hoort bij <b>" + CONJ_PRONOMBRES[p] + "</b> van <b>" + qv.inf + "</b>?",
+                                       "Which form goes with <b>" + CONJ_PRONOMBRES[p] + "</b> of <b>" + qv.inf + "</b>?") + "</p>" +
+        "<div class='card'>" + lesTabelHtml(qv, L.t, -1) + "</div>" +
         (af ? "" : "<div id='lesOpties' style='display:flex; flex-direction:column; gap:8px; margin-top:6px'>" +
           L.opties.map(function(o){ return "<button type='button' class='ghost les-o' data-o='" + o + "'>" + o + "</button>"; }).join("") + "</div>");
     } else {
       var verberg = (lesStapId(L.stap) === "gat") ? p : -1;
       html += "<p class='muted'>" + (verberg >= 0
-          ? ct("Vul het gat in: <b>" + CONJ_PRONOMBRES[p] + "</b>", "Fill the gap: <b>" + CONJ_PRONOMBRES[p] + "</b>")
-          : ct("Zonder tabel. <b>" + CONJ_PRONOMBRES[p] + "</b> van <b>" + v.inf + "</b>, in de " + x.es + ".",
-               "No table. <b>" + CONJ_PRONOMBRES[p] + "</b> of <b>" + v.inf + "</b>, in the " + x.es + ".")) + "</p>" +
-        (verberg >= 0 ? "<div class='card'>" + lesTabelHtml(v, L.t, verberg) + "</div>" : "") +
+          ? ct("Vul het gat in: <b>" + CONJ_PRONOMBRES[p] + "</b> van <b>" + qv.inf + "</b>",
+               "Fill the gap: <b>" + CONJ_PRONOMBRES[p] + "</b> of <b>" + qv.inf + "</b>")
+          : ct("Zonder tabel. <b>" + CONJ_PRONOMBRES[p] + "</b> van <b>" + qv.inf + "</b>" + (x.tijd ? ", in de " + x.es : "") + ".",
+               "No table. <b>" + CONJ_PRONOMBRES[p] + "</b> of <b>" + qv.inf + "</b>" + (x.tijd ? ", in the " + x.es : "") + ".")) + "</p>" +
+        (verberg >= 0 ? "<div class='card'>" + lesTabelHtml(qv, L.t, verberg) + "</div>" : "") +
         (af ? "" : "<input type='text' id='lesInput' autocomplete='off' autocapitalize='off' spellcheck='false' placeholder='" +
              ct("Typ de vorm...", "Type the form...") + "' style='width:100%; padding:12px; font-size:1rem'>" +
            "<div class='row' style='margin-top:8px'><button class='primary' id='btnLesCheck'>" + ct("Nakijken", "Check") + "</button></div>");
