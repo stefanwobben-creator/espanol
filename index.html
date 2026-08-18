@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.121";
+var APP_VERSIE = "v23.123";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2001,7 +2001,10 @@ var SENTENCES = [
  {"id":"s213","lvl":2,"nl":"Vorige week kocht mijn zus een nieuwe telefoon.","en":"Last week my sister bought a new phone.","es":"La semana pasada mi hermana compró un móvil nuevo.","alt":["la semana pasada mi hermana compro un movil nuevo","la semana pasada compró mi hermana un móvil nuevo"],"uitleg":"Bij indefinido gebruik je de uitgang -ó voor de hij/zij-vorm (ella) van werkwoorden op -ar. Het woord 'compró' komt van comprar.","ue":"With indefinido you use the ending -ó for the ella-form of -ar verbs. The word 'compró' comes from comprar.","tag":"indefinido"},
  {"id":"s214","lvl":2,"nl":"Ik voel me opgelucht als de les voorbij is.","en":"I feel relieved when the class is over.","es":"Me siento aliviado cuando termina la clase.","alt":["me siento aliviado cuando termina la clase","me siento aliviada cuando termina la clase"],"uitleg":"Het werkwoord 'sentirse' wordt gevolgd door een bijvoeglijk naamwoord (aliviado/aliviada) dat het gevoel beschrijft. Het geslacht van het bijvoeglijk naamwoord past zich aan aan het onderwerp (yo = mannelijk of vrouwelijk).","ue":"With 'sentirse' the adjective (aliviado/aliviada) describes the feeling and agrees in gender with the subject (yo = male or female).","tag":"sentirse"},
  {"id":"s215","lvl":2,"nl":"Ze voelt zich schuldig omdat ze te veel heeft gegeten.","en":"She feels guilty because she ate too much.","es":"Se siente culpable por comer demasiado.","alt":["se siente culpable por comer demasiado"],"uitleg":"Het werkwoord 'sentirse' wordt gevolgd door het bijvoeglijk naamwoord 'culpable' dat het gevoel beschrijft. 'Demasiado' is een bijwoord dat 'te veel' betekent en staat voor het werkwoord.","ue":"With 'sentirse' the adjective 'culpable' describes the feeling and 'demasiado' is an adverb modifying the verb.","tag":"sentirse"},
- {"id":"s216","lvl":2,"nl":"We voelen ons blij als we de zon zien.","en":"We feel happy when we see the sun.","es":"Nos sentimos contentos cuando vemos el sol.","alt":["nos sentimos contentos cuando vemos el sol","nos sentimos contentas cuando vemos el sol"],"uitleg":"Het werkwoord 'sentirse' wordt gevolgd door het bijvoeglijk naamwoord 'contentos/contentas' dat het gevoel beschrijft. Het meervoud past zich aan aan het onderwerp (nosotros/nosotras).","ue":"With 'sentirse' the adjective 'contentos/contentas' describes the feeling and agrees in number with the subject (nosotros/nosotras).","tag":"sentirse"}
+ {"id":"s216","lvl":2,"nl":"We voelen ons blij als we de zon zien.","en":"We feel happy when we see the sun.","es":"Nos sentimos contentos cuando vemos el sol.","alt":["nos sentimos contentos cuando vemos el sol","nos sentimos contentas cuando vemos el sol"],"uitleg":"Het werkwoord 'sentirse' wordt gevolgd door het bijvoeglijk naamwoord 'contentos/contentas' dat het gevoel beschrijft. Het meervoud past zich aan aan het onderwerp (nosotros/nosotras).","ue":"With 'sentirse' the adjective 'contentos/contentas' describes the feeling and agrees in number with the subject (nosotros/nosotras).","tag":"sentirse"},
+ {"id":"s217","lvl":2,"nl":"De vloer van de gang is van hout.","en":"The floor of the hallway is made of wood.","es":"El suelo del pasillo es de madera.","alt":["el suelo del pasillo es de madera"],"uitleg":"El pasillo = de gang, la madera = het hout en el suelo = de vloer: drie woorden die deze week misgingen. Materiaal geef je aan met ser + de: es de madera (niet 'está de madera').","ue":"El pasillo = the hallway, la madera = the wood and el suelo = the floor: three words missed this week. Material takes ser + de: es de madera (not 'está de madera').","tag":"ser-estar"},
+ {"id":"s218","lvl":2,"nl":"Kun je de advertentie op de deur van het kantoor hangen, alsjeblieft?","en":"Can you put the ad on the office door, please?","es":"¿Puedes poner el anuncio en la puerta del despacho, por favor?","alt":["puedes poner el anuncio en la puerta del despacho por favor","¿puedes poner el anuncio en la puerta del despacho por favor?"],"uitleg":"El despacho = het kantoor (de werkkamer), je meest gemiste woord van deze week, en el anuncio = de advertentie. Een beleefd verzoek bouw je met ¿Puedes + infinitief...?, net als ¿Me puedes enviar...?","ue":"El despacho = the office, your most-missed word this week, and el anuncio = the ad. Build a polite request with ¿Puedes + infinitive...?, like ¿Me puedes enviar...?","tag":"cortesia"},
+ {"id":"s219","lvl":2,"nl":"Gisteren kocht ik de krant bij de kiosk van het station.","en":"Yesterday I bought the newspaper at the kiosk in the station.","es":"Ayer compré el periódico en el quiosco de la estación.","alt":["ayer compré el periódico en el quiosco de la estación","ayer compre el periodico en el quiosco de la estacion"],"uitleg":"El quiosco = de kiosk en la estación = het station: allebei deze week gemist. Compré is indefinido (gisteren, afgerond): -é voor de yo-vorm van -ar-werkwoorden.","ue":"El quiosco = the kiosk and la estación = the station: both missed this week. Compré is indefinido (yesterday, completed): -é for the yo-form of -ar verbs.","tag":"indefinido"}
 ];
 
 var QUIZZES = [
@@ -2628,7 +2631,11 @@ var B_SENTENCES = [
  {id:"bs77", lvl:1, nl:"De badkamer is naast de slaapkamer.", en:"The bathroom is next to the bedroom.", es:"El baño está al lado de la habitación.", alt:["el baño está al lado de la habitación","el bano esta al lado de la habitacion"],
   uitleg:"El baño (badkamer) en la habitación (kamer) gingen deze week allebei mis. Waar iets is zeg je met estar: está al lado de = is naast. Let op: el baño (mannelijk), la habitación (vrouwelijk).", ue:"El baño (bathroom) and la habitación (room) were both missed this week. For where something is, use estar: está al lado de = is next to. Note: el baño (masculine), la habitación (feminine).", tag:"ser-estar"},
  {id:"bs78", lvl:1, nl:"De wastafel is in de badkamer.", en:"The sink is in the bathroom.", es:"El lavabo está en el baño.", alt:["el lavabo está en el baño","el lavabo esta en el bano"],
-  uitleg:"El lavabo = de wastafel, el baño = de badkamer: allebei woorden van deze week. Weer estar voor een plaats: está en. Allebei mannelijk, dus el.", ue:"El lavabo = the sink, el baño = the bathroom: both words from this week. Again estar for a place: está en. Both masculine, so el.", tag:"ser-estar"}
+  uitleg:"El lavabo = de wastafel, el baño = de badkamer: allebei woorden van deze week. Weer estar voor een plaats: está en. Allebei mannelijk, dus el.", ue:"El lavabo = the sink, el baño = the bathroom: both words from this week. Again estar for a place: está en. Both masculine, so el.", tag:"ser-estar"},
+ {id:"bs79", lvl:1, nl:"De stoel staat naast het raam.", en:"The chair is next to the window.", es:"La silla está al lado de la ventana.", alt:["la silla está al lado de la ventana","la silla esta al lado de la ventana"],
+  uitleg:"La silla = de stoel en la ventana = het raam: allebei woorden van deze week. Een plaats geef je aan met estar: está al lado de = staat naast. Allebei vrouwelijk, dus la.", ue:"La silla = the chair and la ventana = the window: both words from this week. Place takes estar: está al lado de = is next to. Both feminine, so la.", tag:"ser-estar"},
+ {id:"bs80", lvl:1, nl:"De fauteuil staat naast de boekenkast.", en:"The armchair is next to the bookshelf.", es:"El sillón está al lado de la estantería.", alt:["el sillón está al lado de la estantería","el sillon esta al lado de la estanteria"],
+  uitleg:"El sillón = de fauteuil en la estantería = de boekenkast: allebei woorden van deze week. Weer estar voor een plaats: está al lado de. Let op: el sillón (mannelijk), la estantería (vrouwelijk).", ue:"El sillón = the armchair and la estantería = the bookshelf: both words from this week. Again estar for a place: está al lado de. Note: el sillón (masculine), la estantería (feminine).", tag:"ser-estar"}
 ];
 
 var B_QUIZZES = [
@@ -4806,8 +4813,8 @@ var C_WORDS = [
 ];
 
 var TRACKS = {
-  a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-16"},
-  beginner: {label:"A0 · AULA 1", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"a0-batch-7"}
+  a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-17"},
+  beginner: {label:"A0 · AULA 1", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"a0-batch-8"}
 };
 
 /* ================= LESSEN (volgens AULA-inhoudsopgave) ================= */
@@ -4880,7 +4887,8 @@ var EXTRA_CONTENT = {
     "s139",
     "s161",
     "s190",
-    "s191"
+    "s191",
+    "s217"
    ],
    "quizzes": []
   },
@@ -4908,7 +4916,8 @@ var EXTRA_CONTENT = {
     "s143",
     "s176",
     "s212",
-    "s213"
+    "s213",
+    "s219"
    ],
    "quizzes": []
   },
@@ -4920,7 +4929,8 @@ var EXTRA_CONTENT = {
     "s203",
     "s204",
     "s206",
-    "s210"
+    "s210",
+    "s218"
    ],
    "quizzes": []
   },
@@ -4939,7 +4949,9 @@ var EXTRA_CONTENT = {
     "bs73",
     "bs74",
     "bs77",
-    "bs78"
+    "bs78",
+    "bs79",
+    "bs80"
    ],
    "quizzes": []
   },
