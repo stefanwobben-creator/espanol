@@ -59,6 +59,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   // ---- 1. DE KERN: op de dag zelf kun je niet stollen ----
   const dag0 = await page.evaluate(new Function(allesGroen + `
     const p = GRAM_PADEN[0];
+    // v23.126: er is meer dan één route, dus moet de suite zeggen welke hij bekijkt. Zonder
+    // padView toont het scherm de route waar je in staat, en dat is na afloop een andere.
+    padView = p.id;
     padGehaaldStempel(p);
     funView = 'pad'; renderFun();
     const i = p.stappen.findIndex((s) => s.soort === 'hertoets');
@@ -108,7 +111,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const dag3 = await page.evaluate(() => {
     const p = GRAM_PADEN[0];
     S.brok[padId(p)].gehaald = addDays(today(), -HERTOETS_WACHT);
-    funView = 'pad'; renderFun();
+    padView = p.id; funView = 'pad'; renderFun();
     const i = p.stappen.findIndex((s) => s.soort === 'hertoets');
     return {
       mag: padMagHertoets(p), opSlot: gramPadOpSlot(p, i),
@@ -180,7 +183,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const naFout = !!brokLees(padId(GRAM_PADEN[0])).gestold;
     const goed = ronde(true);
     const naGoed = brokLees(padId(GRAM_PADEN[0])).gestold;
-    funView = 'pad'; renderFun();
+    padView = GRAM_PADEN[0].id; funView = 'pad'; renderFun();
     return { fout, naFout, goed, naGoed, klaar: gramPadKlaar(GRAM_PADEN[0]),
              melding: (document.getElementById('padKlaar') || {}).innerText || '' };
   });

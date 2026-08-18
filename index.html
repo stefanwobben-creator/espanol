@@ -1455,7 +1455,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.123";
+var APP_VERSIE = "v23.126";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -11834,9 +11834,9 @@ function renderFunLetras(){
     (klaar
       ? "<div class='feedback ok' style='margin-top:10px'>" + ct("Alles gevonden! 🎉","All found! 🎉") + "</div>" +
         "<div class='row' style='margin-top:8px'><button class='primary' id='btnLtNieuw'>" + ct("Nieuwe puzzel","New puzzle") + "</button>" +
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>" + naRondeHtml()
+        "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>" + naRondeHtml()
       : "<div class='row' style='margin-top:10px'><button class='ghost' id='btnLtNieuw'>" + ct("Andere puzzel","Another puzzle") + "</button>" +
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>");
+        "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>");
   el.querySelectorAll("[data-ltl]").forEach(function(b){
     b.onclick = function(){ ltTik(parseInt(b.getAttribute("data-ltl"), 10)); };
   });
@@ -11867,7 +11867,7 @@ function renderFunClasificador(){
       "<p class='muted'>" + clSpel.c.icon + " " + naam + "</p>" +
       "<div class='row' style='margin-top:10px'><button class='primary' id='btnClNieuw'>" + ct("Nog een keer","Again") + "</button>" +
       "<button class='ghost' id='btnClAnder'>" + ct("Ander concept","Other concept") + "</button>" +
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>" + naRondeHtml();
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>" + naRondeHtml();
     document.getElementById("btnClNieuw").onclick = function(){ clNieuwSpel(clSpel.c.id); renderFunClasificador(); };
     document.getElementById("btnClAnder").onclick = function(){ clNieuwSpel(); renderFunClasificador(); };
     document.getElementById("btnFunTerug").onclick = function(){ clStop(); clSpel = null; funView = null; renderFun(); };
@@ -11891,7 +11891,7 @@ function renderFunClasificador(){
     }).join("") + "</div>" +
     "<div class='row' style='margin-top:12px'>" +
       "<button class='ghost' id='btnClGeluid'>" + (S.geluid === 0 ? "🔇" : "🔊") + "</button>" +
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
   el.querySelectorAll("[data-clb]").forEach(function(b){
     b.onclick = function(){ clKies(parseInt(b.getAttribute("data-clb"), 10)); };
   });
@@ -12034,7 +12034,7 @@ function renderConjugadorBody(){
       // telefoon onder de fold en leek er niets te gebeuren
       "<div id='cjFeedback'>"+(mk.fb||"")+"</div>"+
       "<div class='row'><button class='"+skipKlasse+"' id='btnCjSkip'>" + skipLabel + "</button>"+
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
   } else {
     html += "<input type='text' id='cjInput' autocomplete='off' autocapitalize='off' "+(mk.beantwoord?"disabled ":"")+"placeholder='"+fx("cjPlaceholder")+"' value=\""+(mk.getypt||"").replace(/"/g,"&quot;")+"\">"+
       (mk.beantwoord ? "" : accentToetsenHtml("cjAccent"))+
@@ -12042,7 +12042,7 @@ function renderConjugadorBody(){
       "<div class='row'>"+
       (mk.beantwoord ? "" : "<button class='primary' id='btnCjCheck'>" + ct("Controleer","Check") + "</button>")+
       "<button class='"+skipKlasse+"' id='btnCjSkip'>" + skipLabel + "</button>"+
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
   }
   el.innerHTML = html;
   wireMoeilijkToggle("cjModus", function(m){ S.modusKeuze = S.modusKeuze || {}; S.modusKeuze.conj = m; cjModusOverride = m; persist(); renderConjugadorBody(); });
@@ -12126,7 +12126,7 @@ function renderConjugadorRondeKlaar(){
     (inFlowCj ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
       : "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
         "<button class='ghost' id='btnRvTerug'>🧩 " + ct("Terug naar het spel","Back to the game") + "</button>"+
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>") + naRondeHtml();
+        "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>") + naRondeHtml();
   el.innerHTML = html;
   lesFlowWireBanner();
   naRondeWire();
@@ -12592,7 +12592,7 @@ function renderFunCorrector(){
     el.innerHTML = "<h2>El Corrector 🕵️</h2><p class='muted'>"+
       ct("Er zijn nog te weinig zinnen vrijgespeeld om fouten in te verstoppen. Doe eerst een les.",
          "Not enough sentences unlocked yet to hide mistakes in. Do a lesson first.")+"</p>"+
-      "<div class='row'><button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>";
+      "<div class='row'><button class='ghost' id='btnFunTerug'>"+funTerugLabel()+"</button></div>";
     document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
     return;
   }
@@ -12604,7 +12604,7 @@ function renderFunCorrector(){
     corrZinHtml()+
     "<div class='row'><button class='"+(corrOpg.klaar ? "ghost" : "primary")+"' id='btnCorrOk'"+
       (corrOpg.klaar ? " disabled" : "")+">"+fx("coTodo")+"</button>"+
-      "<button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>";
+      "<button class='ghost' id='btnFunTerug'>"+funTerugLabel()+"</button></div>";
   if(corrOpg.klaar){
     html += "<div class='feedback "+(goed ? "ok" : "fout")+"' style='margin-top:10px'>"+
       (goed
@@ -12654,7 +12654,7 @@ function renderCorrRondeKlaar(){
     "<p class='muted'>"+ct(stevig+" van de "+haalbaar+" grammaticaregels staan stevig. Een regel die je goed doet komt later terug, een regel die misgaat over twee dagen.",
        stevig+" of the "+haalbaar+" grammar rules are solid. A rule you get right comes back later, one you miss comes back in two days.")+"</p>"+
     "<div class='row'><button class='primary' id='btnCorrNieuweRonde'>"+ct("Nieuwe ronde","New round")+"</button>"+
-      "<button class='ghost' id='btnFunTerug'>"+fx("terug")+"</button></div>" + naRondeHtml();
+      "<button class='ghost' id='btnFunTerug'>"+funTerugLabel()+"</button></div>" + naRondeHtml();
   naRondeWire();
   document.getElementById("btnCorrNieuweRonde").onclick = function(){ corrNieuweRonde(); renderFunCorrector(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
@@ -15725,9 +15725,9 @@ function renderFunBrok(){
         ct("Je beste ronde tot nu toe: ", "Your best round so far: ") + st.beste + " / " + totaal + "</p>" : "") +
       "<div class='row' style='margin-top:10px'>" +
         "<button class='primary' id='btnBrokNieuw'>" + ct("Nog een ronde", "Another round") + "</button>" +
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+        "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     document.getElementById("btnBrokNieuw").onclick = function(){ brokStart(); renderFunBrok(); };
-    document.getElementById("btnFunTerug").onclick = function(){ funView = null; brokSpel = null; renderFun(); };
+    document.getElementById("btnFunTerug").onclick = function(){ brokSpel = null; funTerug(); };
     return;
   }
 
@@ -15757,13 +15757,13 @@ function renderFunBrok(){
           "<button class='ghost' id='btnBrokG' style='flex:1; min-height:64px'>" +
             ct("Gebeurtenis<br><span class='muted' style='font-weight:400; font-size:.82rem'>wat er gebeurde</span>",
                "Event<br><span class='muted' style='font-weight:400; font-size:.82rem'>what happened</span>") + "</button></div>") +
-    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
 
   function wire(id, fn){ var b = document.getElementById(id); if(b) b.onclick = fn; }
   wire("btnBrokA", function(){ brokAntwoord("a"); });
   wire("btnBrokG", function(){ brokAntwoord("g"); });
   wire("btnBrokVerder", brokVolgende);
-  wire("btnFunTerug", function(){ funView = null; brokSpel = null; renderFun(); });
+  wire("btnFunTerug", function(){ brokSpel = null; funTerug(); });
 }
 
 /* ================= DE OMKERING (v23.109) =================
@@ -15889,9 +15889,9 @@ function renderFunOmkeer(){
     el.innerHTML = kop + "<p class='muted'>" +
       ct("Er zijn nog geen vormen om te herkennen. Speel eerst een ronde Conjugador.",
          "There are no forms to recognise yet. Play a round of Conjugador first.") + "</p>" +
-      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     var bt = document.getElementById("btnFunTerug");
-    if(bt) bt.onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
+    if(bt) bt.onclick = function(){ omkeerSpel = null; funTerug(); };
     return;
   }
 
@@ -15918,9 +15918,9 @@ function renderFunOmkeer(){
            "Did you know: " + pctDub + "% of the forms in your open phases belong to more than one person (hablaba is both yo and él). Those are left out here, because a question with two correct answers measures nothing. And that is exactly why the imperfecto so often keeps the pronoun.") + "</p>" +
       "<div class='row' style='margin-top:10px'>" +
         "<button class='primary' id='btnOmkNieuw'>" + ct("Nog een ronde", "Another round") + "</button>" +
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+        "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     document.getElementById("btnOmkNieuw").onclick = function(){ omkeerStart(); renderFunOmkeer(); };
-    document.getElementById("btnFunTerug").onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
+    document.getElementById("btnFunTerug").onclick = function(){ omkeerSpel = null; funTerug(); };
     return;
   }
 
@@ -15963,7 +15963,7 @@ function renderFunOmkeer(){
           CONJ_PRONOMBRES.map(function(pr, i){
             return "<button type='button' class='ghost omk-p' data-p='" + i + "' style='min-height:52px'>" + pr + "</button>";
           }).join("") + "</div>") +
-    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
 
   Array.prototype.forEach.call(el.querySelectorAll(".omk-p"), function(b){
     b.onclick = function(){ omkeerAntwoord(Number(b.getAttribute("data-p"))); };
@@ -15971,7 +15971,7 @@ function renderFunOmkeer(){
   var vb = document.getElementById("btnOmkVerder");
   if(vb) vb.onclick = omkeerVolgende;
   var tb = document.getElementById("btnFunTerug");
-  if(tb) tb.onclick = function(){ funView = null; omkeerSpel = null; renderFun(); };
+  if(tb) tb.onclick = function(){ omkeerSpel = null; funTerug(); };
 }
 
 /* ================= DE HERTOETS (v23.117) =================
@@ -16028,15 +16028,47 @@ function padDagenTeGaan(p){
 /* De opgaven. Drie betekenisvragen uit BROK_TIJD en zeven vormvragen uit de tijden van dit pad,
    getypt en zonder tabel. Dat is de zwaarste vraagvorm, en dat hoort: dit is de toets die bepaalt
    of je verder mag. */
-function hertoetsBouw(p){
-  var tijden = (p.tijden || ["imperfecto", "indefinido"]).filter(function(t){ return !!conjTiempo(t); });
-  var rij = [];
-  geschud(BROK_TIJD.slice()).slice(0, 3).forEach(function(z){ rij.push({soort:"betekenis", z:z}); });
-  var vorm = [];
-  tijden.forEach(function(t){
-    geschud(conjAlleVerbs(t)).forEach(function(v){
-      for(var i = 0; i < 6; i++) vorm.push({soort:"vorm", v:v, p:i, t:t});
+/* v23.126: hier stonden twee dingen vast die per route verschillen. Drie betekenisvragen uit
+   BROK_TIJD zijn Nederlandse zinnen over achtergrond-of-gebeurtenis, en die gaan alleen over de
+   verleden tijd. En "alle werkwoorden van p.tijden" is voor het presente 33 stuks, terwijl die
+   route er 22 onderwijst; dan zou de hertoets vooral hablar meten.
+
+   Allebei nu afgeleid uit het pad zelf: betekenisvragen alleen als het pad een betekenisstap heeft,
+   en de werkwoorden uit de pools van zijn lesstappen. Voor de verleden tijd verandert er daarmee
+   niets, want die lesstappen zijn hele tijden. */
+function hertoetsPool(p){
+  var uit = [], gezien = {};
+  (p.stappen || []).forEach(function(s){
+    if(s.soort !== "les" || !s.arg) return;
+    var r = lesRij(s.arg);
+    if(!r) return;
+    var vs = r.tijd ? conjAlleVerbs(r.t) : conjPatroonPool(s.arg);
+    vs.forEach(function(v){
+      var k = v.inf + "|" + r.t;
+      if(gezien[k]) return;
+      gezien[k] = 1;
+      uit.push({v:v, t:r.t});
     });
+  });
+  if(uit.length) return uit;
+  /* een pad zonder lesstap valt terug op zijn tijden */
+  (p.tijden || []).filter(function(t){ return !!conjTiempo(t); }).forEach(function(t){
+    conjAlleVerbs(t).forEach(function(v){ uit.push({v:v, t:t}); });
+  });
+  return uit;
+}
+function hertoetsBetekenisN(p){
+  var heeft = (p.stappen || []).some(function(s){ return s.soort === "betekenis"; });
+  return heeft ? 3 : 0;
+}
+function hertoetsBouw(p){
+  var rij = [];
+  geschud(BROK_TIJD.slice()).slice(0, hertoetsBetekenisN(p)).forEach(function(z){
+    rij.push({soort:"betekenis", z:z});
+  });
+  var vorm = [];
+  geschud(hertoetsPool(p)).forEach(function(x){
+    for(var i = 0; i < 6; i++) vorm.push({soort:"vorm", v:x.v, p:i, t:x.t});
   });
   geschud(vorm).slice(0, HERTOETS_LEN - rij.length).forEach(function(x){ rij.push(x); });
   return geschud(rij);
@@ -16079,7 +16111,7 @@ function renderFunHertoets(){
   var el = document.getElementById("funCard");
   if(!el) return;
   var terug = function(){ funView = "pad"; hertoetsSpel = null; renderFun(); };
-  if(!hertoetsSpel) hertoetsStart(GRAM_PADEN[0]);
+  if(!hertoetsSpel) hertoetsStart(gramPadHuidig());
   var H = hertoetsSpel, totaal = H.rij.length;
   var kop = "<h2>" + ct("De hertoets \ud83e\uddca", "The recheck \ud83e\uddca") + "</h2>";
 
@@ -16135,7 +16167,7 @@ function renderFunHertoets(){
       "<div class='row' style='margin-top:10px'><button class='primary' id='btnHerNext'>" +
         (H.i + 1 >= totaal ? ct("Uitslag \u2192", "Result \u2192") : ct("Volgende \u2192", "Next \u2192")) + "</button></div>";
   }
-  html += "<div class='row' style='margin-top:10px'><button class='mini' id='btnHerStop'>" + fx("terug") + "</button></div>";
+  html += "<div class='row' style='margin-top:10px'><button class='mini' id='btnHerStop'>" + funTerugLabel() + "</button></div>";
   el.innerHTML = html;
 
   Array.prototype.forEach.call(el.querySelectorAll(".her-b"), function(b){
@@ -16270,8 +16302,85 @@ var GRAM_PADEN = [
       nl:"Gestold?", en:"Has it set?",
       subNl:"Tien gemengde opgaven, op zijn vroegst drie dagen na de rest. Pas dan is dit punt echt af.",
       subEn:"Ten mixed items, at the earliest three days after the rest. Only then is this point really done."}
+   ]},
+  /* v23.126: de tweede route. De zes patroonlessen van v23.125 stonden los; hier staan ze in een
+     volgorde met een hertoets erachter.
+
+     -go staat vooraan en dat is met opzet: het is \u00e9\u00e9n letter en zes werkwoorden, en drie ervan
+     (tener, venir, decir) hebben daarn\u00e1ast ook nog een schoen. Ken je -go, dan is de schoen
+     daarna het enige wat er aan die drie nog overblijft. Andersom leer je tengo twee keer als
+     iets nieuws.
+
+     Geen stap voor het regelmatige presente. Die staat al vijf fasen lang in de Conjugador, en
+     een route die je opnieuw hablar laat typen is een route die je overslaat. */
+  {id:"presente",
+   tijden:["presente"],
+   nl:"Het presente: de 22 onregelmatige zijn zes patronen",
+   en:"The present tense: the 22 irregulars are six patterns",
+   uitNl:"Van de 33 werkwoorden zijn er 22 onregelmatig in het presente. Dat lijken 22 rijtjes om uit je hoofd te leren. Uitgerekend zijn het er zes, en het zijn de werkwoorden die je het vaakst nodig hebt.",
+   uitEn:"Of the 33 verbs, 22 are irregular in the present tense. That looks like 22 rows to memorise. Worked out, there are six, and they are the verbs you need most often.",
+   stappen:[
+     {brok:"les.yo.go", soort:"les", view:"les", arg:"yo.go",
+      nl:"De yo-vorm op -go", en:"The yo form in -go",
+      subNl:"Zes werkwoorden, \u00e9\u00e9n letter. Begin hier: drie van deze zes krijgen straks ook nog een schoen.",
+      subEn:"Six verbs, one letter. Start here: three of these six also get a boot later on."},
+     {brok:"les.schoen.ie", soort:"les", view:"les", arg:"schoen.ie",
+      nl:"La bota: e wordt ie", en:"La bota: e becomes ie",
+      subNl:"De grootste rij, zeven werkwoorden. De stam wisselt bij yo, t\u00fa, \u00e9l en ellos, en juist niet bij nosotros en vosotros.",
+      subEn:"The biggest row, seven verbs. The stem changes at yo, t\u00fa, \u00e9l and ellos, and not at nosotros and vosotros."},
+     {brok:"les.schoen.ue", soort:"les", view:"les", arg:"schoen.ue",
+      nl:"La bota: o wordt ue", en:"La bota: o becomes ue",
+      subNl:"Dezelfde laars, andere klinker. Jugar hoort erbij met een u, en is daar het enige werkwoord in.",
+      subEn:"The same boot, another vowel. Jugar belongs here with a u, and is the only verb that does that."},
+     {brok:"les.schoen.i", soort:"les", view:"les", arg:"schoen.i",
+      nl:"La bota: e wordt i", en:"La bota: e becomes i",
+      subNl:"De kleinste laars: geen ie maar een enkele i. Twee werkwoorden, en die ken je nu allebei al van -go.",
+      subEn:"The smallest boot: a single i, not ie. Two verbs, and you know both from -go by now."},
+     {brok:"les.yo.oy", soort:"les", view:"les", arg:"yo.oy",
+      nl:"De yo-vorm op -oy", en:"The yo form in -oy",
+      subNl:"Vier werkwoorden: ser, estar, ir en dar. Vier die je elke dag nodig hebt.",
+      subEn:"Four verbs: ser, estar, ir and dar. Four you need every day."},
+     {brok:"les.yo.los", soort:"les", view:"les", arg:"yo.los",
+      nl:"De twee losse", en:"The two loose ones",
+      subNl:"S\u00e9 en veo volgen niets. Twee vormen om gewoon te onthouden, en dat mag: twee is te doen.",
+      subEn:"S\u00e9 and veo follow nothing. Two forms to simply memorise, and that is fine: two is doable."},
+     {brok:"presente.patroon", soort:"keuze", view:null,
+      nl:"Welk patroon is dit?", en:"Which pattern is this?",
+      subNl:"Komt nog. Door elkaar herkennen is de laatste stap, niet de eerste.",
+      subEn:"Coming. Telling them apart comes last, not first."},
+     {brok:"pad.presente", soort:"hertoets", view:"hertoets",
+      nl:"Gestold?", en:"Has it set?",
+      subNl:"Tien vormen uit de tweeëntwintig, op zijn vroegst drie dagen na de rest.",
+      subEn:"Ten forms out of the twenty-two, at the earliest three days after the rest."}
    ]}
 ];
+
+/* ===== v23.126: welke route staat er nu? =====
+
+   De volgorde van de routes is die van de Conjugador-ladder en niet een tweede lijst. CONJ_FASES
+   zegt al in welke volgorde de tijden opengaan; een route erft daaruit zijn plaats. Zijn positie
+   in het array hierboven zegt niets.
+
+   De volgorde stelt voor, hij sluit niets af: op slot zetten doet de Conjugador al. Daarom is de
+   route die bovenaan staat de route waar je in st\u00e1\u00e1t, en pas als je nergens in staat de eerste
+   die nog niet klaar is. Anders zou een nieuwe route je van een route afduwen waar je halverwege
+   in zit. */
+function gramPadRang(p){
+  var beste = CONJ_FASES.length;
+  (p.tijden || []).forEach(function(t){
+    for(var i = 0; i < CONJ_FASES.length; i++){
+      if(CONJ_FASES[i].tijd === t){ if(i < beste) beste = i; return; }
+    }
+  });
+  return beste;
+}
+function gramPadenGeordend(){
+  return GRAM_PADEN.slice().sort(function(a, b){ return gramPadRang(a) - gramPadRang(b); });
+}
+function gramPadVan(id){
+  for(var i = 0; i < GRAM_PADEN.length; i++) if(GRAM_PADEN[i].id === id) return GRAM_PADEN[i];
+  return null;
+}
 
 function gramPadStap(p, i){
   var s = p.stappen[i];
@@ -16311,6 +16420,22 @@ function gramPadKlaar(p){
   }
   return true;
 }
+function gramPadBegonnen(p){
+  for(var i = 0; i < p.stappen.length; i++) if(gramPadStap(p, i).af) return true;
+  return false;
+}
+function gramPadNu(){
+  var L = gramPadenGeordend(), i;
+  for(i = 0; i < L.length; i++) if(gramPadBegonnen(L[i]) && !gramPadKlaar(L[i])) return L[i];
+  for(i = 0; i < L.length; i++) if(!gramPadKlaar(L[i])) return L[i];
+  return L[0] || null;
+}
+/* Welke route het routescherm laat zien. Null betekent "die van nu"; klik je in de lijst op een
+   andere, dan staat hij hier tot je het scherm verlaat. */
+var padView = null;
+function gramPadHuidig(){
+  return (padView && gramPadVan(padView)) || gramPadNu();
+}
 
 function gramPadGa(p, i){
   var s = p.stappen[i];
@@ -16332,13 +16457,16 @@ function gramPadGa(p, i){
   if(s.view === "hertoets"){ hertoetsStart(p); }
   funView = s.view;
   navPush({t:"fun", v:s.view});
-  renderFun();
+  /* v23.124: show() en niet renderFun(), want dit wordt nu ook aangeroepen vanaf de routekaart op
+     de Grammatica-tab, en dan staat de speeltuinkaart nog verstopt. */
+  show("speeltuin", true);
 }
 
 function renderFunPad(){
   var el = document.getElementById("funCard");
   if(!el) return;
-  var p = GRAM_PADEN[0];
+  var p = gramPadHuidig();
+  if(!p) return;
   var volgende = gramPadVolgende(p);
   var klaar = gramPadKlaar(p);
 
@@ -16369,10 +16497,7 @@ function renderFunPad(){
   var stPad = brokLees(padId(p));
   if(padGehaald(p) && !stPad.gestold && !padMagHertoets(p)){
     padGehaaldStempel(p);
-    var teGaan = padDagenTeGaan(p);
-    html += "<div class='feedback bijna' id='padWacht'>" +
-      ct("Gehaald. Nog " + teGaan + " " + (teGaan === 1 ? "dag" : "dagen") + " tot de hertoets.",
-         "Passed. " + teGaan + " more " + (teGaan === 1 ? "day" : "days") + " until the recheck.") + "</div>" +
+    html += "<div class='feedback bijna' id='padWacht'>" + padWachtZin(p) + "</div>" +
       "<p class='muted' style='font-size:.88rem'>" +
       ct("Dit is met opzet. Wat je vandaag kunt, weet je over drie dagen misschien niet, en alleen dat tweede telt. Aan dit punt valt nu niets te doen: doe woorden, lezen of luisteren.",
          "This is deliberate. What you can do today you may not know in three days, and only the second counts. There is nothing to do on this point right now: do words, reading or listening.") + "</p>";
@@ -16386,9 +16511,9 @@ function renderFunPad(){
       ct("Verder: ", "Continue: ") + ct(p.stappen[volgende].nl, p.stappen[volgende].en) + " \u2192</button></div>";
   }
   html += "<p class='muted' style='font-size:.82rem; margin-top:10px'>" +
-    ct("Je kunt alles ook los blijven doen in de Speeltuin. Dit scherm dwingt niets af, het wijst alleen waar je bent.",
-       "You can still do everything separately in the Playground. This screen enforces nothing, it just shows where you are.") + "</p>" +
-    "<div class='row' style='margin-top:8px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    ct("Je kunt alles ook los blijven doen: ze staan onder \u201eLos oefenen\u201d op deze tab. Dit scherm dwingt niets af, het wijst alleen waar je bent.",
+       "You can still do everything separately: they are under \u201cPractise separately\u201d on this tab. This screen enforces nothing, it just shows where you are.") + "</p>" +
+    "<div class='row' style='margin-top:8px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
 
   el.innerHTML = html;
   Array.prototype.forEach.call(el.querySelectorAll(".pad-stap"), function(d){
@@ -16401,7 +16526,110 @@ function renderFunPad(){
   var bv = document.getElementById("btnPadVerder");
   if(bv) bv.onclick = function(){ gramPadGa(p, volgende); };
   var tb = document.getElementById("btnFunTerug");
-  if(tb) tb.onclick = function(){ funView = null; renderFun(); };
+  if(tb) tb.onclick = function(){ padView = null; funTerug(); };
+}
+
+/* ================= DE GRAMMATICA-TAB (v23.124) =================
+
+   Wat hieronder staat is geen nieuw scherm maar een adres. De route, de les en de drie metingen
+   bestonden al; wat ontbrak was dat de tab die "Grammatica" heet ernaar wees. Stefan zocht de
+   route daar, en vond alleen de spiekbrieven.
+
+   De kaart bovenaan is met opzet een samenvatting en geen tweede routescherm: hij zegt wat de
+   route nu van je vraagt en heeft \u00e9\u00e9n knop die dat opent. Alles wat hij toont is afgeleid uit
+   GRAM_PADEN, dus een stap erbij verandert hier niets. */
+function padWachtZin(p){
+  var d = padDagenTeGaan(p);
+  if(d === null) return "";
+  return ct("Gehaald. Nog " + d + " " + (d === 1 ? "dag" : "dagen") + " tot de hertoets.",
+            "Passed. " + d + " more " + (d === 1 ? "day" : "days") + " until the recheck.");
+}
+function gramRouteRegel(p){
+  if(gramPadKlaar(p)) return ct("Gestold. Dit punt is echt af.", "Set. This point is really done.");
+  var v = gramPadVolgende(p);
+  if(v >= 0) return ct("Nu: ", "Now: ") + ct(p.stappen[v].nl, p.stappen[v].en);
+  /* geen volgende stap en toch niet klaar: dan sta je in de wachttijd voor de hertoets */
+  return padWachtZin(p);
+}
+/* Stappen die nog niet bestaan tellen niet mee in de teller. Anders zou de balk nooit vol kunnen
+   worden en zou "8/9" blijven staan terwijl er niets meer te doen is. */
+function gramRouteTelling(p){
+  var af = 0, telt = 0;
+  p.stappen.forEach(function(s, i){
+    var x = gramPadStap(p, i);
+    if(!x.bestaat) return;
+    telt++;
+    if(x.af) af++;
+  });
+  return {af:af, telt:telt};
+}
+function gramRouteHtml(){
+  var p = gramPadNu();
+  if(!p) return "";
+  var t = gramRouteTelling(p);
+  var pct = t.telt ? Math.round(100 * t.af / t.telt) : 0;
+  var v = gramPadVolgende(p);
+  return "<div class='card' id='gramRoute'><h2>" + ct("De route", "The route") + " \ud83e\udded</h2>" +
+    "<p class='muted' style='margin:0 0 2px'><b>" + ct(p.nl, p.en) + "</b></p>" +
+    "<p class='muted' style='font-size:.88rem; margin:0 0 8px'>" + ct(p.uitNl, p.uitEn) + "</p>" +
+    "<div class='boxrow'><div class='bar'><div style='width:" + pct + "%'></div></div>" +
+      "<b style='width:52px; text-align:right'>" + t.af + "/" + t.telt + "</b></div>" +
+    "<p id='gramRouteNu' style='margin:8px 0 10px'>" + gramRouteRegel(p) + "</p>" +
+    (v >= 0
+      ? "<div class='row'><button class='primary' id='btnGramVerder'>" +
+          ct("Verder: ", "Continue: ") + ct(p.stappen[v].nl, p.stappen[v].en) + " \u2192</button></div>"
+      : "") +
+    /* De knop draagt het id van de routetegel uit spelInfo(). Niet uit netheid: pw-tegels klikt
+       elke tegel uit die lijst echt aan en eist dat er iets verandert. Zou de route hier onder een
+       eigen naam staan, dan zou de tegel "pad" nergens meer op het scherm staan en zou precies de
+       dode-tegelcontrole van v23.112 blind worden voor het pad. */
+    "<div class='row' style='margin-top:8px'><button class='mini' data-padga='" + p.id + "' id='" +
+      ((spelInfoVan("pad") || {}).id || "btnGramRoute") + "'>" +
+      ct("Bekijk de hele route", "See the whole route") + "</button></div></div>" +
+    gramAndereRoutesHtml(p);
+}
+/* v23.126: de andere routes. Weglaten mag nooit verstoppen worden (v23.53), dus staan ze er, maar
+   klein en zonder knop: de route van nu is de route van nu. De volgorde komt uit de ladder. */
+function gramAndereRoutesHtml(nu){
+  var rest = gramPadenGeordend().filter(function(p){ return p.id !== (nu || {}).id; });
+  if(!rest.length) return "";
+  return "<div class='card' id='gramRoutes'><h2>" + ct("De andere routes", "The other routes") + "</h2>" +
+    "<p class='muted' style='font-size:.88rem'>" +
+    ct("In de volgorde waarin de Conjugador ze openzet. Je mag vooruit kijken; de route hierboven is waar je nu staat.",
+       "In the order the Conjugador unlocks them. You may look ahead; the route above is where you stand now.") + "</p>" +
+    rest.map(function(p){
+      var t = gramRouteTelling(p);
+      return "<div class='lesson' data-padga='" + p.id + "' style='cursor:pointer'>" +
+        "<div class='lnum'>" + (gramPadKlaar(p) ? "\u2713" : t.af + "/" + t.telt) + "</div>" +
+        "<div class='lbody'><b>" + ct(p.nl, p.en) + "</b><span>" + gramRouteRegel(p) + "</span></div>" +
+        "<div class='lstatus'>\u25b6</div></div>";
+    }).join("") + "</div>";
+}
+/* De routetegel zelf staat hier niet tussen: die is de kaart hierboven, met de knop eronder. */
+function gramLosseTegels(){ return gramTegels().filter(function(g){ return g.v !== "pad"; }); }
+function gramOefenHtml(){
+  var lijst = gramLosseTegels();
+  if(!lijst.length) return "";
+  var r = tegelLijstHtml(lijst);
+  return "<div class='card' id='gramOefen'><h2>" + ct("Los oefenen", "Practise separately") + "</h2>" +
+    "<p class='muted'>" +
+    ct("Dit zijn de oefeningen uit de route hierboven. De route wijst de volgorde aan; hier kies je zelf.",
+       "These are the exercises from the route above. The route sets the order; here you choose yourself.") +
+    "</p>" + r.nu + r.straks + "</div>";
+}
+function gramHomeHtml(){ return gramRouteHtml() + gramOefenHtml(); }
+function gramHomeWire(){
+  var p = gramPadNu();
+  var bv = document.getElementById("btnGramVerder");
+  if(bv && p) bv.onclick = function(){ padView = p.id; gramPadGa(p, gramPadVolgende(p)); };
+  /* alle gram-tegels, de route incluis: die hangt aan de knop onder de routekaart */
+  tegelWire(gramTegels());
+  Array.prototype.forEach.call(document.querySelectorAll("[data-padga]"), function(b){
+    b.onclick = function(){
+      padView = b.getAttribute("data-padga");
+      speelStart(spelInfoVan("pad"));
+    };
+  });
 }
 
 /* ================= DE LES (v23.115) =================
@@ -16459,6 +16687,134 @@ function lesOverdrachtPool(t, lesV){
   });
 }
 
+/* ================= HET PATROON ACHTER DE 22 (v23.125) =================
+
+   Gemeten in VERBOS: 11 van de 33 werkwoorden zijn regelmatig in het presente, 22 niet. Dat getal
+   leest als 22 rijtjes om uit je hoofd te leren. Uitgerekend zijn het er zes:
+
+       de schoen  \u2192ie    tener, querer, venir, empezar, pensar, sentir, preferir      7
+       de schoen  \u2192ue    poder, jugar, dormir, volver                                 4
+       de schoen  \u2192i     decir, pedir                                                 2
+       eigen yo   -go    tener, hacer, decir, poner, salir, venir                     6
+       eigen yo   -oy    ser, estar, ir, dar                                          4
+       eigen yo   los    saber (s\u00e9), ver (veo)                                        2
+
+   tener, venir en decir staan in twee rijen: die hebben \u00e9\u00e9n schoen \u00e9n een eigen yo. 7+4+2+3+4+2
+   = 22, dus er valt niets buiten.
+
+   De schoen is de vorm: de stam verandert bij yo, t\u00fa, \u00e9l en ellos, en juist niet bij nosotros en
+   vosotros. Omcirkel dat in de tabel en je hebt de omtrek van een laars.
+
+   Niets hiervan staat als lijst in dit bestand. conjPatroon() leidt het af uit de vormen die er al
+   staan, net als conjRegelmatig() hierboven. Wat w\u00e9l met de hand geschreven is, is de uitleg per
+   patroon: dat is geen feit uit de data maar kennis. */
+function conjKaal(s){ return stripAcc(String(s || "")); }
+/* De stam die uit de jij-vorm valt af te lezen. Null zodra de vorm niet op de gewone uitgang
+   eindigt, want dan valt er niets af te lezen (ser: "eres"). */
+function conjBootStam(v){
+  var u = CONJ_UITGANGEN[conjGroep(v)];
+  if(!u || !v.presente) return null;
+  var tu = conjKaal(v.presente[1]), uit = conjKaal(u[1]);
+  if(tu.length <= uit.length || tu.slice(-uit.length) !== uit) return null;
+  return tu.slice(0, tu.length - uit.length);
+}
+var CONJ_WISSELS = [["e","ie"], ["o","ue"], ["u","ue"], ["e","i"]];
+/* {regelmatig, wissel, yo}. wissel is de klinker die erbij komt ("ie"/"ue"/"i") en staat er alleen
+   als nosotros en vosotros de infinitiefstam h\u00f3uden: dat is wat een schoen een schoen maakt.
+   yo is "go", "oy" of "los" zodra de yo-vorm noch uit de gewone stam noch uit de schoenstam volgt. */
+function conjPatroon(v){
+  var g = conjGroep(v), u = CONJ_UITGANGEN[g];
+  var leeg = {regelmatig:false, wissel:null, yo:null};
+  if(!u || !v.presente || v.presente.length !== 6) return leeg;
+  var stam = conjKaal(v.inf.slice(0, -2));
+  var vv = v.presente.map(conjKaal), reg = u.map(function(x){ return conjKaal(stam + x); });
+  if(vv.join("|") === reg.join("|")) return {regelmatig:true, wissel:null, yo:null};
+
+  var boot = conjBootStam(v), wissel = null;
+  var schoen = boot && boot !== stam && vv[3] === reg[3] && vv[4] === reg[4];
+  if(schoen){
+    for(var i = 0; i < CONJ_WISSELS.length; i++){
+      var a = CONJ_WISSELS[i][0], b = CONJ_WISSELS[i][1];
+      /* van achter naar voren vervangen: de klinker die wisselt is de laatste in de stam
+         (empezar \u2192 empiez, niet \u2192 iempez) */
+      var k = stam.lastIndexOf(a);
+      if(k >= 0 && stam.slice(0, k) + b + stam.slice(k + a.length) === boot){ wissel = b; break; }
+    }
+  }
+  var yo = null;
+  if(vv[0] !== reg[0] && (!boot || vv[0] !== boot + "o")){
+    yo = /go$/.test(vv[0]) ? "go" : (/oy$/.test(vv[0]) ? "oy" : "los");
+  }
+  return {regelmatig:false, wissel:wissel, yo:yo};
+}
+/* De zes rijen. De volgorde is die van de omvang: het grootste patroon eerst, want dat is het
+   patroon dat het vaakst iets oplevert. */
+var CONJ_PATRONEN = [
+  {id:"schoen.ie", soort:"schoen", sleutel:"ie", es:"la bota: e \u2192 ie",
+   nl:"de schoen: e wordt ie", en:"the boot: e becomes ie",
+   doet:"Zeven werkwoorden waarin de e van de stam ie wordt. Niet overal: juist bij nosotros en vosotros blijft hij e. Teken je dat in de tabel, dan krijg je de omtrek van een laars.",
+   doetEn:"Seven verbs where the stem e turns into ie. Not everywhere: at nosotros and vosotros it stays e. Draw that in the table and you get the outline of a boot.",
+   vorm:"quiero, quieres, quiere, queremos, quer\u00e9is, quieren. Vier keer ie, twee keer e.",
+   vormEn:"quiero, quieres, quiere, queremos, quer\u00e9is, quieren. Four times ie, twice e."},
+  {id:"schoen.ue", soort:"schoen", sleutel:"ue", es:"la bota: o \u2192 ue",
+   nl:"de schoen: o wordt ue", en:"the boot: o becomes ue",
+   doet:"Dezelfde laars, andere klinker: de o wordt ue, behalve bij nosotros en vosotros. Jugar hoort er ook bij, met een u in plaats van een o; dat is het enige werkwoord dat dat doet.",
+   doetEn:"The same boot, another vowel: o becomes ue, except at nosotros and vosotros. Jugar belongs here too, with a u instead of an o; it is the only verb that does that.",
+   vorm:"puedo, puedes, puede, podemos, pod\u00e9is, pueden. En juego, jugamos.",
+   vormEn:"puedo, puedes, puede, podemos, pod\u00e9is, pueden. And juego, jugamos."},
+  {id:"yo.go", soort:"yo", sleutel:"go", es:"yo op -go",
+   nl:"de yo-vorm op -go", en:"the yo form in -go",
+   doet:"Alleen de ik-vorm is anders: er komt een g in. De rest van het rijtje doet gewoon mee. Drie van deze zes hebben daarn\u00e1ast ook nog een schoen (tener, venir, decir), en dat is precies waarom je ze los oefent.",
+   doetEn:"Only the I-form differs: a g appears. The rest of the row behaves normally. Three of these six also have a boot (tener, venir, decir), which is exactly why you practise them separately.",
+   vorm:"tengo, hago, digo, pongo, salgo, vengo. Steeds -go, en dan verder gewoon.",
+   vormEn:"tengo, hago, digo, pongo, salgo, vengo. Always -go, and then on as usual."},
+  {id:"yo.oy", soort:"yo", sleutel:"oy", es:"yo op -oy",
+   nl:"de yo-vorm op -oy", en:"the yo form in -oy",
+   doet:"Vier werkwoorden waarvan de ik-vorm op -oy eindigt. Het zijn er maar vier, en het zijn er vier die je elke dag nodig hebt.",
+   doetEn:"Four verbs whose I-form ends in -oy. There are only four, and they are four you need every day.",
+   vorm:"soy, estoy, voy, doy. Van ser, estar, ir en dar.",
+   vormEn:"soy, estoy, voy, doy. From ser, estar, ir and dar."},
+  {id:"schoen.i", soort:"schoen", sleutel:"i", es:"la bota: e \u2192 i",
+   nl:"de schoen: e wordt i", en:"the boot: e becomes i",
+   doet:"De kleinste laars: de e wordt geen ie maar een enkele i. Twee werkwoorden, allebei op -ir, en allebei hebben ze daarnaast een yo op -go.",
+   doetEn:"The smallest boot: the e becomes a single i, not ie. Two verbs, both -ir, and both also have a yo in -go.",
+   vorm:"pido, pides, pide, pedimos, ped\u00eds, piden.",
+   vormEn:"pido, pides, pide, pedimos, ped\u00eds, piden."},
+  {id:"yo.los", soort:"yo", sleutel:"los", es:"de losse twee",
+   nl:"de twee losse yo-vormen", en:"the two loose yo forms",
+   doet:"Saber en ver volgen geen enkel patroon in hun ik-vorm. Twee vormen om gewoon te onthouden, en dat mag: twee is te doen, tweeëntwintig niet.",
+   doetEn:"Saber and ver follow no pattern at all in their I-form. Two forms to simply memorise, and that is fine: two is doable, twenty-two is not.",
+   vorm:"s\u00e9 en veo. Verder doen ze allebei gewoon mee.",
+   vormEn:"s\u00e9 and veo. Otherwise they behave normally."}
+];
+function conjPatroonVan(id){
+  for(var i = 0; i < CONJ_PATRONEN.length; i++) if(CONJ_PATRONEN[i].id === id) return CONJ_PATRONEN[i];
+  return null;
+}
+function conjInPatroon(v, pat){
+  var p = conjPatroon(v);
+  return pat.soort === "schoen" ? p.wissel === pat.sleutel : p.yo === pat.sleutel;
+}
+function conjPatroonPool(id){
+  var pat = conjPatroonVan(id);
+  if(!pat) return [];
+  return VERBOS.filter(function(v){ return conjInPatroon(v, pat); });
+}
+/* In hoeveel rijen staat dit werkwoord? Drie staan er in twee (tener, venir, decir). */
+function conjPatroonAantal(v){
+  var n = 0;
+  CONJ_PATRONEN.forEach(function(p){ if(conjInPatroon(v, p)) n++; });
+  return n;
+}
+/* Het werkwoord waarmee de les dit patroon voordoet. Nooit een werkwoord dat in twee rijen staat:
+   tener stond vooraan in schoen.ie, en dan doet een les over e → ie zijn voorbeeld met "tengo".
+   Dat is het tegenvoorbeeld, niet het voorbeeld. */
+function conjPatroonModel(id){
+  var pool = conjPatroonPool(id);
+  for(var i = 0; i < pool.length; i++) if(conjPatroonAantal(pool[i]) === 1) return pool[i];
+  return pool[0] || null;
+}
+
 function lesId(t){ return "les." + t; }
 function lesWerkwoord(t){
   var x = conjTiempo(t);
@@ -16466,16 +16822,46 @@ function lesWerkwoord(t){
   var v = VERBOS.filter(function(w){ return w.inf === naam; })[0];
   return v || conjVerbPool(t)[0] || VERBOS[0];
 }
+/* v23.125: hier stond "\u00e9\u00e9n tijd tegelijk", en dat was te smal. Een les onderwijst \u00e9\u00e9n RIJ, en een
+   tijd is daar \u00e9\u00e9n soort van; de zes patronen binnen het presente zijn de andere. De zes stappen,
+   de nakijker en de voortgang weten van dat verschil niets: die krijgen een rij en een tijd, en
+   verder is alles hetzelfde. Zie de toelichting bij conjPatroon(). */
+function lesRij(id){
+  var x = conjTiempo(id);
+  if(x){
+    return {id:id, t:id, tijd:true, es:x.es, nl:x.nl, en:x.en,
+            doet:x.doet, doetEn:x.doetEn, vorm:x.vorm, vormEn:x.vormEn,
+            vb:x.vb, vbNl:x.vbNl, vbEn:x.vbEn, v:lesWerkwoord(id),
+            pool:function(lesV){ return lesOverdrachtPool(id, lesV); }};
+  }
+  var pat = conjPatroonVan(id);
+  if(!pat) return null;
+  var pool = conjPatroonPool(id);
+  if(!pool.length) return null;
+  var v0 = conjPatroonModel(id);
+  return {id:id, t:"presente", tijd:false, es:pat.es, nl:pat.nl, en:pat.en,
+          doet:pat.doet, doetEn:pat.doetEn, vorm:pat.vorm, vormEn:pat.vormEn,
+          vb:conjVorm(v0, 0, "presente"), vbNl:conjGloss(v0), vbEn:conjGloss(v0), v:v0,
+          pool:function(lesV){ return pool.filter(function(w){ return w.inf !== lesV.inf; }); }};
+}
+/* Elke rij die de les vandaag kan onderwijzen: je open tijden, en daarna de patronen. De patronen
+   staan achter de tijden omdat ze binnen het presente wonen en niet ernaast. */
+function lesRijIds(){
+  var uit = conjOpenTijden().slice();
+  CONJ_PATRONEN.forEach(function(p){ if(conjPatroonPool(p.id).length) uit.push(p.id); });
+  return uit;
+}
 function lesStart(t){
-  var v = lesWerkwoord(t);
-  lesSpel = {t:t, v:v, stap:0, i:0, goed:0, fout:0, gekozen:null, getypt:"", af:false, opties:null, over:null};
+  var r = lesRij(t);
+  if(!r) return null;
+  lesSpel = {rij:r.id, t:r.t, v:r.v, stap:0, i:0, goed:0, fout:0, gekozen:null, getypt:"", af:false, opties:null, over:null};
   return lesSpel;
 }
 /* De rij van stap 4b wordt \u00e9\u00e9n keer per doorloop gemaakt en vastgehouden, anders zou elke render
    een ander werkwoord kunnen tonen dan het antwoord dat je net gaf. */
 function lesOverNu(){
   if(!lesSpel) return null;
-  if(!lesSpel.over) lesSpel.over = lesOverdrachtRij(lesSpel.t, lesSpel.v);
+  if(!lesSpel.over) lesSpel.over = lesOverdrachtRij(lesSpel.rij, lesSpel.v);
   return lesSpel.over;
 }
 /* Bij stap 4b hoort de opgave bij het werkwoord uit die rij; bij alle andere stappen bij het
@@ -16504,8 +16890,9 @@ function lesPersoonRij(stap){
 /* Zes opgaven, alle zes de personen, met ongeziene werkwoorden. In het presente zijn er maar drie
    ongeziene regelmatige -ar werkwoorden (trabajar, estudiar, comprar), dus zes verschillende
    werkwoorden kan niet. De werkwoorden rouleren, de personen niet. */
-function lesOverdrachtRij(t, lesV){
-  var pool = geschud(lesOverdrachtPool(t, lesV));
+function lesOverdrachtRij(rijId, lesV){
+  var r = lesRij(rijId);
+  var pool = geschud(r ? r.pool(lesV) : []);
   var pers = geschud([0, 1, 2, 3, 4, 5]);
   if(!pool.length) return [];
   return pers.map(function(p, i){ return {v:pool[i % pool.length], p:p}; });
@@ -16516,11 +16903,11 @@ function lesKlaar(t){
 }
 function lesStapAf(){
   if(!lesSpel) return;
-  var st = brokLees(lesId(lesSpel.t));
+  var st = brokLees(lesId(lesSpel.rij));
   st.stapMax = Math.max(st.stapMax || 0, lesSpel.stap);
   st.laatst = today();
   S.brok = S.brok || {};
-  S.brok[lesId(lesSpel.t)] = st;
+  S.brok[lesId(lesSpel.rij)] = st;
   try { persist(); } catch(e){}
 }
 
@@ -16535,31 +16922,42 @@ function lesTabelHtml(v, t, verberg){
 function renderFunLes(){
   var el = document.getElementById("funCard");
   if(!el) return;
-  var terug = function(){ funView = null; lesSpel = null; renderFun(); };
+  var terug = function(){ lesSpel = null; funTerug(); };
 
   /* geen tijd gekozen: het keuzescherm. Je struikelblok uit v23.114 staat vooraan, want dat is de
      tijd waar je werk zit. */
   if(!lesSpel){
-    var open = conjOpenTijden();
+    var open = lesRijIds();
     var w = tijdvormTopVerwar();
     var aanbevolen = w ? w.getoond : null;
     el.innerHTML = "<h2>" + ct("De les \ud83d\udcd6", "The lesson \ud83d\udcd6") + "</h2>" +
-      "<p class='muted'>" + ct("E\u00e9n tijd tegelijk, in vijf stappen. De eerste twee stellen geen vraag: eerst zien, dan pas ophalen.",
-                               "One tense at a time, in five steps. The first two ask nothing: see it first, retrieve it later.") + "</p>" +
+      "<p class='muted'>" + ct("E\u00e9n rijtje tegelijk, in " + LES_STAPPEN.length + " stappen. De eerste twee stellen geen vraag: eerst zien, dan pas ophalen.",
+                               "One row at a time, in " + LES_STAPPEN.length + " steps. The first two ask nothing: see it first, retrieve it later.") + "</p>" +
       (aanbevolen && conjTiempo(aanbevolen)
         ? "<p class='muted' id='lesAanbevolen' style='font-size:.9rem'>" +
             ct("Op grond van \u201eWelke tijd is dit?\u201d zou ik met <b>" + conjTiempo(aanbevolen).es + "</b> beginnen.",
                "Based on \u201cWhich tense is this?\u201d I would start with <b>" + conjTiempo(aanbevolen).es + "</b>.") + "</p>"
         : "") +
       "<div id='lesKeuze' style='display:flex; flex-direction:column; gap:8px; margin-top:8px'>" +
-        open.map(function(t){
-          var x = conjTiempo(t);
+        open.map(function(t, i){
+          var r = lesRij(t);
+          if(!r) return "";
           var st = brokLees(lesId(t));
           var merk = lesKlaar(t) ? " \u2713" : (st.stapMax ? " \u00b7 " + ct("stap ", "step ") + ((st.stapMax || 0) + 1) + "/" + LES_STAPPEN.length : "");
-          return "<button type='button' class='" + (t === aanbevolen ? "primary" : "ghost") + " les-t' data-t='" + t + "' style='min-height:52px'>" +
-            (x ? x.es : t) + merk + "<br><span class='muted' style='font-weight:400; font-size:.78rem'>" + (x ? ct(x.nl, x.en) : "") + "</span></button>";
+          /* v23.125: de patronen staan onder een eigen kopje. Niet als versiering: zonder die
+             regel lijkt "la bota: e \u2192 ie" een zesde tijd, en dat is het niet. */
+          var eerstePatroon = !r.tijd && (i === 0 || (lesRij(open[i - 1]) || {}).tijd);
+          return (eerstePatroon
+            ? "<p class='muted' id='lesPatroonKop' style='margin:10px 0 0; font-size:.85rem'><b>" +
+                ct("Binnen het presente", "Inside the present tense") + "</b> \u00b7 " +
+                ct("de 22 onregelmatige zijn zes patronen", "the 22 irregulars are six patterns") + "</p>"
+            : "") +
+            "<button type='button' class='" + (t === aanbevolen ? "primary" : "ghost") + " les-t' data-t='" + t + "' style='min-height:52px'>" +
+            r.es + merk + "<br><span class='muted' style='font-weight:400; font-size:.78rem'>" +
+            ct(r.nl, r.en) + (r.tijd ? "" : " \u00b7 " + conjPatroonPool(t).length + " " + ct("werkwoorden", "verbs")) +
+            "</span></button>";
         }).join("") + "</div>" +
-      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     Array.prototype.forEach.call(el.querySelectorAll(".les-t"), function(b){
       b.onclick = function(){ lesStart(b.getAttribute("data-t")); renderFunLes(); };
     });
@@ -16568,9 +16966,9 @@ function renderFunLes(){
     return;
   }
 
-  var L = lesSpel, x = conjTiempo(L.t), v = L.v;
+  var L = lesSpel, x = lesRij(L.rij), v = L.v;
   var sN = LES_STAPPEN[L.stap] || {};
-  var kop = "<h2>" + (x ? x.es : L.t) + " \ud83d\udcd6</h2>" +
+  var kop = "<h2>" + (x ? x.es : L.rij) + " \ud83d\udcd6</h2>" +
     "<span class='kicker' id='lesKicker'>" + ct("Stap ", "Step ") + (L.stap + 1) + "/" + LES_STAPPEN.length +
       " \u00b7 " + ct(sN.nl || "", sN.en || "") + "</span>";
   var html = kop;
@@ -16580,7 +16978,11 @@ function renderFunLes(){
     html += "<div class='card' style='margin:10px 0'>" +
       "<p style='margin:0 0 8px'><b>" + ct("Wat doet hij?", "What does it do?") + "</b><br>" + ct(x.doet, x.doetEn) + "</p>" +
       "<p style='margin:0 0 8px'><b>" + ct("Waaraan zie je hem?", "How do you spot it?") + "</b><br>" + ct(x.vorm, x.vormEn) + "</p>" +
-      "<p class='muted' style='margin:0'><b>" + x.vb + "</b> = " + ct(x.vbNl, x.vbEn) + "</p></div>" +
+      "<p class='muted' style='margin:0'><b>" + x.vb + "</b> = " + ct(x.vbNl, x.vbEn) + "</p>" +
+      (x.tijd ? "" :
+        "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>" +
+          ct("In deze rij: ", "In this row: ") +
+          conjPatroonPool(L.rij).map(function(w){ return w.inf; }).join(", ") + "</p>") + "</div>" +
       "<p class='muted' style='font-size:.85rem'>" +
         ct("Er komt hier geen vraag. Lees het, dan gaan we het rijtje bekijken.",
            "There is no question here. Read it, then we look at the row.") + "</p>" +
@@ -16691,7 +17093,7 @@ function renderFunLes(){
         "<div class='row' style='margin-top:10px'><button class='primary' id='btnLesNext'>" +
           (L.i + 1 >= n ? ct("Uitslag \u2192", "Result \u2192") : ct("Volgende \u2192", "Next \u2192")) + "</button></div>";
     }
-    html += "<div class='row' style='margin-top:10px'><button class='mini' id='btnLesStop'>" + fx("terug") + "</button></div>";
+    html += "<div class='row' style='margin-top:10px'><button class='mini' id='btnLesStop'>" + funTerugLabel() + "</button></div>";
     el.innerHTML = html;
 
     Array.prototype.forEach.call(el.querySelectorAll(".les-o"), function(b){
@@ -16708,7 +17110,7 @@ function renderFunLes(){
     return;
   }
 
-  html += "<div class='row' style='margin-top:10px'><button class='mini' id='btnLesStop'>" + fx("terug") + "</button></div>";
+  html += "<div class='row' style='margin-top:10px'><button class='mini' id='btnLesStop'>" + funTerugLabel() + "</button></div>";
   el.innerHTML = html;
   var bv2 = document.getElementById("btnLesVerder");
   if(bv2) bv2.onclick = function(){ lesStapAf(); L.stap++; L.i = 0; L.goed = 0; renderFunLes(); };
@@ -16872,7 +17274,7 @@ function renderFunTijdvorm(){
   var el = document.getElementById("funCard");
   if(!el) return;
   var kop = "<h2>" + ct("Welke tijd is dit? \u23f3", "Which tense is this? \u23f3") + "</h2>";
-  var terug = function(){ funView = null; tijdvormSpel = null; renderFun(); };
+  var terug = function(){ tijdvormSpel = null; funTerug(); };
 
   /* Met één open tijd valt er niets te onderscheiden en zou dit scherm twaalf keer hetzelfde
      antwoord vragen. Dan liever eerlijk zeggen dat het er nog niet is. */
@@ -16880,7 +17282,7 @@ function renderFunTijdvorm(){
     el.innerHTML = kop + "<p class='muted'>" +
       ct("Je hebt nog maar één tijd open staan, dus er valt nog niets te onderscheiden. Kom terug zodra je in de Conjugador bij de verleden tijd bent.",
          "You only have one tense unlocked, so there is nothing to tell apart yet. Come back once you reach the past tense in Conjugador.") + "</p>" +
-      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     var b0 = document.getElementById("btnFunTerug");
     if(b0) b0.onclick = terug;
     return;
@@ -16923,7 +17325,7 @@ function renderFunTijdvorm(){
         ct("Je beste ronde tot nu toe: ", "Your best round so far: ") + st.beste + " / " + totaal + "</p>" : "") +
       "<div class='row' style='margin-top:10px'>" +
         "<button class='primary' id='btnTvNieuw'>" + ct("Nog een ronde", "Another round") + "</button>" +
-        "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+        "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     document.getElementById("btnTvNieuw").onclick = function(){ tijdvormStart(); renderFunTijdvorm(); };
     document.getElementById("btnFunTerug").onclick = terug;
     return;
@@ -16976,7 +17378,7 @@ function renderFunTijdvorm(){
             return "<button type='button' class='ghost tv-t' data-t='" + t + "' style='min-height:52px'>" +
               (x ? x.es : t) + "<br><span class='muted' style='font-weight:400; font-size:.78rem'>" + (x ? ct(x.nl, x.en) : "") + "</span></button>";
           }).join("") + "</div>") +
-    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    "<div class='row' style='margin-top:10px'><button class='mini' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
 
   Array.prototype.forEach.call(el.querySelectorAll(".tv-t"), function(b){
     b.onclick = function(){ tijdvormAntwoord(b.getAttribute("data-t")); };
@@ -17007,17 +17409,17 @@ function spelInfo(){
     /* v23.106: geen spel maar een meting, en hij staat hier omdat dit de plek is waar je iets
        kunt doen dat geen dagportie is. Zodra het brokkenmodel staat verhuist hij naar stap 1
        van indefinido-tegenover-imperfecto. */
-    {v:"brok",    id:"ftBrok",    e:"\ud83c\udfad",            t:ct("Achtergrond of gebeurtenis","Background or event"), s:ct("Twaalf Nederlandse zinnen, twee bakjes. Geen Spaans: dit meet of je de regel snapt, los van de vormen.","Twelve English sentences, two bins. No Spanish: this measures whether you get the rule, apart from the forms."), gezien:false, verse:function(){ brokSpel = null; }},
+    {v:"brok",    id:"ftBrok",    e:"\ud83c\udfad", gram:true,  t:ct("Achtergrond of gebeurtenis","Background or event"), s:ct("Twaalf Nederlandse zinnen, twee bakjes. Geen Spaans: dit meet of je de regel snapt, los van de vormen.","Twelve English sentences, two bins. No Spanish: this measures whether you get the rule, apart from the forms."), gezien:false, verse:function(){ brokSpel = null; }},
     /* v23.109: net als de brok geen spel maar een meting, en om dezelfde reden hier: dit is de
        plek waar je iets kunt doen dat geen dagportie is. Zodra het brokkenmodel staat wordt dit
        stap 2 van de vormladder. */
-    {v:"omkeer",  id:"ftOmkeer",  e:"\ud83d\udd0e",            t:ct("Wie is dit?","Who is this?"), s:ct("Een vervoegde vorm zonder voornaamwoord: wie is het? De omgekeerde richting van de Conjugador.","A conjugated form with no pronoun: who is it? The reverse direction of Conjugador."), gezien:false, verse:function(){ omkeerSpel = null; }},
+    {v:"omkeer",  id:"ftOmkeer",  e:"\ud83d\udd0e", gram:true,  t:ct("Wie is dit?","Who is this?"), s:ct("Een vervoegde vorm zonder voornaamwoord: wie is het? De omgekeerde richting van de Conjugador.","A conjugated form with no pronoun: who is it? The reverse direction of Conjugador."), gezien:false, verse:function(){ omkeerSpel = null; }},
     /* v23.116: de route door de grammatica. Staat bovenaan omdat hij de andere drie aanstuurt. */
-    {v:"pad",     id:"ftPad",     e:"\ud83e\udded",            t:ct("Grammatica","Grammar"), s:ct("De route door de verleden tijd, van het verschil snappen tot in een echte zin. Wijst je volgende stap aan.","The route through the past tense, from getting the difference to using it in a real sentence. Points at your next step."), gezien:false},
+    {v:"pad",     id:"ftPad",     e:"\ud83e\udded", gram:true,  t:ct("De route","The route"), s:ct("De route door de verleden tijd, van het verschil snappen tot in een echte zin. Wijst je volgende stap aan.","The route through the past tense, from getting the difference to using it in a real sentence. Points at your next step."), gezien:false},
     /* v23.115: geen meting maar een les, en daarom staat hij bovenaan. */
-    {v:"les",     id:"ftLes",     e:"\ud83d\udcd6",            t:ct("De les","The lesson"), s:ct("E\u00e9n tijd tegelijk, in vijf stappen. De eerste twee stellen geen vraag.","One tense at a time, in five steps. The first two ask nothing."), gezien:false, verse:function(){ lesSpel = null; }},
+    {v:"les",     id:"ftLes",     e:"\ud83d\udcd6", gram:true,  t:ct("De les","The lesson"), s:ct("E\u00e9n rijtje tegelijk, in " + LES_STAPPEN.length + " stappen: een tijd, of \u00e9\u00e9n van de zes patronen achter de onregelmatige werkwoorden.","One row at a time, in " + LES_STAPPEN.length + " steps: a tense, or one of the six patterns behind the irregular verbs."), gezien:false, verse:function(){ lesSpel = null; }},
     /* v23.113: de tweede helft van de omkering. Wie is dit? vraagt de persoon, deze de tijd. */
-    {v:"tijdvorm", id:"ftTijdvorm", e:"\u23f3",                t:ct("Welke tijd is dit?","Which tense is this?"), s:ct("Een vervoegde vorm zonder zin en zonder bijwoord: in welke tijd staat hij?","A conjugated form with no sentence and no adverb: which tense is it in?"), gezien:false, verse:function(){ tijdvormSpel = null; }},
+    {v:"tijdvorm", id:"ftTijdvorm", e:"\u23f3",     gram:true,  t:ct("Welke tijd is dit?","Which tense is this?"), s:ct("Een vervoegde vorm zonder zin en zonder bijwoord: in welke tijd staat hij?","A conjugated form with no sentence and no adverb: which tense is it in?"), gezien:false, verse:function(){ tijdvormSpel = null; }},
     {v:"mem",     id:"ftMem",     e:"\ud83c\udccf",            t:"Memory \u00b7 Parejas",  s:fx("meS")},
     {v:"duel",    id:"ftDuel",    e:"\u2694\ufe0f",            t:"Palabra Duel",          s:fx("duS"), gezien:false}
   ];
@@ -17027,6 +17429,25 @@ function spelInfoVan(v){
   for(i = 0; i < L.length; i++){ if(L[i].v === v) return L[i]; }
   return null;
 }
+/* ===== v23.124: waar een tegel woont =====
+
+   Stefan: "het moet sowieso niet bij Spelen maar bij Grammatica." En toen hij de route zocht die
+   ik hem net geleverd had: "hoe heet ie dan? ik vind hem niet." Hij keek op de Grammatica-tab, en
+   de route stond elfde in de Speeltuin tussen Crucigrama en Memory.
+
+   De streep bestond al sinds v21.5: onder Oefenen telt het mee voor je niveau, onder Spelen niet.
+   Deze vijf tellen mee. Ze staan nu aan de goede kant, en de tegel draagt dat zelf (gram:true), zodat
+   de Speeltuin, de Grammatica-tab en de dagkaart alle drie hetzelfde ene veld lezen. */
+function speelTegels(){ return spelInfo().filter(function(x){ return !x.gram; }); }
+function gramTegels(){ return spelInfo().filter(function(x){ return !!x.gram; }); }
+/* De hertoets heeft geen eigen tegel (je komt er alleen via het pad) maar hoort wel bij dit blok:
+   ook daaruit hoor je terug te komen op de Grammatica-tab en niet in de Speeltuin. */
+function gramViews(){
+  var r = ["hertoets"];
+  gramTegels().forEach(function(x){ r.push(x.v); });
+  return r;
+}
+function isGramView(v){ return !!v && gramViews().indexOf(v) !== -1; }
 /* De regels komen uit twee generaties tekst: sommige beginnen met een kleine letter en missen een
    punt ("puzzel met jouw geleerde woorden"), andere zijn hele zinnen. Onder elkaar in een lijst
    valt dat meteen op. Repareren bij het tonen en niet in de teksten zelf, want die staan ook in de
@@ -17041,9 +17462,12 @@ function spelZin(s){
 /* Aventura staat vast op de dagkaart (dat is het grote spel) en Palabra Duel heeft een tweede
    speler nodig. De rest wisselt per dag, Música inbegrepen: die heeft geen materiaal nodig en is
    daarmee op dag 1 het enige wat naast Aventura echt kan draaien. */
-/* v23.109: omkeer erbij, om dezelfde reden als brok. Dit zijn metingen, geen dagportie: ze
-   horen niet mee te tellen in het dagritme en het dagscherm hoort er niet naar te wijzen. */
-var DAGSPEL_UIT = {avt:1, duel:1, brok:1, omkeer:1, tijdvorm:1, les:1, pad:1};
+/* v23.124: hier stonden brok, omkeer, tijdvorm, les en pad ook in, en dat waren precies de
+   gram-tegels. Een tweede handgeschreven lijst met dezelfde namen erin is een vergeetplek: wie er
+   morgen een grammatica-oefening bij zet, zet hem hier niet bij en vindt hem dan op de dagkaart
+   terug tussen de spelletjes. Nu afgeleid. Wat overblijft is wat er echt in thuishoort: Aventura
+   staat vast op de kaart (dat is het grote spel) en Palabra Duel heeft een tweede speler nodig. */
+var DAGSPEL_UIT = {avt:1, duel:1};
 /* v23.65, en dit was een echte fout. In DAGSPELLEN stonden Escuchar, El Corrector en Rompecabezas,
    dus de kaart met de kop "Even spelen" bood drie oefeningen aan. De regel van v21.5 is in één zin
    te zeggen (Stefan: "lessen, dat zijn de oefeningen, die zitten nu ook onder speeltuin"): onder
@@ -17051,7 +17475,7 @@ var DAGSPEL_UIT = {avt:1, duel:1, brok:1, omkeer:1, tijdvorm:1, les:1, pad:1};
    dagkaart niet. Het eindscherm van de les wist het trouwens al wel: lesFlowWinst() biedt El
    Corrector aan als "hier win je het meeste" en lesFlowLeuk() een spel als "of gewoon leuk". */
 function dagSpellen(){
-  return spelInfo().filter(function(x){ return !DAGSPEL_UIT[x.v]; });
+  return speelTegels().filter(function(x){ return !DAGSPEL_UIT[x.v]; });
 }
 /* v23.65: het aantal is een parameter geworden. De dagkaart toont sinds deze versie regels met
    een zin erbij in plaats van tegels, en dan zijn drie voorstellen naast Aventura te veel scherm.
@@ -20538,6 +20962,9 @@ var NAV_HOOFD = [
 /* Oefeningen die in de speeltuinkaart renderen (funView). Ze horen bij Oefenen, dus moet de balk
    Oefenen laten oplichten en niet Spelen, ook al staan ze technisch in hetzelfde scherm. */
 var OEFEN_FUNVIEWS = ["audi", "corr", "conj"];
+/* v23.124: de grammatica-oefeningen komen er afgeleid bij. Ze wonen op de Grammatica-tab, en die
+   laat Oefenen oplichten, dus hoort de balk niet om te springen zodra je er een opent. */
+function inOefenFunView(v){ return OEFEN_FUNVIEWS.indexOf(v) !== -1 || isGramView(v); }
 var OEFEN_TABS = ["vertalen", "lezen", "spiekbrief", "oefenen"];
 
 // Alles wat niet in de balk past. De tweede regel is geen decoratie: mijn moeder wist bij de helft
@@ -20612,7 +21039,7 @@ function oefenItems(){
      s:ct("Bouw werkwoorden uit stam en uitgang. Hoeveel echte vormen haal je uit zes zetten?",
           "Build verbs from stem and ending. How many real forms can you make in six moves?")},
     {id:"spiekbrief", soort:"tab", ico:"📐", t:ct("Grammatica","Grammar"),
-     s:ct("Regels opzoeken en oefenen, zonder ze uit je hoofd te leren.","Look up the rules and practise them, no memorising.")}
+     s:ct("De route door de verleden tijd, de losse oefeningen en alle regels om op te zoeken.","The route through the past tense, the separate exercises, and all the rules to look up.")}
   ];
 }
 function renderOefenen(){
@@ -24114,7 +24541,7 @@ function renderFunKruisLos(){
     if(!kruisLos){ funView = null; renderFun(); return; }
   }
   renderKruisUI(el, kruisLos, {
-    tLabel: fx("terug"),
+    tLabel: funTerugLabel(),
     hintAltijd: true,
     weg: function(){ kruisLos = null; funView = null; renderFun(); },
     nieuw: function(){ kruisLos = kruisBouw(); renderFun(); },
@@ -24811,7 +25238,7 @@ function renderFunMem(){
     html += "<p class='muted'>" + fx("memIntro") + "</p>"+
       (S.memBest ? "<p class='muted'>" + fx("memRecord") + " <b>"+S.memBest+" " + fx("memBeurten") + "</b> 🏅</p>" : "")+
       "<div class='row'><button class='primary' id='btnMem'>" + fx("memNieuw") + "</button>"+
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     el.innerHTML = html;
     var b0 = document.getElementById("btnMem");
     if(b0) b0.onclick = memStart;
@@ -24835,7 +25262,7 @@ function renderFunMem(){
       (S.memBest === mem.beurten ? " " + fx("memNieuwRec") : "")+"</p>";
   }
   html += "<div class='row'><button class='ghost' id='btnMemNieuw'>" + fx("memNieuw") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("button[data-mem]").forEach(function(b){
     b.onclick = function(){ memClick(+b.getAttribute("data-mem")); };
@@ -25707,7 +26134,7 @@ function renderFunAdivina(){
     el.innerHTML = "<h2>Adivina 🟩</h2><p class='muted'>" +
       ct("Nog geen woorden van vijf of zes letters om mee te spelen.",
          "No five or six letter words to play with yet.") + "</p>" +
-      "<div class='row' style='margin-top:10px'><button class='ghost' id='btnFunTerug'>" + fx("terug") +
+      "<div class='row' style='margin-top:10px'><button class='ghost' id='btnFunTerug'>" + funTerugLabel() +
       "</button></div>";
     var tb = document.getElementById("btnFunTerug");
     if(tb) tb.onclick = function(){ funView = null; renderFun(); };
@@ -25786,7 +26213,7 @@ function renderFunAdivina(){
     "<div class='row' style='margin-top:10px'>" +
       (klaar ? "<button class='primary' id='btnAdivNieuw'>" + ct("Nog een","Another one") + "</button>"
              : "<button class='ghost' id='btnAdivNieuw'>" + ct("Ander woord","Another word") + "</button>") +
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>" +
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>" +
     (klaar === 1 ? naRondeHtml() : "");
 
   el.querySelectorAll("[data-adivk]").forEach(function(b){
@@ -25802,6 +26229,57 @@ function renderFunAdivina(){
   document.getElementById("btnAdivNieuw").onclick = function(){ adivNieuw(); renderFunAdivina(); };
   document.getElementById("btnFunTerug").onclick = function(){ funView = null; renderFun(); };
   if(klaar === 1) naRondeWire();
+}
+
+/* ===== v23.124: één rij, twee tabs =====
+   De Speeltuin en de Grammatica-tab tekenen dezelfde soort regel en handelen dezelfde klik af.
+   Twee kopieën daarvan zouden na precies één ronde uit elkaar lopen; zie de toelichting bij
+   speelTegels(). */
+function tegelLijstHtml(lijst){
+  var nu = "", straks = "";
+  lijst.forEach(function(g){
+    var kop = "<div class='lnum'>"+g.e+"</div><div class='lbody'><b>"+g.t+"</b><span>";
+    if(speelKlaar(g.v)){
+      nu += "<div class='lesson' id='"+g.id+"'>"+kop+spelZin(g.s)+"</span></div><div class='lstatus'>\u25b6</div></div>";
+    } else {
+      straks += "<div class='lesson' style='opacity:.5'>"+kop+speelWacht(g.v)+"</span></div><div class='lstatus'>\u00b7</div></div>";
+    }
+  });
+  return {nu:nu, straks:straks};
+}
+/* show() en niet renderFun(), en dat is nieuw: de tegel kan nu vanaf twee tabs aangeklikt worden.
+   Vanaf Grammatica moet de speeltuinkaart eerst zichtbaar worden, en show() zet meteen het juiste
+   vak in de balk aan. Op de Speeltuin zelf verandert er niets, want show("speeltuin") tekent de
+   kaart opnieuw. */
+function speelStart(g){
+  if(!g) return;
+  if(g.open){ g.open(); return; }
+  if(g.gezien !== false) speelGezien(g.v);
+  if(g.verse) g.verse();
+  funView = g.v;
+  navPush({t:"fun", v:g.v});
+  show("speeltuin", true);
+}
+function tegelWire(lijst){
+  lijst.forEach(function(g){
+    var b = document.getElementById(g.id);
+    if(b) b.onclick = function(){ speelStart(g); };
+  });
+}
+/* Waar je uitkomt als je een oefening verlaat, hangt af van waar hij woont. Een
+   grammatica-oefening brengt je terug naar de Grammatica-tab: daar ben je vandaan gekomen, en
+   daar staat wat je nu kunt doen. */
+/* v23.125: op elk grammatica-scherm stond "← Speeltuin" op de terugknop, terwijl je sinds
+   v23.124 op de Grammatica-tab uitkomt. Een knop die de verkeerde plek belooft is erger dan een
+   knop zonder tekst. Één plek die het weet, dezelfde plek die de knop ook echt afhandelt. */
+function funTerugLabel(){
+  return isGramView(funView) ? ct("← Grammatica", "← Grammar") : fx("terug");
+}
+function funTerug(){
+  var v = funView;
+  funView = null;
+  if(isGramView(v)){ gwSess = null; gcLeesId = null; show("spiekbrief"); return; }
+  renderFun();
 }
 
 function renderFun(){
@@ -25830,16 +26308,12 @@ function renderFun(){
   /* v23.65: uit spelInfo(), zodat dit scherm en de dagkaart niet meer uit elkaar kunnen lopen.
      De inhoud van deze lijst verandert niet: precies dezelfde negen spellen als hiervoor. Wat
      verandert is dat de dagkaart nu uit dezelfde bron leest, en dat de oefeningen daar weg zijn. */
-  var SPEELMENU = spelInfo();
-  var nuHtml = "", straksHtml = "";
-  SPEELMENU.forEach(function(g){
-    var kop = "<div class='lnum'>"+g.e+"</div><div class='lbody'><b>"+g.t+"</b><span>";
-    if(speelKlaar(g.v)){
-      nuHtml += "<div class='lesson' id='"+g.id+"'>"+kop+spelZin(g.s)+"</span></div><div class='lstatus'>\u25b6</div></div>";
-    } else {
-      straksHtml += "<div class='lesson' style='opacity:.5'>"+kop+speelWacht(g.v)+"</span></div><div class='lstatus'>\u00b7</div></div>";
-    }
-  });
+  /* v23.124: de grammatica-tegels staan hier niet meer, die wonen op de Grammatica-tab. De
+     opmaak en de klik staan in tegelLijstHtml/tegelWire, want anders zou dezelfde rij op twee
+     plekken getekend worden en dat is precies wat in v23.112 een dode tegel opleverde. */
+  var SPEELMENU = speelTegels();
+  var rijen = tegelLijstHtml(SPEELMENU);
+  var nuHtml = rijen.nu, straksHtml = rijen.straks;
   /* v23.98: er stond niet wat een spel oplevert, terwijl Oefenen dat wel zegt. Je kon dus niet
      weten welk spel je verder helpt en welk puur vermaak is, en dat verschil is er wel degelijk:
      zie spelSrsBij() en SPEL_PLAFOND. */
@@ -25858,21 +26332,11 @@ function renderFun(){
       (profLang()==="nl" ? "Nodig een vriend uit 🔗" : "Invite a friend 🔗")+"</button></div>"+
     "<p class='muted' style='font-size:.85rem; margin-top:6px'>" + fx("klassement") + "</p>";
   bindUitnodig("speeltuin");
-  function wire(id, fn){ var b = document.getElementById(id); if(b) b.onclick = fn; }
-  /* v23.112: hier stond een handgeschreven rij van tien wire-regels naast SPEELMENU. Twee lijsten
-     met dezelfde tegels erin, met de hand synchroon gehouden, en dus liepen ze uit elkaar: de
-     omkering-tegel van v23.109 stond wel in spelInfo() en niet in die rij, dus hij tekende netjes
-     en deed niets. Nu loopt de koppeling over SPEELMENU, en is een tegel zonder afhandeling
-     onmogelijk. Wat per spel anders is staat als data bij dat spel (zie spelInfo). */
-  SPEELMENU.forEach(function(g){
-    wire(g.id, g.open || function(){
-      if(g.gezien !== false) speelGezien(g.v);
-      if(g.verse) g.verse();
-      funView = g.v;
-      navPush({t:"fun", v:g.v});
-      renderFun();
-    });
-  });
+  /* v23.112: hier stond een handgeschreven rij van tien wire-regels naast SPEELMENU, en die liep
+     uit de pas: de omkering-tegel stond wel in spelInfo() en niet in die rij, dus hij tekende
+     netjes en deed niets. De koppeling loopt sindsdien over de lijst zelf. v23.124 verhuist hem
+     naar tegelWire(), zodat de Grammatica-tab hem hergebruikt in plaats van hem na te bouwen. */
+  tegelWire(SPEELMENU);
   var sa = document.getElementById("speelAlles");
   if(sa) sa.onclick = function(ev){
     if(ev && ev.preventDefault) ev.preventDefault();
@@ -27222,7 +27686,7 @@ function renderFunWs(){
   if(!ws){
     html += "<p class='muted'>" + fx("wsIntro") + "</p>"+
       "<div class='row'><button class='primary' id='btnWs'>" + fx("wsNieuw") + "</button>"+
-      "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+      "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
     el.innerHTML = html;
     var b0 = document.getElementById("btnWs");
     if(b0) b0.onclick = wsStart;
@@ -27246,7 +27710,7 @@ function renderFunWs(){
         : " <button class='wshint' data-hint='"+i+"' title='" + fx("wsHintT") + "'>\ud83d\udca1</button>");
     }).join(" \u00b7 ")+"</p>"+
     "<div class='row'><button class='ghost' id='btnWsNieuw'>" + fx("wsPuzzelNieuw") + "</button>"+
-    "<button class='ghost' id='btnFunTerug'>" + fx("terug") + "</button></div>";
+    "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>";
   el.innerHTML = html;
   el.querySelectorAll("button[data-ws]").forEach(function(b){
     b.onclick = function(){
@@ -31329,7 +31793,10 @@ function renderCheat(){
     jargonScan(el);
     return;
   }
-  el.innerHTML = gwLijstHtml() + spiekNaslagHtml() + gwToetsSectieHtml();
+  /* v23.124: de route en de losse oefeningen staan bovenaan, want dat is wat je hier komt doen.
+     De onderwerpen eronder zijn naslag en herhaling, en die stonden er al. */
+  el.innerHTML = gramHomeHtml() + gwLijstHtml() + spiekNaslagHtml() + gwToetsSectieHtml();
+  gramHomeWire();
   el.querySelectorAll("button[data-spiekquiz]").forEach(function(b){
     b.onclick = function(){
       var qid = b.getAttribute("data-spiekquiz");
@@ -32039,7 +32506,7 @@ function show(tabId, skipPush){
   var inMeer = ["cursus","musica","chispa","perfil"].indexOf(tabId) !== -1;
   // Oefenen licht op zodra je in een oefening zit, ook als die technisch in de speeltuinkaart woont.
   var inOefen = OEFEN_TABS.indexOf(tabId) !== -1 ||
-                (tabId === "speeltuin" && OEFEN_FUNVIEWS.indexOf(funView) !== -1);
+                (tabId === "speeltuin" && inOefenFunView(funView));
   document.querySelectorAll("#nav button").forEach(function(b){
     var id = b.getAttribute("data-tab");
     var aan = id === "__meer" ? inMeer : (id === "oefenen" ? inOefen : (id === tabId && !inOefen));

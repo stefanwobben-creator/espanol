@@ -21,6 +21,7 @@
 // En de gebruikelijke controles: de opgaven zijn niet te bedriegen, de tabel is er in stap 2 en 3
 // en wég in stap 4, en de voortgang wordt onthouden.
 const { chromium } = require('playwright');
+const { naarTegel, naarTegelTab } = require('./tegelhulp.js');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -83,17 +84,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     data.overdracht.map((x) => x.t + ':' + x.n).join(' ') + ')');
 
   // ---- 2. het keuzescherm en de aanbeveling ----
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.click('#nav button[data-tab="speeltuin"]');
-  await page.waitForTimeout(250);
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.waitForTimeout(200);
-  const tegel = await page.locator('#ftLes').count();
-  if (tegel) await page.click('#ftLes');
-  await page.waitForTimeout(300);
+  const tegel = await naarTegel(page, 'ftLes');
   const keuze = await page.evaluate(() => ({
     view: funView,
     knoppen: document.querySelectorAll('.les-t').length,
+    // v23.125: hier stond "5". Sinds de les ook patronen onderwijst zijn het er elf, en het
+    // vaste getal is de vijfde keer dat testcode een aantal napraatte dat in de data staat.
+    rijen: lesRijIds().length,
     aanbevolen: (document.getElementById('lesAanbevolen') || {}).innerText || ''
   }));
   const metStruikel = await page.evaluate(() => {
@@ -105,7 +102,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- het keuzescherm --');
   ok(tegel === 1 && keuze.view === 'les', 'de tegel staat er en klikken opent de les (nu: ' + keuze.view + ')');
-  ok(keuze.knoppen === 5, 'één knop per open tijd (nu: ' + keuze.knoppen + ')');
+  ok(keuze.knoppen === keuze.rijen, 'één knop per rij die de les kan onderwijzen (nu: ' + keuze.knoppen + ' van de ' + keuze.rijen + ')');
   ok(keuze.aanbevolen === '', 'zonder struikelblok geen aanbeveling (geen verzonnen advies)');
   ok(/imperfecto/.test(metStruikel),
     'met een struikelblok uit v23.114 wijst hij die tijd aan ("' + metStruikel.replace(/\s+/g, ' ').slice(0, 90) + '")');

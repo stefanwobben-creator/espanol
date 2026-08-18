@@ -27,6 +27,7 @@
 // ("ik werkte bij die firma toen ik hem leerde kennen" tegenover "ik werkte drie jaar bij die
 // firma"). Zonder dat paar kun je op het werkwoord patroonherkennen en meet de test niets.
 const { chromium } = require('playwright');
+const { naarTegel, naarTegelTab } = require('./tegelhulp.js');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -35,7 +36,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
 // Speelt één hele ronde. keuze is 'a', 'g', of 'echt' (het juiste antwoord per zin).
 async function ronde(page, keuze) {
-  await page.evaluate(() => { funView = 'brok'; brokSpel = null; renderFun(); });
+  // v23.124: show() en niet renderFun(). De tegel woont nu op de Grammatica-tab, dus staat de
+  // speeltuinkaart verstopt als je hier binnenkomt, en dan valt er niets aan te klikken.
+  await page.evaluate(() => { funView = 'brok'; brokSpel = null; show('speeltuin', true); });
   await page.waitForTimeout(200);
   for (let i = 0; i < 12; i++) {
     const wil = keuze === 'echt'
@@ -100,16 +103,16 @@ async function ronde(page, keuze) {
     'het strikpaar staat erin: twee keer "werkte", twee verschillende antwoorden');
 
   // ---- 2. de drie controlerondes ----
-  await page.click('#nav button[data-tab="speeltuin"]');
-  await page.waitForTimeout(300);
-  const tegel = await page.locator('#ftBrok').count();
+  // v23.124: de tegel is verhuisd naar de Grammatica-tab. Welke tab dat is vraagt tegelhulp aan
+  // de app, zodat deze suite dat feit niet napraat.
+  const tegel = await naarTegelTab(page, 'ftBrok', false);
 
   const altijdA = await ronde(page, 'a');
   const altijdG = await ronde(page, 'g');
   const echt = await ronde(page, 'echt');
 
   console.log('\n-- de meting keurt niet alles goed en niet alles fout --');
-  ok(tegel === 1, 'de tegel staat in de Speeltuin');
+  ok(tegel === 1, 'de tegel staat op de tab waar hij hoort');
   ok(altijdA.goed === 6, 'CONTROLE: altijd "achtergrond" geeft precies 6/12 (nu: ' + altijdA.goed + ')');
   ok(altijdG.goed === 6, 'CONTROLE: altijd "gebeurtenis" geeft precies 6/12 (nu: ' + altijdG.goed + ')');
   ok(echt.goed === 12, 'CONTROLE: het juiste antwoord per zin geeft 12/12 (nu: ' + echt.goed + ')');

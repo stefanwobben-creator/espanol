@@ -26,6 +26,7 @@
 //      geantwoord hebt. Dit is exact de fout die in de Conjugador zit (288/288 meerkeuzevragen met
 //      een unieke persoonsuitgang tussen de opties), en dit scherm bestaat om hem niet te maken.
 const { chromium } = require('playwright');
+const { naarTegel, naarTegelTab } = require('./tegelhulp.js');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -134,14 +135,8 @@ async function ronde(page, keuze) {
   // v23.112: KLIKKEN, niet tellen. Hiervoor stond hier alleen of het element bestond, en daarna
   // werd het scherm geopend met funView = "omkeer". Zo bleef deze check groen terwijl de tegel
   // geen onclick had en dus niets deed. Stefan vond dat, niet de poort.
-  await page.evaluate(() => { funView = null; S.speelAlles = true; renderFun(); });
-  await page.click('#nav button[data-tab="speeltuin"]');
-  await page.waitForTimeout(300);
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.waitForTimeout(200);
-  const tegel = await page.locator('#ftOmkeer').count();
-  if (tegel) await page.click('#ftOmkeer');
-  await page.waitForTimeout(300);
+  await page.evaluate(() => { S.speelAlles = true; });
+  const tegel = await naarTegel(page, 'ftOmkeer');
   const viaTegel = await page.evaluate(() => funView);
 
   const altijd0 = await ronde(page, 0);
@@ -149,7 +144,7 @@ async function ronde(page, keuze) {
   const echt = await ronde(page, 'echt');
 
   console.log('\n-- de meting --');
-  ok(tegel === 1, 'de tegel staat in de Speeltuin');
+  ok(tegel === 1, 'de tegel staat op de tab waar hij hoort');
   ok(viaTegel === 'omkeer', 'en klikken erop opent het scherm ook echt (nu: ' + viaTegel + ')');
   ok(altijd0.goed < altijd0.n && altijd3.goed < altijd3.n,
     'CONTROLE: altijd dezelfde knop geeft nooit alles goed (' + altijd0.goed + '/' + altijd0.n + ' en ' + altijd3.goed + '/' + altijd3.n + ')');

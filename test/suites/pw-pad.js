@@ -21,9 +21,13 @@
 // En de controle die dit alles tanden geeft: als je de brokken vult alsof je alles gehaald hebt,
 // moet het pad kantelen. Een pad dat altijd hetzelfde zegt is geen pad.
 const { chromium } = require('playwright');
+const { naarTegel, naarTegelTab } = require('./tegelhulp.js');
 // v23.120: de fixture staat in padvul.js, want vier suites hielden hun eigen lijstje bij en
 // vier keer viel er een om toen er een stap bij kwam. Zie de kop van dat bestand.
 const { VUL } = require('./padvul.js');
+// v23.126: er is meer dan één route. Deze suite gaat over GRAM_PADEN[0], dus zet hij padView
+// voor elke render: zonder dat toont het scherm de route waar je in staat, en dat is bij een leeg
+// profiel de eerste uit de ladder en niet deze.
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -96,7 +100,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   // ---- 2. verse gebruiker: alles dicht behalve stap 1 ----
   const vers = await page.evaluate(() => {
     S.brok = {};
-    funView = 'pad'; renderFun();
+    padView = GRAM_PADEN[0].id; funView = 'pad'; renderFun();
     const p = GRAM_PADEN[0];
     return {
       volgende: gramPadVolgende(p),
@@ -166,7 +170,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     // alles gehaald BEHALVE de hertoets: die mag pas na de wachttijd (v23.117), dus het pad hoort
     // nog niet klaar te zijn. Afgeleid uit de padvorm en niet uit een opgeschreven index.
     vulPad(p, p.stappen.findIndex((s) => s.soort === 'hertoets'));
-    funView = 'pad'; renderFun();
+    padView = GRAM_PADEN[0].id; funView = 'pad'; renderFun();
     const keuze = p.stappen.findIndex((x) => x.soort === 'keuze');
     return {
       keuze,
@@ -195,31 +199,26 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: vers stond het hele pad op nul, dus deze meting kan verschil zien');
 
   // ---- 7. de knop gaat naar de juiste plek ----
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.click('#nav button[data-tab="speeltuin"]');
-  await page.waitForTimeout(250);
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.waitForTimeout(200);
-  const tegel = await page.locator('#ftPad').count();
-  if (tegel) await page.click('#ftPad');
-  await page.waitForTimeout(300);
+  // v23.124: de route is verhuisd naar de Grammatica-tab, waar hij aan de knop onder de
+  // routekaart hangt. Welke tab dat is vraagt tegelhulp aan de app.
+  const tegel = await naarTegel(page, 'ftPad');
   const route = await page.evaluate(new Function(VUL + `
     const p = GRAM_PADEN[0];
     vulPad(p, 0);
     funView = null; gwSess = null;
-    funView = 'pad'; renderFun();
+    padView = GRAM_PADEN[0].id; funView = 'pad'; renderFun();
     document.getElementById('btnPadVerder').click();
     const na1 = {view: funView, wiz: gwSess ? gwSess.id : null};
     // de eerste twee stappen gehaald: de knop hoort nu naar de derde te gaan
     vulPad(p, 2);
-    funView = 'pad'; renderFun();
+    padView = GRAM_PADEN[0].id; funView = 'pad'; renderFun();
     const derde = p.stappen[2];
     document.getElementById('btnPadVerder').click();
     return { na1, na2: {view: funView, wiz: gwSess ? gwSess.id : null}, derde: derde.soort };
   `));
 
   console.log('\n-- de knop --');
-  ok(tegel === 1, 'de tegel staat in de Speeltuin');
+  ok(tegel === 1, 'de tegel staat op de tab waar hij hoort');
   ok(!!route.na1.wiz, 'stap 1 opent de bestaande uitleg (nu: ' + route.na1.wiz + ')');
   ok(route.na2.view === 'brok' || !!route.na2.wiz,
     'en met de eerste twee gehaald gaat de knop naar de derde stap, een ' + route.derde);

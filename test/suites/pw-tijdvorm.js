@@ -23,6 +23,7 @@
 //      plaats van twaalf keer hetzelfde antwoord te vragen
 //   6. de tegel wordt AANGEKLIKT, niet geteld (zie pw-tegels en de les van v23.112)
 const { chromium } = require('playwright');
+const { naarTegel, naarTegelTab } = require('./tegelhulp.js');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
@@ -142,18 +143,11 @@ async function ronde(page, keuze) {
   ok(opzet.max <= 3, 'CONTROLE: gespreid, niet twaalf keer presente (hoogste: ' + opzet.max + ')');
 
   // ---- 4. de tegel, aangeklikt ----
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.click('#nav button[data-tab="speeltuin"]');
-  await page.waitForTimeout(250);
-  await page.evaluate(() => { funView = null; renderFun(); });
-  await page.waitForTimeout(200);
-  const tegel = await page.locator('#ftTijdvorm').count();
-  if (tegel) await page.click('#ftTijdvorm');
-  await page.waitForTimeout(300);
+  const tegel = await naarTegel(page, 'ftTijdvorm');
   const viaTegel = await page.evaluate(() => funView);
 
   console.log('\n-- de tegel --');
-  ok(tegel === 1, 'de tegel staat in de Speeltuin');
+  ok(tegel === 1, 'de tegel staat op de tab waar hij hoort');
   ok(viaTegel === 'tijdvorm', 'en klikken opent het scherm ook echt (nu: ' + viaTegel + ')');
 
   // ---- 5. de meting keurt niet alles goed en niet alles fout ----

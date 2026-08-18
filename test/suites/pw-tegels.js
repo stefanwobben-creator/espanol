@@ -19,6 +19,11 @@
 //
 // Deze suite loopt daarom over ALLE tegels uit spelInfo(), klikt er echt op, en eist dat er iets
 // verandert. Dat vangt deze fout voor elke tegel die er ooit nog bij komt.
+//
+// v23.124: de tegels wonen niet meer allemaal op hetzelfde scherm. Wie gram:true draagt staat op de
+// Grammatica-tab, de rest in de Speeltuin. Welke tab dat is leest deze suite uit datzelfde veld en
+// niet uit een eigen lijstje: dat lijstje zou de zesde keer worden dat testcode een feit napraat dat
+// al in de data staat (zie de kop van padvul.js).
 const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
@@ -47,22 +52,30 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   // alles zichtbaar, anders staat de helft onder "komt er straks bij" en zonder id op het scherm
   await page.evaluate(() => { S.lang = 'nl'; S.speelAlles = true; try { persist(); } catch (e) {} });
 
-  const lijst = await page.evaluate(() => spelInfo().map((g) => ({ v: g.v, id: g.id, t: g.t })));
+  const lijst = await page.evaluate(() => spelInfo().map((g) => ({ v: g.v, id: g.id, t: g.t, gram: !!g.gram })));
 
   console.log('\n-- de lijst --');
   ok(lijst.length >= 11, 'er staan ' + lijst.length + ' tegels in spelInfo()');
   ok(lijst.every((g) => g.v && g.id && g.t), 'elke tegel heeft een view, een id en een titel');
   ok(new Set(lijst.map((g) => g.id)).size === lijst.length, 'geen twee tegels met hetzelfde id');
 
+  // naar het scherm waar deze tegel woont, in een schone staat
+  async function naarThuis(gram) {
+    await page.evaluate(() => { funView = null; });
+    if (gram) {
+      await page.evaluate(() => { gwSess = null; gcLeesId = null; show('spiekbrief'); });
+    } else {
+      await page.click('#nav button[data-tab="speeltuin"]');
+      await page.waitForTimeout(200);
+      await page.evaluate(() => { funView = null; renderFun(); });
+    }
+    await page.waitForTimeout(200);
+  }
+
   console.log('\n-- elke tegel klikken --');
   const dood = [];
   for (const g of lijst) {
-    // terug naar de Speeltuin, in een schone staat
-    await page.evaluate(() => { funView = null; renderFun(); });
-    await page.click('#nav button[data-tab="speeltuin"]');
-    await page.waitForTimeout(200);
-    await page.evaluate(() => { funView = null; renderFun(); });
-    await page.waitForTimeout(150);
+    await naarThuis(g.gram);
 
     const bestaat = await page.locator('#' + g.id).count();
     if (!bestaat) { dood.push(g.id + ' (staat niet op het scherm)'); continue; }
@@ -96,8 +109,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   // ---- controle: heeft deze suite tanden? ----
   // Een tegel zonder afhandeling moet hier omvallen. Simulatie: teken de Speeltuin, haal de
   // onclick van één tegel weg, klik, en kijk of er inderdaad niets verandert.
+  await naarThuis(true);
   const tanden = await page.evaluate(() => {
-    funView = null; renderFun();
     const el = document.getElementById('ftOmkeer');
     if (!el) return null;
     el.onclick = null;
