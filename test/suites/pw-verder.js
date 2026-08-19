@@ -113,6 +113,23 @@ async function bewaard(page) {
   const na1 = await bewaard(page);
   ok(!!na1 && na1.stap === 'woorden', 'het herstelpunt overleeft het herladen van het tabblad');
   ok(await page.evaluate(() => lesFlow === null), 'terwijl de draaiende les wél weg is');
+  /* v23.131: hier verwachtte deze suite meteen "Verder waar je was", terwijl er nog geen enkel
+     antwoord gegeven was. Dat is precies de zin die een gloednieuwe gebruiker op zijn eerste scherm
+     te lezen kreeg. Verdergaan veronderstelt dat je ergens wás, dus eerst de nieuwe regel meten, en
+     daarna pas het gedrag waar deze suite voor bestaat. */
+  const kaart0 = await startKaart(page);
+  ok(/Start je les/i.test(kaart0.kicker),
+    'DE REGEL: begonnen maar niets beantwoord blijft "Start je les" (' + kaart0.kicker + ')');
+  ok(!!(await bewaard(page)),
+    'CONTROLE: het herstelpunt staat er wél, dus je komt nog steeds op stap 1 terug');
+
+  // en nu iemand die vandaag echt iets gedaan heeft
+  await page.evaluate(() => {
+    S.newIntro = S.newIntro || {}; S.newIntro[today()] = 1;
+    try { persist(); } catch (e) {}
+    show('lessen');   // het dagscherm opnieuw tekenen, anders lees je de vorige stand
+  });
+  await page.waitForTimeout(600);
   const kaart1 = await startKaart(page);
   ok(/Verder waar je was/i.test(kaart1.kicker), 'het kopje zegt nu "Verder waar je was" (' + kaart1.kicker + ')');
   ok(/stap 1\/4/i.test(kaart1.kicker), 'met de stap erbij, zodat het geen vage belofte is');
