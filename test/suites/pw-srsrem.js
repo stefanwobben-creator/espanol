@@ -59,10 +59,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     avtSrsBij(w2, true, true);
     uit.tweedeKeerStil = S.srs[w2.id].box === voor;
 
-    // HET CONTROLEGEVAL: met een oude dag hoort hij wél op te schuiven
+    // HET CONTROLEGEVAL: met een oude dag hoort hij wél op te schuiven.
+    // v23.132: hoevéél dozen hij opschuift is niet aan deze suite. Een woord dat je nog nooit fout
+    // had schuift sinds die ronde twee dozen tegelijk op (srsStap). De rem hier gaat over de dag,
+    // niet over de stapgrootte; die staat in pw-ladder.js. Deze regel eiste `voor + 1` en werd
+    // daardoor rood op een gedragsverandering die hij niet bewaakt.
     S.srs[w2.id].bd = '2000-01-01';
     avtSrsBij(w2, true, true);
-    uit.controleStijgt = S.srs[w2.id].box === voor + 1;
+    uit.controleStijgt = S.srs[w2.id].box > voor;
 
     // spelSrsBij levert de tweede keer op dezelfde dag niets meer op
     S.srs[w3.id] = { box: 0, due: today() };

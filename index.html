@@ -1458,7 +1458,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.131";
+var APP_VERSIE = "v23.132";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7574,7 +7574,28 @@ function toast(msg){
 function today(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function addDays(dateStr, n){ var p=dateStr.split("-"); var d=new Date(+p[0], +p[1]-1, +p[2]); d.setDate(d.getDate()+n);
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
-var INTERVALS = [0,1,3,7,14,30];
+/* ================= DE LADDER (v23.132) =================
+   Stond tot v23.132 op [0,1,3,7,14,30]. De bovenste doos was 30 dagen, en dat was tegelijk de doos
+   waar een woord voorgoed in bleef zitten: elk woord dat je ooit bewijst kwam twaalf keer per jaar
+   terug, voor altijd. Bij 313 woorden is dat een stuk of tien per dag; bij de 1907 die er met een
+   niveauprofiel in zitten ruim zestig, elke dag, alleen aan dingen die je al kunt. De dagelijkse
+   last groeide dus lineair mee met alles wat je erbij leerde.
+
+   Er komen drie dozen boven: twee maanden, vier maanden, acht maanden. Dezelfde 1907 woorden geven
+   dan acht herhalingen per dag. Grond: hoe langer het interval dat je nog nét haalt, hoe langer het
+   daarna blijft zitten (Bahrick op jarenschaal, Kim & Webb 2022 op weken- en maandenschaal). Blijkt
+   een interval te lang, dan zet het foute antwoord je terug op doos 0 en corrigeert het zichzelf
+   binnen een beurt.
+
+   Wat NIET verandert is de ladder tot en met de maand, inclusief de Laatste stap op doos 4. Er komt
+   niets bij aan bewijslast en er gaat niets af. */
+var INTERVALS = [0,1,3,7,14,30,60,120,240];
+/* De doos waar het bewijs compleet is. Dit was hetzelfde getal als de bovenste doos, en daarom
+   stond het er niet: stevigDrempel() rekende het uit de lengte van de ladder. Sinds de ladder
+   doorloopt zijn het twee verschillende dingen, en dit is degene waar de voortgangsbalk, de poort,
+   de niveaupeiling en de Laatste stap aan hangen. Verzet je hem, dan verzet je al die betekenissen
+   tegelijk; daarom staat hij hier met naam en toenaam. Alles erboven is wachttijd, geen bewijs. */
+var STEVIG_BOX = 5;
 // v19.49 (Stefan: "herhaal je wel af en toe maar met een minder frequentie denk ik want grammatica
 // is wat saai"): grammatica krijgt een eigen, veel rustiger ladder dan losse woorden. Een regel die
 // je één keer echt snapt, zakt langzamer weg dan een woord — en een saai onderdeel mag je minder
@@ -7629,10 +7650,40 @@ function pcicNiv(){
   return _pcicNiv;
 }
 
-// Stevig = de bovenste box. Omdat een fout antwoord de box terugzet op 0 (zie
-// answerWord), betekent die box vijf keer achter elkaar goed over minstens 25
-// dagen. Er is dus geen aparte "beheerst"-vlag nodig; de ladder is het bewijs.
-function stevigDrempel(){ return INTERVALS.length - 1; }
+// Stevig = de doos waar het bewijs compleet is. Omdat een fout antwoord de box terugzet op 0 (zie
+// answerWord), betekent die box vijf keer achter elkaar goed over minstens 25 dagen. Er is dus geen
+// aparte "beheerst"-vlag nodig; de ladder is het bewijs.
+function stevigDrempel(){ return STEVIG_BOX; }
+// De bovenste doos van de ladder. Sinds v23.132 hoger dan stevig: daarboven zit alleen wachttijd.
+function srsTop(){ return INTERVALS.length - 1; }
+/* De hoogste doos die je op je eigen woord mag halen. De Laatste stap (wCheckNodig) zit op de doos
+   eronder, dus zonder die check kom je hier niet voorbij. Dit stond overal als INTERVALS.length-2
+   en dat was hetzelfde getal, tot de ladder doorliep. */
+function zelfDrempel(){ return stevigDrempel() - 1; }
+/* Hoeveel dozen een goed antwoord dit woord omhoog brengt.
+
+   Waarom niet altijd een: de ladder was voor elk woord even lang. "gracias" doorliep evenveel
+   herhalingen als "atardecer". Elke herhaling die een woord niet nodig had is een minuut die niet
+   naar een woord ging dat het wel nodig had.
+
+   De eis is streng met opzet: nog nooit fout, minstens drie beurten, en pas voorbij doos 2. st.f
+   gaat nooit meer weg, dus wie ergens onderuit gaat staat voorgoed weer op een doos per keer. En
+   overslaan kan de Laatste stap niet passeren: die zit op zelfDrempel(), en zelfDrempel() is de
+   bovengrens van elke zelfbeoordeling. */
+function srsStap(st){
+  if(!st || typeof st !== "object") return 1;
+  if((st.f || 0) > 0) return 1;
+  if((st.n || 0) < 3) return 1;
+  if((st.box || 0) < 2) return 1;
+  return 2;
+}
+/* Een goed antwoord, met "mag" als hoogste doos die deze beurt mag opleveren. Eén plek, want tot nu
+   toe stond dezelfde som op drie plaatsen met drie verschillende schrijfwijzen van hetzelfde
+   plafond, en die zijn twee keer uit elkaar gelopen. */
+function srsOmhoog(st, mag){
+  st.box = Math.min(Math.max(0, st.box || 0) + srsStap(st), mag);
+  return st.box;
+}
 
 /* ================= SPEL VOEDT DE WOORD-SRS (v19.89) =================
    Tot nu toe schreven alleen de woordtrainer, Crucigrama en de rondleiding naar
@@ -8077,9 +8128,14 @@ function zwakkePunten(){
   return {themas:themas, regels:regels};
 }
 
+/* v23.132: de noemer is de maanddoos, niet de bovenste doos. Sinds de ladder doorloopt tot acht
+   maanden zou "gedeeld door het hoogste interval" betekenen dat een bewezen woord ineens voor 12,5
+   procent meetelt, en dan stort het getal op Vandaag in op de dag van de update terwijl er niets is
+   gebeurd. De schaal blijft staan waar hij stond: de maanddoos is honderd, en alles daarboven ook.
+   Wat erboven ligt is wachttijd, geen extra bewijs. */
 function krachtGewicht(box){
-  var top = INTERVALS[INTERVALS.length - 1] || 30;
-  return (INTERVALS[box] || 0) / top;
+  var top = INTERVALS[stevigDrempel()] || 30;
+  return Math.min(1, (INTERVALS[box] || 0) / top);
 }
 /* v23.31: alle niveaus tot en met het jouwe bij elkaar. Het staat als eigen functie naast
    voortgangCijfers en niet erin verstopt, want dit is de telling waar de balk op Vandaag op staat en
@@ -8140,7 +8196,10 @@ function voortgangCijfers(){
      Waarom dit gewicht: het herhaalinterval van het doosje zelf, gedeeld door het hoogste. Dat is
      geen schaal die ik heb bedacht maar de planning die de app al gebruikt. Er zit dus geen enkele
      nieuwe aanname in, en dat is precies de eis die dit scherm drie keer heeft laten struikelen. */
-  var dozen = [0, 0, 0, 0, 0, 0], dId, dSt, dB, dI, kr = 0;
+  // v23.132: even lang als de ladder, niet zes vakjes met de hand. Woorden in de nieuwe dozen
+  // vielen anders stilletjes buiten deze telling, en dan daalt de balk zodra je goed wordt.
+  var dozen = [], dId, dSt, dB, dI, kr = 0;
+  for(dI = 0; dI < INTERVALS.length; dI++) dozen.push(0);
   for(dId in S.srs){
     dSt = S.srs[dId];
     if(!dSt || typeof dSt !== "object") continue;
@@ -9935,7 +9994,9 @@ function answerWord(good){
     // v20.0: de laatste doos hoort bij een check die je niet zelf beoordeelt. Zonder die check
     // blijft een woord op de een-na-laatste staan, hoe vaak je ook "wist ik" zegt. Zodra hij daar
     // staat biedt renderWord de check aan; zie wCheckNodig.
-    st.box = Math.min(st.box+1, st.k ? INTERVALS.length-1 : INTERVALS.length-2);
+    // v23.132: de stap hoeft geen doos van een te zijn (zie srsStap), en het plafond staat nu in
+    // zelfDrempel()/srsTop() in plaats van in twee losse sommen op de lengte van de ladder.
+    srsOmhoog(st, st.k ? srsTop() : zelfDrempel());
     st.due = addDays(t, INTERVALS[st.box]);
     wQueue.shift();
     delete wNetFout[wCur.id];
@@ -15417,7 +15478,9 @@ function vgLegendaRij(kop, uitleg){
     "<span class='muted'>"+uitleg+"</span></p>";
 }
 function vgLegendaUitlegHtml(n){
-  var top = INTERVALS.length - 1;
+  // v23.132: stevigDrempel(), niet de lengte van de ladder. De ladder loopt door tot acht maanden;
+  // deze uitleg gaat over waar "bewezen vast" begint, en dat is niet meegeschoven.
+  var top = stevigDrempel();
   var dagen = 0, i;
   for(i = 0; i < top; i++){ dagen += INTERVALS[i]; }
   var r = "";
@@ -24501,7 +24564,7 @@ function avtSrsBij(w, goed, getypt){
     if(getypt) st.k = 1;
     if(st.bd !== t){
       st.bd = t;
-      st.box = Math.min(st.box + 1, getypt ? INTERVALS.length - 1 : Math.max(0, INTERVALS.length - 2));
+      srsOmhoog(st, getypt ? srsTop() : zelfDrempel());   // v23.132, zie srsStap
       st.due = addDays(t, INTERVALS[st.box]);
     }
     addXP(2); trackPoging(false);
@@ -32594,8 +32657,8 @@ function sterkZwakHtml(){
 
 function krachtTabelHtml(){
   var c = voortgangCijfers();
-  var lab = ct("nieuw/fout|1 dag|3 dagen|1 week|2 weken|1 maand",
-               "new/wrong|1 day|3 days|1 week|2 weeks|1 month").split("|");
+  var lab = ct("nieuw/fout|1 dag|3 dagen|1 week|2 weken|1 maand|2 maanden|4 maanden|8 maanden",
+               "new/wrong|1 day|3 days|1 week|2 weeks|1 month|2 months|4 months|8 months").split("|");
   var r = "", i, bij;
   for(i = 1; i < c.dozen.length; i++){
     if(!c.dozen[i]) continue;
