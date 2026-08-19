@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-18T02:54:44.090Z",
+ "wanneer": "2026-08-19T03:03:15.647Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -9,21 +9,26 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 5,
+  "zinnen": 6,
   "toetsjes": 1,
   "nieuweLes": 0
  },
- "versie": "v23.121",
+ "versie": "v23.129",
  "klachten": [
-  "s214: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onzin: 'Hij vertelde me dat hij gisteren zijn sleutels verloor' is onwaarschijnlijk in een normale conversatie (mensen zeggen meestal 'ik ben mijn sleutels kwijt' of 'ik heb mijn sleutels verloren').",
-  "s217: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onnatuurlijk: 'verveeld' (aburrido) wordt in het Spaans zelden gebruikt voor mensen in een vergadering; men zegt eerder 'estar aburrido' of 'sentirse aburrido' in andere contexten, maar niet specifiek tijdens een vergadering.",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 1: De uitleg klopt niet: 'tenían' is geen imperfecto van 'tener' in deze context, maar een verkeerde optie. De uitleg noemt 'tenían' als imperfecto, maar dat is incorrect (juist is 'tenía' voor 'ik had').)",
-  "nieuwe les AFGEKEURD:\n - zin 1 (s217): veld \"tag\" ontbreekt\n - zin 2 (s218): veld \"tag\" ontbreekt\n - zin 2 (s218): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 3 (s219): veld \"tag\" ontbreekt\n - zin 4 (s220): veld \"tag\" ontbreekt\n - zin 5 (s221): veld \"tag\" ontbreekt\n - zin 5 (s221): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 6 (s222): veld \"tag\" ontbreekt\n - zin 7 (s223): veld \"tag\" ontbreekt\n - zin 8 (s224): veld \"tag\" ontbreekt"
+  "s225: afgekeurd — De uitleg klopt niet volledig: 'empezar' kan zowel gevolgd worden door 'a' + infinitief (empezó a trabajar) als door een zelfstandig naamwoord (empezó su nuevo trabajo). Beide opties zijn correct en natuurlijk in het Spaans.",
+  "s227: afgekeurd — De uitleg bevat een onjuiste bewering: 'catalán' is mannelijk, maar in deze context wordt het zonder lidwoord gebruikt, wat correct is. De formulering in de uitleg is echter onnodig complex en kan verwarrend zijn.",
+  "s227: afgekeurd — De uitleg klopt niet: na 'porque' volgt de indicativo ('tengo'), niet de subjuntivo. De zin is wel natuurlijk en correct.",
+  "s229: afgekeurd — De uitleg klopt niet: 'echar de menos' gebruikt geen infinitief na 'de', maar een zelfstandig naamwoord ('la máquina de café'). De zin is wel natuurlijk en correct.",
+  "s230: afgekeurd — De uitleg klopt niet: 'averiado' is mannelijk ('el ascensor está averiado'), niet vrouwelijk. De zin is wel natuurlijk en correct.",
+  "s232: afgekeurd — De uitleg klopt niet: na 'cuando' volgt de indicativo ('voy'), niet de infinitief. De zin is wel natuurlijk en correct.",
+  "s234: afgekeurd — De uitleg klopt niet: 'encantar' gebruikt de infinitief na 'trabajar' om een gewoonte uit te drukken, maar de uitleg is onnauwkeurig. De zin is wel natuurlijk en correct.",
+  "5 van de 8 zinnen afgekeurd, de rest gaat door",
+  "te weinig zinnen over → les niet aangeboden"
  ],
  "reden": null,
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-08-18T03:00:32.740Z"
+ "pogingen": 2,
+ "afgemaakt": "2026-08-19T03:09:09.332Z"
 }
