@@ -9,6 +9,12 @@
 // bij wat er op een dag aan je woorden veranderde. st.box gaat omhoog en dat is alles; er is geen
 // datum bij, dus na afloop is niet te zeggen welke woorden vandaag zijn opgeschoven.
 //
+// v23.139: en het scherm mag niet in machinetaal praten. "Kaartjes een doosje omhoog" en "woorden
+// gered" zijn termen uit de SRS; niemand buiten deze code weet wat een doosje is. Stefan: "mensen
+// snappen woord doosjes omhoog en gered niet." Dezelfde fout als v23.66. Er staat nu wat er gebeurt
+// (je ziet die woorden een tijd niet, met het aantal dagen erbij), plus grammatica en plus hoe lang
+// je nog te gaan hebt.
+//
 // WAT DEZE SUITE BEWAAKT
 //
 //   1. ELKE WEG OMHOOG ZET DE DATUM. Drie plekken laten een doos stijgen: srsOmhoog (woordtrainer
@@ -96,10 +102,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     });
     S.mijn['aceite'] = { es: 'el aceite', nl: 'olie', d: t };
     S.vert = { trede: 4, reeks: 0, d: t, dagStart: 3 };
+    S.gram = { serestar: { box: 2, goed: 18, fout: 7, bd: t, laatst: gisteren },
+               porpara: { box: 0, goed: 12, fout: 8, laatst: t } };
     const d = dagVerschoven();
     uit.d = { omhoog: d.omhoog, gered: d.gered, nieuw: d.nieuw, uitLezen: d.uitLezen,
               voor: d.tredeVoor, na: d.tredeNa };
     uit.html = dagVerschovenHtml();
+    uit.gram = d.gram;
+    uit.dagMin = d.dagMin; uit.dagMax = d.dagMax;
+    uit.niveauHtml = dagNiveauHtml();
 
     // ---- 4. "vast" is een gebeurtenis ----
     S.srs[WORDS[0].id] = { box: stevigDrempel(), due: t, n: 7, od: t, k: 1 };
@@ -107,7 +118,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.vastHtml = dagVerschovenHtml();
 
     // ---- 5. geen lijstje met nullen ----
-    S.srs = {}; S.mijn = {}; S.newIntro = {}; S.vert = { trede: 3, reeks: 0 };
+    // v23.139: S.gram hoort er ook bij leeg te staan. Bewoog er vandaag een grammaticaonderwerp,
+    // dan is er wél iets verschoven en hoort er wél iets te staan.
+    S.srs = {}; S.mijn = {}; S.newIntro = {}; S.gram = {}; S.vert = { trede: 3, reeks: 0 };
     uit.leeg = dagVerschovenHtml();
     return uit;
   });
@@ -129,8 +142,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.d.nieuw === 4, 'vier nieuw uit je dagportie (nu: ' + r.d.nieuw + ')');
   ok(r.d.uitLezen === 1, 'en één die je zelf aantikte tijdens het lezen (nu: ' + r.d.uitLezen + ')');
   ok(r.d.voor === 3 && r.d.na === 4, 'de ladder ging van 3 naar 4 (nu: ' + r.d.voor + ' -> ' + r.d.na + ')');
-  ok(/kaartjes een doosje omhoog/.test(r.html), 'het staat ook echt op het scherm');
-  ok(/aantikte tijdens het lezen/.test(r.html), 'met de leeswoorden apart benoemd');
+  ok(/zie je pas over/.test(r.html), 'het staat ook echt op het scherm');
+  // v23.139: de regel is compacter geworden, "uit je boek" in plaats van een hele bijzin.
+  ok(/uit je boek/.test(r.html), 'met de leeswoorden apart benoemd');
   ok(/trede 4 van 6/.test(r.html), 'en de trede erbij');
 
   console.log('\n-- 4. "vast" is een gebeurtenis, geen teller --');
@@ -139,7 +153,29 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(/staat nu vast/.test(r.vastHtml), 'en dat staat er met naam en al');
   ok(!/bewezen vast/.test(r.vastHtml), 'de teller "bewezen vast" staat er niet: die beweegt na één les bijna nooit');
 
+  console.log('\n-- 6. geen machinetaal (v23.139) --');
+  ok(!/doosje/.test(r.html), 'het woord "doosje" staat er niet meer');
+  ok(!/gered/.test(r.html), 'en "gered" ook niet');
+  ok(/zie je pas over/.test(r.html), 'er staat wat er gebeurt: je ziet die woorden een tijd niet');
+  ok(r.dagMin !== null && r.dagMax !== null, 'met een echt aantal dagen, uit de intervallen van die woorden');
+  ok(/bijna kwijt was/.test(r.html), 'en "bijna kwijt" in plaats van "gered"');
+
+  console.log('\n-- 7. grammatica staat erbij (v23.139) --');
+  ok(r.gram.length === 2, 'twee onderwerpen bewogen vandaag (nu: ' + r.gram.length + ')');
+  ok(r.gram.filter(function (g) { return g.vooruit; }).length === 1, 'één ging vooruit');
+  ok(r.gram.filter(function (g) { return !g.vooruit; }).length === 1, 'en één kwam terug');
+  ok(/ging vooruit/.test(r.html) && /kwam terug/.test(r.html), 'allebei staan ze op het scherm');
+
+  console.log('\n-- 8. hoe lang je nog te gaan hebt (v23.139) --');
+  console.log('   ' + r.niveauHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150));
+  ok(/woorden staan vast/.test(r.niveauHtml), 'de stand staat er: hoeveel van hoeveel');
+  ok(/weken/.test(r.niveauHtml), 'en iets over weken: of de schatting, of dat er nog gemeten wordt');
+  ok(!/doosje|stevig\b/.test(r.niveauHtml), 'zonder machinetaal');
+  ok(r.niveauHtml.indexOf("class='card'") === -1, 'als regel, niet als eigen kaart: "en nu?" moet in de viering blijven passen');
+
   console.log('\n-- 5. geen lijstje met nullen --');
+  // "Waar je staat" hangt hier niet aan: dat is een stand, geen gebeurtenis van vandaag, en hij
+  // wordt op het eindscherm apart aangeplakt. Deze regel gaat alleen over wat er verschoof.
   ok(r.leeg === '', 'verschoof er niets, dan staat er niets (nu: ' + JSON.stringify(r.leeg.slice(0, 40)) + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));

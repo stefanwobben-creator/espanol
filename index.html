@@ -1458,7 +1458,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.138";
+var APP_VERSIE = "v23.139";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14759,10 +14759,17 @@ function lesFlowVoorstellenHtml(vs, kaal){
    aantal dagen dat het kostte. Dat gebeurt niet elke dag, en juist daarom is het iets waard. */
 function dagVerschoven(){
   var t = today(), omhoog = 0, gered = 0, vast = [], id, st, w;
+  /* v23.139: hoeveel dagen die woorden nu wegblijven. Zonder dit getal moet het scherm het woord
+     "doosje" gebruiken om uit te leggen wat er gebeurd is, en dat is machinetaal. Met dit getal kan
+     er staan wat er echt gebeurt: je ziet ze een tijd niet. */
+  var dagMin = null, dagMax = null, dg;
   for(id in (S.srs || {})){
     st = S.srs[id];
     if(!st || typeof st !== "object" || st.od !== t) continue;
     omhoog++;
+    dg = INTERVALS[st.box || 0] || 0;
+    if(dagMin === null || dg < dagMin) dagMin = dg;
+    if(dagMax === null || dg > dagMax) dagMax = dg;
     if((st.f || 0) > 0) gered++;
     if((st.box || 0) >= stevigDrempel() && st.k && vast.length < 2){
       w = null;
@@ -14777,52 +14784,104 @@ function dagVerschoven(){
   var v = null;
   try { v = S.vert && S.vert.d === t && typeof S.vert.dagStart === "number" ? S.vert : null; } catch(e){ v = null; }
   return {omhoog:omhoog, gered:gered, nieuw:nieuw, uitLezen:uitLezen, vast:vast,
+          dagMin:dagMin, dagMax:dagMax, gram:dagGramVerschoven(),
           tredeVoor: v ? v.dagStart : null, tredeNa: v ? v.trede : null};
 }
-function dagMetingRij(n, kop, uitleg){
-  return "<div style='display:flex; align-items:baseline; gap:10px; padding:5px 0; border-bottom:1px solid var(--border)'>"+
-    "<b style='font-size:1.3rem; min-width:1.8em; text-align:right'>"+n+"</b>"+
-    "<span style='font-size:.88rem'>"+kop+
-      "<span style='display:block; font-size:.78rem; color:var(--muted)'>"+uitleg+"</span></span></div>";
+/* v23.139: wat er vandaag met je grammatica gebeurde. S.gram houdt per onderwerp goed, fout en een
+   dagstempel bij (bd op de goede kant sinds v23.92, laatst op de foute), dus alles wat hier nodig is
+   lag er al. Het werd alleen nergens per dag gelezen. */
+function dagGramVerschoven(){
+  var t = today(), uit = [], k, g;
+  for(k in (S.gram || {})){
+    g = S.gram[k];
+    if(!g || typeof g !== "object") continue;
+    if(g.bd === t) uit.push({id:k, naam:gramNaam(k), vooruit:true, goed:g.goed || 0, fout:g.fout || 0});
+    else if(g.laatst === t) uit.push({id:k, naam:gramNaam(k), vooruit:false, goed:g.goed || 0, fout:g.fout || 0});
+  }
+  return uit.slice(0, 2);
+}
+/* Waar je staat en hoe lang je nog te gaan hebt, in twee regels. voortgangBand() bestaat sinds
+   v19.83 en rekent uit je eigen weekmetingen een marge in weken; hij stond alleen op het
+   Voortgang-scherm, en dat is precies het scherm dat je een keer per week opent. */
+function dagNiveauHtml(){
+  var niv, tel, vast, noem, b;
+  try {
+    niv = NIV_NAAM[Math.min(poortRang(), NIV_NAAM.length - 1)] || "A1";
+    tel = voortgangTellers();
+    vast = (tel.dek && tel.dek[niv]) || 0;
+    noem = PCIC_NOEMER[niv] || 0;
+    b = voortgangBand(niv);
+  } catch(e){ return ""; }
+  if(!noem) return "";
+  var staart;
+  if(b && b.onder === 0 && b.boven === 0){
+    staart = ct(niv+" is vol.", niv+" is full.");
+  } else if(b && b.tempo > 0){
+    staart = ct("op dit tempo nog "+(b.boven === null ? "minstens "+b.onder : b.onder+" tot "+b.boven)+" weken",
+                "at this pace, "+(b.boven === null ? "at least "+b.onder : b.onder+" to "+b.boven)+" more weeks");
+  } else {
+    var weken = 0;
+    try { weken = metingenNieuweMaat(niv).length; } catch(e){ weken = 0; }
+    var nog = Math.max(1, 3 - weken);
+    staart = ct("hoe lang je nog te gaan hebt weet de app na nog "+nog+" "+(nog === 1 ? "week" : "weken")+" meten",
+                "how long you have to go is known after "+nog+" more "+(nog === 1 ? "week" : "weeks")+" of measuring");
+  }
+  return dagRegel("<b>"+niv+"</b> · "+
+    ct(vast+" van de "+noem+" woorden staan vast", vast+" of "+noem+" words are solid")+
+    " · "+staart);
+}
+/* v23.139: regels in plaats van kaarten met grote getallen.
+
+   Twee dingen dwongen dit af. Stefan: "mensen snappen woord doosjes omhoog en gered niet", dus de
+   taal moest weg uit de machinerie. En pw-naronde bewaakt sinds v23.58 dat het antwoord op "en nu?"
+   binnen het scherm valt en in de kaart van de viering zelf staat; twee kaarten met metingen ervoor
+   duwden dat eruit, en die suite werd daar terecht rood op.
+
+   Dus: vier korte regels binnen de viering. Na een les wil je een blik, geen rapport. Het volledige
+   verhaal staat op Voortgang, en daar hoort het ook. */
+function dagRegel(tekst){
+  return "<p class='muted' style='margin:5px 0 0; font-size:.87rem; line-height:1.45'>"+tekst+"</p>";
 }
 function dagVerschovenHtml(){
-  var d = dagVerschoven(), r = "";
+  var d = dagVerschoven(), deel = [], r = "";
   if(d.omhoog){
-    r += dagMetingRij(d.omhoog, ct("kaartjes een doosje omhoog","cards moved up a box"),
-      ct("die komen nu later terug in plaats van morgen","they come back later now instead of tomorrow"));
+    var wacht = d.dagMin === d.dagMax
+      ? ct("over "+d.dagMax+" dagen","in "+d.dagMax+" days")
+      : ct("over "+d.dagMin+" tot "+d.dagMax+" dagen","in "+d.dagMin+" to "+d.dagMax+" days");
+    deel.push(ct("<b>"+d.omhoog+" woorden</b> zie je pas "+wacht+" terug",
+                 "<b>"+d.omhoog+" words</b> you will not see again "+wacht));
   }
   if(d.gered){
-    r += dagMetingRij(d.gered, ct("woorden gered","words rescued"),
-      ct("die had je eerder fout en vandaag weer goed","you had these wrong before and right again today"));
+    deel.push(ct("<b>"+d.gered+"</b> die je bijna kwijt was, ken je weer",
+                 "<b>"+d.gered+"</b> you had nearly lost, you know again"));
   }
   if(d.nieuw || d.uitLezen){
-    r += dagMetingRij(d.nieuw + d.uitLezen, ct("nieuw vandaag","new today"),
-      d.uitLezen ? ct("waarvan "+d.uitLezen+" die je zelf aantikte tijdens het lezen",
-                      "of which "+d.uitLezen+" you tapped yourself while reading")
-                 : ct("uit je dagportie","from today's portion"));
+    deel.push(ct("<b>"+(d.nieuw + d.uitLezen)+"</b> voor het eerst gezien"+
+                 (d.uitLezen ? " (waarvan "+d.uitLezen+" uit je boek)" : ""),
+                 "<b>"+(d.nieuw + d.uitLezen)+"</b> seen for the first time"+
+                 (d.uitLezen ? " ("+d.uitLezen+" from your book)" : "")));
   }
+  if(deel.length) r += dagRegel(deel.join(" · "));
+  var tweede = [];
+  (d.gram || []).forEach(function(g){
+    tweede.push(veiligHtml(g.naam)+" "+(g.vooruit ? ct("ging vooruit","moved forward")
+                                                  : ct("kwam terug","came back")));
+  });
   if(d.tredeNa !== null && d.tredeNa !== d.tredeVoor){
-    r += dagMetingRij((d.tredeNa > d.tredeVoor ? "+" : "") + (d.tredeNa - d.tredeVoor),
-      ct("op de ladder van zelf maken","on the writing ladder"),
-      ct("je staat nu op trede "+d.tredeNa+" van "+VERT_TREDES.length,
-         "you are now on step "+d.tredeNa+" of "+VERT_TREDES.length));
+    tweede.push(ct((d.tredeNa > d.tredeVoor ? "langere" : "kortere")+" zinnen om zelf te maken: trede "+
+                   d.tredeNa+" van "+VERT_TREDES.length,
+                   (d.tredeNa > d.tredeVoor ? "longer" : "shorter")+" sentences to write: step "+
+                   d.tredeNa+" of "+VERT_TREDES.length));
   }
+  if(tweede.length) r += dagRegel(tweede.join(" · "));
+  d.vast.forEach(function(x){
+    r += dagRegel("<span class='vast'>✓</span> <span class='es'><b>"+x.es+"</b></span> "+
+      ct("staat nu vast, na "+x.n+" beurten. Die zie je pas over twee maanden terug.",
+         "is solid now, after "+x.n+" turns. You will not see it again for two months."));
+  });
   /* Geen lijstje met nullen. Deed je vandaag alleen dingen die niets verschoven, dan is dat het
      eerlijke antwoord en hoort er niets te staan. */
-  if(!r) return "";
-  var kop = "<div class='card'><span class='kicker'>"+ct("Wat er vandaag verschoof","What moved today")+"</span>"+r+"</div>";
-  if(d.vast.length){
-    kop += "<div class='card' style='background:var(--green-soft); border-color:#bfe0cd'>"+
-      "<span class='kicker'>"+ct("Vast","Solid")+"</span>"+
-      d.vast.map(function(x){
-        return "<p style='margin:0 0 2px'><span class='es' style='font-weight:700'>"+x.es+"</span> "+
-          ct("staat nu vast.","is solid now.")+"</p>"+
-          "<p class='muted' style='margin:0 0 6px; font-size:.83rem'>"+
-          ct(x.n+" beurten, en de laatste was een check die je niet zelf beoordeelde. Die zie je pas over twee maanden terug.",
-             x.n+" turns, and the last one was a check you did not grade yourself. You will not see it again for two months.")+"</p>";
-      }).join("")+"</div>";
-  }
-  return kop;
+  return r;
 }
 
 function lesFlowKlaarBonus(){
