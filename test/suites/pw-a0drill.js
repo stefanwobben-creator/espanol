@@ -87,13 +87,17 @@ const { chromium } = require('playwright');
   });
   ok(dubbel.length === 0, 'geen enkele les heeft een dubbele zin (' + JSON.stringify(dubbel.slice(0, 3)) + ')');
 
-  // ---- 3. kort genoeg voor een beginner: onder het dictado-plafond van v21.0 ----
+  // ---- 3. kort genoeg voor een beginner: onder de eerste trede van de zinnenladder ----
+  // v23.136: hier stond dicPlafond() met S.dicGetypt = 0, oftewel het plafond van iemand die nog
+  // niets heeft getypt. Dat plafond bestaat niet meer; de opvolger is trede 1 van VERT_TREDES, en
+  // dat is precies dezelfde vraag: past deze drillzin voor iemand die net begint?
   const zwaarte = await page.evaluate(() => {
     S.dicGetypt = 0;
+    S.vert = { trede: 1, reeks: 0 };
     const bij = {};
     B_SENTENCES.forEach(function (z) { bij[z.id] = z; });
     return {
-      plafond: dicPlafond(),
+      plafond: vertPlafond(),
       w70: dicZwaarte(bij.bs70), w71: dicZwaarte(bij.bs71), w72: dicZwaarte(bij.bs72)
     };
   });

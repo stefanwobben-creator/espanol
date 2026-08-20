@@ -1458,7 +1458,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.135";
+var APP_VERSIE = "v23.136";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10153,7 +10153,7 @@ function pickSentence(){
   if(!pool.length) pool = SENTENCES;
   /* v21.4: op niveau snijden. Dit zat tot nu toe alleen in dictado; met dictado weg zou de
      lengteregeling verdwijnen en krijgt een beginner weer negen woorden met een jaartal. */
-  var plafond = dicPlafond();
+  var plafond = vertPlafond();   // v23.136: de ladder, niet de teller
   var licht = pool.filter(function(x){ return dicZwaarte(x) <= plafond; });
   if(licht.length >= 3) pool = licht;
   else pool = pool.slice().sort(function(a, b){ return dicZwaarte(a) - dicZwaarte(b); }).slice(0, 5);
@@ -10313,8 +10313,66 @@ function getyptN(){
   if(typeof S.getypt !== "number") S.getypt = S.dicGetypt || 0;
   return S.getypt;
 }
-function dicPlafond(){
-  return Math.min(30, 6 + getyptN() * 0.5);
+/* ================= DE LADDER VOOR ZINNEN (v23.136) =================
+
+   Stefan, 20 aug: "nu zijn de zinnen soms te lang en dat is te moeilijk voor me."
+
+   Hier stond dit:
+
+       function dicPlafond(){ return Math.min(30, 6 + getyptN() * 0.5); }
+
+   Een plafond dat hangt aan hoeveel zinnen je ooit hebt getypt. Na twintig zinnen staat het op 16,
+   na achtenveertig op 30, en de zwaarste zin in de bak is een 19. Vanaf een stuk of vijftig getypte
+   zinnen is het plafond dus uit. Het mat hoe lang je bezig was, niet hoe het ging: het ging maar een
+   kant op, het ging vanzelf, en het ging nooit terug.
+
+   Zes treden nu, met grenzen op dezelfde zwaarte die dicZwaarte() al berekende. De grenzen zijn
+   gekozen op de bak zoals hij is: elke trede levert minstens veertig nieuwe zinnen op, gemeten over
+   de 231 (57 / 58 / 59 / 40 / 15 / 2). Bij de A0-bak lopen de bovenste drie leeg, en dat hoort:
+   die zinnen bestaan daar niet.
+
+   Drie goed op rij omhoog, twee fout op rij omlaag. Dezelfde vorm als de Conjugador-ladder, en de
+   enige lengteregeling in de app die ook kan zakken. */
+var VERT_TREDES = [6, 8, 10, 13, 16, 99];
+var VERT_OMHOOG = 3;   // goede eerste pogingen op rij
+var VERT_OMLAAG = 2;   // foute eerste pogingen op rij
+function vertStand(){
+  if(!S.vert || typeof S.vert !== "object"){
+    /* Migratie. Wie al twintig zinnen heeft getypt begint niet op trede 1. Maar ook niet op de
+       trede die het oude plafond hem gaf, want dat stond bij een ervaren gebruiker al op 30 en dat
+       is precies de klacht. Trede 3 is de middelste band: 174 zinnen open, en binnen een paar dagen
+       staat de ladder waar hij hoort. */
+    S.vert = {trede: getyptN() >= 20 ? 3 : 1, reeks: 0};
+    try { persist(); } catch(e){}
+  }
+  if(typeof S.vert.trede !== "number") S.vert.trede = 1;
+  if(typeof S.vert.reeks !== "number") S.vert.reeks = 0;
+  S.vert.trede = Math.max(1, Math.min(VERT_TREDES.length, S.vert.trede));
+  return S.vert;
+}
+function vertTrede(){ return vertStand().trede; }
+function vertPlafond(){ return VERT_TREDES[vertTrede() - 1]; }
+/* Een positieve reeks is goed op rij, een negatieve is fout op rij. Een goed antwoord na een foute
+   reeks begint dus op 1 en niet op nul: één keer goed na twee keer mis is een stap vooruit, geen
+   schone lei. */
+function vertBij(goed){
+  var v = vertStand(), voor = v.trede;
+  v.reeks = goed ? Math.max(0, v.reeks) + 1 : Math.min(0, v.reeks) - 1;
+  if(goed && v.reeks >= VERT_OMHOOG && v.trede < VERT_TREDES.length){ v.trede++; v.reeks = 0; }
+  if(!goed && v.reeks <= -VERT_OMLAAG && v.trede > 1){ v.trede--; v.reeks = 0; }
+  try { persist(); } catch(e){}
+  return {voor:voor, na:v.trede};
+}
+function vertTredeHtml(t){
+  if(!t || t.na === t.voor) return "";
+  if(t.na > t.voor){
+    return "<div class='feedback ok' style='margin-top:6px'>"+
+      ct("Trede "+t.na+" van "+VERT_TREDES.length+": de zinnen worden vanaf nu iets langer.",
+         "Step "+t.na+" of "+VERT_TREDES.length+": the sentences get a bit longer from here.")+"</div>";
+  }
+  return "<div class='feedback bijna' style='margin-top:6px'>"+
+    ct("Trede "+t.na+" van "+VERT_TREDES.length+": even wat kortere zinnen.",
+       "Step "+t.na+" of "+VERT_TREDES.length+": shorter sentences for a bit.")+"</div>";
 }
 
 /* ================= TEGELS BIJ VERTALEN (v21.3) =================
@@ -10421,8 +10479,11 @@ function zinLuisterWire(zin){
   if(b2) b2.onclick = function(){ zinSpreek(zin, 0.75); };
 }
 
+/* v23.136: je mag een zin opnieuw proberen, en die tweede poging telt niet mee voor de ladder.
+   Zonder deze vlag klim je door te blijven proberen in plaats van door het te kunnen. */
+var zinGeteld = false;
 function renderSentence(fresh){
-  if(fresh || sIdx===null){ sIdx = pickSentence(); }
+  if(fresh || sIdx===null){ sIdx = pickSentence(); zinGeteld = false; }
   var s = sIdx;
   var allowIds = allowedSentIds();
   var doneCount = allowIds.filter(function(id){ return !!S.done[id]; }).length;
@@ -10432,7 +10493,9 @@ function renderSentence(fresh){
     /* v23.60. Stefan: "dat je altijd in beeld moet zien waar je bent en hoeveel je nog moet."
        Het stond er wel ("Zin 1/3") maar als grijs kopregeltje zonder vorm. Nu met dezelfde balk als
        de helling erbij, zodat je het ziet zonder te lezen. */
-    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+(inFlowVertalen ? ct("Zin ","Sentence ")+((lesFlow.vertalenTotaal||5)-lesFlow.vertalenTeGaan+1)+"/"+(lesFlow.vertalenTotaal||5) : ct("Vertalen · niveau ","Translate · level ")+s.lvl+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
+    "<span class='kicker'>"+(scopeLesson?"Les "+scopeLesson.num+" · ":"")+/* v23.136: hier stond "niveau "+s.lvl. Dat is geen niveau maar een standaardwaarde: 183 van de
+       231 zinnen staan op 2. De trede beweegt wel, en hij zegt iets over de zin die je nu krijgt. */
+      (inFlowVertalen ? ct("Zin ","Sentence ")+((lesFlow.vertalenTotaal||5)-lesFlow.vertalenTeGaan+1)+"/"+(lesFlow.vertalenTotaal||5)+ct(" · trede "," · step ")+vertTrede()+"/"+VERT_TREDES.length : ct("Vertalen · trede ","Translate · step ")+vertTrede()+"/"+VERT_TREDES.length+" · "+doneCount+"/"+allowIds.length+ct(" gehaald"," done"))+"</span>"+
     (function(){
       var nu, tot;
       if(inFlowVertalen){ tot = lesFlow.vertalenTotaal || 5; nu = tot - lesFlow.vertalenTeGaan; }
@@ -10539,6 +10602,7 @@ function checkSentence(){
   var exact = answers.indexOf(given) !== -1;
   var loose = answers.map(stripAcc).indexOf(stripAcc(given)) !== -1;
   var html = "", gehaald = false, retryable = false, fregel = null;   // v23.101: zie foutRegel()
+  var vTrap = null;
   if(exact){
     /* Drie treden, drie prijzen. Meerkeuze is het lichtste bewijs (je kunt raden op lengte),
        tegels zitten ertussen (elk woord moet je aanraken, met afleiders ernaast), zelf typen is
@@ -10601,6 +10665,10 @@ function checkSentence(){
                  "<button class='ghost' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
                : "<button class='primary' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button><button class='ghost' id='btnAiUitleg'>🤖 "+ct("Meer uitleg","More explanation")+"</button>")+
     "</div>";
+  /* v23.136: de ladder beweegt op de eerste poging van deze zin, en zegt het als hij beweegt.
+     Boven de uitleg en onder de knoppen: het is een mededeling over morgen, geen uitslag van nu. */
+  if(!zinGeteld){ zinGeteld = true; vTrap = vertBij(gehaald); }
+  html += vertTredeHtml(vTrap);
   html += "<div class='uitleg'><b>"+ct("Waarom:","Why:")+"</b> "+zinUitleg(s)+"</div>";
   // De juiste zin staat nu in beeld. Dit is het enige moment waarop horen hoe hij klinkt iets
   // toevoegt: je weet wat er staat en wat het betekent, dus je hoort de uitspraak en niet een raadsel.
