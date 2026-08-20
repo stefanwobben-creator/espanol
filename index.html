@@ -1458,7 +1458,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.136";
+var APP_VERSIE = "v23.137";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -10482,8 +10482,11 @@ function zinLuisterWire(zin){
 /* v23.136: je mag een zin opnieuw proberen, en die tweede poging telt niet mee voor de ladder.
    Zonder deze vlag klim je door te blijven proberen in plaats van door het te kunnen. */
 var zinGeteld = false;
+/* v23.137: er loopt een vraag aan het model over deze zin, dus de ladder wacht. */
+var vertWacht = false;
 function renderSentence(fresh){
   if(fresh || sIdx===null){ sIdx = pickSentence(); zinGeteld = false; }
+  vertWacht = false;
   var s = sIdx;
   var allowIds = allowedSentIds();
   var doneCount = allowIds.filter(function(id){ return !!S.done[id]; }).length;
@@ -10595,7 +10598,16 @@ function checkSentence(){
   zinDoorStop();
   var s = sIdx;
   var modus = sHuidigeModus(s);
-  var given = norm(document.getElementById("sInput").value || "");
+  /* v23.137: hier stond alleen `given` (genormaliseerd). De ruwe tekst werd pas onderaan gelezen,
+     ná fb.innerHTML en ná zinInvoerDicht(), en die laatste vervangt de innerHTML van #sInvoer,
+     waar #sInput in zit. Op dat moment bestaat het invoerveld niet meer en was `rauw` dus altijd
+     leeg. De knop "Is mijn variant ook goed?" stuurde daardoor een leeg antwoord naar de server, en
+     die antwoordt daarop met 400 "nl en gegeven verplicht". De knop was stuk, en niemand kon dat
+     zien: je kreeg gewoon een foutmelding van de AI te zien.
+     Nu wordt de ruwe tekst gelezen op hetzelfde moment als `given`, want dat is het enige moment
+     waarop hij er zeker nog staat. */
+  var rauw = document.getElementById("sInput").value || "";
+  var given = norm(rauw);
   if(!given) return;
   var fb = document.getElementById("sFeedback");
   var answers = [norm(s.es)].concat(s.alt.map(norm));
@@ -10629,9 +10641,14 @@ function checkSentence(){
     fregel = foutRegel(d);
     if(fregel) gramBij(fregel.cid, false);
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
+      /* v23.137. Hier stond: "Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak
+         meer goede vertalingen. Vraag het in de les of aan Claude." Dat is de app die weet dat hij
+         het antwoord niet zeker weet, en de vraag doorschuift naar jou. Nu vraagt hij het zelf, en
+         wacht de ladder op de uitslag. Zie zinAiCheck(). */
       html = "<div class='feedback bijna'>"+ct("Zó dichtbij! "+d.m+" woord"+(d.m>1?"en":"")+" wijkt af (onderstreept): ","So close! "+d.m+" word"+(d.m>1?"s":"")+" differ"+(d.m>1?"":"s")+" (underlined): ")+"<b>"+d.html+"</b> (+2 "+xpw()+")</div>"+
-        "<p class='muted' style='margin-top:6px'>"+ct("Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak meer goede vertalingen. Vraag het in de les of aan Claude.","Think your version might also be correct Spanish? Quite possible: there are often several good translations. Ask in class or ask Claude.")+"</p>";
-      addXP(2); retryable = true;
+        "<p class='muted' style='margin-top:6px' id='zinVraagt'>🤖 "+
+          ct("Ik vraag even na of jouw variant ook goed is...","Let me check whether your version is also correct...")+"</p>";
+      addXP(2); retryable = true; vertWacht = true;
       logError(s.id, "zin", s.tag, given);
     } else {
       html = "<div class='feedback fout'>"+ct("Nog niet. Het antwoord is: ","Not yet. The answer is: ")+"<b>"+d.html+"</b></div>";
@@ -10666,8 +10683,10 @@ function checkSentence(){
                : "<button class='primary' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button><button class='ghost' id='btnAiUitleg'>🤖 "+ct("Meer uitleg","More explanation")+"</button>")+
     "</div>";
   /* v23.136: de ladder beweegt op de eerste poging van deze zin, en zegt het als hij beweegt.
-     Boven de uitleg en onder de knoppen: het is een mededeling over morgen, geen uitslag van nu. */
-  if(!zinGeteld){ zinGeteld = true; vTrap = vertBij(gehaald); }
+     Boven de uitleg en onder de knoppen: het is een mededeling over morgen, geen uitslag van nu.
+     v23.137: behalve bij een bijna-treffer. Dan staat de vraag "is dit ook goed?" nog open, en een
+     ladder die alvast zakt zou een geldige variant een trede kosten. */
+  if(!zinGeteld && !vertWacht){ zinGeteld = true; vTrap = vertBij(gehaald); }
   html += vertTredeHtml(vTrap);
   html += "<div class='uitleg'><b>"+ct("Waarom:","Why:")+"</b> "+zinUitleg(s)+"</div>";
   // De juiste zin staat nu in beeld. Dit is het enige moment waarop horen hoe hij klinkt iets
@@ -10679,7 +10698,6 @@ function checkSentence(){
   persist();
   if(gehaald){ checkLessonComplete(); }
   zinLuisterWire(s);
-  var rauw = document.getElementById("sInput") ? document.getElementById("sInput").value : "";
   var bn = document.getElementById("btnNext");
   if(bn) bn.onclick = function(){
     if(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "vertalen"){
@@ -10700,20 +10718,39 @@ function checkSentence(){
      een fout staat het juiste antwoord er net, en dat is het moment waarop je even moet kunnen
      kijken. */
   if(gehaald && !retryable) zinDoorloop(fb, bn);
+  /* v23.137: één functie, twee aanroepers. Hij ging alleen op een tik; nu gaat hij vanzelf bij een
+     bijna-treffer, en blijft de knop als vangnet voor het geval het model niet bereikbaar is.
+     De ladder wordt hier afgehandeld en nergens anders: vertWacht staat aan, dus checkSentence()
+     heeft hem overgeslagen. */
+  function zinAiKlaar(goed){
+    if(!vertWacht) return;
+    vertWacht = false;
+    if(zinGeteld) return;
+    zinGeteld = true;
+    var t = vertBij(goed);
+    var af = document.getElementById("aiFb");
+    if(af && t && t.na !== t.voor) af.innerHTML += vertTredeHtml(t);
+  }
   var ba = document.getElementById("btnAiCheck");
-  if(ba) ba.onclick = function(){
-    ba.disabled = true; ba.textContent = "🤖 Claude denkt na...";
+  function zinAiCheck(){
+    if(ba){ ba.disabled = true; ba.textContent = "🤖 Claude denkt na..."; }
+    var vraagt = document.getElementById("zinVraagt");
     api("/api/ai/check", "POST", {nl:s.nl, verwacht:s.es, gegeven:rauw}).then(function(res){
+      if(vraagt && vraagt.parentNode) vraagt.parentNode.removeChild(vraagt);
       var af = document.getElementById("aiFb");
-      if(!af) return;
+      if(!af){ zinAiKlaar(false); return; }
       if(!res || !res.ok){
+        zinAiKlaar(false);
         /* v23.70: hier stond "De AI is even niet bereikbaar, probeer het straks nog eens." Dat was
            sinds het slot op de server bijna altijd onwaar. Zie aiFoutTekst(). */
         af.innerHTML = "<div class='feedback bijna'>\ud83e\udd16 "+aiFoutTekst(res)+"</div>";
-        if(aiNogEensZin(res)){ ba.disabled=false; ba.textContent="🤖 Is mijn variant ook goed?"; }
-        else { ba.classList.add("hidden"); }
+        if(ba){
+          if(aiNogEensZin(res)){ ba.disabled=false; ba.textContent="🤖 Is mijn variant ook goed?"; }
+          else { ba.classList.add("hidden"); }
+        }
         return;
       }
+      zinAiKlaar(!!res.goed);
       if(res.goed){
         /* v23.94: en de fout die drie regels eerder is genoteerd gaat weg. Je variant was goed
            Spaans, dus er was geen fout. Tot nu toe bleef die staan, en sinds S.errors nergens werd
@@ -10725,9 +10762,13 @@ function checkSentence(){
       } else {
         af.innerHTML = "<div class='feedback fout'>🤖 Claude: helaas, niet helemaal. "+veiligHtml(res.uitleg)+"</div>";
       }
-      ba.classList.add("hidden");
+      if(ba) ba.classList.add("hidden");
     });
-  };
+  }
+  if(ba) ba.onclick = zinAiCheck;
+  /* Vanzelf, en alleen bij een bijna-treffer. Bij een antwoord dat er helemaal naast zit valt er
+     niets te vragen, en dan is een modelaanroep alleen wachttijd. */
+  if(vertWacht) zinAiCheck();
   var bu = document.getElementById("btnAiUitleg");
   if(bu) bu.onclick = function(){
     bu.disabled = true; bu.textContent = "🤖 Momentje...";

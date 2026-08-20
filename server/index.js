@@ -999,6 +999,8 @@ app.post("/api/ai/check", async (req, res) => {
       "Je beoordeelt antwoorden in een Spaanse leerapp voor Nederlandstaligen (niveau A0-A2). " +
       "Antwoord UITSLUITEND met geldige JSON: {\"goed\": true/false, \"uitleg\": \"korte uitleg in het Nederlands (max 2 zinnen)\"}. " +
       "Wees streng op grammatica maar accepteer natuurlijke alternatieven (andere woordvolgorde, synoniemen, weglaten van onderwerp). " +
+      "Bij twijfel: goed=false. Deze check draait automatisch bij elk bijna-goed antwoord, dus te soepel goedkeuren maakt de oefening waardeloos. " +
+      "Zeg in de uitleg altijd of jouw variant de gewoonste keuze is of alleen ook mogelijk. " +
       "Kleine accentfouten: goed=true maar benoem ze in de uitleg.",
       "Nederlandse zin: \"" + String(nl).slice(0, 300) + "\"\nModelantwoord: \"" +
         String(verwacht || "-").slice(0, 300) + "\"\nAntwoord van de leerling: \"" +
