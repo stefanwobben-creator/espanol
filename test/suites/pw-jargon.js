@@ -200,8 +200,11 @@ const { chromium } = require('playwright');
   ok(banner.html.indexOf('btnLesFlowStop') === -1, 'de banner bevat geen "Later verder"-knop meer');
   ok(!/Later verder|Continue later/.test(banner.html), 'en ook de tekst ervan niet');
   ok(banner.stopWeg, 'lesFlowStop() is uit de code verdwenen');
-  ok(banner.wire, 'lesFlowWireBanner() is de nieuwe wiring-functie');
-  ok(banner.chispaKnop, 'Chispa zelf blijft aanklikbaar in de banner (dat is spel, geen keuze)');
+  /* v23.146: de banner is een strook geworden en Chispa zwijgt tijdens je les. Wat deze twee regels
+     bewaakten (er zit geen keuzeknop in, en wat er wél zit is geen beslissing) geldt sterker dan
+     eerst: er zit nu helemaal niets aanklikbaars meer in. Zie pw-stilte. */
+  ok(banner.wire === false, 'er valt niets meer te koppelen: de strook heeft geen knop');
+  ok(banner.chispaKnop === false, 'en Chispa zwijgt tijdens je les (v23.146)');
   ok(await page.evaluate(() => document.querySelectorAll('#btnLesFlowStop').length) === 0, 'nergens in de DOM nog een stop-knop');
 
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED/.test(e));

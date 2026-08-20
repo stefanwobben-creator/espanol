@@ -59,10 +59,12 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   ok(pool.zonderId === 0, 'en allemaal met een id, want anders kan het spel je woordjes niet raken');
 
   console.log('\n-- het scherm is bereikbaar en speelt --');
-  await page.evaluate(() => { funView = null; show('speeltuin'); });
+  // v23.145: de Speeltuin toont er drie vooraan; de rest staat achter "alle spellen". S.spelAlles
+  // klapt hem open, en dat is wat een gebruiker met één tik ook doet.
+  await page.evaluate(() => { funView = null; S.spelAlles = true; show('speeltuin'); });
   await page.waitForTimeout(400);
   const inMenu = await page.evaluate(() => !!document.getElementById('ftAdiv'));
-  ok(inMenu, 'Adivina staat in de speeltuin');
+  ok(inMenu, 'Adivina staat in de speeltuin, achter "alle spellen"');
   await page.evaluate(() => { document.getElementById('ftAdiv').click(); });
   await page.waitForTimeout(400);
 

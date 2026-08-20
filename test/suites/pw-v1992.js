@@ -46,7 +46,11 @@ async function wegMetOverlays(page) {
   ok(minstens(versie, 'v19.92'), 'versie is minstens v19.92 (nu ' + versie + ')');
 
   console.log('\n-- verse speeltuin: alleen wat iets kan tonen --');
-  await page.evaluate(() => { S.srs = {}; S.speelOoit = {}; S.speelAlles = false; try { persist(); } catch (e) {} show('speeltuin'); });
+  /* v23.145: de Speeltuin klapt zichzelf in tot drie tegels; de rest staat achter "alle spellen".
+     Deze suite gaat over iets anders, namelijk welk spel al kán draaien en welk nog niet (SPEEL_EIS),
+     en dat staat los van de opmaak. Dus zetten we hem hier open. Dat de inklap zelf werkt bewaakt
+     pw-waarjeloopt. */
+  await page.evaluate(() => { S.srs = {}; S.speelOoit = {}; S.speelAlles = false; S.spelAlles = true; try { persist(); } catch (e) {} show('speeltuin'); });
   await page.waitForTimeout(400);
   await page.screenshot({ path: 'shot-v1992-speeltuin-vers.png' });
 
@@ -68,7 +72,9 @@ async function wegMetOverlays(page) {
   ok(menu.klaar.length >= 1 && menu.klaar.length < menu.klaar.length + menu.straks, 'niet alles staat meteen open (' + menu.klaar.length + ' klaar, ' + menu.straks + ' grijs)');
   ok(menu.klaar.indexOf('ftAvt') !== -1 && menu.klaar.indexOf('ftMusica') !== -1, 'Aventura en Musica staan er altijd');
   // v21.5: de Conjugador is naar Oefenen verhuisd; de Speeltuin heeft alleen nog spelletjes.
-  ok(menu.klaar.indexOf('ftDuel') !== -1 && menu.klaar.indexOf('ftAvt') !== -1, 'Duel en Aventura staan er altijd');
+  // v23.145: Palabra Duel staat niet meer vooraan (die heeft een tweede speler nodig), maar hij is
+  // er nog wel, achter "alle spellen".
+  ok(menu.klaar.indexOf('ftDuel') !== -1 && menu.klaar.indexOf('ftAvt') !== -1, 'Duel en Aventura staan er allebei nog');
   // v21.2: exacte tellingen maken elke nieuwe oefening een valse regressie (v19.52-les).
   ok(menu.straks >= 1, 'er staat nog iets in het grijs (' + menu.straks + ')');
   ok(menu.kop, 'kop "Komt er straks bij" staat er');
@@ -91,7 +97,7 @@ async function wegMetOverlays(page) {
 
   console.log('\n-- woorden laten de woordspellen verschijnen --');
   await page.evaluate(() => {
-    S.speelAlles = false; S.speelOoit = {}; S.srs = {};
+    S.speelAlles = false; S.speelOoit = {}; S.srs = {}; S.spelAlles = true;
     WORDS.slice(0, 12).forEach(function (w) { S.srs[w.id] = { n: 1, d: 0 }; });
     try { persist(); } catch (e) {}
     renderFun();

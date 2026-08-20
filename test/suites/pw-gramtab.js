@@ -66,7 +66,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const speel = tegels.filter((g) => !g.gram);
 
   async function naarSpeeltuin() {
-    await page.evaluate(() => { funView = null; });
+    /* v23.145: de Speeltuin toont er drie vooraan en de rest achter "alle spellen". Deze suite gaat
+       over wáár een tegel woont en niet over hoeveel er vooraan staan, dus we klappen hem open: dan
+       is "geen enkele grammatica-tegel in de Speeltuin" ook echt over alle tegels. */
+    await page.evaluate(() => { funView = null; S.spelAlles = true; });
     await page.click('#nav button[data-tab="speeltuin"]');
     await page.waitForTimeout(250);
   }

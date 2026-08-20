@@ -2,6 +2,9 @@
 //   2. "zou chispa ook in de interface terug komen komen bijv na de onboarding bij je eerste les?"
 //      -> mini-Chispa in de dagles-banner (één plek, twaalf views), met een Spaanse regel per stap
 //         en een aparte begroeting bij je allereerste les.
+//      -> DE BANNER IS IN v23.146 TERUGGEDRAAID. Zie de toelichting bij verzoek 2 hieronder: wat
+//         overeind blijft is dat ze niet meer in haar eigen tabje zit; wat weg is, is dat ze
+//         tijdens elke stap van elke les iets zei.
 //   4. "welke mechanics van tamagotchi kan je beter toepassen op chispa doe dat"
 //      -> hongermeter die per dag oploopt, dagwens die Chispa zélf stelt, zorgreeks, nachtstand.
 //   6. "bij de familie zou je een krabbel acher kunnen latne met een hyes banaan bij een
@@ -37,36 +40,35 @@ const { chromium } = require('playwright');
   if (await skip.count()) await skip.click();
   await page.waitForTimeout(400);
 
-  /* ---------------- verzoek 2: Chispa loopt mee door de dagles ---------------- */
+  /* ---------------- verzoek 2: Chispa loopt mee door de dagles ----------------
+
+     TERUGGEDRAAID IN v23.146, en dat hoort hier te staan in plaats van weggepoetst.
+
+     Wat hier stond bewaakte de banner die op verzoek 2 gebouwd is: haar kop boven elk scherm van de
+     les, een eigen Spaanse regel per stap, en een aparte begroeting bij je allereerste les. Dat
+     werkte precies één keer, en daarna zesentwintig dagen lang niet meer: vier zinnen over twaalf
+     views, elke stap opnieuw.
+
+     Stefan, 20 aug: "chispa die altijd iets leuks zegt kan weg." De regel die eruit volgt: een
+     aanmoediging die altijd komt is geen aanmoediging maar meubilair.
+
+     Wat er nu bewaakt wordt is de andere kant van verzoek 2, en die staat overeind: ze zit niet meer
+     opgesloten in haar eigen tabje. Ze staat op het dagscherm vóór je begint, ze krijgt haar tapa als
+     je klaar bent, en je kunt met haar praten (v23.144). Dat ze tijdens je les zwijgt bewaakt
+     pw-stilte. */
   await page.evaluate(() => { lesFlow = { stap: null, quizzesTeDoen: [], gekozenSpel: null, vertalenTeGaan: 0 }; lesFlowVolgende(); });
   await page.waitForTimeout(500);
   ok(await page.evaluate(() => lesFlow && lesFlow.stap === 'woorden'), 'de dagles start op de woordjes-stap');
-  ok(await page.locator('#btnLesFlowChispa').count() === 1, 'Chispa staat in de dagles-banner, niet meer alleen in haar eigen tabje');
-  ok(await page.locator('#btnLesFlowChispa svg').count() === 1, 'het is echt haar sprite (svg) en geen emoji-plaatsvervanger');
-  // v19.66: Chispa staat sinds deze versie óók op de dagkaart zelf (de begroeting vóór je begint),
-  // dus .lfsay komt nu twee keer voor. Deze test gaat over de banner ín de les: scope hem daarop.
-  const zegtEerste = await page.locator('.lfrow:has(#btnLesFlowChispa) .lfsay .es').first().innerText();
-  ok(/Soy Chispa/.test(zegtEerste), 'bij je allereerste les stelt ze zich eerst voor (' + zegtEerste + ')');
+  ok(await page.locator('#btnLesFlowChispa').count() === 0, 'in de les staat ze er niet meer (v23.146)');
 
-  // per stap een andere Spaanse regel: dat maakt haar aanwezigheid informatief i.p.v. decoratief
-  const regels = await page.evaluate(() => {
-    const uit = {};
-    ['woorden', 'grammatica', 'toetsjes', 'produceren'].forEach((s) => {
-      lesFlow.stap = s;
-      uit[s] = lesFlowChispaFrase().es;
-    });
-    return uit;
-  });
-  const unieke = Object.keys(regels).map((k) => regels[k]).filter((v, i, a) => a.indexOf(v) === i);
-  ok(unieke.length === 4, 'elke stap heeft zijn eigen Spaanse regel (' + unieke.length + '/4 uniek)');
-  ok(/gram/i.test(regels.grammatica), 'bij de grammatica-stap zegt ze iets over grammatica (' + regels.grammatica + ')');
-
-  // zonder actieve dagles geen banner, dus ook geen zwevende Chispa
-  // let op: het is niet genoeg om een ánder tabblad te hertekenen, want verborgen tabs blijven in de
-  // DOM staan. We hertekenen de view waar de banner net nog stond (show('woorden') -> renderWord()).
-  await page.evaluate(() => { lesFlow = null; show('woorden'); });
-  await page.waitForTimeout(200);
-  ok(await page.locator('#btnLesFlowChispa').count() === 0, 'buiten de dagles verschijnt de banner-Chispa niet');
+  await page.evaluate(() => { lesFlow = null; show('lessen'); renderLessons(); });
+  await page.waitForTimeout(300);
+  ok(await page.locator('#tab-lessen #btnRitmeChispa').count() === 1, 'maar op het dagscherm wel, vóór je begint');
+  ok(await page.locator('#tab-lessen #btnRitmeChispa svg').count() === 1, 'het is echt haar sprite (svg) en geen emoji-plaatsvervanger');
+  const zegt = await page.locator('#tab-lessen .lfsay .es').first().innerText();
+  ok(zegt.length > 3, 'en ze zegt één Spaanse zin, één keer per dag (' + zegt + ')');
+  ok(await page.evaluate(() => typeof lesFlowChispaFrase === 'undefined'),
+     'de zinnen per stap bestaan niet meer');
 
   /* ---------------- verzoek 4: Tamagotchi-mechanics ---------------- */
   await page.evaluate(() => show('chispa'));

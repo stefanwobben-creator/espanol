@@ -641,6 +641,11 @@
              padding:12px 20px; border-radius:12px; font-size:.95rem;}
   .donatebtn:hover{opacity:.9;}
   .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  /* v23.146: de strook boven je les. Geen kaart meer, geen kop, geen tekstballon: alleen de balk
+     van v23.142 en één regel die zegt waar je bent. */
+  .lesstrook{margin:0 0 10px;}
+  .lesstap{font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;
+           font-weight:700;}
   /* v23.144: het gesprek met Chispa. Haar beurten links met haar kop ernaast, die van jou rechts.
      De notitie over jouw zin staat er los onder (klasse naast): het gesprek en de correctie zijn
      twee verschillende dingen en horen er ook verschillend uit te zien. */
@@ -1496,7 +1501,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.144";
+var APP_VERSIE = "v23.146";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6211,6 +6216,8 @@ function normaliseerState(s){
   var d = defaultState(), k;
   for(k in d){ if(s[k] === undefined || s[k] === null) s[k] = d[k]; }
   s.xp = s.xp || {};
+  s.errors = s.errors || {};
+  try { foutenOpschonen(s); } catch(e){}   // v23.146: fouten op oefeningen die niet meer bestaan
   s.streak = s.streak || {count:0, last:""};
   // v19.63: de streak kon dalen, en een getal dat kan dalen is een schuld. Wat we tonen is
   // voortaan het aantal dagen dat je er bent geweest; dat kan alleen omhoog. Bij de eerste
@@ -6496,6 +6503,7 @@ function logServer(kind, payload){
     payload.geleerd = Object.keys(S.srs || {}).length;
     payload.minuten = doelMinuten();
     payload.lessenAf = doneLessonCount();
+    payload.gezien = S.gezien || {};   // v23.145: waar je liep, niet alleen waar je struikelde
   }catch(e){}
   api("/api/log", "POST", {code: ensureCode(p), kind: kind, payload: payload});
 }
@@ -8562,6 +8570,26 @@ function foutWeg(id, type){
   var k = type + ":" + id;
   if(S.errors && S.errors[k]) delete S.errors[k];
 }
+/* v23.146: welke soorten fouten bestaan er nog?
+
+   Deze lijst staat naast de functie die ze aanmaakt, en niet ergens anders, zodat de volgende keer
+   dat er een oefening verdwijnt de opruiming vanzelf meekomt.
+
+   Gemeten in Stefans logboek op 20 aug: 66 fouten op dictado (verwijderd in v21.4), 10 op husselen,
+   4 op klemtoon, 1 op jaartal. Geen van vieren heeft een datum, want dat veld kwam pas in v22.0. Ze
+   doen je leren geen kwaad, maar het foutenlogboek is de enige plek waar de app noteert wat je deed,
+   en een kwart van de regels ging over onderdelen die niet meer bestaan. Wie daarnaar kijkt om te
+   beslissen wat weg kan, kijkt naar spoken. */
+var FOUT_SOORTEN = ["woord", "zin", "quiz", "gramwiz", "conj", "verbo", "concept", "corrector", "escucha"];
+function foutenOpschonen(s){
+  if(!s || !s.errors) return 0;
+  var weg = 0, k;
+  for(k in s.errors){
+    var soort = String(k).split(":")[0];
+    if(FOUT_SOORTEN.indexOf(soort) === -1){ delete s.errors[k]; weg++; }
+  }
+  return weg;
+}
 function logError(id, type, tag, extra){
   /* v22.0. Het veld laatst bevatte twee verschillende dingen: bij een woord of zin wat je typte
      ("la mujer"), bij El Corrector een datum. En bijnaGoedIds() vergeleek dat met een datum. In
@@ -9794,7 +9822,6 @@ function renderWordCheck(){
   }
   html += wStopHtml();
   el.innerHTML = html;
-  lesFlowWireBanner();
   wStopWire();
   var wi = document.getElementById("wCheckInp");
   if(wi){
@@ -9970,7 +9997,6 @@ function renderWord(){
   // verwarrend want ik doe dat al met de flashcards." Klopt: omdraaien, "wist ik",
   // klaar. Twee knoppen voor hetzelfde gebaar is er één te veel. Wie al Spaans kan
   // zegt dat nu één keer bij het instellen (zie niveauClaim), niet 390 keer per kaartje.
-  lesFlowWireBanner();
   wStopWire();
   document.getElementById("btnShow").onclick = showWord;
   document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
@@ -10024,7 +10050,6 @@ function showWord(){
     "<div class='row'><button class='good' id='btnGood'>"+tt("wistIk")+"</button>"+
     "<button class='bad' id='btnBad'>"+tt("wistNiet")+"</button></div>"+
     wStopHtml();
-  lesFlowWireBanner();
   wStopWire();
   document.getElementById("btnGood").onclick = function(){ answerWord(true); };
   document.getElementById("btnBad").onclick = function(){ answerWord(false); };
@@ -10557,7 +10582,6 @@ function renderSentence(fresh){
     })()+
     "<p class='big'>"+zinPrompt(s)+"</p>"+
     "<div id='sBody'></div>";
-  lesFlowWireBanner();
   renderSentenceBody();
 }
 
@@ -12188,7 +12212,6 @@ function renderFunRompecabezas(){
       (inFlow ? "<div class='row' style='margin-top:10px'><button class='primary' id='btnLesFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
               : "<div class='row' style='margin-top:10px'><button class='primary' id='btnRvNieuw'>" + ct("Nog een potje","Another round") + "</button>" +
                 "<button class='ghost' id='btnRvDrill'>" + ct("Oude oefenmodus","Old drill mode") + "</button></div>" + naRondeHtml());
-    lesFlowWireBanner();
     if(inFlow){ document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); }; return; }
     document.getElementById("btnRvNieuw").onclick = function(){ rvNieuweRonde(); renderFunRompecabezas(); };
     document.getElementById("btnRvDrill").onclick = function(){ S.rvDrill = 1; persist(); conjRonde = null; conjIdx = null; renderFunConjugadorDrill(); };
@@ -12212,7 +12235,6 @@ function renderFunRompecabezas(){
     "<p class='muted' style='font-size:.82rem; margin-top:8px'>★ " +
       ct("wisselwerkwoord: dubbele punten","stem-changing verb: double points") + "</p>" +
     "<div id='rvFeedback'>" + rvFeedbackHtml() + "</div>";
-  lesFlowWireBanner();
   el.querySelectorAll("[data-rvs]").forEach(function(b){
     b.onclick = function(){
       rvSpel.kiesStam = parseInt(b.getAttribute("data-rvs"), 10);
@@ -12263,7 +12285,6 @@ function renderFunConjugadorDrill(){
     "</div>"+
     "<div id='cjBody'></div>";
   el.innerHTML = html;
-  lesFlowWireBanner();
   wireConjFaseKiezer();
   renderConjugadorBody();
 }
@@ -12391,7 +12412,6 @@ function renderConjugadorRondeKlaar(){
         "<button class='ghost' id='btnRvTerug'>🧩 " + ct("Terug naar het spel","Back to the game") + "</button>"+
         "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>") + naRondeHtml();
   el.innerHTML = html;
-  lesFlowWireBanner();
   naRondeWire();
   if(inFlowCj){
     document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
@@ -13025,7 +13045,6 @@ function renderQuestion(){
         "<span class='kicker'>"+quizTitel(qz)+"</span>"+
         "<p class='big'>"+st.score+" / "+gesteld+"</p><p>"+msg+"</p>"+
         "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>";
-      lesFlowWireBanner();
       document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
       return;
     }
@@ -13063,7 +13082,6 @@ function renderQuestion(){
   });
   html += "<div id='qFeedback'></div>";
   el.innerHTML = html;
-  lesFlowWireBanner();
   el.querySelectorAll(".opt").forEach(function(b){
     b.onclick = function(){ answerQuestion(+b.getAttribute("data-i"), b); };
   });
@@ -14239,33 +14257,31 @@ function chispaZegHtml(es, nl){
     (om ? "<span class='nl'>"+nl+"</span><span class='es'>"+es+"</span>"
         : "<span class='es'>"+es+"</span><span class='nl'>"+nl+"</span>")+"</p>";
 }
+/* ================= DE STROOK IN PLAATS VAN DE BANNER (v23.146) =================
+
+   Stefan, 20 aug: "chispa die altijd iets leuks zegt kan weg. nou heel veel dingen kunnen weg."
+
+   Dit draait iets terug dat er op zijn eigen verzoek in kwam, en dat hoort er expliciet bij te staan.
+   v19.49, Stefan: "zou chispa ook in de interface terug komen bijv na de onboarding bij je eerste
+   les?" Wat er toen bij kwam was een hele kaart boven élk scherm van de dagles: haar kop, een Spaanse
+   regel per stap, de Nederlandse vertaling eronder, en een tik erop voor een toast met dezelfde zin.
+
+   Vier zinnen, twaalf plekken, zesentwintig dagen. Dat is de reden dat het weggaat: een aanmoediging
+   die altijd komt is geen aanmoediging meer maar meubilair. En het duurste stuk schermruimte van de
+   app, boven elke oefening, ging eraan op.
+
+   Ze verdwijnt niet. Ze staat op het dagscherm vóórdat je begint (één keer per dag, en dat is Fogg's
+   prompt: die werkt juist door zijn plek), ze krijgt haar tapa als je klaar bent, en sinds v23.144
+   kun je met haar praten. Tijdens je les zwijgt ze, en dan is het ook weer iets waard.
+
+   Wat ervoor terugkomt is wat de banner nooit gaf: waar je bent. */
 function lesFlowBannerHtml(){
   if(!lesFlow) return "";
-  var f = lesFlowChispaFrase();
-  return "<div class='card' style='margin-bottom:10px'>"+
-    "<div class='lfrow'>"+
-      "<button class='lfchispa' id='btnLesFlowChispa' title='Chispa'>"+chispaMiniSvg()+"</button>"+
-      "<div class='lfmid'>"+
-        "<span class='kicker'>🚦 "+ct("Start je les","Start your session")+" · "+ct("stap","step")+" "+lesFlowStapNum()+"/"+lesFlowStapTotaal()+" · "+lesFlowStapNaam()+"</span>"+
-        chispaZegHtml(f.es, ct(f.nl, f.en || f.nl))+
-      "</div>"+
-    "</div>"+
-    /* v23.142: dezelfde balk als op Vandaag, met het blok waar je nu in zit vol. De kicker hierboven
-       zegt "stap 4 van 5" in woorden; dit zegt waar dat vierde blok zit en hoe groot het is. */
+  return "<div class='lesstrook'>"+
     dagBalkHtml(lesFlow.stap, lesFlow.stappen)+
-  "</div>";
+    "<div class='lesstap'>"+ct("stap","step")+" "+lesFlowStapNum()+"/"+lesFlowStapTotaal()+
+      " · "+lesFlowStapNaam()+"</div></div>";
 }
-/* v19.49 (Stefan: "zou chispa ook in de interface terug komen komen bijv na de onboarding bij je
-   eerste les?"). Chispa zat opgesloten in haar eigen tabje. Nu loopt ze mee door de hele dagles:
-   één plek in de banner, die vanuit twaalf views gerenderd wordt. Bij de allereerste les stelt
-   ze zich nog even voor. */
-var LESFLOW_CHISPA = {
-  woorden:    {es:"¡Vamos! Primero las palabras.",    nl:"Kom op! Eerst de woordjes.",         en:"Let's go! Words first."},
-  grammatica: {es:"Ahora la gramática. Yo te espero.", nl:"Nu de grammatica. Ik wacht op je.",  en:"Now the grammar. I'll wait for you."},
-  toetsjes:   {es:"Un test pequeño, nada más.",      nl:"Eén klein toetsje, verder niets.", en:"One small quiz, nothing more."},
-  produceren: {es:"¡Ahora hablas tú!",               nl:"En nu praat jij!",                   en:"Now you talk!"}
-};
-var LESFLOW_CHISPA_EERSTE = {es:"¡Hola! Soy Chispa. Vamos juntos.", nl:"Hoi! Ik ben Chispa. We doen dit samen.", en:"Hi! I'm Chispa. We'll do this together."};
 /* v19.66 — de begroeting vóór je begint. Chispa liep al mee dóór de dagles, maar stond er niet op
    het moment dat je ervoor kiest. Dat is precies het moment waarop een prompt in Fogg's zin telt:
    niet als herinnering achteraf, maar als het gezicht dat bij de handeling hoort. Eén zin, elke dag
@@ -14281,29 +14297,9 @@ var CHISPA_GROET = [
   {es:"Sin prisa, pero sin pausa.",   nl:"Geen haast, maar wel doorgaan.",     en:"No rush, but no stopping."}
 ];
 function chispaGroet(){ return CHISPA_GROET[dayHash("groet") % CHISPA_GROET.length]; }
-function lesFlowChispaFrase(){
-  if(!lesFlow) return LESFLOW_CHISPA.woorden;
-  if(lesFlow.stap === "woorden" && typeof doneLessonCount === "function" && doneLessonCount() === 0) return LESFLOW_CHISPA_EERSTE;
-  return LESFLOW_CHISPA[lesFlow.stap] || LESFLOW_CHISPA.woorden;
-}
 function chispaMiniSvg(){
   return "<svg viewBox='-16 -16 32 34'>"+escChispaMini()+"</svg>";
 }
-function lesFlowChispaKlik(){
-  var f = lesFlowChispaFrase();
-  var b = document.getElementById("btnLesFlowChispa");
-  if(b) chispaMiniSpin(b);
-  toast("💬 " + f.es + " · " + ct(f.nl, f.en || f.nl));
-}
-/* Stefan, 30 juli: "Het is een speelse instructie, geen actie of keuzemoment." De banner van stap 1
-   had een 'Later verder'-knop, en die maakte van een aanmoediging een beslissing die je elke stap
-   opnieuw moest nemen. Weg dus, inclusief lesFlowStop(): weglopen doe je met de navigatie, niet met
-   een knop in Chispa's tekstballon. Chispa zelf blijft aanklikbaar, dat is spel en geen keuze. */
-function lesFlowWireBanner(){
-  var bc = document.getElementById("btnLesFlowChispa");
-  if(bc) bc.onclick = lesFlowChispaKlik;
-}
-
 /* ================= VERDER WAAR JE WAS (v20.2) =================
    Stefan, 5 augustus: "Waar in een oefening is men nu." De les liep in vier stappen, maar bestond
    alleen zolang het tabblad open bleef. Wie tussendoor wegklikte, de app sloot of op "Klaar voor
@@ -18794,6 +18790,35 @@ function spelInfoVan(v){
    Deze vijf tellen mee. Ze staan nu aan de goede kant, en de tegel draagt dat zelf (gram:true), zodat
    de Speeltuin, de Grammatica-tab en de dagkaart alle drie hetzelfde ene veld lezen. */
 function speelTegels(){ return spelInfo().filter(function(x){ return !x.gram; }); }
+/* v23.145: welke drie staan er vooraan?
+
+   Aventura is het grote spel en Música heeft geen materiaal nodig, dus die twee staan er altijd. De
+   derde plek roteert.
+
+   Palabra Duel staat in geen van beide: hij heeft een tweede speler nodig, dus vooraan zetten belooft
+   iets dat je alleen niet kunt, en "het spel van vandaag" zou een doodlopende weg zijn. Hij staat
+   achter de regel bij de rest. */
+var SPEL_VAST = ["avt", "musica"];
+var SPEL_ROTEERT_NIET = ["avt", "musica", "duel"];
+/* En het spel van vandaag is dat wat je het langst niet geopend hebt. Nooit geopend telt als het
+   langst geleden: daar is de kans het grootst dat je iets vindt.
+
+   Gelijkspel wordt met dayHash gebroken en niet met Math.random(). Anders verspringt de tegel onder
+   je handen bij elke hertekening, en dan is "het spel van vandaag" een leugen. */
+function spelVanVandaag(){
+  var kand = speelTegels().filter(function(g){
+    return SPEL_ROTEERT_NIET.indexOf(g.v) === -1 && speelKlaar(g.v);
+  });
+  if(!kand.length) return null;
+  var draai = 0;
+  try { draai = dayHash("spel"); } catch(e){ draai = 0; }
+  var beste = null, besteSleutel = null;
+  kand.forEach(function(x, i){
+    var sleutel = (gezienLaatst("spel:" + x.v) || "0000-00-00") + "|" + ((draai + i) % kand.length);
+    if(besteSleutel === null || sleutel < besteSleutel){ besteSleutel = sleutel; beste = x; }
+  });
+  return beste;
+}
 function gramTegels(){ return spelInfo().filter(function(x){ return !!x.gram; }); }
 /* De hertoets heeft geen eigen tegel (je komt er alleen via het pad) maar hoort wel bij dit blok:
    ook daaruit hoor je terug te komen op de Grammatica-tab en niet in de Speeltuin. */
@@ -21319,7 +21344,6 @@ function chatWire(){
     inv.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); chatStuur(); } };
     inv.focus();
   }
-  try { lesFlowWireBanner(); } catch(e){}
 }
 
 function chatStuur(){
@@ -27861,9 +27885,35 @@ function renderFun(){
   /* v23.124: de grammatica-tegels staan hier niet meer, die wonen op de Grammatica-tab. De
      opmaak en de klik staan in tegelLijstHtml/tegelWire, want anders zou dezelfde rij op twee
      plekken getekend worden en dat is precies wat in v23.112 een dode tegel opleverde. */
+  /* v23.145: negen tegels naast elkaar, allemaal even groot, allemaal even hard roepend. Nu drie
+     vooraan en de rest achter één regel. Er gaat niets weg: wat je zoekt is één tik verderop, en wat
+     nog niet kan staat nog steeds in het grijs met de eis erbij (v23.77, verdwijnen is geen
+     opruimen). */
   var SPEELMENU = speelTegels();
-  var rijen = tegelLijstHtml(SPEELMENU);
-  var nuHtml = rijen.nu, straksHtml = rijen.straks;
+  /* Op naam vergelijken en niet op het object: spelInfo() bouwt zijn lijst bij elke aanroep opnieuw,
+     dus spelVanVandaag() geeft een ánder object terug met dezelfde v. Eerst met indexOf(g) gedaan,
+     en toen stond het spel van vandaag er twee keer, met twee keer hetzelfde id. */
+  var vandaagV = (spelVanVandaag() || {}).v || null;
+  var vooropV = (vandaagV ? [vandaagV] : []).concat(SPEL_VAST.filter(function(v){ return v !== vandaagV; }));
+  var voorop = [], rest = [];
+  vooropV.forEach(function(v){
+    SPEELMENU.forEach(function(g){ if(g.v === v) voorop.push(g); });
+  });
+  SPEELMENU.forEach(function(g){ if(vooropV.indexOf(g.v) === -1) rest.push(g); });
+  var vandaagSpel = vandaagV;
+  var rijenV = tegelLijstHtml(voorop), rijenR = tegelLijstHtml(rest);
+  var allesUit = !!S.spelAlles;
+  var nuHtml = (vandaagSpel ? "<p class='muted' style='margin:8px 0 2px; font-size:.82rem'>"+
+                  ct("Het spel van vandaag","Today's game")+"</p>" : "")+
+               rijenV.nu + (allesUit ? rijenR.nu : "");
+  /* De verborgen tegels worden geteld uit dezelfde lijst die ze zou tekenen. Een handgeschreven
+     getal naast een gefilterde lijst is de fout van v23.94 (drie getallen, één chipje). */
+  var restN = rest.filter(function(g){ return speelKlaar(g.v); }).length;
+  if(restN) nuHtml += "<button class='mini' id='spelMeer'>"+
+    (allesUit ? ct("Minder","Fewer")
+              : ct("Alle spellen ("+restN+" meer)","All games ("+restN+" more)"))+"</button>";
+  // wat nog niet kan staat er hoe dan ook, open of dicht: dat is een belofte over later en geen keuze
+  var straksHtml = rijenV.straks + rijenR.straks;
   /* v23.98: er stond niet wat een spel oplevert, terwijl Oefenen dat wel zegt. Je kon dus niet
      weten welk spel je verder helpt en welk puur vermaak is, en dat verschil is er wel degelijk:
      zie spelSrsBij() en SPEL_PLAFOND. */
@@ -27887,6 +27937,14 @@ function renderFun(){
      netjes en deed niets. De koppeling loopt sindsdien over de lijst zelf. v23.124 verhuist hem
      naar tegelWire(), zodat de Grammatica-tab hem hergebruikt in plaats van hem na te bouwen. */
   tegelWire(SPEELMENU);
+  var sm = document.getElementById("spelMeer");
+  if(sm) sm.onclick = function(ev){
+    if(ev && ev.preventDefault) ev.preventDefault();
+    S.spelAlles = !S.spelAlles;
+    try { persist(); } catch(e){}
+    renderFun();
+    return false;
+  };
   var sa = document.getElementById("speelAlles");
   if(sa) sa.onclick = function(ev){
     if(ev && ev.preventDefault) ev.preventDefault();
@@ -33302,7 +33360,6 @@ function wireGramWiz(el){
     show("toetsjes");
     if(qid) startQuiz(qid);
   };
-  lesFlowWireBanner();
   b = document.getElementById("gwNaarToets"); if(b) b.onclick = gwNaarToets;
   b = document.getElementById("gwVolgende"); if(b) b.onclick = gwVolgende;
   b = document.getElementById("gwVolgendeStap"); if(b) b.onclick = gwVolgendeStap;
@@ -34030,7 +34087,44 @@ var TABS = [
 ];
 
 function navPush(state){
+  try{ gezienBij(state); }catch(e){}
   try{ if(window.history && history.pushState) history.pushState(state, ""); }catch(e){}
+}
+/* ================= WAAR JE LOOPT (v23.145) =================
+
+   De app registreerde tot nu toe alleen waar je struikelt: het foutenlogboek. Waar je heen gaat werd
+   nergens vastgelegd. Gevolg (gemeten over 26 dagen, drie gebruikers): van elf onderdelen, waaronder
+   alle spellen en het boek, is er geen enkel gegeven. Niet omdat ze niet gebruikt worden, maar omdat
+   een spel waarin je geen fout kúnt maken geen spoor nalaat.
+
+   navPush() is de enige plek waar élke overgang doorheen komt: een tab, een spel, een grammaticales.
+   Daarom staat het hier en niet in twintig aanroepers.
+
+   Opslaan gebeurt alleen bij de eerste keer per dag dat je ergens komt. De rest van de dag lift de
+   teller mee op de opslag die er toch al plaatsvindt; anders kost bladeren evenveel schrijfacties
+   als leren. */
+function gezienNaam(st){
+  if(!st || typeof st !== "object") return null;
+  if(st.t === "tab") return st.id || null;
+  if(st.t === "fun") return st.v ? ("spel:" + st.v) : null;
+  if(st.t === "gramwiz") return "gramles";
+  if(st.t === "gclees") return "gramlezen";
+  return null;
+}
+function gezienBij(st){
+  var naam = gezienNaam(st);
+  if(!naam) return;
+  S.gezien = S.gezien || {};
+  var g = S.gezien[naam] || {n:0, l:""};
+  var eersteVandaag = g.l !== today();
+  g.n = (g.n || 0) + 1;
+  g.l = today();
+  S.gezien[naam] = g;
+  if(eersteVandaag){ try { persist(); } catch(e){} }
+}
+function gezienLaatst(naam){
+  var g = (S.gezien || {})[naam];
+  return (g && g.l) || "";
 }
 
 // "Hoe dit werkt" (29 juli, v19.39; samengevoegd met Steun in v19.40): Stefans idee na de familie/

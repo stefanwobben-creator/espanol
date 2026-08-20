@@ -50,7 +50,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   if (await skip.count()) await skip.first().click();
   await page.waitForTimeout(400);
   // alles zichtbaar, anders staat de helft onder "komt er straks bij" en zonder id op het scherm
-  await page.evaluate(() => { S.lang = 'nl'; S.speelAlles = true; try { persist(); } catch (e) {} });
+  /* S.speelAlles laat ook zien wat nog op slot staat; S.spelAlles klapt sinds v23.145 de
+     ingeklapte helft van de Speeltuin open. Deze suite vraagt van elke tegel of hij iets dóét, dus
+     ze moeten alle twee aan: een tegel die niet getekend wordt is hier geen dode tegel maar een
+     onmeetbare. */
+  await page.evaluate(() => { S.lang = 'nl'; S.speelAlles = true; S.spelAlles = true; try { persist(); } catch (e) {} });
 
   const lijst = await page.evaluate(() => spelInfo().map((g) => ({ v: g.v, id: g.id, t: g.t, gram: !!g.gram })));
 
