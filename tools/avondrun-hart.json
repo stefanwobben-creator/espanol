@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-08-19T03:03:15.647Z",
- "gelukt": true,
+ "wanneer": "2026-08-20T02:55:43.949Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -8,27 +8,16 @@
   "toetsje": 1,
   "nieuweLes": 1
  },
- "geleverd": {
-  "zinnen": 6,
-  "toetsjes": 1,
-  "nieuweLes": 0
- },
- "versie": "v23.129",
+ "geleverd": null,
+ "versie": null,
  "klachten": [
-  "s225: afgekeurd — De uitleg klopt niet volledig: 'empezar' kan zowel gevolgd worden door 'a' + infinitief (empezó a trabajar) als door een zelfstandig naamwoord (empezó su nuevo trabajo). Beide opties zijn correct en natuurlijk in het Spaans.",
-  "s227: afgekeurd — De uitleg bevat een onjuiste bewering: 'catalán' is mannelijk, maar in deze context wordt het zonder lidwoord gebruikt, wat correct is. De formulering in de uitleg is echter onnodig complex en kan verwarrend zijn.",
-  "s227: afgekeurd — De uitleg klopt niet: na 'porque' volgt de indicativo ('tengo'), niet de subjuntivo. De zin is wel natuurlijk en correct.",
-  "s229: afgekeurd — De uitleg klopt niet: 'echar de menos' gebruikt geen infinitief na 'de', maar een zelfstandig naamwoord ('la máquina de café'). De zin is wel natuurlijk en correct.",
-  "s230: afgekeurd — De uitleg klopt niet: 'averiado' is mannelijk ('el ascensor está averiado'), niet vrouwelijk. De zin is wel natuurlijk en correct.",
-  "s232: afgekeurd — De uitleg klopt niet: na 'cuando' volgt de indicativo ('voy'), niet de infinitief. De zin is wel natuurlijk en correct.",
-  "s234: afgekeurd — De uitleg klopt niet: 'encantar' gebruikt de infinitief na 'trabajar' om een gewoonte uit te drukken, maar de uitleg is onnauwkeurig. De zin is wel natuurlijk en correct.",
-  "5 van de 8 zinnen afgekeurd, de rest gaat door",
-  "te weinig zinnen over → les niet aangeboden"
+  "s234: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onzin: niemand laat expres een tas in de winkel liggen en vergeet dat. De vertaling en uitleg zijn wel correct.",
+  "AFGEKEURD:\n - zin 1 (s231): lvl moet 1-5 zijn\n - zin 2 (s232): lvl moet 1-5 zijn\n - zin 3 (s233): lvl moet 1-5 zijn"
  ],
- "reden": null,
- "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
- "pogingen": 2,
- "afgemaakt": "2026-08-19T03:09:09.332Z"
+ "reden": "de run is niet afgemaakt",
+ "gegenereerd": false,
+ "gepubliceerd": false,
+ "status": "geklapt",
+ "pogingen": 1,
+ "afgemaakt": "2026-08-20T02:55:47.549Z"
 }
