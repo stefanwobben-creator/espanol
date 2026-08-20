@@ -1458,7 +1458,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.140";
+var APP_VERSIE = "v23.141";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14661,6 +14661,66 @@ var VAARD_NAAM = {
    De volgorde is niet willekeurig: eerst wat het meeste oplevert, daarna iets wat gewoon leuk is.
    Dat is letterlijk zijn eigen formulering ("doe ook nog even 5 min x want daar kun je nog het
    meeste verbeteren, wil je dat of doe een leuk spelletje"). */
+/* ================= DE ROUTE IN JE DAG (v23.141) =================
+
+   Stefan: "de lessen lijken beetje los te staan van de grammatica, hoe verhoudt dit tot elkaar?"
+
+   Er lopen drie ladders door de app. De lessen (Cursus) en de grammatica-stap van je dagles zijn
+   wél gekoppeld: lesFlowGramId() vraagt huidigeLes() en pakt een onderwerp uit de spiekbrief van
+   precies die les. De routes (GRAM_PADEN, v23.116) en de Conjugador staan er los van: je kunt drie
+   weken aan een route werken zonder dat je dagles het merkt.
+
+   Deze functie is de verbinding. Niet door de route de verplichte les in te duwen (de routestappen
+   zijn oefeningen van vijf tot tien minuten zonder "door"-knop, dus dan strand je halverwege je
+   les), maar door hem te laten zien op de twee momenten waarop je beslist wat je nu doet: onder je
+   dagplan, en na je les. */
+function routeStand(){
+  var p = null, i = -1;
+  try { p = gramPadNu(); } catch(e){ p = null; }
+  if(!p || !p.stappen) return null;
+  try { i = gramPadVolgende(p); } catch(e){ i = -1; }
+  if(i < 0) return null;
+  var open = 0, j, x;
+  for(j = i; j < p.stappen.length; j++){
+    try { x = gramPadStap(p, j); } catch(e){ x = null; }
+    if(x && x.bestaat && !x.af) open++;
+  }
+  var s = p.stappen[i];
+  return {p:p, i:i, s:s, titel:ct(p.nl, p.en), stap:ct(s.nl, s.en), open:open,
+          begonnen: (function(){ try { return gramPadBegonnen(p); } catch(e){ return false; } })()};
+}
+function routeRegelHtml(){
+  var r = routeStand();
+  if(!r) return "";
+  return "<p class='muted' style='margin:8px 0 0; font-size:.82rem'>"+
+    ct("Je route: <b>"+r.titel+"</b>. Nu: "+r.stap+", nog "+r.open+" "+(r.open === 1 ? "stap" : "stappen")+". ",
+       "Your route: <b>"+r.titel+"</b>. Now: "+r.stap+", "+r.open+" "+(r.open === 1 ? "step" : "steps")+" to go. ")+
+    "<button class='mini' id='btnRouteDag' style='margin-top:4px'>"+
+      ct("Naar je route","To your route")+"</button></p>";
+}
+function routeRegelWire(){
+  var b = document.getElementById("btnRouteDag");
+  if(!b) return;
+  b.onclick = function(){
+    var r = routeStand();
+    if(r) gramPadGa(r.p, r.i);
+  };
+}
+/* Als voorstel na je les. Eén object in dezelfde vorm als de rest (icon, kop, waarom, knop, doe),
+   zodat het door dezelfde lijst en dezelfde knoppen loopt. */
+function routeVoorstel(){
+  var r = routeStand();
+  if(!r) return null;
+  return {icon:"\ud83e\udded",
+    kop:ct("Je route: "+r.stap, "Your route: "+r.stap),
+    waarom:ct("Dit is de volgende stap van "+r.titel+". Nog "+r.open+" "+(r.open === 1 ? "stap" : "stappen")+
+              " en die tijd staat gestold: dan kun je hem maken zonder erbij na te denken.",
+              "This is the next step of "+r.titel+". "+r.open+" "+(r.open === 1 ? "step" : "steps")+
+              " to go and that tense is set: then you can produce it without thinking."),
+    knop:ct("Volgende stap","Next step"),
+    doe:function(){ gramPadGa(r.p, r.i); }};
+}
+
 function lesFlowWinst(){
   var fout = gramFoutTop();
   if(fout){
@@ -14678,6 +14738,13 @@ function lesFlowWinst(){
      vreemde heeft er vijf): de poort van v23.43 verbergt de tegel wél, maar dit voorstel roept
      speelNaar("corr") rechtstreeks aan. Een tweede deur naar dezelfde gesloten kamer, precies op
      het moment dat iemand besluit of hij doorgaat. */
+  /* v23.141: de route komt hier, op plek twee. Een fout die je twee keer maakte (hierboven) is een
+     gat dat nu dicht moet; een route is een plan en dat kan een dag wachten. Maar hij gaat vóór El
+     Corrector en vóór de vaardigheidskeuze, want hij is het enige voorstel met een eindpunt: er
+     staat bij hoeveel stappen er nog zijn. */
+  var rv = null;
+  try { rv = routeVoorstel(); } catch(e){ rv = null; }
+  if(rv) return rv;
   var corrKan = true;
   try { corrKan = speelKlaar("corr"); } catch(e){ corrKan = true; }
   var cd = corrKan ? corrDueHaalbaar() : [];
@@ -15801,7 +15868,7 @@ function ritmeCard(){
             ct("Je stopte bij stap "+hStap+" van "+hTot+": "+hNaam+"."+(toonPlan ? "" : " De rest van je portie staat klaar."),
                "You stopped at step "+hStap+" of "+hTot+": "+hNaam+"."+(toonPlan ? "" : " The rest of your session is waiting."))+"</p>"+
           (toonPlan ? dagPlanHtml(S.lesFlowNu && S.lesFlowNu.stap, S.lesFlowNu && S.lesFlowNu.stappen) : "")
-        : toonPlan ? dagPlanHtml()
+        : toonPlan ? dagPlanHtml() + routeRegelHtml()   /* v23.141: en waar je route staat */
                    : "<p class='muted' style='margin:6px 0 0'>"+portieTxt+"</p>")+
       /* v23.87: op dag 1 stond hier "Daarna mag je Chispa 🐙 el pulpo a la gallega geven", en dat
          waren drie onbekenden in één zin: wie Chispa is (ze stelt zich pas in de les voor), wat het
@@ -19099,6 +19166,7 @@ function renderLessons(){
   html += thuisKaartHtml();
   listEl.innerHTML = html;
   dagBordWire(listEl);
+  routeRegelWire();   // v23.141: de knop bij de routeregel onder je dagplan
   thuisKaartWire(listEl);
   muurWire();
   muurHaal();
