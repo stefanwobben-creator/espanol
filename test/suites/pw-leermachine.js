@@ -228,6 +228,10 @@ const { chromium } = require('playwright');
     S.xp = {}; S.dag = {}; S.ritme = { wanneer: 'stil' }; S.lesFlow = {};
     lesFlow = { stap: 'toetsjes', quizzesTeDoen: [], gekozenSpel: null, vertalenTeGaan: 0 };
     lesFlowVolgende();
+    // v23.140: het inputblok (lezen of luisteren) staat tussen het toetsje en het schrijven. Deze
+    // suite gaat over de keten woordjes-grammatica-toets-schrijven; het inputblok heeft zijn eigen
+    // suite (pw-inputblok.js), dus hier lopen we het door.
+    if (lesFlow && lesFlow.stap === 'input') lesFlowVolgende();
     const naToets = { stap: lesFlow && lesFlow.stap, spel: lesFlow && lesFlow.gekozenSpel,
                       zinnen: lesFlow && lesFlow.vertalenTotaal };
     // de drie zinnen afwerken

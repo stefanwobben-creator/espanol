@@ -32,15 +32,23 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   const na = await page.evaluate(() => {
     lesFlow = { stap: 'toetsjes', quizzesTeDoen: [], gekozenSpel: null, vertalenTeGaan: 0 };
     lesFlowVolgendeKern();
+    /* v23.140: tussen het toetsje en het schrijven staat nu het inputblok (lezen of luisteren).
+       Deze suite gaat over het schrijfblok, dus we lopen dat blok door en meten daarna hetzelfde
+       als hiervoor. Dat het inputblok er staat en klopt, bewaakt pw-inputblok.js. */
+    if (lesFlow && lesFlow.stap === 'input') lesFlowVolgendeKern();
     return { stap: lesFlow && lesFlow.stap, vaardigheid: lesFlow && lesFlow.vaardigheid,
              spel: lesFlow && lesFlow.gekozenSpel, teGaan: lesFlow && lesFlow.vertalenTeGaan,
              totaal: lesFlow && lesFlow.vertalenTotaal, vast: SCHRIJF_PER_LES,
-             num: lesFlowStapNum(), naam: lesFlowStapNaam(),
+             num: lesFlowStapNum(), naam: lesFlowStapNaam(), tot: lesFlowStapTotaal(),
              zichtbaar: !document.getElementById('tab-vertalen').classList.contains('hidden') };
   });
   ok(na.stap === 'produceren' && na.vaardigheid === 'schrijven', 'de les gaat door naar schrijven (' + na.stap + '/' + na.vaardigheid + ')');
   ok(na.zichtbaar, 'en het scherm staat open');
-  ok(na.num === 4 && /Schrijven/.test(na.naam || ''), 'het is stap 4 en heet Schrijven (' + na.num + ' ' + na.naam + ')');
+  /* v23.140: schrijven is niet meer stap 4 maar de laatste stap, en hoeveel dat er zijn hangt af
+     van of er vandaag iets te lezen of te luisteren is. De bewering blijft: schrijven sluit de les
+     af en heet Schrijven. */
+  ok(na.num === na.tot && /Schrijven/.test(na.naam || ''),
+    'het is de laatste stap en heet Schrijven (' + na.num + ' van ' + na.tot + ', ' + na.naam + ')');
 
   console.log('\n-- drie zinnen, niet tien --');
   ok(na.vast === 3, 'SCHRIJF_PER_LES is 3 (' + na.vast + ')');
@@ -49,7 +57,7 @@ const U = 'http://localhost:8321/espanol-stefan.html';
     const k = document.querySelector('#tab-vertalen .kicker');
     return (k ? k.innerText : '').replace(/\s+/g, ' ');
   });
-  ok(/1\/3/.test(kop) || /4\/4/.test(kop), 'de kop zegt waar je bent (' + kop + ')');
+  ok(/1\/3/.test(kop) || new RegExp(na.tot + '/' + na.tot).test(kop), 'de kop zegt waar je bent (' + kop + ')');
 
   console.log('\n-- na de derde zin is de les af --');
   const af = await page.evaluate(() => {

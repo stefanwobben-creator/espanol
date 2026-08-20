@@ -1458,7 +1458,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.139";
+var APP_VERSIE = "v23.140";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13881,7 +13881,9 @@ function closeBoek(){
   bState = null;
   // v19.92: lezen is nu een stap in de dagles. Klaar met het hoofdstuk (of ertussenuit) betekent dus:
   // door met de les, niet terug naar het boekenmenu.
-  if(wasLezen && lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "boek"){ lesFlowVolgende(); return; }
+  // v23.140: "input" erbij. Lezen is sinds deze versie een eigen stap in de les en niet meer alleen
+  // het opt-in-blok van v20.5; zonder deze regel bleef je na het hoofdstuk in het boekenmenu staan.
+  if(wasLezen && lesFlow && (lesFlow.stap === "produceren" || lesFlow.stap === "input") && lesFlow.gekozenSpel === "boek"){ lesFlowVolgende(); return; }
   renderBoekMenu();
 }
 
@@ -13988,6 +13990,18 @@ function dagPlan(){
     blokken.push({stap:"toetsjes", naam:ct("Toetsje","Quiz"),
       wat:qn + " " + ct("vragen","questions"), sec:qn * sec});
   }
+  /* v23.140: de derde draad. Tussen het toetsje en het schrijven, want het is input en input hoort
+     vóór wat je er zelf mee doet. De tijd is een kwart van je dag, hetzelfde budget dat
+     vaardigheidTijd() al aan een vaardigheidsblok gaf. */
+  var inputV = null;
+  try { inputV = lesFlowInputKeuze(); } catch(e){ inputV = null; }
+  if(inputV){
+    blokken.push({stap:"input",
+      naam: inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
+      wat: inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
+                              : ct("een gesprek","one conversation"),
+      sec: doelMinuten() * 60 * 0.25, vaardigheid: inputV});
+  }
   var kanSchrijven = false;
   try { kanSchrijven = !!allowedSentIds().length; } catch(e){ kanSchrijven = false; }
   if(kanSchrijven){
@@ -14071,7 +14085,7 @@ function lesFlowStapNaam(f){
   if(f.stap === "woorden") return ct("Woordjes","Words");
   if(f.stap === "grammatica") return ct("Grammatica","Grammar");
   if(f.stap === "toetsjes") return ct("Toetsjes","Quizzes");
-  if(f.stap === "produceren"){
+  if(f.stap === "input" || f.stap === "produceren"){
     var v = f.vaardigheid;
     if(v === "lezen") return ct("Lezen","Reading");
     if(v === "luisteren") return ct("Luisteren","Listening");
@@ -14084,7 +14098,7 @@ function lesFlowStapNaam(f){
    in f.stappen (gezet bij de start, bewaard in S.lesFlowNu), zodat een les die als vier stappen
    begon vier stappen blijft. Staat hij er niet, dan is dit een les van vóór deze versie en valt hij
    terug op het plan van vandaag. */
-var LESFLOW_VOLGORDE = ["woorden", "grammatica", "toetsjes", "produceren"];
+var LESFLOW_VOLGORDE = ["woorden", "grammatica", "toetsjes", "input", "produceren"];
 function lesFlowStapRij(f){
   f = f || lesFlow;
   if(f && f.stappen && f.stappen.length) return f.stappen;
@@ -14209,7 +14223,7 @@ function lesFlowBewaar(){
     gramLes: lesFlow.gramLes || null,
     quizzesTeDoen: (lesFlow.quizzesTeDoen || []).slice(),
     gekozenSpel: lesFlow.gekozenSpel || null,
-    vaardigheid: lesFlow.vaardigheid || null,
+    vaardigheid: lesFlow.vaardigheid || null,   // v23.140: draagt ook de keuze van het inputblok
     vaardigheidRij: (lesFlow.vaardigheidRij || []).slice(),
     vertalenTeGaan: lesFlow.vertalenTeGaan || 0,
     vertalenTotaal: lesFlow.vertalenTotaal || 0
@@ -14296,6 +14310,30 @@ function huidigeLes(){
 /* v23.73: wat de grammaticastap vandaag doet, op volgorde. Hoogstens twee dingen: één opfrisvraag
    en één onderwerp. De opfrisser valt weg als er niets op herhaling staat, het onderwerp als je
    alles al hebt gezien; blijft er niets over, dan slaat de stap zichzelf over zoals altijd. */
+/* ================= HET INPUTBLOK (v23.140) =================
+
+   De derde draad van Nation: iets begrijpen, niet iets oefenen. Even dagen lezen, oneven luisteren.
+
+   Waarom ik kies en jij niet: laat je de gebruiker kiezen, dan wordt luisteren nooit gekozen, en dan
+   is de draad er alsnog niet. Het staat wel in het plan op Vandaag voordat je begint, dus het is
+   geen verrassing halverwege.
+
+   Is er niets, dan is er niets: geen open hoofdstuk of geen audio betekent dat dit blok niet in het
+   plan staat en de les gewoon vier stappen telt. Een plan dat iets belooft wat er niet is, is
+   erger dan een korter plan (v23.135). */
+function lesFlowInputKeuze(){
+  var lezen = null, audi = false;
+  try { lezen = lesFlowBoekHoofdstuk(); } catch(e){ lezen = null; }
+  /* audOpen(sc) vraagt of één scene open is; wat we hier nodig hebben is of er überhaupt iets
+     open staat, en dat is audLijst(). Eerst per ongeluk audOpen() zonder scene aangeroepen: die
+     valt dan over sc.id, wordt opgevangen door de catch, en luisteren zou nooit gekozen worden. */
+  try { audi = typeof audLijst === "function" && audLijst().length > 0; } catch(e){ audi = false; }
+  if(!lezen && !audi) return null;
+  if(!lezen) return "luisteren";
+  if(!audi) return "lezen";
+  return (dayHash("input") % 2) === 0 ? "lezen" : "luisteren";
+}
+
 function lesFlowGramLijst(){
   var uit = [];
   var rij = [];
@@ -14491,6 +14529,33 @@ function lesFlowVolgendeKern(){
     // vijf tot tien zinnen ná het punt waarop je al klaar was. Drie zinnen is iets anders dan tien,
     // en het staat nu ín de les in plaats van erachter. Zelf iets produceren is bovendien het enige
     // moment van de dag waarop je het Spaans uit je hoofd moet halen in plaats van herkennen.
+    /* v23.140: eerst input, dan pas zelf iets maken. lesFlowOpenProductie() weet sinds v20.5 al hoe
+       het een hoofdstuk of een luisterscene opent; die machinerie wordt hier hergebruikt. */
+    var inputV = null;
+    try { inputV = lesFlowInputKeuze(); } catch(e){ inputV = null; }
+    if(inputV){
+      lesFlow.stap = "input";
+      lesFlow.vaardigheid = inputV;
+      lesFlow.vaardigheidRij = [];
+      lesFlowOpenProductie();
+      return;
+    }
+    if(allowedSentIds().length){
+      lesFlow.stap = "produceren";
+      lesFlow.vaardigheid = "schrijven";
+      lesFlow.vaardigheidRij = [];
+      lesFlow.gekozenSpel = "vertalen";
+      lesFlow.vertalenTeGaan = lesFlow.vertalenTotaal = SCHRIJF_PER_LES;
+      show("vertalen");
+      return;
+    }
+    lesFlowKlaar();
+    return;
+  }
+  /* v23.140: klaar met lezen of luisteren, door naar het schrijven. Dezelfde afhandeling als
+     hieronder, maar met een vaste volgende stap in plaats van een rij vaardigheden. */
+  if(lesFlow.stap === "input"){
+    if(lesFlow.vaardigheid) S.lesFlowSpel[lesFlow.vaardigheid] = today();
     if(allowedSentIds().length){
       lesFlow.stap = "produceren";
       lesFlow.vaardigheid = "schrijven";

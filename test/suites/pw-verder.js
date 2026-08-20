@@ -131,13 +131,18 @@ async function bewaard(page) {
   });
   await page.waitForTimeout(600);
   const kaart1 = await startKaart(page);
+  /* v23.140: het aantal stappen is niet meer vast vier. Sinds v23.135 komt het uit dagPlan(), en
+     sinds v23.140 zit het inputblok erin als er iets te lezen of te luisteren is. De bewering
+     blijft dezelfde ("de stap staat erbij, met het totaal"), maar het totaal wordt gevraagd in
+     plaats van bevroren. */
+  const tot = await page.evaluate(() => lesFlowStapTotaal(S.lesFlowNu));
   ok(/Verder waar je was/i.test(kaart1.kicker), 'het kopje zegt nu "Verder waar je was" (' + kaart1.kicker + ')');
-  ok(/stap 1\/4/i.test(kaart1.kicker), 'met de stap erbij, zodat het geen vage belofte is');
+  ok(new RegExp('stap 1/' + tot, 'i').test(kaart1.kicker), 'met de stap erbij, zodat het geen vage belofte is (van ' + tot + ')');
   ok(/Woordjes/i.test(kaart1.kicker), 'en de naam van die stap');
   ok(/Verder waar je was/i.test(kaart1.knopTekst), 'de knop zegt hetzelfde (' + kaart1.knopTekst + ')');
   ok(kaart1.opnieuw, 'eronder staat "liever opnieuw beginnen"');
   ok(kaart1.primair === 1, 'precies één primaire knop, geen twee die om aandacht vechten (' + kaart1.primair + ')');
-  ok(/Je stopte bij stap 1 van 4/.test(kaart1.tekst), 'en in gewone taal eronder waar je gebleven was');
+  ok(new RegExp('Je stopte bij stap 1 van ' + tot).test(kaart1.tekst), 'en in gewone taal eronder waar je gebleven was');
   ok(!/[—–]|--/.test(kaart1.tekst), 'geen streepjes in de nieuwe tekst');
 
   console.log('\n-- en brengt je terug naar die stap --');
@@ -160,13 +165,13 @@ async function bewaard(page) {
   }));
   ok(naStap.loopt !== 'woorden', 'de les is een stap verder (' + naStap.loopt + ')');
   ok(naStap.bewaard === naStap.loopt, 'en het herstelpunt is meegeschoven (' + naStap.bewaard + ')');
-  ok(naStap.num >= 2 && naStap.num <= 4, 'de stap heeft een nummer boven de eerste (' + naStap.num + ')');
+  ok(naStap.num >= 2 && naStap.num <= tot, 'de stap heeft een nummer boven de eerste (' + naStap.num + ' van ' + tot + ')');
   ok(!!naStap.naam, 'en een naam om op het dagscherm te zetten ("' + naStap.naam + '")');
   await herlaad(page);
   // .kicker staat in kapitalen in de css, dus hier hoofdletterloos vergelijken
   const kaart2 = await startKaart(page);
   const kick2 = kaart2.kicker.toLowerCase();
-  ok(kick2.indexOf('stap ' + naStap.num + '/4') !== -1,
+  ok(kick2.indexOf('stap ' + naStap.num + '/' + tot) !== -1,
     'het dagscherm noemt diezelfde stap (' + kaart2.kicker + ')');
   ok(kick2.indexOf(naStap.naam.toLowerCase()) !== -1, 'en diezelfde naam');
 

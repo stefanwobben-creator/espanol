@@ -137,7 +137,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.hervatScherm = hv;
     uit.hervatNog = /Nog ongeveer/.test(hv);
     uit.hervatVink = (hv.match(/✓/g) || []).length;
-    uit.hervatVan = /stap 3 van 4/.test(hv);
+    // v23.140: het totaal is niet meer vast vier (het inputblok kwam erbij). De bewering gaat over
+    // "de stapregel telt uit het bewaarde plan", dus we vergelijken met het bewaarde plan zelf.
+    uit.hervatVan = new RegExp('stap 3 van ' + gemeten.stappen.length).test(hv);
     return uit;
   });
 
@@ -179,7 +181,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 6. hervatten telt wat er over is --');
   ok(r.hervatNog, 'de kop zegt hoeveel er nog te gaan is');
   ok(r.hervatVink === 2, 'de twee blokken die je gehad hebt staan afgevinkt (nu: ' + r.hervatVink + ')');
-  ok(r.hervatVan, 'en de stapregel telt uit het bewaarde plan ("stap 3 van 4")');
+  ok(r.hervatVan, 'en de stapregel telt uit het bewaarde plan');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
