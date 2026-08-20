@@ -1044,6 +1044,67 @@ app.post("/api/ai/zin", async (req, res) => {
   }
 });
 
+/* POST /api/ai/chat  (v23.144)
+   Twee vragen, één eindpunt, want ze delen dezelfde gespreksgeschiedenis.
+
+   modus "gesprek": {beurten:[{van:"chispa"|"jij", es}], niveau} -> {naast, es, nl}
+     naast = wat er van de laatste zin van de leerling te zeggen valt, in het Nederlands, náást het
+     gesprek. Een gesprekspartner die elke zin verbetert is geen gesprekspartner, dus het staat
+     apart en het gesprek loopt gewoon door.
+   modus "hulp": {vraag} -> {es, uitleg}
+     De leerling loopt vast en vraagt in het Nederlands hoe je iets zegt. Vastlopen mag; wegklikken
+     niet. */
+app.post("/api/ai/chat", async (req, res) => {
+  const slot = aiSlot(req);
+  if (slot) return badReden(res, slot.code, slot.tekst, slot.reden);
+  const { beurten, niveau, modus, vraag } = req.body || {};
+  const niv = /^(a0|a1|a2|b1)$/i.test(String(niveau || "")) ? String(niveau).toUpperCase() : "A2";
+  try {
+    if (modus === "hulp") {
+      if (!vraag) return bad(res, 400, "vraag verplicht");
+      const txt = await vraagLadder(
+        "Een Nederlandstalige leerling Spaans (niveau " + niv + ") loopt vast in een gesprek en vraagt in " +
+        "het Nederlands hoe je iets zegt. Antwoord UITSLUITEND met geldige JSON: " +
+        "{\"es\": \"de Spaanse zin, kort en op dit niveau\", \"uitleg\": \"één of twee zinnen Nederlands over waarom het zo is\"}. " +
+        "Kies de gewoonste manier om het te zeggen, niet de meest letterlijke vertaling.",
+        "Vraag van de leerling: " + String(vraag).slice(0, 300),
+        250, true, "ai-chat-hulp"
+      );
+      const m = txt.match(/\{[\s\S]*\}/);
+      if (!m) return badReden(res, 502, "onleesbaar AI-antwoord", "stuk");
+      const p = JSON.parse(m[0]);
+      return ok(res, { es: String(p.es || "").slice(0, 200), uitleg: String(p.uitleg || "").slice(0, 400) });
+    }
+    const rij = Array.isArray(beurten) ? beurten.slice(-8) : [];
+    if (!rij.length) return bad(res, 400, "beurten verplicht");
+    const gesprek = rij.map((b) =>
+      (b && b.van === "jij" ? "LEERLING: " : "CHISPA: ") + String((b && b.es) || "").slice(0, 300)
+    ).join("\n");
+    const txt = await vraagLadder(
+      "Je bent Chispa, een vrolijk pratend diertje in een Spaanse leerapp voor Nederlandstaligen op niveau " +
+      niv + ". Je voert een kort gesprek in eenvoudig Spaans.\n" +
+      "Regels voor jouw beurt: hoogstens twaalf woorden, woordenschat die bij " + niv + " past, altijd één " +
+      "vraag terug zodat de leerling verder kan, nooit Nederlands in het veld es, geen emoji.\n" +
+      "Antwoord UITSLUITEND met geldige JSON: " +
+      "{\"naast\": \"...\", \"es\": \"...\", \"nl\": \"...\"}.\n" +
+      "naast = wat er van de laatste zin van de LEERLING te zeggen valt, in het Nederlands, hoogstens twee " +
+      "zinnen: klopt hij, en zo niet, wat is de natuurlijke versie. Klopt hij helemaal, dan een korte " +
+      "bevestiging. Reageer hier op de vorm; op de inhoud reageer je in es.\n" +
+      "es = jouw volgende zin in het Spaans. nl = de Nederlandse vertaling van precies die zin.",
+      "Het gesprek tot nu toe:\n" + gesprek,
+      350, true, "ai-chat"
+    );
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) return badReden(res, 502, "onleesbaar AI-antwoord", "stuk");
+    const p = JSON.parse(m[0]);
+    ok(res, { naast: String(p.naast || "").slice(0, 400), es: String(p.es || "").slice(0, 300),
+              nl: String(p.nl || "").slice(0, 300) });
+  } catch (e) {
+    console.error(e);
+    badReden(res, 502, "AI-fout", "stuk");
+  }
+});
+
 // POST /api/ai/uitleg {vraag, context}
 // "Leg uit waarom"-knop: korte NL-uitleg over een grammaticapunt.
 app.post("/api/ai/uitleg", async (req, res) => {

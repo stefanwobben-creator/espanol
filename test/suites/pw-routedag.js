@@ -13,8 +13,9 @@
 // WAT DEZE SUITE BEWAAKT
 //
 //   1. DE ROUTE STAAT OP JE DAGSCHERM. Welke route, welke stap, hoeveel nog te gaan, met een knop.
-//   2. EN NA JE LES, ALS VOORSTEL. Op plek twee: ná "twee keer dezelfde fout" (dat is een gat dat
-//      nu dicht moet) en vóór El Corrector (een route is een plan met een eindpunt).
+//   2. EN NA JE LES, ALS VOORSTEL. Ná "twee keer dezelfde fout" (dat is een gat dat nu dicht moet)
+//      en ná het gesprek met Chispa (v23.144: dat is er één per dag en dan is het op), maar vóór El
+//      Corrector: een route is een plan met een eindpunt en dat weegt zwaarder dan een spel.
 //   3. HET KLOPT MET DE ROUTE ZELF. De stap die de dagregel noemt is dezelfde die gramPadVolgende()
 //      aanwijst, en het aantal is dat van de route. Een tweede plek die zijn eigen route uitrekent
 //      is een tweede waarheid.
@@ -88,6 +89,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
     // ---- 2. en na je les, als voorstel ----
     S.gram = {};                       // geen twee-keer-fout, dus de route hoort bovenaan
+    // v23.144: het gesprek met Chispa staat vóór de route (het is er één per dag en dan is het op;
+    // een route staat er morgen ook nog). Deze suite gaat over de route, dus we doen alsof je
+    // vandaag al gepraat hebt. Dat pw-chat de andere volgorde bewaakt is het punt: samen zeggen ze
+    // wat er wanneer bovenaan hoort.
+    S.chat = { d: today(), beurten: [], klaar: true };
     const w = lesFlowWinst();
     uit.winstKop = w ? w.kop : null;
     uit.winstIsRoute = !!(w && /route/i.test(w.kop));

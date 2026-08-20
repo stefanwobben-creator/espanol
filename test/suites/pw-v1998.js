@@ -135,8 +135,22 @@ async function nieuwProfiel(page) {
   // wat via Oefenen te bereiken is telt net zo goed mee als wat in de balk of onder Meer staat
   const viaOefenen = await page.evaluate(() => oefenItems().map((o) => o.id));
   const bereikbaar = meer.rijen.map((r) => r.id).concat(['lessen', 'woorden', 'oefenen', 'speeltuin']).concat(viaOefenen);
-  const alleTabs = await page.evaluate(() => TABS.filter((t) => ['steun', 'privacy', 'toetsjes'].indexOf(t.id) === -1).map((t) => t.id));
+  /* "chat" staat er niet bij en dat is met opzet (v23.144). Het gesprek met Chispa woont op haar
+     eigen pagina en komt na je les als voorstel langs; een extra regel in Meer zou het menu langer
+     maken terwijl de opdracht juist is het korter te krijgen. Maar een scherm dat nergens vandaan
+     komt is een dood scherm, dus de uitzondering kost een bewijs: de knop op haar pagina hieronder. */
+  const alleTabs = await page.evaluate(() => TABS.filter((t) => ['steun', 'privacy', 'toetsjes', 'chat'].indexOf(t.id) === -1).map((t) => t.id));
   ok(alleTabs.every((t) => bereikbaar.indexOf(t) !== -1), 'elke tab is via de balk of via Meer te bereiken');
+  ok(await page.evaluate(() => {
+    show('chispa');
+    const b = document.getElementById('btnNaarChat');
+    if (!b) return false;
+    b.click();
+    const open = !document.getElementById('tab-chat').classList.contains('hidden');
+    show('woorden');
+    return open;
+  }), 'en het gesprek met Chispa hangt aan haar eigen pagina');
+  // het Meer-blad staat hierboven al open en blijft dat; de proef op de som hieronder klikt erin
   ok(meer.rijen.every((r) => r.kop.length > 1 && r.uit.length > 15), 'elke regel heeft een naam en een uitleg');
   ok(/[Ss]toppen mag altijd/.test(meer.stop), 'er staat dat stoppen altijd mag');
   ok(!/[—–]|--/.test(JSON.stringify(meer)), 'geen streepjes in het Meer-blad');

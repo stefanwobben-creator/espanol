@@ -423,11 +423,15 @@ rep(
 # ================= 5. en als voorstel na je les =================
 
 rep(
-    """  var corrKan = true;
-  try { corrKan = speelKlaar("corr"); } catch(e){ corrKan = true; }""",
-    """  /* v23.144: het gesprek staat op plek drie, ná je route en vóór El Corrector. Het is produceren
-     (Nation's tweede draad) en dat weegt zwaarder dan een spel. Eén per dag: een tweede gesprek op
-     dezelfde dag is geen voorstel meer maar aandringen. */
+    """  /* v23.141: de route komt hier, op plek twee.""",
+    """  /* v23.144: het gesprek staat op plek twee, vóór je route.
+
+     Waarom vóór: een route is er altijd en heeft tientallen stappen, dus alles wat erachter staat
+     komt nooit aan de beurt (gemeten: het gespreksvoorstel kwam met de route ervoor geen enkele
+     keer bovendrijven). Een gesprek is er één per dag en het is op, dus het kan alleen vandaag.
+     Wat schaars is gaat voor wat er morgen ook nog staat.
+
+     Eén per dag: een tweede gesprek op dezelfde dag is geen voorstel meer maar aandringen. */
   if(!chatGedaanVandaag()){
     return {icon:"\\ud83d\\udcac",
       kop:ct("Praat even met Chispa","Have a chat with Chispa"),
@@ -436,8 +440,7 @@ rep(
       knop:ct("Beginnen","Start"),
       doe:function(){ show("chat"); }};
   }
-  var corrKan = true;
-  try { corrKan = speelKlaar("corr"); } catch(e){ corrKan = true; }""",
+  /* v23.141: de route komt hier, op plek twee.""",
 )
 
 # ---------------------------------------------------------------- wegschrijven
