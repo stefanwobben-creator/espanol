@@ -641,6 +641,26 @@
              padding:12px 20px; border-radius:12px; font-size:.95rem;}
   .donatebtn:hover{opacity:.9;}
   .ritme{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  /* v23.142: het dagplan als blokken. De breedte van een staafje is de tijd van dat blok, dus de
+     balk is op schaal: je ziet dat woordjes twee keer zo groot is als grammatica zonder te lezen. */
+  .dagbalk{display:flex; gap:3px; margin:8px 0 2px;}
+  .dagbalk i{height:6px; border-radius:3px; background:var(--border);}
+  .dagbalk i.vol{background:var(--accent-soft);}
+  .dagbalk i.aan{background:var(--accent);}
+  .dagplan{margin:2px 0 4px;}
+  .dagrij{display:flex; gap:10px; align-items:baseline; padding:5px 0;}
+  .dagrij + .dagrij{border-top:1px solid var(--border);}
+  .dagrij .n{flex:0 0 20px; height:20px; line-height:19px; text-align:center; border-radius:999px;
+             background:var(--bg); border:1px solid var(--border); font-size:.72rem; font-weight:800;
+             color:var(--muted);}
+  .dagrij.aan .n{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .dagrij.gehad{opacity:.55;}
+  .dagrij .w{flex:1; font-size:.92rem;}
+  .dagrij .w .muted{font-size:.85rem;}
+  .dagrij .d{display:inline-block; margin-left:6px; font-size:.66rem; text-transform:uppercase;
+             letter-spacing:.05em; color:var(--muted); border:1px solid var(--border);
+             border-radius:999px; padding:1px 7px; white-space:nowrap;}
+  .dagrij .t{font-size:.82rem; color:var(--muted); white-space:nowrap;}
   .vpop{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); border:2px solid var(--accent);
         border-radius:14px; padding:16px 18px; max-width:340px; width:88vw; z-index:97; box-shadow:0 10px 40px rgba(0,0,0,.3); font-size:.92rem;}
   .vpop h3{margin:0 0 6px; font-size:1.05rem;}
@@ -1458,7 +1478,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.141";
+var APP_VERSIE = "v23.142";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13972,7 +13992,7 @@ function dagPlan(){
   var nWoord = portie ? (portie.totaal || 0) : 0;
   var nNieuw = portie && portie.nieuw ? portie.nieuw.length : 0;
   if(nWoord){
-    blokken.push({stap:"woorden", naam:ct("Woordjes","Words"),
+    blokken.push({stap:"woorden", naam:ct("Woordjes","Words"), draad:ct("leren","study"),
       wat:nWoord + " " + ct("kaartjes","cards") + (nNieuw ? " (" + nNieuw + " " + ct("nieuw","new") + ")" : ""),
       sec:nWoord * sec});
   }
@@ -13980,14 +14000,19 @@ function dagPlan(){
   if(gram.length){
     var gBeurten = 0;
     gram.forEach(function(id){ gBeurten += dagGramVragen(id) + 1; });   // +1 voor de uitleg lezen
-    blokken.push({stap:"grammatica", naam:ct("Grammatica","Grammar"),
+    blokken.push({stap:"grammatica", naam:ct("Grammatica","Grammar"), draad:ct("leren","study"),
       wat:gram.length + " " + (gram.length === 1 ? ct("onderwerp","topic") : ct("onderwerpen","topics")),
       sec:gBeurten * sec});
   }
   try { qid = lesFlowQuizId(); } catch(e){ qid = null; }
   if(qid){
     var qn = toetsvragenPerDag();
-    blokken.push({stap:"toetsjes", naam:ct("Toetsje","Quiz"),
+    /* De draad "sneller" is een keuze en geen vanzelfsprekendheid. Nation's vierde draad is
+       vloeiendheid: werken met wat je al kent, onder tijdsdruk, zonder nieuwe stof. Het toetsje put
+       uit de lessen die je al gehad hebt, dus dat is de dichtstbijzijnde van de vier. Wie hem
+       taalgerichte studie zou noemen heeft ook een punt; dan staan er drie blokken "leren" en één
+       "begrijpen", en dan klopt de regel onder het plan niet meer. */
+    blokken.push({stap:"toetsjes", naam:ct("Toetsje","Quiz"), draad:ct("sneller","fluency"),
       wat:qn + " " + ct("vragen","questions"), sec:qn * sec});
   }
   /* v23.140: de derde draad. Tussen het toetsje en het schrijven, want het is input en input hoort
@@ -13996,7 +14021,7 @@ function dagPlan(){
   var inputV = null;
   try { inputV = lesFlowInputKeuze(); } catch(e){ inputV = null; }
   if(inputV){
-    blokken.push({stap:"input",
+    blokken.push({stap:"input", draad:ct("begrijpen","input"),
       naam: inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
       wat: inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
                               : ct("een gesprek","one conversation"),
@@ -14005,7 +14030,7 @@ function dagPlan(){
   var kanSchrijven = false;
   try { kanSchrijven = !!allowedSentIds().length; } catch(e){ kanSchrijven = false; }
   if(kanSchrijven){
-    blokken.push({stap:"produceren", naam:ct("Schrijven","Writing"),
+    blokken.push({stap:"produceren", naam:ct("Schrijven","Writing"), draad:ct("zelf maken","output"),
       wat:SCHRIJF_PER_LES + " " + ct("zinnen","sentences"), sec:SCHRIJF_PER_LES * SCHRIJF_SEC});
   }
   var tot = 0;
@@ -14023,31 +14048,75 @@ function dagPlanStappen(){ return dagPlan().stappen; }
 /* Het lijstje op het dagscherm. Hervat je een les, dan staan de blokken die je gehad hebt afgevinkt
    en telt de kop alleen nog wat er over is: "nog ongeveer 6 min" is het antwoord op de vraag die je
    dan stelt, en "ongeveer 11 min" is dat niet. */
-function dagPlanHtml(nu, stappen){
+/* v23.142: één plek die uitrekent welke blokken er in beeld zijn en waar je staat. Twee weergaven
+   lezen eruit: de balk (in de banner tijdens je les) en het lijstje (op Vandaag). Twee plekken die
+   dat zelf uitrekenen zijn twee waarheden.
+
+   nu === "klaar" betekent: alles gehad. Dat is het scherm ná je les, waar de vraag niet meer is wat
+   je gaat doen maar wat je gedaan hebt. */
+function dagPlanStand(nu, stappen){
   var p = dagPlan();
   var rij = stappen && stappen.length ? stappen : p.stappen;
   var blokken = p.blokken.filter(function(b){ return rij.indexOf(b.stap) !== -1; });
-  if(!blokken.length) return "";
-  var iNu = nu ? rij.indexOf(nu) : -1;
-  var rest = 0;
-  blokken.forEach(function(b){ if(iNu < 0 || rij.indexOf(b.stap) >= iNu) rest += b.sec; });
-  var restMin = Math.max(1, Math.round(rest / 60));
-  var kop = (iNu > 0 ? ct("Nog ongeveer "+restMin+" min","About "+restMin+" min to go")
-                     : ct("Je les vandaag","Your session today")+" · "+
-                       ct("ongeveer "+p.min+" min","about "+p.min+" min")) +
-            (p.gemeten ? ct(", gerekend met jouw tempo",", based on your own pace")
-                       : ct(", geschat",", estimated"));
-  var r = "<p class='muted' style='margin:8px 0 2px; font-size:.82rem'><b>"+kop+"</b></p>";
-  blokken.forEach(function(b){
-    var gehad = iNu > 0 && rij.indexOf(b.stap) < iNu;
-    r += "<div style='display:flex; gap:8px; align-items:baseline; font-size:.85rem; padding:1px 0"+
-         (gehad ? "; opacity:.5" : "")+"'>"+
-      "<span class='muted' style='min-width:1.1em; text-align:right'>"+(gehad ? "\u2713" : b.nr)+"</span>"+
-      "<span style='flex:1'>"+(gehad ? b.naam : "<b>"+b.naam+"</b>")+
-        " <span class='muted'>"+b.wat+"</span></span>"+
-      "<span class='muted' style='white-space:nowrap'>"+b.min+" min</span></div>";
+  var klaar = nu === "klaar";
+  var iNu = klaar ? rij.length : (nu ? rij.indexOf(nu) : -1);
+  return {p:p, rij:rij, blokken:blokken, klaar:klaar, iNu:iNu};
+}
+/* De balk op schaal. De breedte van een staafje is de tijd van dat blok, dus je ziet de verhouding
+   zonder een getal te lezen. Vóór je begint staat alles zacht ingekleurd (dit is wat je gaat doen);
+   tijdens je les is het blok waar je in zit vol en de rest leeg. */
+function dagBalkHtml(nu, stappen){
+  var s = dagPlanStand(nu, stappen);
+  if(s.blokken.length < 2) return "";
+  var r = "<div class='dagbalk'>";
+  s.blokken.forEach(function(b){
+    var i = s.rij.indexOf(b.stap);
+    var kl = s.iNu < 0 ? "vol" : (i < s.iNu ? "vol" : (i === s.iNu ? "aan" : ""));
+    r += "<i style='flex:"+Math.max(1, Math.round(b.sec))+"' class='"+kl+"'></i>";
   });
+  return r + "</div>";
+}
+function dagPlanHtml(nu, stappen){
+  var s = dagPlanStand(nu, stappen);
+  if(!s.blokken.length) return "";
+  var rest = 0;
+  s.blokken.forEach(function(b){ if(s.iNu < 0 || s.rij.indexOf(b.stap) >= s.iNu) rest += b.sec; });
+  var restMin = Math.max(1, Math.round(rest / 60));
+  var kop = s.klaar
+    ? ct("Dit deed je vandaag","What you did today")
+    : (s.iNu > 0 ? ct("Nog ongeveer "+restMin+" min","About "+restMin+" min to go")
+                 : ct("Je les vandaag","Your session today")+" · "+
+                   ct("ongeveer "+s.p.min+" min","about "+s.p.min+" min")) +
+      (s.p.gemeten ? ct(", gerekend met jouw tempo",", based on your own pace")
+                   : ct(", geschat",", estimated"));
+  var r = "<p style='margin:10px 0 0; font-size:.86rem'><b>"+kop+"</b></p>"+
+          dagBalkHtml(nu, stappen)+"<div class='dagplan'>";
+  s.blokken.forEach(function(b){
+    var i = s.rij.indexOf(b.stap);
+    var gehad = s.iNu > 0 && i < s.iNu;
+    r += "<div class='dagrij"+(gehad ? " gehad" : "")+(i === s.iNu ? " aan" : "")+"'>"+
+      "<span class='n'>"+(gehad ? "\u2713" : b.nr)+"</span>"+
+      "<span class='w'><b>"+b.naam+"</b> <span class='muted'>"+b.wat+"</span>"+
+        (b.draad ? "<span class='d'>"+b.draad+"</span>" : "")+"</span>"+
+      "<span class='t'>"+b.min+" min</span></div>";
+  });
+  r += "</div>";
+  /* Waarom de blokken zijn zoals ze zijn, in één regel: Nation's vier draden (2007) in gewone
+     woorden. Alleen als ze er alle vier echt zijn. Een uitleg over vier draden onder een plan met
+     drie blokken is precies het soort belofte dat niet klopt (v23.135). */
+  if(!s.klaar && dagDradenCompleet(s.blokken)){
+    r += "<p class='muted' style='margin:2px 0 0; font-size:.8rem'>"+ct(
+      "Elke dag raak je alle vier de manieren aan waarop een taal binnenkomt: leren, begrijpen, zelf maken, en sneller worden in wat je al kent.",
+      "Every day you touch all four ways a language goes in: study, understanding, producing, and getting faster at what you already know.")+"</p>";
+  }
   return r;
+}
+function dagDradenCompleet(blokken){
+  var gezien = {}, n = 0;
+  (blokken || []).forEach(function(b){
+    if(b.draad && !gezien[b.draad]){ gezien[b.draad] = 1; n++; }
+  });
+  return n >= 4;
 }
 function lesFlowKiesVaardigheden(n){
   var c = berekenCompetenties();
@@ -14146,6 +14215,9 @@ function lesFlowBannerHtml(){
         chispaZegHtml(f.es, ct(f.nl, f.en || f.nl))+
       "</div>"+
     "</div>"+
+    /* v23.142: dezelfde balk als op Vandaag, met het blok waar je nu in zit vol. De kicker hierboven
+       zegt "stap 4 van 5" in woorden; dit zegt waar dat vierde blok zit en hoe groot het is. */
+    dagBalkHtml(lesFlow.stap, lesFlow.stappen)+
   "</div>";
 }
 /* v19.49 (Stefan: "zou chispa ook in de interface terug komen komen bijv na de onboarding bij je
@@ -15862,7 +15934,9 @@ function ritmeCard(){
             : ct(groet.nl, groet.en)))+
       "</div>"+
     "</div>"+
-    (afgesloten || (gedaanVandaag && !hervat) ? "" :
+    /* v23.142: was je klaar, dan verdween hier de hele band en gaf het dagscherm geen antwoord op
+       "wat heb ik vandaag gedaan". Nu staat het plan er nog, afgevinkt. */
+    (afgesloten || (gedaanVandaag && !hervat) ? (toonPlan ? dagPlanHtml("klaar") : "") :
       (hervat
         ? "<p class='muted' style='margin:6px 0 0'>"+
             ct("Je stopte bij stap "+hStap+" van "+hTot+": "+hNaam+"."+(toonPlan ? "" : " De rest van je portie staat klaar."),
