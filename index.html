@@ -1524,7 +1524,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.161";
+var APP_VERSIE = "v23.162";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8788,7 +8788,16 @@ function tempoMeting(niveau){
   for(i = 1; i < reeks.length; i++) d.push(reeks[i] - reeks[i-1]);
   var som = d.reduce(function(a, b){ return a + b; }, 0), gem = som / d.length;
   var v = d.reduce(function(a, b){ return a + (b - gem) * (b - gem); }, 0) / Math.max(1, d.length - 1);
-  return {gem:gem, marge:2 * Math.sqrt(v / d.length), weken:ws.length, nu:reeks[reeks.length - 1]};
+  /* v23.162: hier stond `weken: ws.length`, en er is geen ws in deze functie. JavaScript pakte dan
+     de globale ws van de woordenzoeker (var ws = null, twaalfduizend regels verderop). Nooit
+     gewoordenzoekerd betekende dus een TypeError op ws.length, en daarmee klapte tempoMeting en
+     alles wat eraan hangt: voortgangBand, voorspelWaar en voorspelHtml. De hele voorspelling, voor
+     iedereen, sinds v19.90.
+
+     Niets ving het, en dat is het echte probleem: elke aanroeper vangt fouten af ("een meter mag de
+     app nooit omver duwen"), dus een kapotte voorspeller ziet er op het scherm precies zo uit als
+     een voorspeller die nog zwijgt omdat er te weinig weken zijn. */
+  return {gem:gem, marge:2 * Math.sqrt(v / d.length), weken:reeks.length, nu:reeks[reeks.length - 1]};
 }
 
 function voortgangBand(niveau){
@@ -13582,6 +13591,13 @@ var LEES_REEKSEN = [
   soortNl:"recepten", soortEn:"recipes",
   omNl:"Zes Spaanse gerechten die al vegan waren, met maten en tijden, zodat je ze naast het fornuis kunt leggen.",
   omEn:"Six Spanish dishes that were already vegan, with quantities and times, so you can cook from them."},
+ /* v23.162: de acht hoofdstukken van v23.157 stonden wel in BOOK maar op geen enkele plank, want
+    de plank zoekt op id-voorvoegsel en er was geen reeks met pre:"cadiz-". Ze telden mee in je
+    leesvoortgang en waren nergens te vinden. */
+ {id:"cadiz", pre:"cadiz-", nl:"Un año en Cádiz", en:"Un año en Cádiz", stem:true,
+  soortNl:"verhaal", soortEn:"story",
+  omNl:"Een jaar in het zuiden, van de eerste dag op een onbekend adres tot de carnaval waarop je meezingt.",
+  omEn:"A year in the south, from your first day at an unfamiliar address to the carnival where you sing along."},
  {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true,
   soortNl:"geschiedenis", soortEn:"history",
   omNl:"Spanje van 1931 tot nu, in tien hoofdstukken: de oorlog, de honger, de stilte en de terugweg.",
@@ -13658,6 +13674,14 @@ function leesPlankHtml(){
         "<p class='muted' style='margin:4px 0 0; font-size:.85rem'>"+
           ct("Voor jou nu: <b>"+leesZwaarteWoord(z)+"</b>, ongeveer "+getal1(z)+" onbekende woorden per zin.",
              "For you right now: <b>"+leesZwaarteWoord(z)+"</b>, about "+getal1(z)+" unknown words per sentence.")+"</p>")+
+      /* v23.162: een uitgelezen boek hoort er anders uit te zien dan een half boek. Anders is het
+         feestje van vorige week op de plank niet terug te vinden, en dan was het geen moment maar
+         een animatie. */
+      ((S.boekUit && S.boekUit[r.id])
+        ? "<p style='margin:6px 0 0; font-size:.9rem'><b>\ud83c\udf89 " +
+            ct("Uitgelezen", "Finished") + "</b> <span class='muted'>\u00b7 " +
+            ct("op " + S.boekUit[r.id], "on " + S.boekUit[r.id]) + "</span></p>"
+        : "")+
       "<div class='row' style='margin-top:10px'><button class='"+(af ? "ghost" : "primary")+"' data-reeks='"+r.id+"'>"+
         (af && af < hst.length ? ct("Verder lezen","Keep reading")
                                : (af ? ct("Nog eens lezen","Read again") : ct("Beginnen","Start")))+" \u2192</button></div>"+
@@ -13666,6 +13690,63 @@ function leesPlankHtml(){
   return h;
 }
 
+/* ================= EEN BOEK UIT (v23.162) =================
+
+   Stefan: "ik had al een keer eerder gezegd dat als een boek uit is, het een feestje moet voelen.
+   Dat is nu ook niet zo."
+
+   Klopte. finishBoek() vierde een hoofdstuk en verder niets: het laatste hoofdstuk van tien gaf
+   dezelfde toast als het derde. Een boek uitlezen in een vreemde taal is het soort ding waar je een
+   jaar later nog aan terugdenkt, en de app liet het voorbijgaan.
+
+   De getallen hieronder worden afgeleid en niet verzonnen. Hoofdstukken en woorden staan in BOOK;
+   de dagen komen uit de datum die S.boek sinds deze versie per hoofdstuk bewaart. Heeft een oude
+   regel die datum niet, dan valt die zin weg in plaats van dat er iets geschats komt te staan. */
+function boekReeksHst(r){
+  return BOOK.filter(function(x){ return String(x.id).indexOf(r.pre) === 0; });
+}
+function boekReeksAf(r){
+  var hst = boekReeksHst(r);
+  return hst.length > 0 && hst.every(function(x){ return S.boek[x.id] && S.boek[x.id].done; });
+}
+function boekReeksCijfers(r){
+  var hst = boekReeksHst(r), woorden = 0, dagen = [];
+  hst.forEach(function(h){
+    woorden += String(h.tekst || "").split(/\s+/).filter(Boolean).length;
+    var st = S.boek[h.id];
+    if(st && st.d) dagen.push(st.d);
+  });
+  dagen.sort();
+  var spanne = null;
+  if(dagen.length > 1){
+    var v = Math.round((new Date(dagen[dagen.length - 1]) - new Date(dagen[0])) / 86400000);
+    if(v >= 1) spanne = v;
+  }
+  return {hoofdstukken:hst.length, woorden:woorden, spanne:spanne, van:dagen[0] || null};
+}
+/* Het scherm zelf. Geen toast: een toast verdwijnt terwijl je hem leest, en dit is juist het moment
+   waarop je even mag stilstaan. */
+function boekUitScherm(r){
+  var c = boekReeksCijfers(r);
+  var el = document.getElementById("lezenCard");
+  if(!el) return;
+  el.innerHTML = "<span class='kicker'>" + ct("Uit \ud83c\udf89", "Finished \ud83c\udf89") + "</span>" +
+    "<h2 style='margin:2px 0 10px'>" + (profLang() === "nl" ? r.nl : r.en) + "</h2>" +
+    "<p class='big' style='margin:0 0 4px'>" +
+      ct("Je hebt een boek in het Spaans uitgelezen.", "You finished a book in Spanish.") + "</p>" +
+    "<div class='feedback ok' style='margin-top:12px'>" +
+      c.hoofdstukken + " " + ct("hoofdstukken", "chapters") + " \u00b7 " +
+      c.woorden + " " + ct("woorden Spaans", "words of Spanish") +
+      (c.spanne ? " \u00b7 " + ct("in " + c.spanne + " dagen", "in " + c.spanne + " days") : "") +
+    "</div>" +
+    "<p class='muted' style='margin-top:10px'>" +
+      ct("Dat is geen oefening meer. Dat is lezen.", "That is not practice any more. That is reading.") + "</p>" +
+    "<div class='row' style='margin-top:12px'>" +
+      "<button class='primary' id='btnBoekUitDoor'>" + ct("Naar de plank \u2192", "To the shelf \u2192") + "</button>" +
+    "</div>";
+  var b = document.getElementById("btnBoekUitDoor");
+  if(b) b.onclick = function(){ closeBoek(); };
+}
 function renderBoekMenu(){
   var el = document.getElementById("lezenMenu");
   _leesBekend = null;                       // per render opnieuw: je doosjes veranderen
@@ -14371,12 +14452,34 @@ function finishBoek(){
   var vorige = S.boek[h.id];
   var eersteKeer = !(vorige && vorige.done);
   var besteScore = vorige && vorige.score !== undefined ? Math.max(vorige.score, st.score) : st.score;
-  S.boek[h.id] = {done:true, score:besteScore, reflectie: refl || (vorige && vorige.reflectie) || ""};
+  /* v23.162: de datum erbij. Zonder die datum kan het slotscherm van een boek niet zeggen hoe
+     lang je erover deed, en dat is precies het soort getal waar zo'n moment van leeft. Oude regels
+     hebben hem niet; dan valt die zin weg in plaats van dat er iets geschats komt te staan. */
+  var reedsD = (vorige && vorige.d) || null;
+  S.boek[h.id] = {done:true, score:besteScore, reflectie: refl || (vorige && vorige.reflectie) || "",
+                  d: reedsD || today()};
   persist();
   var pct = h.vragen.length ? st.score / h.vragen.length : 1;
   var verdiend = 0;
   if(eersteKeer) verdiend += 3;
   if(pct === 1) verdiend += 2;
+  /* v23.162: is dit het laatste hoofdstuk van het boek, dan is dit geen hoofdstukmoment meer.
+     De reeks moet nu af zijn en het mag niet eerder al af geweest zijn, anders viert hij mee bij
+     elke herlezing. */
+  var reeks = leesReeksVan(h);
+  var boekUit = false;
+  try { boekUit = eersteKeer && reeks && boekReeksAf(reeks) && !(S.boekUit && S.boekUit[reeks.id]); }
+  catch(e){ boekUit = false; }
+  if(boekUit){
+    verdiend += 10;
+    S.tapas = (S.tapas||0) + verdiend;
+    S.boekUit = S.boekUit || {};
+    S.boekUit[reeks.id] = today();
+    persist();
+    confetti(["\ud83c\udf89","\ud83d\udcda","\u2728","\ud83c\udf8a"], 60);
+    boekUitScherm(reeks);
+    return;
+  }
   if(verdiend){ S.tapas = (S.tapas||0) + verdiend; persist(); confetti(["📖","🌮","⭐️"], eersteKeer ? 28 : 14); }
   var msg = eersteKeer ? ct("¡Capítulo terminado! ","Chapter finished! ") : ct("¡Otra vez! ","Once more! ");
   toast(msg + (verdiend ? "+"+verdiend+" tapas 🫒" : "") + (pct===1 ? " · "+ct("¡foutloos!","flawless!") : ""));
