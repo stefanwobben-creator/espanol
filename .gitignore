@@ -9,3 +9,9 @@ server/node_modules/
 
 _to_delete/
 .claude/
+
+# De patchbestanden waarmee ik werk uitlever horen niet in de repo. Ze slopen sinds v23.159 elke
+# aflevering: git add -A pakte ze mee, en dan probeert de patch bij Stefan een bestand aan te maken
+# dat bij hem al los in de map ligt ("already exists in working directory"). git am weigert dan, en
+# laat een halve .git/rebase-apply achter waar elke volgende poging over struikelt.
+vamos-*.patch
