@@ -28,6 +28,11 @@
 //   5. JE KOMT ERUIT. Het controlegeval: een blok dat je in een spel achterlaat zonder weg terug is
 //      erger dan geen blok. Eén knop, en de les gaat verder.
 //   6. EN PAUZEREN MAG. Hervatten zet je terug in je rijtje, niet in het keuzemenu van De les.
+//   7. HET RIJTJE VOLGT JE FOUTEN (v23.161). Stefan, gevraagd waar het misgaat: "soms vorm vooral
+//      bijv Indefinido en imperfecto maar ook het ophalen van de rijtjes en de onregematige."
+//      Het blok liep de lijst van boven af en die begint bij het presente, dus hij kreeg elke
+//      tweede dag een stap in de tijd waar hij geen werk had. S.errors weet allang waar het werk
+//      ligt; die teller werd alleen door niemand gelezen.
 const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
@@ -152,6 +157,33 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     // en morgen sta je een stap verder
     uit.stapMorgen = vormStapVandaag(uit.rij);
 
+    // ---- 7. het rijtje volgt je fouten (v23.161) ----
+    lesFlow = null; lesSpel = null; funView = null; S.lesFlowNu = null;
+    S.brok = {}; S.errors = {}; S.conjOpen = CONJ_FASES.length - 1;
+    dagPlanVerval();
+    uit.fout = { zonder: vormRijVandaag() };
+    // fouten in het indefinido en het imperfecto, en eentje in het presente
+    ['tener', 'hacer', 'ir', 'poder', 'decir'].forEach(function (inf) {
+      const v = VERBOS.filter(function (w) { return w.inf === inf; })[0];
+      [0, 2, 4].forEach(function (pp) { logError(conjErrKey(v, pp, 'indefinido'), 'conj', inf, 'x'); });
+    });
+    ['ser', 'ver'].forEach(function (inf) {
+      const v = VERBOS.filter(function (w) { return w.inf === inf; })[0];
+      [1, 3].forEach(function (pp) { logError(conjErrKey(v, pp, 'imperfecto'), 'conj', inf, 'x'); });
+    });
+    const hab = VERBOS.filter(function (w) { return w.inf === 'hablar'; })[0];
+    logError(conjErrKey(hab, 0, 'presente'), 'conj', 'hablar', 'x');
+    uit.fout.perTijd = vormFoutenPerTijd();
+    dagPlanVerval();
+    uit.fout.met = vormRijVandaag();
+    uit.fout.wat = (dagPlan().blokken.filter(function (b) { return b.stap === 'vormen'; })[0] || {}).wat;
+    /* Het controlegeval: is het indefinido af, dan hoort hij naar de volgende rij mét fouten te
+       gaan en niet terug naar boven. Een lijst die van boven af loopt zou hier presente zeggen. */
+    S.brok['les.indefinido'] = { stapMax: LES_STAPPEN.length - 1 };
+    dagPlanVerval();
+    uit.fout.naAf = vormRijVandaag();
+    S.errors = {}; S.brok = {};
+
     lesFlow = null; lesSpel = null; funView = null; S.lesFlowNu = null;
     return uit;
   });
@@ -199,6 +231,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.naHervat.stap === 'vormen' && r.naHervat.view === 'les', 'hervatten zet je terug in het vormenblok');
   ok(r.naHervat.rij === r.rij && r.naHervat.stapN === r.stapVoor, 'bij hetzelfde rijtje en dezelfde stap');
   ok(!r.naHervat.keuzescherm, 'en niet in het keuzemenu van De les');
+
+  console.log('\n-- 7. het rijtje volgt je fouten --');
+  console.log('   openstaande fouten per tijd: ' + JSON.stringify(r.fout.perTijd));
+  ok(r.fout.zonder === 'presente', 'zonder fouten begint het gewoon bovenaan (' + r.fout.zonder + ')');
+  ok(r.fout.met === 'indefinido', 'met fouten in het indefinido gaat het rijtje daarheen (' + r.fout.met + ')');
+  ok(/fouten staan open/.test(r.fout.wat || ''), 'en het plan zegt waaróm juist dit rijtje ("' + r.fout.wat + '")');
+  ok(r.fout.naAf === 'imperfecto',
+    'het controlegeval: is dat rijtje af, dan de volgende mét fouten en niet terug naar boven (' + r.fout.naAf + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
