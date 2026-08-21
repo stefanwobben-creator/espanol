@@ -1524,7 +1524,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.159";
+var APP_VERSIE = "v23.160";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14513,6 +14513,15 @@ function dagPlan(){
     blokken.push({stap:"grammatica", naam:ct("Grammatica","Grammar"), draad:ct("leren","study"),
       wat:dagGramWat(gram), sec:gBeurten * sec});
   }
+  /* v23.160: het vormenblok, tussen de grammatica en het toetsje. Grammatica gaat over de regel,
+     dit over de vorm, en dat zijn sinds v23.107 (het brokkenmodel) twee verschillende dingen die
+     apart gemeten horen te worden. Ze staan dus naast elkaar en niet door elkaar. */
+  var vormOk = false;
+  try { vormOk = vormKan(); } catch(e){ vormOk = false; }
+  if(vormOk){
+    blokken.push({stap:"vormen", naam:ct("Vormen","Forms"), draad:ct("leren","study"),
+      wat:vormWat(), sec:6 * sec});
+  }
   try { qid = lesFlowQuizId(); } catch(e){ qid = null; }
   if(qid){
     var qn = toetsvragenPerDag();
@@ -14672,6 +14681,7 @@ function lesFlowStapNaam(f){
   if(!f) return "";
   if(f.stap === "woorden") return ct("Woordjes","Words");
   if(f.stap === "grammatica") return ct("Grammatica","Grammar");
+  if(f.stap === "vormen") return ct("Vormen","Forms");
   if(f.stap === "toetsjes") return ct("Toetsjes","Quizzes");
   if(f.stap === "input" && f.vaardigheid === "musica") return ct("Liedje","Song");
   if(f.stap === "produceren" && f.vaardigheid === "praten") return ct("Praten","Talking");
@@ -14688,7 +14698,7 @@ function lesFlowStapNaam(f){
    in f.stappen (gezet bij de start, bewaard in S.lesFlowNu), zodat een les die als vier stappen
    begon vier stappen blijft. Staat hij er niet, dan is dit een les van vóór deze versie en valt hij
    terug op het plan van vandaag. */
-var LESFLOW_VOLGORDE = ["woorden", "grammatica", "toetsjes", "input", "produceren"];
+var LESFLOW_VOLGORDE = ["woorden", "grammatica", "vormen", "toetsjes", "input", "produceren"];
 function lesFlowStapRij(f){
   f = f || lesFlow;
   if(f && f.stappen && f.stappen.length) return f.stappen;
@@ -14845,6 +14855,7 @@ function lesFlowBewaar(){
     gramLes: lesFlow.gramLes || null,
     quizzesTeDoen: (lesFlow.quizzesTeDoen || []).slice(),
     gekozenSpel: lesFlow.gekozenSpel || null,
+    vormRij: lesFlow.vormRij || null,           // v23.160: welk rijtje het vormenblok doet
     vaardigheid: lesFlow.vaardigheid || null,   // v23.140: draagt ook de keuze van het inputblok
     vaardigheidRij: (lesFlow.vaardigheidRij || []).slice(),
     vertalenTeGaan: lesFlow.vertalenTeGaan || 0,
@@ -14875,6 +14886,7 @@ function lesFlowHervat(){
     gramLes: n.gramLes || null,
     quizzesTeDoen: (n.quizzesTeDoen || []).slice(),
     gekozenSpel: n.gekozenSpel || null,
+    vormRij: n.vormRij || null,
     vaardigheid: n.vaardigheid || null,
     vaardigheidRij: (n.vaardigheidRij || []).slice(),
     vertalenTeGaan: n.vertalenTeGaan || 0,
@@ -14893,6 +14905,19 @@ function lesFlowHervat(){
     if(!lesFlow.gramId){ lesFlowVolgende(); return; }
     show("spiekbrief");
     gwStart(lesFlow.gramId);
+    lesFlowBewaar();
+    return;
+  }
+  /* v23.160: pauzeer je midden in het vormenblok, dan komt het rijtje terug waar je was. Zonder
+     deze tak zou hervatten je op het keuzescherm van De les zetten (lesSpel is null na een
+     herlaad), en dan sta je in een dagles ineens in een menu. */
+  if(lesFlow.stap === "vormen"){
+    var vr = lesFlow.vormRij;
+    if(!vr || !lesStart(vr)){ lesFlowVolgende(); return; }
+    lesSpel.stap = vormStapVandaag(vr);
+    lesFlow.gekozenSpel = "les";
+    funView = "les";
+    show("speeltuin");
     lesFlowBewaar();
     return;
   }
@@ -15130,6 +15155,24 @@ function lesFlowVolgendeKern(){
       var stl = S.lessons[lesFlow.gramLes] || {};
       if(!stl.spiek){ stl.spiek = true; S.lessons[lesFlow.gramLes] = stl; persist(); checkLessonComplete(); }
     }
+    /* v23.160: het vormenblok. Elke route naar het toetsje loopt hier langs, ook op de dagen dat er
+       geen vormenblok is: dan zet deze stap zichzelf meteen door. Zo staat de opening van het
+       toetsje op één plek in plaats van op twee. */
+    lesFlow.stap = "vormen";
+    var vt = null;
+    try { vt = vormKan() ? vormRijVandaag() : null; } catch(e){ vt = null; }
+    if(vt && lesStart(vt)){
+      lesSpel.stap = vormStapVandaag(vt);
+      lesFlow.vormRij = vt;
+      lesFlow.gekozenSpel = "les";
+      funView = "les";
+      show("speeltuin");
+      lesFlowBewaar();
+      return;
+    }
+  }
+  if(lesFlow.stap === "vormen"){
+    lesSpel = null;
     lesFlow.stap = "toetsjes";
     // v19.49: precies één toetsje per dagles (dat van dit grammatica-onderwerp), niet de hele
     // herhaallijst achter elkaar. Anders is de dagles zo lang dat je er niet aan begint.
@@ -18577,6 +18620,57 @@ function lesOverdrachtRij(rijId, lesV){
   if(!pool.length) return [];
   return pers.map(function(p, i){ return {v:pool[i % pool.length], p:p}; });
 }
+/* ================= HET VORMENBLOK (v23.160) =================
+
+   Stefan: "hoe zijn de vervoegingen, ik moet dat veel oefenen."
+
+   Het bestond al, in drie soorten zelfs, en de dagles raakte er geen van aan. Dit blok is dus geen
+   nieuwe oefening maar een afspraak: om de dag doe je een stap van De les, en die stap staat in je
+   plan voordat je begint.
+
+   Waarom een stap en niet de hele les: zes stappen achter elkaar is geen dagles meer, en de
+   afstand tussen de stappen is hier het werk. Wie het rijtje op zes achtereenvolgende dagen
+   aanraakt onthoudt het; wie het op een middag zes keer doet, niet.
+
+   Waarom om de dag, en juist op de dagen dat je niet met Chispa praat: anders groeit de dag op
+   twee assen tegelijk. praatBeurt() draait op oneven dagen, dit dus op even. */
+function vormBeurt(){
+  var d = 0;
+  try { d = dagenTotaal(); } catch(e){ d = 0; }
+  if(d <= 1) return false;
+  return (d % 2) === 0;
+}
+/* Welk rijtje vandaag. Eerst waar je al aan begonnen bent en nog niet af is (een halve les afmaken
+   gaat voor een nieuwe beginnen), dan wat "Welke tijd is dit?" als struikelblok gemeten heeft, dan
+   gewoon de eerste die nog niet af is. Geen nieuwe volgorde: lesRijIds() bepaalt hem al. */
+function vormRijVandaag(){
+  var ids = [];
+  try { ids = lesRijIds(); } catch(e){ ids = []; }
+  var open = ids.filter(function(t){ return !lesKlaar(t); });
+  if(!open.length) return null;
+  var bezig = open.filter(function(t){
+    var st = brokLees(lesId(t));
+    return (st.stapMax || 0) > 0;
+  });
+  if(bezig.length) return bezig[0];
+  var w = null;
+  try { w = tijdvormTopVerwar(); } catch(e){ w = null; }
+  if(w && w.getoond && open.indexOf(w.getoond) !== -1) return w.getoond;
+  return open[0];
+}
+/* De stap waar je vandaag aan toe bent. stapMax is de hoogste stap die je AF hebt, dus de volgende
+   is stapMax + 1; is er nog niets, dan stap 0. */
+function vormStapVandaag(t){
+  var st = brokLees(lesId(t));
+  return (typeof st.stapMax === "number") ? Math.min(st.stapMax + 1, LES_STAPPEN.length - 1) : 0;
+}
+function vormKan(){ return vormBeurt() && !!vormRijVandaag(); }
+function vormWat(){
+  var t = vormRijVandaag();
+  if(!t) return "";
+  var r = lesRij(t), s = LES_STAPPEN[vormStapVandaag(t)] || {};
+  return (r ? r.es : t) + " \u00b7 " + ct(s.nl || "", s.en || "");
+}
 function lesKlaar(t){
   var st = brokLees(lesId(t));
   return (st.stapMax || 0) >= LES_STAPPEN.length - 1;
@@ -18602,7 +18696,10 @@ function lesTabelHtml(v, t, verberg){
 function renderFunLes(){
   var el = document.getElementById("funCard");
   if(!el) return;
-  var terug = function(){ lesSpel = null; funTerug(); };
+  /* v23.160: draait deze les binnen je dagles, dan is hij één stap lang en gaat de knop terug naar
+     de les in plaats van naar de volgende stap. De afstand tussen de stappen is hier het werk. */
+  var inFlowLes = !!(lesFlow && lesFlow.stap === "vormen" && lesFlow.gekozenSpel === "les");
+  var terug = function(){ lesSpel = null; if(inFlowLes){ lesFlowVolgende(); return; } funTerug(); };
 
   /* geen tijd gekozen: het keuzescherm. Je struikelblok uit v23.114 staat vooraan, want dat is de
      tijd waar je werk zit. */
@@ -18698,14 +18795,22 @@ function renderFunLes(){
           : ct("Nog niet helemaal. Deze stap nog een keer is geen straf: dat is precies hoe het erin gaat.",
                "Not quite. Doing this step again is not a punishment: that is exactly how it sinks in.")) + "</p>" +
         "<div class='row' style='margin-top:10px'>" +
-          (gehaald && L.stap < LES_STAPPEN.length - 1
-            ? "<button class='primary' id='btnLesVerder'>" + ct("Volgende stap \u2192", "Next step \u2192") + "</button>"
-            : "") +
-          (gehaald && L.stap >= LES_STAPPEN.length - 1
-            ? "<button class='primary' id='btnLesKlaar'>" + ct("Klaar \u2713", "Done \u2713") + "</button>"
-            : "") +
+          /* v23.160: in je dagles is dit blok één stap. Er staat dus geen "volgende stap" maar
+             "Door", en de volgende stap krijg je morgen. Wie meer wil kan de les altijd los doen. */
+          (inFlowLes
+            ? "<button class='primary' id='btnLesFlowDoor'>" + ct("Door \u2192", "Continue \u2192") + "</button>"
+            : (gehaald && L.stap < LES_STAPPEN.length - 1
+                ? "<button class='primary' id='btnLesVerder'>" + ct("Volgende stap \u2192", "Next step \u2192") + "</button>"
+                : "") +
+              (gehaald && L.stap >= LES_STAPPEN.length - 1
+                ? "<button class='primary' id='btnLesKlaar'>" + ct("Klaar \u2713", "Done \u2713") + "</button>"
+                : "")) +
           "<button class='ghost' id='btnLesOpnieuw'>" + ct("Deze stap opnieuw", "This step again") + "</button></div>";
       el.innerHTML = html;
+      /* de stap gaat af zodra je hem gehaald hebt, ook in de dagles: anders krijg je morgen weer
+         dezelfde stap en komt de les nooit vooruit */
+      var bd = document.getElementById("btnLesFlowDoor");
+      if(bd) bd.onclick = function(){ if(gehaald) lesStapAf(); lesSpel = null; lesFlowVolgende(); };
       var bv = document.getElementById("btnLesVerder");
       if(bv) bv.onclick = function(){ lesStapAf(); L.stap++; L.i = 0; L.goed = 0; L.gekozen = null; L.opties = null; L.over = null; renderFunLes(); };
       var bk = document.getElementById("btnLesKlaar");
