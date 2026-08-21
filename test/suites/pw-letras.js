@@ -44,7 +44,19 @@ const { chromium } = require('playwright');
       voorbeeld: w[k[0]]
     };
   });
-  ok(wb.n >= 800, 'het woordenboek is groot genoeg voor variatie (' + wb.n + ' woorden)');
+  /* v23.156: de drempel stond op 800 en dat gold voor een Nederlands profiel. De browser van deze
+     suite staat op en-US, en sindsdien doen woorden zonder Engelse vertaling niet meer mee (anders
+     krijg je een Spaans woord met een Nederlandse omschrijving, zie wTransEcht). Dat is een echte
+     inperking en die hoort zichtbaar te zijn: in het Nederlands is de vijver ruim twee keer zo
+     groot. Wat de drempel moet bewaken is "genoeg om te spelen", en dat is een paar honderd. */
+  const nlPool = await page.evaluate(() => {
+    const was = S.lang; S.lang = 'nl';
+    const n = Object.keys(ltWoordenboek()).length;
+    S.lang = was; ltWbCache = null;
+    return n;
+  });
+  ok(wb.n >= 400, 'het woordenboek is groot genoeg voor variatie (' + wb.n + ' woorden in dit profiel)');
+  ok(nlPool > wb.n, 'en in het Nederlands groter, want daar is voor elk woord een omschrijving (' + nlPool + ')');
 
   // ---- 1b. de horizon: alleen de meestgebruikte woorden, en hij groeit mee ----
   // v22.2: "reo" (de gedaagde) kwam uit de frequentielijst, die op ondertitels is gebaseerd en dus

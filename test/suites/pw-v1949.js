@@ -191,13 +191,21 @@ const { chromium } = require('playwright');
     muurOpen = 'Elise|' + vandaag;
     const el = document.createElement('div');
     el.innerHTML = muurHtml();
+    /* v23.156: er staat sinds die versie een veld op dit scherm, voor de vraag van de dag. Dat is
+       iets anders dan waar v19.49 over ging: dat verbood vrije tekst als REACTIE op iemands regel
+       ("een krabbel achterlaten, maar alleen in het Spaans"). De vraag van de dag is geen reactie
+       op een persoon maar een antwoord op een Spaanse vraag, en het veld zegt dat ook. Wat hier
+       bewaakt blijft is de reactie zelf: die gaat nog steeds via het vaste palet. */
+    const muurKaart = el.querySelector('#muurCard') || el;
     return {
       knoppen: el.querySelectorAll('[data-mk]').length,
-      velden: el.querySelectorAll('input, textarea').length
+      velden: muurKaart.querySelectorAll('input, textarea').length,
+      dagzinVeld: !!el.querySelector('#dagzinInp')
     };
   });
   ok(muur.knoppen >= 8, 'de muur zet dat palet als knoppen neer (' + muur.knoppen + ')');
-  ok(muur.velden === 0, 'er is geen vrij tekstveld: je kúnt niets anders dan Spaans achterlaten');
+  ok(muur.velden === 0, 'reageren op iemands regel kan alleen met het vaste palet, niet met vrije tekst');
+  ok(muur.dagzinVeld, 'het enige tekstveld hier is de vraag van de dag (v23.156), en dat is geen reactie');
 
   const echte = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED/.test(e));
   ok(echte.length === 0, 'geen JS-fouten in eigen app-code (' + echte.length + ' gevonden, ' + (errors.length - echte.length) + ' netwerkruis genegeerd)');

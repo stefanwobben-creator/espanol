@@ -495,6 +495,17 @@ function muurVelden(st) {
     // v22.6: de kleine dag naast de grote grenzen. Alleen vandaag en gisteren, want verder terug
     // kijkt de muur niet en de rest is dode last in een antwoord dat elk bezoek wordt opgehaald.
     oogst: oogstKort((st && st.oogst) || {}),
+    /* v23.156: de zin van vandaag, het antwoord op de vraag van de dag. Geen tabel nodig: de hele
+       state van elk groepslid wordt al gesynchroniseerd en komt hier al langs. Alleen vandaag en
+       gisteren, en afgekapt, want dit antwoord wordt bij elk bezoek opgehaald. */
+    dagzin: (function(){
+      const dz = st && st.dagzin;
+      if (!dz || !dz.es || !dz.d) return null;
+      const vandaag = new Date().toISOString().slice(0, 10);
+      const gisteren = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      if (dz.d !== vandaag && dz.d !== gisteren) return null;
+      return { d: dz.d, v: String(dz.v || ""), es: String(dz.es).slice(0, 140) };
+    })(),
   };
 }
 
