@@ -45,12 +45,29 @@ const { chromium } = require('playwright');
   await page.evaluate(() => show('spiekbrief'));
   await page.waitForTimeout(250);
 
-  // ---------- alle drie de nieuwe kaartjes staan er ----------
-  for (const id of ['serestar', 'porpara', 'subjuntivo']) {
-    ok(await page.locator('#cheat [data-gwstart="' + id + '"]').count() === 1, 'kaartje voor ' + id + ' staat op de Grammatica-tab');
+  /* v23.159: de drie diepe lessen stonden alle drie als los kaartje op de Grammatica-tab, naast een
+     concept met bijna dezelfde naam ("Ser of estar" en "Ser vs. estar", vier regels uit elkaar).
+     Twee kaartjes, twee namen, een onderwerp. Ze zijn nu bereikbaar waar ze horen: op de leespagina
+     van hun eigen concept, achter "Dieper". Wat geen concept heeft (subjuntivo) blijft een kaartje.
+     Deze suite gaat over de wizards zelf en niet over de tab, dus hij volgt gewoon de nieuwe route
+     ernaartoe. De tab zelf staat in pw-gramroute.js. */
+  for (const id of ['serestar', 'porpara']) {
+    ok(await page.locator('#cheat [data-gwstart="' + id + '"]').count() === 0,
+      id + ' staat niet meer als los kaartje naast zijn eigen concept');
+    await page.evaluate((x) => { gcLeesOpen(x); }, id);
+    await page.waitForTimeout(200);
+    ok(await page.locator('#cheat [data-gwstart="' + id + '"]').count() === 1,
+      'maar wel als "Dieper" op de leespagina van ' + id);
   }
+  ok(await page.locator('#cheat [data-gwstart="subjuntivo"]').count() === 0, 'en de leespagina toont niet andermans diepe les');
+  await page.evaluate(() => { gcLeesSluit(); renderCheat(); });
+  await page.waitForTimeout(200);
+  ok(await page.locator('#cheat [data-gwstart="subjuntivo"]').count() === 1,
+    'de subjuntivo heeft geen concept en blijft dus een kaartje op de tab');
 
   // ---------- ser vs. estar helemaal doorlopen ----------
+  await page.evaluate(() => { gcLeesOpen('serestar'); });
+  await page.waitForTimeout(200);
   await page.click('#cheat [data-gwstart="serestar"]');
   await page.waitForTimeout(250);
   ok(await page.locator('.gwuitleg').count() === 1, 'ser vs. estar opent in de uitlegfase');
@@ -89,6 +106,8 @@ const { chromium } = require('playwright');
   // ---------- por vs. para opent ----------
   await page.click('#gwSluit');
   await page.waitForTimeout(250);
+  await page.evaluate(() => { gcLeesOpen('porpara'); });
+  await page.waitForTimeout(200);
   await page.click('#cheat [data-gwstart="porpara"]');
   await page.waitForTimeout(250);
   ok(await page.evaluate(() => gwSess && gwSess.id === 'porpara'), 'por vs. para opent');
@@ -98,6 +117,8 @@ const { chromium } = require('playwright');
   // ---------- subjuntivo: openen en doorsteken naar de Conjugador ----------
   await page.click('#gwSluit');
   await page.waitForTimeout(250);
+  await page.evaluate(() => { gcLeesSluit(); renderCheat(); });
+  await page.waitForTimeout(200);
   await page.click('#cheat [data-gwstart="subjuntivo"]');
   await page.waitForTimeout(250);
   ok(await page.evaluate(() => gwSess && gwSess.id === 'subjuntivo'), 'de subjuntivo opent');
