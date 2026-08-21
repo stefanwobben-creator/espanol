@@ -17,7 +17,10 @@
 //
 //   1. DE EERSTE STAP BEGINT MET DE VRAAG. Geen tussenscherm, geen "Toets me →" waar niets te
 //      toetsen viel.
-//   2. MAAR DE ZIN IS NIET WEG. Hij staat bij de eerste vraag, want het is een gebruiksaanwijzing.
+//   2. MAAR ER STAAT WEL IETS BIJ DIE EERSTE VRAAG. Anders komt de vraag alsnog uit het niets.
+//      v23.158: dat was de gebruiksaanwijzing "gok gerust", en het is nu de regel zelf met de
+//      ezelsbrug eronder. Wat er staat mag veranderen, dat er iets staat niet. Deze suite haalt de
+//      tekst daarom op uit wat de stap draagt, niet uit een vaste zin.
 //   3. EN ALLEEN DAAR. Bij vraag twee is hij weg; anders is het behang.
 //   4. ECHTE UITLEG HOUDT WEL ZIJN SCHERM. Dit is het controlegeval: een stap met grammatica erin
 //      hoort die grammatica te laten lezen vóór de vraag. Alles overslaan is net zo fout.
@@ -79,7 +82,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.scherm1 = el.textContent.replace(/\s+/g, ' ');
     uit.heeftToetsMe = !!document.getElementById('gwNaarToets');
     uit.heeftOpties = el.querySelectorAll('#gwOpties button').length;
-    uit.uitlegZin = String(ct(o.stappen[0].uitleg, o.stappen[0].uitlegEn) || '').replace(/<[^>]*>/g, '');
+    /* v23.158: de tekst die bij vraag 1 hoort komt uit de stap zelf. Draagt hij hulp, dan is dat de
+       kern van het onderwerp; zo niet, dan de oude gebruiksaanwijzing. Zo blijft deze suite meten
+       dát er iets staat, ook als er morgen weer iets beters staat. */
+    uit.uitlegZin = o.stappen[0].hulp
+      ? gcHulpTekst(o.stappen[0].hulp, 'kern')
+      : String(ct(o.stappen[0].uitleg, o.stappen[0].uitlegEn) || '').replace(/<[^>]*>/g, '');
     uit.zinBijVraag1 = uit.scherm1.indexOf(uit.uitlegZin.slice(0, 30)) !== -1;
 
     // vraag 2: dezelfde zin hoort er niet meer te staan
@@ -123,12 +131,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- 1 t/m 3. de eerste stap begint met de vraag --');
   console.log('   ' + r.scherm1.slice(0, 110));
-  ok(r.eersteProcedureel, 'stap 1 is gemarkeerd als procedureel (zijn uitleg gaat over de oefening)');
+  ok(r.eersteProcedureel, 'stap 1 is gemarkeerd als procedureel (hij krijgt geen eigen leesscherm)');
   ok(r.heeftTekst0 === false, 'en krijgt daarom geen eigen uitlegscherm');
   ok(r.fase === 'toets', 'de sessie begint meteen bij de vraag (nu: ' + r.fase + ')');
   ok(!r.heeftToetsMe, 'er staat geen "Toets me" waar niets te toetsen viel');
   ok(r.heeftOpties >= 2, 'er staan antwoordopties op het scherm (' + r.heeftOpties + ')');
-  ok(r.zinBijVraag1, 'de zin over hoe het werkt staat bij de eerste vraag');
+  ok(r.zinBijVraag1, 'er staat begeleidende tekst bij de eerste vraag ("' + r.uitlegZin.slice(0, 45) + '...")');
   ok(!r.zinBijVraag2, 'en bij de tweede vraag niet meer');
 
   console.log('\n-- 4. het controlegeval: echte uitleg houdt zijn scherm --');
