@@ -81,6 +81,13 @@ const U = 'http://localhost:8321/espanol-stefan.html';
     try {
       lesFlow = { stap: 'toetsjes', quizzesTeDoen: [], gekozenSpel: null, vertalenTeGaan: 0 };
       lesFlowVolgendeKern();
+      /* v23.140 zette het inputblok tussen het toetsje en het schrijven; de eerste sectie van deze
+         suite loopt daar al doorheen, maar deze sectie was niet mee. Op lezen-dagen (dayHash even)
+         eindigde de lege les toevallig meteen, op luisteren-dagen parkeert hij eerst in het
+         inputblok — dezelfde suite was dus om de dag rood zonder dat er iets stuk was (ontdekt in
+         de nachtrun van 21 aug, de eerste luisteren-dag sinds v23.140). Zelfde afhandeling als
+         boven: het inputblok doorlopen, daarna moet de les alsnog netjes sluiten. */
+      if (lesFlow && lesFlow.stap === 'input') lesFlowVolgendeKern();
       return { flow: lesFlow ? lesFlow.stap : null };
     } finally { allowedSentIds = echt; }
   });
