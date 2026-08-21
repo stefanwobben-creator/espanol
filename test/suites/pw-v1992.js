@@ -70,11 +70,13 @@ async function wegMetOverlays(page) {
   // naar Oefenen verhuisd. Een exacte telling maakt elke verhuizing een valse regressie, dus we
   // toetsen wat de test eigenlijk bewaakt: niet alles staat meteen open.
   ok(menu.klaar.length >= 1 && menu.klaar.length < menu.klaar.length + menu.straks, 'niet alles staat meteen open (' + menu.klaar.length + ' klaar, ' + menu.straks + ' grijs)');
-  ok(menu.klaar.indexOf('ftAvt') !== -1 && menu.klaar.indexOf('ftMusica') !== -1, 'Aventura en Musica staan er altijd');
+  // v23.147: Aventura is geschrapt (2057 regels, geen spoor van gebruik). Musica staat er nog.
+  ok(menu.klaar.indexOf('ftAvt') === -1, 'Aventura is er niet meer');
+  ok(menu.klaar.indexOf('ftMusica') !== -1, 'Musica staat er altijd');
   // v21.5: de Conjugador is naar Oefenen verhuisd; de Speeltuin heeft alleen nog spelletjes.
   // v23.145: Palabra Duel staat niet meer vooraan (die heeft een tweede speler nodig), maar hij is
   // er nog wel, achter "alle spellen".
-  ok(menu.klaar.indexOf('ftDuel') !== -1 && menu.klaar.indexOf('ftAvt') !== -1, 'Duel en Aventura staan er allebei nog');
+  ok(menu.klaar.indexOf('ftDuel') !== -1, 'Palabra Duel staat er nog');
   // v21.2: exacte tellingen maken elke nieuwe oefening een valse regressie (v19.52-les).
   ok(menu.straks >= 1, 'er staat nog iets in het grijs (' + menu.straks + ')');
   ok(menu.kop, 'kop "Komt er straks bij" staat er');

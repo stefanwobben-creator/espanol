@@ -78,7 +78,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const trap = [];
     for (let i = 0; i < 5; i++) {
       S.srs[w1.id].bd = '2000-01-01';                     // de dagrem opzij, zie pw-srsrem
-      avtSrsBij(w1, true, true);
+      spelGetyptBij(w1, true, true);
       trap.push({ box: S.srs[w1.id].box, dagen: INTERVALS[S.srs[w1.id].box] });
     }
     uit.trap = trap;
@@ -91,7 +91,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const zonder = [];
     for (let i = 0; i < 4; i++) {
       S.srs[w2.id].bd = '2000-01-01';
-      avtSrsBij(w2, true, false);                          // aanklikken, geen bewijs
+      spelGetyptBij(w2, true, false);                          // aanklikken, geen bewijs
       zonder.push(S.srs[w2.id].box);
     }
     uit.zonderCheck = zonder;
@@ -103,7 +103,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       const w = WORDS[5];
       S.srs[w.id] = Object.assign({ box: 2, due: today(), k: 1, n: 5 }, vlag);
       const voor = S.srs[w.id].box;
-      avtSrsBij(w, true, true);
+      spelGetyptBij(w, true, true);
       return S.srs[w.id].box - voor;
     }
     uit.stapSchoon = stap({});               // nooit fout, genoeg beurten: twee
@@ -112,21 +112,21 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.stapOnderaan = (function () {
       const w = WORDS[6];
       S.srs[w.id] = { box: 0, due: today(), k: 1, n: 5 };
-      avtSrsBij(w, true, true);
+      spelGetyptBij(w, true, true);
       return S.srs[w.id].box;                // onderaan geen versnelling
     })();
 
     // ---- 6. de versnelling springt niet over de Laatste stap ----
     const w3 = WORDS[7];
     S.srs[w3.id] = { box: 3, due: today(), n: 9 };         // schoon, maar geen k
-    avtSrsBij(w3, true, false);
+    spelGetyptBij(w3, true, false);
     uit.sprongBox = S.srs[w3.id].box;
     uit.sprongCheck = wCheckNodig(S.srs[w3.id]);
 
     // ---- 7. HET CONTROLEGEVAL: fout gaat nog steeds terug naar nul ----
     const w4 = WORDS[8];
     S.srs[w4.id] = { box: INTERVALS.length - 1, due: addDays(today(), 240), k: 1, n: 9 };
-    avtSrsBij(w4, false, true);
+    spelGetyptBij(w4, false, true);
     uit.foutBox = S.srs[w4.id].box;
     uit.foutDue = S.srs[w4.id].due === today();
 

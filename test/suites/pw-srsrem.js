@@ -4,12 +4,12 @@
 //
 // Drie keer dezelfde fout, op drie plekken, allemaal ontdekt op 14 augustus:
 //
-//   1. avtSrsBij() zette `st.k = 1` bij élk goed antwoord in Aventura, ook bij een klik op een
+//   1. spelGetyptBij() (tot v23.147 avtSrsBij) zette `st.k = 1` bij élk goed antwoord in Aventura, ook bij een klik op een
 //      meerkeuze-optie en bij het galgje. `k` is definitief: wCheckNodig() slaat de Laatste stap
 //      voorgoed over zodra hij bestaat, en answerWord mag er de laatste doos mee halen op een
 //      zelfbeoordeling. Eén klik zette dus de hele bewijsvoering van v20.0 uit voor dat woord.
 //      Stefan heeft die Laatste stap in 814 woorden nooit gezien.
-//   2. spelSrsBij() en avtSrsBij() keken niet of een woord vandaag aan de beurt was. Drie spellen
+//   2. spelSrsBij() en spelGetyptBij() keken niet of een woord vandaag aan de beurt was. Drie spellen
 //      achter elkaar brachten hetzelfde woord van doos 0 naar doos 3 in tien minuten.
 //   3. gramBij() verhoogde de doos bij elk goed antwoord: vijf goede antwoorden in één sessie
 //      zetten een onderwerp van 0 naar 5, en dan zie je het 55 dagen niet meer.
@@ -46,17 +46,17 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
     // een klik uit vier is geen bewijs
     S.srs[w1.id] = { box: 1, due: today() };
-    avtSrsBij(w1, true, false);
+    spelGetyptBij(w1, true, false);
     uit.klikZetK = !!S.srs[w1.id].k;
 
     // intikken wel
     S.srs[w2.id] = { box: 1, due: today() };
-    avtSrsBij(w2, true, true);
+    spelGetyptBij(w2, true, true);
     uit.typZetK = !!S.srs[w2.id].k;
 
     // de dagrem: tweede keer op dezelfde dag schuift niet op
     const voor = S.srs[w2.id].box;
-    avtSrsBij(w2, true, true);
+    spelGetyptBij(w2, true, true);
     uit.tweedeKeerStil = S.srs[w2.id].box === voor;
 
     // HET CONTROLEGEVAL: met een oude dag hoort hij wél op te schuiven.
@@ -65,7 +65,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     // niet over de stapgrootte; die staat in pw-ladder.js. Deze regel eiste `voor + 1` en werd
     // daardoor rood op een gedragsverandering die hij niet bewaakt.
     S.srs[w2.id].bd = '2000-01-01';
-    avtSrsBij(w2, true, true);
+    spelGetyptBij(w2, true, true);
     uit.controleStijgt = S.srs[w2.id].box > voor;
 
     // spelSrsBij levert de tweede keer op dezelfde dag niets meer op

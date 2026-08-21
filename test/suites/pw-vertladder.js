@@ -98,9 +98,21 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     }
     const laag = trek(1, 40), hoog = trek(6, 40);
     uit.laagMax = Math.max.apply(null, laag);
-    uit.laagGem = laag.reduce((a, b) => a + b, 0) / laag.length;
     uit.hoogMax = Math.max.apply(null, hoog);
-    uit.hoogGem = hoog.reduce((a, b) => a + b, 0) / hoog.length;
+    /* Het gemiddelde niet uit veertig trekkingen: pickSentence() kiest willekeurig, en dan valt
+       het gemiddelde van trede 6 er af en toe onder dat van trede 1. Deze suite ging daardoor
+       willekeurig rood en dat is erger dan geen suite. De vijver zelf is wél deterministisch, en
+       dat is ook waar de bewering over gaat: op een hogere trede mogen er zwaardere zinnen in. */
+    function vijver(trede) {
+      S.vert = { trede: trede, reeks: 0 };
+      const p = vertPlafond();
+      const z = allowedSentIds().map(function (id) {
+        return dicZwaarte(SENTENCES.filter(function (x) { return x.id === id; })[0]);
+      }).filter(function (w) { return w <= p; });
+      return z.reduce(function (a, b) { return a + b; }, 0) / (z.length || 1);
+    }
+    uit.laagGem = vijver(1);
+    uit.hoogGem = vijver(VERT_TREDES.length);
     uit.plafond1 = (function () { S.vert = { trede: 1, reeks: 0 }; return vertPlafond(); })();
     uit.plafond6 = (function () { S.vert = { trede: 6, reeks: 0 }; return vertPlafond(); })();
 
@@ -156,7 +168,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     '  |  trede 6: max ' + r.hoogMax + ', gem ' + r.hoogGem.toFixed(1));
   ok(r.laagMax <= r.plafond1, 'op trede 1 komt er niets zwaarder dan ' + r.plafond1 + ' langs (nu: ' + r.laagMax + ')');
   ok(r.hoogMax > r.plafond1, 'op trede 6 komen de zware zinnen er wél bij (nu: ' + r.hoogMax + ')');
-  ok(r.hoogGem > r.laagGem, 'en gemiddeld zijn ze daar langer');
+  ok(r.hoogGem > r.laagGem, 'en de vijver waaruit hij trekt is er gemiddeld zwaarder');
 
   console.log('\n-- 6. de kop zegt de trede --');
   console.log('   ' + r.kop);

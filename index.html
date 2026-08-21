@@ -1501,7 +1501,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.151";
+var APP_VERSIE = "v23.154";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8822,12 +8822,16 @@ var FIESTAS = [
   {van:"12-24", tot:"12-26", e:"🎄", naam:"Navidad",    txt:"¡Feliz Navidad! Tijd voor turrón uit Alicante.", txtEn:"¡Feliz Navidad! Time for turrón from Alicante."},
   {van:"12-31", tot:"12-31", e:"🍇", naam:"Nochevieja", txt:"Nochevieja: druiven klaarzetten voor middernacht!", txtEn:"Nochevieja: get your grapes ready for midnight!"}
 ];
-function dayHash(extra){
-  var s = today() + "|" + (extra || "");
+/* v23.153: hier stond alleen de versie met today() erin, en daardoor was "welk lied is het morgen"
+   niet te beantwoorden zonder te wachten tot morgen. Nu rekent hij met de datum die je meegeeft, en
+   is dayHash() de versie die vandaag invult. Dezelfde splitsing als bij today() zelf. */
+function dagHashVoor(datum, extra){
+  var s = (datum || today()) + "|" + (extra || "");
   var h = 0;
   for(var i=0;i<s.length;i++){ h = ((h<<5)-h+s.charCodeAt(i))|0; }
   return Math.abs(h);
 }
+function dayHash(extra){ return dagHashVoor(today(), extra); }
 function fiestaVandaag(){
   var md = today().slice(5); // "MM-DD"
   for(var i=0;i<FIESTAS.length;i++){
@@ -9281,6 +9285,44 @@ function morgenTerug(){
 /* De zin die daarbij hoort. De clausule over de herinnering staat er alleen in je eerste drie
    dagen: het is een feit dat je één keer moet horen, en elke dag melden dat er niets gaat gebeuren
    is zelf een vorm van zeuren. Regels die je niet meer leest, maken de regel ernaast ook onzichtbaar. */
+/* ================= MORGEN (v23.153) =================
+
+   Stefan vroeg of de roosters zichzelf moeten inroosteren of dat hij de week vooruit wil zien. Geen
+   van beide: een weekoverzicht kán niet kloppen, want alle drie de roosters lopen op dagenTotaal()
+   en die telt jouw actieve dagen. Sla je een dag over, dan schuift alles op. Een kalendergrid moet
+   dus gokken of het rooster aan de kalender vastspijkeren, en dat tweede straft een dag vrijnemen
+   af. Dat is wat in v19.64 is weggehaald.
+
+   Dus: één zin, over morgen, op het scherm waar die vraag opkomt (v23.67). En alleen als er morgen
+   echt iets bijzonders is: een regel die elke dag hetzelfde zegt is geen bericht meer. */
+function morgenBijzonder(){
+  var d = 0, uit = [];
+  try { d = dagenTotaal() + 1; } catch(e){ return uit; }
+  if(d <= 1) return uit;
+  var morgenDatum = addDays(today(), 1);
+  try {
+    if((d % MUS_OM_DE) === 0){
+      var sg = musVanDag(morgenDatum);
+      if(sg) uit.push(ct("je zingt mee met "+sg.titel, "you sing along with "+sg.titel));
+    }
+  } catch(e){}
+  try {
+    /* praatKan() vraagt onder meer of je vandaag al gepraat hebt, en dat zegt niets over morgen.
+       Wat wél over morgen gaat is de trede: sta je nog op één, dan is vrij praten ook morgen een
+       muur. */
+    if((d % 2) === 1 && vertTrede() >= PRAAT_TREDE_MIN){
+      uit.push(ct("je praat met Chispa", "you talk with Chispa"));
+    }
+  } catch(e){}
+  return uit;
+}
+function morgenBijzonderZin(){
+  var r = morgenBijzonder();
+  if(!r.length) return "";
+  var lijst = r.length === 1 ? r[0] : r.slice(0, -1).join(", ") + ct(" en ", " and ") + r[r.length - 1];
+  return " " + ct("En ", "And ") + lijst + ".";
+}
+
 function morgenZin(){
   var n = morgenTerug(), dg = 0;
   try { dg = dagenTotaal(); } catch(e){ dg = 0; }
@@ -9289,6 +9331,7 @@ function morgenZin(){
          "Tomorrow "+n+" "+(n === 1 ? "word comes" : "words come")+" back.")
     : ct("Morgen staat er nog niets op herhaling, dus je begint met nieuwe woordjes.",
          "Nothing is due for review tomorrow, so you will start with new words.");
+  z += morgenBijzonderZin();   // v23.153
   if(dg <= 3){
     z += " " + ct("Je krijgt geen herinnering, dus kom terug wanneer het jou uitkomt.",
                   "You will not get a reminder, so come back whenever it suits you.");
@@ -10206,6 +10249,20 @@ function norm(s){
   return s.toLowerCase().trim()
     .replace(/[¡!¿?.,;:]/g,"")
     .replace(/\s+/g," ");
+}
+/* v23.147: verhuisd uit het Aventura-blok. Ze horen hier omdat de Laatste check ze gebruikt en
+   niet het spel; dat ze daar woonden was toeval van de bouwvolgorde. */
+function esVormen(es){
+  var delen = es.split("/").map(function(s){ return s.trim(); }).filter(Boolean);
+  if(delen.length > 1) delen.push(es);
+  return delen;
+}
+function woordGetypt(inp, es){
+  var geg = stripAcc(norm(inp));
+  var vormen = esVormen(es);
+  var los = vormen.some(function(v){ return stripAcc(norm(v)) === geg; });
+  var exact = vormen.some(function(v){ return norm(v) === norm(inp); });
+  return {goed:los, accentMis:los && !exact};
 }
 function stripAcc(s){
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -11941,9 +11998,11 @@ function ltPast(sig, basis){
   }
   return true;
 }
+var ltWbTaal = null;   // v23.147: de vijver hangt nu ook aan de taal, dus de cache ook
 function ltWoordenboek(){
   var hor = ltHorizon();
-  if(ltWbCache && ltWbHorizon === hor) return ltWbCache;
+  if(ltWbCache && ltWbHorizon === hor && ltWbTaal === profLang()) return ltWbCache;
+  ltWbTaal = profLang();
   var uit = {}, zien = {};
   function voeg(es, nl){
     if(!es || !nl) return;
@@ -11955,8 +12014,12 @@ function ltWoordenboek(){
     zien[plat] = 1;
     uit[plat] = {es: es, nl: nl, sig: ltSig(es)};
   }
-  // FREQ staat op volgorde van hoe vaak een woord voorkomt, dus de horizon is gewoon een afkapping.
-  (typeof FREQ !== "undefined" ? FREQ : []).slice(0, hor).forEach(function(r){ voeg(r[0], r[1]); });
+  /* FREQ staat op volgorde van hoe vaak een woord voorkomt, dus de horizon is gewoon een afkapping.
+     v23.147: alleen in een Nederlands profiel. FREQ is [es, nl] en heeft geen Engelse kolom, dus in
+     een Engels profiel leverde deze regel Spaanse woorden met een Nederlandse omschrijving op. */
+  if(profLang() === "nl"){
+    (typeof FREQ !== "undefined" ? FREQ : []).slice(0, hor).forEach(function(r){ voeg(r[0], r[1]); });
+  }
   [typeof WORDS !== "undefined" ? WORDS : [], typeof B_WORDS !== "undefined" ? B_WORDS : [],
    typeof K_WORDS !== "undefined" ? K_WORDS : []].forEach(function(lijst){
     lijst.forEach(function(w){
@@ -14084,15 +14147,25 @@ function dagPlan(){
   var inputV = null;
   try { inputV = lesFlowInputKeuze(); } catch(e){ inputV = null; }
   if(inputV){
+    var musDag = inputV === "musica" ? musVanDag() : null;
     blokken.push({stap:"input", draad:ct("begrijpen","input"),
-      naam: inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
-      wat: inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
+      naam: inputV === "musica" ? ct("Liedje","Song")
+          : inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
+      wat: inputV === "musica" ? (musDag ? musDag.titel : "M\u00fasica")
+         : inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
                               : ct("een gesprek","one conversation"),
       sec: doelMinuten() * 60 * 0.25, vaardigheid: inputV});
   }
+  /* v23.150: om de dag is het schrijfblok een gesprek. Allebei zelf iets maken, maar bij vertalen
+     ligt de zin vast en bij praten kies je zelf wat je zegt. */
+  var praat = false;
+  try { praat = praatBeurt(); } catch(e){ praat = false; }
   var kanSchrijven = false;
   try { kanSchrijven = !!allowedSentIds().length; } catch(e){ kanSchrijven = false; }
-  if(kanSchrijven){
+  if(praat){
+    blokken.push({stap:"produceren", naam:ct("Praten met Chispa","Talking with Chispa"),
+      draad:ct("zelf maken","output"), wat:praatBlokWat(), sec:CHAT_BEURTEN * SCHRIJF_SEC * 1.6});
+  } else if(kanSchrijven){
     blokken.push({stap:"produceren", naam:ct("Schrijven","Writing"), draad:ct("zelf maken","output"),
       wat:SCHRIJF_PER_LES + " " + ct("zinnen","sentences"), sec:SCHRIJF_PER_LES * SCHRIJF_SEC});
   }
@@ -14217,6 +14290,8 @@ function lesFlowStapNaam(f){
   if(f.stap === "woorden") return ct("Woordjes","Words");
   if(f.stap === "grammatica") return ct("Grammatica","Grammar");
   if(f.stap === "toetsjes") return ct("Toetsjes","Quizzes");
+  if(f.stap === "input" && f.vaardigheid === "musica") return ct("Liedje","Song");
+  if(f.stap === "produceren" && f.vaardigheid === "praten") return ct("Praten","Talking");
   if(f.stap === "input" || f.stap === "produceren"){
     var v = f.vaardigheid;
     if(v === "lezen") return ct("Lezen","Reading");
@@ -14435,6 +14510,9 @@ function huidigeLes(){
    plan staat en de les gewoon vier stappen telt. Een plan dat iets belooft wat er niet is, is
    erger dan een korter plan (v23.135). */
 function lesFlowInputKeuze(){
+  /* v23.148: eens per drie actieve dagen is het inputblok een lied. Dat gaat vóór de wisseling
+     tussen lezen en luisteren, want die twee komen elke andere dag langs en het lied niet. */
+  try { if(musDagBeurt()) return "musica"; } catch(e){}
   var lezen = null, audi = false;
   try { lezen = lesFlowBoekHoofdstuk(); } catch(e){ lezen = null; }
   /* audOpen(sc) vraagt of één scene open is; wat we hier nodig hebben is of er überhaupt iets
@@ -14658,15 +14736,7 @@ function lesFlowVolgendeKern(){
       lesFlowOpenProductie();
       return;
     }
-    if(allowedSentIds().length){
-      lesFlow.stap = "produceren";
-      lesFlow.vaardigheid = "schrijven";
-      lesFlow.vaardigheidRij = [];
-      lesFlow.gekozenSpel = "vertalen";
-      lesFlow.vertalenTeGaan = lesFlow.vertalenTotaal = SCHRIJF_PER_LES;
-      show("vertalen");
-      return;
-    }
+    if(lesFlowNaarProduceren()) return;   // v23.150
     lesFlowKlaar();
     return;
   }
@@ -14674,15 +14744,7 @@ function lesFlowVolgendeKern(){
      hieronder, maar met een vaste volgende stap in plaats van een rij vaardigheden. */
   if(lesFlow.stap === "input"){
     if(lesFlow.vaardigheid) S.lesFlowSpel[lesFlow.vaardigheid] = today();
-    if(allowedSentIds().length){
-      lesFlow.stap = "produceren";
-      lesFlow.vaardigheid = "schrijven";
-      lesFlow.vaardigheidRij = [];
-      lesFlow.gekozenSpel = "vertalen";
-      lesFlow.vertalenTeGaan = lesFlow.vertalenTotaal = SCHRIJF_PER_LES;
-      show("vertalen");
-      return;
-    }
+    if(lesFlowNaarProduceren()) return;   // v23.150
     lesFlowKlaar();
     return;
   }
@@ -14701,14 +14763,56 @@ function lesFlowVolgendeKern(){
 }
 
 // De lengte van elk blok komt uit je tijdbudget: bij 30 minuten zeven zinnen dictado, bij 5 twee.
+/* v23.150: één plek die het schrijfblok opent, want er waren er twee die hetzelfde deden en dan
+   krijgt er straks eentje het gesprek niet mee. Geeft terug of er iets geopend is. */
+function lesFlowNaarProduceren(){
+  var praat = false;
+  try { praat = praatBeurt(); } catch(e){ praat = false; }
+  if(praat){
+    lesFlow.stap = "produceren";
+    lesFlow.vaardigheid = "praten";
+    lesFlow.vaardigheidRij = [];
+    lesFlow.gekozenSpel = "chat";
+    show("chat");
+    return true;
+  }
+  if(allowedSentIds().length){
+    lesFlow.stap = "produceren";
+    lesFlow.vaardigheid = "schrijven";
+    lesFlow.vaardigheidRij = [];
+    lesFlow.gekozenSpel = "vertalen";
+    lesFlow.vertalenTeGaan = lesFlow.vertalenTotaal = SCHRIJF_PER_LES;
+    show("vertalen");
+    return true;
+  }
+  return false;
+}
+
 function lesFlowOpenProductie(){
   var v = lesFlow.vaardigheid;
   var tijd = vaardigheidTijd();
+  if(v === "praten"){   // v23.150
+    lesFlow.gekozenSpel = "chat";
+    show("chat");
+    return;
+  }
   if(v === "lezen"){
     var h = lesFlowBoekHoofdstuk();
     if(h){ lesFlow.gekozenSpel = "boek"; show("lezen"); startBoek(h.id); return; }
     // het boek gaat pas open na je eerste afgeronde les; tot die tijd een andere vaardigheid
     v = lesFlow.vaardigheid = (lesFlow.vaardigheidRij || []).indexOf("luisteren") >= 0 ? "schrijven" : "luisteren";
+  }
+  if(v === "musica"){
+    /* v23.148: het lied van vandaag. Het opent zijn eigen tabblad, net als lezen dat doet, en komt
+       terug via de knop onder de quizuitslag. */
+    var sgDag = musVanDag();
+    if(sgDag){
+      lesFlow.gekozenSpel = "musica";
+      show("musica");
+      openSong(sgDag, true);
+      return;
+    }
+    v = lesFlow.vaardigheid = "luisteren";
   }
   if(v === "luisteren"){
     /* v21.4: het luisterblok was dictado, en dat traint transcriberen in plaats van begrijpen.
@@ -18757,7 +18861,6 @@ function renderFunTijdvorm(){
      open     een eigen afhandeling, voor het enige spel dat geen funView is */
 function spelInfo(){
   return [
-    {v:"avt",     id:"ftAvt",     e:"\ud83d\uddfa\ufe0f",     t:"Aventura",              s:fx("avS"), gezien:false},
     {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",            t:"M\u00fasica",            s:fx("muS"), open:function(){ show("musica"); }},
     {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS")},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",            t:"Crucigrama",            s:fx("krS"), verse:function(){ kruisLos = null; }},
@@ -18800,16 +18903,18 @@ function spelInfoVan(v){
    Deze vijf tellen mee. Ze staan nu aan de goede kant, en de tegel draagt dat zelf (gram:true), zodat
    de Speeltuin, de Grammatica-tab en de dagkaart alle drie hetzelfde ene veld lezen. */
 function speelTegels(){ return spelInfo().filter(function(x){ return !x.gram; }); }
-/* v23.145: welke drie staan er vooraan?
+/* v23.145: welke staan er vooraan?
 
-   Aventura is het grote spel en Música heeft geen materiaal nodig, dus die twee staan er altijd. De
-   derde plek roteert.
+   Música heeft geen materiaal nodig, dus die kan op dag 1 al draaien en staat er altijd. De rest
+   van de plekken roteert.
 
-   Palabra Duel staat in geen van beide: hij heeft een tweede speler nodig, dus vooraan zetten belooft
-   iets dat je alleen niet kunt, en "het spel van vandaag" zou een doodlopende weg zijn. Hij staat
-   achter de regel bij de rest. */
-var SPEL_VAST = ["avt", "musica"];
-var SPEL_ROTEERT_NIET = ["avt", "musica", "duel"];
+   Palabra Duel roteert niet mee: hij heeft een tweede speler nodig, dus vooraan zetten belooft iets
+   dat je alleen niet kunt, en "het spel van vandaag" zou een doodlopende weg zijn. Hij staat achter
+   de regel bij de rest.
+
+   v23.147: Aventura stond hier ook, als "het grote spel". Dat spel is er niet meer. */
+var SPEL_VAST = ["musica"];
+var SPEL_ROTEERT_NIET = ["musica", "duel"];
 /* En het spel van vandaag is dat wat je het langst niet geopend hebt. Nooit geopend telt als het
    langst geleden: daar is de kans het grootst dat je iets vindt.
 
@@ -18857,7 +18962,7 @@ function spelZin(s){
    morgen een grammatica-oefening bij zet, zet hem hier niet bij en vindt hem dan op de dagkaart
    terug tussen de spelletjes. Nu afgeleid. Wat overblijft is wat er echt in thuishoort: Aventura
    staat vast op de kaart (dat is het grote spel) en Palabra Duel heeft een tweede speler nodig. */
-var DAGSPEL_UIT = {avt:1, duel:1};
+var DAGSPEL_UIT = {duel:1};   // v23.147: avt stond hier ook, dat spel bestaat niet meer
 /* v23.65, en dit was een echte fout. In DAGSPELLEN stonden Escuchar, El Corrector en Rompecabezas,
    dus de kaart met de kop "Even spelen" bood drie oefeningen aan. De regel van v21.5 is in één zin
    te zeggen (Stefan: "lessen, dat zijn de oefeningen, die zitten nu ook onder speeltuin"): onder
@@ -18911,8 +19016,10 @@ function dagSpeelRij(g){
       "<span class='sppijl'>\u25b6</span></button>";
 }
 function dagSpeelHtml(){
-  var keus = dagSpelKeuze(2);
-  var knoppen = dagSpeelRij(spelInfoVan("avt"));
+  /* v23.147: hier stond Aventura vast bovenaan en kwamen er twee wisselende bij. Nu drie
+     wisselende, want die vaste plek hoorde bij een spel dat er niet meer is. */
+  var keus = dagSpelKeuze(3);
+  var knoppen = "";
   keus.forEach(function(k){ knoppen += dagSpeelRij(k); });
   /* v23.65. Stefan: "waarom heb ik die unlocked? dan wil ik toch alle spellen zien maar met eentje
      die niet locked is." Het antwoord stond op het volgende scherm en niet hier: daar staan de
@@ -21297,6 +21404,40 @@ function chatNiveau(){
   try { return gwTrackKey() === "a0" ? "a0" : "a2"; } catch(e){ return "a2"; }
 }
 
+/* ================= HET PRAATBLOK (v23.150) =================
+
+   Stefan, drie keer: "ik kan ook nog niet chatten met chispa."
+
+   Het gesprek bestond al sinds v23.144, app en server allebei. Het stond alleen als vierde kaart op
+   de Chispa-pagina, en die zit achter Meer: drie tikken diep. Wat niet in de dagles staat, bestaat
+   niet; dat is nu drie keer dezelfde diagnose (lezen vóór v23.140, Música vóór v23.148, dit).
+
+   Om de dag, en niet elke dag: vertalen en praten zijn allebei Nation's tweede draad maar ze doen
+   iets anders. Bij vertalen ligt de zin vast en zoek jij de vorm; bij praten kies je zelf wat je
+   zegt, en dat is de stap naar de echte wereld. Geen van beide vervangt de ander.
+
+   Twee remmen. Niet vanaf dag één (trede 2 van de zinnenladder, v23.136): vrij praten terwijl je nog
+   geen zin kunt maken is geen oefening maar een muur. En niet als de AI plat ligt: dan staat er een
+   knop naar het schrijfblok, want halverwege je les stilstaan is waar v20.5 op is teruggedraaid. */
+var PRAAT_TREDE_MIN = 2;
+
+function praatKan(){
+  if(chatGedaanVandaag()) return false;
+  try { if(vertTrede() < PRAAT_TREDE_MIN) return false; } catch(e){ return false; }
+  return true;
+}
+/* Om de dag, op jouw actieve dagen en niet op de kalender: wie een week overslaat komt terug waar
+   hij gebleven was. Dezelfde teller als het liedblok (v23.148). */
+function praatBeurt(){
+  if(!praatKan()) return false;
+  var d = 0;
+  try { d = dagenTotaal(); } catch(e){ d = 0; }
+  return d > 1 && (d % 2) === 1;
+}
+function praatBlokWat(){
+  return ct(CHAT_BEURTEN + " beurten in het Spaans", CHAT_BEURTEN + " turns in Spanish");
+}
+
 function renderChat(){
   var el = document.getElementById("chatWrap");
   if(!el) return;
@@ -21335,6 +21476,11 @@ function renderChat(){
       "<div class='row' style='margin-top:8px'>"+
         "<button class='primary' id='chatStuur'"+(chatBezig ? " disabled" : "")+">"+ct("Versturen","Send")+"</button>"+
         "<button class='ghost' id='chatHulp'>"+ct("Hoe zeg ik...?","How do I say...?")+"</button>"+
+        /* v23.150: sinds het gesprek een blok in de les is, is "overslaan" niet genoeg. Ligt de AI
+           plat, dan hoort er iets te staan wat je wél kunt doen; halverwege je les stilstaan is
+           precies waar v20.5 op is teruggedraaid. */
+        (inFlow ? "<button class='ghost' id='chatNaarZinnen'>"+ct("Liever zinnen schrijven","Rather write sentences")+"</button>"
+                : "")+
         (inFlow ? "<button class='ghost' id='chatFlow'>"+ct("Overslaan \u2192","Skip \u2192")+"</button>"
                 : "<button class='ghost' id='chatTerug'>"+ct("\u2190 Terug","\u2190 Back")+"</button>")+
       "</div>";
@@ -21348,6 +21494,21 @@ function chatWire(){
   b = document.getElementById("chatStuur"); if(b) b.onclick = chatStuur;
   b = document.getElementById("chatHulp"); if(b) b.onclick = chatHulpVak;
   b = document.getElementById("chatFlow"); if(b) b.onclick = function(){ chatStand().klaar = true; persist(); lesFlowVolgende(); };
+  /* v23.150: hetzelfde blok, andere vorm. Niet lesFlowVolgende(): dan sla je het schrijfblok over in
+     plaats van het te doen. */
+  b = document.getElementById("chatNaarZinnen");
+  if(b) b.onclick = function(){
+    chatStand().klaar = true;
+    persist();
+    if(lesFlow && allowedSentIds().length){
+      lesFlow.vaardigheid = "schrijven";
+      lesFlow.gekozenSpel = "vertalen";
+      lesFlow.vertalenTeGaan = lesFlow.vertalenTotaal = SCHRIJF_PER_LES;
+      show("vertalen");
+      return;
+    }
+    lesFlowVolgende();
+  };
   b = document.getElementById("chatTerug"); if(b) b.onclick = function(){ chatStand().klaar = true; persist(); show("chispa"); };
   var inv = document.getElementById("chatInvoer");
   if(inv){
@@ -22084,6 +22245,19 @@ function renderSongs(){
     ct("Leer Spaans met liedjes: kijk de video en oogst de taal eruit. Er komt regelmatig nieuwe muziek bij.",
        "Learn Spanish with songs: watch the video and harvest the language out of it. New music is added regularly.")+"</p>"+
     "<div class='row'><button class='ghost' id='btnMusTerug'>← "+ct("Speeltuin","Playground")+"</button></div></div>";
+  /* v23.148: hetzelfde lied als het inputblok van je les zou kiezen, uit dezelfde functie. Twee
+     plekken die allebei "het liedje van vandaag" zeggen en een ander lied bedoelen, is precies de
+     tweede waarheid waar deze app het meeste last van heeft gehad. */
+  var vandaag = musVanDag();
+  if(vandaag){
+    html += "<div class='card'><span class='kicker'>"+ct("Het liedje van vandaag","Today's song")+"</span>"+
+      "<div class='lesson' data-song='"+vandaag.id+"' style='opacity:1'><div class='lnum'>🎵</div>"+
+      "<div class='lbody'><b>"+vandaag.titel+"</b><span>"+vandaag.artiest+" · "+
+        (musGedaan(vandaag) ? ct("al gedaan, nog een keer mag","done already, again is fine")
+                            : ct((vandaag.oogst||[]).length+" uitdrukkingen om mee te nemen",
+                                 (vandaag.oogst||[]).length+" phrases to take with you"))+
+      "</span></div><div class='lstatus'>▶</div></div></div>";
+  }
   var p0 = activeProfile();
   var mijnNiveau = p0 && p0.track === "beginner" ? "A0" : "A2";
   var lijst = SONGS.slice().sort(function(a, b){
@@ -22162,7 +22336,10 @@ function openSong(sg, skipPush){
       sg = Object.assign({}, sg, {lvl:bib.lvl, intro:bib.intro, oogst:bib.oogst, vragen:bib.vragen, eigen:true});
     }
   }
-  if(!skipPush) navPush({t:"song", id:sg.id});
+  if(!skipPush){
+    navPush({t:"song", id:sg.id});
+    musStap = 1; musHoorI = 0; musHoorGoed = 0;   // v23.149: een verse opening begint bij luisteren
+  }
   document.getElementById("songList").classList.add("hidden");
   var el = document.getElementById("songView");
   el.classList.remove("hidden");
@@ -22170,16 +22347,33 @@ function openSong(sg, skipPush){
   var html = "<div class='card'><span class='kicker'>Música · "+(sg.lvl||"")+"</span>"+
     "<p class='big' style='margin:4px 0'>"+sg.titel+"</p><p class='muted'>"+sg.artiest+"</p>"+
     "<div class='ytwrap'><iframe src='https://www.youtube-nocookie.com/embed/"+ytEff+"' title='"+sg.titel+"' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' allowfullscreen></iframe></div>"+
-    "<p>"+(sg.intro||"")+"</p>"+
-    "<p class='muted'>Tip: zet ondertiteling (CC) aan in de speler en zing gewoon mee, fouten maken mag hard.</p></div>";
-  if(sg.oogst && sg.oogst.length){
+    /* v23.149: de intro staat in stap 2 en niet in stap 1. Hij is Nederlands en vertelt waar het
+       lied over gaat, en in stap 1 is de vraag juist wat je hoort zonder dat je het al weet. */
+    (musStap === 2 ? "<p>"+(sg.intro||"")+"</p>" : "")+
+    "<p class='muted'>"+ct("Tip: zet ondertiteling (CC) aan in de speler.",
+                           "Tip: turn on subtitles (CC) in the player.")+"</p></div>"+
+    musStapKop(sg);   /* v23.149 */
+  /* v23.149: stap 1 is luisteren, en dan hoort de oogst er nog niet te staan. De hele vraag "welke
+     van deze drie hoor je" is weg als de goede er in het Nederlands naast staat. */
+  if(musStap === 1){
+    html += musHoorHtml(sg);
+  }
+  if(musStap >= 2 && sg.oogst && sg.oogst.length){
     html += "<div class='card'><h2>De taaloogst 🌾</h2>";
     sg.oogst.forEach(function(o){
-      html += "<div class='oogst'><b>"+o.es+"</b> · "+o.nl+"<span class='muted'>"+o.u+"</span></div>";
+      html += "<div class='oogst'><b>"+o.es+"</b> · "+o.nl+
+        (musStap === 2 ? "<span class='muted'>"+o.u+"</span>" : "")+"</div>";
     });
+    if(musStap === 2){
+      html += "<div class='row' style='margin-top:10px'><button class='primary' id='btnMusStap3'>"+
+        ct("Nu meezingen \u2192","Now sing along \u2192")+"</button></div>";
+    }
+    /* v23.148: de knop is er voor wie de quiz overslaat. Wie hem afmaakt krijgt hetzelfde
+       automatisch; het is dezelfde functie. In stap 3, want daarvoor heb je ze nog niet gehad. */
+    if(musStap >= 3) html += musOogstRegelHtml(sg);
     html += "</div>";
   }
-  if(sg.vragen && sg.vragen.length){
+  if(musStap >= 3 && sg.vragen && sg.vragen.length){
     html += "<div class='card'><h2>Snap je het lied?</h2><div id='songQuiz'></div></div>";
   }
   // v19.92: alleen je eigen toegevoegde liedje (of de beheerder) krijgt de knoppen die iets
@@ -22199,6 +22393,11 @@ function openSong(sg, skipPush){
              "The songs in the list belong to the app: you cannot change or delete them. Adding a song of your own is fine, at the bottom of M\u00fasica.")+"</p>")+
     "<div id='songBeheerFb'></div></div>";
   el.innerHTML = html;
+  /* v23.149 */
+  if(musStap === 1) musHoorWire(sg);
+  var b3 = document.getElementById("btnMusStap3");
+  if(b3) b3.onclick = function(){ musStap = 3; openSong(sg, true); };
+  musOogstWire(sg);   // v23.148
   document.getElementById("btnSongTerug").onclick = renderSongs;
   var bv = document.getElementById("btnSongVideo");
   if(bv) bv.onclick = function(){
@@ -22235,7 +22434,7 @@ function openSong(sg, skipPush){
   el.querySelectorAll(".oogst b").forEach(function(b){
     b.onclick = function(){ verbPopup(b.textContent); };
   });
-  if(sg.vragen && sg.vragen.length) renderSongQuiz(sg, 0, 0);
+  if(musStap >= 3 && sg.vragen && sg.vragen.length) renderSongQuiz(sg, 0, 0);
 }
 
 function renderSongQuiz(sg, i, score){
@@ -22243,7 +22442,18 @@ function renderSongQuiz(sg, i, score){
   if(!el) return;
   if(i >= sg.vragen.length){
     if(score === sg.vragen.length){ confetti(["🎵","🎉","⭐️"], 16); }
-    el.innerHTML = "<p class='big'>"+score+"/"+sg.vragen.length+"</p><p class='muted'>"+(score===sg.vragen.length?ct("¡Perfecto! Je luistert als een local. (+"+xpw()+")","¡Perfecto! You listen like a local. (+"+xpw()+")"):ct("Kijk de taaloogst nog eens en luister opnieuw.","Look at the word harvest again and listen once more."))+"</p>";
+    /* v23.148: hier hield het op. Je had een lied gekeken, zeven uitgelegde uitdrukkingen gelezen en
+       drie vragen beantwoord, en er bleef niets van staan omdat de machine niet wist dat je het
+       gezien had. Nu gaan de uitdrukkingen naar je woorden, en zie je ze de komende dagen terug. */
+    var geoogst = 0;
+    try { geoogst = musOogstBij(sg); } catch(e){ geoogst = 0; }
+    el.innerHTML = "<p class='big'>"+score+"/"+sg.vragen.length+"</p><p class='muted'>"+(score===sg.vragen.length?ct("¡Perfecto! Je luistert als een local. (+"+xpw()+")","¡Perfecto! You listen like a local. (+"+xpw()+")"):ct("Kijk de taaloogst nog eens en luister opnieuw.","Look at the word harvest again and listen once more."))+"</p>"+
+      (geoogst ? "<div class='feedback ok'>"+musOogstGedaanTxt(geoogst)+"</div>" : "")+
+      (lesFlow && lesFlow.stap === "input" && lesFlow.gekozenSpel === "musica"
+        ? "<div class='row' style='margin-top:8px'><button class='primary' id='btnMusFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
+        : "");
+    var door = document.getElementById("btnMusFlowDoor");
+    if(door) door.onclick = function(){ lesFlowVolgende(); };
     return;
   }
   var v = sg.vragen[i];
@@ -22256,6 +22466,10 @@ function renderSongQuiz(sg, i, score){
       var goed = +b.getAttribute("data-i") === v.c;
       el.querySelectorAll(".opt")[v.c].classList.add("correct");
       if(!goed) b.classList.add("wrong");
+      /* v23.148: een fout hier verdween. De vragen gaan over de grammatica van het lied (indefinido,
+         wederkerend, pronomen achter de infinitief), dus ze horen in dezelfde foutenlijst als de
+         rest; El Corrector en de foutenlus putten daaruit. */
+      if(!goed){ try { logError(sg.id + "-q" + i, "song", sg.id, vraagTekst(v)); } catch(e){} }
       addXP(goed ? 2 : 1);
       document.getElementById("songQFb").innerHTML = "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+"</b>"+vraagWaarom(v)+"</div>"+
         "<div class='row'><button class='primary' id='btnSongNext'>"+(i+1<sg.vragen.length?ct("Volgende →","Next →"):ct("Uitslag →","Result →"))+"</button></div>";
@@ -24165,6 +24379,238 @@ function vormAnalyse(qRaw){
   if(m2 && VORM_ONREG_STAM[m2[1]]) push(VORM_ONREG_STAM[m2[1]], "indefinido", m2[2] === "e" ? "yo" : "él/ella");
   return hits.slice(0, 4);
 }
+/* ================= HET LIEDJE VAN VANDAAG (v23.148) =================
+
+   Stefan: "musica mag blijven maar dan moet er automatisch een liedje van de dag of om de x dagen
+   komen. En de leeroutput moet ook hoger."
+
+   Waarom eens per drie dagen en niet elke dag: een lied is vier minuten video plus de oogst lezen
+   plus drie vragen. Dat is ruim twee keer een stukje hoofdstuk. Elke dag zou het inputblok laten
+   uitdijen en de andere twee draden verdringen.
+
+   Waarom vast per dag en niet willekeurig per klik: anders is "het liedje van vandaag" een ander
+   lied als je twee keer kijkt, en dan betekent de naam niets. dagenTotaal() telt jouw actieve dagen,
+   dus de teller loopt op jouw tempo en niet op de kalender. */
+var MUS_OM_DE = 3;
+
+function musLijst(){
+  if(typeof SONGS === "undefined") return [];
+  return SONGS.filter(function(sg){
+    if(S.songHide && S.songHide[sg.id]) return false;
+    return !!(sg.oogst && sg.oogst.length);
+  });
+}
+function musGedaan(sg){ return !!(sg && S.musKlaar && S.musKlaar[sg.id]); }
+/* Eerst de liedjes die je nog nooit hebt afgemaakt, en pas als die op zijn de rest. Binnen elke
+   groep beslist de dag, niet het toeval. */
+function musVanDag(datum){
+  var alles = musLijst();
+  if(!alles.length) return null;
+  var vers = alles.filter(function(sg){ return !musGedaan(sg); });
+  var pot = vers.length ? vers : alles;
+  return pot[dagHashVoor(datum || today(), "musica") % pot.length];   // v23.153: ook voor morgen
+}
+/* Is het inputblok van vandaag een lied? Alleen als er nog liedjes zijn en de teller op nul staat.
+   Dag 0 telt niet mee: op dag een is het dagscherm het eerste wat een vreemde ziet (v23.135). */
+function musDagBeurt(){
+  if(!musVanDag()) return false;
+  var d = dagenTotaal();
+  return d > 1 && (d % MUS_OM_DE) === 0;
+}
+
+/* Wat het achterlaat. Dezelfde machinerie als v23.133 voor opgezochte leeswoorden: een eigen rij in
+   S.mijn, een rij in WORDS zodat de kaartjes ergens uit kunnen putten, en een doosje 0 in de SRS.
+
+   Het verschil met v23.133 zit in het waarom, niet in de code: daar zocht je het woord zelf op, en
+   dat opzoeken is het bewijs dat je het wilde weten. Hier krijg je de uitdrukking aangereikt, en dan
+   is zeven keer vragen "wil je deze onthouden?" zeven keer dezelfde vraag. Dus gaan ze in één keer,
+   en staat er daarna wat er gebeurd is. */
+function musPlat(es){
+  return stripAcc(String(es || "").toLowerCase()).replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
+}
+/* v23.149, Stefan: "als het uitdrukkingen zijn niet meer dan 5 woorden dan kan het."
+
+   Gemeten over alle 92 oogstregels: 28 van één woord, 43 van twee, 12 van drie, 6 van vier, 3 van
+   vijf, nul erboven. Deze grens verandert vandaag dus niets. Hij staat er als regel voor wat er nog
+   bij komt, en niet als opruimactie.
+
+   Waarom vijf: langer dan dat is geen brokje meer maar een zin, en een zin op een kaartje vraagt
+   iets anders van je dan een uitdrukking. Zinnen maken doe je in het schrijfblok. */
+var MUS_MAX_WOORDEN = 5;
+function musTeLang(es){
+  return musPlat(es).split(" ").filter(Boolean).length > MUS_MAX_WOORDEN;
+}
+function musOogstDoel(o){
+  if(!o || !o.es || !o.nl) return null;
+  if(musTeLang(o.es)) return null;
+  var plat = musPlat(o.es);
+  if(!plat) return null;
+  return {id:mijnWoordId(plat), eigen:true, plat:plat, es:o.es, nl:o.nl};
+}
+function musOogstOpen(sg){
+  if(!sg || !sg.oogst) return [];
+  return sg.oogst.map(musOogstDoel).filter(function(d){ return d && !mijnHeeft(d); });
+}
+function musOogstBij(sg){
+  var open = musOogstOpen(sg), n = 0;
+  open.forEach(function(d){ if(mijnBij(d)) n++; });
+  if(sg && sg.id){
+    S.musKlaar = S.musKlaar || {};
+    S.musKlaar[sg.id] = today();
+    try { persist(); } catch(e){}
+  }
+  return n;
+}
+/* Zeg wat er gebeurt, niet hoe de machine heet (v23.139). Geen doosjes, geen SRS, geen "kaartjes":
+   je ziet ze terug, en wanneer. */
+function musOogstRegelHtml(sg){
+  var open = musOogstOpen(sg).length;
+  var totaal = (sg && sg.oogst && sg.oogst.length) || 0;
+  if(!totaal) return "";
+  if(!open){
+    return "<p class='muted' style='margin:8px 0 0'>"+
+      ct("Deze "+totaal+" uitdrukkingen staan al bij je woorden.",
+         "These "+totaal+" phrases are already in your words.")+"</p>";
+  }
+  return "<p class='muted' style='margin:8px 0 0'>"+
+      ct(open+" van deze uitdrukkingen "+(open === 1 ? "kun" : "kun")+" je bij je woorden zetten. Dan komen ze de komende dagen terug.",
+         "You can add "+open+" of these phrases to your words. Then they come back over the next days.")+"</p>"+
+    "<div class='row' style='margin-top:6px'><button class='ghost' id='btnMusOogst'>"+
+      ct("Bij mijn woorden","Add to my words")+"</button></div><div id='musOogstFb'></div>";
+}
+function musOogstWire(sg){
+  var b = document.getElementById("btnMusOogst");
+  if(!b) return;
+  b.onclick = function(){
+    var n = musOogstBij(sg);
+    var fb = document.getElementById("musOogstFb");
+    if(fb) fb.innerHTML = "<div class='feedback ok'>"+musOogstGedaanTxt(n)+"</div>";
+    b.disabled = true;
+  };
+}
+function musOogstGedaanTxt(n){
+  if(!n) return ct("Die stonden er al in.","Those were already in there.");
+  return ct(n+" "+(n === 1 ? "uitdrukking staat" : "uitdrukkingen staan")+" nu bij je woorden. Morgen zie je "+
+              (n === 1 ? "hem" : "ze")+" terug.",
+            n+" "+(n === 1 ? "phrase is" : "phrases are")+" now in your words. You'll see "+
+              (n === 1 ? "it" : "them")+" again tomorrow.");
+}
+
+/* ================= HET LIEDBLOK IN DRIE STAPPEN (v23.149) =================
+
+   Stefan: "hoe ga je me helpen met het liedje. Alleen het refrein. Meezingen of eerst alleen
+   luisteren?"
+
+   Eerst luisteren, dan pas meezingen. Meezingen met woorden die je niet begrijpt is een
+   uitspraakoefening en geen taaloefening: je maakt klanken na zonder betekenis, en er blijft niets
+   van staan. Andersom werkt wel.
+
+   En niet het hele lied maar de brokjes, want die neem je mee. Daarom staat er ook geen songtekst
+   in de app: het gaat om de zeven uitdrukkingen, en die stonden er al.
+
+     stap 1  luisteren     video + drie keer "welke van deze drie hoor je?", alleen Spaans
+     stap 2  de woorden    de oogst met de uitleg erbij
+     stap 3  meezingen     nog een keer, met de brokjes ernaast, en dan de vragen
+
+   De afleiders komen uit andere liedjes en zijn niet verzonnen: even echt, even lang, even moeilijk.
+   Dan gaat de vraag over wat je hoort en niet over welke er het gekst uitziet. */
+var MUS_HOOR_N = 3;        // hoeveel keer "welke hoor je?"
+var MUS_HOOR_OPTIES = 3;   // hoeveel keuzes per vraag
+var musStap = 1;
+var musHoorI = 0, musHoorGoed = 0;
+
+function musHoorRij(sg){
+  if(!sg || !sg.oogst) return [];
+  /* Vast per lied en niet per klik: wie halverwege terugbladert hoort niet ineens andere brokjes.
+     Alleen brokjes van twee woorden of meer, want één woord is in een lied niet te horen als keuze. */
+  var eigen = sg.oogst.filter(function(o){ return musPlat(o.es).split(" ").filter(Boolean).length >= 2; });
+  if(eigen.length < 2) eigen = sg.oogst.slice();
+  var vreemd = [];
+  musLijst().forEach(function(ander){
+    if(ander.id === sg.id) return;
+    (ander.oogst || []).forEach(function(o){
+      if(musPlat(o.es).split(" ").filter(Boolean).length < 2) return;
+      vreemd.push(o.es);
+    });
+  });
+  var rij = [], i, j, h;
+  for(i = 0; i < Math.min(MUS_HOOR_N, eigen.length); i++){
+    h = dayHash(sg.id + "-hoor-" + i);
+    var goed = eigen[(h + i) % eigen.length].es;
+    var opties = [goed];
+    for(j = 0; j < MUS_HOOR_OPTIES - 1 && vreemd.length; j++){
+      var kand = vreemd[(h + j * 7 + i * 13) % vreemd.length];
+      if(opties.indexOf(kand) === -1) opties.push(kand);
+    }
+    // door elkaar, maar wel vast: dezelfde vraag geeft dezelfde volgorde
+    opties.sort(function(a, b){ return ((h + a.length) % 7) - ((h + b.length) % 7); });
+    rij.push({goed:goed, opties:opties});
+  }
+  return rij;
+}
+
+function musStapKop(sg){
+  var namen = [ct("Luisteren","Listen"), ct("De woorden erbij","The words"), ct("Meezingen","Sing along")];
+  var h = "<div class='card'><span class='kicker'>"+
+    ct("Stap ","Step ")+musStap+"/3 \u00b7 "+namen[musStap - 1]+"</span>";
+  if(musStap === 1){
+    h += "<p style='margin:4px 0'>"+ct("Luister eerst. Je hoeft nog niet te snappen wat er staat: je hoeft alleen te horen wat er staat.",
+                                       "Listen first. You don't have to understand yet: you only have to hear what is there.")+"</p>";
+  } else if(musStap === 2){
+    h += "<p style='margin:4px 0'>"+ct("Deze uitdrukkingen kwamen net langs. Nu de betekenis erbij.",
+                                       "These phrases just went past. Now the meaning.")+"</p>";
+  } else {
+    h += "<p style='margin:4px 0'>"+ct("Nu weet je wat er staat. Zet hem nog een keer aan en zing deze stukjes mee als ze langskomen. Hard mag.",
+                                       "Now you know what it says. Play it once more and sing these bits along when they come by. Loudly is fine.")+"</p>";
+  }
+  return h + "</div>";
+}
+
+function musHoorHtml(sg){
+  var rij = musHoorRij(sg);
+  if(!rij.length) return "<div class='card'><div class='row'><button class='primary' id='btnMusStap2'>"+
+    ct("Verder \u2192","Continue \u2192")+"</button></div></div>";
+  if(musHoorI >= rij.length){
+    return "<div class='card'><div class='feedback "+(musHoorGoed === rij.length ? "ok" : "bijna")+"'>"+
+      musHoorGoed+"/"+rij.length+" "+ct("gehoord","heard")+"</div>"+
+      "<div class='row' style='margin-top:8px'><button class='primary' id='btnMusStap2'>"+
+        ct("Wat betekenen ze? \u2192","What do they mean? \u2192")+"</button></div></div>";
+  }
+  var v = rij[musHoorI];
+  var h = "<div class='card'><p><b>"+(musHoorI + 1)+"/"+rij.length+" \u00b7 "+
+    ct("Welke van deze drie hoor je in het lied?","Which of these three do you hear in the song?")+"</b></p>";
+  v.opties.forEach(function(o, i){ h += "<button class='opt es' data-hoor='"+i+"'>"+o+"</button>"; });
+  return h + "<div id='musHoorFb'></div></div>";
+}
+
+function musHoorWire(sg){
+  var rij = musHoorRij(sg);
+  var v = rij[musHoorI];
+  var wrap = document.getElementById("songView");
+  if(!wrap) return;
+  var door = document.getElementById("btnMusStap2");
+  if(door) door.onclick = function(){ musStap = 2; openSong(sg, true); };
+  if(!v) return;
+  wrap.querySelectorAll("[data-hoor]").forEach(function(b){
+    b.onclick = function(){
+      var gekozen = v.opties[+b.getAttribute("data-hoor")];
+      var goed = gekozen === v.goed;
+      wrap.querySelectorAll("[data-hoor]").forEach(function(x){
+        if(v.opties[+x.getAttribute("data-hoor")] === v.goed) x.classList.add("correct");
+      });
+      if(!goed) b.classList.add("wrong");
+      if(goed) musHoorGoed++;
+      addXP(goed ? 2 : 1);
+      document.getElementById("musHoorFb").innerHTML =
+        "<div class='row' style='margin-top:8px'><button class='primary' id='btnMusHoorNext'>"+
+          ct("Volgende \u2192","Next \u2192")+"</button></div>";
+      document.getElementById("btnMusHoorNext").onclick = function(){
+        musHoorI++; openSong(sg, true);
+      };
+    };
+  });
+}
+
 function songWoordenLijst(){
   var out = [];
   if(typeof SONGS === "undefined") return out;
@@ -24576,410 +25022,18 @@ function escChispaMini(){
     "</g>";
 }
 
-/* ================= AVENTURA (Zelda-achtige mini-RPG) ================= */
-var AVT_TXT = {
- nl:{kop:"Aventura 🗺️", kies:"Kies je wereld:", slot:"nog op slot: eerst La Costa uitspelen", binnenkort:"binnenkort",
-     verder:"▶ Spelen", reset:"opnieuw beginnen", terug:"← Speeltuin", kaartTerug:"← Werelden",
-     missie:"Versla alle Olvidos (vergeet-monstertjes) en bevrijd het strand. Loop met de pijltjes, raak een monster aan om te vechten.",
-     olvidos:"Olvidos", vraagNaar:"Hoe zeg je dit in het Spaans?", vraagVan:"Wat betekent dit?",
-     hint:"🔍 Lupa", tapaKnop:"🫒 tapa = +1 ❤️", vlucht:"🏃 Vluchten",
-     raak:"¡Toma! Rake klap!", weg:"Poef! De Olvido lost op in zeeschuim ✨", fout:"Au! Dat was: ",
-     moe:"Chispa is uitgeput... even puffen op het startpunt van dit scherm.",
-     kist:"¡La Lupa Mágica! Vanaf nu heb je een hint-knop in gevechten 🔍",
-     deurDicht:"De tempeldeur zit dicht. Er dwalen nog Olvidos rond: ", deurOpen:"Je hoort gerommel... de tempeldeur is open! 🚪",
-     baasNaam:"El Olvido Gigante", baasIntro:"Het monster dat woorden laat vergeten. Versla hem met wat je geleerd hebt!",
-     gewonnen:"¡VICTORIA!", gewonnenSub:"La Costa is bevrijd. Chispa krijgt 3 tapas en eeuwige roem.",
-     volgende:"El Pueblo (A1) opent in een volgende update...", geluidAan:"🔊", geluidUit:"🔇",
-     tienda:"La Tienda de la Playa", tiendaSub:"Het strandwinkeltje van Mamá Iguana. Betaal met monedas (🪙) van verslagen Olvidos.",
-     koopTapa:"🫒 Tapa", koopHart:"❤️ Extra hartcontainer", koopSombrero:"🎩 Sombrero voor Chispa", koopAmulet:"🔮 Amuleto del Recuerdo",
-     amuletUitleg:"redt je één keer met volle hartjes als je K.O. gaat", gekocht:"✓ gekocht", verder2:"Verder winkelen? Loop gerust nog eens langs!",
-     pesca:"El Pescador", pescaVraag:"¡Amigo! Vertaal deze zin voor me, dan deel ik mijn monedas:",
-     pescaGoed:"¡Perfecto! Hier, je verdiende monedas.", pescaFout:"Mmm, het was: ", pescaTyp:"Typ hem nu zelf goed over, dan krijg je nog de helft.",
-     pescaKlaar:"De pescador neuriet tevreden. Morgen heeft hij een nieuwe zin voor je.",
-     marea:"🌊 La Marea! Het getij bracht sterkere Olvidos terug. Deze schrijf je: typen dus!",
-     mareaUitleg:"🌊 Elke dag brengt de vloed elite-Olvidos terug: die versla je door de woorden te schríjven. En de Gigante wil dagelijks een revancha.",
-     schrijf:"Schrijf het in het Spaans:", check:"Check ✓", racha:"¡Racha! 🔥 dubbele monedas",
-     conchaGevonden:"Een schelp! +2 🪙", conchasAlle:"Alle schelpen gevonden! De zee beloont je: +15 🪙",
-     rotsHint:"Deze rots is gebarsten... Met een bomba krijg je hem open. Ergens ligt een kist met eentje, en Mamá Iguana verkoopt ze in de tienda. 💣",
-     rotsBom:"Gebarsten rots! Druk op de knop 💣 Bom leggen.",
-     casaKlaar:"De bewoners geven je een zakje monedas! +5 🪙", casaMorgen:"Vandaag heb je hier al geweest... kom morgen terug voor nieuwe monedas!",
-     naarKaart:"⬅︎ kaart",
-     slotA1:"eerst La Costa bevrijden", baasNaam2:"El Olvido Sabio", baasIntro2:"De geleerde onder de Olvidos. Hij toetst je A1-grammatica!",
-     gewonnenSub2:"El Pueblo is bevrijd. De klokken luiden voor Chispa: 3 tapas!", volgende2:"El Bosque (A2) opent in een volgende update...",
-     taq:"La Taquería", taqDoel:"Eet minstens 8 taco's zonder jezelf of de muur te raken!", taqDood:"Auw! Dat waren er", taqWin:"¡Qué rico! Doel gehaald:", taqBeloning:"+6 🪙 (dagbeloning)", taqNog:"Otra vez 🌮", taqRecord:"récord",
-     biblio:"La Biblioteca", biblioSub:"Het kruiswoord van de bibliothecaris: jouw geleerde woorden, kriskras door elkaar.", kruisKies:"Kies een omschrijving en typ het Spaanse woord:",
-     kruisGoed:"¡Exacto!", kruisFout:"Nee... kijk nog eens goed.", kruisKlaar:"Kruiswoord opgelost!", kruisBeloning:"+5 🪙 (dagbeloning)",
-     llaveCamp:"🗝️ ¡La Llave del Campanario! De kerkdeur kan nu open.", kruisNieuw:"Nieuw kruiswoord", kruisWeinig:"Leer eerst wat meer woordjes voor een kruiswoord!",
-     questVraag:"Mamá Iguana: \"Sin pescado fresco geen taco especial... El Pescador aan de kust van Las Dunas heeft vast wat voor je!\"",
-     questPescado:"El Pescador geeft je una caja de pescado fresco 🐟. Breng hem naar La Taquería in El Pueblo!",
-     questKlaar:"🌮✨ ¡El Taco Especial! Mamá Iguana is dolblij met de vis: +15 🪙 en +2 tapas!",
-     wereldOverloop:"Je wandelt verder langs de kust...",
-     morgenSlot:"⏳ opent morgen! Kom dan terug.", eerstVersla:"versla eerst",
-     volgendeMorgen:"🌙 Kom morgen terug: dan opent", eindtitel:"¡CAMPEÓN DE LA MEMORIA!",
-     eindSub:"Je hebt alle vier de werelden bevrijd. El Gran Olvido is verslagen: wat jij geleerd hebt, raakt niemand meer kwijt. +5 tapas en +25 monedas!",
-     eindDaarna:"De werelden blijven open: elke dag nieuwe mareas, revanchas en dagklusjes. En Chispa? Die is trots.",
-     lenIntro:"El Leñador: \"Mi puente is kapot... Breng me 3 setas mágicas 🍄 uit het bos, dan bouw ik hem voor je!\"",
-     lenBezig:"El Leñador: \"Nog niet genoeg setas... je hebt er\"", lenKlaar:"El Leñador timmert de brug! 🌉 De weg over de río is open.",
-     lenGroet:"El Leñador zwaait: \"¡Buen camino, amigo!\"", setaGevonden:"Una seta mágica! 🍄",
-     brugKapot:"De brug is kapot... El Leñador op El Sendero kan vast helpen. 🪓",
-     ahor:"El Ahorcado", ahorSub:"Raad je woord letter voor letter, vóór de Olvido-mist Chispa bereikt. 3 goede woorden = beloning!",
-     ahorGoed:"¡Palabra completa!", ahorFout:"De mist heeft Chispa bereikt... het woord was:", ahorNieuw:"Nieuw woord", ahorReeks:"woorden goed",
-     llaveClaro:"🗝️ ¡La Llave del Claro! De weg naar La Guarida is open.",
-     guardianes:"Guardianes", baasNaam3:"La Loba del Tiempo", baasIntro3:"De wolvin die je verleden tijd opeet. A2-grammatica!",
-     baasNaam4:"El Gran Olvido", baasIntro4:"De laatste. Alles wat je ooit leerde, wil hij terug. Alle grammatica door elkaar!",
-     gewonnenSub3:"El Bosque is bevrijd. De wolven huilen voor Chispa: 3 tapas!", gewonnenSub4:"",
-     volgende3:"El Castillo (B1) wacht...", zinVertaal:"Vertaal de zin:",
-     volgendeOpen:"🎉 De poort is open! Je kunt meteen door naar", verderKnop:"▶ Verder waar je was", nieuwSpel:"↺ Nieuw spel",
-     cronNaam:"El Cronista", cronIntro:"De oude schildpad schrijft jouw kroniek. Bevrijde werelden blijven vrij: bij hem kies je zélf je uitdagingen.",
-     cronUitleg:"🐢 Bevrijde werelden blijven vrij. Bezoek El Cronista voor je kroniek, heroefening en dagelijkse uitdagingen.",
-     cronKroniek:"Jouw kroniek", cronBevrijd:"bevrijd op", cronVerslagen:"Olvidos verslagen", cronVeroverd:"Veroverd (zit goed)", cronHard:"Hardnekkige vijanden",
-     cronOefen:"🐢 Oefen je hardnekkige 5", cronOefenSub:"+5 🪙 per dag", cronSchrijf:"Schrijf het in het Spaans:",
-     cronGoed:"¡Bien! De Cronista knikt.", cronFout:"De Cronista schrijft op:", cronKlaarTxt:"De Cronista sluit zijn boek:",
-     cronBeloning:"+5 🪙", cronMorgen:"morgen weer", cronGeen:"Nog geen hardnekkige vijanden. ¡Muy bien!",
-     bord:"Uitdagingsbord", bordMarea:"🌊 Roep de marea op", bordMareaSub:"elite-Olvidos keren terug in deze wereld (schrijven!)",
-     bordRev:"⚔️ Baas-revancha", bordRevSub:"vecht opnieuw in de arena (+10 🪙)", bordKlaar:"✅ Uitdaging volbracht! De wereld is weer vrij. +5 🪙",
-     cronTeaser:"🐢 Er is iemand verschenen bij het beginpunt van deze wereld...",
-     ookGoed:"Ook goed:", vormTip:"({o} bij mannelijke, {a} bij vrouwelijke woorden)",
-     gramVraag:"De Gramático overhoort:",
-     zekerWeten:"Zeker weten? Dit wist AL je Aventura-voortgang. Tik nogmaals om te wissen.",
-     accent:"Goed! Maar let op de accenten: ", amuletRedt:"🔮 Het amulet gloeit op... Chispa herinnert zich alles! Volle hartjes.",
-     revWin:"¡Revancha gewonnen! +10 🪙 en +1 🫒",
-     koopBom:"💣 Bomba", bomUitleg:"blaast gebarsten rotsen op", bommen:"bommen",
-     bomGevonden:"💣 Een bomba! Zie je ergens een rots met een barst? Ga ernaast staan...", bomLeg:"💣 Bom leggen",
-     boom:"¡BOOM! De rots splijt open... er zit een grot achter! 🕳️",
-     sleutelNodig:"De deur zit op slot. Er is een sleutelgat... ergens moet la Llave del Templo liggen. 🗝️",
-     llaveGevonden:"🗝️ ¡La Llave del Templo! Nu nog alle Olvidos verslaan, dan kan de deur open.",
-     cueva:"La Cueva Secreta"},
- en:{kop:"Aventura 🗺️", kies:"Choose your world:", slot:"locked: finish La Costa first", binnenkort:"coming soon",
-     verder:"▶ Play", reset:"start over", terug:"← Playground", kaartTerug:"← Worlds",
-     missie:"Defeat all Olvidos (forget-monsters) and free the beach. Walk with the arrows, touch a monster to fight.",
-     olvidos:"Olvidos", vraagNaar:"How do you say this in Spanish?", vraagVan:"What does this mean?",
-     hint:"🔍 Lupa", tapaKnop:"🫒 tapa = +1 ❤️", vlucht:"🏃 Flee",
-     raak:"¡Toma! Direct hit!", weg:"Poof! The Olvido dissolves into sea foam ✨", fout:"Ouch! It was: ",
-     moe:"Chispa is exhausted... catching a breath at the start of this screen.",
-     kist:"¡La Lupa Mágica! From now on you have a hint button in battles 🔍",
-     deurDicht:"The temple door is closed. Olvidos still roam: ", deurOpen:"You hear a rumble... the temple door is open! 🚪",
-     baasNaam:"El Olvido Gigante", baasIntro:"The monster that makes words fade. Defeat it with what you've learned!",
-     gewonnen:"¡VICTORIA!", gewonnenSub:"La Costa is free. Chispa earns 3 tapas and eternal fame.",
-     volgende:"El Pueblo (A1) opens in a future update...", geluidAan:"🔊", geluidUit:"🔇",
-     tienda:"La Tienda de la Playa", tiendaSub:"Mamá Iguana's beach shop. Pay with monedas (🪙) from defeated Olvidos.",
-     koopTapa:"🫒 Tapa", koopHart:"❤️ Extra heart container", koopSombrero:"🎩 Sombrero for Chispa", koopAmulet:"🔮 Amuleto del Recuerdo",
-     amuletUitleg:"saves you once with full hearts when you're K.O.", gekocht:"✓ owned", verder2:"Come back any time!",
-     pesca:"El Pescador", pescaVraag:"¡Amigo! Translate this sentence for me and I'll share my monedas:",
-     pescaGoed:"¡Perfecto! Here, your well-earned monedas.", pescaFout:"Hmm, it was: ", pescaTyp:"Now type it correctly yourself for half the reward.",
-     pescaKlaar:"The pescador hums contentedly. Tomorrow he'll have a new sentence for you.",
-     marea:"🌊 La Marea! The tide brought back stronger Olvidos. These you must write: typing time!",
-     mareaUitleg:"🌊 Every day the tide returns elite Olvidos: defeat them by wríting the words. And the Gigante wants a daily rematch.",
-     schrijf:"Write it in Spanish:", check:"Check ✓", racha:"¡Racha! 🔥 double monedas",
-     conchaGevonden:"A shell! +2 🪙", conchasAlle:"All shells found! The sea rewards you: +15 🪙",
-     rotsHint:"This rock is cracked... A bomba would open it. There's a chest with one somewhere, and Mamá Iguana sells them in the tienda. 💣",
-     rotsBom:"Cracked rock! Press the 💣 Place bomb button.",
-     casaKlaar:"The residents hand you a pouch of monedas! +5 🪙", casaMorgen:"You have been here today already... come back tomorrow for more monedas!",
-     naarKaart:"⬅︎ map",
-     slotA1:"free La Costa first", baasNaam2:"El Olvido Sabio", baasIntro2:"The scholar among the Olvidos. He tests your A1 grammar!",
-     gewonnenSub2:"El Pueblo is free. The bells ring for Chispa: 3 tapas!", volgende2:"El Bosque (A2) opens in a future update...",
-     taq:"La Taquería", taqDoel:"Eat at least 8 tacos without hitting yourself or the wall!", taqDood:"Ouch! That was", taqWin:"¡Qué rico! Goal reached:", taqBeloning:"+6 🪙 (daily reward)", taqNog:"Otra vez 🌮", taqRecord:"record",
-     biblio:"La Biblioteca", biblioSub:"The librarian's crossword: your learned words, criss-crossed.", kruisKies:"Pick a clue and type the Spanish word:",
-     kruisGoed:"¡Exacto!", kruisFout:"No... look again.", kruisKlaar:"Crossword solved!", kruisBeloning:"+5 🪙 (daily reward)",
-     llaveCamp:"🗝️ ¡La Llave del Campanario! The church door can open now.", kruisNieuw:"New crossword", kruisWeinig:"Learn a few more words first for a crossword!",
-     questVraag:"Mamá Iguana: \"Sin pescado fresco no taco especial... El Pescador on the Las Dunas coast surely has some for you!\"",
-     questPescado:"El Pescador hands you una caja de pescado fresco 🐟. Bring it to La Taquería in El Pueblo!",
-     questKlaar:"🌮✨ ¡El Taco Especial! Mamá Iguana is thrilled with the fish: +15 🪙 and +2 tapas!",
-     wereldOverloop:"You walk on along the coast...",
-     morgenSlot:"⏳ opens tomorrow! Come back then.", eerstVersla:"first defeat",
-     volgendeMorgen:"🌙 Come back tomorrow: then we open", eindtitel:"¡CAMPEÓN DE LA MEMORIA!",
-     eindSub:"You freed all four worlds. El Gran Olvido is defeated: nothing you learned can be taken away. +5 tapas and +25 monedas!",
-     eindDaarna:"The worlds stay open: new mareas, rematches and daily jobs every day. And Chispa? Proud.",
-     lenIntro:"El Leñador: \"Mi puente is broken... Bring me 3 setas mágicas 🍄 from the forest and I'll build it for you!\"",
-     lenBezig:"El Leñador: \"Not enough setas yet... you have\"", lenKlaar:"El Leñador hammers the bridge together! 🌉 The way across the río is open.",
-     lenGroet:"El Leñador waves: \"¡Buen camino, amigo!\"", setaGevonden:"Una seta mágica! 🍄",
-     brugKapot:"The bridge is broken... El Leñador on El Sendero can surely help. 🪓",
-     ahor:"El Ahorcado", ahorSub:"Guess your word letter by letter before the Olvido fog reaches Chispa. 3 correct words = reward!",
-     ahorGoed:"¡Palabra completa!", ahorFout:"The fog reached Chispa... the word was:", ahorNieuw:"New word", ahorReeks:"words solved",
-     llaveClaro:"🗝️ ¡La Llave del Claro! The way to La Guarida is open.",
-     guardianes:"Guardianes", baasNaam3:"La Loba del Tiempo", baasIntro3:"The she-wolf who eats your past tenses. A2 grammar!",
-     baasNaam4:"El Gran Olvido", baasIntro4:"The last one. Everything you ever learned, he wants back. All grammar mixed!",
-     gewonnenSub3:"El Bosque is free. The wolves howl for Chispa: 3 tapas!", gewonnenSub4:"",
-     volgende3:"El Castillo (B1) awaits...", zinVertaal:"Translate the sentence:",
-     volgendeOpen:"🎉 The gate is open! You can continue straight to", verderKnop:"▶ Continue where you were", nieuwSpel:"↺ New game",
-     cronNaam:"El Cronista", cronIntro:"The old turtle writes your chronicle. Freed worlds stay free: with him you choose your own challenges.",
-     cronUitleg:"🐢 Freed worlds stay free. Visit El Cronista for your chronicle, focused practice and daily challenges.",
-     cronKroniek:"Your chronicle", cronBevrijd:"freed on", cronVerslagen:"Olvidos defeated", cronVeroverd:"Conquered (solid)", cronHard:"Stubborn enemies",
-     cronOefen:"🐢 Practise your stubborn 5", cronOefenSub:"+5 🪙 per day", cronSchrijf:"Write it in Spanish:",
-     cronGoed:"¡Bien! The Cronista nods.", cronFout:"The Cronista writes down:", cronKlaarTxt:"The Cronista closes his book:",
-     cronBeloning:"+5 🪙", cronMorgen:"again tomorrow", cronGeen:"No stubborn enemies yet. ¡Muy bien!",
-     bord:"Challenge board", bordMarea:"🌊 Summon the marea", bordMareaSub:"elite Olvidos return to this world (typing!)",
-     bordRev:"⚔️ Boss rematch", bordRevSub:"fight again in the arena (+10 🪙)", bordKlaar:"✅ Challenge complete! The world is free again. +5 🪙",
-     cronTeaser:"🐢 Someone has appeared at this world's starting point...",
-     ookGoed:"Also correct:", vormTip:"({o} with masculine, {a} with feminine words)",
-     gramVraag:"The Gramático quizzes you:",
-     zekerWeten:"Are you sure? This erases ALL your Aventura progress. Tap again to erase.",
-     accent:"Right! But mind the accents: ", amuletRedt:"🔮 The amulet glows... Chispa remembers everything! Full hearts.",
-     revWin:"¡Rematch won! +10 🪙 and +1 🫒",
-     koopBom:"💣 Bomba", bomUitleg:"blows up cracked rocks", bommen:"bombs",
-     bomGevonden:"💣 A bomba! Seen a rock with a crack somewhere? Go stand next to it...", bomLeg:"💣 Place bomb",
-     boom:"¡BOOM! The rock splits open... there's a cave behind it! 🕳️",
-     sleutelNodig:"The door is locked. There's a keyhole... la Llave del Templo must be somewhere. 🗝️",
-     llaveGevonden:"🗝️ ¡La Llave del Templo! Now defeat all Olvidos and the door will open.",
-     cueva:"La Cueva Secreta"}
-};
-function at(k){ var d = profLang() === "nl" ? AVT_TXT.nl : AVT_TXT.en; return d[k]; }
+/* ================= GELUID (v23.147, was de Aventura-motor) =================
 
-var AVT_WERELDEN = [
- {id:"a0", naam:"La Costa", nl:"A0 · het strand van je eerste woorden", en:"A0 · the beach of your first words", open:true},
- {id:"a1", naam:"El Pueblo", nl:"A1 · het witte dorp", en:"A1 · the white village", open:false},
- {id:"a2", naam:"El Bosque", nl:"A2 · het fluisterbos", en:"A2 · the whispering woods", open:false},
- {id:"b1", naam:"El Castillo", nl:"B1 · het kasteel van de tijden", en:"B1 · the castle of tenses", open:false}
-];
+   Aventura is er in v23.147 uitgegaan (2057 regels, geen enkel spoor van gebruik in 26 dagen). Twee
+   dingen uit dat blok bleven staan omdat de rest van de app ze gebruikt.
 
-/* kaart: 10x7 tegels van 40px — . zand  , gras  ~ water  P palm  R rots  C kist  T tempeldeur */
-var AVT_SCHERMEN = [
- {naam:"La Playa", grid:[
-   "~~~~~~~~~~",
-   "~~~...S...",
-   "~~........",
-   "..........",
-   "...P...R..",
-   "..........",
-   "~~~~~~~~~~"],
-  start:{x:1,y:3}, vijanden:[{t:"olvido",x:6,y:2}], exits:{rechts:1}, w:"a0"},
- {naam:"Las Dunas", grid:[
-   "~~~~..~~~~",
-   ".H..P.N...",
-   "..........",
-   "....R.....",
-   ".P......P.",
-   "........B.",
-   "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:3,y:5},{t:"cangrejo",x:7,y:2},{t:"gramatico",x:5,y:3}], exits:{links:0, rechts:2, boven:6}, casaScene:"cocina", w:"a0"},
- {naam:"El Palmar", grid:[
-   "~~~..~~~~~",
-   ".P..P...P.",
-   "..........",
-   "..R.H..C..",
-   "..........",
-   ".P....P...",
-   "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"cangrejo",x:2,y:4},{t:"pulpo",x:5,y:2},{t:"gramatico",x:3,y:2}], exits:{links:1, rechts:3, boven:7}, casaScene:"jardin", w:"a0"},
- {naam:"Las Rocas", grid:[
-   "~~~~~~~~~~",
-   "...R....T.",
-   "..K.......",
-   "..........",
-   "....R.R...",
-   "..........",
-   "~~~~~~~~~~"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:3},{t:"cangrejo",x:5,y:5},{t:"pulpo",x:7,y:3}], exits:{links:2, rechts:8}, arena:4, w:"a0"},
- {naam:"El Templo", grid:[
-   "RRRRRRRRRR",
-   "R........R",
-   "R........R",
-   "R........R",
-   "R........R",
-   "R........R",
-   "RRRRRRRRRR"],
-  start:{x:4,y:5}, vijanden:[], baas:true, w:"a0"},
- {naam:"La Cueva Secreta", grid:[
-   "GGGGGGGGGG",
-   "GggggggggG",
-   "GggGGgggLG",
-   "GggggggggG",
-   "GGgggGGggG",
-   "GggggUgggG",
-   "GGGGGGGGGG"],
-  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:7,y:3}], w:"a0"},
- {naam:"El Faro", grid:[
-   "~~~~~~~~~~",
-   "....F.....",
-   "..........",
-   ".R......P.",
-   "..........",
-   "..........",
-   "~~~~..~~~~"],
-  start:{x:4,y:5}, vijanden:[{t:"olvido",x:2,y:2},{t:"cangrejo",x:7,y:4}], exits:{onder:1, rechts:7}, casaScene:"salon", w:"a0"},
- {naam:"Los Acantilados", grid:[
-   "~~~~~~~~~~",
-   ".R.....R..",
-   "........H.",
-   "...P......",
-   "..R....R..",
-   "..........",
-   "~~~..~~~~~"],
-  start:{x:3,y:5}, vijanden:[{t:"pulpo",x:6,y:2},{t:"olvido",x:4,y:4}], exits:{links:6, onder:2}, casaScene:"super", w:"a0"},
- {naam:"La Plaza", grid:[
-   "xxxxxxxxxx",
-   "x,,,,,,,,x",
-   "x,,O,,Q,,x",
-   ",,,,,,,,,,",
-   "x,,,,,,,,x",
-   "x,,,,,,,,x",
-   "xxxx,,xxxx"],
-  start:{x:1,y:3}, vijanden:[{t:"olvido",x:5,y:4},{t:"pulpo",x:7,y:5}], exits:{links:3, rechts:9, onder:10}, w:"a1"},
- {naam:"La Calle Mayor", grid:[
-   "xxxx,,xxxx",
-   "x,,,,,,,,x",
-   "x,W,,x,,,x",
-   ",,,,,,,,,x",
-   "x,x,,,,x,x",
-   "x,,,,,,,,x",
-   "xxxx,,xxxx"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:6,y:1},{t:"cangrejo",x:3,y:5},{t:"olvido",x:7,y:3},{t:"gramatico",x:5,y:5}], exits:{links:8, onder:11, boven:13}, w:"a1"},
- {naam:"El Mercado", grid:[
-   "xxxx,,xxxx",
-   "x,,,,,,,,x",
-   "x,S,,x,,,x",
-   "x,,,,,,,,,",
-   "x,x,,,x,,x",
-   "x,,,,,,,,x",
-   "xxxxxxxxxx"],
-  start:{x:4,y:1}, vijanden:[{t:"pulpo",x:6,y:4},{t:"olvido",x:4,y:1},{t:"gramatico",x:7,y:1}], exits:{boven:8, rechts:11}, w:"a1"},
- {naam:"La Iglesia", grid:[
-   "xxxx,,xxxx",
-   "x,,,,,,,,x",
-   "x,,xTx,,,x",
-   ",,,,,,,,,x",
-   "x,,,,,,,,x",
-   "x,,,,,,,,x",
-   "xxxxxxxxxx"],
-  start:{x:4,y:1}, vijanden:[{t:"olvido",x:6,y:4},{t:"cangrejo",x:2,y:5},{t:"pulpo",x:7,y:1}], exits:{links:10, boven:9}, arena:12, w:"a1"},
- {naam:"El Campanario", grid:[
-   "GGGGGGGGGG",
-   "G........G",
-   "G........G",
-   "G........G",
-   "G........G",
-   "G........G",
-   "GGGGGGGGGG"],
-  start:{x:4,y:5}, vijanden:[], baas:true, w:"a1"},
- {naam:"La Entrada del Bosque", grid:[
-   "AAAAAAAAAA",
-   "AbbbbbbbDA",
-   "AbbAAbbbbA",
-   "Abbbbbbbbb",
-   "AbAbbAbbbA",
-   "AbbbbbbbbA",
-   "AAAAbbAAAA"],
-  start:{x:4,y:5}, vijanden:[{t:"lobo",x:6,y:2},{t:"olvido",x:2,y:4}], exits:{onder:9, rechts:14}, w:"a2"},
- {naam:"El Sendero", grid:[
-   "AAAAAAAAAA",
-   "AbbbbAbbbA",
-   "AbMbbbbbbA",
-   "bbbbbbbbbb",
-   "AbbAbbAbbA",
-   "AbbbbDbbbA",
-   "AAAAAAAAAA"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:4,y:1},{t:"lobo",x:7,y:4},{t:"gramatico",x:8,y:2}], exits:{links:13, rechts:15}, w:"a2"},
- {naam:"El Río", grid:[
-   "AAAAAAAAAA",
-   "Abbb~bbbbA",
-   "AbDb~bbbbA",
-   "bbbb=bbbbb",
-   "Abbb~bbAbA",
-   "Abbb~bbbbA",
-   "AAAAAAAAAA"],
-  start:{x:0,y:3}, vijanden:[{t:"olvido",x:2,y:4},{t:"lobo",x:7,y:2},{t:"olvido",x:7,y:5}], exits:{links:14, rechts:16}, w:"a2"},
- {naam:"El Claro Oscuro", grid:[
-   "AAAAbbAAAA",
-   "AbbbbbbJbA",
-   "AbbAbbbbbA",
-   "bbbbbbbbbA",
-   "AbbbbAbbTA",
-   "AbbbbbbbbA",
-   "AAAAAAAAAA"],
-  start:{x:0,y:3}, vijanden:[{t:"lobo",x:3,y:5},{t:"lobo",x:5,y:2},{t:"olvido",x:6,y:3},{t:"gramatico",x:2,y:5}], exits:{links:15, boven:18}, arena:17, w:"a2"},
- {naam:"La Guarida", grid:[
-   "GGGGGGGGGG",
-   "G........G",
-   "G........G",
-   "G........G",
-   "G........G",
-   "G........G",
-   "GGGGGGGGGG"],
-  start:{x:4,y:5}, vijanden:[], baas:true, w:"a2"},
- {naam:"El Puente Levadizo", grid:[
-   "GGGGggGGGG",
-   "G~~~gg~~~G",
-   "G~~~gg~~~G",
-   "GggggggggG",
-   "G~~~gg~~~G",
-   "G~~~gg~~~G",
-   "GGGGggGGGG"],
-  start:{x:4,y:5}, vijanden:[{t:"guardian",x:2,y:3},{t:"olvido",x:7,y:3}], exits:{onder:16, boven:19}, w:"b1"},
- {naam:"El Patio", grid:[
-   "GGGGGGGGGG",
-   "GggggggggG",
-   "GggGGggggG",
-   "Gggggggggg",
-   "GggGGggggG",
-   "GggggggggG",
-   "GGGGggGGGG"],
-  start:{x:4,y:5}, vijanden:[{t:"guardian",x:6,y:1},{t:"lobo",x:3,y:5},{t:"olvido",x:7,y:4},{t:"gramatico",x:5,y:1}], exits:{onder:18, rechts:20}, w:"b1"},
- {naam:"La Torre", grid:[
-   "GGGGGGGGGG",
-   "GggggggggG",
-   "GggGTGgggG",
-   "gggggggggG",
-   "GggGGggggG",
-   "GggggggggG",
-   "GGGGGGGGGG"],
-  start:{x:0,y:3}, vijanden:[{t:"guardian",x:7,y:4},{t:"lobo",x:2,y:4}], exits:{links:19}, arena:21, w:"b1"},
- {naam:"El Trono", grid:[
-   "GGGGGGGGGG",
-   "G........G",
-   "G........G",
-   "G........G",
-   "G........G",
-   "G........G",
-   "GGGGGGGGGG"],
-  start:{x:4,y:5}, vijanden:[], baas:true, w:"b1"}
-];
-var AVT_CONCHAS = [{s:0,x:8,y:5},{s:1,x:1,y:1},{s:2,x:9,y:4},{s:3,x:4,y:3},{s:4,x:8,y:4},{s:6,x:8,y:1},{s:7,x:1,y:5},{s:8,x:8,y:5},{s:9,x:1,y:5},{s:10,x:8,y:1},{s:11,x:1,y:4},{s:13,x:1,y:5},{s:16,x:1,y:5},{s:19,x:1,y:1},{s:20,x:8,y:5}];
-var AVT_TYPES = {
-  olvido:  {es:"el Olvido",  hp:1, nl:"vergeet-monstertje", en:"forget-monster"},
-  cangrejo:{es:"el Cangrejo Confuso", hp:1, nl:"verwarde krab", en:"confused crab"},
-  pulpo:   {es:"el Pulpo Olvidón", hp:2, nl:"vergeetachtige octopus", en:"forgetful octopus"},
-  lobo:    {es:"el Lobo del Olvido", hp:2, nl:"vergeet-wolf", en:"forget-wolf"},
-  guardian:{es:"el Guardián del Sello", hp:3, nl:"zegelwachter (schrijven!)", en:"seal guardian (typing!)"},
-  gramatico:{es:"el Olvido Gramático", hp:2, nl:"grammatica-overhoorder", en:"grammar quizzer"}
-};
-var AVT_BAAS_VRAGEN = [
- {q:"Yo ___ Chispa.", o:["soy","estoy","es"], a:0, u:"soy: wie je bent → ser"},
- {q:"___ playa", o:["la","el"], a:0, u:"playa is vrouwelijk: la playa"},
- {q:"¿Cómo ___ llamas?", o:["te","me","se"], a:0, u:"¿Cómo te llamas? = hoe heet jij?"},
- {q:"Nosotros ___ de Holanda.", o:["somos","estamos","sois"], a:0, u:"herkomst → ser: somos"},
- {q:"En la mesa ___ un libro.", o:["hay","está","es"], a:0, u:"er is/er staat → hay"},
- {q:"¿Dónde ___ Madrid?", o:["está","hay","es"], a:0, u:"plaats van iets bekends → estar"},
- {q:"___ problema", o:["el","la"], a:0, u:"instinker: el problema (mannelijk)"},
- {q:"Ella ___ veinte años.", o:["tiene","es","hay"], a:0, u:"leeftijd → tener: tiene ... años"},
- {q:"¿___ tal?", o:["Qué","Cómo","Cuál"], a:0, u:"¿Qué tal? = hoe gaat het?"},
- {q:"quince =", o:["15","5","50"], a:0, u:"quince = 15 (cinco 5, cincuenta 50)"}
-];
+   Dit is het eerste: de geluidsmotor. Chispa's serenade en de ritmes op de muziekpagina draaien
+   erop. De namen beginnen nog met avt en dat is met opzet zo gelaten: ze zitten in twintig
+   aanroepen verderop en in S.avtStil, dat op ieders toestel staat opgeslagen. Een naam veranderen
+   die niemand ziet is risico zonder opbrengst; deze regel is de uitleg die de naam mist.
 
-var AVT_BAAS2_VRAGEN = [
- {q:"Me ___ las tapas.", o:["gustan","gusta","gustas"], a:0, u:"meervoud (las tapas) → gustan"},
- {q:"___ hermana se llama Ana.", o:["Mi","Mis","Yo"], a:0, u:"één zus → mi (mis = meervoud)"},
- {q:"¿___ hora es?", o:["Qué","Cuál","Cómo"], a:0, u:"¿Qué hora es? = hoe laat is het?"},
- {q:"Yo ___ ir a la playa.", o:["quiero","quiere","queremos"], a:0, u:"querer: yo quiero (e→ie)"},
- {q:"Nosotros ___ al cine.", o:["vamos","van","voy"], a:0, u:"ir: voy, vas, va, vamos"},
- {q:"Son ___ tres. (15:00)", o:["las","los","la"], a:0, u:"uren zijn vrouwelijk: son las tres"},
- {q:"¿___ te levantas?", o:["A qué hora","Qué hora","Cuándo es"], a:0, u:"a qué hora = hoe laat (tijdstip)"},
- {q:"Tengo ___ estudiar.", o:["que","de","a"], a:0, u:"tener que + infinitief = moeten"},
- {q:"Ella no ___ venir hoy.", o:["puede","puedo","podemos"], a:0, u:"poder: o→ue, ella puede"},
- {q:"A Juan ___ gustan los perros.", o:["le","me","te"], a:0, u:"aan hem → le gustan"}
-];
-var AVT_BAAS3_VRAGEN = [
- {q:"Ayer ___ a la playa.", o:["fui","he ido","voy"], a:0, u:"ayer (afgesloten verleden) → indefinido: fui"},
- {q:"Hoy ___ mucho.", o:["he trabajado","trabajé","trabajo"], a:0, u:"hoy (nog open) → perfecto: he trabajado"},
- {q:"¿Has estado ___ en Madrid?", o:["alguna vez","ayer","anoche"], a:0, u:"alguna vez hoort bij het perfecto"},
- {q:"Mañana voy ___ estudiar.", o:["a","de","que"], a:0, u:"ir a + infinitief = gaan doen"},
- {q:"Me duele ___ cabeza.", o:["la","mi","el"], a:0, u:"doler + lidwoord: me duele la cabeza"},
- {q:"El AVE es ___ rápido que el bus.", o:["más","muy","tan"], a:0, u:"vergelijken: más ... que"},
- {q:"¿Las naranjas? ___ compré en el mercado.", o:["Las","Los","Les"], a:0, u:"lijdend voorwerp v. mv. → las"},
- {q:"Anoche no ___ nada.", o:["dormí","he dormido","duermo"], a:0, u:"anoche → indefinido: dormí"},
- {q:"¿Un café? — No, ya ___ tomado uno.", o:["he","ha","había"], a:0, u:"ya + perfecto: ya he tomado"},
- {q:"Toma la primera calle ___ la derecha.", o:["a","en","por"], a:0, u:"a la derecha = rechtsaf"}
-];
-/* ---- audio: chiptune + sfx via WebAudio, geen bestanden nodig ---- */
+   Wat wel is weggehaald: van de negen geluidjes in avtSfx bleven er drie over. Hart, kist, stap,
+   encuentro, boom en baas hoorden bij het gevecht en dat gevecht is er niet meer. */
 var avtAC = null, avtMuziekTimer = null, avtMuziekFrase = 0;
 function avtCtx(){
   try{
@@ -25040,9 +25094,8 @@ var AVT_CADENS = [
 ];
 var AVT_FALSETA = [659.26,587.33,523.25,493.88,440,415.30,349.23,329.63];
 function avtMuziekStap(){
-  if(funView !== "avt" || !avt || avt.victory){ avtMuziekStop(); return; }
   var ac = avtCtx(); if(!ac){ return; }
-  var acht = (avt.gevecht && avt.gevecht.baas) ? 0.125 : 0.165;
+  var acht = 0.165;
   var t0 = ac.currentTime + 0.05;
   var falseta = avtMuziekFrase % 2 === 1;
   AVT_CADENS.forEach(function(bar, b){
@@ -25070,612 +25123,27 @@ function avtSfx(naam){
   var t = ac.currentTime + 0.02;
   if(naam === "goed"){ avtPluk(AVT_N.A4,t,0.18,0.10); avtPluk(659.26,t+0.07,0.28,0.10); }
   if(naam === "fout"){ avtNoot(110,t,0.28,"sawtooth",0.07); avtNoot(103.8,t+0.05,0.25,"sawtooth",0.05); }
-  if(naam === "hart"){ avtNoot(AVT_N.C4,t,0.12,"triangle",0.08); avtNoot(AVT_N.A3,t+0.13,0.2,"triangle",0.08); }
-  if(naam === "kist"){ [AVT_N.A3,AVT_N.E4,AVT_N.A4,523.25,659.26].forEach(function(f,i){ avtPluk(f,t+i*0.045,0.35,0.08); }); }
-  if(naam === "stap"){ avtNoot(196,t,0.04,"square",0.015); }
-  if(naam === "encuentro"){ avtNoot(AVT_N.E3,t,0.12,"square",0.06); avtNoot(AVT_N.F3,t+0.12,0.22,"square",0.06); }
-  if(naam === "boom"){
-    try{
-      var nb = Math.floor(ac.sampleRate * 0.4);
-      var buf2 = ac.createBuffer(1, nb, ac.sampleRate);
-      var d2 = buf2.getChannelData(0);
-      for(var bi=0;bi<nb;bi++){ d2[bi] = (Math.random()*2 - 1) * Math.pow(1 - bi/nb, 1.5); }
-      var s2 = ac.createBufferSource(); s2.buffer = buf2;
-      var lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 420;
-      var g2 = ac.createGain(); g2.gain.value = 0.28;
-      s2.connect(lp); lp.connect(g2); g2.connect(ac.destination); s2.start(t);
-      avtNoot(55, t, 0.5, "sine", 0.2);
-    }catch(e){}
-  }
   if(naam === "win"){ [AVT_N.E4,AVT_N.Gs4,AVT_N.B3,AVT_N.A4,523.25,659.26,880].forEach(function(f,i){ avtPluk(f,t+i*0.11,0.3,0.09); avtPluk(f/2,t+i*0.11,0.35,0.07); }); avtPalmas(t+0.77,0.12); avtPalmas(t+0.99,0.12); }
-  if(naam === "baas"){ avtNoot(AVT_N.E2,t,0.5,"sawtooth",0.08); avtNoot(AVT_N.F2,t+0.5,0.5,"sawtooth",0.08); avtNoot(AVT_N.E2,t+1.0,0.7,"sawtooth",0.09); }
 }
 
-/* ---- savegame + runtime ---- */
-var avtWereld = "a0";
-var AVT_START = {a0:0, a1:8, a2:13, b1:18};
-function avtSaveVan(wid){
-  if(!S.avt) S.avt = {};
-  if(!S.avt[wid]){
-    var st0 = AVT_SCHERMEN[AVT_START[wid] || 0].start;
-    S.avt[wid] = {scherm:(AVT_START[wid] || 0), x:st0.x, y:st0.y, harten:3, dood:{}, kist:false, lupa:false, klaar:false};
-  }
-  var a = S.avt[wid];
-  if(!a.maxHarten) a.maxHarten = 3;
-  if(!a.conchas) a.conchas = {};
-  if(a.klaar && !a.klaarDag) a.klaarDag = addDays(today(), -1);
-  return a;
-}
-var AVT_VOLGORDE = ["a0","a1","a2","b1"];
-function avtWereldOpen(wid){
-  if(wid === "a0") return true;
-  var vorige = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(wid) - 1];
-  var sv = S.avt && S.avt[vorige];
-  return !!(sv && sv.klaar);
-}
-function avtSave(){ return avtSaveVan(avtWereld); }
-function avtGear(){
-  if(!S.avtGear){
-    var a0 = (S.avt && S.avt.a0) || {}, a1 = (S.avt && S.avt.a1) || {};
-    S.avtGear = {
-      maxHarten: Math.max(a0.maxHarten||3, a1.maxHarten||3),
-      harten: Math.max(a0.harten||3, a1.harten||3),
-      sombrero: !!(a0.sombrero || a1.sombrero),
-      amuleto: !!(a0.amuleto || a1.amuleto),
-      bommen: (a0.bommen||0) + (a1.bommen||0),
-      lupa: !!(a0.lupa || a1.lupa)
-    };
-  }
-  if(S.avtGear.harten > S.avtGear.maxHarten) S.avtGear.harten = S.avtGear.maxHarten;
-  if(S.avtGear.harten < 0) S.avtGear.harten = 0;
-  return S.avtGear;
-}
-function avtHeeftLupa(){ return !!avtGear().lupa; }
-function avtWereldInfo(wid){
-  var sv = S.avt && S.avt[wid];
-  var tot = 0, over = 0, totC = 0, gevC = 0;
-  AVT_SCHERMEN.forEach(function(sch, i){
-    if(sch.w !== wid) return;
-    sch.vijanden.forEach(function(v, j){ tot++; if(!(sv && sv.dood && sv.dood[i + ":" + j])) over++; });
-  });
-  AVT_CONCHAS.forEach(function(cc){
-    if(AVT_SCHERMEN[cc.s].w !== wid) return;
-    totC++; if(sv && sv.conchas && sv.conchas[cc.s + ":" + cc.x + ":" + cc.y]) gevC++;
-  });
-  return {tot:tot, over:over, totC:totC, gevC:gevC, klaar:!!(sv && sv.klaar)};
-}
-var AVT_CRON = {a0:{s:0, x:4, y:2}, a1:{s:8, x:2, y:4}, a2:{s:13, x:2, y:2}, b1:{s:18, x:5, y:3}};
-function avtCronSvg(){
-  return "<ellipse cx='0' cy='13' rx='13' ry='3' fill='#00000015'/>"+
-    "<ellipse cx='0' cy='2' rx='12' ry='9' fill='#8fae62' stroke='#6f8e4a' stroke-width='2'/>"+
-    "<path d='M-8 -2 l4 4 M-3 -5 l3 5 M3 -5 l-3 5 M8 -2 l-4 4' stroke='#6f8e4a' stroke-width='1.2'/>"+
-    "<circle cx='11' cy='-4' r='5' fill='#b8cf8e' stroke='#8fae62' stroke-width='1.5'/>"+
-    "<circle cx='12.5' cy='-5' r='1' fill='#2d2a26'/>"+
-    "<rect x='9' y='-7.5' width='5' height='2' rx='1' fill='#8a6a3e'/>"+
-    "<rect x='-16' y='-3' width='9' height='11' rx='1.5' fill='#f5ead6' stroke='#c9ab84' stroke-width='1.5' transform='rotate(-12 -11 2)'/>"+
-    "<path d='M-15 0 h6 M-15 3 h6 M-15 6 h4' stroke='#c9ab84' stroke-width='1' transform='rotate(-12 -11 2)'/>"+
-    "<text x='0' y='-16' text-anchor='middle' font-size='9'>📜</text>";
-}
-var avt = null, avtTikker = null, avtKeys = false;
+/* ================= CRUCIGRAMA (v23.147) =================
 
-function avtStartWereld(){
-  S.avtLaatste = avtWereld;
-  var sav = avtSave();
-  avt = {scherm:sav.scherm, x:sav.x, y:sav.y, kijk:1, gevecht:null, victory:false, vijanden:[], combo:0};
-  avtLaadScherm(avt.scherm, true);
-  avtMuziekFrase = 0;
-  renderFun();
-  avtMuziekStart();
-  if(!avtTikker) avtTikker = setInterval(avtTik, 950);
-}
-function avtLaadScherm(i, behoudPos){
-  var sav = avtSave();
-  avt.scherm = i;
-  var sch = AVT_SCHERMEN[i];
-  if(!behoudPos){ avt.x = sch.start.x; avt.y = sch.start.y; }
-  avt.vijanden = [];
-  var vrijeWereld = sav.klaar && sav.uitdagingDag !== today();
-  sch.vijanden.forEach(function(v, j){
-    if(vrijeWereld) return;
-    if(sav.dood[i + ":" + j]) return;
-    var hp = AVT_TYPES[v.t].hp + (sav.klaar ? 1 : 0);
-    avt.vijanden.push({i:j, t:v.t, x:v.x, y:v.y, hp:hp, maxHp:hp, elite:!!sav.klaar});
-  });
-  sav.scherm = i; sav.x = avt.x; sav.y = avt.y; persist();
-}
-function avtStopAlles(){
-  avtMuziekStop();
-  if(avtTikker){ clearInterval(avtTikker); avtTikker = null; }
-  if(avtSnakeTimer){ clearInterval(avtSnakeTimer); avtSnakeTimer = null; }
-}
-function avtVrijOp(si, x, y){
-  if(y < 0 || y > 6) return false;
-  if(x < 0 || x > 9) return false;
-  var c = AVT_SCHERMEN[si].grid[y].charAt(x);
-  if(c === "K") return !!avtSaveVan(AVT_SCHERMEN[si].w).rotsOpen;
-  if(c === "=") return !!avtSaveVan(AVT_SCHERMEN[si].w).brug;
-  return c === "." || c === "," || c === "C" || c === "T" || c === "S" || c === "N" || c === "g" || c === "B" || c === "L" || c === "U" || c === "b" || c === "D";
-}
-function avtVrij(x, y){ return avtVrijOp(avt.scherm, x, y); }
-function avtOlvidosOver(){
-  var sav = avtSave(), n = 0;
-  AVT_SCHERMEN.forEach(function(sch, i){ if(sch.w !== avtWereld) return; sch.vijanden.forEach(function(v, j){ if(!sav.dood[i + ":" + j]) n++; }); });
-  return n;
-}
+   Het tweede dat uit Aventura bleef staan, en dat was bijna een ongeluk: het kruiswoord woonde in
+   de code van het spel dat eruit ging. Stefan wil hem juist houden, en pedagogisch is hij van de
+   lichte spellen de beste: een omschrijving vraagt het woord terug, dus je haalt betekenis naar
+   vorm op. Dat is precies wat een woordenzoeker niet doet.
 
-/* ---- sprites ---- */
-function avtVijandSvg(t, groot){
-  var s = groot ? 3.2 : 1;
-  var svg = "";
-  if(t === "olvido"){
-    svg = "<path d='M-11 6 Q-13 -8 0 -10 Q13 -8 11 6 L8 3 L5 7 L2 3 L-1 7 L-4 3 L-7 7 Z' fill='#b9c3cf' stroke='#93a1b1' stroke-width='1.5'/>"+
-      "<circle cx='-4' cy='-3' r='1.8' fill='#2d2a26'/><circle cx='4' cy='-3' r='1.8' fill='#2d2a26'/>"+
-      "<path d='M-6 -7 Q-4 -8.5 -2 -7 M2 -7 Q4 -8.5 6 -7' stroke='#93a1b1' stroke-width='1.2' fill='none'/>"+
-      "<ellipse cx='0' cy='2' rx='2' ry='1.4' fill='#93a1b1'/>";
-  } else if(t === "cangrejo"){
-    svg = "<path d='M-10 -6 q-5 -4 -7 0 q2 3 5 2 M10 -6 q5 -4 7 0 q-2 3 -5 2' stroke='#e2704d' stroke-width='2.5' fill='#f0906d'/>"+
-      "<ellipse cx='0' cy='0' rx='10' ry='7' fill='#f0906d' stroke='#e2704d' stroke-width='1.5'/>"+
-      "<path d='M-8 6 l-3 3 M-3 7 l-1 3 M3 7 l1 3 M8 6 l3 3' stroke='#e2704d' stroke-width='2' stroke-linecap='round'/>"+
-      "<circle cx='-3.5' cy='-2' r='1.8' fill='#2d2a26'/><circle cx='3.5' cy='-2' r='1.8' fill='#2d2a26'/>"+
-      "<path d='M-2 3 Q0 4.5 2 3' stroke='#2d2a26' stroke-width='1.2' fill='none'/>";
-  } else if(t === "lobo"){
-    svg = "<path d='M-9 -8 l-3 -6 5 2 M9 -8 l3 -6 -5 2' fill='#8e9aab' stroke='#6d7a8c' stroke-width='1.5'/>"+
-      "<ellipse cx='0' cy='0' rx='11' ry='8' fill='#a5b1c2' stroke='#8492a6' stroke-width='1.5'/>"+
-      "<path d='M8 2 q7 0 9 -4 l0 5 q-4 3 -9 2 Z' fill='#a5b1c2' stroke='#8492a6' stroke-width='1'/>"+
-      "<ellipse cx='-4' cy='3' rx='5' ry='3.5' fill='#d8dee8'/>"+
-      "<circle cx='-4' cy='-2.5' r='1.8' fill='#2d2a26'/><circle cx='3' cy='-2.5' r='1.8' fill='#2d2a26'/>"+
-      "<ellipse cx='-8' cy='1' rx='1.6' ry='1.2' fill='#2d2a26'/>";
-  } else if(t === "gramatico"){
-    svg = "<path d='M-11 6 Q-13 -8 0 -10 Q13 -8 11 6 L8 3 L5 7 L2 3 L-1 7 L-4 3 L-7 7 Z' fill='#c3b9cf' stroke='#a193b1' stroke-width='1.5'/>"+
-      "<path d='M-9 -9 L0 -14 L9 -9 L0 -5 Z' fill='#4a4238' stroke='#2d2a26' stroke-width='1'/>"+
-      "<path d='M9 -9 l0 5' stroke='#e0a800' stroke-width='1.2'/><circle cx='9' cy='-3' r='1.3' fill='#ffd54d'/>"+
-      "<circle cx='-4' cy='-2' r='1.8' fill='#2d2a26'/>"+
-      "<circle cx='4' cy='-2' r='3' fill='none' stroke='#2d2a26' stroke-width='1'/><circle cx='4' cy='-2' r='1.6' fill='#2d2a26'/>"+
-      "<path d='M-4 4 Q0 5.5 4 4' stroke='#2d2a26' stroke-width='1.2' fill='none'/>";
-  } else if(t === "guardian"){
-    svg = "<path d='M-10 6 Q-12 -8 0 -10 Q12 -8 10 6 L7 3 L4 7 L0 3 L-4 7 L-7 3 Z' fill='#7d8ba0' stroke='#5c6a80' stroke-width='1.5'/>"+
-      "<path d='M-9 -6 a9 6 0 0 1 18 0 l0 3 l-18 0 Z' fill='#c9d2de' stroke='#9aa7b8' stroke-width='1.5'/>"+
-      "<path d='M0 -12 q3 -5 7 -4 q-2 4 -7 4' fill='#e8503a'/>"+
-      "<circle cx='-3.5' cy='-2' r='1.8' fill='#2d2a26'/><circle cx='3.5' cy='-2' r='1.8' fill='#2d2a26'/>"+
-      "<rect x='-2' y='2' width='4' height='5' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1'/>";
-  } else if(t === "pulpo"){
-    svg = "<ellipse cx='0' cy='-2' rx='9' ry='8' fill='#b79ad1' stroke='#9878b8' stroke-width='1.5'/>"+
-      "<path d='M-8 4 q-3 4 -1 7 M-3 6 q-1 4 1 7 M3 6 q3 4 1 7 M8 4 q4 3 2 6' stroke='#9878b8' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
-      "<circle cx='-3.5' cy='-3' r='2' fill='#2d2a26'/><circle cx='3.5' cy='-3' r='2' fill='#2d2a26'/>"+
-      "<circle cx='-3' cy='-3.7' r='0.7' fill='#fff'/><circle cx='4' cy='-3.7' r='0.7' fill='#fff'/>"+
-      "<path d='M-2 2 Q0 3.5 2 2' stroke='#2d2a26' stroke-width='1.2' fill='none'/>";
-  }
-  return "<g transform='scale(" + s + ")'>" + svg + "</g>";
-}
-function avtBaasSvg(hp){
-  var sch = 1 + (Math.min(hp, 5) / 5) * 1.6;
-  return "<g transform='scale(" + sch.toFixed(2) + ")'>"+
-    "<path d='M-30 18 Q-38 -22 0 -28 Q38 -22 30 18 L24 10 L17 20 L9 11 L0 21 L-9 11 L-17 20 L-24 10 Z' fill='#7d8ba0' stroke='#5c6a80' stroke-width='2.5'/>"+
-    "<path d='M-16 -26 l4 -8 4 6 4 -9 4 8 5 -6 3 8' stroke='#5c6a80' stroke-width='2.5' fill='none' stroke-linecap='round'/>"+
-    "<path d='M-14 -10 q4 -4 8 0 M6 -10 q4 -4 8 0' stroke='#2d2a26' stroke-width='2.5' fill='none'/>"+
-    "<circle cx='-10' cy='-6' r='4' fill='#e8503a'/><circle cx='10' cy='-6' r='4' fill='#e8503a'/>"+
-    "<circle cx='-10' cy='-6' r='1.6' fill='#2d2a26'/><circle cx='10' cy='-6' r='1.6' fill='#2d2a26'/>"+
-    "<path d='M-8 8 Q0 4 8 8' stroke='#2d2a26' stroke-width='2' fill='none'/>"+
-    "<ellipse cx='0' cy='14' rx='4' ry='2.5' fill='#5c6a80'/></g>";
-}
-function avtTegel(c, x, y){
-  var px = x * 40, py = y * 40;
-  if(c === "~") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='#8ec9e8'/><path d='M"+(px+6)+" "+(py+14)+" q5 -4 10 0 q5 4 10 0 M"+(px+10)+" "+(py+28)+" q5 -4 10 0 q5 4 10 0' stroke='#ffffff88' stroke-width='2' fill='none'/>";
-  var zand = "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#f2ddab" : "#f5e2b4")+"'/>";
-  if(c === "P") return zand + "<path d='M"+(px+20)+" "+(py+34)+" q-2 -12 0 -18' stroke='#a97c50' stroke-width='4' fill='none'/><path d='M"+(px+20)+" "+(py+16)+" q-12 -6 -15 2 q8 -2 15 2 q12 -6 15 2 q-8 -2 -15 -2 q-10 -10 -1 -13 q9 3 1 13' fill='#7fae62' stroke='#658e4e' stroke-width='1.2'/>";
-  if(c === "R") return zand + "<ellipse cx='"+(px+20)+"' cy='"+(py+24)+"' rx='14' ry='10' fill='#b8b0a4' stroke='#978f83' stroke-width='2'/><path d='M"+(px+12)+" "+(py+20)+" l6 -3 5 3' stroke='#978f83' stroke-width='1.5' fill='none'/>";
-  if(c === "C"){
-    var sav = avtSave();
-    return zand + (sav.kist
-      ? "<rect x='"+(px+8)+"' y='"+(py+16)+"' width='24' height='14' rx='3' fill='#c9a36e' stroke='#8a6a3e' stroke-width='2'/><rect x='"+(px+8)+"' y='"+(py+8)+"' width='24' height='7' rx='3' fill='#b78a55' stroke='#8a6a3e' stroke-width='2' transform='rotate(-14 "+(px+8)+" "+(py+15)+")'/>"
-      : "<rect x='"+(px+8)+"' y='"+(py+12)+"' width='24' height='18' rx='3' fill='#b78a55' stroke='#8a6a3e' stroke-width='2'/><path d='M"+(px+8)+" "+(py+18)+" h24' stroke='#8a6a3e' stroke-width='2'/><rect x='"+(px+17)+"' y='"+(py+16)+"' width='6' height='6' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/>");
-  }
-  if(c === "T"){
-    var open = avtOlvidosOver() === 0;
-    return zand + "<rect x='"+(px+4)+"' y='"+(py+2)+"' width='32' height='36' rx='4' fill='#cfc5b4' stroke='#a89d8a' stroke-width='2'/>"+
-      "<path d='M"+(px+10)+" "+(py+38)+" v-20 a10 10 0 0 1 20 0 v20' fill='"+(open ? "#4a4238" : "#7d7264")+"' stroke='#5c5346' stroke-width='2'/>"+
-      (open ? "<text x='"+(px+20)+"' y='"+(py+26)+"' text-anchor='middle' font-size='11'>✨</text>" : "<circle cx='"+(px+20)+"' cy='"+(py+26)+"' r='2.5' fill='#ffd54d'/>");
-  }
-  if(c === "S") return zand + "<rect x='"+(px+6)+"' y='"+(py+14)+"' width='28' height='20' rx='3' fill='#e8d3ae' stroke='#b8977a' stroke-width='2'/>"+
-    "<path d='M"+(px+2)+" "+(py+14)+" L"+(px+20)+" "+(py+4)+" L"+(px+38)+" "+(py+14)+" Z' fill='#e8503a'/>"+
-    "<path d='M"+(px+2)+" "+(py+14)+" L"+(px+20)+" "+(py+4)+" L"+(px+38)+" "+(py+14)+"' stroke='#c73e2a' stroke-width='2' fill='none'/>"+
-    "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='10' height='12' fill='#8a6a3e'/>"+
-    "<text x='"+(px+20)+"' y='"+(py+20)+"' text-anchor='middle' font-size='9'>🪙</text>";
-  if(c === "N") return zand + "<text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='24'>🎣</text>";
-  var bos = "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#a8bf8a" : "#b0c693")+"'/>";
-  if(c === "A") return bos + "<path d='M"+(px+20)+" "+(py+36)+" v-8' stroke='#7a5c3e' stroke-width='5'/><path d='M"+(px+20)+" "+(py+4)+" L"+(px+34)+" "+(py+18)+" L"+(px+27)+" "+(py+18)+" L"+(px+37)+" "+(py+30)+" L"+(px+3)+" "+(py+30)+" L"+(px+13)+" "+(py+18)+" L"+(px+6)+" "+(py+18)+" Z' fill='#5d8a4e' stroke='#48703c' stroke-width='1.5'/>";
-  if(c === "b") return bos + ((x*3+y*7)%5===0 ? "<path d='M"+(px+10)+" "+(py+30)+" q2 -4 4 0 M"+(px+26)+" "+(py+14)+" q2 -4 4 0' stroke='#93ab77' stroke-width='1.5' fill='none'/>" : "");
-  if(c === "D"){
-    var sk2 = avtSave().setaTiles || {};
-    if(sk2[(avt ? avt.scherm : 0) + ":" + x + ":" + y]) return bos;
-    return bos + "<path d='M"+(px+20)+" "+(py+34)+" v-8' stroke='#e8e0d0' stroke-width='5'/><path d='M"+(px+8)+" "+(py+26)+" a12 10 0 0 1 24 0 Z' fill='#e8503a' stroke='#c73e2a' stroke-width='1.5'/><circle cx='"+(px+14)+"' cy='"+(py+21)+"' r='2' fill='#fff'/><circle cx='"+(px+24)+"' cy='"+(py+19)+"' r='2.5' fill='#fff'/>";
-  }
-  if(c === "="){
-    var brg = avtSave().brug;
-    var wtr = "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='#8ec9e8'/>";
-    if(brg) return wtr + "<rect x='"+px+"' y='"+(py+6)+"' width='40' height='28' fill='#c9a36e' stroke='#8a6a3e' stroke-width='2'/><path d='M"+(px+10)+" "+(py+6)+" v28 M"+(px+20)+" "+(py+6)+" v28 M"+(px+30)+" "+(py+6)+" v28' stroke='#8a6a3e' stroke-width='1.5'/>";
-    return wtr + "<path d='M"+px+" "+(py+12)+" l12 6 -4 8 M"+(px+40)+" "+(py+24)+" l-12 -4 4 -8' stroke='#8a6a3e' stroke-width='4' fill='none' stroke-linecap='round'/>";
-  }
-  if(c === "M") return bos + "<text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='24'>\ud83e\ude93</text>";
-  if(c === "J") return bos + "<rect x='"+(px+6)+"' y='"+(py+14)+"' width='28' height='22' rx='2' fill='#8a6a3e' stroke='#6a5230' stroke-width='2'/><path d='M"+(px+3)+" "+(py+16)+" L"+(px+20)+" "+(py+3)+" L"+(px+37)+" "+(py+16)+" Z' fill='#5d4a2e' stroke='#463a24' stroke-width='2'/><rect x='"+(px+15)+"' y='"+(py+22)+"' width='9' height='14' rx='1.5' fill='#463a24'/><text x='"+(px+29)+"' y='"+(py+22)+"' text-anchor='middle' font-size='9'>\u2754</text>";
-  if(c === "H") return zand + "<rect x='"+(px+6)+"' y='"+(py+14)+"' width='28' height='22' rx='2' fill='#f5ead6' stroke='#c9ab84' stroke-width='2'/>"+
-    "<path d='M"+(px+3)+" "+(py+16)+" L"+(px+20)+" "+(py+3)+" L"+(px+37)+" "+(py+16)+" Z' fill='#d97f5f' stroke='#b96044' stroke-width='2'/>"+
-    "<rect x='"+(px+15)+"' y='"+(py+22)+"' width='9' height='14' rx='1.5' fill='#8a6a3e'/>"+
-    "<rect x='"+(px+27)+"' y='"+(py+20)+"' width='6' height='6' fill='#bcdcf0' stroke='#8fb8d4' stroke-width='1.5'/>";
-  if(c === ",") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><path d='M"+px+" "+(py+20)+" h40 M"+(px+20)+" "+py+" v20' stroke='#dccdb2' stroke-width='1'/>";
-  if(c === "x") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='#e8dcc8'/><rect x='"+(px+3)+"' y='"+(py+12)+"' width='34' height='26' fill='#faf6ee' stroke='#cfc5b4' stroke-width='2'/><path d='M"+px+" "+(py+14)+" L"+(px+20)+" "+(py+2)+" L"+(px+40)+" "+(py+14)+" Z' fill='#d97f5f' stroke='#b96044' stroke-width='2'/><rect x='"+(px+16)+"' y='"+(py+22)+"' width='8' height='8' fill='#bcdcf0' stroke='#8fb8d4' stroke-width='1.5'/>";
-  if(c === "O") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><ellipse cx='"+(px+20)+"' cy='"+(py+26)+"' rx='15' ry='9' fill='#8ec9e8' stroke='#b8b0a4' stroke-width='3'/><path d='M"+(px+20)+" "+(py+24)+" q-4 -12 0 -16 q4 4 0 16 M"+(px+14)+" "+(py+24)+" q-2 -7 -5 -8 M"+(px+26)+" "+(py+24)+" q2 -7 5 -8' stroke='#bfe2f5' stroke-width='2.5' fill='none' stroke-linecap='round'/>";
-  if(c === "Q") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><rect x='"+(px+5)+"' y='"+(py+16)+"' width='30' height='20' fill='#f5ead6' stroke='#c9ab84' stroke-width='2'/><path d='M"+(px+2)+" "+(py+16)+" h36 l-3 -9 h-30 Z' fill='#ffd54d' stroke='#e0a800' stroke-width='2'/><path d='M"+(px+8)+" "+(py+16)+" v-8 M"+(px+16)+" "+(py+16)+" v-9 M"+(px+24)+" "+(py+16)+" v-9 M"+(px+32)+" "+(py+16)+" v-8' stroke='#e8503a' stroke-width='2.5'/><text x='"+(px+20)+"' y='"+(py+31)+"' text-anchor='middle' font-size='12'>🌮</text>";
-  if(c === "W") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#e8dcc8" : "#eee2cf")+"'/><rect x='"+(px+4)+"' y='"+(py+10)+"' width='32' height='28' fill='#f0e6d2' stroke='#c9ab84' stroke-width='2'/><path d='M"+(px+2)+" "+(py+10)+" h36' stroke='#b96044' stroke-width='4'/><path d='M"+(px+9)+" "+(py+38)+" v-22 M"+(px+17)+" "+(py+38)+" v-22 M"+(px+25)+" "+(py+38)+" v-22 M"+(px+33)+" "+(py+38)+" v-22' stroke='#d9c5a8' stroke-width='3'/><text x='"+(px+20)+"' y='"+(py+30)+"' text-anchor='middle' font-size='11'>📚</text>";
-  if(c === "F") return zand + "<path d='M"+(px+14)+" "+(py+38)+" L"+(px+16)+" "+(py+6)+" L"+(px+24)+" "+(py+6)+" L"+(px+26)+" "+(py+38)+" Z' fill='#f5f0e6' stroke='#c9beac' stroke-width='1.5'/>"+
-    "<path d='M"+(px+15)+" "+(py+30)+" h10 M"+(px+15.5)+" "+(py+20)+" h9' stroke='#e8503a' stroke-width='5'/>"+
-    "<rect x='"+(px+16)+"' y='"+(py+2)+"' width='8' height='6' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/>";
-  if(c === "G") return "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='#4a4238'/><path d='M"+(px+6)+" "+(py+12)+" l8 -4 8 5 M"+(px+18)+" "+(py+28)+" l8 -4 8 5' stroke='#5c5346' stroke-width='2' fill='none'/>";
-  var grot = "<rect x='"+px+"' y='"+py+"' width='40' height='40' fill='"+((x+y)%2 ? "#75675a" : "#7a6c5e")+"'/>";
-  if(c === "g") return grot + ((x*5+y*11)%4===0 ? "<circle cx='"+(px+12)+"' cy='"+(py+26)+"' r='1.5' fill='#5f5347'/>" : "");
-  if(c === "U") return grot + "<ellipse cx='"+(px+20)+"' cy='"+(py+20)+"' rx='13' ry='10' fill='#f5e2b4'/><path d='M"+(px+14)+" "+(py+14)+" l12 12 M"+(px+26)+" "+(py+14)+" l-12 12' stroke='#e0cfa4' stroke-width='2'/><text x='"+(px+20)+"' y='"+(py+25)+"' text-anchor='middle' font-size='10'>☀️</text>";
-  if(c === "K"){
-    var ro = avtSave().rotsOpen;
-    if(ro) return zand + "<ellipse cx='"+(px+20)+"' cy='"+(py+24)+"' rx='15' ry='11' fill='#4a4238'/><ellipse cx='"+(px+20)+"' cy='"+(py+26)+"' rx='9' ry='7' fill='#2d2a26'/>";
-    return zand + "<ellipse cx='"+(px+20)+"' cy='"+(py+24)+"' rx='14' ry='10' fill='#b8b0a4' stroke='#978f83' stroke-width='2'/><path d='M"+(px+20)+" "+(py+15)+" l-3 5 4 4 -3 5 4 4' stroke='#6f675c' stroke-width='2' fill='none'/>";
-  }
-  if(c === "B"){
-    var bk = avtSave().bomKist;
-    return zand + (bk
-      ? "<rect x='"+(px+8)+"' y='"+(py+16)+"' width='24' height='14' rx='3' fill='#c9a36e' stroke='#8a6a3e' stroke-width='2'/><rect x='"+(px+8)+"' y='"+(py+8)+"' width='24' height='7' rx='3' fill='#b78a55' stroke='#8a6a3e' stroke-width='2' transform='rotate(-14 "+(px+8)+" "+(py+15)+")'/>"
-      : "<rect x='"+(px+8)+"' y='"+(py+12)+"' width='24' height='18' rx='3' fill='#8a7a9e' stroke='#6a5a7e' stroke-width='2'/><path d='M"+(px+8)+" "+(py+18)+" h24' stroke='#6a5a7e' stroke-width='2'/><rect x='"+(px+17)+"' y='"+(py+16)+"' width='6' height='6' rx='1' fill='#ffd54d' stroke='#e0a800' stroke-width='1.5'/>");
-  }
-  if(c === "L"){
-    var lk = avtSave().llave;
-    return grot + (lk
-      ? "<rect x='"+(px+8)+"' y='"+(py+16)+"' width='24' height='14' rx='3' fill='#e8c96e' stroke='#b89a3e' stroke-width='2'/><rect x='"+(px+8)+"' y='"+(py+8)+"' width='24' height='7' rx='3' fill='#d9b855' stroke='#b89a3e' stroke-width='2' transform='rotate(-14 "+(px+8)+" "+(py+15)+")'/>"
-      : "<rect x='"+(px+8)+"' y='"+(py+12)+"' width='24' height='18' rx='3' fill='#d9b855' stroke='#b89a3e' stroke-width='2'/><path d='M"+(px+8)+" "+(py+18)+" h24' stroke='#b89a3e' stroke-width='2'/><text x='"+(px+20)+"' y='"+(py+27)+"' text-anchor='middle' font-size='10'>🗝️</text>");
-  }
-  return zand + ((x*7+y*13)%5===0 ? "<circle cx='"+(px+10)+"' cy='"+(py+30)+"' r='1.2' fill='#dcc48f'/>" : "");
-}
+   Meeverhuisd en hernoemd, want de oude namen wezen naar een spel dat niet meer bestaat:
+   avtKruisCellen -> kruisCellen, avtKruisBekend -> kruisBekend, avtSrsBij -> spelGetyptBij.
 
-/* ---- kaart renderen + bewegen ---- */
-function avtKaartSvg(){
-  var sch = AVT_SCHERMEN[avt.scherm];
-  var html = "<svg id='avtKaart' viewBox='0 0 400 280' style='width:100%; border-radius:12px; border:1.5px solid var(--border); touch-action:none'>";
-  for(var y=0;y<7;y++){ for(var x=0;x<10;x++){ html += avtTegel(sch.grid[y].charAt(x), x, y); } }
-  var savB = avtSave();
-  if(sch.baas && (!savB.klaar || savB.baasDag !== today())){
-    html += "<g id='avtBaasG' style='transform:translate(200px,100px)'>" + avtBaasSvg(5) + "</g>";
-  }
-  AVT_CONCHAS.forEach(function(cc){
-    if(cc.s !== avt.scherm || avtSave().conchas[cc.s + ":" + cc.x + ":" + cc.y]) return;
-    var cx = cc.x*40+20, cy = cc.y*40+24;
-    html += "<g><path d='M"+(cx-7)+" "+cy+" Q"+cx+" "+(cy-11)+" "+(cx+7)+" "+cy+" Q"+cx+" "+(cy+4)+" "+(cx-7)+" "+cy+"' fill='#f5cfae' stroke='#d8a67e' stroke-width='1.5'/><path d='M"+cx+" "+(cy-8)+" v8 M"+(cx-4)+" "+(cy-6)+" l2 6 M"+(cx+4)+" "+(cy-6)+" l-2 6' stroke='#d8a67e' stroke-width='1'/></g>";
-  });
-  var cr = AVT_CRON[avtWereld];
-  if(cr && avtSave().klaar && avt.scherm === cr.s){
-    html += "<g style='transform:translate(" + (cr.x*40+20) + "px," + (cr.y*40+22) + "px)'><g class='avtzweefg'>" + avtCronSvg() + "</g></g>";
-  }
-  avt.vijanden.forEach(function(v){
-    html += "<g class='avtvij' data-avtv='"+v.i+"' style='transform:translate("+(v.x*40+20)+"px,"+(v.y*40+22)+"px); transition:transform .5s ease'><g class='avtzweefg'>" + avtVijandSvg(v.t) + (v.elite ? "<text x='0' y='-16' text-anchor='middle' font-size='10'>⚡</text>" : "") + "</g></g>";
-  });
-  html += "<g id='avtHeld' style='transform:translate("+(avt.x*40+20)+"px,"+(avt.y*40+22)+"px); transition:transform .22s ease'>"+
-    "<g id='avtHeldK' transform='scale("+(avt.kijk<0?-1:1)+" 1)'><g transform='scale(0.85)'>" + escChispaMini() +
-    (avtGear().sombrero ? "<g transform='translate(0,-13)'><ellipse cx='0' cy='2' rx='13' ry='4' fill='#d9a441' stroke='#b8862f' stroke-width='1.5'/><path d='M-6 1 q0 -8 6 -8 q6 0 6 8 Z' fill='#d9a441' stroke='#b8862f' stroke-width='1.5'/></g>" : "") + "</g></g></g>";
-  return html + "</svg>";
-}
-function avtMove(dx, dy){
-  if(!avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || avt.cron) return;
-  var nx = avt.x + dx, ny = avt.y + dy;
-  if(dx) avt.kijk = dx;
-  var kop = document.getElementById("avtHeldK");
-  if(kop) kop.setAttribute("transform", "scale(" + avt.kijk + " 1)");
-  /* vijand op doeltegel? → gevecht */
-  var vij = avt.vijanden.filter(function(v){ return v.x === nx && v.y === ny; })[0];
-  if(vij){ avtGevechtStart(vij); return; }
-  /* schermwissel: 2D-wereld, alle vier de richtingen */
-  if(nx > 9 || nx < 0 || ny < 0 || ny > 6){
-    var ex = AVT_SCHERMEN[avt.scherm].exits || {};
-    var naar = nx > 9 ? ex.rechts : (nx < 0 ? ex.links : (ny < 0 ? ex.boven : ex.onder));
-    var ix = nx > 9 ? 0 : (nx < 0 ? 9 : nx);
-    var iy = ny < 0 ? 6 : (ny > 6 ? 0 : ny);
-    if(naar != null && avtVrijOp(naar, ix, iy)){
-      var nw = AVT_SCHERMEN[naar].w;
-      if(nw !== avtWereld){
-        if(!avtWereldOpen(nw)){
-          var vor = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(nw) - 1];
-          var vorNaam = AVT_WERELDEN.filter(function(x){ return x.id === vor; })[0].naam;
-          toast("🔒 " + at("eerstVersla") + " " + vorNaam);
-          return;
-        }
-        avtWereld = nw;
-        toast(at("wereldOverloop"));
-      }
-      avtLaadScherm(naar, false); avt.x = ix; avt.y = iy;
-      var sv = avtSave(); sv.x = ix; sv.y = iy; persist();
-      renderFun();
-    }
-    return;
-  }
-  if(!avtVrij(nx, ny)){
-    var cb = AVT_SCHERMEN[avt.scherm].grid[ny].charAt(nx);
-    if(cb === "K" && !avtSave().rotsOpen){
-      toast(at((avtGear().bommen||0) > 0 ? "rotsBom" : "rotsHint"));
-      if((avtGear().bommen||0) > 0 && !document.getElementById("btnAvtBom")){ setTimeout(renderFun, 120); }
-    }
-    if(cb === "H" || cb === "F"){
-      var casaId = AVT_SCHERMEN[avt.scherm].casaScene;
-      var savH = avtSave();
-      if(!savH.casa) savH.casa = {};
-      if(savH.casa[casaId] !== today()){
-        savH.casa[casaId] = today();
-        S.tapas = (S.tapas||0) + 1;
-        S.monedas = (S.monedas||0) + 5;
-        persist();
-        avtSfx("kist");
-        confetti(["🎁","🌮","🎉","⭐️"], 20);
-        toast("¡Tesoro! +1 tapa 🫒 · " + at("casaKlaar"));
-      } else {
-        toast("🏠 " + at("casaMorgen"));
-      }
-    }
-    if(cb === "=" && !avtSave().brug){ toast("\ud83c\udf09 " + at("brugKapot")); }
-    if(cb === "M"){
-      var sv3 = avtSave();
-      if(sv3.brug){ toast("\ud83e\ude93 " + at("lenGroet")); }
-      else if((sv3.setas||0) >= 3){
-        sv3.brug = true; persist();
-        avtSfx("win"); confetti(["\ud83c\udf09","\u2728"], 18);
-        toast(at("lenKlaar"));
-        setTimeout(renderFun, 250);
-      }
-      else if(!sv3.lenIntro){ sv3.lenIntro = true; persist(); toast("\ud83e\ude93 " + at("lenIntro")); }
-      else { toast("\ud83e\ude93 " + at("lenBezig") + " " + (sv3.setas||0) + "/3."); }
-    }
-    if(cb === "J"){ avtSfx("kist"); avtAhorStart(); }
-    if(cb === "Q"){
-      var qst = S.avtQuest = S.avtQuest || {};
-      if(qst.heb && !qst.klaar){
-        qst.klaar = true; S.monedas = (S.monedas||0) + 15; S.tapas = (S.tapas||0) + 2; persist();
-        avtSfx("win"); confetti(["🐟","🌮","🎉"], 22);
-        toast(at("questKlaar"));
-        renderFun(); return;
-      }
-      if(!qst.vraag && !qst.klaar){ qst.vraag = true; persist(); toast("🦎 " + at("questVraag")); }
-      avtSfx("kist"); avtSnakeStart();
-    }
-    if(cb === "W"){ avtSfx("kist"); avtKruisStart(); }
-    return;
-  }
-  var bomKnopVoor = !!document.getElementById("btnAvtBom");
-  avt.x = nx; avt.y = ny;
-  avtSfx("stap");
-  var held = document.getElementById("avtHeld");
-  if(held) held.style.transform = "translate(" + (nx*40+20) + "px," + (ny*40+22) + "px)";
-  var sav = avtSave(); sav.x = nx; sav.y = ny; persist();
-  var bomKnopNa = !!(avtBomBuur() && (avtGear().bommen||0) > 0);
-  if(bomKnopVoor !== bomKnopNa){ setTimeout(renderFun, 240); }
-  var sch = AVT_SCHERMEN[avt.scherm];
-  var c = sch.grid[ny].charAt(nx);
-  if(c === "C" && !sav.kist){
-    sav.kist = true; sav.lupa = true; avtGear().lupa = true; persist();
-    avtSfx("kist"); confetti(["🔍","✨"], 14); toast(at("kist"));
-    setTimeout(renderFun, 250);
-  }
-  if(c === "T"){
-    if(avtWereld !== "b1" && !sav.llave){ toast(at("sleutelNodig")); }
-    else if(avtOlvidosOver() > 0){ toast(at("deurDicht") + avtOlvidosOver()); }
-    else { avtSfx("baas"); avtLaadScherm(AVT_SCHERMEN[avt.scherm].arena, false); renderFun(); }
-  }
-  if(c === "K" && sav.rotsOpen){ avtSfx("baas"); avtLaadScherm(5, false); renderFun(); return; }
-  if(c === "U"){ avtLaadScherm(3, false); avt.x = 2; avt.y = 3; sav.x = 2; sav.y = 3; persist(); renderFun(); return; }
-  if(c === "B" && !sav.bomKist){
-    sav.bomKist = true; avtGear().bommen = (avtGear().bommen||0) + 1; persist();
-    avtSfx("kist"); confetti(["💣","✨"], 10); toast(at("bomGevonden"));
-    setTimeout(renderFun, 250);
-  }
-  if(c === "L" && !sav.llave){
-    sav.llave = true; persist();
-    avtSfx("kist"); confetti(["🗝️","✨"], 14); toast(at("llaveGevonden"));
-    setTimeout(renderFun, 250);
-  }
-  if(c === "S"){ avt.tienda = true; avtSfx("kist"); renderFun(); return; }
-  if(c === "N"){
-    var qst2 = S.avtQuest = S.avtQuest || {};
-    if(qst2.vraag && !qst2.heb && !qst2.klaar){
-      qst2.heb = true; persist();
-      avtSfx("kist"); confetti(["🐟","✨"], 12);
-      toast("🎣 " + at("questPescado"));
-    }
-    else if(sav.pescaDag === today()){ toast("🎣 " + at("pescaKlaar")); }
-    else {
-      var zin = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
-      avt.pesca = {zin:zin, pog:0, hint:false};
-      renderFun(); return;
-    }
-  }
-  if(c === "D"){
-    sav.setaTiles = sav.setaTiles || {};
-    var sk = avt.scherm + ":" + nx + ":" + ny;
-    if(!sav.setaTiles[sk]){
-      sav.setaTiles[sk] = true; sav.setas = (sav.setas||0) + 1; persist();
-      avtSfx("kist"); confetti(["\ud83c\udf44","\u2728"], 8);
-      toast(at("setaGevonden") + " (" + sav.setas + "/3)");
-      setTimeout(renderFun, 200);
-    }
-  }
-  var crM = AVT_CRON[avtWereld];
-  if(crM && sav.klaar && avt.scherm === crM.s && nx === crM.x && ny === crM.y){
-    avtSfx("kist");
-    avt.cron = {drill:null};
-    renderFun();
-    return;
-  }
-  var ck = avt.scherm + ":" + nx + ":" + ny;
-  if(AVT_CONCHAS.some(function(cc){ return cc.s === avt.scherm && cc.x === nx && cc.y === ny; }) && !sav.conchas[ck]){
-    sav.conchas[ck] = true; S.monedas = (S.monedas||0) + 2; persist();
-    avtSfx("kist");
-    var tot = Object.keys(sav.conchas).length;
-    var totC = AVT_CONCHAS.filter(function(cc){ return AVT_SCHERMEN[cc.s].w === avtWereld; }).length;
-    if(tot >= totC){ S.monedas += 15; persist(); confetti(["🐚","✨"], 20); toast(at("conchasAlle")); }
-    else { toast("🐚 " + at("conchaGevonden") + " (" + tot + "/" + totC + ")"); }
-    setTimeout(renderFun, 200);
-  }
-  if(sch.baas && ny <= 2 && (!sav.klaar || sav.baasDag !== today())){ avtBaasStart(); }
-}
-function avtTik(){
-  if(funView !== "avt" || !avt || avt.gevecht || avt.victory || avt.tienda || avt.pesca || avt.snake || avt.kruis || avt.ahor || avt.cron){ return; }
-  if(!document.getElementById("avtKaart")){ return; }
-  avt.vijanden.forEach(function(v){
-    if(Math.random() < 0.45) return;
-    var opties = [[1,0],[-1,0],[0,1],[0,-1]].filter(function(d){
-      var nx = v.x + d[0], ny = v.y + d[1];
-      if(!avtVrij(nx, ny)) return false;
-      if(avt.vijanden.some(function(o){ return o !== v && o.x === nx && o.y === ny; })) return false;
-      return true;
-    });
-    if(!opties.length) return;
-    var d = opties[Math.floor(Math.random() * opties.length)];
-    var nx = v.x + d[0], ny = v.y + d[1];
-    if(nx === avt.x && ny === avt.y){ avtGevechtStart(v); return; }
-    v.x = nx; v.y = ny;
-    var el = document.querySelector("[data-avtv='" + v.i + "']");
-    if(el) el.style.transform = "translate(" + (nx*40+20) + "px," + (ny*40+22) + "px)";
-  });
-}
+   spelGetyptBij() is de reden dat het kruiswoord meetelt en de woordenzoeker niet: je typt het
+   woord, dus het is ophalen en niet herkennen, en dan mag het doosje ook echt omhoog (tot srsTop
+   in plaats van tot SPEL_PLAFOND, zie spelSrsBij).
 
-/* ---- gevechten (gekoppeld aan je echte SRS) ---- */
-function avtWoordPool(){
-  var pool = WORDS.filter(function(w){ return S.srs[w.id]; });
-  if(pool.length < 6) pool = pool.concat(WORDS.slice(0, 12));
-  var uniek = {}, uit = [];
-  pool.forEach(function(w){ if(!uniek[w.id]){ uniek[w.id] = 1; uit.push(w); } });
-  return uit;
-}
-function gramVormVraag(){
-  var paren = WORDS.filter(function(w){ return w.es.indexOf("/") !== -1 && S.srs[w.id]; });
-  if(!paren.length) paren = WORDS.filter(function(w){ return w.es.indexOf("/") !== -1; });
-  if(!paren.length) return null;
-  var w = paren[Math.floor(Math.random() * paren.length)];
-  var v = esVormen(w.es).filter(function(x){ return x !== w.es; });
-  if(v.length < 2) return null;
-  var kies = Math.floor(Math.random() * 2);
-  var doel = v[kies], ander = v[1 - kies];
-  if(/^(el|la|un|una)\s/.test(doel) && /^(el|la|un|una)\s/.test(ander)){
-    var rest = doel.split(" ").slice(1).join(" ");
-    return {q:"___ " + rest, o:[doel.split(" ")[0], ander.split(" ")[0]], a:0, u:doel + " · " + wTrans(w)};
-  }
-  var vertDelen = wTrans(w).split("/").map(function(s){ return s.trim(); }).filter(Boolean);
-  if(vertDelen.length === v.length){
-    var di = v.indexOf(doel);
-    return {q:vertDelen[di] + " = ___", o:[doel, ander], a:0, u:w.es + " · " + wTrans(w)};
-  }
-  if((/o$/.test(doel) && /a$/.test(ander)) || (/a$/.test(doel) && /o$/.test(ander))){
-    var vrouwelijk = /a$/.test(doel);
-    var ctx = vrouwelijk ? "la casa" : "el libro";
-    return {q:ctx + " … ___", o:[doel, ander], a:0, u:ctx + " → " + doel + " (" + (vrouwelijk ? "-a" : "-o") + ") · " + wTrans(w)};
-  }
-  return null;
-}
-function avtNieuweVraag(){
-  var g = avt.gevecht;
-  if(g.baas){
-    g.vraag = g.baasVragen[g.baasIdx % g.baasVragen.length]; g.baasIdx++;
-    var volg = g.vraag.o.map(function(o, i){ return {t:o, goed:i === g.vraag.a}; });
-    volg.sort(function(){ return Math.random() - 0.5; });
-    g.opties = volg; g.hintWeg = false;
-    return;
-  }
-  if(g.v && g.v.t === "gramatico"){
-    var set2 = avtWereld === "a1" ? AVT_BAAS2_VRAGEN : avtWereld === "a2" ? AVT_BAAS3_VRAGEN :
-      avtWereld === "b1" ? AVT_BAAS_VRAGEN.concat(AVT_BAAS2_VRAGEN, AVT_BAAS3_VRAGEN) : AVT_BAAS_VRAGEN;
-    var gv = (Math.random() < 0.5 ? gramVormVraag() : null) || set2[Math.floor(Math.random() * set2.length)];
-    g.vraagG = gv; g.zin = null; g.w = null;
-    var vg = gv.o.map(function(o, i2){ return {t:o, goed:i2 === gv.a}; });
-    vg.sort(function(){ return Math.random() - 0.5; });
-    g.opties = vg; g.hintWeg = false; g.hintTxt = null;
-    return;
-  }
-  if(avtWereld === "b1" && g.v){
-    if(!avt.recentZ) avt.recentZ = [];
-    var zp = SENTENCES.filter(function(z){ return avt.recentZ.indexOf(z.id) === -1; });
-    if(zp.length < 3){ avt.recentZ = []; zp = SENTENCES.slice(); }
-    var foutZ = zp.filter(function(z){ return S.errors["zin:" + z.id]; });
-    var zin = (foutZ.length && Math.random() < 0.5)
-      ? foutZ[Math.floor(Math.random() * foutZ.length)]
-      : zp[Math.floor(Math.random() * zp.length)];
-    avt.recentZ.push(zin.id);
-    if(avt.recentZ.length > 8) avt.recentZ.shift();
-    g.zin = zin; g.w = null; g.opties = []; g.hintWeg = false; g.hintTxt = null;
-    return;
-  }
-  var pool = gameVoorrang(avtWoordPool());
-  if(!avt.recent) avt.recent = [];
-  var vers = pool.filter(function(x){ return avt.recent.indexOf(x.id) === -1; });
-  if(vers.length < 4) { avt.recent = []; vers = pool; }
-  var top = vers.slice(0, Math.min(12, vers.length));
-  var w = top[Math.floor(Math.random() * top.length)];
-  if(w === g.vorige && top.length > 1){ w = top[(top.indexOf(w) + 1) % top.length]; }
-  avt.recent.push(w.id);
-  if(avt.recent.length > 10) avt.recent.shift();
-  g.vorige = w;
-  var getypt = g.v && (g.v.elite || g.v.t === "guardian" || avtWereld === "a2");
-  g.naarEs = getypt ? true : Math.random() < 0.5;
-  if(getypt){ g.w = w; g.opties = []; g.hintWeg = false; g.hintTxt = null; return; }
-  var fout = [];
-  var rest = avtWoordPool().filter(function(x){ return x.id !== w.id; }).sort(function(){ return Math.random() - 0.5; });
-  for(var i=0; i<rest.length && fout.length<3; i++){ fout.push(rest[i]); }
-  var opties = fout.map(function(f){ return {t:(g.naarEs ? f.es : wTrans(f)), goed:false}; });
-  opties.push({t:(g.naarEs ? w.es : wTrans(w)), goed:true});
-  opties.sort(function(){ return Math.random() - 0.5; });
-  g.w = w; g.opties = opties; g.hintWeg = false;
-}
-function avtGevechtStart(vijand){
-  avt.gevecht = {v:vijand, feedback:null, vorige:null};
-  avtSfx("encuentro");
-  avtNieuweVraag();
-  renderFun();
-}
-function avtBaasStart(){
-  avtSfx("baas");
-  var rev = avtSave().klaar;
-  var basisHp = avtWereld === "b1" ? 8 : (avtWereld === "a2" ? 6 : 5);
-  var hp = basisHp + (rev ? 1 : 0);
-  var set = avtWereld === "a1" ? AVT_BAAS2_VRAGEN : avtWereld === "a2" ? AVT_BAAS3_VRAGEN :
-    avtWereld === "b1" ? AVT_BAAS_VRAGEN.concat(AVT_BAAS2_VRAGEN, AVT_BAAS3_VRAGEN) : AVT_BAAS_VRAGEN;
-  var vragen = set.slice().sort(function(){ return Math.random() - 0.5; });
-  avt.gevecht = {baas:true, revancha:rev, hp:hp, maxHp:hp, baasVragen:vragen, baasIdx:0, feedback:null};
-  avtNieuweVraag();
-  renderFun();
-}
-function esVormen(es){
-  var delen = es.split("/").map(function(s){ return s.trim(); }).filter(Boolean);
-  if(delen.length > 1) delen.push(es);
-  return delen;
-}
-function woordGetypt(inp, es){
-  var geg = stripAcc(norm(inp));
-  var vormen = esVormen(es);
-  var los = vormen.some(function(v){ return stripAcc(norm(v)) === geg; });
-  var exact = vormen.some(function(v){ return norm(v) === norm(inp); });
-  return {goed:los, accentMis:los && !exact};
-}
-function vormFeedback(inp, es){
-  var vormen = esVormen(es).filter(function(v){ return v !== es; });
-  if(vormen.length < 2) return "";
-  var geg = stripAcc(norm(inp));
-  var anders = vormen.filter(function(v){ return stripAcc(norm(v)) !== geg; });
-  if(!anders.length || anders.length === vormen.length) return "";
-  return " · " + at("ookGoed") + " <b class='es'>" + anders.join(", ") + "</b>";
-}
-/* v23.92: `getypt` erbij, en het is geen detail.
-
-   Hier stond onvoorwaardelijk `st.k = 1` met de toelichting "hier typ je het woord zelf". Dat gold
-   voor twee van de vijf aanroepers. De andere drie zijn een klik op een meerkeuze-optie en het
-   galgje. Een klik uit vier is geen productie, en `k` is definitief: `wCheckNodig()` slaat de
-   Laatste stap over zodra hij bestaat, en `answerWord` mag er de laatste doos mee halen op een
-   zelfbeoordeling. Eén klik in Aventura zette de hele bewijsvoering van v20.0 uit voor dat woord.
-
-   En de dagrem (`st.bd`): de doos mag hoogstens één keer per dag stijgen. Zonder die rem brachten
-   drie spellen achter elkaar hetzelfde woord in tien minuten naar doos 3. Het wachten is wat werkt;
-   dat kun je niet inhalen door meer te spelen. Punten en plezier blijven, de doos niet. */
-function avtSrsBij(w, goed, getypt){
+   De teksten kwamen uit AVT_TXT, de vertaaltabel van het spel. Die is weg, dus ze staan nu gewoon
+   met ct() op hun plek. En de lupa (het voorwerp waarmee je in het spel een hint kocht) bestaat
+   niet meer: de hint hangt nu alleen nog aan opts.hintAltijd. */
+function spelGetyptBij(w, goed, getypt){
   var t = today();
   var st = S.srs[w.id];
   if(!st){ st = {box:0, due:t}; S.newIntro[t] = (S.newIntro[t]||0) + 1; }
@@ -25695,180 +25163,9 @@ function avtSrsBij(w, goed, getypt){
   }
   S.srs[w.id] = st; persist(); updateBadge();
 }
-function avtHartKwijt(){
-  var gr = avtGear();
-  gr.harten--;
-  avtSfx("hart");
-  if(gr.harten <= 0){
-    if(gr.amuleto){
-      gr.amuleto = false; gr.harten = gr.maxHarten; persist();
-      avtSfx("kist"); confetti(["🔮","✨"], 12);
-      toast(at("amuletRedt"));
-      return false;
-    }
-    gr.harten = gr.maxHarten;
-    var sch = AVT_SCHERMEN[avt.scherm];
-    avt.x = sch.start.x; avt.y = sch.start.y;
-    if(avt.gevecht && avt.gevecht.baas){ avtLaadScherm(3, false); }
-    avt.gevecht = null;
-    persist();
-    toast("💤 " + at("moe"));
-    renderFun();
-    return true;
-  }
-  persist();
-  return false;
-}
-function avtAntwoord(op, getypt){
-  var g = avt.gevecht; if(!g) return;
-  if(g.baas){
-    if(op.goed){
-      avt.combo = (avt.combo||0) + 1;
-      avtSfx("goed"); g.hp--; trackPoging(false);
-      if(g.hp <= 0){
-        var sav = avtSave();
-        sav.baasDag = today();
-        if(g.revancha){
-          avtGear().harten = avtGear().maxHarten; persist();
-          S.monedas = (S.monedas||0) + 10; S.tapas = (S.tapas||0) + 1; persist();
-          avt.gevecht = null;
-          avtSfx("win"); confetti(["🏆","🪙","🌮"], 25);
-          toast("🏆 " + at("revWin"));
-          renderFun(); return;
-        }
-        sav.klaar = true; sav.klaarDag = today(); avtGear().harten = avtGear().maxHarten; persist();
-        var eind = avtWereld === "b1";
-        S.tapas = (S.tapas||0) + (eind ? 5 : 3); S.monedas = (S.monedas||0) + (eind ? 25 : 10); persist();
-        avt.gevecht = null; avt.victory = true;
-        avtMuziekStop();
-        avtSfx("win"); confetti(["🏆","🎉","⭐️","🌮"], 40);
-        renderFun(); return;
-      }
-      g.feedback = {goed:true, txt:at("raak")};
-      avtNieuweVraag(); renderFun();
-    } else {
-      avt.combo = 0;
-      avtSfx("fout"); trackPoging(true);
-      var juist = g.vraag.o[g.vraag.a];
-      if(avtHartKwijt()) return;
-      g.feedback = {goed:false, txt:at("fout") + juist + " · " + g.vraag.u};
-      avtNieuweVraag(); renderFun();
-    }
-    return;
-  }
-  var w = g.w;
-  if(op.goed){
-    avt.combo = (avt.combo||0) + 1;
-    if(g.vraagG){ addXP(2); persist(); updateBadge(); trackPoging(false); }
-    else if(g.zin){ addXP(3); persist(); updateBadge(); trackPoging(false); }
-    else { avtSrsBij(w, true, getypt); }
-    avtSfx("goed");
-    g.v.hp--;
-    if(g.v.hp <= 0){
-      var sav2 = avtSave();
-      sav2.dood[avt.scherm + ":" + g.v.i] = true;
-      var munt = g.v.t === "guardian" ? 5 : (g.v.elite ? 3 : (g.v.t === "pulpo" || g.v.t === "lobo" || g.v.t === "gramatico" ? 2 : 1));
-      var racha = avt.combo >= 3;
-      if(racha) munt *= 2;
-      S.monedas = (S.monedas||0) + munt; persist();
-      avt.vijanden = avt.vijanden.filter(function(x){ return x !== g.v; });
-      avt.gevecht = null;
-      confetti(["✨","💨"], 10);
-      toast(at("weg") + " +" + munt + " 🪙" + (racha ? " · " + at("racha") : ""));
-      if(avtOlvidosOver() === 0){
-        if(sav2.klaar){
-          S.monedas = (S.monedas||0) + 5; persist();
-          setTimeout(function(){ toast(at("bordKlaar")); avtSfx("win"); confetti(["🕊️","🪙"], 14); }, 700);
-        } else {
-          setTimeout(function(){ toast(at("deurOpen")); avtSfx("kist"); }, 900);
-        }
-      }
-      renderFun(); return;
-    }
-    g.feedback = {goed:true, txt:at("raak")};
-    avtNieuweVraag(); renderFun();
-  } else {
-    avt.combo = 0;
-    if(g.vraagG){ addXP(1); persist(); updateBadge(); trackPoging(true); }
-    else if(g.zin){ logError(g.zin.id, "zin", g.zin.tag, g.zin.es); addXP(1); persist(); updateBadge(); }
-    else { avtSrsBij(w, false, getypt); }
-    avtSfx("fout");
-    var juistTxt = g.vraagG ? (g.vraagG.o[g.vraagG.a] + " · " + g.vraagG.u) : (g.zin ? g.zin.es : (g.naarEs ? w.es : wTrans(w)));
-    if(avtHartKwijt()) return;
-    g.feedback = {goed:false, txt:at("fout") + "<b>" + juistTxt + "</b>"};
-    avtNieuweVraag(); renderFun();
-  }
-}
-
-/* ---- La Taquería: snake met taco's ---- */
-var avtSnakeTimer = null;
-var AVT_NUM_ES = ["uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte"];
-function avtSnakeStart(){
-  avt.snake = {d:[1,0], vlg:[1,0], slang:[[4,6],[3,6],[2,6]], eten:0, dood:false};
-  avtSnakeTaco();
-  if(avtSnakeTimer) clearInterval(avtSnakeTimer);
-  avtSnakeTimer = setInterval(avtSnakeTik, 190);
-  renderFun();
-}
-function avtSnakeTaco(){
-  var s = avt.snake;
-  for(var p=0; p<200; p++){
-    var x = 1 + Math.floor(Math.random() * 14), y = 1 + Math.floor(Math.random() * 10);
-    if(!s.slang.some(function(sg){ return sg[0] === x && sg[1] === y; })){ s.taco = [x, y]; return; }
-  }
-  s.taco = [7, 5];
-}
-function avtSnakeTik(){
-  if(funView !== "avt" || !avt || !avt.snake){ if(avtSnakeTimer){ clearInterval(avtSnakeTimer); avtSnakeTimer = null; } return; }
-  var s = avt.snake;
-  if(s.dood) return;
-  s.d = s.vlg;
-  var kop = [s.slang[0][0] + s.d[0], s.slang[0][1] + s.d[1]];
-  var raak = kop[0] < 1 || kop[0] > 14 || kop[1] < 1 || kop[1] > 10 ||
-    s.slang.some(function(sg){ return sg[0] === kop[0] && sg[1] === kop[1]; });
-  if(raak){
-    s.dood = true;
-    avtSfx("fout");
-    var sav = avtSave();
-    if(s.eten > (sav.snakeBest||0)){ sav.snakeBest = s.eten; }
-    if(s.eten >= 8 && sav.snakeDag !== today()){
-      sav.snakeDag = today();
-      S.monedas = (S.monedas||0) + 6;
-      addXP(3); updateBadge();
-      confetti(["🌮","🪙"], 16);
-    }
-    persist();
-    renderFun();
-    return;
-  }
-  s.slang.unshift(kop);
-  if(kop[0] === s.taco[0] && kop[1] === s.taco[1]){
-    s.eten++;
-    avtSfx("goed");
-    avtSnakeTaco();
-  } else {
-    s.slang.pop();
-  }
-  renderFun();
-}
-function avtSnakeSvg(){
-  var s = avt.snake, C = 25;
-  var html = "<svg viewBox='0 0 400 300' style='width:100%; border-radius:12px; border:1.5px solid var(--border)'>";
-  html += "<rect width='400' height='300' fill='#f5e2b4'/>";
-  html += "<rect x='25' y='25' width='350' height='250' fill='#fdf6ec' stroke='#c9ab84' stroke-width='3'/>";
-  html += "<text x='" + (s.taco[0]*C + 12) + "' y='" + (s.taco[1]*C + 20) + "' text-anchor='middle' font-size='18'>🌮</text>";
-  for(var i = s.slang.length - 1; i >= 1; i--){
-    var sg = s.slang[i];
-    html += "<circle cx='" + (sg[0]*C + 12) + "' cy='" + (sg[1]*C + 12) + "' r='9' fill='#f8b8ce' stroke='#ef97b8' stroke-width='1.5' opacity='" + (0.55 + 0.45 * (1 - i / s.slang.length)).toFixed(2) + "'/>";
-  }
-  var k = s.slang[0];
-  html += "<g transform='translate(" + (k[0]*C + 12) + "," + (k[1]*C + 12) + ") scale(0.75)'>" + escChispaMini() + "</g>";
-  return html + "</svg>";
-}
-/* ---- La Biblioteca: kruiswoord uit je eigen woorden ---- */
 function kruisBouw(){
   var kandidaten = gameVoorrang(wsWoordPool()).filter(function(k){ return k.woord.length >= 4 && k.woord.length <= 8; });
-  if(kandidaten.length < 4){ toast("📚 " + at("kruisWeinig")); return null; }
+  if(kandidaten.length < 4){ toast("📚 " + ct("Leer eerst wat meer woordjes voor een kruiswoord!", "Learn a few more words first for a crossword!")); return null; }
   var beste = null;
   for(var poging = 0; poging < 6 && !beste; poging++){
     var pool = kandidaten.slice(0, 18).sort(function(){ return Math.random() - 0.5; });
@@ -25912,17 +25209,11 @@ function kruisBouw(){
     }
     if(woorden.length >= 4) beste = {cellen:cellen, woorden:woorden};
   }
-  if(!beste){ toast("📚 " + at("kruisWeinig")); return null; }
+  if(!beste){ toast("📚 " + ct("Leer eerst wat meer woordjes voor een kruiswoord!", "Learn a few more words first for a crossword!")); return null; }
   beste.sel = 0;
   return beste;
 }
-function avtKruisStart(){
-  var b = kruisBouw();
-  if(!b) return;
-  avt.kruis = b;
-  renderFun();
-}
-function avtKruisCellen(kr){
+function kruisCellen(kr){
   var minX = 99, maxX = -99, minY = 99, maxY = -99;
   Object.keys(kr.cellen).forEach(function(key){
     var p = key.split(",");
@@ -25931,7 +25222,7 @@ function avtKruisCellen(kr){
   });
   return {minX:minX, maxX:maxX, minY:minY, maxY:maxY};
 }
-function avtKruisBekend(kr, x, y){
+function kruisBekend(kr, x, y){
   for(var i = 0; i < kr.woorden.length; i++){
     var wo = kr.woorden[i];
     if(!wo.klaar) continue;
@@ -25941,115 +25232,18 @@ function avtKruisBekend(kr, x, y){
   }
   return null;
 }
-/* ---- El Ahorcado: galgje met je eigen woorden ---- */
-function avtAhorStart(){
-  avt.ahor = {reeks:0, beloond:false};
-  if(!avtAhorWoord()){ avt.ahor = null; return; }
-  renderFun();
-}
-function avtAhorWoord(){
-  var pool = gameVoorrang(wsWoordPool()).filter(function(k){ return k.woord.length >= 4 && k.woord.length <= 9; });
-  if(pool.length < 3){ toast("🪵 " + at("kruisWeinig")); return false; }
-  if(!avt.recent) avt.recent = [];
-  var vers = pool.filter(function(x){ return avt.recent.indexOf(x.id) === -1; });
-  if(vers.length < 2){ avt.recent = []; vers = pool; }
-  var top = vers.slice(0, Math.min(10, vers.length));
-  var k = top[Math.floor(Math.random() * top.length)];
-  avt.recent.push(k.id);
-  if(avt.recent.length > 10) avt.recent.shift();
-  var a = avt.ahor;
-  a.w = k; a.gok = {}; a.fout = 0; a.af = null; a.hint = false;
-  return true;
-}
-function avtAhorGok(ch){
-  var a = avt.ahor;
-  if(!a || !a.w || a.af || a.gok[ch]) return;
-  a.gok[ch] = true;
-  var kern = a.w.woord;
-  var wOrig = WORDS.filter(function(x){ return x.id === a.w.id; })[0];
-  if(kern.indexOf(ch) >= 0){
-    avtSfx("stap");
-    var compleet = kern.split("").every(function(l){ return a.gok[l]; });
-    if(compleet){
-      a.af = "goed"; a.reeks++;
-      if(wOrig) avtSrsBij(wOrig, true, false); else { addXP(2); updateBadge(); }
-      avtSfx("goed"); confetti(["🪵","✨"], 8);
-      if(a.reeks >= 3 && !a.beloond){
-        a.beloond = true;
-        var sv = avtSave();
-        if(avtWereld === "a2" && !sv.llave){
-          sv.llave = true; persist();
-          avtSfx("win"); confetti(["🗝️","🌲","✨"], 22);
-          toast(at("llaveClaro"));
-        } else if(sv.ahorDag !== today()){
-          sv.ahorDag = today(); S.monedas = (S.monedas||0) + 5; persist();
-          confetti(["🪙"], 10); toast("🪵 +5 🪙");
-        }
-      }
-    }
-  } else {
-    a.fout++;
-    avtSfx("fout");
-    if(a.fout >= 6){
-      a.af = "fout"; a.reeks = 0;
-      if(wOrig) avtSrsBij(wOrig, false);
-    }
-  }
-  renderFun();
-}
-function avtAhorSvg(){
-  var a = avt.ahor;
-  var fx = 30 + a.fout * 42;
-  return "<svg viewBox='0 0 400 110' style='width:100%; border-radius:12px; border:1.5px solid var(--border)'>"+
-    "<rect width='400' height='110' fill='#eef2e4'/>"+
-    "<rect y='88' width='400' height='22' fill='#b0c693'/>"+
-    "<g transform='translate(340,72)'>" + escChispaMini() + "</g>"+
-    "<g transform='translate(" + fx + ",72) scale(" + (1 + a.fout * 0.12) + ")' opacity='" + (0.45 + a.fout * 0.09) + "'><g class='avtzweefg'>" + avtVijandSvg("olvido") + "</g></g>"+
-    (a.fout >= 5 ? "<text x='340' y='34' text-anchor='middle' font-size='15'>😰</text>" : "")+
-    "</svg>";
-}
-/* ---- render ---- */
-function avtBomBuur(){
-  if(!avt) return null;
-  var sch = AVT_SCHERMEN[avt.scherm], b = null;
-  [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
-    var bx = avt.x + d[0], by = avt.y + d[1];
-    if(by >= 0 && by <= 6 && bx >= 0 && bx <= 9 && sch.grid[by].charAt(bx) === "K" && !avtSave().rotsOpen) b = {x:bx, y:by};
-  });
-  return b;
-}
-function avtBomLeg(){
-  var sav = avtSave();
-  if(!avtBomBuur() || (avtGear().bommen||0) < 1 || sav.rotsOpen) return;
-  avtGear().bommen--; sav.rotsOpen = true; persist();
-  avtSfx("boom"); confetti(["💥","🪨"], 16); toast(at("boom"));
-  renderFun();
-}
-function avtWachtersDood(){
-  var sv = avtSave(), d = 0;
-  AVT_SCHERMEN.forEach(function(sc, si2){
-    if(sc.w !== avtWereld) return;
-    sc.vijanden.forEach(function(v, j){ if(v.t === "guardian" && sv.dood[si2 + ":" + j]) d++; });
-  });
-  return d;
-}
-function avtHarten(){
-  var gr = avtGear(), s = "";
-  for(var i=0;i<gr.maxHarten;i++){ s += i < gr.harten ? "❤️" : "🖤"; }
-  return s;
-}
 function renderKruisUI(el, kr, opts){
-    var bnd = avtKruisCellen(kr);
+    var bnd = kruisCellen(kr);
     var cel = Math.min(28, Math.floor(340 / (bnd.maxX - bnd.minX + 1)));
-    var kh = "<div style='text-align:center'><span class='kicker'>" + at("biblio") + " 📚</span>"+
-      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("biblioSub") + "</p></div>";
+    var kh = "<div style='text-align:center'><span class='kicker'>" + ct("La Biblioteca", "La Biblioteca") + " 📚</span>"+
+      "<p class='muted' style='font-size:.85rem; margin:4px'>" + ct("Het kruiswoord van de bibliothecaris: jouw geleerde woorden, kriskras door elkaar.", "The librarian's crossword: your learned words, criss-crossed.") + "</p></div>";
     kh += "<div style='overflow-x:auto; text-align:center'><div style='display:inline-block; margin:4px auto'>";
     for(var ky = bnd.minY; ky <= bnd.maxY; ky++){
       kh += "<div style='display:flex'>";
       for(var kx = bnd.minX; kx <= bnd.maxX; kx++){
         var kch = kr.cellen[kx + "," + ky];
         if(!kch){ kh += "<div style='width:" + cel + "px; height:" + cel + "px'></div>"; continue; }
-        var bek = avtKruisBekend(kr, kx, ky);
+        var bek = kruisBekend(kr, kx, ky);
         var num = "";
         kr.woorden.forEach(function(wo, wi2){ if(wo.x === kx && wo.y === ky && !num) num = String(wi2 + 1); });
         kh += "<div style='width:" + cel + "px; height:" + cel + "px; border:1.5px solid var(--border); background:" + (bek ? "#f2fbe8" : "#fff") + "; position:relative; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:" + Math.floor(cel*0.55) + "px'>"+
@@ -26059,7 +25253,7 @@ function renderKruisUI(el, kr, opts){
       kh += "</div>";
     }
     kh += "</div></div>";
-    kh += "<p class='muted' style='font-size:.8rem; margin:6px 0 2px'>" + at("kruisKies") + "</p><div style='display:flex; flex-wrap:wrap; gap:4px'>";
+    kh += "<p class='muted' style='font-size:.8rem; margin:6px 0 2px'>" + ct("Kies een omschrijving en typ het Spaanse woord:", "Pick a clue and type the Spanish word:") + "</p><div style='display:flex; flex-wrap:wrap; gap:4px'>";
     kr.woorden.forEach(function(wo, wi3){
       kh += "<button class='ghost' data-avtkw='" + wi3 + "' style='font-size:.8rem; padding:5px 8px" + (wo.klaar ? "; opacity:.45" : (wi3 === kr.sel ? "; border-color:var(--accent); border-width:2px" : "")) + "'" + (wo.klaar ? " disabled" : "") + ">" + (wi3 + 1) + (wo.dx ? "→" : "↓") + " " + wo.k.nl + (wo.klaar ? " ✓" : "") + "</button>";
     });
@@ -26069,11 +25263,11 @@ function renderKruisUI(el, kr, opts){
     if(selW && !selW.klaar){
       if(selW.hint){ kh += "<p style='text-align:center; letter-spacing:.15em; margin:6px 2px 0'><span class='muted'>🔍</span> " + selW.k.woord.charAt(0) + selW.k.woord.slice(1).replace(/./g, "·") + "</p>"; }
       kh += "<div class='row' style='margin-top:6px'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
-        "<div class='row' style='margin-top:4px'><button class='primary' id='btnAvtKruisCheck'>" + at("check") + "</button>"+
-        ((opts.hintAltijd || avtHeeftLupa()) && !selW.hint ? "<button class='ghost' id='btnAvtKruisHint'>" + at("hint") + "</button>" : "")+
+        "<div class='row' style='margin-top:4px'><button class='primary' id='btnAvtKruisCheck'>" + ct("Check \u2713", "Check \u2713") + "</button>"+
+        (opts.hintAltijd && !selW.hint ? "<button class='ghost' id='btnAvtKruisHint'>" + ct("\ud83d\udd0d Hint", "\ud83d\udd0d Hint") + "</button>" : "")+
         "<button class='ghost' id='btnAvtKruisWeg'>" + opts.tLabel + "</button></div>";
     } else {
-      kh += "<div class='row' style='margin-top:8px'>" + (allesKlaar ? "<button class='primary' id='btnAvtKruisNieuw'>" + at("kruisNieuw") + "</button>" : "") + "<button class='ghost' id='btnAvtKruisWeg'>" + opts.tLabel + "</button></div>";
+      kh += "<div class='row' style='margin-top:8px'>" + (allesKlaar ? "<button class='primary' id='btnAvtKruisNieuw'>" + ct("Nieuw kruiswoord", "New crossword") + "</button>" : "") + "<button class='ghost' id='btnAvtKruisWeg'>" + opts.tLabel + "</button></div>";
     }
     el.innerHTML = kh;
     el.querySelectorAll("[data-avtkw]").forEach(function(b){
@@ -26089,7 +25283,7 @@ function renderKruisUI(el, kr, opts){
         var wOrig = WORDS.filter(function(x){ return x.id === wo.k.id; })[0];
         if(stripAcc(norm(inp)).replace(/[^a-z]/g, "") === wo.k.woord){
           wo.klaar = true;
-          if(wOrig) avtSrsBij(wOrig, true, true); else { addXP(2); updateBadge(); }
+          if(wOrig) spelGetyptBij(wOrig, true, true); else { addXP(2); updateBadge(); }
           avtSfx("goed");
           if(kr.woorden.every(function(w5){ return w5.klaar; })){
             opts.beloond();
@@ -26098,9 +25292,9 @@ function renderKruisUI(el, kr, opts){
           }
           renderFun();
         } else {
-          if(wOrig) avtSrsBij(wOrig, false);
+          if(wOrig) spelGetyptBij(wOrig, false);
           avtSfx("fout");
-          toast("🤔 " + at("kruisFout"));
+          toast("🤔 " + ct("Nee... kijk nog eens goed.", "No... look again."));
         }
       };
       var kb = document.getElementById("btnAvtKruisCheck");
@@ -26133,506 +25327,16 @@ function renderFunKruisLos(){
       if(S.kruisLosDag !== today()){
         S.kruisLosDag = today();
         S.monedas = (S.monedas||0) + 5;
-        extra = " " + at("kruisBeloning");
+        extra = " " + ct("+5 \ud83e\ude99 (dagbeloning)", "+5 \ud83e\ude99 (daily reward)");
         confetti(["📚","🪙"], 14);
       } else {
         confetti(["📚","✨"], 10);
       }
       persist();
-      toast("🎉 " + at("kruisKlaar") + extra);
+      toast("🎉 " + ct("Kruiswoord opgelost!", "Crossword solved!") + extra);
     }
   });
 }
-function renderFunAvt(){
-  var el = document.getElementById("funCard");
-  var sav = avtSave();
-  if(!avt){
-    var html = "<h2>" + at("kop") + "</h2><p class='muted'>" + at("kies") + "</p>";
-    var laatste = S.avtLaatste && AVT_WERELDEN.filter(function(x){ return x.id === S.avtLaatste; })[0];
-    var laatsteSv = laatste && S.avt && S.avt[laatste.id];
-    if(laatste && laatsteSv && avtWereldOpen(laatste.id)){
-      var schNm = AVT_SCHERMEN[laatsteSv.scherm] ? AVT_SCHERMEN[laatsteSv.scherm].naam : "";
-      html += "<div class='row'><button class='primary' id='btnAvtVerder' style='flex:1'>" + at("verderKnop") + "<br><span style='font-size:.8rem; font-weight:400; opacity:.85'>" + laatste.naam + " · " + schNm + "</span></button></div>";
-    }
-    var a0klaar = avtWereldInfo("a0").klaar;
-    var AVT_ICONEN = {a0:"🏖️", a1:"🏘️", a2:"🌲", b1:"🏰"};
-    AVT_WERELDEN.forEach(function(w){
-      var sub = profLang() === "nl" ? w.nl : w.en;
-      var open = avtWereldOpen(w.id);
-      if(open){
-        var inf = avtWereldInfo(w.id);
-        var st = inf.klaar ? "🏆" : "▶";
-        var sv2 = S.avt && S.avt[w.id];
-        var voortgang = (inf.klaar ? "✓ " + (profLang()==="nl" ? "bevrijd!" : "freed!") + " · 🐢" : (inf.tot - inf.over) + "/" + inf.tot + " " + at("olvidos")) + " · 🐚" + inf.gevC + "/" + inf.totC + (sv2 && sv2.llave && !inf.klaar ? " · 🗝️" : "");
-        html += "<div class='lesson' data-avtw='" + w.id + "'><div class='lnum'>" + AVT_ICONEN[w.id] + "</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + voortgang + "</span></div><div class='lstatus'>" + st + "</div></div>";
-      } else {
-        var vorW = AVT_VOLGORDE[AVT_VOLGORDE.indexOf(w.id) - 1];
-        var vorNm = AVT_WERELDEN.filter(function(x){ return x.id === vorW; })[0].naam;
-        html += "<div class='lesson' style='opacity:.5'><div class='lnum'>🔒</div><div class='lbody'><b>" + w.naam + "</b><span>" + sub + " · " + at("eerstVersla") + " " + vorNm + "</span></div><div class='lstatus'>🔒</div></div>";
-      }
-    });
-    html += "<p class='muted' style='font-size:.85rem; margin-top:6px'>🪙 " + (S.monedas||0) + " · " + (a0klaar ? at("cronUitleg") : at("missie")) + "</p>";
-    var heeftVoortgang = S.avt && Object.keys(S.avt).some(function(k){ return S.avt[k] && (Object.keys(S.avt[k].dood||{}).length || S.avt[k].klaar); });
-    html += "<div class='row'><button class='ghost' id='btnAvtTerug'>" + at("terug") + "</button>"+
-      (heeftVoortgang ? "<button class='ghost' id='btnAvtReset' style='font-size:.8rem'>" + at("nieuwSpel") + "</button>" : "") + "</div>";
-    el.innerHTML = html;
-    el.querySelectorAll("[data-avtw]").forEach(function(b){
-      b.onclick = function(){ avtWereld = b.getAttribute("data-avtw"); avtStartWereld(); };
-    });
-    var bt = document.getElementById("btnAvtTerug");
-    if(bt) bt.onclick = function(){ avtStopAlles(); funView = null; renderFun(); };
-    var bv2 = document.getElementById("btnAvtVerder");
-    if(bv2) bv2.onclick = function(){ avtWereld = S.avtLaatste; avtStartWereld(); };
-    var br = document.getElementById("btnAvtReset");
-    if(br) br.onclick = function(){
-      if(!br.dataset.zeker){
-        br.dataset.zeker = "1";
-        br.textContent = "⚠️ " + at("nieuwSpel");
-        toast(at("zekerWeten"));
-        setTimeout(function(){ if(br && br.dataset){ delete br.dataset.zeker; br.textContent = at("nieuwSpel"); } }, 4000);
-        return;
-      }
-      S.avt = {}; S.avtGear = null; S.avtQuest = {}; S.avtLaatste = null; avtSave(); avtGear(); persist(); renderFun();
-    };
-    return;
-  }
-  if(avt.victory){
-    var eindB = avtWereld === "b1";
-    var subT = {a0:at("gewonnenSub"), a1:at("gewonnenSub2"), a2:at("gewonnenSub3"), b1:at("eindSub")}[avtWereld];
-    var volgNm = {a0:"El Pueblo", a1:"El Bosque", a2:"El Castillo"}[avtWereld];
-    var volgT = (eindB ? at("eindDaarna") : at("volgendeOpen") + " <b>" + volgNm + "</b>!") + "<br>" + at("cronTeaser");
-    el.innerHTML = "<div style='text-align:center'><p style='font-size:3rem; margin:8px'>" + (eindB ? "👑" : "🏆") + "</p>"+
-      "<h2>" + (eindB ? at("eindtitel") : at("gewonnen")) + "</h2><p>" + subT + "</p>"+
-      "<p style='font-size:2rem'>" + (eindB ? "🌮🌮🌮🌮🌮" : "🌮🌮🌮") + "</p>"+
-      "<p class='muted'>" + volgT + "</p>"+
-      "<div class='row' style='justify-content:center'><button class='primary' id='btnAvtKlaar'>" + at("kaartTerug") + "</button></div></div>";
-    document.getElementById("btnAvtKlaar").onclick = function(){ avtStopAlles(); avt = null; renderFun(); };
-    return;
-  }
-  if(avt.cron){
-    var cw = avt.cron;
-    var arena = {a0:4, a1:12, a2:17, b1:21}[avtWereld];
-    if(cw.drill){
-      var dr = cw.drill;
-      if(dr.i >= dr.lijst.length){
-        var extraC = "";
-        if(sav.cronDag !== today()){
-          sav.cronDag = today(); S.monedas = (S.monedas||0) + 5; persist();
-          extraC = " " + at("cronBeloning");
-          confetti(["🐢","🪙"], 12);
-        }
-        el.innerHTML = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢</span>"+
-          "<p style='font-size:2.2rem; margin:6px'>📜</p>"+
-          (dr.fb ? "<p style='margin:4px; color:" + (dr.fbGoed ? "var(--good, #3a8a3a)" : "var(--accent)") + "'>" + dr.fb + "</p>" : "")+
-          "<p><b>" + at("cronKlaarTxt") + "</b> " + dr.goed + "/" + dr.lijst.length + extraC + "</p>"+
-          "<div class='row' style='justify-content:center'><button class='primary' id='btnCronTerug2'>" + at("cronNaam") + "</button></div></div>";
-        document.getElementById("btnCronTerug2").onclick = function(){ cw.drill = null; renderFun(); };
-        return;
-      }
-      var dw = dr.lijst[dr.i];
-      var dh = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢 · " + (dr.i+1) + "/" + dr.lijst.length + "</span>"+
-        "<p class='muted' style='margin:6px 0 2px'>" + at("cronSchrijf") + "</p>"+
-        "<p class='big' style='margin:4px'>" + wTrans(dw) + "</p></div>";
-      if(dr.fb){ dh += "<p style='text-align:center; margin:4px; color:" + (dr.fbGoed ? "var(--good, #3a8a3a)" : "var(--accent)") + "'>" + dr.fb + "</p>"; }
-      dh += "<div class='row'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
-        "<div class='row' style='margin-top:6px'><button class='primary' id='btnCronCheck'>" + at("check") + "</button>"+
-        "<button class='ghost' id='btnCronStop'>" + at("cronNaam") + "</button></div>";
-      el.innerHTML = dh;
-      var ci = document.getElementById("avtInp");
-      ci.focus();
-      var cronCheck = function(){
-        var inp = ci.value || "";
-        if(!norm(inp)) return;
-        var chkD = woordGetypt(inp, dw.es);
-        var goedc = chkD.goed;
-        avtSrsBij(dw, goedc, true);
-        if(goedc){ dr.goed++; avtSfx("goed"); dr.fb = at("cronGoed") + " <b class='es'>" + dw.es + "</b>" + vormFeedback(inp, dw.es); dr.fbGoed = true; }
-        else { avtSfx("fout"); dr.fb = at("cronFout") + " <b class='es'>" + dw.es + "</b> · " + wTrans(dw); dr.fbGoed = false; }
-        dr.i++;
-        renderFun();
-      };
-      document.getElementById("btnCronCheck").onclick = cronCheck;
-      ci.addEventListener("keydown", function(e){ if(e.key === "Enter") cronCheck(); });
-      document.getElementById("btnCronStop").onclick = function(){ cw.drill = null; renderFun(); };
-      return;
-    }
-    var inf2 = avtWereldInfo(avtWereld);
-    var sterke = [], hardnekkig = [];
-    WORDS.forEach(function(w){
-      var st = S.srs[w.id];
-      if(st && st.box >= 4) sterke.push({w:w, n:st.n||0});
-      var e = S.errors["woord:" + w.id];
-      if(e && e.count >= 2 && st && st.box <= 1) hardnekkig.push({w:w, c:e.count});
-    });
-    sterke.sort(function(a,b){ return b.n - a.n; });
-    hardnekkig.sort(function(a,b){ return b.c - a.c; });
-    var ch = "<div style='text-align:center'><span class='kicker'>" + at("cronNaam") + " 🐢 · " + AVT_WERELDEN.filter(function(x){ return x.id === avtWereld; })[0].naam + "</span>"+
-      "<svg viewBox='-24 -26 48 46' style='width:84px'><g class='avtzweefg'>" + avtCronSvg() + "</g></svg>"+
-      "<p class='muted' style='font-size:.85rem; margin:2px'>" + at("cronIntro") + "</p></div>";
-    ch += "<p style='margin:8px 0 2px'><b>📜 " + at("cronKroniek") + "</b></p>"+
-      "<p class='muted' style='font-size:.9rem'>" + at("cronBevrijd") + " " + (sav.klaarDag || "—") + " · " + inf2.tot + " " + at("cronVerslagen") + " · 🐚 " + inf2.gevC + "/" + inf2.totC + "</p>";
-    if(sterke.length){
-      ch += "<p style='margin:8px 0 2px'><b>🏆 " + at("cronVeroverd") + "</b></p><p style='font-size:.9rem'>"+
-        sterke.slice(0,5).map(function(s){ return "<b class='es'>" + s.w.es + "</b> <span class='muted'>· " + wTrans(s.w) + "</span>"; }).join("<br>") + "</p>";
-    }
-    ch += "<p style='margin:8px 0 2px'><b>👻 " + at("cronHard") + "</b></p>";
-    if(hardnekkig.length){
-      ch += "<p style='font-size:.9rem'>" + hardnekkig.slice(0,5).map(function(h){ return "<b class='es'>" + h.w.es + "</b> <span class='muted'>· " + wTrans(h.w) + " · " + h.c + "×</span>"; }).join("<br>") + "</p>";
-    } else {
-      ch += "<p class='muted' style='font-size:.9rem'>" + at("cronGeen") + "</p>";
-    }
-    ch += "<div class='row' style='margin-top:6px'><button class='primary' id='btnCronDrill'>" + at("cronOefen") + "</button></div>"+
-      "<p class='muted' style='font-size:.75rem; margin:2px 0 8px'>" + (sav.cronDag === today() ? at("cronMorgen") : at("cronOefenSub")) + "</p>";
-    ch += "<p style='margin:8px 0 2px'><b>🪧 " + at("bord") + "</b></p>";
-    var mareaKan = avtOlvidosOver() === 0 && sav.uitdagingDag !== today();
-    var revKan = sav.baasDag !== today();
-    ch += "<div class='lesson'" + (mareaKan ? "" : " style='opacity:.5'") + " id='cronMarea'><div class='lnum'>🌊</div><div class='lbody'><b>" + at("bordMarea") + "</b><span>" + (mareaKan ? at("bordMareaSub") : at("cronMorgen")) + "</span></div><div class='lstatus'>" + (mareaKan ? "▶" : "⏳") + "</div></div>";
-    ch += "<div class='lesson'" + (revKan ? "" : " style='opacity:.5'") + " id='cronRev'><div class='lnum'>⚔️</div><div class='lbody'><b>" + at("bordRev") + "</b><span>" + (revKan ? at("bordRevSub") : at("cronMorgen")) + "</span></div><div class='lstatus'>" + (revKan ? "▶" : "⏳") + "</div></div>";
-    ch += "<div class='row' style='margin-top:8px'><button class='ghost' id='btnCronWeg'>" + at("naarKaart") + "</button></div>";
-    el.innerHTML = ch;
-    document.getElementById("btnCronDrill").onclick = function(){
-      var lijst = hardnekkig.slice(0,5).map(function(h){ return h.w; });
-      if(lijst.length < 5){
-        gameVoorrang(avtWoordPool()).forEach(function(k){
-          if(lijst.length >= 5) return;
-          var wo = WORDS.filter(function(x){ return x.id === k.id; })[0];
-          if(wo && lijst.indexOf(wo) === -1) lijst.push(wo);
-        });
-      }
-      if(!lijst.length){ toast(at("cronGeen")); return; }
-      cw.drill = {lijst:lijst, i:0, goed:0, fb:null};
-      renderFun();
-    };
-    var cm = document.getElementById("cronMarea");
-    if(cm) cm.onclick = function(){
-      if(!mareaKan) return;
-      sav.dood = {}; sav.uitdagingDag = today(); persist();
-      avt.cron = null;
-      avtLaadScherm(avt.scherm, true);
-      avtSfx("baas");
-      toast(at("marea"));
-      renderFun();
-    };
-    var cv = document.getElementById("cronRev");
-    if(cv) cv.onclick = function(){
-      if(!revKan) return;
-      avt.cron = null;
-      avtSfx("baas");
-      avtLaadScherm(arena, false);
-      renderFun();
-    };
-    document.getElementById("btnCronWeg").onclick = function(){ avt.cron = null; renderFun(); };
-    return;
-  }
-  if(avt.tienda){
-    var gr = avtGear();
-    var items = [
-      {id:"tapa", label:at("koopTapa"), prijs:5, weg:false, doe:function(){ S.tapas = (S.tapas||0) + 1; }},
-      {id:"hart", label:at("koopHart"), prijs:25, weg:gr.maxHarten >= 4, doe:function(){ gr.maxHarten = 4; gr.harten = 4; }},
-      {id:"sombrero", label:at("koopSombrero"), prijs:10, weg:!!gr.sombrero, doe:function(){ gr.sombrero = true; }},
-      {id:"amulet", label:at("koopAmulet") + " · " + at("amuletUitleg"), prijs:15, weg:!!gr.amuleto, doe:function(){ gr.amuleto = true; }},
-      {id:"bom", label:at("koopBom") + " · " + at("bomUitleg") + ((gr.bommen||0) ? " (" + gr.bommen + ")" : ""), prijs:8, weg:false, doe:function(){ gr.bommen = (gr.bommen||0) + 1; }}
-    ];
-    var th = "<div style='text-align:center'><span class='kicker'>" + at("tienda") + "</span>"+
-      "<p style='font-size:2.2rem; margin:4px'>🦎⛱️</p>"+
-      "<p class='muted' style='font-size:.9rem'>" + at("tiendaSub") + "</p>"+
-      "<p><b>🪙 " + (S.monedas||0) + "</b> · " + avtHarten() + " · 🫒" + (S.tapas||0) + "</p></div>";
-    items.forEach(function(it, i){
-      th += "<div class='lesson'" + (it.weg ? " style='opacity:.55'" : "") + "><div class='lnum'>🪙" + it.prijs + "</div><div class='lbody'><b>" + it.label + "</b></div>"+
-        "<div class='lstatus'>" + (it.weg ? at("gekocht") : "<button class='primary' data-avtkoop='" + i + "' style='padding:6px 12px'" + ((S.monedas||0) < it.prijs ? " disabled" : "") + ">→</button>") + "</div></div>";
-    });
-    th += "<div class='row'><button class='ghost' id='btnAvtTiendaWeg'>⬅︎</button></div>";
-    el.innerHTML = th;
-    el.querySelectorAll("[data-avtkoop]").forEach(function(b){
-      b.onclick = function(){
-        var it = items[+b.getAttribute("data-avtkoop")];
-        if(it.weg || (S.monedas||0) < it.prijs) return;
-        S.monedas -= it.prijs; it.doe(); persist();
-        avtSfx("kist"); confetti(["🪙","✨"], 8);
-        renderFun();
-      };
-    });
-    document.getElementById("btnAvtTiendaWeg").onclick = function(){ avt.tienda = false; renderFun(); };
-    return;
-  }
-  if(avt.pesca){
-    var pz = avt.pesca;
-    var ph = "<div style='text-align:center'><span class='kicker'>" + at("pesca") + "</span>"+
-      "<p style='font-size:2.4rem; margin:4px'>🎣</p>"+
-      "<p class='muted' style='font-size:.9rem'>" + at("pescaVraag") + "</p>"+
-      "<p class='big' style='margin:6px'>" + zinPrompt(pz.zin) + "</p></div>";
-    if(pz.fb){ ph += "<p style='text-align:center; color:var(--accent); margin:4px'>" + pz.fb + "</p>"; }
-    if(pz.hintTxt){ ph += "<p style='text-align:center; letter-spacing:.12em; margin:4px'><span class='muted'>🔍</span> " + pz.hintTxt + "</p>"; }
-    ph += "<div class='row'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
-      "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtPescaCheck'>" + at("check") + "</button>"+
-      (avtHeeftLupa() ? "<button class='ghost' id='btnAvtPescaHint'" + (pz.hint ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
-      "<button class='ghost' id='btnAvtPescaWeg'>⬅︎</button></div>";
-    el.innerHTML = ph;
-    var pi = document.getElementById("avtInp");
-    pi.focus();
-    var pescaCheck = function(){
-      var inp = pi.value || "";
-      if(!norm(inp)) return;
-      var goedb = [pz.zin.es].concat(pz.zin.alt||[]).some(function(a){ return stripAcc(norm(inp)) === stripAcc(norm(a)); });
-      if(goedb){
-        if(norm(inp) !== norm(pz.zin.es) && stripAcc(norm(inp)) === stripAcc(norm(pz.zin.es))){ toast(at("accent") + pz.zin.es); }
-        var beloning = pz.pog === 0 ? 8 : 4;
-        S.monedas = (S.monedas||0) + beloning;
-        sav.pescaDag = today(); persist();
-        addXP(3); updateBadge();
-        avt.pesca = null;
-        avtSfx("win"); confetti(["🪙","🐟","✨"], 16);
-        toast("🎣 " + at("pescaGoed") + " +" + beloning + " 🪙");
-        renderFun();
-      } else {
-        pz.pog++;
-        logError(pz.zin.id, "zin", pz.zin.tag, pz.zin.es);
-        avtSfx("fout");
-        pz.fb = at("pescaFout") + "<b>" + pz.zin.es + "</b><br><span class='muted' style='font-size:.85rem'>" + at("pescaTyp") + "</span>";
-        renderFun();
-      }
-    };
-    document.getElementById("btnAvtPescaCheck").onclick = pescaCheck;
-    pi.addEventListener("keydown", function(e){ if(e.key === "Enter") pescaCheck(); });
-    var pbh = document.getElementById("btnAvtPescaHint");
-    if(pbh) pbh.onclick = function(){
-      pz.hint = true;
-      pz.hintTxt = pz.zin.es.split(" ").map(function(wrd){ return wrd.slice(0,1) + wrd.slice(1).replace(/[^ ]/g,"·"); }).join(" ");
-      renderFun();
-    };
-    document.getElementById("btnAvtPescaWeg").onclick = function(){ avt.pesca = null; renderFun(); };
-    return;
-  }
-  if(avt.snake){
-    var sn = avt.snake;
-    var sh = "<div style='text-align:center'><span class='kicker'>" + at("taq") + " 🌮</span>"+
-      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("taqDoel") + "</p>"+
-      "<p style='margin:4px'><b>🌮 " + sn.eten + "</b>" + (sn.eten > 0 ? " · ¡" + AVT_NUM_ES[Math.min(sn.eten, 20) - 1] + "!" : "") + " · " + at("taqRecord") + ": " + (sav.snakeBest||0) + "</p></div>";
-    sh += avtSnakeSvg();
-    if(sn.dood){
-      sh += "<p style='text-align:center; margin:8px 0 2px'>" + (sn.eten >= 8 ? "🎉 " + at("taqWin") + " 🌮" + sn.eten + " · " + at("taqBeloning") : "💥 " + at("taqDood") + " 🌮" + sn.eten) + "</p>";
-      sh += "<div class='row' style='justify-content:center; margin-top:6px'><button class='primary' id='btnAvtSnakeNog'>" + at("taqNog") + "</button><button class='ghost' id='btnAvtSnakeWeg'>" + at("naarKaart") + "</button></div>";
-    } else {
-      sh += "<div class='avtdpad'>"+
-        "<span></span><button data-avtsd='0,-1'>▲</button><span></span>"+
-        "<button data-avtsd='-1,0'>◀</button><button data-avtsd='0,1'>▼</button><button data-avtsd='1,0'>▶</button></div>"+
-        "<div class='row' style='margin-top:6px'><button class='ghost' id='btnAvtSnakeWeg' style='font-size:.85rem'>" + at("naarKaart") + "</button></div>";
-    }
-    el.innerHTML = sh;
-    el.querySelectorAll("[data-avtsd]").forEach(function(b){
-      b.onclick = function(){
-        var d = b.getAttribute("data-avtsd").split(",").map(Number);
-        if(!(d[0] === -sn.d[0] && d[1] === -sn.d[1])) sn.vlg = d;
-      };
-    });
-    var sb = document.getElementById("btnAvtSnakeNog");
-    if(sb) sb.onclick = function(){ avtSnakeStart(); };
-    var sw = document.getElementById("btnAvtSnakeWeg");
-    if(sw) sw.onclick = function(){ if(avtSnakeTimer){ clearInterval(avtSnakeTimer); avtSnakeTimer = null; } avt.snake = null; renderFun(); };
-    return;
-  }
-  if(avt.kruis){
-    renderKruisUI(el, avt.kruis, {
-      tLabel: at("naarKaart"),
-      hintAltijd: false,
-      weg: function(){ avt.kruis = null; renderFun(); },
-      nieuw: function(){ avt.kruis = null; avtKruisStart(); },
-      beloond: function(){
-        var savK = avtSave();
-        var extra = "";
-        if(avtWereld === "a1" && !savK.llave){ savK.llave = true; extra = " " + at("llaveCamp"); avtSfx("win"); confetti(["🗝️","📚","✨"], 22); }
-        else if(savK.kruisDag !== today()){ savK.kruisDag = today(); S.monedas = (S.monedas||0) + 5; extra = " " + at("kruisBeloning"); confetti(["📚","🪙"], 14); }
-        persist();
-        toast("🎉 " + at("kruisKlaar") + extra);
-      }
-    });
-    return;
-  }
-  if(avt.ahor){
-    var ah = avt.ahor;
-    var hh = "<div style='text-align:center'><span class='kicker'>" + at("ahor") + " 🪵</span>"+
-      "<p class='muted' style='font-size:.85rem; margin:4px'>" + at("ahorSub") + "</p>"+
-      "<p style='margin:2px'>🔥 " + ah.reeks + "/3 " + at("ahorReeks") + "</p></div>";
-    hh += avtAhorSvg();
-    var kern = ah.w.woord;
-    var toon = kern.split("").map(function(l){ return ah.gok[l] ? l.toUpperCase() : "·"; }).join(" ");
-    hh += "<p style='text-align:center; font-size:1.5rem; letter-spacing:.2em; font-weight:800; margin:8px 0 2px'>" + toon + "</p>";
-    hh += "<p class='muted' style='text-align:center; font-size:.85rem; margin:2px'>" + ah.w.nl + " · " + "❌".repeat(ah.fout) + "⚪️".repeat(Math.max(0, 6 - ah.fout)) + "</p>";
-    if(ah.af === "goed"){
-      hh += "<p style='text-align:center; margin:6px'>🎉 " + at("ahorGoed") + " <b class='es'>" + ah.w.es + "</b> · " + ah.w.nl + "</p>";
-    } else if(ah.af === "fout"){
-      hh += "<p style='text-align:center; margin:6px; color:var(--accent)'>💨 " + at("ahorFout") + " <b class='es'>" + ah.w.es + "</b> · " + ah.w.nl + "</p>";
-    } else {
-      hh += "<div style='display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-top:6px'>";
-      "abcdefghijklmnopqrstuvwxyz".split("").forEach(function(l){
-        var gedaan = !!ah.gok[l];
-        hh += "<button class='ghost' data-avtgok='" + l + "' style='min-width:34px; padding:7px 0; font-size:.9rem" + (gedaan ? (kern.indexOf(l) >= 0 ? "; background:#e4f2d8" : "; opacity:.25") : "") + "'" + (gedaan ? " disabled" : "") + ">" + l + "</button>";
-      });
-      hh += "</div>";
-    }
-    hh += "<div class='row' style='margin-top:8px'>"+
-      (ah.af ? "<button class='primary' id='btnAvtAhorNieuw'>" + at("ahorNieuw") + "</button>" : "")+
-      (!ah.af && avtHeeftLupa() && !ah.hint ? "<button class='ghost' id='btnAvtAhorHint'>" + at("hint") + "</button>" : "")+
-      "<button class='ghost' id='btnAvtAhorWeg'>" + at("naarKaart") + "</button></div>";
-    el.innerHTML = hh;
-    el.querySelectorAll("[data-avtgok]").forEach(function(b){
-      b.onclick = function(){ avtAhorGok(b.getAttribute("data-avtgok")); };
-    });
-    var ahn = document.getElementById("btnAvtAhorNieuw");
-    if(ahn) ahn.onclick = function(){ if(avtAhorWoord()) renderFun(); };
-    var ahh = document.getElementById("btnAvtAhorHint");
-    if(ahh) ahh.onclick = function(){
-      ah.hint = true;
-      var mis = ah.w.woord.split("").filter(function(l){ return !ah.gok[l]; });
-      if(mis.length) avtAhorGok(mis[Math.floor(Math.random() * mis.length)]);
-      else renderFun();
-    };
-    document.getElementById("btnAvtAhorWeg").onclick = function(){ avt.ahor = null; renderFun(); };
-    return;
-  }
-  if(avt.gevecht){
-    var g = avt.gevecht;
-    var kop, sub, beeld, pips = "";
-    var typ = !g.baas && !g.vraagG && (!!g.zin || g.v.elite || g.v.t === "guardian" || avtWereld === "a2");
-    if(g.baas){
-      var bnSuf = {a0:"", a1:"2", a2:"3", b1:"4"}[avtWereld] || "";
-      kop = at("baasNaam" + bnSuf) + (g.revancha ? " ⚡" : ""); sub = at("baasIntro" + bnSuf);
-      beeld = "<svg viewBox='-70 -70 140 120' style='width:150px'><g class='avtzweefg'>" + avtBaasSvg(g.hp) + "</g></svg>";
-      for(var i=0;i<g.maxHp;i++){ pips += i < g.hp ? "🟣" : "⚪️"; }
-    } else {
-      var tp = AVT_TYPES[g.v.t];
-      kop = tp.es + (typ ? " ⚡" : ""); sub = (profLang() === "nl" ? tp.nl : tp.en) + (typ ? " · elite" : "");
-      beeld = "<svg viewBox='-40 -40 80 80' style='width:110px'><g class='avtzweefg'>" + avtVijandSvg(g.v.t, true) + (typ ? "<text x='0' y='-30' text-anchor='middle' font-size='13'>⚡</text>" : "") + "</g></svg>";
-      for(var j=0;j<(g.v.maxHp||AVT_TYPES[g.v.t].hp);j++){ pips += j < g.v.hp ? "🟣" : "⚪️"; }
-    }
-    var vraagTxt = g.baas ? g.vraag.q : (g.vraagG ? g.vraagG.q : (g.zin ? zinPrompt(g.zin) : (g.naarEs ? wTrans(g.w) : g.w.es)));
-    var vraagLabel = g.baas ? kop + ":" : (g.vraagG ? at("gramVraag") : (g.zin ? at("zinVertaal") : (g.naarEs ? at("vraagNaar") : at("vraagVan"))));
-    var html2 = "<div style='text-align:center'>"+
-      "<span class='kicker'>" + kop + " · " + sub + "</span><br>" + beeld +
-      "<p style='margin:2px'>" + pips + "</p>"+
-      "<p style='margin:6px 0 2px' class='muted'>" + vraagLabel + "</p>"+
-      "<p class='big' style='margin:4px'>" + vraagTxt + "</p></div>";
-    if(g.feedback){ html2 += "<p style='text-align:center; margin:4px; color:" + (g.feedback.goed ? "var(--good, #3a8a3a)" : "var(--accent)") + "'>" + g.feedback.txt + "</p>"; }
-    if(typ){
-      if(g.hintTxt){ html2 += "<p style='text-align:center; letter-spacing:.12em; margin:4px'><span class='muted'>🔍</span> " + g.hintTxt + "</p>"; }
-      html2 += "<div class='row'><input id='avtInp' type='text' autocomplete='off' autocapitalize='off' placeholder='...' style='flex:1'></div>"+
-        "<div class='row' style='margin-top:6px'><button class='primary' id='btnAvtSchrijf'>" + at("check") + "</button></div>";
-    } else {
-      html2 += "<div class='row' style='flex-wrap:wrap'>";
-      g.opties.forEach(function(o, i){
-        html2 += "<button class='ghost avtopt' data-avto='" + i + "' style='flex:1 1 45%" + (o.weg ? "; opacity:.3; text-decoration:line-through" : "") + "'" + (o.weg ? " disabled" : "") + ">" + o.t + "</button>";
-      });
-      html2 += "</div>";
-    }
-    html2 += "<div class='row' style='margin-top:8px; justify-content:space-between'>"+
-      "<span style='align-self:center'>" + avtHarten() + ((avt.combo||0) >= 2 ? " 🔥" + avt.combo : "") + " · 🪙" + (S.monedas||0) + "</span>"+
-      (avtHeeftLupa() ? "<button class='ghost' id='btnAvtHint' style='font-size:.85rem'" + (g.hintWeg ? " disabled" : "") + ">" + at("hint") + "</button>" : "")+
-      (avtGear().harten < avtGear().maxHarten && (S.tapas||0) > 0 ? "<button class='ghost' id='btnAvtTapa' style='font-size:.85rem'>" + at("tapaKnop") + "</button>" : "")+
-      (!g.baas ? "<button class='ghost' id='btnAvtVlucht' style='font-size:.85rem'>" + at("vlucht") + "</button>" : "")+
-      "</div>";
-    el.innerHTML = html2;
-    el.querySelectorAll("[data-avto]").forEach(function(b){
-      b.onclick = function(){ avtAntwoord(g.opties[+b.getAttribute("data-avto")], false); };
-    });
-    if(typ){
-      var si = document.getElementById("avtInp");
-      if(g.inpTmp){ si.value = g.inpTmp; g.inpTmp = null; }
-      si.focus();
-      var schrijfCheck = function(){
-        var inp = si.value || "";
-        if(!norm(inp)) return;
-        var doel = g.zin ? g.zin.es : g.w.es;
-        var goedb, accentMis = false, vormFb = "";
-        if(g.zin){
-          goedb = [g.zin.es].concat(g.zin.alt||[]).some(function(a){ return stripAcc(norm(inp)) === stripAcc(norm(a)); });
-          accentMis = goedb && norm(inp) !== norm(doel) && stripAcc(norm(inp)) === stripAcc(norm(doel));
-        } else {
-          var chk = woordGetypt(inp, doel);
-          goedb = chk.goed; accentMis = chk.accentMis;
-          if(goedb) vormFb = vormFeedback(inp, doel);
-        }
-        if(accentMis){ toast(at("accent") + doel); }
-        else if(goedb && vormFb){ toast("✓ " + vormFb.replace(/<[^>]+>/g, "").replace("· ", "")); }
-        avtAntwoord({goed:goedb}, true);
-      };
-      document.getElementById("btnAvtSchrijf").onclick = schrijfCheck;
-      si.addEventListener("keydown", function(e){ if(e.key === "Enter") schrijfCheck(); });
-    }
-    var bh = document.getElementById("btnAvtHint");
-    if(bh) bh.onclick = function(){
-      g.hintWeg = true;
-      if(typ){
-        var si2 = document.getElementById("avtInp");
-        if(si2) g.inpTmp = si2.value;
-        g.hintTxt = (g.zin ? g.zin.es : g.w.es).split(" ").map(function(wrd){ return wrd.slice(0,1) + wrd.slice(1).replace(/[^ ]/g,"·"); }).join(" ");
-      } else {
-        var fouten = g.opties.filter(function(o){ return !o.goed && !o.weg; });
-        fouten.sort(function(){ return Math.random() - 0.5; });
-        fouten.slice(0, Math.max(1, fouten.length - 1)).forEach(function(o){ o.weg = true; });
-      }
-      renderFun();
-    };
-    var btp = document.getElementById("btnAvtTapa");
-    if(btp) btp.onclick = function(){
-      var gr2 = avtGear();
-      if((S.tapas||0) < 1 || gr2.harten >= gr2.maxHarten) return;
-      S.tapas--; gr2.harten++; persist(); avtSfx("kist"); renderFun();
-    };
-    var bv = document.getElementById("btnAvtVlucht");
-    if(bv) bv.onclick = function(){ avt.gevecht = null; renderFun(); };
-    return;
-  }
-  /* kaart */
-  var sch = AVT_SCHERMEN[avt.scherm];
-  var over = avtOlvidosOver();
-  var html3 = "<div style='display:flex; justify-content:space-between; align-items:center'>"+
-    "<span class='kicker'>" + ({a0:"La Costa", a1:"El Pueblo", a2:"El Bosque", b1:"El Castillo"}[avtWereld]) + " · " + sch.naam + "</span>"+
-    "<span>" + avtHarten() + " · " + (over ? "👻" + over : (avtSave().klaar ? "🕊️" : "👻0")) + " · 🪙" + (S.monedas||0) + " · 🫒" + (S.tapas||0) + ((avtGear().bommen||0) > 0 ? " · 💣" + avtGear().bommen : "") + ((S.avtQuest && S.avtQuest.heb && !S.avtQuest.klaar) ? " · 🐟" : "") + (avtSave().llave && avtWereld !== "b1" ? " · 🗝️" : "") + (avtWereld === "a2" && !avtSave().brug ? " · 🍄" + (avtSave().setas||0) + "/3" : "") + (avtWereld === "b1" ? " · 👑" + avtWachtersDood() + "/3" : "") + " <button class='ghost' id='btnAvtGeluid' style='padding:2px 8px; font-size:.85rem'>" + (S.avtStil ? at("geluidUit") : at("geluidAan")) + "</button></span></div>";
-  html3 += avtKaartSvg();
-  if(avtBomBuur() && (avtGear().bommen||0) > 0){
-    html3 += "<div class='row' style='margin-top:8px'><button class='primary' id='btnAvtBom'>" + at("bomLeg") + " (" + avtGear().bommen + ")</button></div>";
-  }
-  html3 += "<div class='avtdpad'>"+
-    "<span></span><button data-avtd='0,-1'>▲</button><span></span>"+
-    "<button data-avtd='-1,0'>◀</button><button data-avtd='0,1'>▼</button><button data-avtd='1,0'>▶</button></div>";
-  html3 += "<div class='row' style='margin-top:6px'><button class='ghost' id='btnAvtWerelden' style='font-size:.85rem'>" + at("kaartTerug") + "</button></div>";
-  el.innerHTML = html3;
-  el.querySelectorAll("[data-avtd]").forEach(function(b){
-    b.onclick = function(){ var d = b.getAttribute("data-avtd").split(","); avtMove(+d[0], +d[1]); };
-  });
-  var bb = document.getElementById("btnAvtBom");
-  if(bb) bb.onclick = avtBomLeg;
-  document.getElementById("btnAvtWerelden").onclick = function(){ avtStopAlles(); avt = null; renderFun(); };
-  document.getElementById("btnAvtGeluid").onclick = function(){
-    S.avtStil = !S.avtStil; persist();
-    if(S.avtStil) avtMuziekStop(); else avtMuziekStart();
-    renderFun();
-  };
-  avtMuziekStart();
-  if(!avtTikker) avtTikker = setInterval(avtTik, 950);
-  if(!avtKeys){
-    avtKeys = true;
-    try{
-      document.addEventListener("keydown", function(e){
-        if(funView !== "avt" || !avt) return;
-        if(avt.ahor && avt.ahor.w && !avt.ahor.af && /^[a-zñ]$/.test(e.key)){ avtAhorGok(e.key); e.preventDefault(); return; }
-        if(e.key === " " && !avt.gevecht && !avt.victory && !avt.kruis && !avt.tienda && !avt.pesca && !avt.snake && !avt.ahor && document.getElementById("avtKaart")){
-          e.preventDefault(); avtBomLeg(); return;
-        }
-        var m = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0], w:[0,-1], s:[0,1], a:[-1,0], d:[1,0]}[e.key];
-        if(!m) return;
-        if(avt.snake && !avt.snake.dood){
-          if(!(m[0] === -avt.snake.d[0] && m[1] === -avt.snake.d[1])) avt.snake.vlg = m;
-          e.preventDefault(); return;
-        }
-        if(avt.gevecht || avt.victory || avt.kruis || avt.tienda || avt.pesca || avt.ahor) return;
-        if(!document.getElementById("avtKaart")) return;
-        e.preventDefault(); avtMove(m[0], m[1]);
-      });
-    }catch(e){}
-  }
-}
-
 /* ================= RONDLEIDING (onboarding) ================= */
 var TOUR = [
   {titel:"¡Hola! Ik ben Chispa 🐾",
@@ -27428,7 +26132,10 @@ function renderFunAudicion(){
   if(!el) return;
   /* v23.77: de plank is het beginscherm van Escuchar. De lesflow zet audMenu zelf op false via
      audNieuw(), want daar heb je geen keuze: die scene hoort bij je les. */
-  if(audMenu && !(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "audi")){
+  // v23.148: "input" erbij. Sinds v23.140 heet de stap van het luisterblok zo, en deze twee plekken
+  // stonden nog op "produceren". Gevolg: koos de app luisteren, dan kreeg je na afloop geen "Door →"
+  // en stond je stil in de speeltuin.
+  if(audMenu && !(lesFlow && (lesFlow.stap === "produceren" || lesFlow.stap === "input") && lesFlow.gekozenSpel === "audi")){
     renderAudPlank(); return;
   }
   if(!audSc) audNieuw();
@@ -27464,7 +26171,7 @@ function renderFunAudicion(){
     html += "<div class='feedback " + (audGoed === sc.vragen.length ? "ok" : audGoed ? "bijna" : "fout") + "'>" +
       audGoed + "/" + sc.vragen.length + ct(" goed"," correct") +
       (audGehoord > 1 ? " · " + audGehoord + ct(" keer geluisterd"," listens") : "") + "</div>" +
-      (lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "audi"
+      (lesFlow && (lesFlow.stap === "produceren" || lesFlow.stap === "input") && lesFlow.gekozenSpel === "audi"
         ? "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
         : "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudNieuw'>" +
           ct("Volgende scene →","Next scene →") + "</button></div>" + naRondeHtml());
@@ -27878,7 +26585,6 @@ function renderFun(){
   if(funView === "adiv"){ renderFunAdivina(); return; }
   if(funView === "conj"){ renderFunConjugador(); return; }
   if(funView === "corr"){ renderFunCorrector(); return; }
-  if(funView === "avt"){ renderFunAvt(); return; }
   if(funView === "duel"){ renderFunDuel(); return; }
   if(funView === "brok"){ renderFunBrok(); return; }   // v23.106
   if(funView === "omkeer"){ renderFunOmkeer(); return; }   // v23.109
@@ -27927,8 +26633,15 @@ function renderFun(){
   /* v23.98: er stond niet wat een spel oplevert, terwijl Oefenen dat wel zegt. Je kon dus niet
      weten welk spel je verder helpt en welk puur vermaak is, en dat verschil is er wel degelijk:
      zie spelSrsBij() en SPEL_PLAFOND. */
+  /* v23.147: deze pagina heeft een andere maatstaf dan de rest van de app, en dat stond er niet.
+     Wat in je les zit wordt beoordeeld op wat het je leert; wat hier staat op of het rust geeft.
+     Een woordenzoeker leert je niets, en dat is niet erg zolang dat ook zijn werk niet is. Het
+     wordt pas oneerlijk als hij doet alsof. */
   el.innerHTML = "<h2>" + fx("kop") + "</h2><p class='muted'>" + fx("intro") + "</p>"+
     "<p class='muted' style='margin:-4px 0 10px; font-size:.86rem'>" + fx("meetelt") + "</p>"+
+    "<p class='muted' style='margin:-6px 0 10px; font-size:.86rem'>"+
+      ct("Dit is de ontspanningskant. Hoeft niet, telt niet mee, en dat is precies de bedoeling: het mag ook op een dag dat je geen zin hebt.",
+         "This is the easy side. Optional, doesn't count, and that's the point: it's allowed on a day when you don't feel like it.")+"</p>"+
     nuHtml+
     (straksHtml
       ? "<p class='muted' style='margin:14px 0 4px'><b>"+ct("Komt er straks bij","Joining in later")+"</b></p>"+
@@ -31300,7 +30013,11 @@ function gcBouw(id){
   });
   // stap 1: meteen een voorbeeld. Eén regel kader, zodat niemand denkt dat hij iets gemist heeft.
   if(vb.length){
-    stappen.push({kop:GC_STAP_TXT.nl.k1, kopEn:GC_STAP_TXT.en.k1,
+    /* v23.154: `procedureel` erbij, en dat is het hele punt van deze ronde. Deze uitleg gaat niet
+       over Spaans maar over hoe de oefening werkt, en toch kreeg hij een eigen scherm met een knop
+       "Toets me →". Stefan, 21 aug: "die lijkt uit het niets te komen." Terecht: op dat scherm stond
+       geen woord Spaans. De zin blijft, maar als onderregel bij de eerste vraag. */
+    stappen.push({kop:GC_STAP_TXT.nl.k1, kopEn:GC_STAP_TXT.en.k1, procedureel:true,
       uitleg:"<p>" + GC_STAP_TXT.nl.u1 + "</p>", uitlegEn:"<p>" + GC_STAP_TXT.en.u1 + "</p>",
       vragen:vb.slice(0, 2)});
   }
@@ -32961,6 +31678,9 @@ function gwStapHeeftTekst(o, i){
   try {
     var s = o && o.stappen && o.stappen[i];
     if(!s) return true;
+    // v23.154: een stap waarvan de uitleg over de oefening gaat en niet over Spaans, krijgt geen
+    // eigen scherm. Zie gcBouw.
+    if(s.procedureel) return false;
     return !!String(ct(s.uitleg, s.uitlegEn) || "").replace(/<[^>]*>/g, "").trim();
   } catch(e){ return true; }
 }
@@ -33280,6 +32000,12 @@ function renderGramWiz(){
     var beantwoord = gwSess.gekozen !== null;
     var html = kop +
       "<span class='kicker'>"+ct("Vraag ","Question ")+(gwSess.vraag+1)+"/"+stap.vragen.length+"</span>"+
+      /* v23.154: de zin die eerst een heel scherm vulde staat nu hier, bij de eerste vraag, waar hij
+         hoort: het is een gebruiksaanwijzing en die lees je terwijl je het doet. */
+      (stap.procedureel && gwSess.vraag === 0
+        ? "<p class='muted' style='margin:4px 0 0; font-size:.85rem'>"+
+            String(ct(stap.uitleg, stap.uitlegEn) || "").replace(/<[^>]*>/g, "")+"</p>"
+        : "")+
       "<p class='big' style='margin:6px 0 12px'>"+gwVraagTekst(q)+"</p>"+
       "<div style='display:flex; flex-direction:column; gap:8px' id='gwOpties'>"+
       opties.map(function(t, i){
@@ -33308,7 +32034,14 @@ function renderGramWiz(){
     var laatste = gwSess.stap + 1 >= o.stappen.length;
     return kop +
       "<div class='feedback "+(perfect ? "ok" : gwSess.goed >= Math.ceil(totaal*0.6) ? "bijna" : "fout")+"'>"+
-        ct("Stap klaar: ","Step done: ")+gwSess.goed+"/"+totaal+
+        /* v23.154: hier stond "Stap klaar: 2/2", en dat 2/2 is je score en niet je positie. Boven
+           het scherm staat tegelijk "STAP 1/3". Twee tellers die allebei "stap" heten en iets anders
+           bedoelen is precies waarom Stefan schreef dat hij niet weet wanneer wat gebeurt. */
+        ct(gwSess.goed+" van de "+totaal+" goed", gwSess.goed+" out of "+totaal+" correct")+
+        (o.stappen.length > 1
+          ? " \u00b7 " + ct("deel "+(gwSess.stap+1)+" van "+o.stappen.length+" van dit onderwerp",
+                            "part "+(gwSess.stap+1)+" of "+o.stappen.length+" of this topic")
+          : "")+
       "</div>"+
       (perfect ? "" : "<p class='muted'>"+ct("Klik gerust nog een keer door deze stap heen, dat is precies waar hij voor is.","Feel free to run through this step again, that's exactly what it's for.")+"</p>")+
       /* v23.63. Stefan: "wat me hier echt opvalt zou de vele call to actions, dat is verwarrend ook
@@ -33886,10 +32619,33 @@ function sterkZwakHtml(){
   return h;
 }
 
+/* ================= HOE EEN DOOSJE HEET (v23.154) =================
+
+   Op Voortgang stonden drie regels "undefined 0". INTERVALS is in v23.132 van zeven naar negen
+   doosjes gegaan, en er stonden twee handgeschreven labellijsten in het bestand: eentje van zes in
+   renderStats() en eentje van negen in krachtTabelHtml(). Allebei losgekoppeld van INTERVALS, dus
+   allebei fout te krijgen, en de eerste wás het.
+
+   Staat een feit in de data, dan schrijft geen enkele codeplek dat feit opnieuw. Het aantal dagen
+   staat in INTERVALS; hoe dat heet is een som en geen lijst. */
+function intervalNaam(dagen){
+  var d = dagen || 0;
+  if(d <= 0) return ct("nieuw/fout", "new/wrong");
+  if(d < 7) return d + " " + (d === 1 ? ct("dag","day") : ct("dagen","days"));
+  if(d < 30){
+    var w = Math.round(d / 7);
+    return w + " " + (w === 1 ? ct("week","week") : ct("weken","weeks"));
+  }
+  var m = Math.round(d / 30);
+  return m + " " + (m === 1 ? ct("maand","month") : ct("maanden","months"));
+}
+function intervalNamen(){
+  return (typeof INTERVALS !== "undefined" ? INTERVALS : [0]).map(intervalNaam);
+}
+
 function krachtTabelHtml(){
   var c = voortgangCijfers();
-  var lab = ct("nieuw/fout|1 dag|3 dagen|1 week|2 weken|1 maand|2 maanden|4 maanden|8 maanden",
-               "new/wrong|1 day|3 days|1 week|2 weeks|1 month|2 months|4 months|8 months").split("|");
+  var lab = intervalNamen();   // v23.154: uit INTERVALS, niet met de hand
   var r = "", i, bij;
   for(i = 1; i < c.dozen.length; i++){
     if(!c.dozen[i]) continue;
@@ -33921,8 +32677,10 @@ function renderStats(){
      in je track zit. Nu komen ze uit dezelfde functie als het getal op Vandaag. */
   var c = voortgangCijfers();
   var boxes = c.dozen;
-  // v19.67: ook dit scherm sprak Nederlands tegen een Engelse gebruiker.
-  var boxLabels = ct("nieuw/fout|1 dag|3 dagen|1 week|2 weken|1 maand","new/wrong|1 day|3 days|1 week|2 weeks|1 month").split("|");
+  /* v19.67: ook dit scherm sprak Nederlands tegen een Engelse gebruiker.
+     v23.154: en het telde zes namen bij negen doosjes, dus er stonden drie regels "undefined 0"
+     op het scherm. Nu uit INTERVALS. */
+  var boxLabels = intervalNamen();
   var maxBox = Math.max.apply(null, boxes.concat([1]));
   var boxHtml = boxes.map(function(n,i){
     return "<div class='boxrow'><span style='width:80px'>"+boxLabels[i]+"</span>"+
@@ -34228,7 +32986,9 @@ function renderPrivacy(){
 
 function show(tabId, skipPush){
   if(tabId === "diccionario"){ dicModal(); return; } // oude links/history: woordenboek is nu een popup
-  if(tabId !== "speeltuin" && typeof avtStopAlles === "function") avtStopAlles();
+  // v23.147: hier stond avtStopAlles(), dat het hele Aventura-scherm afbrak. Wat er nog moet
+  // stoppen is de muziek, en die woont nu in het geluidsblok.
+  if(tabId !== "speeltuin" && typeof avtMuziekStop === "function") avtMuziekStop();
   if(tabId !== "lezen" && typeof boekStop === "function") boekStop();
   if(!skipPush) navPush({t:"tab", id:tabId});
   TABS.forEach(function(t){

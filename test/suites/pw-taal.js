@@ -78,7 +78,9 @@ const NL = /\b(niet|geen|wordt|werkwoorden|vervoeging(en)?|oefenen|volgende|opni
   }
 
   // ---------- 2. elke speeltuinweergave ----------
-  const funs = ['ws', 'mem', 'kruis', 'dictado', 'conj', 'hu', 'avt'];
+  // v23.147: 'avt' eruit, dat scherm bestaat niet meer. 'dictado' en 'hu' staan er nog als
+  // controle dat een onbekende naam niets sloopt.
+  const funs = ['ws', 'mem', 'kruis', 'dictado', 'conj', 'hu', 'letras'];
   for (const f of funs) {
     const t = await page.evaluate((n) => {
       scopeLesson = null; funView = n;

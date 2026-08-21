@@ -2,13 +2,16 @@
 // Stefan: "etiquetas werkt niet echt en kan helemaal weg."
 // Contract dat we hier vastleggen:
 //  - er is geen ESCENAS, ESC_TXT, escStart, escSvg, escSpel of renderFunEsc meer
-//  - escChispaMini blijft wel, want Aventura, het kruiswoord en de strips tekenen
-//    hun sprite ermee; die zou anders leeg blijven
+//  - escChispaMini blijft wel, want het kruiswoord en de strips tekenen hun
+//    sprite ermee; die zou anders leeg blijven
 //  - de Speeltuin heeft geen rij met een etiquettenspel
-//  - Aventura werkt nog: de wereldkeuze en de kaart renderen zonder JS-fout
-//  - de huisjes in Aventura leveren nog steeds hun dagelijkse schat op
-//    (+1 tapa en +5 monedas, één keer per dag per huis), want dat was de enige
-//    reden dat je er als speler naar binnen liep
+//  - er blijft een spel over dat wél werkt en zonder JS-fout rendert
+//
+// v23.147: de tweede helft van deze test ging over Aventura, en dat spel is nu zelf geschrapt
+// (2057 regels, geen spoor van gebruik in 26 dagen). De bewering die overeind blijft is de eerste:
+// een geschrapt spel laat geen resten achter en sloopt de buren niet. Die staat nu op het
+// kruiswoord, want dat is wat er uit het Aventura-blok is blijven staan. Dat Aventura zelf weg is,
+// bewaakt pw-geschrapt.
 const { chromium } = require('playwright');
 
 (async () => {
@@ -65,65 +68,26 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(400);
   const speeltuin = (await page.locator('#funCard').innerText()).toLowerCase();
   ok(!speeltuin.includes('etiqueta'), 'geen etiquettenrij in de Speeltuin');
-  ok(speeltuin.includes('aventura'), 'Aventura staat er nog wel');
+  // v23.147: Aventura stond hier als bewijs dat er nog spellen over waren. Dat spel is nu zelf
+  // geschrapt, dus de bewering verschuift naar wat hij eigenlijk was: er staat nog wél iets.
+  ok(!speeltuin.includes('aventura'), 'Aventura ook niet, die is in v23.147 geschrapt');
+  // niet op de schermtekst: de Speeltuin klapt sinds v23.145 in tot drie tegels en op een vers
+  // profiel staat het meeste nog op slot. De vraag is of de lijst zelf nog spellen kent.
+  const spellenOver = await page.evaluate(() => speelTegels().map((x) => x.v));
+  ok(spellenOver.length >= 5, 'maar er staan nog wel spellen (' + spellenOver.join(',') + ')');
+  ok(spellenOver.indexOf('avt') === -1 && spellenOver.indexOf('esc') === -1, 'en geen van de twee geschrapte');
 
-  // 3. Aventura zelf blijft werken
-  await page.evaluate(() => { funView = 'avt'; avt = null; renderFun(); });
-  await page.waitForTimeout(400);
-  const wereldkeuze = await page.locator('#funCard').innerText();
-  ok(/aventura/i.test(wereldkeuze), 'de wereldkeuze van Aventura rendert');
-
-  const kaart = await page.evaluate(() => {
-    avtWereld = 'a0';
-    avtStartWereld();
-    return !!document.getElementById('avtKaart');
+  // 3. wat er overbleef werkt nog: het kruiswoord uit hetzelfde blok
+  await page.evaluate(() => {
+    S.speelAlles = true; S.spelAlles = true;
+    S.srs = {};
+    WORDS.slice(0, 120).forEach(function (w) { S.srs[w.id] = { box: 2, due: today(), n: 3 }; });
+    funView = 'kruis'; kruisLos = null; renderFun();
   });
   await page.waitForTimeout(400);
-  ok(kaart, 'de kaart van La Costa rendert');
-
-  // 4. een huisje betreden levert nog steeds de dagschat op
-  const schat = await page.evaluate(() => {
-    var sav = avtSave();
-    sav.casa = {};
-    var voorTapas = S.tapas || 0, voorMonedas = S.monedas || 0;
-
-    // zoek een scherm in deze wereld met een huisje (H of F) erop en ga erheen
-    var si = -1, doel = null;
-    for (var i = 0; i < AVT_SCHERMEN.length && si < 0; i++) {
-      var sch = AVT_SCHERMEN[i];
-      if (sch.w !== 'a0') continue;
-      for (var y = 0; y < sch.grid.length && si < 0; y++) {
-        for (var x = 0; x < sch.grid[y].length; x++) {
-          var c = sch.grid[y].charAt(x);
-          if (c === 'H' || c === 'F') { si = i; doel = { x: x, y: y }; break; }
-        }
-      }
-    }
-    if (si < 0) return { gevonden: false };
-    avt.scherm = si;
-    avtLaadScherm(si, true);
-
-    avt.x = doel.x; avt.y = doel.y - 1;
-    avtMove(0, 1);
-    var na1 = { tapas: S.tapas || 0, monedas: S.monedas || 0 };
-
-    // en nog een keer, dat mag vandaag niets meer opleveren
-    avt.x = doel.x; avt.y = doel.y - 1;
-    avtMove(0, 1);
-    var na2 = { tapas: S.tapas || 0, monedas: S.monedas || 0 };
-
-    return {
-      gevonden: true,
-      tapaErbij: na1.tapas - voorTapas,
-      monedaErbij: na1.monedas - voorMonedas,
-      tweedeKeerTapa: na2.tapas - na1.tapas,
-      tweedeKeerMoneda: na2.monedas - na1.monedas
-    };
-  });
-  ok(schat.gevonden, 'er staat een huisje op de eerste kaart');
-  ok(schat.tapaErbij === 1, 'een huis betreden geeft +1 tapa');
-  ok(schat.monedaErbij === 5, 'een huis betreden geeft +5 monedas');
-  ok(schat.tweedeKeerTapa === 0 && schat.tweedeKeerMoneda === 0, 'dezelfde dag nog eens levert niets extra op');
+  const kruisScherm = await page.locator('#funCard').innerText();
+  ok(/Biblioteca/i.test(kruisScherm), 'het kruiswoord rendert (' + kruisScherm.split('\n')[0] + ')');
+  ok(await page.evaluate(() => !!kruisLos), 'en er staat echt een puzzel');
 
   ok(errors.length === 0, 'geen JS-fouten: ' + errors.slice(0, 3).join(' | '));
 

@@ -74,7 +74,12 @@ const { chromium } = require('playwright');
   ok(rechtbank.reo === false, 'rechtbanktaal als "reo" doet niet meer mee op het startniveau');
   ok(rechtbank.casa === true && rechtbank.agua === true, 'gewone woorden als casa en agua wel');
 
+  /* v23.147: de horizon groeit mee via FREQ, en FREQ heeft alleen een Nederlandse kolom. In een
+     Engels profiel doet die lijst sindsdien niet meer mee (anders krijg je Spaanse woorden met een
+     Nederlandse omschrijving, zie pw-taal). De browser van deze suite staat op en-US, dus de
+     groeimeting hoort in een Nederlands profiel te gebeuren. */
   const groeit = await page.evaluate(() => {
+    S.lang = 'nl';
     S.srs = {};
     const klein = Object.keys(ltWoordenboek()).length;
     for (let i = 0; i < 400; i++) S.srs['g' + i] = { box: 3, due: today() };
@@ -83,6 +88,20 @@ const { chromium } = require('playwright');
     return { klein: klein, groot: groot };
   });
   ok(groeit.groot > groeit.klein, 'wie meer woorden vast heeft, speelt met een grotere lijst (' + groeit.klein + ' naar ' + groeit.groot + ')');
+
+  const talen = await page.evaluate(() => {
+    S.srs = {};
+    for (let i = 0; i < 400; i++) S.srs['g' + i] = { box: 3, due: today() };
+    S.lang = 'nl';
+    const nl = Object.keys(ltWoordenboek()).length;
+    S.lang = 'en';
+    const en = Object.keys(ltWoordenboek()).length;
+    S.lang = 'nl';
+    S.srs = {};
+    return { nl: nl, en: en };
+  });
+  ok(talen.en < talen.nl, 'een Engels profiel speelt met een kleinere vijver, want FREQ is Nederlands (' + talen.en + ' vs ' + talen.nl + ')');
+  ok(talen.en > 500, 'maar nog steeds met genoeg woorden om te spelen (' + talen.en + ')');
   ok(wb.metSpatie === 0, 'geen uitdrukkingen met spaties');
   ok(wb.metNtilde === 0, 'geen woorden met ñ (die verdwijnt bij het platslaan)');
   ok(wb.teKort === 0, 'niets korter dan drie letters');
