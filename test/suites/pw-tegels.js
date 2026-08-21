@@ -69,6 +69,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     if (gram) {
       await page.evaluate(() => { gwSess = null; gcLeesId = null; show('spiekbrief'); });
     } else {
+      // v23.155: de tabbalk is weg zolang er een dagles loopt; navigeren doe je dan via pauzeren.
+      await page.evaluate(() => { try { lesFlow = null; lesFrameSync(); } catch (e) {} });
       await page.click('#nav button[data-tab="speeltuin"]');
       await page.waitForTimeout(200);
       await page.evaluate(() => { funView = null; renderFun(); });

@@ -56,7 +56,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     lesFlowStart();
     lesFlow.stap = dagPlan().stappen[2] || 'toetsjes';
     const d = document.createElement('div');
-    d.innerHTML = lesFlowBannerHtml();
+    /* v23.155: de strook is uit de schermen naar het lesframe bovenaan verhuisd, dus
+       lesFlowBannerHtml() geeft niets meer terug zolang die les loopt. lesStrookHtml() bouwt hem. */
+    d.innerHTML = lesStrookHtml();
     uit.chispaKnop = !!d.querySelector('#btnLesFlowChispa');
     uit.tekstballon = !!d.querySelector('.lfsay');
     uit.kaart = !!d.querySelector('.card');

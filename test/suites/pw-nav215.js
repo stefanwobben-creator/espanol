@@ -84,6 +84,8 @@ const { chromium } = require('playwright');
   ok(bijSpel.join(',') === 'speeltuin', 'bij een spelletje licht Spelen op (' + bijSpel.join(',') + ')');
 
   // ---- 5. de Spelen-knop brengt je naar de lijst, niet naar het spel waar je in zat ----
+  // v23.155: de tabbalk is weg zolang er een dagles loopt; navigeren doe je dan via pauzeren.
+  await page.evaluate(() => { try { lesFlow = null; lesFrameSync(); } catch (e) {} });
   await page.click('#nav button[data-tab="speeltuin"]');
   await page.waitForTimeout(300);
   const terug = await page.evaluate(() => ({ fun: funView, kop: (document.querySelector('#funCard h2') || {}).textContent }));

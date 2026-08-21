@@ -69,7 +69,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     /* v23.145: de Speeltuin toont er drie vooraan en de rest achter "alle spellen". Deze suite gaat
        over wáár een tegel woont en niet over hoeveel er vooraan staan, dus we klappen hem open: dan
        is "geen enkele grammatica-tegel in de Speeltuin" ook echt over alle tegels. */
-    await page.evaluate(() => { funView = null; S.spelAlles = true; });
+    /* v23.155: de tabbalk is weg zolang er een dagles loopt, en deze suite opent onderweg
+       grammatica-onderwerpen die de flow kunnen starten. De balk is dus alleen bereikbaar als er
+       geen les loopt, en dat is precies de bedoeling van dat frame. */
+    await page.evaluate(() => { funView = null; S.spelAlles = true; lesFlow = null; lesFrameSync(); });
     await page.click('#nav button[data-tab="speeltuin"]');
     await page.waitForTimeout(250);
   }

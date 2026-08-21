@@ -37,6 +37,8 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(300);
 
   // de standalone oefening en zijn functies/data bestaan niet meer
+  // v23.155: de tabbalk is weg zolang er een dagles loopt; navigeren doe je dan via pauzeren.
+  await page.evaluate(() => { try { lesFlow = null; lesFrameSync(); } catch (e) {} });
   await page.click('#nav button[data-tab="speeltuin"]');
   await page.waitForTimeout(300);
   ok(await page.locator('#ftGt').count() === 0, 'de Jaartallen-tegel staat niet meer in de Speeltuin');

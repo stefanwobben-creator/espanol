@@ -111,7 +111,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     lesFlowQuizId = function () { return null; };
     dagPlanVerval();
     uit.naKrimpTotaal = lesFlowStapTotaal();
-    uit.naKrimpBanner = lesFlowBannerHtml().replace(/\s+/g, ' ');
+    // v23.155: de strook woont in het lesframe, zie lesStrookHtml()
+    uit.naKrimpBanner = lesStrookHtml().replace(/\s+/g, ' ');
     // en na bewaren + hervatten nog steeds
     lesFlowBewaar();
     uit.bewaardeStappen = (S.lesFlowNu.stappen || []).slice();

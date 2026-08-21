@@ -644,6 +644,17 @@
   /* v23.146: de strook boven je les. Geen kaart meer, geen kop, geen tekstballon: alleen de balk
      van v23.142 en één regel die zegt waar je bent. */
   .lesstrook{margin:0 0 10px;}
+  /* v23.155: het frame om je dagles. Vast bovenaan, buiten alle tabbladen, zodat er tijdens je les
+     precies één ding op het scherm staat dat niet per blok verandert. */
+  #lesFrame{position:sticky; top:0; z-index:90; background:var(--bg); padding:8px 0 6px;
+            border-bottom:1px solid var(--border); margin:0 0 12px;}
+  #lesFrame.leeg{display:none;}
+  #lesFrame .lesstrook{margin:0;}
+  #lesFrame .lesuit{display:block; margin-top:6px; font-size:.82rem; text-align:right;
+                    text-decoration:underline; cursor:pointer;}
+  /* En de tabbalk gaat weg zolang je bezig bent. Vijf knoppen die je uitnodigen om ergens anders
+     heen te gaan, precies terwijl je iets afmaakt, is de kern van "ik weet niet waar ik ben". */
+  body.in-les nav#nav{display:none;}
   .lesstap{font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;
            font-weight:700;}
   /* v23.144: het gesprek met Chispa. Haar beurten links met haar kop ernaast, die van jou rechts.
@@ -1029,6 +1040,8 @@
 })();
 </script>
 <div class="wrap">
+  <!-- v23.155: het lesframe. Staat altijd in de DOM en is leeg zolang er geen les loopt. -->
+  <div id="lesFrame" class="leeg"></div>
   <header>
     <!-- v23.54: hier stond "¡Vamos …!" met drie puntjes als plaatshouder voor een naam die er nog
          niet is. Een vreemde leest daar geen plaatshouder in maar een fout. De spatie zit nu aan
@@ -1501,7 +1514,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.154";
+var APP_VERSIE = "v23.155";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14360,7 +14373,58 @@ function chispaZegHtml(es, nl){
    kun je met haar praten. Tijdens je les zwijgt ze, en dan is het ook weer iets waard.
 
    Wat ervoor terugkomt is wat de banner nooit gaf: waar je bent. */
+/* ================= HET LESFRAME (v23.155) =================
+
+   Stefan: "Ik weet niet echt wanneer wat gebeurt of waar ik wat kan vinden."
+
+   De dagles rende door vijf tabbladen heen, elk met eigen chrome en een eigen manier terug, en de
+   tabbalk bleef er de hele tijd onder staan. Nu: één strook bovenaan die niet meeverhuist, geen
+   tabbalk zolang je bezig bent, en één manier om te pauzeren.
+
+   lesFrameAan() is de enige plek die bepaalt of het frame er is. Alles hangt daaraan: de strook, de
+   body-klasse, en of de vijftien in-scherm-stroken zichzelf wegcijferen. */
+function lesFrameAan(){
+  return !!(lesFlow && lesFlow.stap && document.getElementById("lesFrame"));
+}
+function lesFrameSync(){
+  var el = document.getElementById("lesFrame");
+  if(!el) return;
+  if(!lesFrameAan()){
+    el.innerHTML = "";
+    el.classList.add("leeg");
+    document.body.classList.remove("in-les");
+    return;
+  }
+  el.classList.remove("leeg");
+  document.body.classList.add("in-les");
+  el.innerHTML = lesStrookHtml() +
+    "<span class='lesuit muted' id='btnLesPauze'>"+
+      ct("pauzeer je les","pause your session")+"</span>";
+  var p = document.getElementById("btnLesPauze");
+  if(p) p.onclick = lesFramePauze;
+}
+/* Eén manier terug. Hij heette op elk van die vijf schermen anders ("Terug", "← Speeltuin", "Verder
+   met je les", "Stoppen"), en op sommige stond hij er niet. lesFlowBewaar() bestaat al sinds v19.92
+   en zet precies genoeg opzij om morgen of straks verder te kunnen. */
+function lesFramePauze(){
+  try { lesFlowBewaar(); } catch(e){}
+  lesFlow = null;
+  lesFrameSync();
+  show("lessen");
+  toast(ct("Je les staat klaar waar je gebleven was.","Your session is waiting where you left off."));
+}
+function lesStrookHtml(){
+  if(!lesFlow) return "";
+  return "<div class='lesstrook'>"+
+    dagBalkHtml(lesFlow.stap, lesFlow.stappen)+
+    "<div class='lesstap'>"+ct("stap","step")+" "+lesFlowStapNum()+"/"+lesFlowStapTotaal()+
+      " · "+lesFlowStapNaam()+"</div></div>";
+}
+/* De vijftien aanroepen in de schermen zelf blijven staan en leveren niets meer zolang het frame er
+   is. Dat is met opzet: vijftien plekken aanpassen om één strook te verplaatsen is vijftien kansen
+   om iets te breken, en deze ene regel doet hetzelfde. */
 function lesFlowBannerHtml(){
+  if(lesFrameAan()) return "";
   if(!lesFlow) return "";
   return "<div class='lesstrook'>"+
     dagBalkHtml(lesFlow.stap, lesFlow.stappen)+
@@ -14644,11 +14708,17 @@ function lesFlowQuizId(){
 
 // v20.2: een schil om de stappenmachine heen, zodat elke overgang zichzelf bewaart. Zo staat de
 // bewaarcode op één plek in plaats van bij elke return in de kern eronder.
+/* v23.155: de strook staat buiten de schermen, dus hij wordt niet meer vanzelf meegetekend als een
+   scherm zichzelf hertekent. Elke stapwissel gaat hierlangs. */
+function lesFlowStap(){
+  try { lesFrameSync(); } catch(e){}
+}
 function lesFlowVolgende(){
   lesFlowVolgendeKern();
   lesFlowBewaar();
 }
 function lesFlowVolgendeKern(){
+  setTimeout(lesFlowStap, 0);   // v23.155: na de schermwissel, zodat de strook de nieuwe stap toont
   if(!lesFlow) return;
   if(lesFlow.stap === null){
     lesFlow.stap = "woorden";
@@ -15263,6 +15333,7 @@ function lesFlowKlaarBonus(){
 }
 
 function lesFlowKlaar(){
+  setTimeout(lesFlowStap, 0);   // v23.155: les klaar, dus frame en tabbalk komen terug
   var t = today();
   var nieuw = !S.lesFlow[t];
   var eersteOoit = !S.lesFlowEerste;
@@ -33017,6 +33088,8 @@ function show(tabId, skipPush){
   if(tabId==="chat"){ renderChat(); }
   // v19.78: wie de chispa-pagina verlaat neemt haar podium niet mee naar de woordjes
   try { chispaBalkCheck(); } catch(e){}
+  // v23.155: het frame hoort bij de app en niet bij het scherm, dus hier, na elke wissel.
+  try { lesFrameSync(); } catch(e){}
   if(tabId==="perfil"){
     // v19.71: wie zijn profiel opent komt kijken hoe het gaat, niet hoe het is ingesteld.
     // De lade gaat dus dicht bij binnenkomst, maar niet bij een hertekening terwijl je erin bezig bent.

@@ -75,7 +75,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     lesFlowStart();
     lesFlow.stap = p.stappen[2];
     const ban = document.createElement('div');
-    ban.innerHTML = lesFlowBannerHtml();
+    /* v23.155: de strook is uit de schermen gehaald en staat nu in het lesframe bovenaan;
+       lesFlowBannerHtml() cijfert zichzelf daarom weg zolang die les loopt. lesStrookHtml() is
+       de functie die hem nog steeds bouwt, en daar gaat deze meting over. */
+    ban.innerHTML = lesStrookHtml();
     const bs = ban.querySelectorAll('.dagbalk i');
     uit.banStaaf = bs.length;
     uit.banKlassen = Array.prototype.map.call(bs, function (x) { return x.className; });
