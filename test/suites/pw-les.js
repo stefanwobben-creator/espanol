@@ -320,17 +320,35 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: het antwoord van het leswerkwoord invullen is FOUT');
   ok(nakijken.goed === 1, 'en het antwoord van het getoonde werkwoord is goed');
 
-  // en de les heet pas af na deze stap
+  /* En de les heet pas af na deze stap.
+     22 aug, v23.173: dit blok riep lesStapAf() op de laatste stap aan zónder iets te beantwoorden.
+     Dat kan sinds v23.173 niet meer: de laatste stap zet een terugkeerdatum, en die staat op vandaag
+     als je de ronde niet haalde. Nul goed is niet gehaald, dus de rij bleef terecht open. De stap
+     wordt nu echt uitgespeeld, zoals de knop in de app het doet: antwoorden, gekozen leegmaken,
+     volgende. Een simulatie die het antwoorden overslaat bewijst niets over de laatste stap. */
   const afNa = await page.evaluate(() => {
     S.brok = {};
     const laatste = LES_STAPPEN.length - 1;
     lesStart('imperfecto'); lesSpel.stap = laatste - 1; lesStapAf();
     const voor = lesKlaar('imperfecto');
-    lesStart('imperfecto'); lesSpel.stap = laatste; lesStapAf();
-    return { voor, na: lesKlaar('imperfecto') };
+    lesStart('imperfecto');
+    lesSpel.stap = laatste; lesSpel.i = 0; lesSpel.goed = 0; lesSpel.fout = 0;
+    lesSpel.gekozen = null; lesSpel.over = null;
+    const n = lesOpgaven(laatste);
+    for (let k = 0; k < n; k++) {
+      const q = lesOpgaveNu();
+      if (q) lesAntwoord(conjVorm(q.v, q.p, lesSpel.t));
+      if (k < n - 1) { lesSpel.i++; lesSpel.gekozen = null; lesSpel.opties = null; }
+    }
+    const rondeGoed = lesSpel.goed;
+    lesStapAf();
+    return { voor, na: lesKlaar('imperfecto'), rondeGoed: rondeGoed, n: n,
+             check: brokLees(lesId('imperfecto')).check, vandaag: today() };
   });
   ok(afNa.voor === false && afNa.na === true,
     'CONTROLE: de les heet pas af NA de overdrachtsstap');
+  ok(afNa.rondeGoed === afNa.n, 'de laatste stap wordt echt uitgespeeld (' + afNa.rondeGoed + '/' + afNa.n + ')');
+  ok(afNa.check > afNa.vandaag, 'en dan staat de terugkeerdatum in de toekomst (' + afNa.check + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 

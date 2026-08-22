@@ -128,6 +128,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       const r = lesRij(id);
       const overWw = {}, overP = {};
       let veilig = 0;
+      /* 22 aug, v23.173: deze lus deed lesSpel.i++ zonder lesSpel.gekozen leeg te maken, en
+         lesAntwoord() keert meteen terug zolang er al iets gekozen is. Elke stap werd dus één keer
+         beantwoord en daarna vijf keer voor niets. Dat viel niet op zolang niemand naar de score
+         keek; sinds v23.173 zet de laatste stap een terugkeerdatum op basis van goed en fout, en
+         toen bleek de simulatie een stap uit te spelen die de app zo nooit uitspeelt. De knop in de
+         app doet i++ én gekozen = null; hier nu ook. */
       while (lesSpel && lesSpel.stap < LES_STAPPEN.length && veilig++ < 400) {
         const stapId = lesStapId(lesSpel.stap);
         if (stapId === 'ontmoeten' || stapId === 'opbouwen') { lesStapAf(); lesSpel.stap++; lesSpel.i = 0; continue; }
@@ -135,7 +141,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
         if (!q) { lesStapAf(); lesSpel.stap++; lesSpel.i = 0; lesSpel.goed = 0; lesSpel.over = null; continue; }
         if (stapId === 'overdracht') { overWw[q.v.inf] = 1; overP[q.p] = 1; }
         lesAntwoord(conjVorm(q.v, q.p, lesSpel.t));
-        lesSpel.i++;
+        lesSpel.i++; lesSpel.gekozen = null;   // zie de noot boven de eerste lus
         if (lesSpel.i >= lesOpgaven(lesSpel.stap)) {
           lesStapAf();
           lesSpel.stap++; lesSpel.i = 0; lesSpel.goed = 0; lesSpel.opties = null; lesSpel.over = null;
@@ -204,7 +210,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
         // buiten de pool zou betekenen dat de mengrij ergens anders uit put
         if (!m.pool().some((w) => w.inf === q.v.inf)) alle['BUITEN:' + q.v.inf] = 1;
         lesAntwoord(conjVorm(q.v, q.p, lesSpel.t));
-        lesSpel.i++;
+        lesSpel.i++; lesSpel.gekozen = null;   // zie de noot boven de eerste lus
         if (lesSpel.i >= lesOpgaven(lesSpel.stap)) {
           lesStapAf();
           lesSpel.stap++; lesSpel.i = 0; lesSpel.goed = 0; lesSpel.opties = null; lesSpel.over = null;

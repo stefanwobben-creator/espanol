@@ -1532,7 +1532,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.172";
+var APP_VERSIE = "v23.173";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2183,7 +2183,7 @@ var CONJ_TIEMPOS = [
    vormEn:"two words: he/has/ha/hemos/hab\u00e9is/han + -ado or -ido",
    doet:"Iets uit een periode die nog loopt: vandaag, deze week, dit jaar, ooit in je leven.",
    doetEn:"Something from a period that is still running: today, this week, this year, ever in your life.",
-   les:"hablar"},
+   les:"comer"},
   {id:"indefinido", es:"pret\u00e9rito indefinido",
    nl:"verleden tijd, afgesloten",                  en:"simple past, finished",
    vb:"aprend\u00ed",  vbNl:"ik leerde (toen, \u00e9\u00e9n keer)",    vbEn:"I learned (once, back then)",
@@ -2191,7 +2191,7 @@ var CONJ_TIEMPOS = [
    vormEn:"accent at the end for yo and \u00e9l: -\u00e9/-\u00ed and -\u00f3/-i\u00f3. Or an irregular stem with no accent (tuve, hice, fui)",
    doet:"E\u00e9n gebeurtenis in een afgesloten periode. Het verhaal gaat erdoor vooruit.",
    doetEn:"One event in a closed period. It moves the story forward.",
-   les:"hablar"},
+   les:"vivir"},
   {id:"imperfecto", es:"pret\u00e9rito imperfecto",
    nl:"verleden tijd, achtergrond",                 en:"past continuous / used to",
    vb:"aprend\u00eda", vbNl:"ik leerde (steeds, gewoonlijk)", vbEn:"I was learning / I used to learn",
@@ -2199,7 +2199,7 @@ var CONJ_TIEMPOS = [
    vormEn:"always -aba- or -\u00eda- before the ending. Only three exceptions: ser, ir, ver",
    doet:"Het toneel waarop het verhaal zich afspeelt: hoe het wás, wat er steeds gebeurde, wat er aan de gang was.",
    doetEn:"The stage the story plays out on: how things were, what kept happening, what was going on.",
-   les:"hablar"},
+   les:"comer"},
   {id:"subjuntivo", es:"presente de subjuntivo",
    nl:"aanvoegende wijs",                           en:"present subjunctive",
    vb:"aprenda",      vbNl:"(dat) ik leer",               vbEn:"(that) I learn",
@@ -18632,9 +18632,35 @@ function conjRegelmatigIn(v, t){
 /* De werkwoorden voor stap 4b: ongezien (niet het leswerkwoord), regelmatig in deze tijd, en uit
    dezelfde groep. Dat laatste omdat overdracht van -ar naar -er een andere sprong is; die hoort bij
    de groepen-as van de volgende ronde. */
+/* v23.173: en in het indefinido ook de onregelmatige.
+
+   Stefan: "onderscheid maken tussen de regelmatige en onregelmatige." Hier zat het gat: deze filter
+   eist conjRegelmatigIn, dus de twintig onregelmatige indefinido-vormen (tuve, dije, hice, fui, di,
+   pidió, durmió) werden in de ladder nooit geproduceerd. Juist het moeilijke deel.
+
+   Waarom alleen het indefinido en niet overal: in het imperfecto zijn er drie uitzonderingen en die
+   horen bij de uitleg, niet bij een overdrachtstoets. In het presente wonen de onregelmatige vormen
+   al in hun eigen zes patroonrijen (v23.122), met elk een eigen ladder. Het indefinido is de enige
+   tijd waar ze nergens geproduceerd worden.
+
+   De groepseis vervalt hier, want bij een onregelmatige stam zegt -ar of -er niets meer: tener en
+   estar hebben allebei -uv-, ongeacht hun groep. */
 function lesOverdrachtPool(t, lesV){
+  var zelfde = function(v){ return v.inf !== lesV.inf; };
+  if(t === "indefinido"){
+    var onreg = VERBOS.filter(function(v){
+      return zelfde(v) && conjHeeftTijd(v, t) && !conjRegelmatigIn(v, t);
+    });
+    var reg = VERBOS.filter(function(v){
+      return zelfde(v) && conjGroep(v) === conjGroep(lesV) && conjRegelmatigIn(v, t);
+    });
+    /* Regelmatig eerst, dan de onregelmatige: de overdrachtsstap moet eerst laten zien dat het
+       patroon zit, en pas daarna dat de uitzonderingen het niet volgen. lesOverdrachtRij() schudt
+       de personen maar loopt de pool op volgorde af, dus deze volgorde is wat je ziet. */
+    return reg.concat(onreg);
+  }
   return VERBOS.filter(function(v){
-    return v.inf !== lesV.inf && conjGroep(v) === conjGroep(lesV) && conjRegelmatigIn(v, t);
+    return zelfde(v) && conjGroep(v) === conjGroep(lesV) && conjRegelmatigIn(v, t);
   });
 }
 
@@ -18819,6 +18845,20 @@ function lesMixVan(id){
 }
 
 function lesId(t){ return "les." + t; }
+/* v23.173: per tijd een eigen modelwerkwoord.
+
+   Hier stond vijf keer hablar, dus Stefan oefende presente, perfecto, indefinido, imperfecto én
+   subjuntivo allemaal met hetzelfde -ar-werkwoord. Dan meet stap 5 of je hablar kent en niet of je
+   het patroon kent; stap 6 bestaat juist om dat verschil te vinden.
+
+   Vast per tijd, en met opzet niet roterend tijdens het klimmen. Wisselen van modelwerkwoord terwijl
+   je een rij aan het verwerven bent verhoogt de moeilijkheid op het verkeerde moment: interleaving
+   is voor een zwakkere leerder een ongewenste moeilijkheid (Hwang et al. 2025), en de blokkering is
+   juist de reden dat deze ladder werkt. Variatie hoort ná het criterium.
+
+   De keuzes: imperfecto en perfecto op comer (het -ía en het regelmatige deelwoord zijn daar het
+   duidelijkst), indefinido op vivir (het knijpen in de eerste en derde persoon is bij -ir het
+   scherpst), presente en subjuntivo houden hablar, want daar is Stefan begonnen. */
 function lesWerkwoord(t){
   var x = conjTiempo(t);
   var naam = (x && x.les) || "hablar";
@@ -18995,6 +19035,11 @@ function vormRijVandaag(){
 /* De stap waar je vandaag aan toe bent. stapMax is de hoogste stap die je AF hebt, dus de volgende
    is stapMax + 1; is er nog niets, dan stap 0. */
 function vormStapVandaag(t){
+  /* v23.173: staat de controle van deze rij open, dan begin je niet waar je gebleven was maar op de
+     losse cel: typen zonder tabel, met het werkwoord dat je kent. Dat is de zuiverste toets van wat
+     er is blijven hangen. Niet de overdrachtsstap, want die voegt een ongezien werkwoord toe en dan
+     meet je twee dingen tegelijk. */
+  if(lesCheckOpen(t)) return LES_STAPPEN.map(function(s){ return s.id; }).indexOf("cel");
   var st = brokLees(lesId(t));
   return (typeof st.stapMax === "number") ? Math.min(st.stapMax + 1, LES_STAPPEN.length - 1) : 0;
 }
@@ -19010,17 +19055,65 @@ function vormWat(){
     (n ? " \u00b7 " + ct(n + (n === 1 ? " fout staat open" : " fouten staan open"),
                           n + (n === 1 ? " mistake still open" : " mistakes still open")) : "");
 }
+/* v23.173: klaar is niet meer voor altijd.
+
+   stapMax ging nooit omlaag, dus een rij die je vier maanden geleden één keer doorliep telde als af
+   en kwam nooit terug. Dat is precies de as waarvan Rawson & Dunlosky zeggen dat hij het meest
+   uitmaakt: één correcte recall in elk van drie gespreide sessies gaf 68 procent na een week, drie
+   correcte recalls binnen één sessie 26 procent. Terugkeer verslaat een hogere drempel.
+
+   Dus: een afgeronde rij krijgt een datum mee. Op die dag telt hij weer als open en begint hij op de
+   losse cel (stap 5), de eerste stap zonder tabel. Haal je hem, dan gaat de volgende controle naar
+   21 dagen; haal je hem niet, dan blijft hij open en werk je hem gewoon weer af.
+
+   Zeven en eenentwintig, want dat is de reeks die er al staat: GRAM_BOX gebruikt 8 en 21 voor de
+   hogere doosjes, en een tweede reeks in dezelfde app is een tweede waarheid. */
+var LES_CHECK_DAGEN = [7, 21];
 function lesKlaar(t){
   var st = brokLees(lesId(t));
-  return (st.stapMax || 0) >= LES_STAPPEN.length - 1;
+  if((st.stapMax || 0) < LES_STAPPEN.length - 1) return false;
+  // af, maar staat de controle open?
+  if(st.check && st.check <= today()) return false;
+  return true;
+}
+/* Wanneer komt deze rij terug? Aangeroepen zodra de laatste stap gehaald wordt. */
+function lesCheckZet(rijId, gehaald){
+  var st = brokLees(lesId(rijId));
+  var ronde = st.checkN || 0;
+  if(!gehaald){ st.check = today(); }                    // niet gehaald: blijft gewoon open
+  else {
+    st.check = addDays(today(), LES_CHECK_DAGEN[Math.min(ronde, LES_CHECK_DAGEN.length - 1)]);
+    st.checkN = ronde + 1;
+  }
+  S.brok = S.brok || {};
+  S.brok[lesId(rijId)] = st;
+}
+/* Staat de controle van deze rij open, dan begin je niet bij stap 0 maar bij de losse cel: de
+   eerste stap zonder tabel in beeld. Herhalen is niet opnieuw leren. */
+function lesCheckOpen(rijId){
+  var st = brokLees(lesId(rijId));
+  return !!(st.check && st.check <= today() && (st.stapMax || 0) >= LES_STAPPEN.length - 1);
 }
 function lesStapAf(){
   if(!lesSpel) return;
   var st = brokLees(lesId(lesSpel.rij));
   st.stapMax = Math.max(st.stapMax || 0, lesSpel.stap);
   st.laatst = today();
+  /* v23.173: en wat je op deze stap presteerde. Hier stond alleen stapMax en laatst, dus de ladder
+     wist wel hoe ver je was maar niet hoe goed het ging: goed en fout gingen nergens heen. Zonder
+     dit is er niets om ooit een drempel of een terugkeer op te baseren. */
+  if(typeof lesSpel.goed === "number" && (lesSpel.goed + lesSpel.fout) > 0){
+    st.goed = (st.goed || 0) + lesSpel.goed;
+    st.fout = (st.fout || 0) + lesSpel.fout;
+    st.laatsteRonde = lesSpel.goed + "/" + (lesSpel.goed + lesSpel.fout);
+  }
   S.brok = S.brok || {};
   S.brok[lesId(lesSpel.rij)] = st;
+  /* de laatste stap gehaald: de rij is af, en dan hoort er een terugkeerdatum bij */
+  if(lesSpel.stap >= LES_STAPPEN.length - 1){
+    var n = lesOpgaven(lesSpel.stap);
+    lesCheckZet(lesSpel.rij, lesSpel.goed >= n - 1);
+  }
   try { persist(); } catch(e){}
 }
 
@@ -19492,7 +19585,23 @@ function lesAntwoord(gegeven){
   if(!q) return;
   var goedeVorm = conjVorm(q.v, q.p, lesSpel.t);
   // zelfde soepelheid als de Conjugador: accenten mogen missen
-  if(stripAcc(norm(g)) === stripAcc(norm(goedeVorm))) lesSpel.goed++; else lesSpel.fout++;
+  var lesGoed = stripAcc(norm(g)) === stripAcc(norm(goedeVorm));
+  if(lesGoed) lesSpel.goed++; else lesSpel.fout++;
+  /* v23.173: en de fout gaat naar het foutenlogboek, net als bij de Conjugador. Zonder dit wist
+     vormFoutenPerTijd() alleen van Conjugador-fouten, terwijl juist deze stap productie toetst.
+
+     bron:"les" erbij, en dat is geen sier: S.errors voedt ook de selectie elders in de app, en
+     Stefan doet 168 antwoorden per dag op 30 procent fout. Een nieuwe foutenstroom zonder herkomst
+     zou de dagles stilletjes in een vervoegingsdagles kunnen veranderen. Met een bron kan een
+     volgende ronde hem wegen of uitsluiten in plaats van hem te moeten uitzoeken. */
+  try {
+    var fid = lesSpel.rij + "-" + q.p + "-" + (lesSpel.t || "");
+    if(lesGoed) foutGoedeBeurt(fid, "conj");
+    else {
+      logError(fid, "conj", lesSpel.t || "", g);
+      if(S.errors && S.errors["conj:" + fid]) S.errors["conj:" + fid].bron = "les";
+    }
+  } catch(e){}
   renderFunLes();
 }
 
