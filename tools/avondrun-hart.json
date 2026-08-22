@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-08-22T02:53:35.672Z",
- "gelukt": false,
+ "wanneer": "2026-08-22T08:38:01.495Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -8,15 +8,23 @@
   "toetsje": 1,
   "nieuweLes": 1
  },
- "geleverd": null,
- "versie": null,
+ "geleverd": {
+  "zinnen": 7,
+  "toetsjes": 1,
+  "nieuweLes": 0
+ },
+ "versie": "v23.166",
  "klachten": [
-  "oud is not defined"
+  "s250: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onzin: 'olvidarse de dejar el bolso en el tren' suggereert dat je jezelf vergeet in de trein te laten liggen, niet je tas. Een natuurlijke zin zou zijn: 'Suelo olvidar el bolso en el tren' of 'Se me olvida el bolso en el tren'.",
+  "s255: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onlogisch: 'Cuando tenga tiempo, iré al parque' suggereert dat je pas naar het park gaat als je tijd hebt, wat tegenstrijdig is met 'vaak'. Een natuurlijke zin zou zijn: 'Cuando tengo tiempo, voy al parque.'",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 4: De uitleg klopt niet: na 'si' met een reële voorwaarde in de toekomst kan zowel indicativo als subjuntivo staan, afhankelijk van de context (hier is 'hace' correct, maar de uitleg is onjuist).; vraag 8: De zin bevat 'esperar' maar de opties zijn 'gustaría'/'gusta' en de uitleg past niet bij de vraag.)",
+  "nieuwe les AFGEKEURD:\n - zin 1 (s254): veld \"tag\" ontbreekt\n - zin 2 (s256): veld \"tag\" ontbreekt\n - zin 3 (s257): veld \"tag\" ontbreekt\n - zin 4 (s258): veld \"tag\" ontbreekt\n - zin 5 (s259): veld \"tag\" ontbreekt\n - zin 6 (s260): veld \"tag\" ontbreekt\n - zin 7 (s261): veld \"tag\" ontbreekt"
  ],
- "reden": "de run is niet afgemaakt",
- "gegenereerd": false,
- "gepubliceerd": false,
- "status": "geklapt",
+ "reden": null,
+ "gegenereerd": true,
+ "gepubliceerd": true,
+ "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-08-22T02:53:38.792Z"
+ "afgemaakt": "2026-08-22T08:44:58.855Z"
 }
