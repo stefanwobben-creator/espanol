@@ -233,12 +233,55 @@ async function main(){
     return;
   }
 
-  await lib.controleerVooraf(cfg, GROEPEN);
+  /* v23.171: de proef mag de nacht niet slopen.
+     Hier stond controleerVooraf(), en die deed process.exit(1) zodra één van de vier stemmen werd
+     geweigerd. Dan werd er niets ingesproken, in geen enkele groep, en werd audio=0 niet eens
+     weggeschreven omdat een process.exit geen exception is. Zie de kop van patch-v23.171.py.
+     Nu: elke groep waarvan de stem het doet gaat gewoon door, en wat niet lukt wordt gemeld op de
+     overzichtspagina van de run in plaats van alleen diep in het log. */
+  const proef = await lib.proefStemmen(cfg, GROEPEN);
+  const stukkeStem = {};
+  proef.stuk.forEach(function(s){ stukkeStem[s.stem] = s.fout && s.fout.message ? s.fout.message : "geweigerd"; });
 
+  let stukMelding = "";
+  if(proef.stuk.length){
+    const regels = proef.stuk.map(function(s){
+      return "- stem `" + s.stem + "` (o.a. groep " + s.groep + "): " +
+        String(s.fout && s.fout.message ? s.fout.message : "geweigerd").slice(0, 300);
+    });
+    console.error("Geweigerde stemmen bij de proefaanroep:");
+    regels.forEach(function(r){ console.error("  " + r); });
+    /* Die staartzin pas nadat we weten of er überhaupt iets doorging: "de rest is wél ingesproken"
+       onder een lijst waarin álles faalde is precies het soort geruststelling dat niet klopt. */
+    stukMelding = "### Stemmen die het niet doen\n\n" + regels.join("\n") +
+      "\n\nDit is bijna altijd een voice-id die niet meer in de bibliotheek staat, of het tegoed.";
+  }
+
+  const overgeslagen = [];
   const delen = [];
+
   for(const g of GROEPEN){
     if(!items[g].length) continue;
+    const stem = lib.stemVoor(g, cfg);
+    if(stukkeStem[stem]){ overgeslagen.push(g); continue; }
     delen.push(await lib.verwerk(g, items[g], opties, cfg, 250));
+  }
+  if(overgeslagen.length){
+    console.error("Overgeslagen groepen: " + overgeslagen.join(", "));
+  }
+  if(stukMelding && delen.length){
+    schrijfSamenvatting(stukMelding + "\n\nDe groepen met een werkende stem zijn wél ingesproken (" +
+      GROEPEN.filter(function(g){ return overgeslagen.indexOf(g) === -1; }).join(", ") + ").");
+  }
+  if(!delen.length){
+    /* Alles overgeslagen. Dit is de tak die vroeger een process.exit was, en het verschil is dat er
+       nu een getal en een reden uit komen in plaats van stilte. */
+    console.error("Geen enkele groep had een werkende stem. Er is niets ingesproken.");
+    if(stukMelding) schrijfSamenvatting(stukMelding + "\n\nEr is vannacht niets ingesproken.");
+    schrijfUit("audio=0");
+    schrijfUit("audiotekens=0");
+    process.exitCode = 0;
+    return;
   }
   lib.slotwoord(delen, cfg, opties);
 

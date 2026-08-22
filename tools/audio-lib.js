@@ -319,7 +319,16 @@ async function spreekUit(cfg, tekst, stem, instelling){
  * stem, dus hooguit acht voor de hele controle. Een gescoopte sleutel die alleen Text to Speech
  * mag, komt hier gewoon doorheen: we vragen niets aan /v1/user, want dat is een ander recht.
  */
-async function controleerVooraf(cfg, groepen){
+/* v23.171: de proef, zonder dat hij ergens dood neervalt.
+ *
+ * Hier stond alleen controleerVooraf(), en die deed process.exit(1) zodra één stem werd geweigerd.
+ * Er zijn vier verschillende stemmen in gebruik (dictado en dialogo-a delen er een, plus dialogo-b,
+ * boek en hist), dus één kapotte stem hield alle vier de groepen tegen. Bij Stefan sloeg dat toe
+ * terwijl zijn sleutel gewoon werkte: geen opnames, en geen melding, want een process.exit is geen
+ * exception en de audio=0-regel werd daardoor ook nooit weggeschreven.
+ *
+ * Geeft { ok: {stem: true}, stuk: [{groep, stem, fout}] } terug. Wie wil stoppen doet dat zelf. */
+async function proefStemmen(cfg, groepen){
   const paren = [];
   (groepen || ALLE_GROEPEN).forEach(function(g){
     const s = stemVoor(g, cfg);
@@ -329,15 +338,27 @@ async function controleerVooraf(cfg, groepen){
     paren.push({ groep: g, stem: s });
   });
 
+  const ok = {}, stuk = [];
   for(const p of paren){
     try{
       await spreekUit(cfg, "Hola", p.stem, null);
+      ok[p.stem] = true;
     }catch(e){
-      meldProefFout(p, e);
-      process.exit(1);
+      stuk.push({ groep: p.groep, stem: p.stem, fout: e });
     }
   }
-  console.log("(Proefaanroep gelukt: sleutel en " + (paren.length === 1 ? "stem doen" : "stemmen doen") + " het.)");
+  return { ok: ok, stuk: stuk, paren: paren };
+}
+
+/* De interactieve variant, voor de handscripts. Daar wíl je stoppen: je staat erbij, je leest de
+   uitleg en je zet je stem opnieuw. Alleen de nachtrun heeft er niets aan om te sterven. */
+async function controleerVooraf(cfg, groepen){
+  const uit = await proefStemmen(cfg, groepen);
+  if(uit.stuk.length){
+    meldProefFout(uit.stuk[0], uit.stuk[0].fout);
+    process.exit(1);
+  }
+  console.log("(Proefaanroep gelukt: sleutel en " + (uit.paren.length === 1 ? "stem doet" : "stemmen doen") + " het.)");
 }
 
 function meldProefFout(p, e){
@@ -536,4 +557,4 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesReeksen, leesHoofdstukkenPerMap, leesDialogos, leesOpties, leesConfig, controleerVooraf, verwerk, slotwoord, stemVoor, ALLE_GROEPEN, MANIFEST_PAD };
+module.exports = { leesZinnen, leesHoofdstukken, leesReeksen, leesHoofdstukkenPerMap, leesDialogos, leesOpties, leesConfig, controleerVooraf, proefStemmen, verwerk, slotwoord, stemVoor, ALLE_GROEPEN, MANIFEST_PAD };
