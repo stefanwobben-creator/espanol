@@ -261,10 +261,52 @@ jobs:
           # niet met zijn eigen eerdere push gaat vechten. Dit is waar run #14 rood op ging.
           git fetch origin main --quiet || true
           git checkout FETCH_HEAD -- audio 2>/dev/null || true
-          git add tools/avondrun-hart.json audio
-          if git diff --cached --quiet; then echo "hartslag en audio ongewijzigd"; exit 0; fi
-          git commit -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
-          git pull --rebase --autostash
+
+          # 22 AUGUSTUS: DE HARTSLAG NAM DE OPNAMES MEE IN ZIJN VAL
+          #
+          # Hier stond: alles in één commit, dan `git pull --rebase`, dan pushen. Twee nachten op rij
+          # liep dat vast met "CONFLICT (content): Merge conflict in tools/avondrun-hart.json", en
+          # daarmee stopte de hele stap. De opnames zaten in diezelfde commit, dus die bleven ook
+          # liggen: dát is de reden dat de zes nieuwe luisterscenes van v23.157 twee nachten lang
+          # geen stem kregen. De poort die roodstond was vervelend maar overleefbaar; deze regel was
+          # de echte blokkade.
+          #
+          # De oorzaak is een categoriefout. De hartslag is een momentopname van déze run en hoort
+          # nooit samengevoegd te worden met die van een vorige: bij een botsing wint per definitie
+          # de nieuwste. Git weet dat niet en probeert netjes te mergen.
+          #
+          # Dus in twee stappen, en in deze volgorde:
+          #   1. de opnames eerst. Dat zijn nieuwe bestanden en die botsen nooit.
+          #   2. gelijklopen met main, met niets van deze run meer in de weg.
+          #   3. de hartslag pas dáárna terugzetten en committen, zodat hij niets meer hoeft te mengen.
+          HART=$(mktemp)
+          cp tools/avondrun-hart.json "$HART"
+          # en meteen terug naar de versie van HEAD, zodat de werkmap schoon is als we zo gaan
+          # rebasen. Zonder dit moet git hem stashen en botst hij alsnog bij het terugzetten
+          # ("Applying autostash resulted in conflicts"), wat dezelfde ellende in een ander jasje is.
+          git checkout -- tools/avondrun-hart.json 2>/dev/null || true
+
+          git add audio
+          N=$(git diff --cached --name-only | wc -l | tr -d ' ')
+          if [ "$N" = "0" ]; then
+            echo "geen nieuwe opnames"
+          else
+            git commit -q -m "avondrun: $N opnames"
+          fi
+
+          if ! git pull --rebase; then
+            git rebase --abort 2>/dev/null || true
+            echo "::warning::rebase mislukt; hartslag en opnames blijven liggen tot de volgende run."
+            exit 0
+          fi
+
+          cp "$HART" tools/avondrun-hart.json
+          git add tools/avondrun-hart.json
+          if git diff --cached --quiet; then
+            echo "hartslag ongewijzigd"
+          else
+            git commit -q -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
+          fi
           git push
 
       # Pas hier valt de run om. Alles hierboven heeft dan zijn werk gedaan: het bewijs is bewaard,
