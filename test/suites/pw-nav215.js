@@ -44,7 +44,12 @@ const { chromium } = require('playwright');
     ok(oef.indexOf(id) !== -1, 'Oefenen bevat ' + id);
   });
 
-  await page.evaluate(() => { funView = null; show('speeltuin'); });
+  /* Sinds v23.145 toont de Speeltuin alleen "het spel van vandaag" (dayHash-rotatie) plus Música;
+     de rest staat achter de knop "Alle spellen". S.speelAlles (hierboven gezet) ontgrendelt alleen
+     de nog-niet-verdiende spellen — het uitklappen van de rest is een ándere sleutel: S.spelAlles.
+     Zonder die tweede sleutel hing deze suite af van welk spel de rotatie vandaag koos, en was hij
+     alleen groen op ws- of mem-dagen (gevonden in de nachtrun van 22 aug, rood op onaangeroerd main). */
+  await page.evaluate(() => { funView = null; S.spelAlles = true; show('speeltuin'); });
   await page.waitForTimeout(300);
   const spel = await page.evaluate(() => Array.from(document.querySelectorAll('#funCard .lesson')).map(r => r.id).filter(Boolean));
   ok(spel.indexOf('ftAudi') === -1 && spel.indexOf('ftCorr') === -1 && spel.indexOf('ftConj') === -1,
