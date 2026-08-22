@@ -1,4 +1,5 @@
-// pw-stem.js (21 aug, v23.161) — heeft elke luisteroefening ook echt een stem?
+// pw-stem.js (22 aug, v23.166) — heeft elke luisteroefening ook echt een stem, en zoekt hij hem
+// waar hij ligt?
 //
 // WAAROM DIT ER IS
 //
@@ -27,6 +28,32 @@
 //      geen ramp is: bij een ontbrekend bestand schakelt de oefening over op tekst, zegt erbij dat
 //      hij niet meetelt voor luisteren, en telt dan ook echt niet mee. Zonder die eerlijkheid zou
 //      ontbrekend geluid als luisterbewijs de statistiek in lopen.
+//
+// 22 AUGUSTUS: HETZELFDE VOOR HET LEESBOEK, EN DAAR ZAT AL EEN VERSCHIL
+//
+// Stefan, 22 aug: "check ook dat het goed gaat, dan doet de voorspelling het maar ook de audio bijv
+// bij het leesboek." Gemeten: audio/boek/ had dertien bestanden, precies de dertien Chispa-
+// hoofdstukken, en de acht hoofdstukken van Un año en Cádiz stonden er sinds v23.157 zonder één
+// opname. Dezelfde vorm als de zes luisterscenes hierboven: het inspreekscript voor het boek was
+// handwerk en niemand draaide het. Sinds v23.166 doet de nachtrun het boek mee.
+//
+// Bij het aanzetten bleek er iets anders. Drie plekken schreven los van elkaar op in welke map de
+// opname van een hoofdstuk hoort (boekSpreek() in de app, groepVan() in generate-boek-audio.js, de
+// filterregel in de nachtrun) en ze waren het niet eens: de app zocht de recepten in audio/receta/,
+// de generator schreef ze in audio/boek/, en een receta-stem bestond niet. Het deed niets omdat de
+// recepten stem:false hebben en dus geen luisterknop, maar zonder deze suite zou de nachtrun zes
+// recepten hebben ingesproken (4.850 tekens) in een map waar de app nooit kijkt.
+//
+//   4. ELK HOOFDSTUK HOORT BIJ EEN REEKS. Anders staat het ook op geen plank in de app, en dan is
+//      ontbrekend geluid het kleinste van twee problemen (v23.162: acht hoofdstukken in BOOK die
+//      nergens te vinden waren).
+//   5. WAAR DE APP HET BESTAND ZOEKT, IS WAAR HET SCRIPT HET NEERZET. Dit is de meting die het
+//      receta-verschil zou hebben gevangen, en hij gaat door de voordeur: de suite opent elk
+//      hoofdstuk in de app en vangt op welke URL boekSpreek() opvraagt. Niet wat de plank belooft,
+//      maar wat de knop doet.
+//   6. GEEN VERTELLER, GEEN KNOP, GEEN OPNAME. Het controlegeval van deze helft: bij de recepten
+//      staat er geen luisterknop, en dan hoort het inspreekscript ze ook niet op de lijst te
+//      hebben. Een van de twee zonder de ander is precies het gat dat hier zat.
 //
 // WAT DEZE SUITE NIET DOET
 //
@@ -157,6 +184,91 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(eerlijk.zonderGeluid.tekstZichtbaar, 'en de tekst komt in beeld, want lezen is dan het enige dat overblijft');
   ok(eerlijk.teltMet === true, 'een ronde mét geluid telt als luisterbewijs');
   ok(eerlijk.teltZonder === false, 'en een ronde zonder geluid niet: gelezen is niet gehoord');
+
+  // ---- 4 t/m 6. het leesboek ----
+  const boekLib = lib.leesHoofdstukkenPerMap();
+
+  /* Wat de APP doet als je op Luisteren drukt. Niet nagerekend maar afgekeken: Audio wordt
+     vervangen door een dubbelganger die de src opschrijft en verder niets doet, en dan wordt
+     boekSpreek() aangeroepen voor elk hoofdstuk. Wat er in vangst staat is dus letterlijk het
+     bestand dat de app zou opvragen. Zo hoeft deze suite de voorvoegselregel niet te kennen, en
+     dat is precies het punt: die regel hoort maar op één plek te staan. */
+  const appKant = await page.evaluate(() => {
+    const vangst = {};
+    const knop = {};
+    const echt = window.Audio;
+    window.Audio = function (src) {
+      this.src = src;
+      this.play = function () { return { catch: function () {} }; };
+      this.pause = function () {};
+      this.addEventListener = function () {};
+      vangst[window.__nu] = src;
+    };
+    BOOK.forEach(function (h) {
+      window.__nu = h.id;
+      try { boekSpreek(h); } catch (e) { vangst[h.id] = 'FOUT: ' + e.message; }
+      /* En de voordeur ernaast: zet de app er een luisterknop bij? Dat is wat bepaalt of een
+         opname ooit hoorbaar is. */
+      try {
+        startBoek(h.id);
+        knop[h.id] = !!document.getElementById('btnBoekLuister');
+      } catch (e) { knop[h.id] = 'FOUT'; }
+    });
+    window.Audio = echt;
+    try { boekStop(); } catch (e) {}
+    return { vangst: vangst, knop: knop, ids: BOOK.map(function (h) { return h.id; }) };
+  });
+
+  console.log('\n-- 4. elk hoofdstuk hoort bij een reeks --');
+  console.log('   ' + appKant.ids.length + ' hoofdstukken · ' +
+    Object.keys(boekLib.perMap).map(function (m) { return m + ': ' + boekLib.perMap[m].length; }).join(' · '));
+  ok(boekLib.wees.length === 0,
+    'geen hoofdstuk staat buiten de boekenplank (' + (boekLib.wees.join(', ') || 'geen') + ')');
+
+  // waar het script het neerzet: id -> map, uit dezelfde bron die de nachtrun gebruikt
+  const scriptMap = {};
+  Object.keys(boekLib.perMap).forEach(function (m) {
+    boekLib.perMap[m].forEach(function (h) { scriptMap[h.id] = m; });
+  });
+
+  const scheef = [];
+  const zonderStem = [];
+  appKant.ids.forEach(function (id) {
+    const src = appKant.vangst[id] || '';
+    const m = /^audio\/([^/]+)\/(.+)\.mp3$/.exec(src);
+    if (!appKant.knop[id]) {
+      // geen knop: dan hoort het script hem ook niet in te spreken
+      if (scriptMap[id]) zonderStem.push(id + ' (geen knop, maar het script spreekt hem wel in)');
+      return;
+    }
+    if (!m) { scheef.push(id + ' (de app vraagt niets op: "' + src + '")'); return; }
+    if (m[2] !== id) { scheef.push(id + ' (de app vraagt ' + m[2] + '.mp3 op)'); return; }
+    if (!scriptMap[id]) { scheef.push(id + ' (knop in de app, maar het script kent hem niet)'); return; }
+    if (m[1] !== scriptMap[id]) scheef.push(id + ' (app: audio/' + m[1] + '/, script: audio/' + scriptMap[id] + '/)');
+  });
+
+  console.log('\n-- 5. de app zoekt waar het script neerzet --');
+  const metKnop = appKant.ids.filter(function (id) { return appKant.knop[id]; });
+  console.log('   ' + metKnop.length + ' hoofdstukken met een luisterknop, ' +
+    (appKant.ids.length - metKnop.length) + ' zonder');
+  ok(scheef.length === 0, 'elk hoofdstuk met een knop wordt gezocht waar het wordt neergezet (' +
+    (scheef.slice(0, 4).join('; ') || 'alle') + ')');
+
+  console.log('\n-- 6. het controlegeval: geen verteller, geen knop, geen opname --');
+  const stil = appKant.ids.filter(function (id) { return !appKant.knop[id]; });
+  console.log('   zonder knop: ' + (stil.join(', ') || 'geen'));
+  ok(stil.length > 0, 'er is een reeks zonder verteller, dus dit geval wordt echt getest');
+  ok(zonderStem.length === 0,
+    'en die staat ook niet op de lijst van de nachtrun (' + (zonderStem.join(', ') || 'geen') + ')');
+
+  // hoeveel van het boek wacht nog op een nachtrun? informatief, net als bij de scenes hierboven
+  const boekMist = [];
+  Object.keys(boekLib.perMap).forEach(function (m) {
+    boekLib.perMap[m].forEach(function (h) {
+      if (!fs.existsSync(path.join(WORTEL, 'audio', m, h.id + '.mp3'))) boekMist.push(h.id);
+    });
+  });
+  console.log('   nog geen opname: ' + (boekMist.join(', ') || 'geen, alles is ingesproken'));
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 

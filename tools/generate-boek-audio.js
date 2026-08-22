@@ -25,17 +25,23 @@
 
 const lib = require("./audio-lib");
 
-/* v23.27: BOOK bevat sinds v23.23 twee reeksen. Chispa (boek-*) houdt zijn verteller, de
-   geschiedenisreeks (hist-*) krijgt een eigen stem en een eigen map. De verdeling gebeurt op het
-   id-voorvoegsel, want dat is hoe de app ze zelf ook uit elkaar houdt. */
-function groepVan(id){ return String(id).indexOf("hist-") === 0 ? "hist" : "boek"; }
+/* v23.166: welke reeks in welke map hoort, staat op de boekenplank in de app (LEES_REEKSEN) en
+   nergens anders meer. Hier stond het als "hist- naar hist, de rest naar boek", en die regel wist
+   niets van de recepten: die kwamen in audio/boek/ terecht terwijl de app ze in audio/receta/
+   zocht, en er bestond geen receta-stem. Nu leest dit script hetzelfde als de app en de nachtrun.
+   Reeksen zonder verteller (stem:false) doen niet mee; zie leesHoofdstukkenPerMap(). */
 
 async function main(){
   const opties = lib.leesOpties(process.argv);
-  const alle = lib.leesHoofdstukken();
-  const perGroep = { boek: [], hist: [] };
-  alle.forEach(function(h){ perGroep[groepVan(h.id)].push(h); });
-  const groepen = ["boek", "hist"].filter(function(g){ return perGroep[g].length; });
+  const { perMap, wees } = lib.leesHoofdstukkenPerMap();
+  if(wees.length){
+    /* Een hoofdstuk dat bij geen enkele reeks hoort, staat ook op geen plank in de app: dan is
+       ontbrekend geluid het kleinste van twee problemen. Melden, niet stilzwijgend inspreken. */
+    console.error("Let op: " + wees.length + " hoofdstuk(ken) horen bij geen enkele reeks en worden " +
+                  "overgeslagen: " + wees.join(", "));
+  }
+  const perGroep = perMap;
+  const groepen = Object.keys(perGroep).filter(function(g){ return perGroep[g].length; });
   const cfg = lib.leesConfig(opties, groepen);
   if(!opties.droog){
     await lib.controleerVooraf(cfg, groepen);

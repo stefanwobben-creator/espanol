@@ -13641,9 +13641,17 @@ function boekEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&l
 
 /* ================= DE BOEKENPLANK (v23.26) =================
    Een reeks is een boek. Ze staan hier los van de hoofdstukken zelf, want een hoofdstuk hoort te
-   weten waar het over gaat en niet hoe de kast eruitziet. */
+   weten waar het over gaat en niet hoe de kast eruitziet.
+
+   v23.166: en de reeks vertelt ook wie hem inspreekt. stem:false is "geen verteller, geen knop";
+   map is de map onder audio/ waar zijn opnames staan. Dat stond hiervoor drie keer los opgeschreven
+   (boekSpreek hier, groepVan in generate-boek-audio.js, de filterregel in avondrun-audio.js) en die
+   drie waren het al niet meer eens: de app zocht de recepten in audio/receta/, de generator schreef
+   ze in audio/boek/, en een receta-stem bestond niet. Onschadelijk omdat de recepten geen knop
+   hebben, maar zo begint elk verschil dat later wel iets kost. Een reeks zonder verteller krijgt
+   dus ook geen map: geluid dat nooit klinkt hoort nergens te staan. */
 var LEES_REEKSEN = [
- {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa", stem:true,
+ {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa", stem:true, map:"boek",
   soortNl:"verhaal", soortEn:"story",
   omNl:"Een wezentje zonder naam zoekt zijn eigen lied, van de kust tot het kasteel.",
   omEn:"A small creature without a name looks for its own song, from the coast to the castle."},
@@ -13654,11 +13662,13 @@ var LEES_REEKSEN = [
  /* v23.162: de acht hoofdstukken van v23.157 stonden wel in BOOK maar op geen enkele plank, want
     de plank zoekt op id-voorvoegsel en er was geen reeks met pre:"cadiz-". Ze telden mee in je
     leesvoortgang en waren nergens te vinden. */
- {id:"cadiz", pre:"cadiz-", nl:"Un año en Cádiz", en:"Un año en Cádiz", stem:true,
+ /* Dezelfde verteller en dus dezelfde map als Chispa: het manifest houdt de stem per map bij,
+     dus een eigen map zou betekenen dat je een tweede stem moet kiezen voordat er iets klinkt. */
+ {id:"cadiz", pre:"cadiz-", nl:"Un año en Cádiz", en:"Un año en Cádiz", stem:true, map:"boek",
   soortNl:"verhaal", soortEn:"story",
   omNl:"Een jaar in het zuiden, van de eerste dag op een onbekend adres tot de carnaval waarop je meezingt.",
   omEn:"A year in the south, from your first day at an unfamiliar address to the carnival where you sing along."},
- {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true,
+ {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true, map:"hist",
   soortNl:"geschiedenis", soortEn:"history",
   omNl:"Spanje van 1931 tot nu, in tien hoofdstukken: de oorlog, de honger, de stilte en de terugweg.",
   omEn:"Spain from 1931 until now, in ten chapters: the war, the hunger, the silence and the way back."}
@@ -13860,13 +13870,12 @@ function startBoek(id){
 function boekSpreek(h){
   boekStop();
   try{
-    /* v23.27: de geschiedenisreeks heeft een eigen verteller en dus een eigen map. Het voorvoegsel
-       van het id bepaalt waar we zoeken, net zoals de boekenplank er de reeks aan herkent. Ontbreekt
-       het bestand, dan valt de app terug op de voorleesstem van de browser; dat was al zo. */
-    /* v23.81: derde reeks. Elke reeks heeft zijn eigen verteller en dus zijn eigen map; het
-       voorvoegsel van het id bepaalt welke. */
-    var pre = String(h.id);
-    var map = pre.indexOf("hist-") === 0 ? "hist" : pre.indexOf("receta-") === 0 ? "receta" : "boek";
+    /* v23.166: welke map, dat weet de reeks. Hier stond die vraag voor de derde keer beantwoord,
+       als een rij voorvoegsels, en die rij was het niet eens met de twee andere plekken (zie de kop
+       bij LEES_REEKSEN). Ontbreekt het bestand, dan valt de app terug op de voorleesstem van de
+       browser; dat was al zo en blijft zo. */
+    var reeks = leesReeksVan(h);
+    var map = (reeks && reeks.map) || "boek";
     var a = new Audio("audio/" + map + "/" + h.id + ".mp3");
     boekAudioEl = a;
     var teruggevallen = false;

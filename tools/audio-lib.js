@@ -67,6 +67,40 @@ function leesHoofdstukken(){
   });
 }
 
+/* De boekenplank uit de app (v23.166). Elke reeks vertelt zelf aan welk voorvoegsel je hem herkent,
+   of hij een verteller heeft (stem) en in welke map onder audio/ zijn opnames staan (map).
+
+   Waarom dit hier hoort: dat feit stond op drie plekken los opgeschreven, als een rij voorvoegsels
+   in boekSpreek() in de app, in groepVan() hier in tools/, en in de filterregel van de nachtrun. Ze
+   waren het niet meer eens: de app zocht de recepten in audio/receta/ en de generator schreef ze in
+   audio/boek/. Nu leest alles dezelfde regel. */
+function leesReeksen(){
+  return leesArrayLiteral(leesAppBron(), "LEES_REEKSEN");
+}
+
+/* De hoofdstukken die een stem horen te krijgen, gegroepeerd per audiomap.
+
+   Twee soorten hoofdstukken doen niet mee, om verschillende redenen:
+   - een reeks zonder verteller (stem:false, de recepten): de app zet er geen luisterknop bij, dus
+     een opname is geld voor geluid dat nooit klinkt.
+   - een hoofdstuk dat bij geen enkele reeks hoort: dat staat ook nergens op de boekenplank, en dan
+     is ontbrekend geluid niet het probleem maar het symptoom (v23.162: acht hoofdstukken stonden
+     wel in BOOK en op geen plank). Ze komen apart terug als `wees`, zodat een controle erop kan
+     afgaan in plaats van ze stilletjes over te slaan. */
+function leesHoofdstukkenPerMap(){
+  const reeksen = leesReeksen();
+  const perMap = {};
+  const wees = [];
+  leesHoofdstukken().forEach(function(h){
+    let bij = null;
+    reeksen.forEach(function(r){ if(String(h.id).indexOf(r.pre) === 0) bij = r; });
+    if(!bij){ wees.push(h.id); return; }
+    if(bij.stem === false || !bij.map) return;
+    (perMap[bij.map] = perMap[bij.map] || []).push(h);
+  });
+  return { perMap: perMap, wees: wees };
+}
+
 /* Alle regels van alle luisterscenes, per spreker gesplitst. Elke regel is een eigen bestand:
    ElevenLabs doet een stem per aanroep, dus een dialoog moet toch in stukken. Dat kost precies
    evenveel tekens en levert twee dingen op die je anders niet had: de app kan tonen welke regel
@@ -502,4 +536,4 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesDialogos, leesOpties, leesConfig, controleerVooraf, verwerk, slotwoord, stemVoor, ALLE_GROEPEN, MANIFEST_PAD };
+module.exports = { leesZinnen, leesHoofdstukken, leesReeksen, leesHoofdstukkenPerMap, leesDialogos, leesOpties, leesConfig, controleerVooraf, verwerk, slotwoord, stemVoor, ALLE_GROEPEN, MANIFEST_PAD };

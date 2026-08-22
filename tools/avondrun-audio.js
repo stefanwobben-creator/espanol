@@ -20,14 +20,15 @@
  * WAT DIT SCRIPT DOET
  *
  * Draait ná het genereren en vóór het publiceren, en spreekt in wat er in de repo staat maar nog
- * geen mp3 heeft. Drie groepen, want dat zijn de groepen die 's nachts kunnen groeien:
+ * geen mp3 heeft:
  *
  *   dictado    audio/dictado/<zin-id>.mp3        de "Hoor hem"-knop bij een oefenzin
  *   dialogo-a  audio/dialogo-a/<scene>-<n>.mp3   de luisterscenes van Escuchar, stem A
  *   dialogo-b  audio/dialogo-b/<scene>-<n>.mp3   dezelfde scenes, stem B
+ *   de boeken  audio/<map>/<hoofdstuk-id>.mp3    elke reeks met een verteller, in zijn eigen map
  *
- * Het boek staat er bewust niet bij. Dat groeit niet vanzelf; een nieuw hoofdstuk is een besluit
- * dat Stefan neemt, en dan draai je tools/generate-boek-audio.js met de hand.
+ * Welke boekenmappen dat zijn staat niet hier maar op de boekenplank in de app (LEES_REEKSEN); zie
+ * de kop bij GROEPEN hieronder voor waarom het boek er sinds 22 augustus bij staat.
  *
  * DRIE REGELS DIE HET VEILIG HOUDEN
  *
@@ -64,8 +65,39 @@ const lib = require("./audio-lib");
 const fs = require("fs");
 const path = require("path");
 
-const GROEPEN = ["dictado", "dialogo-a", "dialogo-b"];
+/* 22 AUGUSTUS: HET BOEK GAAT MEE
+ *
+ * Hier stond alleen dictado en de twee dialoogstemmen, met als reden: "een nieuw hoofdstuk is een
+ * besluit dat Stefan neemt, en dan draait hij tools/generate-boek-audio.js met de hand."
+ *
+ * Die redenering klopt niet meer met de praktijk. Gemeten op 22 augustus: acht hoofdstukken van
+ * Un año en Cádiz staan er sinds v23.157 zonder één opname. Niemand draait dat script met de hand,
+ * en dat is geen slordigheid maar precies wat je verwacht: een stap die alleen bestaat als iemand
+ * eraan denkt, gebeurt niet. Dezelfde vorm als de zes luisterscenes die twee nachten geen stem
+ * kregen.
+ *
+ * De veiligheid die hier al zat blijft gelden en is genoeg: alleen wat ontbreekt wordt ingesproken,
+ * en iets opnieuw inspreken boven de alarmgrens blokkeert de hele stap.
+ *
+ * Wat het boek wél nieuw maakt is de omvang. Een dialoogregel is vijftig tekens, een hoofdstuk
+ * duizend: de acht Cádiz-hoofdstukken zijn 9.381 tekens tegenover 2.117 voor alle luisterscenes
+ * samen. Daarom een tweede rem die er nog niet was: een tekengrens per run. Die staat niet op
+ * "ongeveer wat een normale nacht kost" maar ruim genoeg om een bewust nieuw boek in één keer te
+ * doen, en krap genoeg dat een ongeluk (een lijst die per ongeluk verdubbelt) niet stilletjes je
+ * tegoed leegtrekt. Boven de grens wordt er níéts ingesproken, net als bij de alarmbel: half werk
+ * is hier duurder dan geen werk, want de tweede helft kost morgen nog een keer een aanroep.
+ *
+ * WELKE BOEKENMAPPEN, DAT WEET DIT SCRIPT NIET
+ *
+ * Dat staat op de boekenplank in de app (LEES_REEKSEN, v23.166) en wordt hier gelezen. Eerst stond
+ * hier "alles behalve hist-", en dat had vannacht zes recepten ingesproken in audio/boek/ terwijl
+ * de app ze in audio/receta/ zoekt en er nooit een luisterknop bij zet: 4.850 tekens voor geluid
+ * dat niemand kan horen. Een reeks zonder verteller doet nu niet mee, omdat de reeks dat zelf
+ * zegt. */
+const BOEK = lib.leesHoofdstukkenPerMap();
+const GROEPEN = ["dictado", "dialogo-a", "dialogo-b"].concat(Object.keys(BOEK.perMap));
 const ALARM = Number(process.env.AUDIO_ALARM || 80);
+const TEKENS_MAX = Number(process.env.AUDIO_TEKENS_MAX || 40000);
 const UIT = process.env.GITHUB_OUTPUT || "";
 const SAMENVATTING = process.env.GITHUB_STEP_SUMMARY || "";
 
@@ -127,9 +159,23 @@ async function main(){
   const zinnen = lib.leesZinnen();
   const dial = lib.leesDialogos();
   const items = { dictado: zinnen, "dialogo-a": dial["dialogo-a"], "dialogo-b": dial["dialogo-b"] };
+  Object.keys(BOEK.perMap).forEach(function(map){ items[map] = BOEK.perMap[map]; });
 
+  if(BOEK.wees.length){
+    /* Een hoofdstuk dat bij geen enkele reeks hoort staat ook nergens op de plank in de app. Dat is
+       precies wat er in v23.162 misging met de acht Cádiz-hoofdstukken, en het is een groter
+       probleem dan ontbrekend geluid. Melden dus, en niet stilzwijgend inspreken. */
+    console.log("Let op: " + BOEK.wees.length + " hoofdstuk(ken) horen bij geen enkele reeks en " +
+                "krijgen dus geen stem: " + BOEK.wees.join(", "));
+    schrijfSamenvatting("### Hoofdstukken zonder reeks\n\n" + BOEK.wees.join(", ") +
+      " staan in BOOK maar op geen boekenplank. Ze krijgen geen opname zolang dat zo is.");
+  }
+
+  const boekN = Object.keys(BOEK.perMap).reduce(function(n, m){ return n + BOEK.perMap[m].length; }, 0);
   console.log("Gevonden in de repo: " + zinnen.length + " oefenzinnen, " +
-              (dial["dialogo-a"].length + dial["dialogo-b"].length) + " dialoogregels.");
+              (dial["dialogo-a"].length + dial["dialogo-b"].length) + " dialoogregels, " +
+              boekN + " hoofdstukken met een verteller (" +
+              Object.keys(BOEK.perMap).join(", ") + ").");
 
   const plan = await telPlan(items, !opties.droog);
   console.log("");
@@ -153,6 +199,21 @@ async function main(){
     console.error(melding);
     console.error("Nakijken met: node tools/avondrun-audio.js --droog");
     console.error("Bewust doorzetten kan met AUDIO_ALARM hoger, of met de hand via tools/generate-audio.js.");
+    schrijfSamenvatting("### Audio overgeslagen\n\n" + melding);
+    schrijfUit("audio=0");
+    schrijfUit("audiotekens=0");
+    return;
+  }
+
+  if(plan.tekens > TEKENS_MAX){
+    /* De tweede rem, en de reden dat het boek hier veilig bij kan. Zie de kop bij GROEPEN. */
+    const melding = "De audiostap wil " + plan.tekens.toLocaleString("nl-NL") + " tekens inspreken, " +
+      "en dat is meer dan de grens van " + TEKENS_MAX.toLocaleString("nl-NL") + " per run. Zoveel " +
+      "nieuwe tekst in een nacht is geen gewone aanwas; kijk eerst wat erbij is gekomen. Er is " +
+      "niets ingesproken, en morgen staat het weer op de lijst.";
+    console.error(melding);
+    console.error("Nakijken met: node tools/avondrun-audio.js --droog");
+    console.error("Bewust doorzetten kan met AUDIO_TEKENS_MAX hoger.");
     schrijfSamenvatting("### Audio overgeslagen\n\n" + melding);
     schrijfUit("audio=0");
     schrijfUit("audiotekens=0");
