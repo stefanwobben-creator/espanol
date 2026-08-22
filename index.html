@@ -1532,7 +1532,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.169";
+var APP_VERSIE = "v23.170";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15255,7 +15255,13 @@ function lesFlowGramLijst(){
   }
   var gid = null;
   try { gid = lesFlowGramId(); } catch(e){ gid = null; }
-  if(gid && uit.indexOf(gid) === -1) uit.push(gid);
+  /* v23.170: ontdubbelen op de kále concept-id. Hier stond uit.indexOf(gid), en dat vergelijkt
+     "opfris-genero" met "concept-genero": verschillende strings, dus hetzelfde onderwerp kon twee
+     keer in dezelfde les staan, één keer als opfrisvraag en één keer als volledige microles. Met
+     twee lessen op een dag zijn dat er vier, en dat is een deel van Stefans "heel veel el of la". */
+  var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, ""); };
+  var alHier = uit.map(kaal);
+  if(gid && alHier.indexOf(kaal(gid)) === -1) uit.push(gid);
   return uit;
 }
 function lesFlowGramId(){
@@ -30830,26 +30836,53 @@ function gcConceptenVoorSpiek(i){
 function gramLees(cid){
   return (S.gram && S.gram[cid]) || {box:0, due:"", goed:0, fout:0, laatst:""};
 }
+/* v23.170: HET EERSTE ANTWOORD VAN DE DAG BESLIST.
+
+   Hier stond een dagrem die alleen omhoog werkte:
+
+       goed  ->  doos omhoog, hoogstens één keer per dag (if st.bd !== today())
+       fout  ->  doos naar 0, altijd, zonder rem
+
+   Zet die twee achter elkaar op één dag en je einddoos hangt af van de VOLGORDE van je antwoorden.
+   Eerst goed dan fout eindigt op 0 en kan die dag niet meer omhoog, want de rem staat al aan. Eerst
+   fout dan goed eindigt op doos 1. Zelfde dag, zelfde antwoorden, andere uitkomst. Dat heeft
+   niemand ontworpen.
+
+   Wat het in de praktijk deed: één fout per dag was genoeg om voor altijd op doos 0 te blijven,
+   hoeveel je er daarna ook goed deed. En doos 0 met twee of meer fouten is precies de voorwaarde
+   waarop lesFlowGramId() de volledige microles geeft. Stefan, 22 aug: "ik heb el of la vandaag heel
+   veel gedaan." Zijn genero stond op doos 0 met 52 goed tegen 17 fout.
+
+   De nieuwe regel is dat het eerste antwoord van de dag beslist, en dat is niet willekeurig: de
+   eerste keer dat je een onderwerp die dag ophaalt is de echte toets. Alles daarna is herhaling
+   binnen dezelfde sessie, besmet door wat je net gezien hebt, en dus geen bewijs van geheugen.
+
+   De reset naar 0 blijft staan en is met opzet niet verzacht tot "één stap omlaag". Stefan vroeg
+   er zelf om ("alle fouten die ik maak moeten weer terug"), SuperMemo noemt de één-stap-variant een
+   onjuiste mutatie van Leitner, en Anki reset standaard volledig. Zachter maken vertraagt bovendien
+   het herkennen van een onderwerp dat echt vastzit, en dat is precies wat we hier zoeken. */
 function gramBij(cid, goed){
   if(!cid) return;
   S.gram = S.gram || {};
   var st = S.gram[cid] || {box:0, due:"", goed:0, fout:0, laatst:""};
-  if(goed){
-    st.goed++;
-    /* v23.92: dezelfde dagrem als bij de woorden. Vijf goede antwoorden in één sessie zetten dit
-       onderwerp van doos 0 naar doos 5, en dan zag je het 55 dagen niet meer, na één goede bui.
-       Het aantal goede antwoorden loopt gewoon door; alleen de doos wacht op morgen. */
-    if(st.bd !== today()){
-      st.bd = today();
+  // de tellers lopen altijd door; die zijn de geschiedenis en niet het oordeel
+  if(goed) st.goed++;
+  else { st.fout++; st.laatst = today(); }
+
+  if(st.bd !== today()){
+    st.bd = today();
+    if(goed){
       st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
       st.due = addDays(today(), GRAM_BOX[st.box]);
+    } else {
+      st.box = 0;
+      st.due = addDays(today(), 1);
     }
-  } else {
-    // Stefan: "alle fouten die maak moeten weer terug". Niet over een week, morgen.
-    st.fout++;
-    st.box = 0;
+  } else if(!goed){
+    /* Later op de dag alsnog mis. De doos blijft staan (het oordeel van vandaag is al geveld), maar
+       je ziet het morgen terug in plaats van pas over drie of acht dagen. Zonder deze regel zou een
+       onderwerp dat je 's ochtends goed had en 's middags vijf keer fout gewoon wegzakken. */
     st.due = addDays(today(), 1);
-    st.laatst = today();
   }
   S.gram[cid] = st;
 }
