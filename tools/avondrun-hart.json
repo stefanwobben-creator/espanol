@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-21T03:01:46.418Z",
+ "wanneer": "2026-08-22T02:53:35.672Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -11,7 +11,6 @@
  "geleverd": null,
  "versie": null,
  "klachten": [
-  "s239: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onzin: 'olvidar la bolsa en la tienda' betekent 'de tas vergeten in de winkel', niet 'de tas in de winkel laten liggen'. Een mens zou dit niet zo zeggen.",
   "oud is not defined"
  ],
  "reden": "de run is niet afgemaakt",
@@ -19,5 +18,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 1,
- "afgemaakt": "2026-08-21T03:01:49.887Z"
+ "afgemaakt": "2026-08-22T02:53:38.792Z"
 }
