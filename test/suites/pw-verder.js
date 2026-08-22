@@ -12,6 +12,24 @@
 //     zou precies de tweede bevinding van zijn moeder terugbrengen (knoppen waarvan de bedoeling
 //     onduidelijk is), dus dat wordt hier hard afgevangen.
 //   - een herstelpunt van gisteren is geen "waar je was" maar een verlopen plan, en gaat weg.
+//
+// 22 AUG, v23.169: "KLAAR VOOR VANDAAG" GING OVER TWEE VERSCHILLENDE DINGEN
+//
+// Hier stond één meting voor twee gevallen die er van buiten hetzelfde uitzien: de dag is
+// afgesloten (S.dag.klaar) én er ligt nog een herstelpunt (S.lesFlowNu). De conclusie was: geen
+// startknop. Dat klopt voor het geval waar v19.60 voor gebouwd is, en het klopt niet voor het
+// andere.
+//
+// Stefan, 22 aug, op stap 4 van 6: "ik moet op pauzeer klikken en toen zei het lesje dat ik al
+// klaar was, wat niet zo is, ik heb niet gelezen of geschreven." Zijn dagdoel in XP was onderweg
+// gehaald, dus S.dag.klaar stond aan, dus verdween de weg terug naar zijn eigen les en vinkte de
+// kaart alle zes de blokken af.
+//
+// De twee gevallen zijn uit elkaar te houden, en het verschil staat gewoon in de data:
+//   S.lesFlow[vandaag] gezet   -> je les is af, de dag mag dicht, geen knop (v19.60, blijft staan)
+//   S.lesFlow[vandaag] leeg    -> je les staat open, en dan wint werk van een felicitatie
+//
+// Deze suite meet ze nu allebei, want alleen samen zeggen ze wat de kaart hoort te doen.
 const { chromium } = require('playwright');
 let fout = 0;
 function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); }
@@ -216,24 +234,46 @@ async function bewaard(page) {
   await page.waitForTimeout(800);
   ok((await bewaard(page)) === null, 'na het afronden van de les is het herstelpunt opgeruimd');
 
-  console.log('\n-- klaar voor vandaag is klaar --');
+  console.log('\n-- klaar voor vandaag is klaar, als je les ook echt af is --');
+  const kaartNu = async () => {
+    await dagOpnieuw(page);
+    return page.evaluate(() => {
+      const l = document.getElementById('lessonList');
+      return {
+        start: !!document.getElementById('btnStartLesFlow'),
+        opnieuw: !!document.getElementById('btnLesOpnieuw'),
+        tekst: l ? l.innerText.replace(/\s+/g, ' ') : ''
+      };
+    });
+  };
+
+  // geval 1 (v19.60): les af, dag afgesloten. Er ligt nog een herstelpunt, maar dat is een restje.
   await page.evaluate(() => {
+    S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;
     S.lesFlowNu = { d: today(), stap: 'grammatica', quizzesTeDoen: [], vaardigheidRij: [] };
     S.dag = S.dag || {}; S.dag.klaar = today();
     try { persist(); } catch (e) {}
   });
-  await dagOpnieuw(page);
-  const dicht = await page.evaluate(() => {
-    const l = document.getElementById('lessonList');
-    return {
-      start: !!document.getElementById('btnStartLesFlow'),
-      opnieuw: !!document.getElementById('btnLesOpnieuw'),
-      tekst: l ? l.innerText.replace(/\s+/g, ' ') : ''
-    };
-  });
-  ok(!dicht.start, 'wie de dag afsloot krijgt geen startknop, ook niet met een herstelpunt');
+  const dicht = await kaartNu();
+  ok(!dicht.start, 'wie zijn les af heeft en de dag afsloot krijgt geen startknop');
   ok(!dicht.opnieuw, 'en geen aanbod om opnieuw te beginnen');
   ok(/Klaar voor vandaag/i.test(dicht.tekst), 'het scherm zegt dat je klaar bent (' + dicht.tekst.slice(0, 80) + ')');
+
+  /* geval 2 (v23.169): dezelfde afgesloten dag, maar de les staat nog open. Dit is Stefans stand,
+     en hier hoort de kaart je terug te brengen in plaats van je te feliciteren. */
+  console.log('\n-- maar een onafgemaakte les wint van een gehaald dagdoel --');
+  await page.evaluate(() => {
+    S.lesFlow = {};                                     // de les is NIET af
+    S.lesFlowNu = { d: today(), stap: 'toetsjes', quizzesTeDoen: [], vaardigheidRij: [],
+                    stappen: ['woorden','grammatica','vormen','toetsjes','input','produceren'] };
+    S.dag = S.dag || {}; S.dag.klaar = today();          // en het dagdoel is wél gehaald
+    try { persist(); } catch (e) {}
+  });
+  const open = await kaartNu();
+  ok(open.start, 'de knop terug naar je les staat er');
+  ok(/Verder waar je was/i.test(open.tekst), 'en hij zegt dat je verder gaat (' + open.tekst.slice(0, 80) + ')');
+  ok(!/Klaar voor vandaag/i.test(open.tekst), 'de kaart beweert niet dat je klaar bent');
+  ok(open.opnieuw, 'met de regel eronder om toch opnieuw te beginnen');
 
   ok(errs.length === 0, 'geen javascriptfouten: ' + errs.slice(0, 3).join(' | '));
   await browser.close();

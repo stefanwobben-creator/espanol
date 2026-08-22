@@ -5,7 +5,8 @@
 // Vijf beloften uit die ronde, en ze staan hier omdat een belofte zonder test wegrot:
 //   1. het dagscherm heeft hoogstens een handvol getallen, en geen dashboard
 //   2. wie klaar is hoort wat er morgen gebeurt, én dat er geen herinnering komt
-//   3. Chispa spreekt de eerste week eerst jouw taal
+//   3. Chispa spreekt de eerste week eerst jouw taal (en sinds 22 aug, v23.169 spreekt ze op de
+//      dagkaart alleen nog op dag 1: zie de toelichting bij dat blok)
 //   4. het eerste kaartje legt uit wat je moet doen, en stopt daarmee zodra je een les af hebt
 //   5. onder "Even spelen" staan spellen en geen oefeningen, en elk spel zegt wat het is
 const { chromium } = require('playwright');
@@ -113,18 +114,46 @@ async function lesVandaag(page, af) {
   ok(groet && groet.nlGrootte > groet.esGrootte,
     'en in het grotere formaat (' + (groet ? groet.nlGrootte + ' vs ' + groet.esGrootte : '-') + ')');
   ok(groet && groet.esTekst.length > 0, 'het Spaans staat er nog steeds ("' + (groet ? groet.esTekst : '') + '")');
+  /* 22 aug, v23.169: hieronder stond één meting, op de dagkaart met S.dagen.count = 20, en die
+     klapte op een .lfsay die er niet meer is. De dagkaart zegt Chispa's zin sinds deze versie
+     alleen nog op dag 1. Stefan, na 32 dagen: "we zouden Chispa zuiniger inzetten." Op dag 1 stelt
+     die zin haar voor en dat is werk; op dag 32 is het dezelfde spreuk voor de dertigste keer,
+     boven een kicker die de toestand al zegt.
+
+     De belofte van deze ronde ("Chispa spreekt de eerste week eerst jouw taal") wordt niet
+     ingetrokken, alleen het aantal plekken waar ze spreekt. Daarom wordt de omkeerregel nu gemeten
+     waar hij woont, in chispaZegHtml() zelf, op dag 1 én op dag 20, en staat daar de nieuwe
+     waarheid van het scherm naast: vanaf dag 2 geen zin meer op de dagkaart, haar kop wel. */
   const naWeek = await page.evaluate(() => {
-    S.dagen = S.dagen || {}; S.dagen.count = 20;
+    const meetZin = (dagen) => {
+      S.dagen = S.dagen || {}; S.dagen.count = dagen;
+      const doos = document.createElement('div');
+      doos.innerHTML = chispaZegHtml('Sin prisa, pero sin pausa.', 'Zonder haast, maar zonder pauze.');
+      document.body.appendChild(doos);
+      const p = doos.querySelector('.lfsay');
+      const es = p.querySelector('.es'), nl = p.querySelector('.nl');
+      const uit = { omgekeerd: p.classList.contains('omgekeerd'),
+                    esTop: Math.round(es.getBoundingClientRect().top),
+                    nlTop: Math.round(nl.getBoundingClientRect().top) };
+      doos.remove();
+      return uit;
+    };
+    const eerst = meetZin(1);
+    const later = meetZin(20);
+    S.dagen.count = 20;
     try { persist(); } catch (e) {}
     show('lessen');
-    const p = document.querySelector('.lfsay');
-    const es = p.querySelector('.es'), nl = p.querySelector('.nl');
-    return { omgekeerd: p.classList.contains('omgekeerd'),
-             esTop: Math.round(es.getBoundingClientRect().top),
-             nlTop: Math.round(nl.getBoundingClientRect().top) };
+    const kaart = document.getElementById('tab-lessen');
+    return { eerst: eerst, later: later,
+             zinOpKaart: !!kaart.querySelector('.lfsay'),
+             kopOpKaart: !!kaart.querySelector('#btnRitmeChispa') };
   });
-  ok(!naWeek.omgekeerd && naWeek.esTop < naWeek.nlTop,
+  ok(naWeek.eerst.omgekeerd && naWeek.eerst.nlTop < naWeek.eerst.esTop,
+    'de regel zelf zet de eerste week jouw taal boven');
+  ok(!naWeek.later.omgekeerd && naWeek.later.esTop < naWeek.later.nlTop,
     'na een week draait het om: dan staat het Spaans weer boven');
+  ok(!naWeek.zinOpKaart, 'en vanaf dag 2 zegt de dagkaart die zin niet meer (v23.169)');
+  ok(naWeek.kopOpKaart, 'terwijl haar kop op die kaart blijft staan: ze zwijgt, ze verdwijnt niet');
   await page.evaluate(() => { S.dagen.count = 1; try { persist(); } catch (e) {} });
 
   // ---------------------------------------------------------------- 5

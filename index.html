@@ -1532,7 +1532,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.168";
+var APP_VERSIE = "v23.169";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -14883,7 +14883,11 @@ function dagPlanHtml(nu, stappen){
   /* Waarom de blokken zijn zoals ze zijn, in één regel: Nation's vier draden (2007) in gewone
      woorden. Alleen als ze er alle vier echt zijn. Een uitleg over vier draden onder een plan met
      drie blokken is precies het soort belofte dat niet klopt (v23.135). */
-  if(!s.klaar && dagDradenCompleet(s.blokken)){
+  /* v23.169: en alleen de eerste dagen. Stefan: "deze zin is maar een keer nuttig om te lezen."
+     Hij verantwoordt waarom je plan eruitziet zoals het eruitziet, en dat is een vraag die je één
+     keer stelt. Het plan zelf blijft staan; de voetnoot eronder gaat weg zodra je hem kent. Vier
+     dagen, want het plan verschijnt pas vanaf dag 2 en dan zie je hem drie keer. */
+  if(!s.klaar && dagenTotaal() <= 4 && dagDradenCompleet(s.blokken)){
     r += "<p class='muted' style='margin:2px 0 0; font-size:.8rem'>"+ct(
       "Elke dag raak je alle vier de manieren aan waarop een taal binnenkomt: leren, begrijpen, zelf maken, en sneller worden in wat je al kent.",
       "Every day you touch all four ways a language goes in: study, understanding, producing, and getting faster at what you already know.")+"</p>";
@@ -15360,8 +15364,22 @@ function lesFlowStap(){
   try { lesFrameSync(); } catch(e){}
 }
 function lesFlowVolgende(){
-  lesFlowVolgendeKern();
-  lesFlowBewaar();
+  /* v23.169: met een bodem eronder. Zie de kop van de patch: zonder deze try/catch was een fout
+     halverwege de flow niet te onderscheiden van een knop die niets doet, en dat is precies wat
+     Stefan zag op de uitslag van zijn toetsje.
+
+     lesFlowBewaar() staat in de finally, zodat je les ook na een klapper op de stap staat waar je
+     was en de knop "Verder waar je was" je terugbrengt in plaats van opnieuw te laten beginnen. */
+  try {
+    lesFlowVolgendeKern();
+  } catch(e){
+    try { console.error("lesFlowVolgende:", e && e.message, e); } catch(e2){}
+    try { toast(ct("Deze stap kon niet openen. Je les staat nog waar je was.",
+                   "This step could not open. Your session is still where you left it.")); } catch(e3){}
+    try { show("lessen"); } catch(e4){}
+  } finally {
+    lesFlowBewaar();
+  }
 }
 function lesFlowVolgendeKern(){
   setTimeout(lesFlowStap, 0);   // v23.155: na de schermwissel, zodat de strook de nieuwe stap toont
@@ -15645,23 +15663,10 @@ function routeStand(){
   return {p:p, i:i, s:s, titel:ct(p.nl, p.en), stap:ct(s.nl, s.en), open:open,
           begonnen: (function(){ try { return gramPadBegonnen(p); } catch(e){ return false; } })()};
 }
-function routeRegelHtml(){
-  var r = routeStand();
-  if(!r) return "";
-  return "<p class='muted' style='margin:8px 0 0; font-size:.82rem'>"+
-    ct("Je route: <b>"+r.titel+"</b>. Nu: "+r.stap+", nog "+r.open+" "+(r.open === 1 ? "stap" : "stappen")+". ",
-       "Your route: <b>"+r.titel+"</b>. Now: "+r.stap+", "+r.open+" "+(r.open === 1 ? "step" : "steps")+" to go. ")+
-    "<button class='mini' id='btnRouteDag' style='margin-top:4px'>"+
-      ct("Naar je route","To your route")+"</button></p>";
-}
-function routeRegelWire(){
-  var b = document.getElementById("btnRouteDag");
-  if(!b) return;
-  b.onclick = function(){
-    var r = routeStand();
-    if(r) gramPadGa(r.p, r.i);
-  };
-}
+/* v23.169: routeRegelHtml() en routeRegelWire() stonden hier. Ze tekenden de routeregel op het
+   dagscherm plus de knop ernaartoe, en allebei zijn ze weg. routeStand() blijft, want routeVoorstel()
+   hieronder gebruikt hem: de route komt ná je les nog steeds langs, op de plek waar een voorstel
+   hoort. */
 /* Als voorstel na je les. Eén object in dezelfde vorm als de rest (icon, kop, waarom, knop, doe),
    zodat het door dezelfde lijst en dezelfde knoppen loopt. */
 function routeVoorstel(){
@@ -16768,7 +16773,15 @@ function ritmeCard(){
   // v19.60: heb je vandaag op "Klaar voor vandaag" getikt, dan is dit scherm rustig. Geen open
   // voortgangsbalk die nog iets van je wil, geen primaire knop. Alleen wat je gedaan hebt en wanneer
   // je morgen terugkomt. Doorleren kan nog steeds, maar je moet ernaar reiken.
-  var afgesloten = dagKlaar();
+  /* v23.169: en "afgesloten" mag niet waar zijn zolang er een les open staat. Anders zegt de
+     kicker "Klaar voor vandaag ✓" boven een les die op stap 4 stil is blijven staan.
+
+     Let op de tweede helft: `&& !gedaanVandaag`. Zonder die voorwaarde zou ook een RESTJE van een
+     afgeronde les de dag openhouden, want lesFlowHervatKan() kijkt alleen of er een herstelpunt van
+     vandaag ligt en niet of de les daarna nog is afgemaakt. Dit is dezelfde voorwaarde als bij
+     `hervat` hieronder, en ze horen bij elkaar: de dag is dicht, tenzij er een les openstaat die je
+     nog kunt hervatten. */
+  var afgesloten = dagKlaar() && !(lesFlowHervatKan() && !gedaanVandaag);
   // v19.66 — Chispa staat op het scherm waar je je dag begint, en de portie staat er in woorden bij.
   // Stefan, 31 juli: "dat onboarding met Chispa, dat is ook leuk om echt in de dagcyclus terug te
   // laten komen". Ze deed dat al ín de sessie (de banner per stap), maar niet ervóór. Nu begroet ze
@@ -16780,7 +16793,13 @@ function ritmeCard(){
      te doen is. Twee knoppen naast elkaar zou precies de tweede bevinding van mijn moeder opleveren:
      knoppen waarvan de bedoeling onduidelijk is. Opnieuw beginnen kan wel, als tekstregel eronder,
      dezelfde vorm als "toch nog een les doen". */
-  var hervat = !afgesloten && lesFlowHervatKan();
+  /* v23.169: hier stond `!afgesloten && lesFlowHervatKan()`, en dat gaf een gehaald dagdoel
+     voorrang op een onafgemaakte les. Zie de kop van de patch: Stefan stond op stap 4 van 6, haalde
+     onderweg zijn dagdoel, en kreeg daarna een kaart die zei dat hij klaar was met alle zes de
+     blokken afgevinkt, zonder knop terug naar zijn eigen les.
+
+     Een gehaald dagdoel is een felicitatie, een onafgemaakte les is werk, en werk wint. */
+  var hervat = lesFlowHervatKan() && !gedaanVandaag;
   var hStap = hervat ? lesFlowStapNum(S.lesFlowNu) : 0;
   var hTot = hervat ? lesFlowStapTotaal(S.lesFlowNu) : 0;   // v23.135: niet meer met de hand "4"
   var hNaam = hervat ? lesFlowStapNaam(S.lesFlowNu) : "";
@@ -16849,12 +16868,22 @@ function ritmeCard(){
         "<span class='kicker'>"+(afgesloten ? ct("Klaar voor vandaag ✓","Done for today ✓")
           : hervat ? "🚦 "+ct("Verder waar je was","Pick up where you left off")+" · "+ct("stap","step")+" "+hStap+"/"+hTot+" · "+hNaam
           : gedaanVandaag ? ct("Vandaag al gedaan ✓","Done for today ✓") : "🚦 "+ct("Start je les","Start your session"))+"</span>"+
-        chispaZegHtml(
+        /* v23.169: alleen op dag 1. Stefan: "we zouden Chispa zuiniger inzetten."
+
+           Wat hier stond was een begroeting plus een spreuk, en de kicker erboven zegt de toestand
+           al ("Start je les", "Verder waar je was", "Klaar voor vandaag"). Op dag 1 stelt die regel
+           Chispa voor en dat is werk; op dag 32 is het dezelfde spreuk voor de dertigste keer, en
+           dan zegt hij alleen nog dat er een diertje bestaat.
+
+           Chispa verdwijnt niet: ze staat als knop op deze kaart, ze praat in het gesprek, en ze
+           krijgt haar tapa na je les. Dat zijn de twee plekken waar ze iets doet in plaats van iets
+           zegt (prototype v3, beslissing 7). */
+        (dagenTotaal() <= 1 ? chispaZegHtml(
           (afgesloten ? "Hasta mañana." : hervat ? "Seguimos donde lo dejamos." : gedaanVandaag ? "¡Muy bien!" : groet.es),
           (afgesloten ? ct("Je bent klaar. Chispa slaapt zo lekker.","You're done. Chispa's off to sleep happy.")
             : hervat ? ct("We gaan verder waar we gebleven waren.","We pick up where we left off.")
             : gedaanVandaag ? ct("Chispa is trots op je.","Chispa is proud of you.")
-            : ct(groet.nl, groet.en)))+
+            : ct(groet.nl, groet.en))) : "")+
       "</div>"+
     "</div>"+
     /* v23.142: was je klaar, dan verdween hier de hele band en gaf het dagscherm geen antwoord op
@@ -16865,7 +16894,11 @@ function ritmeCard(){
             ct("Je stopte bij stap "+hStap+" van "+hTot+": "+hNaam+"."+(toonPlan ? "" : " De rest van je portie staat klaar."),
                "You stopped at step "+hStap+" of "+hTot+": "+hNaam+"."+(toonPlan ? "" : " The rest of your session is waiting."))+"</p>"+
           (toonPlan ? dagPlanHtml(S.lesFlowNu && S.lesFlowNu.stap, S.lesFlowNu && S.lesFlowNu.stappen) : "")
-        : toonPlan ? dagPlanHtml() + routeRegelHtml()   /* v23.141: en waar je route staat */
+        /* v23.169: hier stond ook routeRegelHtml(). Zie de kop van de patch: die regel kondigde
+           een route aan zonder reden, terwijl de reden al in de les zelf staat (gramWaaromHtml,
+           v23.143), en de knop erbij bracht je naar de Grammatica-tab, dus uit je dag. Sinds
+           v23.167 heeft de voorkant van de dag één ding, en dit was er een tweede. */
+        : toonPlan ? dagPlanHtml()
                    : "<p class='muted' style='margin:6px 0 0'>"+portieTxt+"</p>")+
       /* v23.87: op dag 1 stond hier "Daarna mag je Chispa 🐙 el pulpo a la gallega geven", en dat
          waren drie onbekenden in één zin: wie Chispa is (ze stelt zich pas in de les voor), wat het
@@ -16883,9 +16916,11 @@ function ritmeCard(){
               tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.nl+").",
             "Chispa is the little creature up top; she grows along with you. After your session you get to give her a treat: "+
               tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.en+").")+"</p>"
-        : "<p class='muted' style='margin:2px 0 0'>"+ct(
-            "Daarna mag je Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.nl+") geven.",
-            "Then you get to give Chispa "+tapaHoy.e+" <b>"+tapaHoy.es+"</b> ("+tapaHoy.en+").")+"</p>"))+
+        /* v23.169: en vanaf dag 2 niets. Stefan: "dit zegt me niet zoveel." Terecht: het is een
+           aankondiging van iets dat over tien minuten vanzelf gebeurt, met een gerecht dat je nog
+           niet kent en dat je op dat moment niets kan schelen. De tapa zelf blijft, op het
+           eindscherm, waar hij een beloning is in plaats van een vooraankondiging. */
+        : ""))+
     /* v23.67: klaar voor vandaag betekende tot nu toe: geen enkel bericht over morgen, op het
        scherm waar die vraag juist opkomt. */
     (afgesloten ? morgenZinHtml("8px") : "")+
@@ -20455,7 +20490,6 @@ function renderLessons(){
   html += thuisKaartHtml();
   listEl.innerHTML = html;
   dagBordWire(listEl);
-  routeRegelWire();   // v23.141: de knop bij de routeregel onder je dagplan
   thuisKaartWire(listEl);
   /* v23.167: alleen als de muur er staat. muurWire() en muurHaal() zijn veilig zonder kaart
      (beide beginnen met een getElementById-controle), maar muurHaal() doet een netwerkverzoek en

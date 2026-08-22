@@ -1,4 +1,4 @@
-// pw-routedag.js (20 aug, v23.141) — weten je route en je dagles van elkaar?
+// pw-routedag.js (22 aug, v23.169) — weten je route en je dagles van elkaar?
 //
 // WAAROM DIT ER IS
 //
@@ -12,7 +12,18 @@
 //
 // WAT DEZE SUITE BEWAAKT
 //
-//   1. DE ROUTE STAAT OP JE DAGSCHERM. Welke route, welke stap, hoeveel nog te gaan, met een knop.
+//   1. DE ROUTE STAAT NIET MEER OP JE DAGSCHERM, EN DAT IS EEN BESLUIT.
+//      Hier stond: "de route staat op je dagscherm, welke route, welke stap, hoeveel nog te gaan,
+//      met een knop." Dat is in v23.169 ingetrokken, op twee gronden die Stefan zelf gaf toen hij
+//      de regel voor de dertigste keer las:
+//        "dit snap ik niet? waarom zit ik in deze route?" De regel kondigde een route aan zonder
+//        enige reden, terwijl de reden al bestond en al op de goede plek stond: gramWaaromHtml()
+//        zegt in de les zelf waaróm je dit onderwerp krijgt (v23.143). Aankondigen zonder uitleg
+//        wekt de vraag; beantwoorden terwijl je bezig bent is genoeg.
+//        "als ik naar route ga kom ik uit mijn dagmodus." De knop bracht je naar de Grammatica-tab.
+//        Sinds v23.167 heeft de voorkant van de dag één ding, en dit was er een tweede.
+//      Bewust vervangen dus, niet per ongeluk gesneuveld. Wat hier nu staat is de afwezigheid,
+//      zodat de regel niet stilletjes terugkomt.
 //   2. EN NA JE LES, ALS VOORSTEL. Ná "twee keer dezelfde fout" (dat is een gat dat nu dicht moet)
 //      en ná het gesprek met Chispa (v23.144: dat is er één per dag en dan is het op), maar vóór El
 //      Corrector: een route is een plan met een eindpunt en dat weegt zwaarder dan een spel.
@@ -83,9 +94,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     }
     uit.echtOpen = echt;
 
-    // ---- 1. de route staat op je dagscherm ----
+    // ---- 1. de route staat NIET op je dagscherm (v23.169) ----
     uit.dag = dagkaart();
     uit.knop = !!document.getElementById('btnRouteDag');
+    uit.regelWeg = (typeof routeRegelHtml === 'undefined');
 
     // ---- 2. en na je les, als voorstel ----
     S.gram = {};                       // geen twee-keer-fout, dus de route hoort bovenaan
@@ -107,10 +119,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       S.gram = {};
     } else { uit.foutGaatVoor = 'geen concept om mee te testen'; }
 
-    // ---- 4. geen route, geen regel ----
+    // ---- 4. geen route, geen voorstel ----
     const echtNu = gramPadNu;
     gramPadNu = function () { return null; };
-    uit.leegRegel = routeRegelHtml();
+    uit.leegStand = routeStand();
     uit.leegVoorstel = routeVoorstel();
     uit.leegDag = dagkaart();
     gramPadNu = echtNu;
@@ -128,22 +140,21 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.zelfdeStap, 'en over dezelfde stap als gramPadVolgende()');
   ok(r.open === r.echtOpen, 'en telt de stappen van de route, niet een eigen telling (' + r.open + ' vs ' + r.echtOpen + ')');
 
-  console.log('\n-- 1. de route staat op je dagscherm --');
-  ok(r.dag.indexOf('Je route') !== -1, 'de regel staat er');
-  ok(r.dag.indexOf(r.stap) !== -1, 'met de stap die nu aan de beurt is');
-  ok(/nog \d+ stap/.test(r.dag), 'en hoeveel er nog te gaan zijn');
-  ok(r.knop, 'met een knop die er rechtstreeks heen gaat');
+  console.log('\n-- 1. de route staat NIET op je dagscherm (v23.169) --');
+  ok(r.dag.indexOf('Je route') === -1, 'er staat geen routeregel op de leskaart');
+  ok(!r.knop, 'en geen knop die je uit je dag naar de Grammatica-tab brengt');
+  ok(r.regelWeg, 'routeRegelHtml() bestaat niet meer, dus er is ook niets om per ongeluk terug te zetten');
 
   console.log('\n-- 2. en na je les, als voorstel --');
   ok(r.winstIsRoute, 'zonder openstaande fout is de route het eerste voorstel ("' + r.winstKop + '")');
   ok(r.foutGaatVoor === true, 'maar twee keer dezelfde fout gaat er nog steeds voor ("' + r.metFoutKop + '")');
 
-  console.log('\n-- 4. het controlegeval: geen route, geen regel --');
-  ok(r.leegRegel === '', 'geen route geeft geen regel');
-  ok(r.leegVoorstel === null, 'en geen voorstel');
+  console.log('\n-- 4. het controlegeval: geen route, geen voorstel --');
+  ok(r.leegStand === null, 'geen route geeft geen stand');
+  ok(r.leegVoorstel === null, 'en dus ook geen voorstel na je les');
   ok(r.leegDag.indexOf('Je route') === -1, 'en niets op het dagscherm');
 
-  console.log('\n-- 5. niet op dag een --');
+  console.log('\n-- 5. en op dag een al helemaal niet --');
   ok(r.dag1.indexOf('Je route') === -1, 'op dag een staat de route er niet, net als het dagplan');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));

@@ -18,8 +18,12 @@
 //      blokken die je gehad hebt "vol". Dat is de "waar ben ik"-vraag zonder te tellen.
 //   3. ELK BLOK ZEGT WAAR HET VOOR IS. leren / begrijpen / zelf maken / sneller: Nation's vier
 //      draden in gewone woorden.
-//   4. DE UITLEG ALLEEN ALS HET WAAR IS. De regel over "alle vier de manieren" staat er alleen als
-//      alle vier de draden er vandaag echt zijn. Anders belooft het plan iets wat er niet is.
+//   4. DE UITLEG ALLEEN ALS HET WAAR IS, EN ALLEEN ZOLANG HIJ NIEUW IS. De regel over "alle vier de
+//      manieren" staat er alleen als alle vier de draden er vandaag echt zijn (anders belooft het
+//      plan iets wat er niet is) en sinds 22 aug, v23.169 alleen op dag 1 tot en met 4. Stefan:
+//      "deze zin is maar een keer nuttig om te lezen." Het is een voetnoot bij je plan, geen deel
+//      van je plan, dus deze suite meet hem nu op dag 2 en meet op dag 32 dat hij weg is terwijl
+//      het plan zelf blijft staan.
 //   5. NA JE LES STAAT HET ER NOG, AFGEVINKT. "Dit deed je vandaag", alle blokken met een vinkje.
 //
 // HET CONTROLEGEVAL
@@ -56,7 +60,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const r = await page.evaluate(() => {
     const uit = {};
     S.lang = 'nl';
-    S.dagen = { count: 5 };                       // het plan staat er vanaf dag twee (v23.135)
+    /* 22 aug, v23.169: hier stond count 5. De uitlegregel onder het plan ("alle vier de manieren")
+       staat sinds deze versie alleen nog op dag 1 tot en met 4. Stefan, na 32 dagen: "deze zin is
+       maar een keer nuttig om te lezen." Het is de voetnoot die verantwoordt waarom je plan
+       eruitziet zoals het eruitziet, en die vraag stel je één keer: hij verdwijnt zodra je hem
+       kent. Het plan zelf blijft elke dag staan, dus de punten 1, 2, 3 en 5 meten hier hetzelfde
+       als eerst. Dag 2, want het plan verschijnt pas vanaf dag twee (v23.135). */
+    S.dagen = { count: 2 };
     dagPlanVerval();
 
     const p = dagPlan();
@@ -110,6 +120,16 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.eenDraadUitleg = /alle vier de manieren/.test(toon().textContent);
     dagPlan = echt;
 
+    /* 22 aug, v23.169: en de tweede helft van punt 4. De regel staat er alleen als hij waar is
+       (alle vier de draden) én alleen zolang hij nieuw is (dag 1 tot en met 4). Zonder deze meting
+       is de nieuwe grens niet bewaakt en kan hij ongemerkt terugkruipen naar elke dag. */
+    S.dagen = { count: 32 };
+    dagPlanVerval();
+    uit.uitlegLaat = /alle vier de manieren/.test(toon().textContent);
+    uit.rijenLaat = toon().querySelectorAll('.dagrij').length;
+    S.dagen = { count: 2 };
+    dagPlanVerval();
+
     // ---- 5. na je les ----
     const k = toon('klaar');
     uit.klaarKop = k.querySelector('p') ? k.querySelector('p').textContent : '';
@@ -144,6 +164,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 4. de uitleg alleen als het waar is --');
   ok(r.uitleg, 'met alle vier de draden staat de regel erover eronder');
   ok(r.eenDraadUitleg === false, 'het controlegeval: één draad, geen belofte over vier');
+  ok(r.uitlegLaat === false, 'en na de eerste dagen is de voetnoot weg (dag 32)');
+  ok(r.rijenLaat === n, 'terwijl het plan zelf er dan nog wel staat (' + r.rijenLaat + ' rijen)');
 
   console.log('\n-- 5. na je les staat het er nog, afgevinkt --');
   ok(/Dit deed je vandaag/.test(r.klaarKop), 'de kop vraagt niet meer wat je gaat doen (nu: "' + r.klaarKop + '")');
