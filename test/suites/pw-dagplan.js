@@ -83,6 +83,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.portieTotaal = dagPortie().totaal;
     uit.toetsvragen = toetsvragenPerDag();
     uit.schrijfPer = SCHRIJF_PER_LES;
+    /* v23.174: het productieblok is één keer per week de weekmeting in plaats van schrijven of
+       praten. Zonder dit onderscheid meet de regel hieronder op zes van de zeven dagen iets anders
+       dan op de zevende, en dat leest als een wisselvallige test in plaats van als twee toestanden. */
+    uit.meetOpen = meetOpen();
+    uit.prodVaardigheid = (p.blokken.filter(function (b) { return b.stap === 'produceren'; })[0] || {}).vaardigheid || null;
     uit.scherm = tekst();
     uit.totaal = lesFlowStapTotaal();
 
@@ -141,6 +146,30 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     // v23.140: het totaal is niet meer vast vier (het inputblok kwam erbij). De bewering gaat over
     // "de stapregel telt uit het bewaarde plan", dus we vergelijken met het bewaarde plan zelf.
     uit.hervatVan = new RegExp('stap 3 van ' + gemeten.stappen.length).test(hv);
+    /* ---- 2b. de weekmeting neemt het productieblok over, en geeft hem terug ----
+       Helemaal achteraan met opzet: meetBewaar() geeft XP, en XP kan een les ontgrendelen en dus
+       het dagplan veranderen. Stond dit blok halverwege, dan meette alles erna een andere dag dan
+       het dacht te meten. Dat is één keer echt gebeurd en het kostte vijf valse rode regels. */
+    const prodVan = function () {
+      dagPlanVerval();
+      const pl = dagPlan();
+      const b = pl.blokken.filter(function (x) { return x.stap === 'produceren'; })[0];
+      /* tellen op het PRODUCTIEblok en niet op alle blokken: meetBewaar() geeft XP en die XP kan
+         een ander blok ontgrendelen (bij deze proef verscheen `vormen`). Dat is echt gedrag en het
+         hoort hier niet gemeten te worden; de claim is dat de meting het productieblok VERVANGT. */
+      return { v: b ? (b.vaardigheid || 'schrijven') : null,
+               n: pl.blokken.filter(function (x) { return x.stap === 'produceren'; }).length };
+    };
+    S.meting = {};
+    const voorM = prodVan();
+    meetBewaar('een tekst van precies genoeg woorden om te tellen, en die tekst hoeft hier niets ' +
+      'te betekenen want de meting zelf staat in pw-nulmeting en niet hier, dus dit is opvulling',
+      meetTaakVanWeek(), { fouten: [] });
+    const naM = prodVan();
+    uit.naMeting = { voor: voorM.v, na: naM.v, een: voorM.n === 1 && naM.n === 1 };
+    S.meting = {};
+    dagPlanVerval();
+
     return uit;
   });
 
@@ -160,7 +189,18 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const bSchr = r.blokken.filter(function (b) { return b.stap === 'produceren'; })[0];
   if (bWoord) ok(bWoord.wat.indexOf(String(r.portieTotaal)) === 0, 'het aantal kaartjes is dat van de dagportie (' + r.portieTotaal + ', op de kaart: ' + bWoord.wat + ')');
   if (bToets) ok(bToets.wat.indexOf(String(r.toetsvragen)) === 0, 'het aantal toetsvragen is toetsvragenPerDag() (' + r.toetsvragen + ')');
-  if (bSchr) ok(bSchr.wat.indexOf(String(r.schrijfPer)) === 0, 'het aantal zinnen is SCHRIJF_PER_LES (' + r.schrijfPer + ')');
+  if (bSchr && r.prodVaardigheid === 'meting') {
+    ok(r.meetOpen === true, 'het productieblok is de weekmeting, en die staat deze week open');
+    ok(/zonder hulp|no help/.test(bSchr.wat), 'en het plan zegt wat dat is ("' + bSchr.wat + '")');
+  } else if (bSchr && r.prodVaardigheid !== 'praten') {
+    ok(bSchr.wat.indexOf(String(r.schrijfPer)) === 0, 'het aantal zinnen is SCHRIJF_PER_LES (' + r.schrijfPer + ')');
+  }
+
+  console.log('\n-- 2b. de weekmeting neemt het productieblok één keer per week over --');
+  console.log('   ' + JSON.stringify(r.naMeting));
+  ok(r.naMeting.voor === 'meting', 'zolang de meting openstaat is dat het productieblok');
+  ok(r.naMeting.na !== 'meting', 'en zodra hij ingeleverd is niet meer (' + r.naMeting.na + ')');
+  ok(r.naMeting.een, 'en er blijft precies één productieblok: de meting vervangt hem, hij komt er niet bij');
 
   console.log('\n-- 3. geen toetsje = geen toetsblok --');
   ok(r.zonderToets.indexOf('toetsjes') === -1, 'het toetsblok verdwijnt uit het plan');

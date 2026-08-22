@@ -76,6 +76,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     S.chat = null;
 
     // ---- 2. het staat vooraf in je plan ----
+    /* v23.174: de weekmeting neemt het productieblok één keer per week over, en op een vers profiel
+       staat die altijd open. Deze suite gaat over de wisseling tussen praten en schrijven, dus de
+       meting wordt hier eerst afgevinkt. Dat de meting voorgaat is de claim van pw-dagplan 2b; dat
+       hier herhalen zou betekenen dat één gedragsverandering twee suites rood maakt en dat is geen
+       extra bewijs. */
+    S.meting = S.meting || {};
+    S.meting[meetWeek()] = { d: today(), schrijf: { n: 60, z: 5, f: [], per: {} } };
     dagPlanVerval();
     const p = dagPlan();
     const blok = p.blokken.filter(function (b) { return b.stap === 'produceren'; })[0];

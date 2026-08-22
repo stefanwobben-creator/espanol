@@ -1353,6 +1353,11 @@ function vroegVraag(){
     <div id="chatWrap"></div>
   </section>
 
+  <!-- DE WEEKMETING (v23.174): een koude schrijftaak, één keer per week, zonder correctie. -->
+  <section id="tab-meting" class="hidden">
+    <div id="metingWrap"></div>
+  </section>
+
   <section id="tab-chispa" class="hidden">
     <div class="card" id="petCard"></div>
     <div class="card" id="groeiCard"></div>
@@ -1532,7 +1537,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.173";
+var APP_VERSIE = "v23.174";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8742,8 +8747,22 @@ function mengMeting(voor){
   // de hoogste meting is de laatste, en de laatste is de juiste.
   if(!voor) return;
   S.meting = S.meting || {};
+  /* v23.174: per veld samenvoegen in plaats van de hele regel vervangen.
+     Hier stond: is `stevig` aan de andere kant hoger, neem dan die hele weekregel over. Dat
+     klopte zolang een weekregel alleen tellers bevatte, want die lopen binnen een week alleen
+     op. De schrijftaak is geen teller: hij staat op één apparaat en op geen enkel ander, dus
+     een pull vanaf een apparaat dat toevallig een hogere woordenstand had wiste hem uit. Een
+     meting die door een sync kan verdwijnen is geen meting. */
   for(var w in voor){
-    if(!S.meting[w] || (voor[w].stevig || 0) > (S.meting[w].stevig || 0)) S.meting[w] = voor[w];
+    var bin = voor[w] || {}, hier = S.meting[w];
+    if(!hier){ S.meting[w] = bin; continue; }
+    if((bin.stevig || 0) > (hier.stevig || 0)){
+      var schrijfHier = hier.schrijf;
+      S.meting[w] = bin;
+      if(schrijfHier && !bin.schrijf) S.meting[w].schrijf = schrijfHier;
+    } else if(bin.schrijf && !hier.schrijf){
+      hier.schrijf = bin.schrijf;
+    }
   }
 }
 function snapshotSchrijf(){
@@ -14805,7 +14824,14 @@ function dagPlan(){
   try { praat = praatBeurt(); } catch(e){ praat = false; }
   var kanSchrijven = false;
   try { kanSchrijven = !!allowedSentIds().length; } catch(e){ kanSchrijven = false; }
-  if(praat){
+  /* v23.174: één keer per week neemt de weekmeting de plaats van het productieblok in. Geen
+     nieuwe kaart op Vandaag en geen langere les: de meting IS het produceren van die dag, en
+     dat klopt ook inhoudelijk, want een koude schrijftaak is de zuiverste productie die er is. */
+  if(meetOpen()){
+    blokken.push({stap:"produceren", naam:ct("De weekmeting","The weekly measurement"),
+      draad:ct("zelf maken","output"), wat:ct("een korte tekst, zonder hulp","a short text, no help"),
+      sec:5 * 60, vaardigheid:"meting"});
+  } else if(praat){
     blokken.push({stap:"produceren", naam:ct("Praten met Chispa","Talking with Chispa"),
       draad:ct("zelf maken","output"), wat:praatBlokWat(), sec:CHAT_BEURTEN * SCHRIJF_SEC * 1.6});
   } else if(kanSchrijven){
@@ -14939,6 +14965,7 @@ function lesFlowStapNaam(f){
   if(f.stap === "vormen") return ct("Vormen","Forms");
   if(f.stap === "toetsjes") return ct("Toetsjes","Quizzes");
   if(f.stap === "input" && f.vaardigheid === "musica") return ct("Liedje","Song");
+  if(f.stap === "produceren" && f.vaardigheid === "meting") return ct("De weekmeting","The measurement");
   if(f.stap === "produceren" && f.vaardigheid === "praten") return ct("Praten","Talking");
   if(f.stap === "input" || f.stap === "produceren"){
     var v = f.vaardigheid;
@@ -15549,6 +15576,12 @@ function lesFlowNaarProduceren(){
 function lesFlowOpenProductie(){
   var v = lesFlow.vaardigheid;
   var tijd = vaardigheidTijd();
+  if(v === "meting"){   // v23.174
+    lesFlow.gekozenSpel = "meting";
+    meetKlaarNu = false;
+    show("meting");
+    return;
+  }
   if(v === "praten"){   // v23.150
     lesFlow.gekozenSpel = "chat";
     show("chat");
@@ -28204,6 +28237,212 @@ function vgZwakHtml(){
     "</p></div>";
 }
 
+/* ================= DE NULMETING (v23.174) =================
+
+   Eén keer per week schrijf je een korte tekst zonder hulp, en je krijgt er geen correctie op.
+
+   Waarom geen correctie: dit is het equivalent van de nieuwe-tekst-taak bij Truscott & Hsu 2008.
+   Zodra je de verbetering terugziet, meet de week erna niet meer wat je kunt maar wat je van die
+   verbetering hebt onthouden, en dan kan niemand ooit nog zeggen of de oefeningen werken. Alles wat
+   je hier schrijft wordt geteld en verder met rust gelaten: geen XP voor goed, geen doosje, geen
+   foutenlogboek, geen wachtrij, en niets in dagStats. Dat laatste is geen netheid maar noodzaak, want
+   de weekmeting rekent haar eigen foutpercentage uit dagStats.
+
+   Er is één beloning, en die hangt aan het dóén: je krijgt XP voor het inleveren, ongeacht hoe goed
+   het was. Een meting die je beter beloont naarmate je beter schrijft, nodigt uit om voorzichtig te
+   schrijven, en voorzichtig schrijven is precies wat de meting niet moet meten. */
+var MEET_PROMPT_V = 1;   /* het nummer van de beoordelingsprompt op de server. De prompt ÍS het
+                            meetinstrument: verandert hij, dan verandert de meting. Elke meting
+                            draagt daarom het nummer waarmee hij beoordeeld is, en de tekst zelf,
+                            zodat oude weken opnieuw te beoordelen zijn als dit nummer opschuift. */
+var MEET_CATS = ["tijd","persoon","geslacht","serestar","voorzetsel","woordkeuze","spelling","volgorde","overig"];
+var MEET_CAT_NL = {tijd:"tijd", persoon:"persoonsvorm", geslacht:"geslacht", serestar:"ser of estar",
+  voorzetsel:"voorzetsel", woordkeuze:"woordkeuze", spelling:"spelling", volgorde:"woordvolgorde",
+  overig:"overig"};
+/* Vijftig woorden, ongeveer vijf zinnen en vijf minuten. Lager kan niet: bij 35 woorden staan er
+   zes werkwoorden in en springt "tijdfouten per honderd woorden" in stappen van drie, en dan meet
+   je ruis. Hoger wil ik niet, want een taak die je overslaat meet helemaal niets. */
+var MEET_WOORDEN_MIN = 50;
+/* Zes opdrachten die alle zes een verleden tijd afdwingen. "Vertel over je dag" laat zich netjes in
+   het presente schrijven, en dan meet de meter nul tijdfouten omdat er geen tijd te kiezen viel.
+   Gekozen op weeknummer, dus ze keren elke zes weken terug: week 1 is dan met week 7 te vergelijken
+   in plaats van met een andere opdracht. */
+var MEET_TAKEN = [
+  {id:"gisteren", nl:"Vertel wat je gisteren hebt gedaan, van opstaan tot naar bed gaan.",
+   en:"Tell what you did yesterday, from getting up to going to bed."},
+  {id:"uiteten", nl:"Vertel over de laatste keer dat je uit eten ging. Waar was het, met wie, wat at je?",
+   en:"Tell about the last time you ate out. Where was it, who with, what did you eat?"},
+  {id:"vakantie", nl:"Vertel over een reis die je ooit hebt gemaakt. Waar ging je heen en wat gebeurde er?",
+   en:"Tell about a trip you once made. Where did you go and what happened?"},
+  {id:"weekend", nl:"Vertel wat je afgelopen weekend hebt gedaan.",
+   en:"Tell what you did last weekend."},
+  {id:"vroeger", nl:"Vertel hoe het vroeger bij jou thuis ging toen je klein was.",
+   en:"Tell how things were at your house when you were little."},
+  {id:"misging", nl:"Vertel over een keer dat er iets misging. Wat gebeurde er en hoe liep het af?",
+   en:"Tell about a time something went wrong. What happened and how did it end?"}
+];
+var meetBezig = false, meetKlaarNu = false;
+
+function meetWeek(){ return isoWeek(today()); }
+function meetTaakVanWeek(w){
+  var n = parseInt(String(w || meetWeek()).split("-W")[1], 10);
+  if(!(n > 0)) n = 1;
+  return MEET_TAKEN[n % MEET_TAKEN.length];
+}
+function meetGedaan(w){
+  var m = (S.meting || {})[w || meetWeek()];
+  return !!(m && m.schrijf);
+}
+function meetOpen(){ return !meetGedaan(); }
+function meetWoorden(t){
+  return String(t || "").trim().split(/\s+/).filter(function(x){ return x.length; }).length;
+}
+function meetZinnen(t){
+  return String(t || "").split(/[.!?…]+/).filter(function(x){ return x.trim().length > 1; }).length;
+}
+/* Alle metingen op volgorde, alleen de weken waarin echt geschreven is. */
+function meetReeks(){
+  var uit = [];
+  Object.keys(S.meting || {}).sort().forEach(function(w){
+    var m = S.meting[w];
+    if(m && m.schrijf && m.schrijf.n) uit.push({w:w, s:m.schrijf});
+  });
+  return uit;
+}
+/* Het getal waar het om gaat: tijdfouten per honderd woorden. Per honderd woorden en niet als
+   percentage van je fouten, want dat tweede daalt ook als je andere fouten toenemen. */
+function meetTijdPer100(s){
+  if(!s || !s.n) return null;
+  return Math.round(((s.per && s.per.tijd || 0) / s.n) * 1000) / 10;
+}
+
+function renderMeting(){
+  var el = document.getElementById("metingWrap");
+  if(!el) return;
+  var taak = meetTaakVanWeek();
+  if(meetKlaarNu){
+    el.innerHTML =
+      "<div class='card'>" +
+      "<h2 style='margin:0 0 6px'>" + ct("Opgeslagen","Saved") + "</h2>" +
+      "<p class='muted' style='margin:0 0 10px'>" +
+      ct("Hier komt geen correctie op, en dat is met opzet. Zou je hem terugkrijgen, dan meet volgende week niet meer wat je kunt maar wat je van die correctie hebt onthouden. De reeks staat bij Voortgang zodra er drie metingen liggen.",
+         "You get no corrections here, and that is on purpose. If you did, next week would measure what you remembered of the correction instead of what you can do. The series shows up under Progress once there are three measurements.") +
+      "</p>" +
+      "<button class='btn' id='btnMeetVerder'>" + ct("Verder","Continue") + "</button>" +
+      "</div>";
+    var bv = document.getElementById("btnMeetVerder");
+    if(bv) bv.onclick = function(){
+      meetKlaarNu = false;
+      if(lesFlow) lesFlowVolgende(); else show("lessen");
+    };
+    return;
+  }
+  var bewaard = "";
+  try { bewaard = (meetConcept() || ""); } catch(e){ bewaard = ""; }
+  el.innerHTML =
+    "<div class='card'>" +
+    "<h2 style='margin:0 0 2px'>" + ct("De weekmeting","The weekly measurement") + "</h2>" +
+    "<p class='muted' style='margin:0 0 10px; font-size:.9rem'>" +
+    ct("Eén keer per week, zonder hulp en zonder correctie. Dit is geen oefening: het is de enige plek waar te zien is of de oefeningen iets doen.",
+       "Once a week, no help and no corrections. This is not an exercise: it is the only place where you can see whether the exercises do anything.") +
+    "</p>" +
+    "<p style='margin:0 0 8px'><b>" + (profLang() === "nl" ? taak.nl : taak.en) + "</b></p>" +
+    "<textarea id='meetInp' rows='7' style='width:100%; padding:10px; font-size:1rem' " +
+    "placeholder='" + ct("Schrijf in het Spaans...","Write in Spanish...") + "'>" + bewaard + "</textarea>" +
+    "<div class='muted' id='meetTel' style='margin:6px 0 10px; font-size:.85rem'></div>" +
+    "<button class='btn' id='btnMeetKlaar'" + (meetBezig ? " disabled" : "") + ">" +
+    (meetBezig ? ct("Bezig...","Working...") : ct("Inleveren","Hand in")) + "</button>" +
+    "</div>";
+  var inp = document.getElementById("meetInp");
+  var tel = function(){
+    var n = meetWoorden(inp ? inp.value : "");
+    var t = document.getElementById("meetTel");
+    if(t) t.textContent = n < MEET_WOORDEN_MIN
+      ? ct("nog " + (MEET_WOORDEN_MIN - n) + " woorden te gaan", (MEET_WOORDEN_MIN - n) + " words to go")
+      : ct(n + " woorden", n + " words");
+    var b = document.getElementById("btnMeetKlaar");
+    if(b) b.disabled = meetBezig || n < MEET_WOORDEN_MIN;
+  };
+  if(inp){
+    inp.oninput = function(){ tel(); meetConceptZet(inp.value); };
+    tel();
+  }
+  var bk = document.getElementById("btnMeetKlaar");
+  if(bk) bk.onclick = meetVerstuur;
+}
+/* Een halve tekst mag niet weg zijn als je per ongeluk wegklikt. Los van S.meting, want dit is nog
+   geen meting. */
+function meetConcept(){ return (S.meetConcept && S.meetConcept.w === meetWeek()) ? S.meetConcept.t : ""; }
+function meetConceptZet(t){ S.meetConcept = {w:meetWeek(), t:String(t || "").slice(0, 2000)}; }
+
+function meetVerstuur(){
+  var inp = document.getElementById("meetInp");
+  var tekst = String(inp ? inp.value : "").trim();
+  if(meetWoorden(tekst) < MEET_WOORDEN_MIN || meetBezig) return;
+  meetBezig = true;
+  renderMeting();
+  var taak = meetTaakVanWeek();
+  api("/api/ai/meting", "POST", {tekst:tekst, taak:(taak.nl + " (" + taak.id + ")"), niveau:chatNiveau()})
+    .then(function(r){
+      meetBewaar(tekst, taak, r);
+      meetBezig = false; meetKlaarNu = true;
+      renderMeting();
+    });
+}
+/* Ook als de server niets teruggeeft wordt de meting bewaard, met ok:false erbij. De tekst is dan
+   nog steeds bruikbaar: hij kan later alsnog beoordeeld worden. Wat niet mag gebeuren is dat een
+   kapotte verbinding de week stilletjes overslaat en de reeks een gat krijgt dat niemand ziet. */
+function meetBewaar(tekst, taak, r){
+  var w = meetWeek();
+  try { snapshotSchrijf(); } catch(e){}
+  S.meting = S.meting || {};
+  if(!S.meting[w]) S.meting[w] = {d:today()};
+  var rauw = (r && Array.isArray(r.fouten)) ? r.fouten : [];
+  var fouten = rauw.slice(0, 40).map(function(f){
+    var c = String((f && f.cat) || "overig");
+    if(MEET_CATS.indexOf(c) === -1) c = "overig";
+    return {l:String((f && f.lemma) || "").slice(0, 24), c:c,
+            g:String((f && f.gegeven) || "").slice(0, 40),
+            d:String((f && f.doel) || "").slice(0, 40)};
+  });
+  var per = {};
+  fouten.forEach(function(f){ per[f.c] = (per[f.c] || 0) + 1; });
+  S.meting[w].schrijf = {
+    taak: taak.id, dag: today(), pv: MEET_PROMPT_V, ok: !!(r && Array.isArray(r.fouten)),
+    n: meetWoorden(tekst), z: meetZinnen(tekst),
+    tekst: String(tekst).slice(0, 1200),
+    f: fouten, per: per
+  };
+  delete S.meetConcept;
+  /* XP voor het doen, niet voor het resultaat. Zie de kop van dit blok. */
+  try { addXP(15); } catch(e){}
+  try { persist(); } catch(e){}
+}
+
+/* De reeks op het Voortgangscherm. Pas vanaf drie metingen, want met twee punten is elk verschil
+   toeval; dezelfde regel als bij de band en de voorspeller. */
+function vgMetingHtml(){
+  var r = meetReeks();
+  if(r.length < 3) return "";
+  var rijen = r.slice(-10).map(function(x){
+    var t = meetTijdPer100(x.s);
+    var tot = 0;
+    Object.keys(x.s.per || {}).forEach(function(k){ tot += x.s.per[k]; });
+    return "<tr><td class='muted' style='font-size:.85rem'>" + x.w + "</td>" +
+      "<td>" + x.s.n + "</td><td>" + tot + "</td><td><b>" + (t === null ? "-" : t) + "</b></td></tr>";
+  }).join("");
+  return "<div class='card'>" +
+    "<h2 style='margin:0 0 2px'>" + ct("De weekmeting","The weekly measurement") + "</h2>" +
+    "<p class='muted' style='margin:0 0 8px; font-size:.85rem'>" +
+    ct("Uit je koude schrijftaak, zonder hulp en zonder correctie. De laatste kolom is het getal dat ertoe doet: tijdfouten per honderd woorden.",
+       "From your cold writing task, no help and no corrections. The last column is the number that matters: tense errors per hundred words.") +
+    "</p><table style='width:100%'><tr><th class='muted' style='text-align:left; font-size:.8rem'>" +
+    ct("week","week") + "</th><th class='muted' style='text-align:left; font-size:.8rem'>" +
+    ct("woorden","words") + "</th><th class='muted' style='text-align:left; font-size:.8rem'>" +
+    ct("fouten","errors") + "</th><th class='muted' style='text-align:left; font-size:.8rem'>" +
+    ct("tijd/100","tense/100") + "</th></tr>" + rijen + "</table></div>";
+}
+
 function renderVoortgang(){
   var c = voortgangCijfers();
   var el = document.getElementById("voortgangCard");
@@ -28213,7 +28452,8 @@ function renderVoortgang(){
     "<div class='card' id='vgVastKaart'>"+dagBasisRegelHtml({legenda:true})+vgLijnHtml(c)+"</div>" +
     vgOnderwegHtml(c) +
     vgSterkHtml() +
-    vgZwakHtml();
+    vgZwakHtml() +
+    vgMetingHtml();
   var bd = document.getElementById("btnVgWeekDeel");
   if(bd) bd.onclick = function(){ maatjeDeel("voortgang"); };
   var bm = document.getElementById("btnVgWeekMaatje");
@@ -34470,6 +34710,7 @@ var TABS = [
   {id:"lezen", label:"Lezen"},
   {id:"chispa", label:"Chispa", nav:false},
   {id:"chat", label:"Praten met Chispa", nav:false},   // v23.144
+  {id:"meting", label:"De weekmeting", nav:false},     // v23.174
   {id:"perfil", label:"Profiel", nav:false},
   {id:"steun", label:"Steun", nav:false},
   {id:"privacy", label:"Privacy", nav:false},
@@ -34640,6 +34881,7 @@ function show(tabId, skipPush){
   if(tabId==="voortgang"){ renderVoortgang(); }
   if(tabId==="chispa"){ renderChispaPagina(); }
   if(tabId==="chat"){ renderChat(); }
+  if(tabId==="meting"){ renderMeting(); }
   // v19.78: wie de chispa-pagina verlaat neemt haar podium niet mee naar de woordjes
   try { chispaBalkCheck(); } catch(e){}
   // v23.155: het frame hoort bij de app en niet bij het scherm, dus hier, na elke wissel.

@@ -139,8 +139,28 @@ async function nieuwProfiel(page) {
      eigen pagina en komt na je les als voorstel langs; een extra regel in Meer zou het menu langer
      maken terwijl de opdracht juist is het korter te krijgen. Maar een scherm dat nergens vandaan
      komt is een dood scherm, dus de uitzondering kost een bewijs: de knop op haar pagina hieronder. */
-  const alleTabs = await page.evaluate(() => TABS.filter((t) => ['steun', 'privacy', 'toetsjes', 'chat'].indexOf(t.id) === -1).map((t) => t.id));
+  /* "meting" staat er sinds v23.174 ook niet bij, om dezelfde reden als "chat": de weekmeting is
+     geen plek waar je naartoe bladert, hij komt één keer per week in je dagles langs. Een extra
+     regel in Meer zou uitnodigen hem tussendoor te doen, en een koude meting die je twee keer per
+     week doet omdat hij er nu eenmaal staat is geen koude meting meer. De uitzondering kost
+     hetzelfde bewijs als bij chat: hieronder moet blijken dat de dagles hem echt opent. */
+  const alleTabs = await page.evaluate(() => TABS.filter((t) => ['steun', 'privacy', 'toetsjes', 'chat', 'meting'].indexOf(t.id) === -1).map((t) => t.id));
   ok(alleTabs.every((t) => bereikbaar.indexOf(t) !== -1), 'elke tab is via de balk of via Meer te bereiken');
+
+  const metingDeur = await page.evaluate(() => {
+    S.meting = {};
+    dagPlanVerval();
+    const b = dagPlan().blokken.filter((x) => x.stap === 'produceren')[0];
+    const open = b && b.vaardigheid === 'meting';
+    // en hij gaat ook echt open, niet alleen in het plan
+    lesFlow = { stap: 'produceren', vaardigheid: 'meting', stappen: ['produceren'] };
+    lesFlowOpenProductie();
+    const zichtbaar = !document.getElementById('tab-meting').classList.contains('hidden');
+    lesFlow = null;
+    return { open: !!open, zichtbaar: zichtbaar };
+  });
+  ok(metingDeur.open, 'de uitzondering voor "meting" is betaald: de dagles zet hem in het plan');
+  ok(metingDeur.zichtbaar, 'en opent hem ook echt');
   ok(await page.evaluate(() => {
     show('chispa');
     const b = document.getElementById('btnNaarChat');

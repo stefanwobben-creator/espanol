@@ -1116,6 +1116,65 @@ app.post("/api/ai/chat", async (req, res) => {
   }
 });
 
+/* POST /api/ai/meting  (v23.174)
+   {tekst, taak, niveau} -> {fouten:[{lemma, cat, gegeven, doel}], pv}
+
+   Dit eindpunt is een meetinstrument en geen docent. Het legt fouten vast met een identiteit
+   (grondwoord + categorie + wat er stond + wat er had moeten staan) en stuurt geen enkele uitleg
+   terug, want de app laat de leerling niets van deze beoordeling zien.
+
+   DE PROMPT HIERONDER IS BEVROREN. Hij bepaalt wat er gemeten wordt, dus elke wijziging breekt de
+   vergelijkbaarheid met alle eerdere weken. Verandert hij toch, dan gaat MEET_PROMPT_V in index.html
+   omhoog; de app bewaart de tekst van elke week, dus oude weken zijn dan opnieuw te beoordelen. */
+const MEET_CATS = ["tijd","persoon","geslacht","serestar","voorzetsel","woordkeuze","spelling","volgorde","overig"];
+app.post("/api/ai/meting", async (req, res) => {
+  const slot = aiSlot(req);
+  if (slot) return badReden(res, slot.code, slot.tekst, slot.reden);
+  const { tekst, taak, niveau } = req.body || {};
+  if (!tekst || String(tekst).trim().length < 20) return bad(res, 400, "tekst verplicht");
+  const niv = /^(a0|a1|a2|b1)$/i.test(String(niveau || "")) ? String(niveau).toUpperCase() : "A2";
+  try {
+    const txt = await vraagLadder(
+      "Je bent een corrector die ALLEEN meet. Een Nederlandstalige leerling Spaans (niveau " + niv +
+      ") heeft een korte tekst geschreven. Noem elke echte fout en verder niets: geen stijladvies, " +
+      "geen mooiere formulering, geen compliment, geen uitleg. De leerling krijgt jouw antwoord niet " +
+      "te zien; het gaat naar een teller.\n" +
+      "Een fout is alleen een fout als een moedertaalspreker hem zou verbeteren. Twijfel je, dan is " +
+      "het geen fout. Noem elke fout apart, ook als hetzelfde woord twee keer misgaat.\n" +
+      "Kies per fout precies één categorie uit deze lijst: " + MEET_CATS.join(", ") + ".\n" +
+      "tijd = de verkeerde werkwoordstijd gekozen (bijvoorbeeld indefinido waar imperfecto hoort).\n" +
+      "persoon = de goede tijd maar de verkeerde persoonsuitgang.\n" +
+      "geslacht = lidwoord of bijvoeglijk naamwoord past niet bij het zelfstandig naamwoord.\n" +
+      "serestar = ser en estar verwisseld.\n" +
+      "voorzetsel = het verkeerde voorzetsel, of er ontbreekt er een.\n" +
+      "woordkeuze = een bestaand Spaans woord dat hier niet past.\n" +
+      "spelling = verkeerd gespeld of een ontbrekend accent, terwijl de vorm verder klopt.\n" +
+      "volgorde = de woorden staan in de verkeerde volgorde.\n" +
+      "overig = alles wat in geen van deze categorieën past.\n" +
+      "Antwoord UITSLUITEND met geldige JSON: {\"fouten\":[{\"lemma\":\"...\",\"cat\":\"...\"," +
+      "\"gegeven\":\"...\",\"doel\":\"...\"}]}. lemma = het grondwoord (de infinitief bij een " +
+      "werkwoord, het enkelvoud bij een zelfstandig naamwoord). gegeven = precies wat de leerling " +
+      "schreef. doel = wat er had moeten staan. Geen enkele fout gevonden: {\"fouten\":[]}.",
+      "De opdracht was: " + String(taak || "-").slice(0, 200) + "\n\nDe tekst van de leerling:\n" +
+        String(tekst).slice(0, 1500),
+      900, true, "ai-meting"
+    );
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) return badReden(res, 502, "onleesbaar AI-antwoord", "stuk");
+    const p = JSON.parse(m[0]);
+    const rij = Array.isArray(p.fouten) ? p.fouten.slice(0, 40) : [];
+    ok(res, { pv: 1, fouten: rij.map((f) => ({
+      lemma: String((f && f.lemma) || "").slice(0, 24),
+      cat: MEET_CATS.indexOf(String((f && f.cat) || "")) === -1 ? "overig" : String(f.cat),
+      gegeven: String((f && f.gegeven) || "").slice(0, 40),
+      doel: String((f && f.doel) || "").slice(0, 40)
+    })) });
+  } catch (e) {
+    console.error(e);
+    badReden(res, 502, "AI-fout", "stuk");
+  }
+});
+
 // POST /api/ai/uitleg {vraag, context}
 // "Leg uit waarom"-knop: korte NL-uitleg over een grammaticapunt.
 app.post("/api/ai/uitleg", async (req, res) => {
