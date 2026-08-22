@@ -1532,7 +1532,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.170";
+var APP_VERSIE = "v23.172";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8940,7 +8940,7 @@ function quizSrsBij(qz, pct){
   }
   S.quizSrs[qz.id] = st;
   // v20.5: een toets raakt meestal een of twee concepten; die krijgen dezelfde uitslag
-  gcConceptenVoorQuiz(qz).forEach(function(cid){ gramBij(cid, pct >= 0.8); });
+  gcConceptenVoorQuiz(qz).forEach(function(cid){ gramBij(cid, pct >= 0.8); gramLog(cid, "toets", pct >= 0.8); });
   quizSpreid();
 }
 function quizDueList(){
@@ -11061,7 +11061,7 @@ function zinTegelsWire(el){
     // Een afleider aantikken is een echte conceptfout en zet dat doosje terug op nul.
     zTegel.rij.forEach(function(i){
       var t = zTegel.bank[i];
-      if(!t.echt && t.cid) gramBij(t.cid, false);
+      if(!t.echt && t.cid){ gramBij(t.cid, false); gramLog(t.cid, "tegels", false); }
     });
     document.getElementById("sInput").value = zTegel.rij.map(function(i){ return zTegel.bank[i].woord; }).join(" ");
     checkSentence();
@@ -11271,7 +11271,7 @@ function checkSentence(){
        Dit gebeurt ook als je de knop hieronder nooit aanraakt, en dat is met opzet het belangrijkste
        deel: je hoeft niet te weten dat je iets fout doet om er beter in te worden. */
     fregel = foutRegel(d);
-    if(fregel) gramBij(fregel.cid, false);
+    if(fregel){ gramBij(fregel.cid, false); gramLog(fregel.cid, "zin", false); }
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
       /* v23.137. Hier stond: "Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak
          meer goede vertalingen. Vraag het in de les of aan Claude." Dat is de app die weet dat hij
@@ -12408,7 +12408,7 @@ function clMis(gekozen){
   clStop();
   clSpel.levens--;
   clSpel.streak = 0;
-  gramBij(clSpel.c.id, false);
+  gramBij(clSpel.c.id, false); gramLog(clSpel.c.id, "clasificador", false);
   clSpel.laatste = {goed:false, juist:clSpel.bakken[clSpel.item.g], w:profLang() === "nl" ? clSpel.item.w : (clSpel.item.wEn || clSpel.item.w),
                     gekozen:gekozen === null ? null : clSpel.bakken[gekozen]};
   /* v22.0: ook naar het foutenlogboek, niet alleen naar het Leitner-doosje. Anders ziet je
@@ -12430,7 +12430,7 @@ function clRaak(){
   clPiep(660 + Math.min(6, clSpel.streak) * 40, 0.09, "sine");
   clSpel.dans = clSpel.streak % CL_DANS_BIJ === 0;
   if(clSpel.dans){
-    gramBij(clSpel.c.id, true);
+    gramBij(clSpel.c.id, true); gramLog(clSpel.c.id, "clasificador", true);
     clPiep(880, 0.14, "triangle");
     try { confetti(["💃","🔥","✨"], 14); } catch(e){}
   }
@@ -13332,7 +13332,7 @@ function corrSrsBij(id, goed){
   S.corr[id] = st;
   // v20.5: de fout gaat ook naar het concept, niet alleen naar de regel. Dit is precies wat
   // Stefan vroeg toen hij muy/mucho fout had: "neem je dat nu mee in de micro grammatica lessen?"
-  gramBij(gcConceptVoorCorr(id), goed);
+  gramBij(gcConceptVoorCorr(id), goed); gramLog(gcConceptVoorCorr(id), "corrector", goed);
 }
 function corrDueRegels(){
   var t = today();
@@ -30861,6 +30861,58 @@ function gramLees(cid){
    er zelf om ("alle fouten die ik maak moeten weer terug"), SuperMemo noemt de één-stap-variant een
    onjuiste mutatie van Leitner, en Anki reset standaard volledig. Zachter maken vertraagt bovendien
    het herkennen van een onderwerp dat echt vastzit, en dat is precies wat we hier zoeken. */
+/* ================= DE LEDGER (v23.172) =================
+
+   Wat er per dag per concept gebeurde, en via welke oefening. Hij verandert niets en beslist niets:
+   dit is een week meekijken voordat er iets aan het herhaalritme verandert.
+
+   Waarom hij er moet zijn. Zeven oefeningen schrijven naar hetzelfde doosje met onvergelijkbare
+   eenheden: een toetsje van tien vragen telt als één schrijving met een drempel van 80 procent, een
+   wizardvraag telt per vraag, een zin met vier afleiders telt vier keer en alleen fout, en
+   Clasificador telt een verlopen klok als conceptfout. Daar moet gewogen worden in plaats van
+   weggegooid, en wegen kan pas als je weet wat er werkelijk langskomt.
+
+   En er is nooit een baseline geweest. Van geen enkel concept is bekend hoe vaak het op een dag
+   voorbijkomt of via welk kanaal. Mijn eigen ontwerp van vandaag stond op de aanname dat het er
+   vier per les waren, en die aanname stond op één anekdote.
+
+   Vorm: S.gramLog[dag][cid] = {n, goed, k:{kanaal:[n, goed]}}. Zeven dagen diep, want dit is een
+   meetinstrument en geen archief. */
+var GRAMLOG_DAGEN = 7;
+function gramLog(cid, kanaal, goed){
+  if(!cid) return;
+  try {
+    var d = today();
+    S.gramLog = S.gramLog || {};
+    if(!S.gramLog[d]) S.gramLog[d] = {};
+    var dag = S.gramLog[d];
+    var r = dag[cid] || (dag[cid] = {n:0, goed:0, k:{}});
+    r.n++;
+    if(goed) r.goed++;
+    var kn = r.k[kanaal] || (r.k[kanaal] = [0, 0]);
+    kn[0]++;
+    if(goed) kn[1]++;
+    // ouder dan een week gaat weg; dit hoort in localStorage te passen naast al het andere
+    var dagen = Object.keys(S.gramLog).sort();
+    while(dagen.length > GRAMLOG_DAGEN) delete S.gramLog[dagen.shift()];
+  } catch(e){}
+}
+
+/* Wat de ledger van vandaag weet, in leesbare vorm. Nog nergens aangeroepen behalve door de suite:
+   dit is het venster waardoor we over een week naar Stefans echte cijfers kijken. */
+function gramLogVandaag(){
+  var d = today(), uit = [];
+  try {
+    var dag = (S.gramLog || {})[d] || {};
+    Object.keys(dag).forEach(function(cid){
+      var r = dag[cid];
+      uit.push({cid:cid, n:r.n, goed:r.goed, kanalen:Object.keys(r.k),
+                perKanaal:r.k, blokken:Object.keys(r.k).length});
+    });
+  } catch(e){}
+  return uit.sort(function(a, b){ return b.n - a.n; });
+}
+
 function gramBij(cid, goed){
   if(!cid) return;
   S.gram = S.gram || {};
@@ -32989,7 +33041,36 @@ function gwStapHeeftTekst(o, i){
     return !!String(ct(s.uitleg, s.uitlegEn) || "").replace(/<[^>]*>/g, "").trim();
   } catch(e){ return true; }
 }
+/* v23.172: een afgerond onderwerp komt terug als opfrisser, niet op zijn laatste stap.
+
+   Stefan: "ik krijg een vraag en spring van stap 1 naar 4 bijvoorbeeld." Dat is geen verdwaalde
+   klik maar het ontwerp: v.stap is een hoogwatermerk dat alleen omhoog gaat, en gwStart() hervat op
+   Math.min(v.stap, aantalStappen - 1). Zodra je een conceptles één keer hebt afgerond wijst dat
+   altijd naar de laatste stap, de begripsvraag, en zie je de voorbeelden nooit meer terug.
+
+   Een onderwerp dat je hebt afgerond is geen microles meer maar een herhaling, en daar hoort een
+   andere vorm bij: één vraag in plaats van de laatste stap van een les die je al kent. Die vorm
+   bestond al (gcOpfrisOnderwerp) en werd alleen gebruikt voor wat op de herhaallijst stond.
+
+   Geldt alleen voor conceptlessen, en alleen als je geen expliciete stap meegeeft: klikken op stap
+   3 in de stapbalk hoort gewoon stap 3 te openen, en de handgeschreven wizards hebben een verhaal
+   dat je wél in zijn geheel wil kunnen herlezen. */
+function gwOpfrisInPlaats(id, stap){
+  if(typeof stap === "number") return null;                 // je koos zelf een stap
+  if(!/^concept-/.test(id || "")) return null;              // geen conceptles
+  var v = null;
+  try { v = gwVoortgangLees(id); } catch(e){ return null; }
+  if(!v || !v.klaar) return null;                           // nog niet afgerond
+  var oid = null;
+  try { oid = gcOpfrisId(id); } catch(e){ return null; }
+  var o = null;
+  try { o = gcOpfrisOnderwerp(oid); } catch(e){ o = null; }
+  return o ? oid : null;                                    // alleen als er ook echt een vraag is
+}
+
 function gwStart(id, stap){
+  var opfris = gwOpfrisInPlaats(id, stap);
+  if(opfris) return gwStart(opfris, 0);
   // v20.5: een conceptles wordt bij elke start opnieuw gegenereerd. Je kunt geen antwoord
   // onthouden van een vraag die nog niet bestond.
   if(/^concept-/.test(id || "")) gcVernieuw(id);
@@ -33114,7 +33195,10 @@ function gwKies(i){
      Draagt een stap een brok-id, dan gaat het antwoord daarheen. Anders naar het onderwerp, zoals
      altijd, zodat de bestaande boekhouding niet verandert. */
   if(stap.brok) brokBij(stap.brok, i === q.g);
-  else if(o.concept) gramBij(o.concept, i === q.g);
+  else if(o.concept){ gramBij(o.concept, i === q.g);
+    /* opfrisser en microles zijn hetzelfde concept maar een ander blok, en dat verschil is precies
+       wat we willen kunnen zien. */
+    gramLog(o.concept, o.opfris ? "opfris" : "microles", i === q.g); }
   persist();
   renderCheat();
 }
@@ -33357,6 +33441,12 @@ function renderGramWiz(){
     /* v23.143: in de dagles staat erbij waarom je dit onderwerp krijgt. Buiten de dagles koos je
        het zelf, en dan is de vraag niet aan de orde. */
     (inFlow ? "<p class='muted' style='margin:-2px 0 8px; font-size:.83rem'>"+gramWaaromHtml(gwSess.id)+"</p>" : "")+
+    /* v23.172: en buiten de dagles ten minste waar je gebleven was. gramWaaromHtml() zegt dat wel,
+       maar alleen in de flow, en alleen als je niet eerder in de fout-tak of de klaar-tak valt.
+       Stefan opende een onderwerp op stap 4 zonder dat iets vertelde waarom. */
+    (!inFlow && gwSess.stap > 0 ? "<p class='muted' style='margin:-2px 0 8px; font-size:.83rem'>"+
+      ct("Hier was je gebleven: stap "+(gwSess.stap+1)+" van "+o.stappen.length+".",
+         "This is where you left off: step "+(gwSess.stap+1)+" of "+o.stappen.length+".")+"</p>" : "")+
     gwStapNavHtml(o);
   var voet = "</div>";
 
