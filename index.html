@@ -516,7 +516,15 @@
   .plaquette button{margin-top:8px;}
   .confettibit{position:fixed; top:-30px; font-size:1.5rem; z-index:98; pointer-events:none; animation:cfall 1.6s ease-in forwards;}
   @keyframes cfall{0%{transform:translateY(0) rotate(0); opacity:1} 100%{transform:translateY(105vh) rotate(540deg); opacity:.7}}
-  .diffword{color:var(--red); font-weight:800; text-decoration:underline;}
+  /* v23.168: de twee zinnen onder elkaar. Vaste kolom voor het label, zodat de zinnen links
+   uitlijnen en je oog het verschil per positie vindt in plaats van per woord. */
+.zinvgl{margin:8px 0 2px}
+.zinvglrij{display:flex; gap:8px; align-items:baseline; margin:2px 0}
+.zinvgllbl{flex:0 0 42px; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; opacity:.6}
+.diffmis{text-decoration:line-through; text-decoration-thickness:1px; opacity:.75}
+.overtyp{margin:10px 0 2px; padding:10px; border-radius:10px; background:rgba(127,127,127,.08)}
+.overtyp input{width:100%}
+.diffword{color:var(--red); font-weight:800; text-decoration:underline;}
   .celebrate{border:2px solid var(--green); background:var(--green-soft);}
   .ytwrap{position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; background:#000; margin:10px 0;}
   .ytwrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
@@ -1524,7 +1532,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.167";
+var APP_VERSIE = "v23.168";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9050,7 +9058,7 @@ function foutenOpschonen(s){
   }
   return weg;
 }
-function logError(id, type, tag, extra){
+function logError(id, type, tag, extra, paren){
   /* v22.0. Het veld laatst bevatte twee verschillende dingen: bij een woord of zin wat je typte
      ("la mujer"), bij El Corrector een datum. En bijnaGoedIds() vergeleek dat met een datum. In
      JavaScript is "la mujer" >= "2026-08-05" gewoon waar, want letters sorteren na cijfers, dus gold
@@ -9064,6 +9072,17 @@ function logError(id, type, tag, extra){
   S.errors[k].goed = 0;   // v23.94: een nieuwe fout zet de teller van goede beurten terug op nul
   S.errors[k].laatst = extra || today();
   S.errors[k].dag = today();
+  /* v23.168: welke fout, niet alleen welke oefening. `type` is de oefeningsoort ("zin"), dus de
+     vraag "maak ik deze fout vaker" was onbeantwoordbaar: de app wist dat zin s142 fout ging en
+     niet dát ser en estar door elkaar liepen. bestDiff() kent het paar al (wat er hoorde, wat jij
+     schreef); het ging alleen nergens heen.
+     Dit bouwt niets zichtbaars. Het is het haakje waar de meting aan hangt die moet uitwijzen of
+     deze hele correctielaag iets doet, en zonder die meting is het volgende oordeel weer een
+     vermoeden. Hoogstens vier paren, want dit staat in localStorage en groeit anders mee met elke
+     lange zin. */
+  if(paren && paren.length){
+    S.errors[k].paren = paren.slice(0, 4).map(function(p){ return {v:p.v, g:p.g}; });
+  }
   trackPoging(true);
   // allereerste fout van dit profiel = hét kwetsbare moment; growth-mindset-boodschap
   // (onderzoek 29 juli: dit soort coach-copy gaf bij Duolingo +7,2% dag-14-retentie)
@@ -10768,17 +10787,38 @@ function pickSentence(){
 }
 
 // woord-voor-woord vergelijking: welk woord wijkt af?
+/* v23.168: jouw zin en de goede zin onder elkaar, met alleen het verschil gemarkeerd.
+
+   Grond: Leeman 2003 vond dat salience-verhoogd positief bewijs het even goed deed als recasts,
+   beide boven controle. Dat is de goedkoopste ingreep met bewijs erachter: geen extra scherm, geen
+   modelaanroep, geen raadronde. Zie de leerkaart in het project voor waarom de raadronde het niet
+   heeft gehaald. */
+function zinVergelijkHtml(d, jouw){
+  return "<div class='zinvgl'>"+
+    "<div class='zinvglrij'><span class='zinvgllbl'>"+ct("Jij","You")+"</span>"+
+      "<span class='es'>"+(d.gHtml || veiligHtml(jouw || ""))+"</span></div>"+
+    "<div class='zinvglrij'><span class='zinvgllbl'>"+ct("Goed","Correct")+"</span>"+
+      "<span class='es'>"+d.html+"</span></div></div>";
+}
+
 function bestDiff(given, s){
   var answers = [s.es].concat(s.alt || []);
   var gTok = norm(given).split(" ");
   var best = null;
   answers.forEach(function(a){
     var aTok = norm(a).split(" ");
-    var m = 0, html = [], paren = [];
+    /* v23.168: gHtml is jouw zin met dezelfde markering, zodat de twee onder elkaar kunnen. Hier
+       werd alleen de goede kant opgebouwd, en dat betekende dat je op het scherm wel zag wat het
+       moest zijn maar niet meer wat jij schreef: je eigen zin was op dat moment al vervangen. Het
+       verschil moest je dus uit je hoofd reconstrueren, en dat is precies het werk dat de
+       markering had moeten besparen. */
+    var m = 0, html = [], gHtml = [], paren = [];
     for(var i=0;i<aTok.length;i++){
       var g = gTok[i] || "";
-      if(stripAcc(g) === stripAcc(aTok[i])){ html.push(aTok[i]); }
+      if(stripAcc(g) === stripAcc(aTok[i])){ html.push(aTok[i]); gHtml.push(g); }
       else {
+        // een leeg g betekent: jouw zin was hier korter, dus er mist een woord
+        gHtml.push("<span class='diffmis'>" + (g || "\u00b7\u00b7\u00b7") + "</span>");
         m++; html.push("<span class='diffword'>"+aTok[i]+"</span>");
         /* v23.101: welk woord hoorde er, en wat schreef jij. Dat paar was er altijd al; het ging
            alleen meteen in HTML om te onderstrepen en daarna weg. Zonder paar is een diff iets om
@@ -10789,7 +10829,10 @@ function bestDiff(given, s){
       }
     }
     m += Math.max(0, gTok.length - aTok.length);
-    if(best === null || m < best.m) best = {m:m, len:aTok.length, html:html.join(" "), paren:paren};
+    // wat je meer schreef dan er hoorde staat ook fout, en anders verdwijnt het stilletjes
+    for(var j = aTok.length; j < gTok.length; j++) gHtml.push("<span class='diffmis'>" + gTok[j] + "</span>");
+    if(best === null || m < best.m) best = {m:m, len:aTok.length, html:html.join(" "),
+                                            gHtml:gHtml.join(" "), paren:paren};
   });
   return best;
 }
@@ -11234,14 +11277,14 @@ function checkSentence(){
          meer goede vertalingen. Vraag het in de les of aan Claude." Dat is de app die weet dat hij
          het antwoord niet zeker weet, en de vraag doorschuift naar jou. Nu vraagt hij het zelf, en
          wacht de ladder op de uitslag. Zie zinAiCheck(). */
-      html = "<div class='feedback bijna'>"+ct("Zó dichtbij! "+d.m+" woord"+(d.m>1?"en":"")+" wijkt af (onderstreept): ","So close! "+d.m+" word"+(d.m>1?"s":"")+" differ"+(d.m>1?"":"s")+" (underlined): ")+"<b>"+d.html+"</b> (+2 "+xpw()+")</div>"+
+      html = "<div class='feedback bijna'>"+ct("Zó dichtbij! "+d.m+" woord"+(d.m>1?"en":"")+" wijkt af: ","So close! "+d.m+" word"+(d.m>1?"s":"")+" differ"+(d.m>1?"":"s")+": ")+" (+2 "+xpw()+")"+zinVergelijkHtml(d, rauw)+"</div>"+
         "<p class='muted' style='margin-top:6px' id='zinVraagt'>🤖 "+
           ct("Ik vraag even na of jouw variant ook goed is...","Let me check whether your version is also correct...")+"</p>";
       addXP(2); retryable = true; vertWacht = true;
-      logError(s.id, "zin", s.tag, given);
+      logError(s.id, "zin", s.tag, given, d.paren);
     } else {
-      html = "<div class='feedback fout'>"+ct("Nog niet. Het antwoord is: ","Not yet. The answer is: ")+"<b>"+d.html+"</b></div>";
-      logError(s.id, "zin", s.tag, given); addXP(1); retryable = true;
+      html = "<div class='feedback fout'>"+ct("Nog niet.","Not yet.")+zinVergelijkHtml(d, rauw)+"</div>";
+      logError(s.id, "zin", s.tag, given, d.paren); addXP(1); retryable = true;
     }
   }
   /* v23.51: de knoppen stonden hier onderaan, ná de uitleg en de luisterknoppen, en op een telefoon
@@ -11263,6 +11306,24 @@ function checkSentence(){
     html += "<p class='muted' style='margin:8px 2px 0; font-size:.9rem'>"+
       ct("Je schreef "+fgG+" waar "+fgV+" hoort. Dat is geen woordje dat je miste maar een keuze, en daar hoort een regel bij: <b>"+fregel.naam+"</b>.",
          "You wrote "+fgG+" where "+fgV+" belongs. That is not a word you were missing but a choice, and there is a rule behind it: <b>"+fregel.naam+"</b>.")+"</p>";
+  }
+  /* v23.168: de goede zin één keer overtypen.
+
+     Dit is de enige actieve stap die het ontwerp overhoudt, en hij staat er om wat de
+     prompt-theorie het werkzame deel noemt: zelf de vorm produceren in plaats van hem alleen zien.
+     Bewust een aanbod en geen poort, want een verplichte stap na elke fout maakt fout maken duurder
+     en dat beloont voorzichtig schrijven. Bewust ook zonder XP: anders gaat overtypen lonen boven
+     het meteen goed hebben, en dan optimaliseer je op de verkeerde uitkomst. */
+  if(retryable){
+    html += "<div class='overtyp' id='overTypBlok'>"+
+      "<p class='muted' style='margin:0 0 6px; font-size:.9rem'>"+
+        ct("Typ hem één keer over. Dat is het enige moment waarop je de goede vorm zelf maakt.",
+           "Type it once. That is the only moment where you produce the correct form yourself.")+"</p>"+
+      "<input type='text' id='sOverTyp' autocomplete='off' autocapitalize='off' spellcheck='false' "+
+        "placeholder='"+veiligHtml(s.es)+"'>"+
+      "<div class='row' style='margin-top:6px'><button class='ghost' id='btnOverTyp'>"+
+        ct("Klaar","Done")+"</button></div>"+
+      "<p class='muted' id='overTypFb' style='margin:6px 0 0; font-size:.9rem'></p></div>";
   }
   html += "<div class='row'>"+
     (retryable ? "<button class='primary' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
@@ -11297,6 +11358,24 @@ function checkSentence(){
   };
   var br = document.getElementById("btnRetry");
   if(br) br.onclick = function(){ renderSentence(false); };
+  /* v23.168: het overtypen. Geen XP, geen doos, geen fout: alleen ja of nog niet. Accenten worden
+     door de vingers gezien, net als in de bijna-tak hierboven, want dit is een productiestap en
+     geen spellingstoets. */
+  var bot = document.getElementById("btnOverTyp"), iot = document.getElementById("sOverTyp");
+  if(bot && iot){
+    var otKlaar = function(){
+      var fbo = document.getElementById("overTypFb");
+      if(!fbo) return;
+      var goed = stripAcc(norm(iot.value || "")) === stripAcc(norm(s.es));
+      fbo.textContent = goed ? ct("Ja, zo is het. ✓","Yes, that is it. ✓")
+                             : ct("Nog niet helemaal. Kijk nog eens naar de gemarkeerde woorden.",
+                                  "Not quite. Look at the marked words again.");
+      fbo.style.color = goed ? "var(--goed, #2e7d32)" : "";
+      if(goed) iot.disabled = true;
+    };
+    bot.onclick = otKlaar;
+    iot.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); otKlaar(); } };
+  }
   /* v23.101: rechtstreeks de microles in, niet naar een overzicht met kaartjes. Wie eerst nog moet
      zoeken welk kaartje het was, is de fout al vergeten. gwStart regenereert de vragen (v20.5), dus
      je krijgt niet het toetsje dat je vorige week uit je hoofd hebt geleerd. */
@@ -20093,6 +20172,17 @@ function dagZinHtml(){
     return h + "</div>";
   }
   h += "<div class='oogst'><b>"+muurEsc(ct("Jij","You"))+"</b> \u00b7 <span class='es'>"+muurEsc(mijn.es)+"</span></div>";
+  /* v23.168: en wat eraan mankeert, onder je eigen zin. Stefan, 22 aug: "deze is leuk maar hij
+     corrigeert niet mijn fout." Dat klopte: er ging niets langs een check.
+     Het staat er als mededeling en niet als oordeel: geen XP-gevolg, geen fout in S.errors, en het
+     plaatsen wordt er niet door tegengehouden. Zie de kop van de patch voor waarom modeloordelen
+     hier niet in je herhaalwachtrij mogen. */
+  if(mijn.naast){
+    h += "<p class='muted' style='margin:4px 0 8px; font-size:.88rem'>\ud83e\udd16 "+muurEsc(mijn.naast)+"</p>";
+  } else if(mijn.wacht){
+    h += "<p class='muted' style='margin:4px 0 8px; font-size:.88rem'>\ud83e\udd16 "+
+      ct("Even kijken wat er van je zin te zeggen valt...","Let me see what there is to say about your sentence...")+"</p>";
+  }
   var and = dagZinAnderen();
   h += and.length
     ? and.map(function(a){
@@ -20106,15 +20196,33 @@ function dagZinHtml(){
 function dagZinWire(){
   var b = document.getElementById("btnDagzin"), inp = document.getElementById("dagzinInp");
   if(!b || !inp) return;
+  function teken(){
+    var el = document.getElementById("dagzinCard");
+    if(!el) return;
+    var n = document.createElement("div");
+    n.innerHTML = dagZinHtml();
+    if(n.firstChild){ el.parentNode.replaceChild(n.firstChild, el); dagZinWire(); }
+  }
   function zet(){
     if(!dagZinBij(inp.value)) return;
-    var el = document.getElementById("dagzinCard");
-    if(el){
-      var n = document.createElement("div");
-      n.innerHTML = dagZinHtml();
-      if(n.firstChild){ el.parentNode.replaceChild(n.firstChild, el); dagZinWire(); }
-    }
+    if(S.dagzin) S.dagzin.wacht = true;
+    teken();
     try { muurGehaald = 0; muurHaal(); } catch(e){}
+    /* v23.168: modus "gesprek" bestaat al en zijn veld `naast` is precies dit: wat er van de
+       laatste zin van de leerling te zeggen valt, in het Nederlands. Eén beurt is genoeg; het
+       antwoord van Chispa (res.es) laten we hier liggen, want deze kaart is voor je groep en niet
+       voor een gesprek. Mislukt de aanroep, dan verdwijnt de wachtregel en staat er verder niets:
+       een correctie die niet komt mag geen foutmelding worden. */
+    try {
+      api("/api/ai/chat", "POST", {modus:"gesprek", niveau:chatNiveau(),
+                                   beurten:[{van:"jij", es:S.dagzin.es}]}).then(function(res){
+        if(!S.dagzin) return;
+        S.dagzin.wacht = false;
+        if(res && res.ok && res.naast) S.dagzin.naast = String(res.naast).slice(0, 400);
+        persist();
+        teken();
+      });
+    } catch(e){ if(S.dagzin){ S.dagzin.wacht = false; teken(); } }
   }
   b.onclick = zet;
   inp.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); zet(); } };
@@ -20352,7 +20460,7 @@ function renderLessons(){
   /* v23.167: alleen als de muur er staat. muurWire() en muurHaal() zijn veilig zonder kaart
      (beide beginnen met een getElementById-controle), maar muurHaal() doet een netwerkverzoek en
      dat is voor een scherm zonder muur een vraag om niets. */
-  if(lesAf){ muurWire(); muurHaal(); }
+  if(lesAf){ muurWire(); muurHaal(); try { dagZinWire(); } catch(e){} }
   var bsf = document.getElementById("btnStartLesFlow");
   // v20.2: dezelfde knop, twee betekenissen, en de app kiest welke. Nooit allebei tegelijk in beeld.
   if(bsf) bsf.onclick = function(){ if(lesFlowHervatKan() && !dagKlaar()) lesFlowHervat(); else lesFlowStart(); };
