@@ -196,6 +196,14 @@ function rapport(inv, an, vrd) {
   toon("taalverschijnselen", an.zinGaten, g => `${g.tag}: ${g.fouten} fouten · ${g.zinnen} oefenzinnen · score ${g.score.toFixed(1)}`);
   toon("woorden die niet plakken", an.woordGaten, g => `${g.tag}: ${g.fouten} fouten over ${g.items} woorden (${g.woorden.slice(0,4).map(w=>w.es).join(", ")}…)`);
   toon("grammatica-toetsjes", an.toetsGaten, g => `${g.tag} (${g.titel}): ${g.fouten} fouten · spiekkaart ${JSON.stringify(g.spiek)}`);
+  /* v23.175: de stand van de kale zinnen hoort in het verslag, ook als er niets te doen is.
+     "er is niets te doen" en "hier ligt al genoeg" zijn niet hetzelfde; zie de verzadigde
+     onderwerpen hierboven, waar dat onderscheid uit dezelfde overweging is ontstaan. */
+  console.log("— kale zinnen (geen tijdsaanduiding, de uitgang draagt de tijd) —");
+  KAAL_TIJDEN.forEach(t => {
+    const n = inv.sentences.filter(s => s.tag === "kaal-" + t).length;
+    console.log(`  ${t}: ${n} van de ${KAAL_DOEL}` + (n >= KAAL_DOEL ? " · vol" : ""));
+  });
   if ((an.verzadigd || []).length) {
     console.log("  overgeslagen, hier ligt al genoeg:");
     an.verzadigd.forEach(g => console.log(
@@ -343,6 +351,77 @@ const STIJL = `Stijl-eisen (belangrijk):
   Het antwoord zelf zetten wij er machinaal bij; dat hoef jij niet over te typen. Laat "alt" gerust
   leeg als er geen echte varianten zijn.`;
 
+/* ---------- kale zinnen per tijd (v23.175) ----------
+
+   Waarom dit gat niet uit het foutenlog komt zoals alle andere: het is geen gat in wat Stefan fout
+   doet maar in wat de app kan vragen. Gemeten op 22 augustus, over alle 413 zinnen, geteld op
+   zinnen zonder tijdsaanduiding met precies één eenduidige vervoegde vorm erin:
+
+       presente 154 · indefinido 17 · perfecto 5 · imperfecto 3 · subjuntivo 1
+
+   Voor het paar waar het om gaat, indefinido tegenover imperfecto, zijn dat er samen twintig. Dat is
+   één ronde. Vandaar dat de nachtrun ze zelf gaat schrijven, één tijd per nacht, de dunste eerst.
+
+   Het presente staat er niet bij: daar liggen er 154, en meer maken zou de nacht kosten die het
+   imperfecto nodig heeft. */
+const KAAL_TIJDEN = ["indefinido", "imperfecto", "perfecto", "subjuntivo"];
+const KAAL_DOEL = 16;              // zoveel kale zinnen per tijd zijn genoeg voor vier ronden
+const KAAL_PER_NACHT = 4;
+
+function kaleGaten(inv) {
+  const per = {};
+  KAAL_TIJDEN.forEach(t => { per[t] = 0; });
+  inv.sentences.forEach(s => {
+    const m = /^kaal-([a-z]+)$/.exec(String(s.tag || ""));
+    if (m && per[m[1]] !== undefined) per[m[1]]++;
+  });
+  return KAAL_TIJDEN.map(t => ({ soort: "kaal", tijd: t, tag: "kaal-" + t, heeft: per[t],
+                                 tekort: KAAL_DOEL - per[t] }))
+    .filter(g => g.tekort > 0)
+    .sort((a, b) => b.tekort - a.tekort);
+}
+
+const KAAL_UITLEG = {
+  indefinido: "één afgeronde gebeurtenis in het verleden",
+  imperfecto: "hoe het wás, gewoonte of beschrijving in het verleden",
+  perfecto: "iets dat gebeurd is en nu nog telt",
+  subjuntivo: "na een uitdrukking van wens, twijfel, gevoel of oordeel"
+};
+
+function promptZinnenKaal(gat, ids, inv) {
+  const bestaand = inv.sentences.filter(s => s.tag === gat.tag).slice(0, 6)
+    .map(s => `- ${s.es} — ${s.nl}`).join("\n");
+  const paar = (gat.tijd === "indefinido" || gat.tijd === "imperfecto");
+  return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
+
+Maak ${ids.length} NIEUWE oefenzinnen in de ${gat.tijd} (${KAAL_UITLEG[gat.tijd]}).
+
+DE EIS DIE ALLES BEPAALT: in de Spaanse zin staat GEEN ENKELE tijdsaanduiding. Geen "ayer", geen
+"todos los días", geen "cuando era niño", geen "ya", geen "hace dos años", geen dagen van de week.
+De werkwoordsuitgang moet het enige zijn dat vertelt wanneer het gebeurde.
+
+Waarom: onderzoek met eye-tracking laat zien dat leerders met een moedertaal zonder rijke
+werkwoordsvervoeging naar het bijwoord kijken en de uitgang overslaan. Staat er "ayer", dan kan de
+leerling de goede vorm kiezen zonder de vorm te kennen, en dan oefent hij zijn eigen omweg. Deze eis
+wordt machinaal gecontroleerd; een zin met een tijdswoord erin wordt afgekeurd.
+${paar ? `
+EN OMDAT HET NEDERLANDS HET VERSCHIL NIET HOORT: "ik woonde in een dorp" kan zowel vivía als viví
+zijn. Geef daarom bij elke zin een veld "sit": één korte Nederlandse regel die de situatie schetst
+zodat de keuze te maken is. Bijvoorbeeld "je vertelt hoe het vroeger elke zomer ging" (imperfecto)
+of "je vertelt over die ene avond" (indefinido). Zonder dat veld is de opgave niet te beslissen.
+` : ""}
+Bestaande zinnen van deze soort (niet herhalen):
+${bestaand || "(nog geen)"}
+
+${STIJL}
+- Gebruik exact deze ids in deze volgorde: ${ids.join(", ")}
+- "tag" is exact "${gat.tag}".
+- "uitleg" noemt de vorm zelf en waarom deze tijd hier hoort.
+
+Antwoord met UITSLUITEND JSON: een object met precies een sleutel "zinnen", met daarin de lijst.
+{"zinnen":[${JSON.stringify(Object.assign({}, VOORBEELD_ZIN, paar ? { sit: "je vertelt over die ene avond" } : {}))}]}`;
+}
+
 function promptZinnenVerschijnsel(gat, ids, inv) {
   const bestaand = inv.sentences.filter(s => s.tag === gat.tag).slice(0, 8).map(s => `- ${s.es} — ${s.nl}`).join("\n");
   return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
@@ -413,6 +492,10 @@ Antwoord met UITSLUITEND JSON:
 {"id":"${id}","titel":"...","titelEn":"...","spiek":${JSON.stringify(gat.spiek)},"vragen":[${JSON.stringify(VOORBEELD_VRAAG)}]}`;
 }
 
+/* v23.175: de tegenlezer krijgt de kale-zin-eis erbij. De machinale lijst in content-lib
+   vangt de bekende woorden; deze vangt wat een lijst niet kan vangen, zoals een zin waarin de
+   tijd uit de context blijkt in plaats van uit de uitgang ("nací en Sevilla" heeft geen
+   tijdswoord maar iedereen weet dat geboren worden af is). */
 function promptTegenlezerZinnen(items) {
   return `Je bent corrector Spaans (Spanje, niveau A2/B1) voor een leerapp. Controleer per item:
 (1) is het Spaans correct en natuurlijk, (2) klopt de Nederlandse vertaling, (3) klopt de uitleg,
@@ -504,11 +587,18 @@ async function maakZinnen(gat, aantal, inv, alTeGaan, motor) {
     return ids.map((id, i) => ({
       id, lvl: 1, nl: `Proefzin ${i + 1} (${gat.tag}).`, en: `Test sentence ${i + 1} (${gat.tag}).`,
       es: `Esta es la frase de prueba número ${i + 1}.`, alt: [`esta es la frase de prueba numero ${i + 1}`],
-      uitleg: "Nepcontent uit --stub, alleen om de pijplijn te testen.",
-      ue: "Stub content, only to test the pipeline.", tag: gat.tag
+      /* De uitleg moet door uitlegZegtIets() komen, dus hij noemt een woord uit zijn eigen
+         zin. Stond hier "Nepcontent uit --stub", en dan keurt valideer() elke proeflevering
+         af en test --stub alleen nog dat afkeuren werkt. */
+      uitleg: "prueba is vrouwelijk, dus la frase de prueba en niet el frase.",
+      ue: "prueba is feminine, so la frase de prueba and not el frase.", tag: gat.tag,
+      /* v23.175: ook de stub moet een situatieregel meenemen, anders keurt valideer() de
+         proeflevering af en meldt --stub een fout die er in het echt niet is. */
+      sit: gat.soort === "kaal" ? "proefsituatie uit --stub" : undefined
     }));
   }
-  const prompt = gat.soort === "woorden" ? promptZinnenWoorden(gat, ids) : promptZinnenVerschijnsel(gat, ids, inv);
+  const prompt = gat.soort === "kaal" ? promptZinnenKaal(gat, ids, inv)
+    : gat.soort === "woorden" ? promptZinnenWoorden(gat, ids) : promptZinnenVerschijnsel(gat, ids, inv);
   const antw = await vraagModel(motor, prompt);
   // Zowel {zinnen:[...]} als een kale array wordt geaccepteerd: het model mag zich hier niet in vergissen.
   const rij = Array.isArray(antw) ? antw : (antw && Array.isArray(antw.zinnen) ? antw.zinnen : null);
@@ -703,7 +793,9 @@ async function maakNieuweLes(inv, motor) {
     les = { titel: "Lección de prueba", doel: "Proefles uit --stub", doelEn: "Stub lesson", niveau,
       words: ids.words.map((id, i) => ({ id, es: "prueba" + (i + 1), nl: "proef" + (i + 1), en: "test" + (i + 1), tag: "stub" })),
       sentences: ids.sents.map((id, i) => ({ id, lvl: 1, nl: "Proef " + (i + 1) + ".", en: "Test " + (i + 1) + ".",
-        es: "Prueba número " + (i + 1) + ".", alt: ["prueba numero " + (i + 1)], uitleg: "Stub.", ue: "Stub.", tag: "stub" })),
+        es: "Prueba número " + (i + 1) + ".", alt: ["prueba numero " + (i + 1)],
+        uitleg: "prueba is vrouwelijk: la prueba, niet el prueba.",
+        ue: "prueba is feminine: la prueba, not el prueba.", tag: "stub" })),
       quiz: { id: ids.quiz, titel: "Proeftoets", titelEn: "Stub quiz",
         vragen: [1, 2, 3, 4].map(i => ({ q: "Prueba " + i + " ___.", nl: "Proef.", ne: "Stub.", opts: ["a", "b"], c: 0, u: "Stub.", ue: "Stub." })) },
       cheat: { titel: "Proefkaart", titelEn: "Stub card", html: "<p>Stub.</p>", htmlEn: "<p>Stub.</p>" } };
@@ -789,21 +881,31 @@ async function main() {
   const gaten = [].concat(
     an.zinGaten.slice().sort((a, b) => b.score - a.score),
     an.woordGaten.slice().sort((a, b) => b.score - a.score));
+  /* v23.175: de kale zinnen krijgen een eigen stap en staan niet op de gatenstapel. Twee
+     redenen. Ze komen niet uit het foutenlog, dus hun "score" staat op geen enkele schaal
+     naast die van de andere gaten; dat is precies de fout die op 11 augustus de woordgaten
+     stelselmatig liet winnen. En als ze wél op die stapel stonden, zouden ze in elke nacht
+     met genoeg echte fouten nooit aan de beurt komen, en dan duurt het maanden. Eén tijd per
+     nacht, de dunste eerst. */
+  const kaal = kaleGaten(inv);
   const padKrap = vrd.krapsteDagen !== null && vrd.krapsteDagen < VOORRAAD_DREMPEL_DAGEN;
   const verlengen = OPT.nieuweLes || padKrap;
 
   // Wat het besluit belooft, is vanaf hier een afspraak: leveren of falen. Zie het slot van main.
   HART.staat.beloofd = { gaten: Math.min(OPT.max, gaten.length), toetsje: an.toetsGaten.length ? 1 : 0,
-                         nieuweLes: verlengen ? 1 : 0 };
+                         kaal: kaal.length ? 1 : 0, nieuweLes: verlengen ? 1 : 0 };
   HART.staat.voorraadDagen = vrd.krapsteDagen;
 
   console.log("— besluit —");
   if (gaten.length) console.log(`  ${Math.min(OPT.max, gaten.length)} gat(en) aanpakken: ` +
     gaten.slice(0, OPT.max).map(g => `${g.tag} (${g.soort})`).join(", "));
   if (an.toetsGaten.length) console.log(`  nieuw toetsje bij: ${an.toetsGaten[0].tag}`);
+  if (kaal.length) console.log(`  ${KAAL_PER_NACHT} kale zinnen in de ${kaal[0].tijd} ` +
+    `(er liggen er ${kaal[0].heeft} van de ${KAAL_DOEL})`);
+  else console.log("  kale zinnen: alle tijden zitten aan " + KAAL_DOEL);
   if (verlengen) console.log(`  pad verlengen met een nieuwe les op niveau ${volgendNiveau(inv)}` +
     (padKrap ? ` (voorraad ${vrd.krapsteDagen} dagen < drempel ${VOORRAAD_DREMPEL_DAGEN})` : " (--nieuwe-les)"));
-  if (!gaten.length && !an.toetsGaten.length && !verlengen) console.log("  niets te doen");
+  if (!gaten.length && !an.toetsGaten.length && !kaal.length && !verlengen) console.log("  niets te doen");
   if (OPT.analyse) return 0;
 
   const motor = OPT.stub ? null : llm();
@@ -833,6 +935,22 @@ async function main() {
     const b = reparatie.lessen[lesId] = reparatie.lessen[lesId] || { sents: [] };
     b.sents = (b.sents || []).concat(goed.map(z => z.id));
     console.log(`    ${goed.length} zinnen goedgekeurd → les ${lesId}`);
+  }
+  /* --- de kale zinnen (v23.175) --- */
+  if (kaal.length) {
+    const gat = kaal[0];
+    const n = Math.min(KAAL_PER_NACHT, gat.tekort);
+    console.log(`  ${gat.tag}: ${n} kale zinnen maken…`);
+    const ruw = await maakZinnen(gat, n, inv, reparatie.sentences, motor);
+    const goed = await keurZinnen(ruw, motor);
+    if (!goed.length) console.error(`    ${gat.tag}: niets overgebleven`);
+    else {
+      /* NIET aan een les hangen, om dezelfde reden als het toetsje hieronder: een extra zin
+         in de lesindeling verhoogt de eis om de volgende les te ontgrendelen. Deze zinnen
+         worden op hun tag gevonden, niet via een les. */
+      reparatie.sentences = reparatie.sentences.concat(goed);
+      console.log(`    ${goed.length} kale zinnen goedgekeurd (${gat.heeft} + ${goed.length} van de ${KAAL_DOEL})`);
+    }
   }
   if (an.toetsGaten.length) {
     const gat = an.toetsGaten[0];
@@ -881,6 +999,7 @@ async function main() {
   }
 
   HART.staat.geleverd = { zinnen: reparatie.sentences.length, toetsjes: reparatie.quizzes.length,
+                          kaal: reparatie.sentences.filter(s => /^kaal-/.test(s.tag || "")).length,
                           nieuweLes: nieuweLes ? 1 : 0 };
   HART.staat.versie = versie;
 
@@ -898,15 +1017,15 @@ async function main() {
      content-lib niet haalt. Elk van die paden schreef een klacht naar stderr en liep door, en de run
      eindigde groen met "geen wijzigingen". Vanaf nu geldt: wat het besluit beloofde, moet er zijn.
      Nul geleverd op een gevulde belofte is een mislukte nacht en die hoort rood te zijn. */
-  const b = HART.staat.beloofd || { gaten: 0, toetsje: 0, nieuweLes: 0 };
-  const beloofd = b.gaten + b.toetsje + b.nieuweLes;
+  const b = HART.staat.beloofd || { gaten: 0, toetsje: 0, kaal: 0, nieuweLes: 0 };
+  const beloofd = b.gaten + b.toetsje + (b.kaal || 0) + b.nieuweLes;
   const geleverd = reparatie.sentences.length + reparatie.quizzes.length + (nieuweLes ? 1 : 0);
   if (beloofd > 0 && geleverd === 0) {
     HART.staat.reden = "het besluit vroeg om " + beloofd + " stuk(ken) werk en er is niets van weggeschreven";
     console.error("MISLUKT: " + HART.staat.reden + ". Kijk hierboven welk onderdeel afhaakte.");
     return 1;
   }
-  if (beloofd === 0) HART.staat.reden = "niets te doen: geen gaten, geen toetsgaten, voorraad ruim genoeg";
+  if (beloofd === 0) HART.staat.reden = "niets te doen: geen gaten, geen toetsgaten, kale zinnen compleet, voorraad ruim genoeg";
   return 0;
 }
 

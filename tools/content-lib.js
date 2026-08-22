@@ -326,6 +326,46 @@ function lektHetAntwoord(w) {
   });
 }
 
+/* ---------- kale zinnen: geen tijdsaanduiding (v23.175) ----------
+
+   Een zin met de tag "kaal-<tijd>" hoort de tijd in de UITGANG te dragen en nergens anders. Staat er
+   "ayer" of "todos los días" in, dan kan de leerling de vorm goed kiezen zonder de vorm te kennen.
+
+   Waarom dit een machinale eis is en geen instructie aan het model: het model onthoudt hem twee
+   zinnen lang en vergeet hem dan, precies zoals bij de vorm van een woordkaart. Zie WOORDVORM in
+   curriculum.js voor hetzelfde patroon en dezelfde aanleiding.
+
+   Deze lijst is met opzet ruim. Hij zal soms een goede zin afkeuren omdat er toevallig "ya" in
+   staat, en dat kost één zin die nacht. Een doorgelaten "ayer" kost een oefening die de omweg
+   traint die we juist proberen af te leren, en dat merkt niemand ooit. Fout naar de veilige kant
+   is hier dus afkeuren. */
+const TIJDSWOORDEN = [
+  "ayer", "hoy", "mañana", "anoche", "ahora", "antes", "después", "luego", "entonces",
+  "siempre", "nunca", "jamás", "todavía", "aún", "ya", "recién", "pronto", "últimamente",
+  "mientras", "primero", "finalmente", "antaño", "actualmente", "hoydía"
+];
+const TIJDSUITDRUKKINGEN = [
+  "hace ", "el año pasado", "la semana pasada", "el mes pasado", "el otro día", "el fin de semana pasado",
+  "esta mañana", "esta tarde", "esta noche", "esta semana", "este año", "este mes", "este fin de semana",
+  "cada día", "cada semana", "cada año", "todos los días", "todas las semanas", "todos los años",
+  "de niño", "de niña", "de pequeño", "de pequeña", "de joven", "cuando era", "cuando éramos",
+  "a menudo", "a veces", "de repente", "en aquella época", "en ese momento", "en aquel momento",
+  "al principio", "al final", "por fin", "desde entonces", "hasta entonces", "una vez", "dos veces",
+  "por primera vez", "el lunes", "el martes", "el miércoles", "el jueves", "el viernes",
+  "el sábado", "el domingo", "los lunes", "los sábados", "los domingos"
+];
+/* Geeft de gevonden aanduidingen terug, niet alleen ja of nee: een afkeuring die niet zegt WELK
+   woord het was, laat de volgende nacht dezelfde fout maken. */
+function tijdsaanduidingen(es){
+  const t = String(es || "").toLowerCase();
+  const uit = [];
+  TIJDSUITDRUKKINGEN.forEach(u => { if (t.includes(u)) uit.push(u.trim()); });
+  const woorden = t.replace(/[¿?¡!.,;:()"]/g, " ").split(/\s+/);
+  TIJDSWOORDEN.forEach(w => { if (woorden.includes(w)) uit.push(w); });
+  return uit;
+}
+function isKaleZin(s){ return /^kaal-[a-z]+$/.test(String((s && s.tag) || "")); }
+
 function valideer(nieuw, inv) {
   const fouten = [];
   const bestaandeIds = new Set([].concat(
@@ -382,6 +422,20 @@ function valideer(nieuw, inv) {
     if (typeof s.lvl !== "number" || s.lvl < 1 || s.lvl > 5) fouten.push(`${waar}: lvl moet 1-5 zijn`);
     if (!uitlegZegtIets(s.uitleg, s.es))
       fouten.push(`${waar}: uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam`);
+    /* v23.175: de harde eis onder de kale zinnen. Zie de kop bij TIJDSWOORDEN. */
+    if (isKaleZin(s)) {
+      const tw = tijdsaanduidingen(s.es);
+      if (tw.length) fouten.push(`${waar}: kale zin met een tijdsaanduiding erin (${tw.join(", ")}); dan draagt de uitgang de tijd niet meer`);
+      const tijd = String(s.tag).slice(5);
+      if (["presente","perfecto","indefinido","imperfecto","subjuntivo"].indexOf(tijd) === -1)
+        fouten.push(`${waar}: tag "${s.tag}" noemt geen bestaande tijd`);
+      if (tijd === "indefinido" || tijd === "imperfecto") {
+        /* Het Nederlands hoort het verschil niet: "ik woonde in een dorp" kan vivía of viví
+           zijn. Zonder een situatieregel is de opgave niet te beslissen en meet hij niets. */
+        if (!s.sit || String(s.sit).length < 8)
+          fouten.push(`${waar}: ${tijd} zonder situatieregel ("sit"); in het Nederlands is deze keuze niet te horen`);
+      }
+    }
   });
 
   (nieuw.quizzes || []).forEach((q, i) => {
@@ -513,7 +567,7 @@ function pasToe(nieuw, opties) {
   return { ok: true, versie: bump.versie, aantallen: verwacht, waarschuwingen };
 }
 
-module.exports = { altWaarschuwingen, altVoornaamwoorden,
+module.exports = { altWaarschuwingen, altVoornaamwoorden, tijdsaanduidingen, isKaleZin,
                    INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
                    valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie,
                    altNorm, altKaal, herstelAlt, lektHetAntwoord, topPuntkomma };
@@ -613,6 +667,42 @@ if (require.main === module && process.argv.includes("--zelftest")) {
   console.log("verplaatst voornaamwoord en -eros geven geen vals alarm:",
     altStil.length ? "FOUT: " + altStil.join("; ") : "klopt \u2713");
   console.log("op de inhoud van nu:", altWaarschuwingen(inv).length + " alt om na te lezen");
+
+  /* De kale zinnen (v23.175). De eis is: in een zin met de tag kaal-<tijd> staat geen enkele
+     tijdsaanduiding, want dan draagt de uitgang de tijd niet meer. Twee kanten, want een lijst die
+     alles afkeurt is net zo nutteloos als een lijst die niets ziet. */
+  const kaalZiet = [
+    ["Ayer comí paella con mi hermana.", "ayer"],
+    ["Todos los días desayuno café.", "todos los días"],
+    ["Cuando era niño vivía en Lugo.", "cuando era"],
+    ["Ya he terminado el trabajo.", "ya"],
+    ["Los sábados salimos a cenar.", "los sábados"]
+  ].every(p => tijdsaanduidingen(p[0]).length > 0);
+  const kaalStil = [
+    "Comí paella con mi hermana.",
+    "Mi hermana trabaja en un hospital.",
+    "Hemos perdido las llaves del coche."
+  ].every(es => tijdsaanduidingen(es).length === 0);
+  console.log("tijdsaanduidingen gezien:", kaalZiet ? "klopt \u2713" : "GEMIST");
+  console.log("CONTROLE: en geen vals alarm op kale zinnen:", kaalStil ? "klopt \u2713" :
+    "FOUT: " + JSON.stringify(["Comí paella con mi hermana.", "Mi hermana trabaja en un hospital.",
+      "Hemos perdido las llaves del coche."].map(tijdsaanduidingen)));
+
+  const kaalZin = (es, extra) => Object.assign({
+    id: idS(3), lvl: 2, nl: "Ik at paella met mijn zus.", en: "I ate paella with my sister.",
+    es, alt: [altKaal(es)], tag: "kaal-indefinido",
+    uitleg: "comí is de yo-vorm van comer in het indefinido.",
+    ue: "comí is the yo form of comer in the indefinido.", sit: "je vertelt over die ene avond"
+  }, extra || {});
+  const kMet = valideer({ sentences: [kaalZin("Ayer comí paella con mi hermana.")] }, inv);
+  const kZonder = valideer({ sentences: [kaalZin("Comí paella con mi hermana.")] }, inv);
+  const kGeenSit = valideer({ sentences: [kaalZin("Comí paella con mi hermana.", { sit: undefined })] }, inv);
+  console.log("valideer keurt een kale zin met ayer af:",
+    kMet.some(x => /tijdsaanduiding/.test(x)) ? "ja \u2713" : "GEMIST");
+  console.log("CONTROLE: dezelfde zin zonder ayer komt erdoor:",
+    kZonder.length ? "FOUT: " + kZonder.join("; ") : "ja \u2713");
+  console.log("een indefinido-zin zonder situatieregel wordt afgekeurd:",
+    kGeenSit.some(x => /situatieregel/.test(x)) ? "ja \u2713" : "GEMIST");
 
   const droog = pasToe(proef, { droog: true });
   console.log("droge schrijfbeurt:", droog.ok ? "ok, wordt " + droog.versie : "MISLUKT: " + droog.fouten);
