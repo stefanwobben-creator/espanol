@@ -81,7 +81,16 @@ async function nieuwProfiel(page) {
   });
 
   console.log('\n-- op Vandaag staat een zin, geen dashboard (v23.64) --');
-  await page.evaluate(() => show('lessen'));
+  /* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant. Vóór je les staat alleen
+     je les; de lijnkaart komt pas tevoorschijn als je les af is. Deze suite gaat over wat er in
+     die kaart staat, niet over wanneer hij verschijnt, dus zetten we de les van vandaag op af en
+     kijken daarna. Zonder die regel is er geen kaart om te meten en wordt elk "geen balk, geen
+     legenda, geen tegels" waar omdat er niets is. */
+  await page.evaluate(() => {
+    S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;
+    try { persist(); } catch (e) {}
+    show('lessen');
+  });
   await page.waitForTimeout(500);
   const opDag = await page.evaluate(() => {
     const kaart = document.getElementById('lijnKaart');

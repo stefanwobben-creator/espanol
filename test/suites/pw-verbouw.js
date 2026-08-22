@@ -33,6 +33,24 @@ async function dagOpnieuw(page) {
   await page.waitForTimeout(400);
 }
 
+/* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant gekregen. Vóór je les staat
+   er één ding, je les; het bord, de lijn en de speelkaart komen pas tevoorschijn als je les van
+   vandaag af is. Reden: zeven kaarten onder elkaar maakten van dit scherm een menu, en op een menu
+   is beginnen de saaiste optie.
+
+   Deze suite meet daarom op twee momenten. Belofte 1 (geen dashboard) geldt op allebei, dus wordt
+   hij op allebei gemeten: het is juist de achterkant waar een dashboard weer zou kunnen groeien.
+   Belofte 3 (Chispa's groet) hoort bij de voorkant, want als je klaar bent zegt ze iets anders.
+   Belofte 5 (de speelkaart) hoort bij de achterkant. */
+async function lesVandaag(page, af) {
+  await page.evaluate((a) => {
+    S.lesFlow = S.lesFlow || {};
+    if (a) S.lesFlow[today()] = true; else delete S.lesFlow[today()];
+    try { persist(); } catch (e) {}
+  }, af);
+  await dagOpnieuw(page);
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'nl-NL' });
@@ -41,8 +59,7 @@ async function dagOpnieuw(page) {
 
   // ---------------------------------------------------------------- 1
   console.log('\n-- 1. het dagscherm is geen dashboard --');
-  await dagOpnieuw(page);
-  const dag1 = await page.evaluate(() => {
+  const meetDag = () => page.evaluate(() => {
     const el = document.getElementById('tab-lessen');
     const t = (el.innerText || '').replace(/\s+/g, ' ');
     return {
@@ -54,6 +71,14 @@ async function dagOpnieuw(page) {
       balk: !!document.querySelector('#tab-lessen #dagBasisBalk')
     };
   });
+  await lesVandaag(page, false);
+  const voorLes = await meetDag();
+  console.log('    voor de les ::', JSON.stringify({ getallen: voorLes.getallen, px: voorLes.hoogte }));
+  ok(voorLes.getallen.length <= 6, 'ook vóór je les hoogstens zes getallen (' + voorLes.getallen.join(',') + ')');
+  // en nu met de les van vandaag af, want dat is de volle stand van het scherm: op de achterkant
+  // is de ruimte waar een dashboard opnieuw zou kunnen groeien.
+  await lesVandaag(page, true);
+  const dag1 = await meetDag();
   console.log('   ', JSON.stringify({ getallen: dag1.getallen, px: dag1.hoogte }));
   /* Gemeten op Stefans scherm vóór deze ronde: 11 getallen en 1362 px in de drukste toestand. De
      grens hieronder is ruim, want dit hoort niet rood te worden van een dagdoel dat verandert; hij
@@ -65,6 +90,9 @@ async function dagOpnieuw(page) {
 
   // ---------------------------------------------------------------- 3
   console.log('\n-- 3. Chispa spreekt eerst jouw taal --');
+  // haar groet hoort bij het begin van je dag, dus terug naar de voorkant: is je les af, dan zegt
+  // ze iets anders ("¡Muy bien!") en gaat dit blok over een andere zin.
+  await lesVandaag(page, false);
   const groet = await page.evaluate(() => {
     const p = document.querySelector('.lfsay');
     if (!p) return null;
@@ -121,6 +149,8 @@ async function dagOpnieuw(page) {
   ok(spel.overlapMenu.length === 0, 'en de speeltuin ook niet (' + spel.overlapMenu.join(',') + ')');
   ok(spel.zonderZin.length === 0, 'elk spel heeft een regel die zegt wat je doet (' + spel.zonderZin.join(',') + ')');
   ok(spel.geenZin.length === 0, 'en die regel is een hele zin, met een punt (' + spel.geenZin.join(',') + ')');
+  // de speelkaart staat achter je les, dus die eerst op af zetten; zie de toelichting bovenin.
+  await lesVandaag(page, true);
   const kaart = await page.evaluate(() => {
     const k = document.getElementById('speelKaart');
     return {

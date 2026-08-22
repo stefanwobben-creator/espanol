@@ -64,6 +64,21 @@ async function dagOpnieuw(page) {
   await page.waitForTimeout(350);
 }
 
+/* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant gekregen. Vóór je les staat
+   er één ding, je les. Alles wat deze suite meet (nieuws, lijn, chiprij, spelen) zit sindsdien
+   achter "les af", omdat het dagscherm anders een menu is waarop beginnen de saaiste optie is.
+
+   Voor deze suite verandert dat de vraag niet, alleen het moment: elk blok moet nog steeds zijn
+   eigen plek verdienen uit jouw context. Zou hier niets gezet worden, dan werd elke "die staat er
+   niet"-regel waar omdat de hele achterkant weg is, en dat is geen test meer. */
+async function lesAfVandaag(page) {
+  await page.evaluate(() => {
+    S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;
+    try { persist(); } catch (e) {}
+  });
+  await dagOpnieuw(page);
+}
+
 async function dagFoto(page) {
   return page.evaluate(() => {
     const lijst = document.getElementById('lessonList');
@@ -94,10 +109,17 @@ async function dagFoto(page) {
 
   console.log('\n-- dag een: alleen wat over jou gaat --');
   await dagOpnieuw(page);
+  const voorLes = await dagFoto(page);
+  ok(voorLes.start, 'de startknop staat er');
+  /* 22 aug, v23.167: hier stond "en de speelkaart, want spelen kan altijd". Dat is bewust
+     teruggedraaid: spelen kan nu zodra je les af is, niet ernaast. Zeven kaarten waarvan er vijf
+     leuker waren dan beginnen, maakten van het dagscherm een menu. Dus wordt het hier twee regels:
+     vóór je les staat de speelkaart er niet, erna wel. */
+  ok(!voorLes.speel, 'vóór je les staat de speelkaart er niet, want beginnen is het enige aanbod');
+  await lesAfVandaag(page);
   const dag1 = await dagFoto(page);
   const rel1 = await page.evaluate(() => dagRelevantie());
-  ok(dag1.start, 'de startknop staat er');
-  ok(dag1.speel, 'en de speelkaart, want spelen kan altijd');
+  ok(dag1.speel, 'en zodra je les af is staat hij er wel, want dan kan spelen altijd');
   ok(!dag1.nieuws, 'geen nieuwskaart die meldt dat er geen nieuws is');
   ok(!dag1.lijn, 'geen lijnkaart met een lege balk en dertien gaten');
   ok(!dag1.ritme, 'geen chiprij met alleen maar nullen');

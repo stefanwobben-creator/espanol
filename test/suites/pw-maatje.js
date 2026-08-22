@@ -153,7 +153,13 @@ const { chromium } = require('playwright');
   // --- 2. Stap 1: de vraag. Stap 2: pas dan een naam en een voorbeeld ---
   const stappen = await page.evaluate(async () => {
     maatjeStap = 0;
-    S.lesFlow = { a: 1, b: 1, c: 1, d: 1 };
+    /* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant. Vóór je les staat er
+       alleen je les; de maatjeskaart hangt aan samenKaartNu() en die komt pas achter "les af"
+       vandaan. Vandaar dat de vierde sessie hieronder die van vandaag is: het blijven vier
+       sessies, dus de vraag van maatjeMoment() verandert niet, alleen het moment waarop de kaart
+       in beeld staat. */
+    S.lesFlow = { a: 1, b: 1, c: 1 };
+    S.lesFlow[today()] = 1;
     S.srs = { hola: 1, gato: 1, casa: 1 };
     renderLessons();
     const kaart = document.getElementById('maatjeKaart');

@@ -103,7 +103,8 @@ const { chromium } = require('playwright');
   // genomen hebt, niet als losse planningsvraag na een oefening. Wat hier telt is dat zijn plek in
   // de rij nu doorschuift naar de uitnodiging, en niet leeg blijft.
   const naEen = await page.evaluate(() => {
-    S.lesFlow = { '2026-07-29': true };
+    // 22 aug, v23.167: de eerste sessie is die van vandaag, zie de toelichting bij blok 4.
+    S.lesFlow = {}; S.lesFlow[today()] = true;
     S.samen = {};
     S.ritme = {};
     S.maatje = {};
@@ -119,8 +120,17 @@ const { chromium } = require('playwright');
   ok(naEen.kaartHtml.indexOf('momentKaart') === -1, 'samenKaartNu() biedt hem ook niet meer aan');
 
   // --- 4. Vanaf de tweede sessie staat de uitnodiging er, direct onder de dagkaart ---
+  /* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant gekregen. Vóór je les
+     staat alleen je les; alles wat eronder hoorde, de uitnodiging incluis, komt pas tevoorschijn
+     als je les van vandaag af is. Daarom is de tweede sessie hieronder die van vandaag: het
+     blijven twee sessies, dus uitnodigMoment(2) meet nog hetzelfde, maar de kaart staat nu ook
+     echt op het scherm.
+
+     "Direct onder de dagkaart" is niet verschoven: de dagkaart is nog steeds het eerste kind van
+     de lijst en de uitnodiging het tweede. Wat eronder kwam te staan is wel veranderd, en dat is
+     precies waarom die positie hier blijft staan. */
   const naTwee = await page.evaluate(() => {
-    S.lesFlow = { '2026-07-28': true, '2026-07-29': true };
+    S.lesFlow = { '2026-07-28': true }; S.lesFlow[today()] = true;
     S.ritme = { wanneer: 'stil' }; // moment is al gezet, dus die kaart claimt de plek niet meer
     S.maatje = {};
     renderLessons();
@@ -172,7 +182,9 @@ const { chromium } = require('playwright');
     S.groepen = [];
     S.samen = {};
     S.tapas = 10;
-    S.lesFlow = { a: true, b: true };
+    // 22 aug, v23.167: tweede sessie is die van vandaag, anders staat de knop achter de nog niet
+    // afgeronde les en valt er niets te tikken. Zie de toelichting bij blok 4.
+    S.lesFlow = { a: true }; S.lesFlow[today()] = true;
     renderLessons();
     document.getElementById('btnUitnodig').click();
     await new Promise(function (r) { setTimeout(r, 400); });
@@ -247,7 +259,9 @@ const { chromium } = require('playwright');
   // --- 7d. Na twee uitnodigingen houdt de app erover op ---
   const opIsOp = await page.evaluate(() => {
     S.samen = { gedeeld: '2026-01-01', tikken: 2 };
-    S.lesFlow = { a: true, b: true };
+    // 22 aug, v23.167: met de les van vandaag af staat de achterkant open, dus dat de kaart hier
+    // ontbreekt zegt weer iets. Zie de toelichting bij blok 4.
+    S.lesFlow = { a: true }; S.lesFlow[today()] = true;
     renderLessons();
     return { moment: uitnodigMoment(2), kaart: !!document.getElementById('uitnodigKaart') };
   });

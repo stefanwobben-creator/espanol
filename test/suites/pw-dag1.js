@@ -173,12 +173,30 @@ async function verseBezoeker(page, niveau) {
     '"laat ze toch allemaal zien" opent nog steeds alles');
 
   console.log('\n-- op het Vandaag-scherm staat niets dat nul is (v23.45) --');
+  /* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant gekregen. Vóór je les
+     staat alleen je les; de spellen, de lijn en het bord komen pas tevoorschijn zodra je les af
+     is. Deze plek meet daarom twee keer: eerst de voorkant (staat je les er?), daarna de
+     achterkant met de les van vandaag op af (staat er niets dat nul is?).
+
+     Dat de les van vandaag af moet staan is hier geen formaliteit: zonder die regel zou "de
+     lijnkaart staat er niet" waar zijn omdat de hele achterkant weg is, en dan bewaakt hij niets
+     meer. */
   await page.evaluate(() => {
     Object.keys(S.srs).slice(3).forEach(id => delete S.srs[id]);
+    if (S.lesFlow) delete S.lesFlow[today()];
     try { persist(); } catch (e) {}
     // De vorige stap liet de app op de speeltuin staan; zonder deze regel is het Vandaag-scherm
     // verborgen en meet je de zichtbaarheid van iets wat sowieso niet in beeld is.
     funView = null; show('lessen'); renderLessons();
+  });
+  await page.waitForTimeout(400);
+  const voorLes = await page.evaluate(() => document.getElementById('lessonList').innerText);
+  ok(/START JE LES/.test(voorLes),
+    'vóór je les staat je les er, en die is het enige dat er staat');
+  await page.evaluate(() => {
+    S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;
+    try { persist(); } catch (e) {}
+    show('lessen'); renderLessons();
   });
   await page.waitForTimeout(500);
   const vandaag = await page.evaluate(() => {
@@ -204,8 +222,8 @@ async function verseBezoeker(page, niveau) {
     'de lijnkaart staat er niet, want alles wat hij kan tonen is nul');
   ok(!/van je 3 woorden, gewogen naar/.test(vandaag.tekst),
     'en dus ook niet het eerste getal dat een vreemde van deze app te zien kreeg: een 0');
-  ok(/START JE LES/.test(vandaag.tekst) && /EVEN SPELEN/.test(vandaag.tekst),
-    'wat er wel staat: de les en de twee spellen die echt kunnen draaien');
+  ok(/EVEN SPELEN/.test(vandaag.tekst),
+    'wat er achter je les wel staat: de twee spellen die echt kunnen draaien');
   ok(vandaag.kaarten === 2, 'twee kaarten op dag 1, niet drie');
 
   /* v23.64: de twee tegels (kracht en foutpercentage) staan niet meer op Vandaag. Stefan: "leuk
@@ -243,6 +261,9 @@ async function verseBezoeker(page, niveau) {
   const teksten = await page.evaluate(() => {
     const uit = { stappen: [], dagkaart: '' };
     S.tour = true; // ook de late stappen, die achter de link Rondleiding zitten
+    // 22 aug, v23.167: de dagkaart belooft wat er in je les zit, en die belofte staat er alleen
+    // zolang je les nog niet af is. Het blok hierboven zette hem op af, dus hier weer terug.
+    if (S.lesFlow) delete S.lesFlow[today()];
     tourLijst().forEach(st => { if (st.txt) uit.stappen.push(st.txt); });
     show('lessen'); renderLessons();
     uit.dagkaart = (document.querySelector('#lessonList .card') || {}).innerText || '';

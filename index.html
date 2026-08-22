@@ -1524,7 +1524,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.166";
+var APP_VERSIE = "v23.167";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15628,7 +15628,11 @@ function lesFlowWinst(){
         waarom:ct("\u201c"+dv.es+"\u201d ("+dv.nl+") Eén zin, en je groep leest mee. Schrijven voor iemand die het echt leest is iets anders dan schrijven voor een toets.",
                   "\u201c"+dv.es+"\u201d ("+dv.en+") One sentence, and your group reads it. Writing for someone who really reads it is not the same as writing for a test."),
         knop:ct("Schrijf je zin","Write your sentence"),
-        doe:function(){ show("perfil"); setTimeout(function(){
+        /* v23.167: hier stond show("perfil"). #dagzinInp staat niet op Profiel maar op Vandaag,
+           in muurHtml(), dus deze knop bracht je naar een scherm zonder invoerveld. Nu naar Vandaag,
+           waar het veld staat en waar het sinds deze versie ook pas verschijnt als je les af is:
+           precies het moment waarop dit voorstel gedaan wordt. */
+        doe:function(){ show("lessen"); setTimeout(function(){
           var el = document.getElementById("dagzinInp"); if(el) el.focus();
         }, 300); }};
     }
@@ -20309,26 +20313,46 @@ function renderLessons(){
   document.getElementById("lessonView").classList.add("hidden");
   var listEl = document.getElementById("lessonList");
   listEl.classList.remove("hidden");
+  /* v23.167: DE VOORKANT EN DE ACHTERKANT VAN DE DAG.
+
+     Hier stonden zeven kaarten onder elkaar, waarvan je les de eerste was. Dat is geen dagscherm
+     maar een menu, en op een menu is beginnen de saaiste optie: van de zeven kaarten waren er vijf
+     leuker dan je les. Nu staat er vóór je les één ding, en komt de rest erachter vandaan zodra je
+     klaar bent.
+
+     Dit volgt beslissing 8 uit het prototype van 20 aug: het spel gaat open op "les af", niet
+     ernaast. Dat is Nation's vierde draad, vloeiendheid, en die hoort ná de andere drie te komen.
+
+     Weggehaald is niets: alles hieronder bestaat nog en is nog bereikbaar via de balk. Het staat
+     alleen niet meer vóór het enige dat lesgeeft. */
+  var lesAf = !!(S.lesFlow && S.lesFlow[today()]);
   var html = ritmeCard();
-  // v19.57: de uitnodiging staat direct onder de dagkaart, dus meteen in beeld. Hij verdwijnt
-  // zodra je gedeeld hebt of zodra er iemand naast je zit; blijven vragen is zeuren.
-  // v19.58: ook hier hoogstens één vraag tegelijk; samenKaartNu() bepaalt welke.
-  html += samenKaartNu(true);
-  // v19.69: het dagbord. Wat is er nieuw, hoe loopt het, waar kan ik nu spelen.
-  html += dagNieuwsHtml();
-  // v22.7: de muur, direct onder het nieuws van vandaag en boven de rest. Wat je maatjes leerden is
-  // nieuws, geen bijzaak, maar het staat wél onder je eigen dagles: eerst jij, dan de anderen.
-  html += muurHtml();
-  html += dagLijnHtml();
-  html += dagSpeelHtml();
+  if(lesAf){
+    // v19.57: de uitnodiging staat direct onder de dagkaart, dus meteen in beeld. Hij verdwijnt
+    // zodra je gedeeld hebt of zodra er iemand naast je zit; blijven vragen is zeuren.
+    // v19.58: ook hier hoogstens één vraag tegelijk; samenKaartNu() bepaalt welke.
+    html += samenKaartNu(true);
+    // v19.69: het dagbord. Wat is er nieuw, hoe loopt het, waar kan ik nu spelen.
+    html += dagNieuwsHtml();
+    /* v22.7: de muur. v23.167: hij staat nu achter je les in plaats van eronder, en dat is de
+       duurste regel van deze versie: schrijft je groep iets terwijl jij je les niet doet, dan zie
+       je het pas morgen. Ik neem die prijs omdat de muur pas iets waard is als je zelf geschreven
+       hebt (dagZinAnderen toont de anderen pas ná je eigen zin), en dat schrijven hoort in je les.
+       Meting als dit fout is: schrijft hij minder vaak een zin dan hiervoor. */
+    html += muurHtml();
+    html += dagLijnHtml();
+    html += dagSpeelHtml();
+  }
   // v20.4: onderaan, want hij gaat niet over vandaag leren maar over hoe je hier morgen weer komt.
   html += thuisKaartHtml();
   listEl.innerHTML = html;
   dagBordWire(listEl);
   routeRegelWire();   // v23.141: de knop bij de routeregel onder je dagplan
   thuisKaartWire(listEl);
-  muurWire();
-  muurHaal();
+  /* v23.167: alleen als de muur er staat. muurWire() en muurHaal() zijn veilig zonder kaart
+     (beide beginnen met een getElementById-controle), maar muurHaal() doet een netwerkverzoek en
+     dat is voor een scherm zonder muur een vraag om niets. */
+  if(lesAf){ muurWire(); muurHaal(); }
   var bsf = document.getElementById("btnStartLesFlow");
   // v20.2: dezelfde knop, twee betekenissen, en de app kiest welke. Nooit allebei tegelijk in beeld.
   if(bsf) bsf.onclick = function(){ if(lesFlowHervatKan() && !dagKlaar()) lesFlowHervat(); else lesFlowStart(); };

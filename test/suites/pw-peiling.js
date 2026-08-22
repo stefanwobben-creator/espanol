@@ -208,7 +208,15 @@ async function beantwoord(page, aantal) {
   ok(!dag1.knop, 'en er staat dus ook geen knop op het dagscherm');
 
   console.log('\n-- daarna wel, en in de kaart die er al stond --');
-  await page.evaluate(() => { S.lesFlowEerste = today(); try { persist(); } catch (e) {} });
+  /* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant. Vóór je les staat alleen
+     je les; de lijnkaart, en daarmee het aanbod voor de peiling, staat erachter. Dat past bij wat
+     dit blok altijd al zei, namelijk pas na een afgeronde les, alleen moet die les nu die van
+     vandaag zijn. Zonder die regel is er geen kaart om de knop in te zoeken. */
+  await page.evaluate(() => {
+    S.lesFlowEerste = today();
+    S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;
+    try { persist(); } catch (e) {}
+  });
   await dagOpnieuw(page);
   const aanbod = await basis(page);
   ok(aanbod.knop, 'na een afgeronde les staat het aanbod er');
