@@ -89,12 +89,29 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     });
     uit.lessenTotaal = doneLessonCount();
     uit.teHoog = BOOK.filter(function (h) { return h.drempel > uit.lessenTotaal; }).map(function (h) { return h.id; });
-    uit.cadiz = BOOK.filter(function (h) { return /^cadiz-/.test(h.id); }).length;
-    uit.cadizOpen = BOOK.filter(function (h) { return /^cadiz-/.test(h.id) && boekOntgrendeld(h); }).length;
+    /* v23.182: hier stond "cadiz". Un año en Cádiz is eruit gegaan, en een suite die één reeks bij
+       naam noemt meet alleen de reeks die toevallig de laatste was toen hij geschreven werd. Nu per
+       reeks op de plank, zodat de volgende reeks er automatisch onder valt. */
+    uit.perReeks = LEES_REEKSEN.map(function (r) {
+      var hs = BOOK.filter(function (h) { return String(h.id).indexOf(r.pre) === 0; });
+      return { id: r.id, n: hs.length,
+               open: hs.filter(boekOntgrendeld).length,
+               eerste: hs.length ? hs[0].id : null };
+    });
 
     // ---- 3. het rendert ----
     show('lezen', true);
-    startBoek('cadiz-1');
+    /* Elke reeks één keer openen. Een reeks die niet rendert is onbereikbaar, en dat merk je anders
+       pas als je hem wilt lezen. */
+    uit.rendert = uit.perReeks.map(function (r) {
+      if (!r.eerste) return { id: r.id, n: 0 };
+      startBoek(r.eerste);
+      var t = (document.getElementById('lezenCard') || {}).textContent || '';
+      closeBoek();
+      return { id: r.id, n: t.length };
+    });
+    show('lezen', true);
+    startBoek(uit.perReeks[0].eerste);
     uit.leesTekst = (document.getElementById('lezenCard') || {}).textContent || '';
     closeBoek();
     audSc = AUDICIONES.filter(function (s) { return s.id === 'e19'; })[0];
@@ -117,13 +134,18 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.dubbel.length === 0, 'geen dubbele ids (' + (r.dubbel.join(',') || 'geen') + ')');
 
   console.log('\n-- 2. het is ook echt te bereiken --');
-  console.log('   ' + r.lessenTotaal + ' lessen bestaan; ' + r.cadizOpen + ' van de ' + r.cadiz + ' nieuwe hoofdstukken open');
+  console.log('   ' + r.lessenTotaal + ' lessen bestaan');
+  r.perReeks.forEach(function (x) { console.log('   ' + x.id + ': ' + x.n + ' hoofdstukken, ' + x.open + ' open'); });
   ok(r.teHoog.length === 0, 'geen enkel hoofdstuk staat achter een drempel die niet te halen is (' + (r.teHoog.join(',') || 'geen') + ')');
-  ok(r.cadiz >= 8, 'het nieuwe boek heeft minstens acht hoofdstukken (' + r.cadiz + ')');
-  ok(r.cadizOpen === r.cadiz, 'en wie alle lessen af heeft, kan ze allemaal lezen');
+  ok(r.perReeks.every(function (x) { return x.n > 0; }),
+    'elke reeks op de plank heeft hoofdstukken (' + r.perReeks.filter(function (x) { return !x.n; }).map(function (x) { return x.id; }).join(',') + ')');
+  ok(r.perReeks.every(function (x) { return x.open === x.n; }),
+    'en wie alle lessen af heeft kan ze allemaal lezen');
 
   console.log('\n-- 3. het rendert --');
-  ok(/Cádiz/.test(r.leesTekst), 'het nieuwe boek staat op het leesscherm');
+  console.log('   rendert: ' + r.rendert.map(function (x) { return x.id + ' ' + x.n; }).join(' · '));
+  ok(r.rendert.every(function (x) { return x.n > 200; }),
+    'elke reeks rendert een hoofdstuk met tekst (' + r.rendert.filter(function (x) { return x.n <= 200; }).map(function (x) { return x.id; }).join(',') + ')');
   ok(r.leesTekst.length > 400, 'met de tekst erin (' + r.leesTekst.length + ' tekens)');
   ok(/Escuchar/.test(r.audTekst), 'en de nieuwe scene op het luisterscherm');
 

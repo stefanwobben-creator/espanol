@@ -66,12 +66,17 @@ const { chromium } = require('playwright');
     return {
       over: Object.keys(schoon.comp.luisteren),
       vlag: schoon.schema,
+      schemaNu: SCHEMA,
       schrijvenIntact: Object.keys(schoon.comp.schrijven).length
     };
   });
   ok(opgeruimd.over.length === 1, 'de vijftig oude sleutels zijn echt weg uit de state: ' + opgeruimd.over.length + ' over');
   ok(opgeruimd.over[0] && /^esc|^aud|.+/.test(opgeruimd.over[0]), 'de echte luisterscene staat er nog: ' + opgeruimd.over[0]);
-  ok(opgeruimd.vlag === 2, 'en het schemanummer staat op 2, zodat dit niet elke keer opnieuw hoeft');
+  /* v23.182: hier stond een hardgecodeerde 2. Elke keer dat er een migratie bij komt gaat SCHEMA
+     omhoog, en dan werd deze regel rood zonder dat er iets stuk was. Nu tegen het nummer dat de app
+     zelf draagt: de claim is dat de migratie het nummer BIJWERKT, niet welk nummer het is. */
+  ok(opgeruimd.vlag === opgeruimd.schemaNu,
+    'en het schemanummer staat op ' + opgeruimd.schemaNu + ', zodat dit niet elke keer opnieuw hoeft (nu: ' + opgeruimd.vlag + ')');
   ok(opgeruimd.schrijvenIntact === 1, 'comp.schrijven wordt niet aangeraakt: daar is de geldige verzameling niet bekend');
 
   const tweedeKeer = await page.evaluate(() => {

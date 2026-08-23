@@ -114,16 +114,24 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     /* Elke plank moet ook echt hoofdstukken hebben: een reeks met een voorvoegsel dat nergens op
        past is een lege kaart, en dat is de spiegelbeeldfout van een boek zonder plank. */
     uit.legeReeks = LEES_REEKSEN.filter(function (x) { return boekReeksHst(x).length === 0; }).map(function (x) { return x.id; });
-    // en het nieuwe boek is met naam te vinden
-    uit.cadizOpPlank = menu.textContent.indexOf('Cádiz') !== -1;
-    uit.cadizHst = boekReeksHst(LEES_REEKSEN.filter(function (x) { return x.id === 'cadiz'; })[0] || { pre: 'cadiz-' }).length;
+    /* v23.182: hier stond "cadiz" bij naam. Un año en Cádiz is eruit gegaan (geen tweede vak, zie
+       het projectdoc "De leesregel") en toen viel deze suite om op een reeks die niet meer bestaat.
+       Een suite die één reeks bij naam noemt bewaakt alleen de reeks die toevallig de laatste was
+       toen hij geschreven werd. Nu: elke reeks staat met zijn naam op de plank. */
+    uit.naamOntbreekt = LEES_REEKSEN.filter(function (x) {
+      return menu.textContent.indexOf(ct(x.nl, x.en)) === -1;
+    }).map(function (x) { return x.id; });
 
     // ---- 4, 5 en 6. een boek uit ----
     S.lessons = S.lessons || {};
     (tLessons() || []).forEach(function (l) {
       S.lessons[l.id] = { done: true, woorden: true, zinnen: true, quiz: true, spiek: true };
     });
-    const reeks = LEES_REEKSEN.filter(function (x) { return x.id === 'cadiz'; })[0];
+    /* v23.182: was 'cadiz'. Nu de langste reeks die je met alle lessen af helemaal open hebt: dat is
+       de zwaarste proef voor "een boek uit", en hij blijft kloppen als er reeksen bij komen. */
+    const reeks = LEES_REEKSEN.slice().sort(function (a, b) {
+      return boekReeksHst(b).length - boekReeksHst(a).length;
+    })[0];
     const hst = boekReeksHst(reeks);
     S.boek = {}; S.boekUit = {}; S.tapas = 0;
     hst.slice(0, hst.length - 1).forEach(function (h) {
@@ -181,10 +189,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'elk hoofdstuk in BOOK hoort bij een plank (' + (r.zonderReeks.slice(0, 8).join(', ') || 'alle') + ')');
   ok(r.legeReeks.length === 0, 'en elke plank heeft hoofdstukken (' + (r.legeReeks.join(', ') || 'alle') + ')');
   ok(r.planken.length === r.reeksen.length, 'alle ' + r.reeksen.length + ' planken staan op het scherm (' + r.planken.length + ')');
-  ok(r.cadizOpPlank && r.cadizHst === 8, 'en het nieuwe boek staat er met zijn ' + r.cadizHst + ' hoofdstukken');
+  ok(r.naamOntbreekt.length === 0,
+    'en elke reeks staat met zijn naam op de plank (mist: ' + (r.naamOntbreekt.join(', ') || 'geen') + ')');
 
   console.log('\n-- 4. een boek uit krijgt zijn eigen scherm --');
-  ok(!r.halfAf.reeksAf && !r.halfAf.gevierd, 'zeven van de acht is nog geen boek uit');
+  ok(!r.halfAf.reeksAf && !r.halfAf.gevierd, 'op één hoofdstuk na is nog geen boek uit');
   ok(!!r.uit.gevierd, 'na het laatste hoofdstuk staat het boek als uitgelezen genoteerd (' + r.uit.gevierd + ')');
   ok(r.uit.knop, 'en er is een eigen scherm, geen toast die wegvalt terwijl je hem leest');
   console.log('   "' + r.uit.scherm.slice(0, 150) + '"');
