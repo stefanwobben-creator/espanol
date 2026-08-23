@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-08-23T03:02:26.256Z",
+ "wanneer": "2026-08-23T10:00:43.706Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -12,14 +12,14 @@
  "geleverd": null,
  "versie": null,
  "klachten": [
-  "s256: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onnatuurlijk: 'Nos sentimos contentos' (wij voelen ons blij) is niet gebruikelijk in het Spaans voor een groep gemengd geslacht of alleen vrouwen. Correct zou zijn: 'Nos sentimos contentas' (als de groep alleen uit vrouwen bestaat) of 'Nos sentimos felices' (neutraal).",
-  "s265: afgekeurd — De vertaling 'Olvidé mis llaves en la mesa de la cocina' is onnatuurlijk Spaans; het moet 'olvidé las llaves en la mesa de la cocina' zijn.",
-  "AFGEKEURD:\n - zin 6 (s260): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 10 (s264): kale zin met een tijdsaanduiding erin (una vez); dan draagt de uitgang de tijd niet meer"
+  "s260: afgekeurd — De zin '¿Puedes estar callado un momento?' is grammaticaal correct maar inhoudelijk onnatuurlijk in het Spaans. Een Spanjaard zou eerder zeggen: '¿Puedes callarte un momento?' of '¿Puedes estar en silencio un momento?'.",
+  "s264: afgekeurd — De uitleg is onjuist: 'perdieron' is hier derde persoon meervoud, maar de zin gaat over 'ik' (yo), dus moet het 'se me perdió' (enkelvoud) zijn.",
+  "oud is not defined"
  ],
  "reden": "de run is niet afgemaakt",
  "gegenereerd": false,
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 1,
- "afgemaakt": "2026-08-23T03:06:06.184Z"
+ "afgemaakt": "2026-08-23T10:00:45.572Z"
 }
