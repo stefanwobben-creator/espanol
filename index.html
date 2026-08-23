@@ -1537,7 +1537,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.180";
+var APP_VERSIE = "v23.181";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6318,6 +6318,144 @@ var BOOK = [
        (GRAM_PADEN) nu lopen, dus voor het eerst wijzen de leesstof en de grammatica dezelfde kant op.
     3. Drempels 8 en 10, dus ná Chispa. Twaalf zou nooit opengaan: er zijn er elf. Wie net begint krijgt dit niet voorgeschoteld. */
 
+
+ /* ================= EL HILO DE LAS PALABRAS (v23.181) =================
+    Tien Spaanse klassiekers, elk één werk, één idee, één beeld. Het tweede vak van deze
+    reeks is de literatuur; zonder tweede vak hoort een reeks er niet te zijn (zie de kop
+    van claude/patch-v23.181.py en het projectdoc "De leesregel").
+
+    Vóór Cádiz, want lesFlowBoekHoofdstuk() pakt het eerste onafgeronde hoofdstuk in deze
+    volgorde en Stefan zit midden in Cádiz. */
+ {id:"lit-1", num:1, deel:"El hilo de las palabras", titel:"Los gigantes que eran molinos", drempel:0,
+  tekst:"Hay un hombre que lee demasiado.\n\nVive en un pueblo de La Mancha, en el centro de España. Es viejo, es pobre y está solo. Por las noches no duerme: lee libros de caballeros, de castillos y de batallas. Lee tanto que un día ya no sabe qué es verdad y qué es historia.\n\nEntonces toma una decisión extraña. Coge una armadura vieja, un caballo flaco y sale de casa. «A partir de hoy me llamo don Quijote de la Mancha», dice.\n\nEn el camino ve unos molinos de viento. Para él no son molinos: son gigantes con brazos largos. Su amigo Sancho le dice que no, que son molinos, que todo el mundo lo ve. Don Quijote no escucha. Ataca, y cae.\n\n¿Quién tiene razón? Sancho ve lo que hay. Don Quijote ve lo que quiere que haya. El libro no dice cuál de los dos vive mejor.\n\nCuatrocientos años después seguimos leyéndolo.",
+  vragen:[
+   {q:"¿Por qué don Quijote ya no sabe qué es verdad?",
+    opts:["Porque está enfermo", "Porque lee demasiados libros de caballeros", "Porque nadie le habla"], c:1},
+   {q:"¿Qué ve don Quijote en el campo?",
+    opts:["Gigantes con brazos largos", "Un castillo", "Un ejército"], c:0},
+   {q:"¿Qué hace Sancho?",
+    opts:["Ataca con él", "Le dice que son molinos", "Se va a casa"], c:1},
+   {q:"¿Qué dice el libro sobre quién vive mejor?",
+    opts:["Que Sancho vive mejor", "Que don Quijote vive mejor", "No lo dice"], c:2}
+  ],
+  reflectie:"¿Conoces a alguien que ve el mundo como quiere que sea? ¿Vive peor por eso?"},
+ {id:"lit-2", num:2, deel:"El hilo de las palabras", titel:"El niño que tenía hambre", drempel:0,
+  tekst:"Lázaro es un niño pobre. Su madre no puede darle de comer, así que lo entrega a un hombre ciego. «Él te enseñará la vida», dice.\n\nEl ciego le enseña, pero no con palabras. El primer día le pide a Lázaro que ponga la oreja en una piedra con forma de toro. Cuando el niño obedece, el ciego le golpea la cabeza contra la piedra. «Aprende: el criado del ciego tiene que saber más que el ciego.»\n\nLázaro aprende. Tiene hambre siempre, así que se vuelve listo. Hace un agujero pequeño en el jarro de vino y bebe por debajo. Roba pan. Miente. No lo hace porque sea malo: lo hace porque come una vez al día.\n\nEste libro es de 1554 y nadie sabe quién lo escribió. Antes, en los libros, los héroes eran caballeros y santos. Aquí el héroe es un niño con hambre que engaña a todo el mundo, y el lector está de su parte.\n\nEspaña se ve distinta desde abajo.",
+  vragen:[
+   {q:"¿Por qué la madre entrega a Lázaro al ciego?",
+    opts:["Porque no puede darle de comer", "Porque el niño se porta mal", "Porque el ciego es rico"], c:0},
+   {q:"¿Qué le hace el ciego el primer día?",
+    opts:["Le da pan", "Le golpea la cabeza contra una piedra", "Le enseña a leer"], c:1},
+   {q:"¿Por qué Lázaro roba y miente?",
+    opts:["Porque es malo", "Porque tiene hambre", "Porque quiere ser rico"], c:1},
+   {q:"¿Qué tiene de nuevo este libro?",
+    opts:["El héroe es un niño pobre y no un caballero", "Está escrito en verso", "Sabemos quién lo escribió"], c:0}
+  ],
+  reflectie:"¿Es Lázaro un ladrón o una víctima? ¿Se puede ser las dos cosas?"},
+ {id:"lit-3", num:3, deel:"El hilo de las palabras", titel:"Y si todo fuera un sueño", drempel:0,
+  tekst:"Un rey encierra a su hijo en una torre.\n\nAntes de nacer el niño, los astrólogos dicen que será un hombre violento y que destruirá el reino. El rey tiene miedo y decide que su hijo crecerá solo, en una torre, sin ver a nadie. El niño se llama Segismundo y no sabe que es príncipe.\n\nMuchos años después el rey duda. ¿Y si los astrólogos se equivocaron? Duerme a su hijo con una bebida, lo lleva al palacio y espera.\n\nSegismundo despierta en una cama de oro. Le dicen que es príncipe. Y se comporta fatal: grita, amenaza, tira a un hombre por la ventana. El rey lo devuelve a la torre y le dice que todo fue un sueño.\n\nEntonces Segismundo piensa algo que cambia la obra. Si la vida puede ser un sueño, dice, hay que hacer el bien igual, porque el bien no se pierde ni en los sueños.\n\nCalderón escribió esto en 1635. La pregunta sigue abierta.",
+  vragen:[
+   {q:"¿Por qué el rey encierra a su hijo?",
+    opts:["Porque los astrólogos dicen que será violento", "Porque el niño está enfermo", "Porque no es su hijo"], c:0},
+   {q:"¿Cómo se comporta Segismundo en el palacio?",
+    opts:["Muy bien", "Fatal: grita y amenaza", "No dice nada"], c:1},
+   {q:"¿Qué le dicen cuando vuelve a la torre?",
+    opts:["Que ahora es rey", "Que todo fue un sueño", "Que su padre ha muerto"], c:1},
+   {q:"¿A qué conclusión llega Segismundo?",
+    opts:["Que hay que hacer el bien igual", "Que nada importa", "Que hay que volver al palacio"], c:0}
+  ],
+  reflectie:"Si supieras que hoy es un sueño, ¿harías algo distinto?"},
+ {id:"lit-4", num:4, deel:"El hilo de las palabras", titel:"¿Quién mira a quién?", drempel:0,
+  tekst:"Entra en una sala del Museo del Prado, en Madrid. En la pared hay un cuadro grande de 1656. Se llama Las Meninas.\n\nEn el centro hay una niña rubia: la infanta Margarita, hija del rey. A su lado, dos chicas jóvenes le ofrecen agua. Hay un perro, una mujer pequeña y un hombre en una puerta al fondo.\n\nY a la izquierda hay un pintor con un pincel en la mano. Es Velázquez, el que pintó el cuadro. Está dentro de su propio cuadro, mirándote.\n\n¿Y qué está pintando? No lo vemos. El lienzo está de espaldas. Pero al fondo hay un espejo, y en el espejo están el rey y la reina.\n\nEntonces, ¿dónde están los reyes? Están donde estás tú, delante del cuadro. Sin saberlo, ocupas su lugar.\n\nTrescientos setenta años después la gente sigue discutiendo qué pasa exactamente en esa sala. Un cuadro que hace una pregunta dura más que uno que da una respuesta.",
+  vragen:[
+   {q:"¿Quién está en el centro del cuadro?",
+    opts:["La reina", "La infanta Margarita", "Velázquez"], c:1},
+   {q:"¿Qué hace Velázquez en el cuadro?",
+    opts:["Está pintando y te mira", "Duerme", "No aparece"], c:0},
+   {q:"¿Quiénes aparecen en el espejo del fondo?",
+    opts:["Los reyes", "Dos perros", "Nadie"], c:0},
+   {q:"¿Dónde estás tú cuando miras el cuadro?",
+    opts:["Detrás del pintor", "En el lugar de los reyes", "Fuera de la sala"], c:1}
+  ],
+  reflectie:"¿Qué cambia en un cuadro cuando el pintor se pinta a sí mismo dentro?"},
+ {id:"lit-5", num:5, deel:"El hilo de las palabras", titel:"Las golondrinas que no volverán", drempel:0,
+  tekst:"Gustavo Adolfo Bécquer vivió poco y mal.\n\nNació en Sevilla en 1836. Sus padres murieron pronto. Fue a Madrid a escribir y pasó frío y hambre. Publicó poco. Murió a los treinta y cuatro años, casi desconocido. Sus amigos reunieron sus poemas después de su muerte.\n\nHoy casi todos los españoles conocen sus primeras líneas: «Volverán las oscuras golondrinas en tu balcón sus nidos a colgar...»\n\nLas golondrinas volverán, dice. Volverán a tu balcón y otra vez habrá primavera. Pero aquellas, las que aprendieron nuestros nombres, ésas no volverán.\n\nEs una idea sencilla y todo el mundo la entiende: la vida sigue, pero no la misma vida.\n\nLo interesante es cómo lo dice. En prosa serían dos frases y las olvidarías. En verso lo lees una vez y se queda. Un poema no informa: hace que algo te pase.",
+  vragen:[
+   {q:"¿Cómo vivió Bécquer?",
+    opts:["Rico y famoso", "Pobre y casi desconocido", "Fuera de España"], c:1},
+   {q:"¿Cuándo se publicaron sus poemas?",
+    opts:["De niño", "Después de su muerte", "Nunca"], c:1},
+   {q:"¿Qué dice el poema sobre las golondrinas?",
+    opts:["Que volverán otras, pero no aquellas", "Que no volverá ninguna", "Que se quedan siempre"], c:0},
+   {q:"Según el capítulo, ¿qué hace un poema?",
+    opts:["Explica algo nuevo", "Hace que algo te pase", "Cuenta una historia larga"], c:1}
+  ],
+  reflectie:"¿Hay alguna frase, de una canción o de un libro, que se te quedó y no sabes por qué?"},
+ {id:"lit-6", num:6, deel:"El hilo de las palabras", titel:"Mirar despacio algo pequeño", drempel:0,
+  tekst:"«Platero es pequeño, peludo, suave; tan blando por fuera, que se diría todo de algodón.»\n\nAsí empieza uno de los libros más leídos de España. Platero es un burro. El que habla es un hombre que pasea con él por Moguer, un pueblo blanco de Andalucía, hace más de cien años.\n\nNo pasa casi nada. Van al río. Ven una flor. Encuentran a unos niños. Llega la primavera, llega el verano. El hombre le habla al burro y el burro no contesta.\n\nJuan Ramón Jiménez escribió esto en 1914 y ganó el Premio Nobel muchos años después. Mucha gente cree que es un libro para niños. No lo es del todo: hay muerte, hay pobreza y hay crueldad, contadas en voz baja.\n\nLo que enseña es una manera de mirar. Casi todo lo que ves cada día te parece pequeño porque lo miras deprisa. Este libro va despacio a propósito.\n\nUn burro puede ser un tema si lo miras el tiempo suficiente.",
+  vragen:[
+   {q:"¿Quién es Platero?",
+    opts:["Un niño", "Un burro", "Un pueblo"], c:1},
+   {q:"¿Dónde pasean?",
+    opts:["Por Madrid", "Por Moguer, en Andalucía", "Por la costa de Galicia"], c:1},
+   {q:"¿Qué pasa en el libro?",
+    opts:["Casi nada: cosas pequeñas de cada día", "Una guerra", "Un viaje a América"], c:0},
+   {q:"¿Es un libro sólo para niños?",
+    opts:["Sí", "No: también hay muerte y pobreza", "Es un libro de historia"], c:1}
+  ],
+  reflectie:"¿Qué cosa pequeña ves cada día sin mirarla nunca de verdad?"},
+ {id:"lit-7", num:7, deel:"El hilo de las palabras", titel:"Caminante, no hay camino", drempel:0,
+  tekst:"Antonio Machado fue profesor de francés en pueblos pequeños. Escribía poemas sobre campos, caminos y álamos.\n\nSus versos más conocidos dicen así: «Caminante, no hay camino, se hace camino al andar.»\n\nEs decir: el camino no existe antes de que alguien lo recorra. Lo haces tú, andando. Si miras atrás ves una senda, pero delante no hay nada todavía.\n\nEn 1939 terminó la guerra civil. Machado salió de España a pie, con su madre anciana, por la frontera de Francia. Llovía. Tenía sesenta y cuatro años y estaba enfermo. Murió tres semanas después en un pueblo pequeño junto al mar.\n\nEn el bolsillo de su abrigo encontraron un papel con un solo verso escrito a mano: «Estos días azules y este sol de la infancia.»\n\nFue lo último que escribió. Su tumba sigue en Francia y todavía recibe flores.",
+  vragen:[
+   {q:"¿De qué trabajaba Machado?",
+    opts:["De profesor de francés", "De médico", "De periodista"], c:0},
+   {q:"¿Qué significa «se hace camino al andar»?",
+    opts:["Que el camino ya existe", "Que el camino lo haces tú andando", "Que hay que volver atrás"], c:1},
+   {q:"¿Por qué salió de España en 1939?",
+    opts:["Por trabajo", "Por el final de la guerra civil", "Para estudiar"], c:1},
+   {q:"¿Qué encontraron en su bolsillo?",
+    opts:["Una carta a su madre", "Un verso escrito a mano", "Una foto"], c:1}
+  ],
+  reflectie:"¿Hay un camino en tu vida que sólo existió después de que empezaste a andar?"},
+ {id:"lit-8", num:8, deel:"El hilo de las palabras", titel:"El duende", drempel:0,
+  tekst:"Federico García Lorca sabía cantar, tocar el piano y dibujar. Escribía teatro y poesía, y en sus poemas hay gitanos, guardias civiles, luna, cuchillos y caballos.\n\nÉl hablaba de una cosa que llamaba el duende. No es un fantasma. Es lo que ocurre cuando alguien canta o baila y de repente te toca por dentro, sin que sepas por qué. «El duende no llega si no ve posibilidad de muerte», decía.\n\nEn 1929 fue a Nueva York y escribió un libro muy distinto, lleno de máquinas, de ciudad y de gente sola.\n\nEn agosto de 1936, al principio de la guerra civil, unos hombres se lo llevaron de una casa en Granada. Lo mataron esa misma noche, cerca de un olivo. Tenía treinta y ocho años. Nunca se encontró su cuerpo.\n\nSus obras se siguen representando en todo el mundo. La gente todavía busca en aquel campo.",
+  vragen:[
+   {q:"¿Qué es el duende, según Lorca?",
+    opts:["Un fantasma", "Lo que te toca por dentro cuando alguien canta o baila", "Un instrumento"], c:1},
+   {q:"¿Adónde fue Lorca en 1929?",
+    opts:["A Nueva York", "A París", "A México"], c:0},
+   {q:"¿Qué le pasó en agosto de 1936?",
+    opts:["Se fue de España", "Lo mataron cerca de Granada", "Dejó de escribir"], c:1},
+   {q:"¿Qué pasó con su cuerpo?",
+    opts:["Está en Madrid", "Nunca se encontró", "Está en Nueva York"], c:1}
+  ],
+  reflectie:"¿Has sentido alguna vez algo parecido al duende, escuchando música?"},
+ {id:"lit-9", num:9, deel:"El hilo de las palabras", titel:"El español del otro lado", drempel:0,
+  tekst:"«Muchos años después, frente al pelotón de fusilamiento, el coronel Aureliano Buendía había de recordar aquella tarde remota en que su padre lo llevó a conocer el hielo.»\n\nEs la primera frase de Cien años de soledad, de 1967. En un pueblo caliente llamado Macondo, el hielo es una cosa mágica que llega con un circo.\n\nEn ese libro pasan cosas imposibles y nadie se sorprende. Una mujer sube al cielo mientras tiende la ropa. Llueve durante cuatro años. Un hombre vive tanto que pierde la cuenta. Los personajes lo cuentan como quien habla del tiempo que hace.\n\nGabriel García Márquez era colombiano. Y aquí hay algo importante: el español no es sólo de España. Lo hablan más de cuatrocientos millones de personas, y la mayoría vive al otro lado del océano.\n\nCuando aprendes español no entras en un país. Entras en veinte.",
+  vragen:[
+   {q:"¿Qué es el hielo en Macondo?",
+    opts:["Algo normal", "Una cosa mágica que llega con un circo", "Una comida"], c:1},
+   {q:"¿Cómo reaccionan los personajes ante lo imposible?",
+    opts:["Con miedo", "Como si fuera normal", "Se van del pueblo"], c:1},
+   {q:"¿De dónde era García Márquez?",
+    opts:["De España", "De Colombia", "De México"], c:1},
+   {q:"¿Cuánta gente habla español?",
+    opts:["Más de cuatrocientos millones", "Unos cincuenta millones", "Sólo en España"], c:0}
+  ],
+  reflectie:"¿Qué español quieres hablar tú: el de España, el de América, o te da igual?"},
+ {id:"lit-10", num:10, deel:"El hilo de las palabras", titel:"Por qué seguimos leyendo", drempel:0,
+  tekst:"Han pasado nueve capítulos. Un hombre que ve gigantes. Un niño con hambre. Un príncipe en una torre. Un pintor dentro de su cuadro. Unas golondrinas. Un burro. Un camino que no existe. Un poeta cerca de un olivo. Un pueblo donde llueve cuatro años.\n\n¿Por qué seguimos leyendo estos libros?\n\nNo es porque sean antiguos. Hay miles de libros antiguos que nadie abre. Éstos siguen aquí porque hacen preguntas que todavía no tienen respuesta, y porque las hacen con una imagen que no se olvida: los molinos, el espejo, el papel en el bolsillo.\n\nY hay otra razón, más práctica para ti. Ahora puedes leerlos. No traducidos: en español. Puede que no entiendas todas las palabras todavía, pero entiendes de qué van.\n\nDon Quijote salió de casa porque había leído demasiado. Tú acabas de leer diez capítulos. Ten cuidado.",
+  vragen:[
+   {q:"Según el capítulo, ¿por qué seguimos leyendo estos libros?",
+    opts:["Porque son antiguos", "Porque hacen preguntas sin respuesta", "Porque son cortos"], c:1},
+   {q:"¿Qué tienen en común los libros de esta serie?",
+    opts:["Una imagen que no se olvida", "El mismo autor", "La misma época"], c:0},
+   {q:"¿Qué puedes hacer ahora, según el texto?",
+    opts:["Leerlos traducidos", "Leerlos en español", "Escribir uno"], c:1},
+   {q:"¿Con qué broma termina el capítulo?",
+    opts:["Que leer demasiado es peligroso", "Que hay que dejar de leer", "Que Don Quijote existió"], c:0}
+  ],
+  reflectie:"De los nueve, ¿cuál quieres leer entero algún día?"},
  {id:"cadiz-1", num:1, deel:"Un año en Cádiz", titel:"La llave que no giraba", drempel:8,
   tekst:"El avión aterrizó a las once de la noche y a las doce y media Marta ya estaba delante de la puerta.\n\n"+
    "Era una puerta verde, vieja, con la pintura levantada. La casera le había mandado la llave por correo dos semanas antes, con una nota: «Gira despacio y hacia la izquierda.»\n\n"+
@@ -13805,6 +13943,13 @@ var LEES_REEKSEN = [
   soortNl:"verhaal", soortEn:"story",
   omNl:"Een jaar in het zuiden, van de eerste dag op een onbekend adres tot de carnaval waarop je meezingt.",
   omEn:"A year in the south, from your first day at an unfamiliar address to the carnival where you sing along."},
+ /* v23.181: dezelfde verteller en dus dezelfde map als Chispa, om dezelfde reden als bij
+    Cádiz: het manifest houdt de stem per map bij, dus een eigen map zou betekenen dat er
+    eerst een stem gekozen moet worden voordat er iets klinkt. */
+ {id:"letras", pre:"lit-", nl:"El hilo de las palabras", en:"El hilo de las palabras", stem:true, map:"boek",
+  soortNl:"literatuur", soortEn:"literature",
+  omNl:"Tien Spaanse klassiekers, van Don Quijote tot Macondo. Elk hoofdstuk \u00e9\u00e9n boek, \u00e9\u00e9n idee en \u00e9\u00e9n beeld dat blijft hangen.",
+  omEn:"Ten Spanish classics, from Don Quijote to Macondo. Each chapter one book, one idea and one image that stays."},
  {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true, map:"hist",
   soortNl:"geschiedenis", soortEn:"history",
   omNl:"Spanje van 1931 tot nu, in tien hoofdstukken: de oorlog, de honger, de stilte en de terugweg.",
