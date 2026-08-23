@@ -557,4 +557,7 @@ function slotwoord(delen, cfg, opties){
   }
 }
 
-module.exports = { leesZinnen, leesHoofdstukken, leesReeksen, leesHoofdstukkenPerMap, leesDialogos, leesOpties, leesConfig, controleerVooraf, proefStemmen, verwerk, slotwoord, stemVoor, ALLE_GROEPEN, MANIFEST_PAD };
+/* hashVan erbij (v23.179): tools/stemmen-inhalen.js moet dezelfde hash rekenen als verwerk(),
+   anders zou het manifest een waarde krijgen die de volgende nacht meteen weer "tekst gewijzigd"
+   oplevert. Eén feit, één plek. */
+module.exports = { leesZinnen, leesHoofdstukken, leesReeksen, leesHoofdstukkenPerMap, leesDialogos, leesOpties, leesConfig, controleerVooraf, proefStemmen, verwerk, slotwoord, stemVoor, hashVan, ALLE_GROEPEN, MANIFEST_PAD };

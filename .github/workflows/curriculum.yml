@@ -92,6 +92,12 @@ jobs:
       - name: Zelftest van de zeef
         run: node tools/curriculum.js --zelftest
 
+      # v23.179: de samenvoeging van het manifest. Zonder deze stap kan de regel "main wint waar
+      # main een regel heeft" ongemerkt omklappen, en dan overschrijft de nachtrun de beschrijving
+      # van een mp3 die hij zelf net heeft teruggezet.
+      - name: Zelftest van de manifestsamenvoeging
+        run: node tools/stemmen-samenvoegen.js --zelftest
+
       # De poort staat hier al klaar, nog vóór de bot iets schrijft. Zo weet je zeker dat een rode
       # avondrun niet aan een al kapotte main ligt: was het hier al rood, dan is het niet zijn schuld.
       - name: Playwright installeren
@@ -274,7 +280,25 @@ jobs:
           # Zelfde reden als bij de audiostap hierboven: wat al op main staat wint, zodat een re-run
           # niet met zijn eigen eerdere push gaat vechten. Dit is waar run #14 rood op ging.
           git fetch origin main --quiet || true
+          # 23 AUGUSTUS (v23.179): HET MANIFEST HOORT NIET BIJ DE TERUGZETTING
+          #
+          # Hier stond `git checkout FETCH_HEAD -- audio` zonder uitzondering, en dat is precies waarom
+          # audio/stemmen.json sinds 16 augustus niet meer is bijgewerkt terwijl er wel elke nacht is
+          # ingesproken. Voor de mp3's klopt de regel: die staan niet op main, dus die blijven staan.
+          # Maar het manifest staat er wel, dus dat werd teruggezet naar de oude versie, en daarmee was
+          # de administratie van wat deze run zojuist insprak weg.
+          #
+          # Gevolg, gemeten op 23 augustus: 102 mp3's op schijf zonder regel in het manifest. Elke
+          # nacht zag de audiostap dezelfde 102 als "onbekende stem", sprak ze opnieuw in, en gooide de
+          # administratie opnieuw weg. Vannacht kwam het aantal boven de alarmgrens van 80 en werd er
+          # helemaal niets meer ingesproken. Een lus die zichzelf voedt en daarna zichzelf blokkeert.
+          #
+          # Dus: het manifest wordt apart gehouden en daarna samengevoegd. Regel: wat op main staat
+          # wint, want als main een mp3 heeft die deze checkout over de onze heen zet, dan hoort de
+          # regel van main erbij. Wat alleen wij hebben vullen we aan.
+          cp audio/stemmen.json "$RUNNER_TEMP/stemmen-van-deze-run.json" 2>/dev/null || true
           git checkout FETCH_HEAD -- audio 2>/dev/null || true
+          node tools/stemmen-samenvoegen.js "$RUNNER_TEMP/stemmen-van-deze-run.json" || true
 
           # 22 AUGUSTUS: DE HARTSLAG NAM DE OPNAMES MEE IN ZIJN VAL
           #
