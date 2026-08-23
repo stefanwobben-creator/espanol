@@ -68,7 +68,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       const t = document.getElementById('lessonList').textContent.replace(/\s+/g, ' ');
       return {
         tekst: t,
-        spreuk: /Sin prisa/.test(t),
+        /* 23 aug (nachtrun): /Sin prisa/ was dag-afhankelijk rood. De groet komt uit
+           chispaGroet() = CHISPA_GROET[dayHash("groet") % 8], en "Sin prisa, pero sin pausa."
+           is maar één van de acht: de suite was alleen groen op dagen dat de rotatie precies
+           die koos (zelfde klasse als pw-nav215 op 22 aug en pw-schrijven op 21 aug).
+           Nu: vraag de app zelf welke groet vandaag geldt en zoek díe in de kaarttekst.
+           Dag 32 gebruikt dezelfde foto(), dus ook de afwezigheids-check blijft kloppen. */
+        spreuk: t.indexOf(chispaGroet().es) !== -1,
         draden: /alle vier de manieren/.test(t),
         route: /Je route/.test(t) || !!document.getElementById('btnRouteDag'),
         tapa: /mag je Chispa/.test(t) || /iets lekkers geven/.test(t),
