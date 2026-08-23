@@ -1537,7 +1537,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.176";
+var APP_VERSIE = "v23.180";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -11348,17 +11348,38 @@ function checkSentence(){
            "Type it once. That is the only moment where you produce the correct form yourself.")+"</p>"+
       "<input type='text' id='sOverTyp' autocomplete='off' autocapitalize='off' spellcheck='false' "+
         "placeholder='"+veiligHtml(s.es)+"'>"+
-      "<div class='row' style='margin-top:6px'><button class='ghost' id='btnOverTyp'>"+
-        ct("Klaar","Done")+"</button></div>"+
+      "<div class='row' style='margin-top:6px'><button class='primary' id='btnOverTyp'>"+
+        ct("Klaar \u2192","Done \u2192")+"</button></div>"+
       "<p class='muted' id='overTypFb' style='margin:6px 0 0; font-size:.9rem'></p></div>";
   }
+  /* v23.180: één primair, en de rest een tik verder weg.
+
+     Stefan, 23 aug: "hier zijn veel te veel knoppen opties voor een lekkere flow." Er stonden
+     er zes op één scherm, waarvan twee primair gekleurd: overtypen en Probeer opnieuw.
+
+     Dat die twee naast elkaar staan is geen smaakkwestie maar een niet-doorgevoerd besluit.
+     De leerkaart van de correctielaag koos de recast plus één overtypbeurt en wees de
+     raadronde af ("kost tijd, beloont voorzichtig schrijven, en het bewijs voor zijn
+     meerwaarde is betwist"). "Probeer opnieuw" ís die raadronde; hij is alleen nooit
+     weggehaald toen het overtypvak erbij kwam. Hij verdwijnt hier niet, want een besluit
+     terugdraaien mag niet stiekem: hij gaat achter "meer opties".
+
+     Bij een goed antwoord blijft alles zoals het was: daar staat één primaire knop en dat was
+     nooit het probleem. */
   html += "<div class='row'>"+
-    (retryable ? "<button class='primary' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
-    (fregel ? "<button class='ghost' id='btnFoutRegel'>\ud83d\udcd8 "+ct("Oefen "+fregel.naam,"Practise "+fregel.naam)+"</button>" : "")+
-                 "<button class='ghost' id='btnAiCheck'>🤖 "+ct("Is mijn variant ook goed?","Is my version also correct?")+"</button>"+
-                 "<button class='ghost' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
+    (retryable ? "<button class='ghost' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button>"
                : "<button class='primary' id='btnNext'>"+ct("Volgende zin →","Next sentence →")+"</button><button class='ghost' id='btnAiUitleg'>🤖 "+ct("Meer uitleg","More explanation")+"</button>")+
     "</div>";
+  if(retryable){
+    html += "<details class='meerOpties' style='margin-top:8px'>"+
+      "<summary class='muted' style='font-size:.9rem; cursor:pointer'>"+
+        ct("meer opties","more options")+"</summary>"+
+      "<div class='row' style='margin-top:8px'>"+
+        "<button class='ghost' id='btnRetry'>"+ct("Probeer opnieuw","Try again")+"</button>"+
+        (fregel ? "<button class='ghost' id='btnFoutRegel'>\ud83d\udcd8 "+ct("Oefen "+fregel.naam,"Practise "+fregel.naam)+"</button>" : "")+
+        "<button class='ghost' id='btnAiCheck'>🤖 "+ct("Is mijn variant ook goed?","Is my version also correct?")+"</button>"+
+      "</div></details>";
+  }
   /* v23.136: de ladder beweegt op de eerste poging van deze zin, en zegt het als hij beweegt.
      Boven de uitleg en onder de knoppen: het is een mededeling over morgen, geen uitslag van nu.
      v23.137: behalve bij een bijna-treffer. Dan staat de vraag "is dit ook goed?" nog open, en een
@@ -11398,7 +11419,17 @@ function checkSentence(){
                              : ct("Nog niet helemaal. Kijk nog eens naar de gemarkeerde woorden.",
                                   "Not quite. Look at the marked words again.");
       fbo.style.color = goed ? "var(--goed, #2e7d32)" : "";
-      if(goed) iot.disabled = true;
+      /* v23.180: goed overgetypt is het einde van deze zin, dus dan gaan we door. Dat is de
+         afspraak van v23.60 ("er moet altijd een knop zijn die controleert en dan automatisch
+         doorgaat naar volgende"), en die gold nog niet voor het overtypvak van v23.168. Even
+         wachten zodat je "Ja, zo is het" nog leest; zonder die pauze voelt het als wegspringen. */
+      if(goed){
+        iot.disabled = true;
+        setTimeout(function(){
+          var bn = document.getElementById("btnNext");
+          if(bn) bn.click();
+        }, 900);
+      }
     };
     bot.onclick = otKlaar;
     iot.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); otKlaar(); } };
@@ -31433,6 +31464,10 @@ function gcOpfrisOnderwerp(id){
   if(!vragen.length) return null;
   var naam = ct(c.naam, c.naamEn || c.naam);
   return {
+    /* v23.180: het icoon stond hier niet, en renderGramWiz() zet o.icon vóór de stapkop.
+       Op het scherm stond dus letterlijk "undefined Even opfrissen". Het concept heeft er
+       een, dus die nemen we over: de opfrisser is hetzelfde onderwerp in het klein. */
+    icon: c.icon || "\ud83d\udd01",
     id: id, concept: cid, opfris: true,
     titel: ct("Even opfrissen: " + naam, "Quick refresher: " + naam),
     titelEn: "Quick refresher: " + (c.naamEn || c.naam),
@@ -33794,7 +33829,10 @@ function renderGramWiz(){
   var inFlow = !!(lesFlow && lesFlow.stap === "grammatica");
   var kop = (inFlow ? lesFlowBannerHtml() : "")+"<div class='card'>"+
     "<span class='kicker'>"+gwTitel(o)+" \u00b7 "+ct("stap ","step ")+(gwSess.stap+1)+"/"+o.stappen.length+"</span>"+
-    "<h2>"+o.icon+" "+ct(stap.kop, stap.kopEn)+"</h2>"+
+    /* v23.180: en hier het vangnet. Een onderwerp zonder icoon hoort geen "undefined" op te
+       leveren maar gewoon een kop zonder icoon. Eén ontbrekend veld mag nooit zichtbaar zijn
+       voor de leerling; dat is precies wat hier weken heeft gestaan. */
+    "<h2>"+(o.icon ? o.icon+" " : "")+ct(stap.kop, stap.kopEn)+"</h2>"+
     /* v23.143: in de dagles staat erbij waarom je dit onderwerp krijgt. Buiten de dagles koos je
        het zelf, en dan is de vraag niet aan de orde. */
     (inFlow ? "<p class='muted' style='margin:-2px 0 8px; font-size:.83rem'>"+gramWaaromHtml(gwSess.id)+"</p>" : "")+

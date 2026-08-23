@@ -152,6 +152,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     checkSentence();
   });
   await page.waitForTimeout(200);
+  /* v23.180: de knop staat sinds vandaag achter "meer opties", want er stonden er zes op één scherm
+     met twee primaire kleuren. Hij is niet weg, alleen een tik verder, dus deze suite doet die tik
+     ook. Dat de knop dáár staat en niet vooraan is de claim van pw-knoppen; hier gaat het er alleen
+     om dat hij nog wérkt. */
+  const meer = page.locator('#tab-vertalen details.meerOpties summary');
+  if (await meer.count()) await meer.first().click();
+  await page.waitForTimeout(150);
   await page.click('#btnFoutRegel');
   await page.waitForTimeout(500);
   const na = await page.evaluate(() => ({
