@@ -78,6 +78,12 @@ jobs:
       - name: Zelftest van de contentbibliotheek
         run: node tools/content-lib.js --zelftest
 
+      # v23.177: de zeef is de reparatie van de nacht die op 23 augustus klapte, en dus hoort
+      # er een controle bij die rood wordt zodra hij niet meer werkt. Hij draait met precies
+      # de twee zinnen die run #25 lieten stranden.
+      - name: Zelftest van de zeef
+        run: node tools/curriculum.js --zelftest
+
       # De poort staat hier al klaar, nog vóór de bot iets schrijft. Zo weet je zeker dat een rode
       # avondrun niet aan een al kapotte main ligt: was het hier al rood, dan is het niet zijn schuld.
       - name: Playwright installeren

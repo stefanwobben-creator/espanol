@@ -56,6 +56,7 @@ const args = process.argv.slice(2);
 const heeft = v => args.includes(v);
 const getal = (v, d) => { const i = args.indexOf(v); return i >= 0 ? +args[i + 1] : d; };
 const OPT = { analyse: heeft("--analyse"), droog: heeft("--droog"), stub: heeft("--stub"),
+              zelftest: heeft("--zelftest"),
               nieuweLes: heeft("--nieuwe-les"), max: getal("--max", 2) };
 
 /* ================= 1. analyse ================= */
@@ -396,9 +397,15 @@ function promptZinnenKaal(gat, ids, inv) {
 
 Maak ${ids.length} NIEUWE oefenzinnen in de ${gat.tijd} (${KAAL_UITLEG[gat.tijd]}).
 
-DE EIS DIE ALLES BEPAALT: in de Spaanse zin staat GEEN ENKELE tijdsaanduiding. Geen "ayer", geen
-"todos los días", geen "cuando era niño", geen "ya", geen "hace dos años", geen dagen van de week.
-De werkwoordsuitgang moet het enige zijn dat vertelt wanneer het gebeurde.
+DE EIS DIE ALLES BEPAALT: in de Spaanse zin staat GEEN ENKELE tijdsaanduiding. De
+werkwoordsuitgang moet het enige zijn dat vertelt wanneer het gebeurde.
+
+Verboden, en dit is een greep uit de lijst waarop machinaal wordt afgekeurd: ayer, hoy, mañana,
+anoche, ahora, antes, después, luego, entonces, siempre, nunca, ya, todavía, mientras, pronto,
+de repente, a veces, a menudo, una vez, dos veces, por primera vez, al principio, al final,
+por fin, todos los días, cada día, la semana pasada, el año pasado, hace dos años, cuando era
+niño, de pequeño, esta mañana, este año, en ese momento, en aquella época, en combinatie met een
+lidwoord ook alle dagen van de week (el lunes, los sábados).
 
 Waarom: onderzoek met eye-tracking laat zien dat leerders met een moedertaal zonder rijke
 werkwoordsvervoeging naar het bijwoord kijken en de uitgang overslaan. Staat er "ayer", dan kan de
@@ -860,9 +867,109 @@ async function maakNieuweLes(inv, motor) {
   };
 }
 
+/* ---------- de zeef (v23.177) ----------
+
+   Aanleiding: run #25 van 23 augustus. Tien zinnen gemaakt, twee afgekeurd, nul weggeschreven.
+   pasToe() valideert de hele levering als één blok en main() gooide bij één fout alles weg.
+
+   Waarom dit nu pas opviel: de poort stond er al, maar hij ging zelden af. v23.175 zette er twee
+   nieuwe manieren bij om hem te laten afgaan, op zinnen uit een gloednieuwe prompt. Toen werd
+   afkeuren van uitzondering tot regel, en dan is alles-of-niets geen strengheid meer maar storing.
+
+   Wat hier NIET gebeurt: de batchcontrole van pasToe() weghalen. Die vangt wat een losse zin niet
+   kan zien, zoals twee gelijke ids binnen één levering. Faalt hij ná deze zeef alsnog, dan is er
+   echt iets mis en hoort de nacht rood te zijn. */
+function zeefZinnen(reparatie, inv) {
+  const goed = [], weg = [];
+  (reparatie.sentences || []).forEach(s => {
+    const f = lib.valideer({ sentences: [s] }, inv);
+    if (f.length) weg.push({ id: s.id, fouten: f }); else goed.push(s);
+  });
+  if (weg.length) {
+    console.error(`— ${weg.length} zin(nen) uit de levering gehaald, de rest gaat gewoon door —`);
+    weg.forEach(w => console.error(`  ${w.id}: ${w.fouten.join(" | ")}`));
+  }
+  const wegIds = new Set(weg.map(w => w.id));
+  reparatie.sentences = goed;
+  /* Ook uit de lesindeling halen. Zonder dit wijst een les naar een zin-id dat nergens bestaat, en
+     dat is het soort fout dat pas weken later opvalt. */
+  Object.keys(reparatie.lessen || {}).forEach(lid => {
+    const b = reparatie.lessen[lid];
+    b.sents = (b.sents || []).filter(id => !wegIds.has(id));
+    if (!(b.sents || []).length && !((b.words || []).length)) delete reparatie.lessen[lid];
+  });
+  return weg.length;
+}
+
+/* Een kale zin met een tijdsaanduiding erin hoeft niet door een tweede model om afgekeurd te
+   worden: de lijst weet dat zelf al. Eruit halen vóór de tegenlezer scheelt een betaalde aanroep en
+   houdt de tegenlezer bij het werk waar hij wél voor nodig is. */
+function zeefKaal(items) {
+  const goed = [], weg = [];
+  items.forEach(z => {
+    const tw = lib.tijdsaanduidingen(z.es);
+    if (tw.length) weg.push(`${z.id} (${tw.join(", ")})`); else goed.push(z);
+  });
+  if (weg.length) console.error(`    tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: ${weg.join(", ")}`);
+  return goed;
+}
+
+/* ---------- zelftest van de zeef (v23.177) ----------
+   Draait in de avondrun, met precies de twee zinnen die run #25 lieten klappen. */
+function zelftestZeef() {
+  const inv = lib.inventaris();
+  const idS = lib.volgendeId(inv.sentences, "s");
+  let mis = 0;
+  const proef = (goed, wat) => { console.log((goed ? "  ok   " : "  FOUT ") + wat); if (!goed) mis++; };
+
+  const goedeZin = (i, extra) => Object.assign({
+    id: idS(i), lvl: 2, nl: "Ik at paella met mijn zus.", en: "I ate paella with my sister.",
+    es: "Comí paella con mi hermana.", alt: ["comi paella con mi hermana"],
+    uitleg: "comí is de yo-vorm van comer in het indefinido.",
+    ue: "comí is the yo form of comer in the indefinido.", tag: "zelftest"
+  }, extra || {});
+
+  /* De levering van 23 augustus, nagebouwd: acht die deugen, twee die zakken. */
+  const rep = {
+    sentences: [
+      goedeZin(1), goedeZin(2), goedeZin(3), goedeZin(4),
+      goedeZin(5, { uitleg: "Deze zin gaat over eten.", ue: "This sentence is about food." }),  // legt niets uit
+      goedeZin(6), goedeZin(7),
+      goedeZin(8, { tag: "kaal-indefinido", sit: "je vertelt over die ene avond",
+                    es: "Una vez comí paella con mi hermana.",
+                    alt: ["una vez comi paella con mi hermana"] }),                              // una vez
+      goedeZin(9), goedeZin(10)
+    ],
+    lessen: { [inv.perLes[0].id]: { sents: [idS(5), idS(8), idS(9)] } }
+  };
+  const weg = zeefZinnen(rep, inv);
+  proef(weg === 2, "twee zinnen eruit (nu: " + weg + ")");
+  proef(rep.sentences.length === 8, "acht zinnen blijven staan (nu: " + rep.sentences.length + ")");
+  proef(!rep.sentences.some(s => s.id === idS(5) || s.id === idS(8)), "en de twee slechte zitten er niet meer bij");
+  const b = rep.lessen[inv.perLes[0].id];
+  proef(!!b && b.sents.length === 1 && b.sents[0] === idS(9),
+    "de lesindeling wijst niet meer naar een verwijderde zin (nu: " + JSON.stringify(b && b.sents) + ")");
+  /* HET CONTROLEGEVAL. Dit is met één regel groen te krijgen door zeefZinnen() alles te laten
+     weggooien, en dan levert de avondrun voor altijd niets meer. */
+  const schoon = { sentences: [goedeZin(1), goedeZin(2)], lessen: {} };
+  proef(zeefZinnen(schoon, inv) === 0 && schoon.sentences.length === 2,
+    "CONTROLE: een levering zonder fouten blijft compleet");
+  /* En de goedkope zeef ervoor: die haalt de tijdsaanduiding eruit vóór de betaalde tegenlezer. */
+  const kaal = zeefKaal([
+    { id: "a", es: "Una vez comí paella." },
+    { id: "b", es: "Comí paella con mi hermana." },
+    { id: "c", es: "Los sábados salimos a cenar." }
+  ]);
+  proef(kaal.length === 1 && kaal[0].id === "b", "zeefKaal houdt alleen de kale zin over");
+
+  console.log(mis ? "\nzeef: " + mis + " fout" : "\nzeef: alles goed");
+  return mis ? 1 : 0;
+}
+
 /* ================= 4. uitvoeren ================= */
 
 async function main() {
+  if (OPT.zelftest) return zelftestZeef();   // v23.177
   const inv = lib.inventaris();
   const logboek = leesLogs();
   const an = analyseer(logboek, inv);
@@ -941,7 +1048,7 @@ async function main() {
     const gat = kaal[0];
     const n = Math.min(KAAL_PER_NACHT, gat.tekort);
     console.log(`  ${gat.tag}: ${n} kale zinnen maken…`);
-    const ruw = await maakZinnen(gat, n, inv, reparatie.sentences, motor);
+    const ruw = zeefKaal(await maakZinnen(gat, n, inv, reparatie.sentences, motor));
     const goed = await keurZinnen(ruw, motor);
     if (!goed.length) console.error(`    ${gat.tag}: niets overgebleven`);
     else {
@@ -965,6 +1072,9 @@ async function main() {
     }
   }
 
+  /* v23.177: eerst zeven, dan pas de batchcontrole. Zie de kop bij zeefZinnen(). */
+  const geweigerd = zeefZinnen(reparatie, inv);
+  HART.staat.geweigerd = geweigerd;
   let versie = null;
   if (reparatie.sentences.length || reparatie.quizzes.length) {
     const res = lib.pasToe(reparatie, { droog: OPT.droog });
@@ -1026,6 +1136,10 @@ async function main() {
     return 1;
   }
   if (beloofd === 0) HART.staat.reden = "niets te doen: geen gaten, geen toetsgaten, kale zinnen compleet, voorraad ruim genoeg";
+  /* v23.177: stil weggooien is net zo erg als alles weggooien. Staat hier drie nachten op rij
+     een hoog getal, dan is de lijst te streng of een prompt te vaag, en dat hoort zichtbaar te
+     zijn zonder de logs te openen. */
+  if (HART.staat.geweigerd) console.log(`  ${HART.staat.geweigerd} zin(nen) geweigerd door de zeef; zie hierboven welke en waarom`);
   return 0;
 }
 
@@ -1048,7 +1162,10 @@ function hartslag(gelukt) {
   if (gelukt && HART.staat.reden === "de run is niet afgemaakt") HART.staat.reden = null;
   console.log("— hartslag —");
   console.log("  " + JSON.stringify(HART.staat));
-  if (OPT.analyse || OPT.droog) return;                 // kijken verandert niets, ook niet hier
+  /* v23.177: --zelftest erbij. Zonder deze regel schrijft de zelftest in de avondrun een lege
+     hartslag over de echte heen, nog voordat de run begonnen is, en dan staat er 's ochtends
+     een toestand in het bestand die van niemand is. */
+  if (OPT.analyse || OPT.droog || OPT.zelftest) return;   // kijken verandert niets, ook niet hier
   try { fs.writeFileSync(HART_PAD, JSON.stringify(HART.staat, null, 1) + "\n"); }
   catch (e) { console.error("hartslag niet weg te schrijven: " + e.message); }
 }
