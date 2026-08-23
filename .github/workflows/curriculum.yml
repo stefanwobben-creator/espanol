@@ -75,6 +75,14 @@ jobs:
       - name: Analyse (altijd, ook zonder sleutel)
         run: node tools/curriculum.js --analyse
 
+      # v23.178: no-undef op tools/. Dit had de nachten van 21 en 22 augustus voorkomen, waar de
+      # run klapte op een `oud` die in die functie nooit gedeclareerd was. node --check ziet dat
+      # niet, want het is geldige JavaScript.
+      - name: Ongedeclareerde namen in tools/
+        run: |
+          npm install --no-audit --no-fund --silent
+          npm run lint
+
       - name: Zelftest van de contentbibliotheek
         run: node tools/content-lib.js --zelftest
 

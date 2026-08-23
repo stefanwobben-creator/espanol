@@ -6,6 +6,10 @@
 test/uitvoer/
 test/node_modules/
 server/node_modules/
+# v23.178: de repo-root heeft sinds de lintstap ook een package.json. Alleen eslint, alleen
+# no-undef, alleen op tools/.
+/node_modules/
+/package-lock.json
 
 _to_delete/
 .claude/

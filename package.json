@@ -1,0 +1,11 @@
+{
+  "name": "vamos",
+  "private": true,
+  "description": "De app is een enkel bestand; dit package.json bestaat alleen voor de controle op tools/ (zie eslint.config.mjs).",
+  "scripts": {
+    "lint": "eslint tools"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5"
+  }
+}

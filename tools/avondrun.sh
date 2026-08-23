@@ -42,8 +42,22 @@ while [ "$poging" -le "$MAX_POGINGEN" ]; do
   zeg "=================== poging $poging van $MAX_POGINGEN ==================="
 
   # ---- 1. genereren ----
+  # 23 aug (v23.178): hier stond alleen de aanroep, en dit script draait met `set -e`. Eindigde
+  # curriculum.js met 1, dan sprong het script er meteen uit, vóórdat het ooit een `wat`
+  # schreef. De laatste stap van de workflow zei dan letterlijk: "De avondrun heeft niets
+  # gepubliceerd ()." Melden dát er iets mis is zonder te melden wát, is de helft van een
+  # meldsysteem. Nu blijft de exitcode staan en gaat er een reden mee naar buiten.
   # shellcheck disable=SC2086
-  node tools/curriculum.js $VLAGGEN
+  CODE=0
+  node tools/curriculum.js $VLAGGEN || CODE=$?
+  if [ "$CODE" -ne 0 ]; then
+    zeg "curriculum.js eindigde met code $CODE. Wat de run daar zelf over zegt:"
+    cat tools/avondrun-hart.json 2>/dev/null || true
+    echo "wat=geklapt" >> "$UIT"
+    echo "pogingen=$poging" >> "$UIT"
+    echo "code=$CODE" >> "$UIT"
+    exit "$CODE"
+  fi
 
   # ---- 2. wat is er veranderd? ----
   # De hartslag verandert per definitie elke nacht en telt hier dus niet mee. Anders zou "er is iets

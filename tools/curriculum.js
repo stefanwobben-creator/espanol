@@ -687,6 +687,13 @@ async function maakToets(gat, inv, motor) {
   const kaart = inv.cheat[gat.spiek[0]]
     ? String(inv.cheat[gat.spiek[0]].html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 1200)
     : "";
+  /* v23.178: hier stond niets, en veertig regels lager werd `oud` gebruikt om de corrector op
+     te ijken. `oud` hoorde bij promptToets(), een andere functie. Twee nachten (21 en 22
+     augustus) klapte de run daarop met "oud is not defined", en omdat alles in één ketting
+     zat ging de hele nacht mee. De tak wordt alleen geraakt als de corrector iets afkeurt én
+     er al een toetsje met deze tag bestaat, en daarom kon hij zo lang blijven staan.
+     node --check ziet dit niet: het is geldige JavaScript, alleen niet uitvoerbaar. */
+  const oud = inv.quizzes.find(q => q.id === gat.tag);
   let bezwaren = null;
   for (let poging = 1; poging <= 2; poging++) {
     const extra = bezwaren
@@ -1025,7 +1032,13 @@ async function main() {
 
   /* --- deel 1: gaten dichten (gaat direct live) --- */
   const reparatie = { sentences: [], quizzes: [], lessen: {} };
+  /* v23.178: elke productiestap krijgt zijn eigen vangnet. De run was één lange ketting, dus
+     een klapper in stap drie gooide ook weg wat stap één en twee al gemaakt hadden. Dat is de
+     gemeenschappelijke oorzaak onder zeven mislukte nachten met vijf verschillende directe
+     aanleidingen. Niets wordt hier weggemoffeld: de klacht gaat naar stderr en dus in de
+     hartslag, en levert alles niets op, dan slaat de belofte-controle aan het eind alsnog toe. */
   for (const gat of gaten.slice(0, OPT.max)) {
+   try {
     const aantal = gat.soort === "woorden"
       ? Math.min(MAX_ZINNEN_PER_GAT, Math.max(2, Math.ceil(gat.woorden.length / 3)))
       : Math.min(MAX_ZINNEN_PER_GAT, Math.max(2, Math.ceil(gat.zinnen * 0.5) || 2));
@@ -1042,9 +1055,10 @@ async function main() {
     const b = reparatie.lessen[lesId] = reparatie.lessen[lesId] || { sents: [] };
     b.sents = (b.sents || []).concat(goed.map(z => z.id));
     console.log(`    ${goed.length} zinnen goedgekeurd → les ${lesId}`);
+   } catch (e) { console.error(`    ${gat.tag} klapte: ${e && e.message}; de rest van de nacht gaat door`); }
   }
   /* --- de kale zinnen (v23.175) --- */
-  if (kaal.length) {
+  if (kaal.length) try {
     const gat = kaal[0];
     const n = Math.min(KAAL_PER_NACHT, gat.tekort);
     console.log(`  ${gat.tag}: ${n} kale zinnen maken…`);
@@ -1058,8 +1072,8 @@ async function main() {
       reparatie.sentences = reparatie.sentences.concat(goed);
       console.log(`    ${goed.length} kale zinnen goedgekeurd (${gat.heeft} + ${goed.length} van de ${KAAL_DOEL})`);
     }
-  }
-  if (an.toetsGaten.length) {
+  } catch (e) { console.error(`    de kale zinnen klapten: ${e && e.message}; de rest van de nacht gaat door`); }
+  if (an.toetsGaten.length) try {
     const gat = an.toetsGaten[0];
     console.log(`  ${gat.tag}: nieuw toetsje maken…`);
     const qz = await maakToets(gat, inv, motor);
@@ -1070,7 +1084,7 @@ async function main() {
       // (quizzenBijSpiek + checkLessonComplete in de app).
       console.log(`    toetsje ${qz.id} goedgekeurd met ${qz.vragen.length} vragen`);
     }
-  }
+  } catch (e) { console.error(`    het toetsje klapte: ${e && e.message}; de zinnen hierboven blijven staan`); }
 
   /* v23.177: eerst zeven, dan pas de batchcontrole. Zie de kop bij zeefZinnen(). */
   const geweigerd = zeefZinnen(reparatie, inv);
@@ -1088,7 +1102,7 @@ async function main() {
 
   /* --- deel 2: het pad verlengen (komt als pull request) --- */
   let nieuweLes = null;
-  if (verlengen) {
+  if (verlengen) try {
     const inv2 = OPT.droog ? inv : lib.inventaris();   // na deel 1 opnieuw inlezen voor verse ids
     nieuweLes = await maakNieuweLes(inv2, motor);
     if (nieuweLes) {
@@ -1106,7 +1120,7 @@ async function main() {
         }
       }
     }
-  }
+  } catch (e) { nieuweLes = null; console.error(`  de nieuwe les klapte: ${e && e.message}; de reparatie hierboven staat er wel`); }
 
   HART.staat.geleverd = { zinnen: reparatie.sentences.length, toetsjes: reparatie.quizzes.length,
                           kaal: reparatie.sentences.filter(s => /^kaal-/.test(s.tag || "")).length,
