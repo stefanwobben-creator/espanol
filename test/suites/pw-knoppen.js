@@ -5,7 +5,7 @@
 // Twee schermafdrukken van Stefan op 23 augustus.
 //
 //   1. "dit lijkt een bug 'undefined'" — op de opfrisser stond letterlijk "undefined Even
-//      opfrissen". renderGramWiz() zet o.icon vóór de stapkop en gcOpfrisOnderwerp() bouwde een
+//      opfrissen". renderGramWiz() zet o.icon vóór de stapkop en de opfris-bouwer maakte een
 //      onderwerp zonder icon-veld.
 //   2. "hier zijn veel te veel knoppen opties voor een lekkere flow" — na een fout antwoord op de
 //      schrijfstap stonden er zes bedieningen, waarvan twee primair gekleurd.
@@ -55,7 +55,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     S.lang = 'nl';
     const uit = { kaal: [], zonderIcoon: [] };
     gcGeordend().forEach(function (c) {
-      const o = gcOpfrisOnderwerp(gcOpfrisId(c.id));
+      // v23.191: gcGebouwd() is sindsdien de enige weg naar een gebouwd onderwerp.
+      const o = gcGebouwd(gcOpfrisId(c.id));
       if (!o) return;
       if (!o.icon) uit.zonderIcoon.push(c.id);
       if (o.icon !== c.icon) uit.kaal.push(c.id + ' (' + o.icon + ' tegenover ' + c.icon + ')');

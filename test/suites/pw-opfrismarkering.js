@@ -154,7 +154,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const mis = v.c === 0 ? 1 : 0;
     answerQuestion(mis, knoppen[mis]);
     const na = document.querySelectorAll('#qCard .opt');
-    return { juist: na[v.c].classList.contains('correct'), jouw: na[mis].classList.contains('wrong') };
+    // v23.191: .correct/.wrong heetten hier vroeger zo; nu draagt élk keuzeknopje .juist/.jouw,
+    // gezet door keuzeMerk(). Zie pw-eenplek.js voor de invariant zelf.
+    return { juist: na[v.c].classList.contains('juist'), jouw: na[mis].classList.contains('jouw') };
   });
   ok(qz.juist && qz.jouw, 'CONTROLE: het toetsje markeert nog steeds allebei (juist=' + qz.juist + ', jouw=' + qz.jouw + ')');
 

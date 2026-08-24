@@ -111,14 +111,12 @@
           margin-top:10px; font-size:.92rem;}
   .opt{display:block; width:100%; text-align:left; margin-top:8px; padding:12px 14px; border-radius:10px;
        border:1.5px solid var(--border); background:var(--card); font-size:1rem; cursor:pointer; color:var(--ink);}
-  .opt.correct{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
-  .opt.wrong{border-color:var(--red); background:var(--red-soft); color:var(--red);}
-  /* v23.189: dezelfde twee kleuren voor de opfrisser. Die markeerde alleen het juiste
-     antwoord, en niet dat van jou, dus bij twee opties was niet te zien welke van de twee
-     je had aangetikt. Het toetsje doet dit al sinds jaar en dag met .correct en .wrong; dit
-     zijn dezelfde variabelen op een knop die geen .opt is. */
-  .gw-optie.juist{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
-  .gw-optie.jouw{border-color:var(--red); background:var(--red-soft); color:var(--red);}
+  /* v23.191: één paar klassen voor élk beantwoord keuzeknopje, en niet meer per scherm.
+     Hier stonden .opt.correct/.opt.wrong (het toetsje) naast .gw-optie.juist/.gw-optie.jouw
+     (de opfrisser, v23.189), en die twee paren zijn ontstaan doordat twee schermen dezelfde
+     vraag stellen en het los oplosten. Wie welke klasse krijgt zegt keuzeMerk(). */
+  .juist{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
+  .jouw{border-color:var(--red); background:var(--red-soft); color:var(--red);}
   .progressbar{height:8px; background:var(--border); border-radius:99px; overflow:hidden; margin:8px 0 4px;}
   .progressbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s;}
   details{border:1px solid var(--border); border-radius:var(--radius); background:var(--card);
@@ -1543,7 +1541,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.190";
+var APP_VERSIE = "v23.191";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6720,9 +6718,9 @@ function defaultState(){ return { schema:SCHEMA, srs:{}, errors:{}, done:{}, qui
       maar een definitie: alles wat er tot nu toe stond heet 1.
 
    Een nieuwe migratie toevoegen: SCHEMA een hoger, één blok onderaan de lijst erbij. Niets anders. */
-/* v23.182: 3, want er is een migratie bij gekomen. Blijft dit getal staan, dan denkt elke
-   bestaande state dat hij bij is en draait migratie 3 nooit. */
-var SCHEMA = 3;
+/* v23.191: 4. Zelfde reden als bij 3: blijft dit getal staan, dan denkt elke bestaande state
+   dat hij bij is en draait de opruiming van de opfrisser nooit. */
+var SCHEMA = 4;
 
 var MIGRATIES = [
   {naar: 2, wat: "oude luister-sleutels van voor v21.2 opruimen", doe: function(s){
@@ -6755,6 +6753,82 @@ var MIGRATIES = [
     Object.keys(s.boek).forEach(function(id){
       if(!geldig[id]){ delete s.boek[id]; weg++; }
     });
+    return weg;
+  }},
+  {naar: 4, wat: "de uitslagen van de opfrisser opruimen, die tot v23.190 een kansspel waren", doe: function(s){
+    /* v23.190: gcOpfrisOnderwerp() bouwde bij elke aanroep een nieuwe vraag, dus gwKies()
+       rekende je klik op de ene trekking af tegen het juiste antwoord van een andere. Op een
+       vraag met twee opties is dat een muntje. Wat daaruit is voortgekomen staat op vier
+       plekken, en dit ruimt op wat eerlijk op te ruimen valt.
+
+       1. DE FOUTREGELS. Sleutel "gramwiz:opfris-<concept>-0-0", en die is eenduidig: alleen
+          de opfrisser schrijft hem. Alles eruit. Er zaten ook echte fouten tussen, maar die
+          zijn niet van de valse te onderscheiden en de verhouding was ongeveer één op één.
+          Een teller waarvan de helft ruis is, is geen teller.
+
+       2. HET LEDGER. S.gramLog houdt per dag per concept bij hoeveel beurten er per kanaal
+          waren. Het kanaal "opfris" gaat eruit, en de dagtotalen gaan met precies dat aantal
+          omlaag. Dit is exact, want het staat per kanaal geteld.
+
+       3. DE TELLERS. S.gram[cid].goed en .fout tellen alles bij elkaar op. Voor de dagen die
+          nog in het ledger staan (zeven) weten we precies hoeveel daarvan van de opfrisser
+          kwam; dat wordt afgetrokken, met nul als bodem. Voor oudere dagen bestaat het
+          record niet meer en valt er niets eerlijks te doen.
+
+       4. DE DOOS. Niet te reconstrueren: gramBij() zet de doos hoogstens één keer per dag, en
+          de opfrisser staat vóór de microles in de dagles, dus op elke gedeelde dag heeft het
+          muntje de doos gezet. Wat wél eerlijk is: een doos is een bewering over hoe goed je
+          iets kent, en een bewering die door een muntje is gezet hoort "onbekend" te zijn.
+          Dus omlaag naar hoogstens 1 en vandaag terug in beeld, en nooit omhoog: de app hoort
+          nooit meer kennis te claimen dan waarvoor bewijs is.
+
+       Wat hier NIET gebeurt: XP en tapas blijven staan (niemand pakt punten af), S.brok blijft
+       ongemoeid (een opfrisstap draagt geen brok-veld) en de content van de nachtrun is niet
+       geraakt, want curriculum.js leest alleen fouten van het type zin, dictado, woord en quiz.
+
+       Idempotent: draait dit twee keer, dan is er de tweede keer niets meer te vinden en
+       verandert er niets. Dat is eis 1 van het schemablok hierboven. */
+    var weg = 0;
+    /* 1. de foutregels */
+    if(s.errors){
+      Object.keys(s.errors).forEach(function(k){
+        if(k.indexOf("gramwiz:opfris-") === 0){ delete s.errors[k]; weg++; }
+      });
+    }
+    /* 2 en 3: het ledger uit, en wat eruit komt van de tellers af */
+    var perConcept = {};
+    if(s.gramLog){
+      Object.keys(s.gramLog).forEach(function(dag){
+        var d = s.gramLog[dag] || {};
+        Object.keys(d).forEach(function(cid){
+          var r = d[cid];
+          if(!r || !r.k || !r.k.opfris) return;
+          var n = r.k.opfris[0] || 0, g = r.k.opfris[1] || 0;
+          var b = perConcept[cid] || (perConcept[cid] = {n:0, goed:0});
+          b.n += n; b.goed += g;
+          r.n = Math.max(0, (r.n || 0) - n);
+          r.goed = Math.max(0, (r.goed || 0) - g);
+          delete r.k.opfris;
+          if(!Object.keys(r.k).length && !r.n) delete d[cid];
+          weg += n;
+        });
+      });
+    }
+    /* 4. en de doos van elk concept waar een opfrisser aan heeft gezeten */
+    if(s.gram){
+      Object.keys(perConcept).forEach(function(cid){
+        var st = s.gram[cid];
+        if(!st) return;
+        var b = perConcept[cid];
+        st.goed = Math.max(0, (st.goed || 0) - b.goed);
+        st.fout = Math.max(0, (st.fout || 0) - (b.n - b.goed));
+        if((st.box || 0) > 1) st.box = 1;
+        st.due = today();
+        /* bd op leeg, anders houdt gramBij() het antwoord van vandaag voor "al geveld" en
+           blijft de doos nog een dag op de waarde van het muntje staan. */
+        st.bd = "";
+      });
+    }
     return weg;
   }}
 ];
@@ -9222,6 +9296,25 @@ function foutenOpschonen(s){
   }
   return weg;
 }
+/* ================= WAT EEN BEANTWOORDE KEUZE DRAAGT (v23.191) =================
+
+   Twee schermen stellen dezelfde vraag: het toetsje (answerQuestion) en de grammatica-wizard
+   (renderCheat). Tot v23.189 markeerde het eerste allebei de antwoorden en het tweede alleen
+   het juiste, zodat je bij twee opties niet kon zien welke knop de jouwe was.
+
+   v23.189 repareerde dat door de tweede plek na te bouwen. Dit is de reparatie daarvan: één
+   functie die het zegt, en twee schermen die hem aanroepen. Een derde scherm krijgt het
+   gedrag mee zodra het deze functie gebruikt, en de poort merkt het als het dat niet doet.
+
+   Geeft "juist" voor het juiste antwoord, "jouw" voor jouw fout, en "" voor de rest. Het
+   juiste antwoord wint als je het goed had: dan hoort er één merkteken te staan en geen twee
+   op dezelfde knop. */
+function keuzeMerk(i, juist, gekozen){
+  if(i === juist) return "juist";
+  if(gekozen !== null && gekozen !== undefined && i === gekozen) return "jouw";
+  return "";
+}
+
 function logError(id, type, tag, extra, paren){
   /* v22.0. Het veld laatst bevatte twee verschillende dingen: bij een woord of zin wat je typte
      ("la mujer"), bij El Corrector een datum. En bijnaGoedIds() vergeleek dat met een datum. In
@@ -13892,9 +13985,14 @@ function answerQuestion(idx, btn){
   var item = st.volgorde[st.i], v = item.v;
   var el = document.getElementById("qCard");
   var opts = el.querySelectorAll(".opt");
-  opts[v.c].classList.add("correct");
+  /* v23.191: via keuzeMerk(), dezelfde functie die de wizard gebruikt. Hier stonden twee
+     losse classList.add()-regels met eigen klassenamen. */
+  opts.forEach(function(b, i){
+    var m = keuzeMerk(i, v.c, idx);
+    if(m) b.classList.add(m);
+  });
   var goed = idx === v.c;
-  if(goed){ st.score++; addXP(2); trackPoging(false); } else { btn.classList.add("wrong"); logError(st.qz.id+"#"+item.oi, "quiz", st.qz.id, v.q); addXP(1); }
+  if(goed){ st.score++; addXP(2); trackPoging(false); } else { logError(st.qz.id+"#"+item.oi, "quiz", st.qz.id, v.q); addXP(1); }
   var fb = document.getElementById("qFeedback");
   // vertaling staat sinds 29 juli al vóór het antwoorden bij de vraag (zie renderQuestion) - hier dus
   // niet meer herhalen, alleen nog de uitleg waarom het antwoord goed/fout is
@@ -15475,7 +15573,7 @@ function lesFlowGramLijst(){
        microles, en die komt uit lesFlowGramId() hieronder. */
     if(!((top.st.box || 0) === 0 && (top.st.fout || 0) >= 2)){
       var o = null;
-      try { o = gcOpfrisOnderwerp(gcOpfrisId(top.c.id)); } catch(e){ o = null; }
+      try { o = gcGebouwd(gcOpfrisId(top.c.id)); } catch(e){ o = null; }
       if(o) uit.push(o.id);
     }
   }
@@ -20319,18 +20417,14 @@ function speelNaar(v){
      vervangen door escuchar." In de plaats daarvan land je bij Escuchar altijd op de plank, ook als
      je er net een scene af had; dat is precies het moment waarop je wil zien wat dat opende. */
   if(v === "audi"){ audMenu = true; }
-  /* v23.188. Hier stond ook "kruis" en "adiv", en niet "letras" en niet "ws". Gevolg: klikte
-     je de suggestie na je les aan, dan stond de puzzel er nog zoals je hem had achtergelaten,
-     compleet met "Alles gevonden!". Via de tegel op de Speeltuin kreeg je wél een verse, want
-     speelStart() roept g.verse() aan.
+  /* v23.188. Hier stond een handgeschreven rijtje spellen waar letras en de woordenzoeker
+     niet in stonden. Gevolg: klikte je de suggestie na je les aan, dan stond de puzzel er nog
+     zoals je hem had achtergelaten, compleet met "Alles gevonden!". Via de tegel op de
+     Speeltuin kreeg je wél een verse puzzel.
 
-     Dat is exact de fout die v23.112 al eens heeft opgeruimd: een handgeschreven rij naast
-     spelInfo(), die ermee uit de pas loopt. Nu leest deze weg dezelfde verse als de tegel, en
-     is er nog één lijst. De drie regels hieronder blijven met de hand, want conj, hu en corr
-     staan niet in spelInfo(): zij hebben geen tegel. */
-  var info = null;
-  try { info = spelInfoVan(v); } catch(e){ info = null; }
-  if(info && info.verse){ try { info.verse(); } catch(e){} }
+     v23.191: en nu door dezelfde functie als de tegel. De drie regels hieronder blijven met
+     de hand, want conj, hu en corr staan niet in spelInfo(): zij hebben geen tegel. */
+  speelVers(v);
   if(v === "conj"){ conjIdx = null; conjRonde = null; }
   if(v === "hu"){ huIdx = null; huRonde = null; }
   if(v === "corr"){ corrOpg = null; corrRonde = null; }
@@ -28004,11 +28098,20 @@ function tegelLijstHtml(lijst){
    Vanaf Grammatica moet de speeltuinkaart eerst zichtbaar worden, en show() zet meteen het juiste
    vak in de balk aan. Op de Speeltuin zelf verandert er niets, want show("speeltuin") tekent de
    kaart opnieuw. */
+/* v23.191: de enige plek die een spelstand leeggooit. Hij stond twee keer geschreven, één keer
+   in speelStart() (de tegel) en één keer in speelNaar() (de suggestie na je les), en die twee
+   liepen in v23.188 uit elkaar: letras en de woordenzoeker stonden maar in één van de twee.
+   Nu is het één functie, en kan de poort ook nakijken dat beide wegen hem aanroepen. */
+function speelVers(v){
+  var g = null;
+  try { g = spelInfoVan(v); } catch(e){ g = null; }
+  if(g && g.verse){ try { g.verse(); } catch(e){} }
+}
 function speelStart(g){
   if(!g) return;
   if(g.open){ g.open(); return; }
   if(g.gezien !== false) speelGezien(g.v);
-  if(g.verse) g.verse();
+  speelVers(g.v);
   funView = g.v;
   navPush({t:"fun", v:g.v});
   show("speeltuin", true);
@@ -31670,21 +31773,14 @@ function gramDueTop(){
    morgen vooraan in de wachtrij, en dan wél als hele microles: twee keer mis is geen geheugenkwestie
    meer. */
 function gcOpfrisId(cid){ return "opfris-" + String(cid || "").replace(/^concept-/, ""); }
-/* v23.190. Hier stond gcOpfrisOnderwerp() zelf, en die bouwde bij ELKE aanroep een nieuwe
-   vraag. gwKies() en renderCheat() halen het onderwerp allebei opnieuw op, dus één klik
-   raakte drie verschillende trekkingen: je klikte op de opties van A, werd afgerekend tegen
-   B, en zag de markering van C. Gemeten: acht van de acht opfrissers wisselden binnen vijf
-   aanroepen, acht van de acht microlessen niet.
+/* v23.190/191. Hier stond gcOpfrisOnderwerp(), die bij ELKE aanroep een nieuwe vraag bouwde
+   en daarmee langs de cache van gcOnderwerp() heen ging. gwKies() en renderCheat() halen het
+   onderwerp allebei opnieuw op, dus één klik raakte drie trekkingen: je klikte op de opties
+   van A, werd afgerekend tegen B, en zag de markering van C.
 
-   Dat verschil zat 'm in de cache van gcOnderwerp(), met daarboven al sinds v20.5 precies de
-   waarschuwing waar dit in liep: "BINNEN een sessie moet het object stil blijven staan".
-   De opfrisser van v23.73 ging daar langsheen. Nu gaat hij er doorheen, met dezelfde sleutel
-   en dezelfde vernieuwing bij de start (zie gwStart). */
-function gcOpfrisOnderwerp(id){
-  var key = id + "|" + profLang();
-  if(!gcCache[key]) gcCache[key] = gcOpfrisBouw(id);
-  return gcCache[key];
-}
+   v23.190 gaf deze functie zijn eigen cache. v23.191 haalt hem weg: er is nu één fabriek
+   (gcGebouwd) met een register van bouwers, en dit is nog alleen de bouwer. Een tweede
+   opvrager die de cache oversla­at kan niet meer bestaan, want er is niets om over te slaan. */
 function gcOpfrisBouw(id){
   var cid = String(id || "").replace(/^opfris-/, "");
   var c = gcConcept(cid);
@@ -31990,20 +32086,47 @@ function gcBouw(id){
     titel:c.naam, titelEn:c.naamEn, pitch:pitch, pitchEn:pitchEn,
     stappen:stappen};
 }
-/* De vragen worden bij elke start opnieuw gemaakt, maar BINNEN een sessie moet het object stil
-   blijven staan: gwKies() en gwVolgende() halen het onderwerp opnieuw op, en zonder cache zou de
-   vraag onder je handen veranderen. */
+/* ================= DE FABRIEK VAN EEN GEBOUWD ONDERWERP (v23.191) =================
+
+   Twee eisen die alleen samen kloppen, en die tot v23.190 maar op één van de twee soorten
+   werden toegepast:
+
+     STIL BINNEN EEN SESSIE.  gwKies() en renderCheat() halen het onderwerp allebei opnieuw
+                              op. Bouwt het dan opnieuw, dan klik je op de opties van de ene
+                              trekking en word je afgerekend tegen een andere. Dat is precies
+                              wat er tussen v23.73 en v23.190 met de opfrisser gebeurde.
+     VERS BIJ ELKE START.     Anders krijg je maanden dezelfde vraag, en dan meet hij of je
+                              het antwoord onthoudt in plaats van of je de regel kent.
+
+   Tot nu toe stonden die twee eisen in gcOnderwerp() en in de regel in gwStart(), en een
+   tweede bouwer moest er zelf aan denken. Nu staan ze hier, één keer, en is een nieuwe soort
+   één regel in GC_BOUWERS. Vergeten kan niet meer: er is geen tweede weg naar binnen.
+
+   De sleutel draagt de taal, want de vragen worden in de taal van het profiel gebouwd. */
 var gcCache = {};
-function gcOnderwerp(id){
+var GC_BOUWERS = [
+  {pre: "concept-", bouw: function(id){ return gcBouw(id.replace(/^concept-/, "")); }},
+  {pre: "opfris-",  bouw: function(id){ return gcOpfrisBouw(id); }}
+];
+function gcBouwerVoor(id){
+  var s = String(id || "");
+  for(var i = 0; i < GC_BOUWERS.length; i++){
+    if(s.indexOf(GC_BOUWERS[i].pre) === 0) return GC_BOUWERS[i];
+  }
+  return null;
+}
+function gcGebouwd(id){
+  var b = gcBouwerVoor(id);
+  if(!b) return null;
   var key = id + "|" + profLang();
-  if(!gcCache[key]) gcCache[key] = gcBouw(id.replace(/^concept-/, ""));
+  if(!gcCache[key]) gcCache[key] = b.bouw(id);
   return gcCache[key];
 }
+/* Blijft bestaan omdat een paar plekken hem bij naam kennen; hij is nu een doorgeefluik. */
+function gcOnderwerp(id){ return gcGebouwd(id); }
 function gcVernieuw(id){
   delete gcCache[id + "|" + profLang()];
-  /* v23.190: via gwOnderwerp() en niet via gcOnderwerp(), want die kent alleen concept-ids.
-     Met de oude regel bouwde een opfris-id na het legen nooit meer terug. */
-  return gwOnderwerp(id);
+  return gcGebouwd(id);
 }
 function gcLijst(){
   /* v23.53: dit gaf alle drieentwintig concepten in arrayvolgorde. Nu in leervolgorde, en alleen
@@ -33577,9 +33700,9 @@ function gwOnderwerp(id){
   // handgeschreven wizards eerst, daarna de automatisch opgeknipte spiekbrief-onderwerpen
   var hand = GRAMWIZ.filter(function(o){ return o.id === id; })[0];
   if(hand) return hand;
-  // v23.73: de opfrisser is een onderwerp van één stap met één vraag en geen uitleg.
-  if(/^opfris-/.test(id || "")) return gcOpfrisOnderwerp(id);
-  if(/^concept-/.test(id || "")) return gcOnderwerp(id);
+  /* v23.191: allebei via dezelfde fabriek. Hier stonden twee regels naar twee functies, en
+     die twee functies deden niet hetzelfde (zie de kop van gcGebouwd). */
+  if(gcBouwerVoor(id)) return gcGebouwd(id);
   var m = /^spiek-(a2|a0)-(\d+)$/.exec(id || "");
   if(m && m[1] === gwTrackKey()) return gwVanSpiek(parseInt(m[2], 10));
   return null;
@@ -33674,7 +33797,7 @@ function gwStapHeeftTekst(o, i){
 
    Een onderwerp dat je hebt afgerond is geen microles meer maar een herhaling, en daar hoort een
    andere vorm bij: één vraag in plaats van de laatste stap van een les die je al kent. Die vorm
-   bestond al (gcOpfrisOnderwerp) en werd alleen gebruikt voor wat op de herhaallijst stond.
+   bestond al (de opfris-bouwer) en werd alleen gebruikt voor wat op de herhaallijst stond.
 
    Geldt alleen voor conceptlessen, en alleen als je geen expliciete stap meegeeft: klikken op stap
    3 in de stapbalk hoort gewoon stap 3 te openen, en de handgeschreven wizards hebben een verhaal
@@ -33688,7 +33811,7 @@ function gwOpfrisInPlaats(id, stap){
   var oid = null;
   try { oid = gcOpfrisId(id); } catch(e){ return null; }
   var o = null;
-  try { o = gcOpfrisOnderwerp(oid); } catch(e){ o = null; }
+  try { o = gcGebouwd(oid); } catch(e){ o = null; }
   return o ? oid : null;                                    // alleen als er ook echt een vraag is
 }
 
@@ -33697,10 +33820,10 @@ function gwStart(id, stap){
   if(opfris) return gwStart(opfris, 0);
   // v20.5: een conceptles wordt bij elke start opnieuw gegenereerd. Je kunt geen antwoord
   // onthouden van een vraag die nog niet bestond.
-  /* v23.190: en de opfrisser net zo goed. Hij zit sinds deze versie in dezelfde cache, en
-     zonder deze regel zou hij daardoor juist het omgekeerde krijgen: elke dag dezelfde vraag.
-     Vers bij de start, stil binnen de sessie. */
-  if(/^(concept|opfris)-/.test(id || "")) gcVernieuw(id);
+  /* v23.191: alles wat gebouwd wordt, wordt vers gebouwd bij een start. Hier stond een regel
+     met de soorten erin opgesomd, en dat is precies de plek waar de derde soort vergeten
+     wordt. gcBouwerVoor() is dezelfde vraag zonder lijstje. */
+  if(gcBouwerVoor(id)) gcVernieuw(id);
   var o = gwOnderwerp(id);
   if(!o) return;
   var v = gwVoortgang(id);
@@ -33813,6 +33936,8 @@ function gwKies(i){
     // gaat het normale foutensysteem in, zodat de nachttaak er net als bij elke andere fout
     // iets mee kan doen; trackPoging(true) zit al in logError()
     logError(gwSess.id + "-" + gwSess.stap + "-" + gwSess.vraag, "gramwiz", gwSess.id, gwOpties(q)[i]);
+    /* v23.191: waar deze fout vandaan komt. Zie de kop van gramAntwoord(). */
+    try { S.errors["gramwiz:" + gwSess.id + "-" + gwSess.stap + "-" + gwSess.vraag].bron = gwKanaal(o); } catch(e){}
   }
   /* v23.107, en dit is de kern. Hier stond onvoorwaardelijk gramBij(o.concept), dus elke vraag van
      elke stap van elk onderwerp ging naar één doos per onderwerp: 23 dozen voor 122 patronen.
@@ -33821,13 +33946,34 @@ function gwKies(i){
      cijfer houd je die niet uit elkaar.
      Draagt een stap een brok-id, dan gaat het antwoord daarheen. Anders naar het onderwerp, zoals
      altijd, zodat de bestaande boekhouding niet verandert. */
-  if(stap.brok) brokBij(stap.brok, i === q.g);
-  else if(o.concept){ gramBij(o.concept, i === q.g);
-    /* opfrisser en microles zijn hetzelfde concept maar een ander blok, en dat verschil is precies
-       wat we willen kunnen zien. */
-    gramLog(o.concept, o.opfris ? "opfris" : "microles", i === q.g); }
+  gramAntwoord(o, stap, q, i);
   persist();
   renderCheat();
+}
+
+/* ================= WAT ER GEBEURT ALS EEN GRAMMATICAVRAAG BEANTWOORD IS (v23.191) ==========
+
+   Dit stond los in gwKies(), tussen de sessieboekhouding door, en schreef naar vier plekken:
+   S.errors, S.gram, S.gramLog en (via brokBij) S.brok. Toen bleek dat het oordeel van de
+   opfrisser een kansspel was (v23.190), moest de schade dus op vier plekken worden
+   teruggezocht, en op drie ervan was hij niet als opfrisser herkenbaar.
+
+   Eén plek, en met de herkomst erbij. Dat laatste is de eigenlijke les: de opruiming van
+   v23.191 kon alleen omdat de foutsleutel toevallig "opfris-" bevat. Dat was geluk. Vanaf nu
+   staat `bron` er met opzet in, zodat een volgende fout te filteren is in plaats van te
+   gissen. Dezelfde afspraak als S.errors[...].bron = "les" bij de vormdrill (v23.130).
+
+   De naam van het kanaal staat één keer, in gwKanaal(), want hij gaat naar twee stores. */
+function gwKanaal(o){ return o && o.opfris ? "opfris" : "microles"; }
+function gramAntwoord(o, stap, q, i){
+  var goed = i === q.g;
+  /* v23.107, en dit is de kern. Hier stond onvoorwaardelijk gramBij(o.concept), dus elke vraag
+     van elke stap van elk onderwerp ging naar één doos per onderwerp: 23 dozen voor 122
+     patronen. Draagt een stap een brok-id, dan gaat het antwoord daarheen. */
+  if(stap && stap.brok){ brokBij(stap.brok, goed); return; }
+  if(!o || !o.concept) return;
+  gramBij(o.concept, goed);
+  gramLog(o.concept, gwKanaal(o), goed);
 }
 function gwVolgende(){
   var o = gwOnderwerp(gwSess.id);
@@ -34134,12 +34280,12 @@ function renderGramWiz(){
       "<p class='big' style='margin:6px 0 12px'>"+gwVraagTekst(q)+"</p>"+
       "<div style='display:flex; flex-direction:column; gap:8px' id='gwOpties'>"+
       opties.map(function(t, i){
-        /* v23.189: twee dingen tegelijk zichtbaar, precies zoals het toetsje het doet. Hier
-           stond alleen "het juiste antwoord wordt primary", dus jouw eigen keuze liet geen
-           spoor achter en met twee opties was de oranje knop niet thuis te brengen. */
+        /* v23.189/191: twee dingen tegelijk zichtbaar, en via dezelfde functie als het
+           toetsje. Hier stond alleen "het juiste antwoord wordt primary", dus jouw eigen
+           keuze liet geen spoor achter en met twee opties was die ene knop niet thuis te
+           brengen. */
         var klasse = "ghost gw-optie";
-        if(beantwoord && i === q.g) klasse += " juist";
-        else if(beantwoord && i === gwSess.gekozen) klasse += " jouw";
+        if(beantwoord) klasse += " " + keuzeMerk(i, q.g, gwSess.gekozen);
         return "<button type='button' class='"+klasse+"' data-gwo='"+i+"' "+(beantwoord?"disabled ":"")+"style='text-align:left'>"+t+"</button>";
       }).join("")+"</div>";
     if(beantwoord){
