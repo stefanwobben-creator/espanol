@@ -109,6 +109,29 @@ function verzadigd(g) {
   return g.zinnen >= VERZADIGD_ZINNEN && g.zinnen / Math.max(1, g.fouten) >= VERZADIGD_PER_FOUT;
 }
 
+/* v23.192. Zinnen en woorden gingen door verzadigd(), toetsjes niet. Elke nacht werd er dus
+   een nieuw toetsje gemaakt voor het onderwerp met de meeste fouten, zonder ooit te vragen
+   of daar al genoeg lag. Gemeten op 24 augustus:
+
+     spiekkaart 26   7 toetsjes   53 vragen    "indefinido of imperfecto?"
+     spiekkaart 5    2 toetsjes   18 vragen
+     elke andere     1 toetsje    10-12 vragen
+
+   53 van de 281 vragen aan één kaart, en het stopt niet vanzelf: meer toetsjes op wat je
+   lastig vindt geeft meer beurten, meer fouten, en morgen staat het weer bovenaan.
+
+   Dezelfde vorm als verzadigd(): genoeg materiaal én genoeg per verse fout. Twintig vragen
+   is twee toetsjes van tien, en dat is een ronde die je kunt afmaken. Eén vraag per fout is
+   ruimer dan de drie zinnen per fout hierboven, want een toetsvraag komt terug en een zin
+   niet: quizVraagVolgorde() zet de vragen die je fout deed vooraan. */
+const VERZADIGD_VRAGEN = 20;
+const VERZADIGD_VRAAG_PER_FOUT = 1;
+
+function toetsVerzadigd(g) {
+  return g.vragen >= VERZADIGD_VRAGEN &&
+         g.vragen / Math.max(1, g.fouten) >= VERZADIGD_VRAAG_PER_FOUT;
+}
+
 function analyseer(logboek, inv) {
   const fouten = foutenSamenvatten(logboek);
   const zinnenPerTag = {};
@@ -135,14 +158,25 @@ function analyseer(logboek, inv) {
     .sort((a, b) => b.fouten - a.fouten);
 
   // (c) grammatica-toetsjes waar je op blijft struikelen: een nieuw toetsje bij dezelfde spiekkaart
+  /* Hoeveel vragen liggen er al aan dezelfde spiekkaart? Dat is de eenheid en niet het
+     toetsje: een tweede toetsje bij dezelfde kaart is meer van hetzelfde onderwerp, en dat
+     is precies wat de rem hieronder moet zien. */
+  const vragenPerSpiek = {};
+  inv.quizzes.forEach(q => {
+    const sl = JSON.stringify(q.spiek || []);
+    vragenPerSpiek[sl] = (vragenPerSpiek[sl] || 0) + (q.vragen || []).length;
+  });
   const toetsGaten = groepeer(fouten.filter(f => f.type === "quiz"), f => f.tag)
     .map(g => {
       const qz = inv.quizzes.find(q => q.id === g.sleutel);
       return { soort: "toets", tag: g.sleutel, fouten: g.fouten, items: g.items.length,
-               spiek: qz ? qz.spiek : null, titel: qz ? qz.titel : null, score: g.fouten / Math.max(1, g.items.length) };
+               spiek: qz ? qz.spiek : null, titel: qz ? qz.titel : null,
+               vragen: qz ? (vragenPerSpiek[JSON.stringify(qz.spiek || [])] || 0) : 0,
+               score: g.fouten / Math.max(1, g.items.length) };
     })
     .filter(g => g.spiek && g.spiek.length)
     .sort((a, b) => b.fouten - a.fouten);
+  const toetsVol = toetsGaten.filter(toetsVerzadigd);
 
   /* Eerst kijken of er al genoeg ligt, dan pas maken. De overgeslagen onderwerpen blijven wel in
      het rapport staan: "er is niets te doen" en "hier lag al genoeg" zijn niet hetzelfde, en dat
@@ -150,7 +184,8 @@ function analyseer(logboek, inv) {
   const vol = zinGaten.filter(verzadigd).concat(woordGaten.filter(verzadigd));
   return { zinGaten: zinGaten.filter(g => !verzadigd(g)),
            woordGaten: woordGaten.filter(g => !verzadigd(g)),
-           toetsGaten, verzadigd: vol };
+           toetsGaten: toetsGaten.filter(g => !toetsVerzadigd(g)),
+           verzadigd: vol, toetsVol };
 }
 
 // Hoeveel dagen nieuwe woorden liggen er nog op de plank? De app stuurt geleerd/minuten mee in het
@@ -196,7 +231,16 @@ function rapport(inv, an, vrd) {
   };
   toon("taalverschijnselen", an.zinGaten, g => `${g.tag}: ${g.fouten} fouten · ${g.zinnen} oefenzinnen · score ${g.score.toFixed(1)}`);
   toon("woorden die niet plakken", an.woordGaten, g => `${g.tag}: ${g.fouten} fouten over ${g.items} woorden (${g.woorden.slice(0,4).map(w=>w.es).join(", ")}…)`);
-  toon("grammatica-toetsjes", an.toetsGaten, g => `${g.tag} (${g.titel}): ${g.fouten} fouten · spiekkaart ${JSON.stringify(g.spiek)}`);
+  toon("grammatica-toetsjes", an.toetsGaten, g => `${g.tag} (${g.titel}): ${g.fouten} fouten · spiekkaart ${JSON.stringify(g.spiek)} · ${g.vragen} vragen`);
+  /* "Er is niets te doen" en "hier lag al genoeg" zijn niet hetzelfde, en dat verschil hoort
+     zichtbaar te zijn - dezelfde afspraak als bij de zinnen hierboven. */
+  if ((an.toetsVol || []).length) {
+    console.log("  toetsjes overgeslagen, hier ligt al genoeg:");
+    an.toetsVol.forEach(g => console.log(
+      `    ${g.tag} (${g.titel}): ${g.fouten} fouten · ${g.vragen} vragen aan spiekkaart ` +
+      `${JSON.stringify(g.spiek)}, dat is ${(g.vragen / Math.max(1, g.fouten)).toFixed(1)} vraag ` +
+      `per fout, dus herhalen en niet bijmaken`));
+  }
   /* v23.175: de stand van de kale zinnen hoort in het verslag, ook als er niets te doen is.
      "er is niets te doen" en "hier ligt al genoeg" zijn niet hetzelfde; zie de verzadigde
      onderwerpen hierboven, waar dat onderscheid uit dezelfde overweging is ontstaan. */
@@ -968,6 +1012,17 @@ function zelftestZeef() {
     { id: "c", es: "Los sábados salimos a cenar." }
   ]);
   proef(kaal.length === 1 && kaal[0].id === "b", "zeefKaal houdt alleen de kale zin over");
+
+  /* v23.192: de rem op de toetsjes. Twee proeven die moeten slagen en twee die moeten
+     falen, want een rem die alles tegenhoudt is net zo stuk als een rem die niets doet. */
+  proef(toetsVerzadigd({ vragen: 53, fouten: 27 }),
+    "53 vragen op 27 fouten is verzadigd (dat is q-relatar op 24 augustus)");
+  proef(toetsVerzadigd({ vragen: 20, fouten: 20 }),
+    "precies op de grens telt als verzadigd");
+  proef(!toetsVerzadigd({ vragen: 12, fouten: 14 }),
+    "CONTROLE: 12 vragen op 14 fouten is niet verzadigd (q-imperfecto: daar hoort wel iets bij)");
+  proef(!toetsVerzadigd({ vragen: 60, fouten: 90 }),
+    "CONTROLE: en veel vragen met nog veel meer fouten ook niet");
 
   console.log(mis ? "\nzeef: " + mis + " fout" : "\nzeef: alles goed");
   return mis ? 1 : 0;

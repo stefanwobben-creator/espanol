@@ -117,6 +117,9 @@
      vraag stellen en het los oplosten. Wie welke klasse krijgt zegt keuzeMerk(). */
   .juist{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
   .jouw{border-color:var(--red); background:var(--red-soft); color:var(--red);}
+  /* v23.192: de tijd naast de vorm. Kleiner en grijzer dan het antwoord zelf, want het is
+     geen deel van je keuze maar de vertaling ervan. */
+  .tijdlab{color:var(--muted); font-weight:400; font-size:.82em;}
   .progressbar{height:8px; background:var(--border); border-radius:99px; overflow:hidden; margin:8px 0 4px;}
   .progressbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s;}
   details{border:1px solid var(--border); border-radius:var(--radius); background:var(--card);
@@ -1541,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.191";
+var APP_VERSIE = "v23.192";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13969,8 +13972,21 @@ function renderQuestion(){
     // pas ná het antwoord getoond, als uitleg - te laat om de vraag te kunnen beantwoorden zonder gokken.
     // Nu vooraf getoond, bij alle 113 vragen die een vertaling hebben (niet alleen deze twee).
     (v.nl ? "<p class='muted'>"+ct("Vertaling: ","Translation: ")+vraagVert(v)+"</p>" : "");
+  /* v23.192: met de tijd erbij als deze vraag over de tijd gaat. Zie vraagTijdLabels(). */
+  var tijdL = null;
+  try { tijdL = vraagTijdLabels(v); } catch(e){ tijdL = null; }
   vraagOpts(v).forEach(function(o,idx){
-    html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>";
+    var tekst = o;
+    if(tijdL && tijdL[idx]){
+      var delen = String(o).split(/\s*([,\u00b7])\s*/);   // scheidingsteken houden we vast
+      var n = 0;
+      tekst = delen.map(function(d){
+        if(d === "," || d === "\u00b7") return d + " ";
+        var lab = tijdL[idx][n++];
+        return d + (lab ? " <span class='tijdlab'>(" + lab + ")</span>" : "");
+      }).join("");
+    }
+    html += "<button class='opt' data-i='"+idx+"'>"+tekst+"</button>";
   });
   html += "<div id='qFeedback'></div>";
   el.innerHTML = html;
@@ -24263,6 +24279,95 @@ function tt(key){
 function ct(nl, en){ return profLang() === "nl" ? nl : en; }
 function zinPrompt(z){ return profLang() === "nl" ? z.nl : (z.en || z.nl); }
 function zinUitleg(z){ return profLang() === "nl" ? z.uitleg : (z.ue || z.uitleg); }
+/* ================= WELKE TIJD HOORT BIJ DEZE VORM (v23.192) =================
+
+   Zie de leerkaart "de toets die twee dingen tegelijk meet". Kort: een vraag met de titel
+   "indefinido of imperfecto?" hoort de regel te meten, en dat deed hij niet, want je moest
+   eerst weten wélke vorm welke tijd is om de antwoorden te kunnen lezen. Nu staat de tijd
+   erbij, en dat label wordt afgeleid in plaats van ingetypt: één feit, één plek.
+
+   Vier wegen, in deze volgorde, en alle vier geven ze of precies één tijd of niets terug.
+   Niets is het goede antwoord als het onzeker is: een ontbrekend label is eerlijk, een
+   verkeerd label is erger dan geen. */
+var TIJD_TABEL = null;
+function tijdTabel(){
+  if(TIJD_TABEL) return TIJD_TABEL;
+  TIJD_TABEL = {};
+  try {
+    VERBOS.forEach(function(v){
+      ["presente","indefinido","imperfecto","perfecto","subjuntivo"].forEach(function(t){
+        for(var pi = 0; pi < 6; pi++){
+          var w = conjVorm(v, pi, t);
+          if(!w) continue;
+          var sl = String(w).toLowerCase();
+          (TIJD_TABEL[sl] = TIJD_TABEL[sl] || {})[t] = 1;
+        }
+      });
+    });
+  } catch(e){}
+  return TIJD_TABEL;
+}
+/* De enige drie onregelmatige imperfectos die het Spaans heeft. Een gesloten rij, dus hij
+   veroudert niet. ver staat meestal in VERBOS en wordt dan al door de tabel gevonden; hij
+   staat hier voor het geval dat niet zo is. */
+var TIJD_ONREG_IMP = {
+  "era":1,"eras":1,"\u00e9ramos":1,"erais":1,"eran":1,
+  "iba":1,"ibas":1,"\u00edbamos":1,"ibais":1,"iban":1,
+  "ve\u00eda":1,"ve\u00edas":1,"ve\u00edamos":1,"ve\u00edais":1,"ve\u00edan":1
+};
+/* Deze uitgangen horen in het hele Spaans maar bij één tijd, dus die kunnen zonder dat we
+   weten welk werkwoord het is. -amos en -imos staan er met opzet NIET bij: die zijn tegelijk
+   presente en indefinido (cenamos), en dat is geen gat in de lijst maar het Spaans. */
+var TIJD_UIT_IMP = /(?:aba|abas|\u00e1bamos|abais|aban)$/;
+var TIJD_UIT_IND = /(?:aste|asteis|aron|iste|isteis|ieron|\u00f3)$/;
+/* Met de infinitief erbij kan ook -ía en -é. Zonder infinitief niet: condicional en futuro
+   plakken diezelfde uitgangen achter de hele infinitief (podría, hablaré), en dan zou het
+   label liegen. */
+var TIJD_INF_IMP = {ar: /(?:aba|abas|\u00e1bamos|abais|aban)$/, er: /(?:\u00eda|\u00edas|\u00edamos|\u00edais|\u00edan)$/};
+var TIJD_INF_IND = {ar: /(?:\u00e9|aste|asteis|aron|\u00f3)$/, er: /(?:\u00ed|iste|isteis|ieron|i\u00f3)$/};
+function tijdVanVorm(w, inf){
+  var woord = String(w || "").trim().toLowerCase();
+  if(!woord) return null;
+  var raak = tijdTabel()[woord];
+  if(raak){
+    var k = Object.keys(raak);
+    return k.length === 1 ? k[0] : null;   // twee tijden delen deze vorm: dan zeggen we niets
+  }
+  if(TIJD_ONREG_IMP[woord]) return "imperfecto";
+  if(TIJD_UIT_IMP.test(woord)) return "imperfecto";
+  if(TIJD_UIT_IND.test(woord)) return "indefinido";
+  if(!inf || !/[aei]r$/.test(inf)) return null;
+  var kl = /ar$/.test(inf) ? "ar" : "er";
+  if(TIJD_INF_IMP[kl].test(woord)) return "imperfecto";
+  if(TIJD_INF_IND[kl].test(woord)) return "indefinido";
+  return null;
+}
+
+/* De labels van één vraag, of null als deze vraag er geen hoort te krijgen.
+
+   Drie voorwaarden, en ze staan er alle drie om te voorkomen dat het label ruis wordt:
+     - elke optie heeft evenveel gaten als de andere
+     - elk gat is te labelen (alles of niets per vraag, want half gelabeld leest slordiger
+       dan niet gelabeld)
+     - de opties dragen niet allemaal hetzelfde tijdenpatroon. Bij "Indefinido: de juiste
+       vorm" is alles indefinido, en dan gaat de vraag niet over de tijd. */
+function vraagTijdLabels(v){
+  if(!v || !v.opts || v.opts.length < 2) return null;
+  var infs = (String(v.q || "").match(/\(([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1]+r)\)/g) || [])
+    .map(function(s){ return s.slice(1, -1); });
+  var rijen = v.opts.map(function(o){
+    var delen = String(o).split(/\s*[,\u00b7]\s*/);
+    var t = delen.map(function(d, i){ return tijdVanVorm(d, infs[i]); });
+    return t.every(function(x){ return !!x; }) ? t : null;
+  });
+  if(rijen.some(function(x){ return !x; })) return null;
+  var lengtes = {}, patronen = {};
+  rijen.forEach(function(x){ lengtes[x.length] = 1; patronen[x.join("+")] = 1; });
+  if(Object.keys(lengtes).length !== 1) return null;
+  if(Object.keys(patronen).length < 2) return null;
+  return rijen;
+}
+
 function vraagVert(v){ return profLang() === "nl" ? v.nl : (v.ne || v.nl); }
 function vraagWaarom(v){ return profLang() === "nl" ? v.u : (v.ue || v.u); }
 function vraagTekst(v){ return profLang() === "nl" ? v.q : (v.qe || v.q); }
