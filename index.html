@@ -1537,7 +1537,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.185";
+var APP_VERSIE = "v23.188";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13919,7 +13919,15 @@ function boekEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&l
    hebben, maar zo begint elk verschil dat later wel iets kost. Een reeks zonder verteller krijgt
    dus ook geen map: geluid dat nooit klinkt hoort nergens te staan. */
 var LEES_REEKSEN = [
- {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa", stem:true, map:"boek",
+ /* v23.183: `verteller` is de voice-id van wie deze reeks voorleest, en dat veld is vanaf nu
+    de waarheid daarover. Tot v23.182 volgde de stem uit de map, en de map werd gekozen omdat
+    een nieuwe map betekende dat er niets zou klinken. Dat is precies andersom: eerst kiezen
+    wie het voorleest, dan pas waar de bestanden staan.
+
+    `stem:true` blijft wat het was: heeft deze reeks audio, ja of nee. Een voice-id is geen
+    geheim (ze staan al in audio/stemmen.json); de API-sleutel wel, en die staat in de
+    GitHub-secrets. */
+ {id:"chispa", pre:"boek-", nl:"Chispa", en:"Chispa", stem:true, map:"boek", verteller:"imFXYz8XIletRKLZZQaA",
   soortNl:"verhaal", soortEn:"story",
   omNl:"Een wezentje zonder naam zoekt zijn eigen lied, van de kust tot het kasteel.",
   omEn:"A small creature without a name looks for its own song, from the coast to the castle."},
@@ -13931,18 +13939,25 @@ var LEES_REEKSEN = [
     regel is: elke leesreeks heeft een tweede vak. Chispa geeft filosofie, Franco geschiedenis, La
     cocina española koken. Cádiz gaf niets; iemand komt aan, kijkt rond en went. De acht opnames
     blijven in audio/boek/ staan, want weggooien levert niets op en terughalen kost tekens. */
- /* v23.182: Don Quijote, het eerste van de tien uitgewerkt tot een eigen boek. Dezelfde map en
-    dus dezelfde verteller als Chispa en El hilo: het manifest houdt de stem per map bij, en een
-    eigen map zou betekenen dat er eerst een stem gekozen moet worden voordat er iets klinkt. */
- {id:"quijote", pre:"quij-", nl:"Don Quijote", en:"Don Quijote", stem:true, map:"boek",
+ /* v23.182: Don Quijote, het eerste van de tien uitgewerkt tot een eigen boek. Stond hier met
+    map:"boek" en dus met de verteller van Chispa, omdat een eigen map betekende dat er niets
+    zou klinken. Dat was de omweg die v23.183 heeft weggehaald.
+
+    v23.184: eigen map, eigen stem. Stefan koos de voice-id. Dit kostte niets, en dat is geen
+    toeval maar timing: er stond nog geen enkele quij-opname, dus de tien hoofdstukken worden
+    meteen op de goede plek en met de goede stem ingesproken in plaats van verhuisd.
+
+    Geen eigen steminstelling: die valt terug op die van `boek`, en dat is de instelling voor
+    een verteller. Een eigen regel zou een getal zijn dat niemand heeft gekozen. */
+ {id:"quijote", pre:"quij-", nl:"Don Quijote", en:"Don Quijote", stem:true, map:"quijote", verteller:"wfTWLJ20rcMqvU8gIiAB",
   soortNl:"verhaal", soortEn:"story",
   omNl:"Een man leest zoveel over ridders dat hij er zelf een wordt. Tien hoofdstukken, van de molens tot de laatste ochtend.",
   omEn:"A man reads so much about knights that he becomes one. Ten chapters, from the windmills to the last morning."},
- {id:"letras", pre:"lit-", nl:"El hilo de las palabras", en:"El hilo de las palabras", stem:true, map:"boek",
+ {id:"letras", pre:"lit-", nl:"El hilo de las palabras", en:"El hilo de las palabras", stem:true, map:"boek", verteller:"imFXYz8XIletRKLZZQaA",
   soortNl:"literatuur", soortEn:"literature",
   omNl:"Tien Spaanse klassiekers, van Don Quijote tot Macondo. Elk hoofdstuk \u00e9\u00e9n boek, \u00e9\u00e9n idee en \u00e9\u00e9n beeld dat blijft hangen.",
   omEn:"Ten Spanish classics, from Don Quijote to Macondo. Each chapter one book, one idea and one image that stays."},
- {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true, map:"hist",
+ {id:"franco", pre:"hist-", nl:"España: los años de Franco", en:"España: los años de Franco", stem:true, map:"hist", verteller:"YKrm0N1EAM9Bw27j8kuD",
   soortNl:"geschiedenis", soortEn:"history",
   omNl:"Spanje van 1931 tot nu, in tien hoofdstukken: de oorlog, de honger, de stilte en de terugweg.",
   omEn:"Spain from 1931 until now, in ten chapters: the war, the hunger, the silence and the way back."}
@@ -14857,6 +14872,8 @@ function closeBoek(){
    dagPortie() waar de andere maten wonen. */
 var SCHRIJF_PER_LES = 3;
 var lesFlow = null; // {stap: null|"woorden"|"grammatica"|"toetsjes"|"produceren", quizzesTeDoen:[...ids], gramId, gekozenSpel, vertalenTeGaan}
+/* v23.188: hoe vaak show() een scherm heeft geopend. Zie de bodem in lesFlowVolgende(). */
+var lesFlowOpende = 0;
 
 /* v19.92 — stap 4 was "één van vier spelletjes, willekeurig geroteerd". Daardoor zat lezen helemaal
    niet in je dagles (het boek stond in een eigen tabje) en kon je drie dagen achter elkaar dezelfde
@@ -15579,8 +15596,31 @@ function lesFlowVolgende(){
 
      lesFlowBewaar() staat in de finally, zodat je les ook na een klapper op de stap staat waar je
      was en de knop "Verder waar je was" je terugbrengt in plaats van opnieuw te laten beginnen. */
+  /* v23.188: en een bodem onder de bodem. De try/catch hierboven vangt een fout die gegooid
+     wordt. Wat Stefan op 23 en 24 augustus zag was iets anders: lesFlowVolgendeKern() is een
+     rij van zes if-blokken zonder else, dus een lesFlow.stap die geen van de zes namen draagt
+     valt er onderdoor. Geen fout, geen melding, geen schermwissel, en de knop is dood.
+
+     En hij blijft dood: lesFlowBewaar() hieronder schrijft die stap weg en lesFlowHervat()
+     zet hem morgen ongecontroleerd terug.
+
+     Niet gerepareerd met een lijstje geldige namen naast de zes if-blokken: twee lijsten
+     naast elkaar lopen uit elkaar, en dat is de fout in punt 2 van deze patch. In plaats
+     daarvan de vraag die er echt toe doet, en die maar één goed antwoord heeft: is er een
+     scherm opengegaan? show() is de enige weg daarheen, dus die telt mee. */
+  var opendeVoor = lesFlowOpende;
+  var stapVoor = lesFlow && lesFlow.stap;
   try {
     lesFlowVolgendeKern();
+    if(lesFlow && lesFlowOpende === opendeVoor){
+      try { console.error("lesFlowVolgende: stap \"" + stapVoor + "\" opende niets; les afgerond."); } catch(e5){}
+      /* Afronden en niet repareren-naar-de-volgende-stap: welke stap dat zou moeten zijn is
+         onbekend, en gokken levert een les op die halverwege opnieuw begint. Klaar is een
+         eerlijke uitkomst, hij ruimt S.lesFlowNu op (lesFlow wordt null) en morgen begin je
+         schoon in plaats van weer vast te lopen. */
+      try { toast(ct("Je les was hier klaar.", "Your session ended here.")); } catch(e6){}
+      lesFlowKlaar();
+    }
   } catch(e){
     try { console.error("lesFlowVolgende:", e && e.message, e); } catch(e2){}
     try { toast(ct("Deze stap kon niet openen. Je les staat nog waar je was.",
@@ -20083,7 +20123,9 @@ function renderFunTijdvorm(){
 function spelInfo(){
   return [
     {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",            t:"M\u00fasica",            s:fx("muS"), open:function(){ show("musica"); }},
-    {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS")},
+    /* v23.188: de woordenzoeker had als enige rasterspel geen verse, dus je kwam terug op het
+     raster dat je al had uitgespeeld. Zelfde afspraak als bij Letras en Crucigrama. */
+ {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS"), verse:function(){ ws = null; }},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",            t:"Crucigrama",            s:fx("krS"), verse:function(){ kruisLos = null; }},
     {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",            t:"Letras",                s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock."), verse:function(){ ltSpel = null; }},
     {v:"adiv",    id:"ftAdiv",    e:"\ud83d\udfe9",            t:"Adivina",               s:ct("Raad het woord in vijf pogingen. De eerste letter krijg je.","Guess the word in five tries. You get the first letter."), verse:function(){ adivSpel = null; }},
@@ -20271,11 +20313,21 @@ function speelNaar(v){
      vervangen door escuchar." In de plaats daarvan land je bij Escuchar altijd op de plank, ook als
      je er net een scene af had; dat is precies het moment waarop je wil zien wat dat opende. */
   if(v === "audi"){ audMenu = true; }
+  /* v23.188. Hier stond ook "kruis" en "adiv", en niet "letras" en niet "ws". Gevolg: klikte
+     je de suggestie na je les aan, dan stond de puzzel er nog zoals je hem had achtergelaten,
+     compleet met "Alles gevonden!". Via de tegel op de Speeltuin kreeg je wél een verse, want
+     speelStart() roept g.verse() aan.
+
+     Dat is exact de fout die v23.112 al eens heeft opgeruimd: een handgeschreven rij naast
+     spelInfo(), die ermee uit de pas loopt. Nu leest deze weg dezelfde verse als de tegel, en
+     is er nog één lijst. De drie regels hieronder blijven met de hand, want conj, hu en corr
+     staan niet in spelInfo(): zij hebben geen tegel. */
+  var info = null;
+  try { info = spelInfoVan(v); } catch(e){ info = null; }
+  if(info && info.verse){ try { info.verse(); } catch(e){} }
   if(v === "conj"){ conjIdx = null; conjRonde = null; }
   if(v === "hu"){ huIdx = null; huRonde = null; }
   if(v === "corr"){ corrOpg = null; corrRonde = null; }
-  if(v === "kruis"){ kruisLos = null; }
-  if(v === "adiv"){ adivSpel = null; }
   show("speeltuin");
 }
 function dagBordWire(el){
@@ -23937,10 +23989,30 @@ function verbPopup(term){
 // een korte uitleg met een voorbeeldzin. Zelfde popup-schil en dezelfde S.vcache, dus tweede keer
 // openen kost niets.
 /* ================= WOORDENZOEKER ================= */
+/* v23.188. Stefan, 24 aug: "er zijn recente woorden die ik vaak fout doe die ik hier niet
+   terug zie." Nagelopen, en hij heeft gelijk: hier stond nergens wannéér je een woord fout
+   deed. S.errors draagt .dag (de dag van de laatste fout) en die werd niet gelezen.
+
+   Twee gevolgen, en samen zijn ze precies zijn zin. Een woord dat je gisteren én eergisteren
+   fout deed heeft count 2, haalde de drempel van 3 niet, en stond dus achteraan tussen de
+   woorden die je nooit fout hebt gedaan. En een woord dat je in mei drie keer fout deed stond
+   vóór alles van deze week.
+
+   Nu eerst wanneer, dan hoe vaak. De grens ligt op zeven dagen: dat is de week waar je zelf
+   nog een herinnering aan hebt, en het is dezelfde orde als de eerste doosjes van de SRS.
+
+   Wat dit NIET repareert: wsWoordPool() laat alleen losse woorden van vier tot negen letters
+   door. Een uitdrukking of een woord van drie letters past niet in een raster, hoe vaak je
+   hem ook fout doet. Ontbreekt zo'n woord, dan is dat de vorm van het spel en niet de
+   voorrang. */
+var GAME_VERS_DAGEN = 7;
 function gameVoorrang(pool){
   function score(id){
     var e = S.errors["woord:" + id];
-    if(e && e.count >= 3) return 2;            // hardnekkig: komt het eerst
+    var dagen = 9999;
+    try { if(e) dagen = peilDagenGeleden(e.dag || e.laatst); } catch(x){ dagen = 9999; }
+    if(e && dagen <= GAME_VERS_DAGEN) return 3;  // deze week fout: dat is waar je nu staat
+    if(e && e.count >= 3) return 2;            // hardnekkig van langer geleden: daarna
     var st = S.srs[id];
     if(st && st.box <= 1) return 1;            // wankel: daarna
     return 0;                                   // de rest vult aan
@@ -35034,6 +35106,10 @@ function renderPrivacy(){
 }
 
 function show(tabId, skipPush){
+  /* v23.188: één teller, en verder verandert er niets aan show(). Hij is er zodat
+     lesFlowVolgende() kan vaststellen of er echt een scherm is opengegaan. Dat is de enige
+     vraag die telt bij een knop die niets doet, en er was geen manier om hem te stellen. */
+  lesFlowOpende++;
   if(tabId === "diccionario"){ dicModal(); return; } // oude links/history: woordenboek is nu een popup
   // v23.147: hier stond avtStopAlles(), dat het hele Aventura-scherm afbrak. Wat er nog moet
   // stoppen is de muziek, en die woont nu in het geluidsblok.

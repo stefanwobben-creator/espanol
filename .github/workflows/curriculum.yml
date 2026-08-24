@@ -98,6 +98,13 @@ jobs:
       - name: Zelftest van de manifestsamenvoeging
         run: node tools/stemmen-samenvoegen.js --zelftest
 
+      # v23.183: elke leesreeks met geluid noemt zijn eigen verteller. Deze stap wordt rood
+      # zodra er een boek bij komt zonder stem, mét de naam van de reeks erbij. Dat is de hele
+      # reden dat hij er is: bij v23.181 en v23.182 stond in de patchkop dat er geen stem was
+      # gekozen, en een afspraak die alleen in een patchkop staat gaat de derde keer weer mis.
+      - name: Zelftest van de stem per reeks
+        run: node tools/audio-lib.js --zelftest
+
       # De poort staat hier al klaar, nog vóór de bot iets schrijft. Zo weet je zeker dat een rode
       # avondrun niet aan een al kapotte main ligt: was het hier al rood, dan is het niet zijn schuld.
       - name: Playwright installeren
