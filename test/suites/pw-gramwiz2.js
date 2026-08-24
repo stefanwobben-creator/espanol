@@ -174,7 +174,12 @@ const { chromium } = require('playwright');
   const gen = await page.evaluate(() => {
     const plat = (h) => String(h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     (tLessons() || []).forEach((l) => { S.lessons[l.id] = Object.assign(S.lessons[l.id] || {}, { done: true }); });
-    const lijst = gwGenLijst();
+    /* v23.194: hier stond gwGenLijst(), en die is sinds deze versie leeg. Niet omdat de generator
+       stuk is, maar omdat elke spiekbriefkaart nu door een handgeschreven concept wordt afgedekt en
+       gwGenLijst() juist teruggeeft wat níét is afgedekt. De regels hieronder gaan over de
+       generator zelf, dus die draaien nu over álle kaarten die hij kan opknippen. */
+    const opRoute = gwGenLijst().length;
+    const lijst = CHEATSHEET.map(function (c, i) { return gwVanSpiek(i); }).filter(Boolean);
     let stappen = 0, dubbel = 0, losseAankondiging = 0, tabelZonderAanloop = 0;
     lijst.forEach((o) => {
       o.stappen.forEach((s, i) => {
@@ -188,9 +193,10 @@ const { chromium } = require('playwright');
         if (/^\s*<table/i.test(String(s.uitleg || '').trim()) && i > 0) tabelZonderAanloop++;
       });
     });
-    return { n: lijst.length, stappen, dubbel, losseAankondiging, tabelZonderAanloop };
+    return { n: lijst.length, opRoute, stappen, dubbel, losseAankondiging, tabelZonderAanloop };
   });
-  console.log('  ' + gen.n + ' onderwerpen, ' + gen.stappen + ' stappen');
+  console.log('  ' + gen.n + ' onderwerpen, ' + gen.stappen + ' stappen (' + gen.opRoute +
+    ' daarvan staan nog los op de route; de rest heeft een eigen microles)');
   ok(gen.n > 0, 'er zijn gegenereerde onderwerpen om te toetsen (' + gen.n + ')');
   ok(gen.dubbel === 0,
     'geen enkele stap herhaalt zijn eigen tekst in de uitklapper (' + gen.dubbel + ' van ' + gen.stappen + ')');

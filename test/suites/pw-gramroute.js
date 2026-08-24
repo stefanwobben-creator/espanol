@@ -114,6 +114,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const tekst = el.textContent.replace(/\s+/g, ' ');
     uit.kopRoute = /De route/.test(tekst);
     uit.kopOud = /Alle onderwerpen|De keuzes|De diepe lessen/.test(tekst);
+    /* v23.194: "Uit je lessen" is de kop boven de spiekbriefkaarten die de route NIET dekt. Sinds
+       deze versie dekt de route ze allemaal, dus die kop hoort er juist niet meer te staan: een lege
+       kop is erger dan geen kop. De regel is daarom niet "de kop staat er" maar "de kop staat er
+       precies als er iets onder hangt". */
     uit.kopLessen = /Uit je lessen/.test(tekst);
 
     // ---- 5. het controlegeval: de korte opening blijft ----
@@ -150,7 +154,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.diepDubbel.length === 0, 'en geen diepe les als los kaartje naast zijn eigen concept (' + (r.diepDubbel.join(',') || 'geen') + ')');
   ok(r.diepLos.length > 0, 'wat echt naast de route staat blijft wel staan (' + r.diepLos.join(',') + ')');
   ok(!r.kopOud, 'de oude koppen zijn weg ("Alle onderwerpen" ging over 24 van de 52)');
-  ok(r.kopRoute && r.kopLessen, 'en de koppen zeggen nu wat er staat');
+  ok(r.kopRoute, 'en de kop zegt nu wat er staat ("De route")');
+  ok(r.kopLessen === (r.genN > 0),
+    'de kop "Uit je lessen" staat er precies als er kaarten onder hangen (' + r.genN + ' kaarten, kop ' +
+    (r.kopLessen ? 'staat er' : 'staat er niet') + ')');
 
   console.log('\n-- 2. de uitgeklapte lijst is de route --');
   ok(r.routeN === r.ordeN, 'alle ' + r.ordeN + ' onderwerpen staan erin (' + r.routeN + ')');

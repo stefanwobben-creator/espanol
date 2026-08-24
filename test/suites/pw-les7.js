@@ -47,8 +47,15 @@ const { chromium } = require('playwright');
   ok(/El imperativo/.test(grammDom), 'Grammatica-tab draagt de imperativo-kaart');
   const lesErBij = await page.evaluate(() => !!gcConcept('imperativo'));
   ok(lesErBij, 'CONTROLE: en er is inmiddels ook een microles voor de imperativo');
-  ok(grammText.indexOf("Se impersonal: how something 'gets done'") !== -1, 'Grammatica-tab toont se impersonal-titel');
-  ok(grammText.indexOf('Quantities: un poco de') !== -1, 'Grammatica-tab toont hoeveelheden-titel');
+  /* v23.194: dezelfde verhuizing als hierboven bij de imperativo. Kaart 21 en 22 hebben sinds deze
+     versie een eigen microles (seimpersonal, cantidad) die verderop in de leervolgorde staat, dus ze
+     staan nu in de dichtgeklapte naslaglijst en niet meer in de route. innerText liet ze daardoor
+     weg terwijl ze wél op de pagina staan. */
+  ok(grammDom.indexOf("Se impersonal: how something 'gets done'") !== -1, 'Grammatica-tab draagt de se impersonal-kaart');
+  ok(grammDom.indexOf('Quantities: un poco de') !== -1, 'Grammatica-tab draagt de hoeveelheden-kaart');
+  const lessenErBij = await page.evaluate(() => !!gcConcept('seimpersonal') && !!gcConcept('cantidad'));
+  ok(lessenErBij, 'CONTROLE: en er is inmiddels ook voor allebei een microles');
+  ok(grammText.length > 200, 'CONTROLE: en innerText leest de zichtbare route wel degelijk uit (' + grammText.length + ' tekens)');
 
   await page.evaluate(() => show('toetsjes')); // v19.47: Toetsjes zit niet meer in de nav
   await page.waitForTimeout(200);

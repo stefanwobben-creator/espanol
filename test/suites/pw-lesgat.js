@@ -9,12 +9,12 @@
 //
 // Dat gat kon zo groot worden omdat niets het narekende. Deze suite rekent het na.
 //
-// WAT HIJ DOET, EN WAAROM HET EEN TELLER IS EN GEEN VERBOD
+// WAT HIJ DOET, EN WAAROM DE TELLER NU EEN VERBOD IS
 //
-// Er staan nog elf gaten open; dertien lessen schrijven is geen ronde. De suite legt daarom het
-// huidige aantal vast en wordt rood zodra het GROTER wordt. Zo kan er geen gat bij komen zonder dat
-// iemand het ziet, en elke les die erbij komt verlaagt het getal. Wie er twee schrijft, zet de
-// grens twee lager; dat is één regel en het is de bedoeling.
+// De suite legde eerst het huidige aantal vast en werd rood zodra het GROTER werd, zodat elke ronde
+// het getal kon verlagen: 12 → 9 na v23.193, en 9 → 0 na v23.194. Vanaf nu staat hij op nul, en
+// daarmee is het geen teller meer maar een regel: een toetsvraag over stof die nergens wordt
+// uitgelegd komt er niet meer in. Wie een spiekkaart toetst, schrijft de les erbij.
 //
 // WAT DEZE SUITE BEWAAKT
 //
@@ -30,9 +30,21 @@ const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
-/* Stand op 24 augustus, ná de twee lessen van v23.193: er waren twaalf kaarten met een toets en
-   zonder les, en de imperativo (20, 25) en de beleefdheidsvormen (12) zijn eraf. */
-const GATEN_MAX = 9;
+/* Stand op 24 augustus, ná de zes lessen en twee aanhechtingen van v23.194: nul. Dit getal hoort
+   niet meer omhoog te gaan. Gaat het toch omhoog, dan is er een toets bij gekomen zonder les. */
+const GATEN_MAX = 0;
+
+/* de acht lessen van v23.193 en v23.194, met de spiekkaart die ze horen te dekken */
+const NIEUW = [
+  { id: 'imperativo',    kaarten: [20, 25] },
+  { id: 'cortesia',      kaarten: [12] },
+  { id: 'tijdmarkers',   kaarten: [6] },
+  { id: 'posesivo',      kaarten: [9] },
+  { id: 'exclamacion',   kaarten: [17] },
+  { id: 'gustarfamilie', kaarten: [18, 23] },
+  { id: 'seimpersonal',  kaarten: [21] },
+  { id: 'cantidad',      kaarten: [22] }
+];
 
 let fout = 0;
 function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); }
@@ -79,11 +91,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     console.log('   ↓ er is een gat gedicht: zet GATEN_MAX in deze suite op ' + gat.n);
   }
 
-  // ---- 2. de twee nieuwe lessen ----
-  console.log('\n-- 2. de twee lessen van v23.193 --');
-  const les = await page.evaluate(() => {
+  // ---- 2. de acht nieuwe lessen ----
+  console.log('\n-- 2. de acht lessen van v23.193 en v23.194 --');
+  const les = await page.evaluate((ids) => {
     const tk = gwTrackKey();
-    return ['imperativo', 'cortesia'].map(function (id) {
+    return ids.map(function (id) {
       const c = gcConcept(id);
       if (!c) return { id: id, bestaat: false };
       return {
@@ -96,11 +108,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
         capaciteit: (function () { try { return gcMaakVragen(c, 99).length; } catch (e) { return 0; } })()
       };
     });
-  });
-  les.forEach(function (l) {
+  }, NIEUW.map(function (n) { return n.id; }));
+  les.forEach(function (l, li) {
     ok(l.bestaat, l.id + ' bestaat als concept' + (l.bestaat ? ' ("' + l.naam + '")' : ''));
     if (!l.bestaat) return;
-    ok(l.kaarten.length > 0, '  en hangt aan spiekkaart ' + JSON.stringify(l.kaarten));
+    const wil = NIEUW[li].kaarten;
+    ok(wil.every(function (k) { return l.kaarten.indexOf(k) >= 0; }),
+      '  en hangt aan spiekkaart ' + JSON.stringify(wil) + ' (heeft ' + JSON.stringify(l.kaarten) + ')');
     ok(l.inOrde, '  en staat in de leervolgorde op plek ' + l.rang + ' (999 = nooit aan de beurt)');
     ok(l.hulp, '  en heeft een ezelsbrug en een "waar het misgaat"');
     ok(l.stappen >= 2, '  en bouwt ' + l.stappen + ' stappen');
@@ -108,9 +122,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   // ---- 3 en 4. de vragen ----
   console.log('\n-- 3 en 4. de vragen die ze maken --');
-  const kwaliteit = await page.evaluate(() => {
+  const kwaliteit = await page.evaluate((ids) => {
     const uit = {};
-    ['imperativo', 'cortesia'].forEach(function (id) {
+    ids.forEach(function (id) {
       const c = gcConcept(id);
       if (!c) { uit[id] = null; return; }
       const alle = [];
@@ -125,11 +139,17 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
                            .map(function (q) { return q.v + ' :: ' + q.o.join(' | '); }).slice(0, 3),
         zonderUitleg: alle.filter(function (q) { return !q.w; }).length,
         leegVeld: alle.filter(function (q) { return /undefined|\[object/.test(q.v + q.o.join('') + q.w); })
-                      .map(function (q) { return q.v; }).slice(0, 3)
+                      .map(function (q) { return q.v; }).slice(0, 3),
+        /* een vraag die met een kleine letter begint verraadt een ingevuld woord dat vooraan
+           terechtkwam ("durante el verano viví..."). Het gat zelf telt niet mee: daar staat ___. */
+        kleineLetter: alle.filter(function (q) {
+          const t = String(q.v).replace(/<[^>]+>/g, '').replace(/^\s+/, '');
+          return /^[a-záéíóúñü]/.test(t);
+        }).map(function (q) { return q.v; }).slice(0, 3)
       };
     });
     return uit;
-  });
+  }, NIEUW.map(function (n) { return n.id; }));
   Object.keys(kwaliteit).forEach(function (id) {
     const k = kwaliteit[id];
     if (!k) return;
@@ -141,6 +161,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       'CONTROLE: ' + id + ' — geen vraag met twee keer dezelfde optie (' + (k.dubbeleOpties[0] || 'geen') + ')');
     ok(k.zonderUitleg === 0, 'CONTROLE: ' + id + ' — elke vraag zegt waarom (' + k.zonderUitleg + ' zonder)');
     ok(k.leegVeld.length === 0, 'CONTROLE: ' + id + ' — nergens undefined op het scherm (' + (k.leegVeld[0] || 'geen') + ')');
+    ok(k.kleineLetter.length === 0,
+      'CONTROLE: ' + id + ' — geen vraag begint met een kleine letter (' + (k.kleineLetter[0] || 'geen') + ')');
   });
 
   // ---- 5. en alles wat een concept kan maken, is ook te krijgen ----
@@ -169,6 +191,39 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(bereik.mis.length === 0,
     'elk concept levert alles wat zijn patronen kunnen maken (' + (bereik.mis.slice(0, 3).join(' · ') || 'geen verlies') + ')');
   ok(bereik.mogelijk > 1000, 'CONTROLE: en er is genoeg om over te tellen (' + bereik.mogelijk + ')');
+
+  // ---- 6. de twee aanhechtingen leggen ook echt uit ----
+  console.log('\n-- 6. de aangehechte kaarten worden uitgelegd, niet alleen geclaimd --');
+  /* Kaart 4 en 28 zijn woordenlijsten, geen onderwerpen. Ze zijn in v23.194 aan een bestaande les
+     gehangen in plaats van er een aparte les voor te verzinnen. Dat mag alleen als die les de
+     woorden ook echt behandelt: anders praat de aanhechting proef 1 naar nul zonder dat Stefan er
+     iets van leert, en dat is precies het boekhouden waar de review tegen was. */
+  const hecht = await page.evaluate(() => {
+    const eis = {
+      perfindef:   { kaart: 4,  woorden: ['ya', 'todavía no', 'alguna vez', 'últimamente', 'hace dos años', 'aquel día'] },
+      indefimperf: { kaart: 28, woorden: ['un día', 'una vez', 'mientras', 'de repente', 'al final'] }
+    };
+    const tk = gwTrackKey();
+    const uit = {};
+    Object.keys(eis).forEach(function (id) {
+      const c = gcConcept(id);
+      const tekst = c ? String(c.uitleg).replace(/<[^>]+>/g, ' ').toLowerCase() : '';
+      uit[id] = {
+        bestaat: !!c,
+        claimt: c ? ((c.spiek || {})[tk] || []).indexOf(eis[id].kaart) >= 0 : false,
+        mist: eis[id].woorden.filter(function (w) { return tekst.indexOf(w.toLowerCase()) < 0; }),
+        // de matcher moet kunnen falen, anders bewijst "niets mist" niets
+        nep: tekst.indexOf('zzquux') < 0
+      };
+    });
+    return uit;
+  });
+  Object.keys(hecht).forEach(function (id) {
+    const h = hecht[id];
+    ok(h.bestaat && h.claimt, id + ' claimt de aangehechte kaart');
+    ok(h.mist.length === 0, id + ' legt de woorden van die kaart ook echt uit (mist: ' + (h.mist.join(', ') || 'niets') + ')');
+    ok(h.nep, 'CONTROLE: ' + id + ' — de zoekmethode vindt een woord dat er niet staat niet');
+  });
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
