@@ -1544,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.192";
+var APP_VERSIE = "v23.193";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -30060,7 +30060,56 @@ function gcSchud(q){
   return q;
 }
 
-var GC_ADJ_SER = [
+/* v23.193: de werkwoorden waar de imperativo-les mee werkt. Bewust keukenwerkwoorden en
+   instructies, want dat is waar je de gebiedende wijs tegenkomt (spiekkaart 20 heet niet voor
+   niets "recepten en instructies").
+
+   `tu` is de bevestigende tú-vorm, `neg` de ontkennende. Die twee staan er allebei omdat ze in het
+   Spaans niet uit elkaar volgen: corta wordt no cortes, en dat is de hele moeilijkheid. */
+var GC_IMP = [
+ {inf:"cortar",  tu:"corta",  neg:"no cortes",  obj:"la cebolla",
+  geb:"Snijd de ui.",            gebNeg:"Snijd de ui niet.",          hij:"Hij snijdt de ui.",           ik:"Ik snijd de ui.",
+  gebEn:"Cut the onion.",        gebNegEn:"Do not cut the onion.",    hijEn:"He cuts the onion.",        ikEn:"I cut the onion."},
+ {inf:"a\u00f1adir",  tu:"a\u00f1ade",  neg:"no a\u00f1adas",  obj:"la sal",
+  geb:"Voeg het zout toe.",      gebNeg:"Voeg het zout niet toe.",    hij:"Hij voegt het zout toe.",     ik:"Ik voeg het zout toe.",
+  gebEn:"Add the salt.",         gebNegEn:"Do not add the salt.",     hijEn:"He adds the salt.",         ikEn:"I add the salt."},
+ {inf:"mezclar", tu:"mezcla", neg:"no mezcles", obj:"todo",
+  geb:"Meng alles.",             gebNeg:"Meng niet alles.",           hij:"Hij mengt alles.",            ik:"Ik meng alles.",
+  gebEn:"Mix everything.",       gebNegEn:"Do not mix everything.",   hijEn:"He mixes everything.",      ikEn:"I mix everything."},
+ {inf:"abrir",   tu:"abre",   neg:"no abras",   obj:"la puerta",
+  geb:"Doe de deur open.",       gebNeg:"Doe de deur niet open.",     hij:"Hij doet de deur open.",      ik:"Ik doe de deur open.",
+  gebEn:"Open the door.",        gebNegEn:"Do not open the door.",    hijEn:"He opens the door.",        ikEn:"I open the door."},
+ {inf:"beber",   tu:"bebe",   neg:"no bebas",   obj:"agua",
+  geb:"Drink water.",            gebNeg:"Drink geen water.",          hij:"Hij drinkt water.",           ik:"Ik drink water.",
+  gebEn:"Drink water.",          gebNegEn:"Do not drink water.",      hijEn:"He drinks water.",          ikEn:"I drink water."},
+ {inf:"escribir",tu:"escribe",neg:"no escribas",obj:"tu nombre",
+  geb:"Schrijf je naam op.",     gebNeg:"Schrijf je naam niet op.",   hij:"Hij schrijft zijn naam op.",  ik:"Ik schrijf mijn naam op.",
+  gebEn:"Write your name.",      gebNegEn:"Do not write your name.",  hijEn:"He writes his name.",       ikEn:"I write my name."}
+];/* De acht onregelmatige tú-vormen van het Spaans. Een gesloten rij: er zijn er geen negen. */
+var GC_IMP_ONREG = [
+ {inf:"hacer", tu:"haz", geb:"Doe het!",     gebEn:"Do it!"},
+ {inf:"poner", tu:"pon", geb:"Zet neer!",    gebEn:"Put it down!"},
+ {inf:"venir", tu:"ven", geb:"Kom!",         gebEn:"Come!"},
+ {inf:"tener", tu:"ten", geb:"Hou vast!",    gebEn:"Hold this!"},
+ {inf:"decir", tu:"di",  geb:"Zeg het!",     gebEn:"Say it!"},
+ {inf:"salir", tu:"sal", geb:"Ga weg!",      gebEn:"Get out!"},
+ {inf:"ser",   tu:"s\u00e9",  geb:"Wees aardig!", gebEn:"Be nice!"},
+ {inf:"ir",    tu:"ve",  geb:"Ga!",          gebEn:"Go!"}
+];/* v23.193: waar je beleefd om vraagt. GC_PEDIR bestond al maar is korter en zit vast aan de
+   pedir-of-preguntar-les; deze rij draagt ook een werkwoord, want ¿Podrías + infinitivo? vraagt er
+   een. */
+var GC_CORTES = [
+ {ww:"traer",   tu:"traes",   obj:"la cuenta",  vraag:"Zou je de rekening kunnen brengen?",     vraagEn:"Could you bring the bill?",
+  inf:"brengen",   infEn:"bring",   te:"de rekening te brengen",  teEn:"bringing the bill"},
+ {ww:"pasar",   tu:"pasas",   obj:"la sal",     vraag:"Zou je het zout kunnen aangeven?",       vraagEn:"Could you pass the salt?",
+  inf:"aangeven",  infEn:"pass",    te:"het zout aan te geven",   teEn:"passing the salt"},
+ {ww:"prestar", tu:"prestas", obj:"un boli",    vraag:"Zou je me een pen kunnen lenen?",        vraagEn:"Could you lend me a pen?",
+  inf:"lenen",     infEn:"lend",    te:"een pen te lenen",        teEn:"lending a pen"},
+ {ww:"abrir",   tu:"abres",   obj:"la ventana", vraag:"Zou je het raam kunnen openen?",         vraagEn:"Could you open the window?",
+  inf:"openen",    infEn:"open",    te:"het raam te openen",      teEn:"opening the window"},
+ {ww:"repetir", tu:"repites", obj:"eso",        vraag:"Zou je dat kunnen herhalen?",            vraagEn:"Could you repeat that?",
+  inf:"herhalen",  infEn:"repeat",  te:"dat te herhalen",         teEn:"repeating that"}
+];var GC_ADJ_SER = [
  {es:"alto", nl:"lang", en:"tall"}, {es:"simpático", nl:"aardig", en:"nice"},
  {es:"rubio", nl:"blond", en:"blond"}, {es:"delgado", nl:"slank", en:"slim"},
  {es:"tímido", nl:"verlegen", en:"shy"}, {es:"generoso", nl:"gul", en:"generous", nlc:"guller"},
@@ -30969,6 +31018,59 @@ var GC_CONCEPTEN = [
              wEn:"Asking permission takes poder. Sé abrir would say you learned how a window works."}; }
   ]},
 
+ /* v23.193. Kaart 20 en 25 dragen samen zestien toetsvragen over de imperativo en er stond geen
+    les tegenover. Zie de review "De grammatica als geheel": 35 procent van de toetsvragen ging
+    over stof die nergens werd uitgelegd, en dit is het eerste gat dat gedicht wordt. */
+ {id:"imperativo", icon:"👉", naam:"Zeg wat iemand moet doen", naamEn:"Telling someone what to do",
+  corr:[], spiek:{a2:[20,25]}, wizard:null,
+  uitleg:"<p>De gebiedende wijs tegen <b>tú</b> is in het Spaans verrassend makkelijk: je neemt de vorm die bij <i>él</i> hoort in de tegenwoordige tijd, en klaar.</p>"+
+    "<p><i>cortar</i> → <i>él corta</i> → <b>corta</b> la cebolla. <i>beber</i> → <i>él bebe</i> → <b>bebe</b> agua. <i>escribir</i> → <i>él escribe</i> → <b>escribe</b> tu nombre.</p>"+
+    "<p>Acht werkwoorden doen het anders, en die zijn de moeite van het uit je hoofd leren waard, want het zijn er precies acht: <b>haz, pon, ven, ten, di, sal, sé, ve</b> (hacer, poner, venir, tener, decir, salir, ser, ir).</p>"+
+    "<p>En dan de valkuil: <b>ontkennend is het een heel andere vorm.</b> Niet <i>no corta</i> maar <i>no <b>cortes</b></i>, niet <i>no bebe</i> maar <i>no <b>bebas</b></i>. De -ar-werkwoorden krijgen -es, de -er- en -ir-werkwoorden -as. Precies andersom dan je verwacht.</p>",
+  uitlegEn:"<p>The command form for <b>tú</b> is surprisingly easy in Spanish: take the form that goes with <i>él</i> in the present tense, and that is it.</p>"+
+    "<p><i>cortar</i> → <i>él corta</i> → <b>corta</b> la cebolla. <i>beber</i> → <i>él bebe</i> → <b>bebe</b> agua. <i>escribir</i> → <i>él escribe</i> → <b>escribe</b> tu nombre.</p>"+
+    "<p>Eight verbs do it differently, and they are worth memorising because there are exactly eight: <b>haz, pon, ven, ten, di, sal, sé, ve</b> (hacer, poner, venir, tener, decir, salir, ser, ir).</p>"+
+    "<p>And then the trap: <b>the negative is a completely different form.</b> Not <i>no corta</i> but <i>no <b>cortes</b></i>, not <i>no bebe</i> but <i>no <b>bebas</b></i>. The -ar verbs take -es, the -er and -ir verbs take -as. Exactly the other way round from what you expect.</p>",
+  begrip:{v:"Hoe maak je de bevestigende gebiedende wijs tegen tú?",
+    vEn:"How do you make the affirmative command form for tú?",
+    o:["Je neemt de él-vorm van de tegenwoordige tijd","Je neemt de infinitief zonder -r","Je neemt de tú-vorm van de tegenwoordige tijd","Je zet het werkwoord in de verleden tijd"],
+    oEn:["You take the él form of the present tense","You take the infinitive without the -r","You take the tú form of the present tense","You put the verb in the past tense"],
+    g:0,
+    w:"Habla, come, escribe: dat zijn de él-vormen. De tú-vorm (hablas) is het net niet, en dat is de fout die het vaakst gemaakt wordt.",
+    wEn:"Habla, come, escribe: those are the él forms. The tú form (hablas) is nearly right, and that is the most common slip."},
+  patronen:[
+   function(){ var w = gcKies(GC_IMP);
+     return {v:"___ "+w.obj+". ("+w.geb+")", vEn:"___ "+w.obj+". ("+w.gebEn+")",
+             o:[w.tu, w.inf, w.tu+"s"], g:0,
+             w:"De \u00e9l-vorm van "+w.inf+" is "+w.tu+", en dat is de gebiedende wijs. "+w.tu+"s is de t\u00fa-vorm en betekent iets anders.",
+             wEn:"The \u00e9l form of "+w.inf+" is "+w.tu+", and that is the command. "+w.tu+"s is the t\u00fa form and means something else."}; },
+   function(){ var w = gcKies(GC_IMP_ONREG);
+     return {v:"\u00a1___! ("+w.geb+") \u00b7 van "+w.inf,
+             vEn:"\u00a1___! ("+w.gebEn+") \u00b7 from "+w.inf,
+             o:[w.tu, w.inf.replace(/r$/, ""), w.inf], g:0,
+             w:w.inf+" is een van de acht onregelmatige: "+w.tu+". Die acht zijn haz, pon, ven, ten, di, sal, s\u00e9, ve.",
+             wEn:w.inf+" is one of the eight irregulars: "+w.tu+". The eight are haz, pon, ven, ten, di, sal, s\u00e9, ve."}; },
+   function(){ var w = gcKies(GC_IMP);
+     return {v:"___ "+w.obj+". ("+w.gebNeg+")", vEn:"___ "+w.obj+". ("+w.gebNegEn+")",
+             o:[w.neg, "no "+w.tu, "no "+w.inf], g:0,
+             w:"Ontkennend verandert de vorm: "+w.neg+", niet no "+w.tu+". Dat is de valkuil van dit onderwerp.",
+             wEn:"The negative changes the form: "+w.neg+", not no "+w.tu+". That is the trap here."}; },
+   function(){ var w = gcKies(GC_IMP);
+     return {v:"Wat betekent \u00ab"+w.tu+" "+w.obj+"\u00bb?",
+             vEn:"What does \u00ab"+w.tu+" "+w.obj+"\u00bb mean?",
+             o:[w.geb+" (een opdracht)", w.hij, w.ik],
+             oEn:[w.gebEn+" (a command)", w.hijEn, w.ikEn], g:0,
+             w:"De vorm is dezelfde als de \u00e9l-vorm, dus de zin vertelt het je: geen onderwerp erbij en een opdracht, dus de gebiedende wijs. "+w.hij+" zou "+w.inf.replace(/r$/, "")+" zijn met \u00e9l erbij.",
+             wEn:"The form is the same as the \u00e9l form, so the sentence tells you: no subject and an instruction means a command."}; },
+   function(){ var w = gcKies(GC_IMP_ONREG);
+     return {v:"Hoeveel werkwoorden hebben een onregelmatige t\u00fa-gebiedende wijs, zoals \u00ab"+w.tu+"\u00bb?",
+             vEn:"How many verbs have an irregular t\u00fa command, like \u00ab"+w.tu+"\u00bb?",
+             o:["Acht","Twee","Zoveel dat je ze niet kunt leren","Geen enkele"],
+             oEn:["Eight","Two","So many you cannot learn them","None"], g:0,
+             w:"Precies acht: haz, pon, ven, ten, di, sal, s\u00e9, ve. Een lijstje van acht is te leren, en daarmee is dit onderwerp af.",
+             wEn:"Exactly eight: haz, pon, ven, ten, di, sal, s\u00e9, ve. A list of eight is learnable, and that finishes this topic."}; }
+  ]},
+
  {id:"apersonal", icon:"🧍", naam:"De persoonlijke a", naamEn:"The personal a",
   corr:[], spiek:{}, wizard:null,
   uitleg:"<p>Staat er een bepaald persoon als lijdend voorwerp achter het werkwoord, dan zet het Spaans er een <b>a</b> voor. Bij dingen niet.</p>"+
@@ -31441,6 +31543,64 @@ var GC_CONCEPTEN = [
              wEn:"En este momento points at what is going on now, so estar + gerundio."}; }
   ]},
 
+ /* v23.193. Kaart 12 draagt tien toetsvragen over beleefd vragen en er stond geen les tegenover.
+    Dit onderwerp is geen paradigma maar een handjevol vaste wendingen, en zo staat het er ook: de
+    vraag is niet welke vorm maar hoe direct je klinkt. */
+ {id:"cortesia", icon:"🙏", naam:"Beleefd iets vragen", naamEn:"Asking politely",
+  corr:[], spiek:{a2:[12]}, wizard:null,
+  uitleg:"<p>Met <i>puedes</i> vraag je gewoon of iets kan. Dat is niet onbeleefd, maar het is wel direct: <i>¿Puedes abrir la ventana?</i> is “kun je het raam openen?”.</p>"+
+    "<p>Wil je zachter klinken, dan zet je er een <b>-ía</b> achter: <b>podría</b> (ik/hij/u) en <b>podrías</b> (jij). <i>¿Podrías abrir la ventana?</i> is “zou je het raam kunnen openen?”. Let op de stam: het is <i>podr-</i> en niet <i>poder-</i>.</p>"+
+    "<p>Nog een stap beleefder is <b>¿Te importaría + infinitief?</b> — letterlijk “zou het je uitmaken om...”. <i>¿Te importaría repetir eso?</i> Tegen iemand die u is: <i>¿Le importaría...?</i></p>"+
+    "<p>Na al deze vormen komt altijd een <b>infinitief</b>, nooit een vervoegd werkwoord: <i>¿Podrías traer la cuenta?</i>, nooit <i>¿Podrías traes...?</i></p>",
+  uitlegEn:"<p>With <i>puedes</i> you simply ask whether something is possible. That is not rude, but it is direct: <i>¿Puedes abrir la ventana?</i> is “can you open the window?”.</p>"+
+    "<p>To sound softer, add <b>-ía</b>: <b>podría</b> (I/he/you formal) and <b>podrías</b> (you). <i>¿Podrías abrir la ventana?</i> is “could you open the window?”. Note the stem: it is <i>podr-</i>, not <i>poder-</i>.</p>"+
+    "<p>One step more polite is <b>¿Te importaría + infinitive?</b> — literally “would it bother you to...”. <i>¿Te importaría repetir eso?</i> To someone you address formally: <i>¿Le importaría...?</i></p>"+
+    "<p>All these forms are followed by an <b>infinitive</b>, never a conjugated verb: <i>¿Podrías traer la cuenta?</i>, never <i>¿Podrías traes...?</i></p>",
+  begrip:{v:"Wat komt er na podrías of te importaría?",
+    vEn:"What comes after podrías or te importaría?",
+    o:["Een infinitief: podrías traer","Een vervoegd werkwoord: podrías traes","Een verleden tijd: podrías trajiste","Een zelfstandig naamwoord, nooit een werkwoord"],
+    oEn:["An infinitive: podrías traer","A conjugated verb: podrías traes","A past tense: podrías trajiste","A noun, never a verb"],
+    g:0,
+    w:"Net als na puedo en quiero: het tweede werkwoord blijft in de infinitief staan.",
+    wEn:"Just as after puedo and quiero: the second verb stays in the infinitive."},
+  patronen:[
+   function(){ var c = gcKies(GC_CORTES);
+     return {v:"\u00bf___ "+c.ww+" "+c.obj+"? ("+c.vraag+" \u2014 je wilt zacht klinken)",
+             vEn:"\u00bf___ "+c.ww+" "+c.obj+"? ("+c.vraagEn+" \u2014 you want to sound soft)",
+             o:["Podr\u00edas","Puedes","Podes"], g:0,
+             w:"Puedes kan ook en is niet onbeleefd, maar podr\u00edas is de zachte vorm en daar vroeg de zin om. Podes bestaat niet in Spanje.",
+             wEn:"Puedes works too and is not rude, but podr\u00edas is the soft form, and that is what the sentence asked for. Podes does not exist in Spain."}; },
+   function(){ var c = gcKies(GC_CORTES);
+     return {v:"\u00bfPodr\u00edas ___ "+c.obj+"? ("+c.vraag+")",
+             vEn:"\u00bfPodr\u00edas ___ "+c.obj+"? ("+c.vraagEn+")",
+             /* Twee opties, en allebei bestaande Spaanse woorden. Hier stond een derde afleider die
+                uit het werkwoord werd gerekend ("trao"), en dat is geen Spaans: een afleider die
+                niet bestaat is een gratis punt. */
+             o:[c.ww, c.tu], g:0,
+             w:"Na podr\u00edas komt de infinitief: "+c.ww+". Een vervoegde vorm kan daar niet staan.",
+             wEn:"After podr\u00edas comes the infinitive: "+c.ww+". A conjugated form cannot go there."}; },
+   function(){ var c = gcKies(GC_CORTES);
+     return {v:"\u00bfTe ___ "+c.ww+" "+c.obj+"? (Zou het je uitmaken om "+c.te+"?)",
+             vEn:"\u00bfTe ___ "+c.ww+" "+c.obj+"? (Would you mind "+c.teEn+"?)",
+             o:["importar\u00eda","importas","importar"], g:0,
+             w:"Te importar\u00eda + infinitief. Dit is de beleefdste van de drie vormen op deze kaart.",
+             wEn:"Te importar\u00eda + infinitive. This is the most polite of the three forms on this card."}; },
+   function(){
+     return {v:"Je spreekt iemand aan met usted. Wat wordt het?",
+             vEn:"You are addressing someone with usted. Which one?",
+             o:["\u00bfPodr\u00eda ayudarme?","\u00bfPodr\u00edas ayudarme?","\u00bfPuedes ayudarme?","\u00bfPodr\u00e1n ayudarme?"],
+             oEn:["\u00bfPodr\u00eda ayudarme?","\u00bfPodr\u00edas ayudarme?","\u00bfPuedes ayudarme?","\u00bfPodr\u00e1n ayudarme?"], g:0,
+             w:"Usted gebruikt de derde persoon: podr\u00eda. Podr\u00edas is t\u00fa, en dat botst met de aanspreekvorm.",
+             wEn:"Usted takes the third person: podr\u00eda. Podr\u00edas is t\u00fa, which clashes with the form of address."}; },
+   function(){
+     return {v:"Waar komt podr\u00eda vandaan?",
+             vEn:"Where does podr\u00eda come from?",
+             o:["podr- + \u00eda","poder- + \u00eda","pued- + \u00eda","pod- + \u00eda"],
+             oEn:["podr- + \u00eda","poder- + \u00eda","pued- + \u00eda","pod- + \u00eda"], g:0,
+             w:"Poder verliest zijn e: podr- + \u00eda. Pas op dat pod\u00eda iets anders is: dat is de imperfecto, \u201cik kon\u201d.",
+             wEn:"Poder drops its e: podr- + \u00eda. Watch out: pod\u00eda is something else, the imperfect, \u201cI could\u201d."}; }
+  ]},
+
  {id:"futuroir", icon:"🗓️", naam:"Plannen met ir a", naamEn:"Plans with ir a",
   corr:[], spiek:{a2:[19]}, wizard:null,
   uitleg:"<p>Een plan maak je in het Spaans bijna altijd met <b>ir a</b> plus het hele werkwoord, niet met de futuro. In gesproken Spaans is dit veruit de gewone manier om over morgen te praten.</p>"+
@@ -31514,6 +31674,8 @@ var GC_ORDE = [
   "negacion",        // no ... nada: een regel, geen keuze
   "muymucho",        // muy of mucho: kijk naar het woord erachter
   "tuusted",         // tu of usted
+  "cortesia",        // v23.193: en meteen daarna hoe je het beleefd vraagt, want tu tegenover
+                     // usted is de helft van dat onderwerp
   "futuroir",        // ir a + infinitief, je eerste toekomst
   "gustar",          // gusta of gustan
   "demostrativo",    // este, ese, aquel
@@ -31521,6 +31683,8 @@ var GC_ORDE = [
   "reflexivo",       // me, te, se
   "comparar",        // mas que, tan como
   "gerundio",        // presente of estar + gerundio
+  "imperativo",      // v23.193: na de presente, want de bevestigende tu-vorm IS de el-vorm
+                     // van de presente en de les legt hem daarmee uit
   "apersonal",       // de persoonlijke a
   "saberconocer",    // saber of conocer
   "quecual",         // que of cual: hier zat Stefan, en hier hoort het pas
@@ -31932,11 +32096,25 @@ function gcMaakVragen(c, n){
   while(uit.length < n && poging < n * 25){
     poging++;
     var p = c.patronen[(start + ronde) % c.patronen.length];
+    /* v23.193: doordraaien bij elke poging, niet alleen bij elke treffer.
+
+       Hier stond ronde++ onderaan, na het opslaan. Een patroon dat een vaste vraag maakt
+       levert de tweede keer een duplicaat, en dan sprong de lus met continue terug zonder
+       door te draaien: hij bleef op datzelfde patroon staan tot de pogingenteller op was, en
+       alles erachter kwam nooit aan bod.
+
+       Gemeten over alle 25 concepten, elk patroon los uitgeput tegenover wat hier uitkwam:
+       1416 vragen mogelijk, 580 bereikbaar. 836 vragen, 59 procent, werden nooit gesteld.
+       Het ergst bij comparar (407 mogelijk, 8 bereikbaar) en bij perfindef (90 om 26), en
+       dat laatste is precies het onderwerp waar Stefan de meeste fouten op maakt.
+
+       De afspraak van v23.59 blijft: wie een concept voor het eerst doet begint bij patroon
+       nul, want start is dan nul en dit is de eerste doorgang. */
+    ronde++;
     var q = null;
     try { q = p(); } catch(e){ q = null; }
     if(!q || gezien[q.v]) continue;
     gezien[q.v] = 1;
-    ronde++;
     uit.push(gcSchud(q));
   }
   return uit;
@@ -31957,6 +32135,20 @@ function gcMaakVragen(c, n){
 
    Los van GC_CONCEPTEN, want dat is een lijst van vraaggeneratoren en dit is lesmateriaal. */
 var GC_HULP = {
+ imperativo:{
+  kern:"Bevestigend tegen tú is de él-vorm van de presente: corta, bebe, escribe. Acht werkwoorden doen het anders: haz, pon, ven, ten, di, sal, sé, ve. Ontkennend is een andere vorm: no cortes, no bebas.",
+  kernEn:"The affirmative tú command is the él form of the present: corta, bebe, escribe. Eight verbs differ: haz, pon, ven, ten, di, sal, sé, ve. The negative is a different form: no cortes, no bebas.",
+  brug:"Bevestigend leen je van hem (él), ontkennend draai je de klinker om: -ar krijgt -es, -er en -ir krijgen -as. Precies andersom dan de tegenwoordige tijd.",
+  brugEn:"Affirmative you borrow from him (él); negative you flip the vowel: -ar takes -es, -er and -ir take -as. Exactly the opposite of the present tense.",
+  mis:"De fout die bijna iedereen maakt is de tú-vorm pakken: hablas in plaats van habla. En daarna no corta in plaats van no cortes, want ontkennend voelt als hetzelfde woord met no ervoor.",
+  misEn:"The mistake nearly everyone makes is taking the tú form: hablas instead of habla. And then no corta instead of no cortes, because the negative feels like the same word with no in front."},
+ cortesia:{
+  kern:"Puedes vraagt of iets kan, podrías vraagt het zachter, te importaría is het beleefdst. Na alle drie komt een infinitief.",
+  kernEn:"Puedes asks whether something is possible, podrías asks more softly, te importaría is the most polite. All three are followed by an infinitive.",
+  brug:"De -ía is de zachte staart: hoe langer de staart, hoe beleefder. Puedes, podrías, te importaría.",
+  brugEn:"The -ía is the soft tail: the longer the tail, the more polite. Puedes, podrías, te importaría.",
+  mis:"Twee dingen. De stam is podr- en niet poder-, dus podría en nooit podería. En podía is iets heel anders: dat is de verleden tijd, niet de beleefde vorm.",
+  misEn:"Two things. The stem is podr-, not poder-, so podría and never podería. And podía is something else entirely: that is the past tense, not the polite form."},
  muymucho:{
   kern:"Muy staat bij een woord dat iets beschrijft: muy alto, muy bien. Mucho staat bij een hoeveelheid (mucho dinero, muchas cosas) of bij het werkwoord zelf (trabajo mucho).",
   kernEn:"Muy goes with a word that describes: muy alto, muy bien. Mucho goes with an amount (mucho dinero, muchas cosas) or with the verb itself (trabajo mucho).",
@@ -34563,13 +34755,47 @@ function quizzenBijSpiek(idx){
   });
   return pool.filter(function(q){ return !q.spiek && ids[q.id]; });
 }
+/* v23.193: welke spiekkaarten staan nergens in de route?
+
+   Dit stond als losse regel in spiekNaslagHtml() ("geen onderwerp voor deze kaart") en werd in
+   de poort nog een keer nagerekend. Twee plekken die hetzelfde bepalen, en ze zijn uit elkaar
+   gelopen zodra de regel veranderde. Nu is het één functie en vraagt de poort het hier.
+
+   De regel is ook veranderd, en dat is de reden dat deze functie er is. Hij was "bestaat er een
+   onderwerp voor deze kaart". Sinds v23.159 haalt een concept zijn kaart uit de route (tegen
+   dubbelingen), óók als dat concept nog tien onderwerpen verderop ligt: dan viel de kaart uit
+   de route én uit de naslag en was hij nergens meer te vinden. Dat gebeurde meteen bij de
+   eerste twee lessen die een gat in het curriculum dichtten.
+
+   De vraag is dus: staat deze kaart ergens op het scherm? Zo niet, dan hoort hij in de naslag,
+   of dat nu komt doordat er geen les is of doordat de les nog dicht zit. */
+function spiekWeesLijst(){
+  var inRoute = {}, tk = gwTrackKey();
+  try {
+    gwGenLijst().forEach(function(o){
+      var m = /^spiek-(?:a2|a0)-(\d+)$/.exec(o && o.id);
+      if(m) inRoute[+m[1]] = 1;
+    });
+  } catch(e){}
+  GRAMWIZ.forEach(function(o){
+    ((o.spiek && o.spiek[tk]) || []).forEach(function(i){ inRoute[i] = 1; });
+  });
+  GC_CONCEPTEN.forEach(function(c){
+    var open = false;
+    try { open = gcConceptOpen(c.id); } catch(e){ open = true; }
+    if(!open) return;
+    ((c.spiek && c.spiek[tk]) || []).forEach(function(i){ inRoute[i] = 1; });
+  });
+  var uit = [];
+  CHEATSHEET.forEach(function(c, i){ if(!inRoute[i]) uit.push(i); });
+  return uit;
+}
 function spiekNaslagHtml(){
   // v19.98: dit blok stond onder de onderwerpkaartjes en herhaalde ze allemaal. Op een A1-profiel
   // zijn dat 23 van de 23: een tweede lijst met dezelfde titels, waarvan de eerste al zegt hoe ver
   // je bent. Nu staan hier alleen de spiekbrieven waar geen onderwerp bij bestaat, zodat de lijst
   // een vangnet is in plaats van een kopie. Zijn die er niet, dan valt hier niets te zien.
-  var wees = [];
-  CHEATSHEET.forEach(function(c, i){ if(!gwOnderwerpVoorSpiek(i)) wees.push(i); });
+  var wees = spiekWeesLijst();
   if(!wees.length) return "";
   return "<div class='card'><h2>" + ct("Naslag: de spiekbrieven", "Reference: the cheat sheets") + " \ud83d\udcdd</h2>" +
     "<p class='muted'>" + ct("Onderwerpen zonder eigen stappenlijstje, om snel iets op te zoeken. Woorden opzoeken? Gebruik het \ud83d\udcd6-knopje bovenin.", "Topics without their own step-by-step list, for quick lookups. Looking up words? Use the \ud83d\udcd6 button at the top.") + "</p>" +

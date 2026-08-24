@@ -38,7 +38,15 @@ const { chromium } = require('playwright');
   // sinds de A2-content-EN-vertaalronde (26 juli) toont de spiekbrief de Engelse titel (het
   // testprofiel staat op EN) i.p.v. de NL-fallback van eerder.
   const grammText = await page.locator('#cheat').innerText();
-  ok(grammText.indexOf('El imperativo (tú): recipes and instructions') !== -1, 'Grammatica-tab toont de imperativo-titel');
+  /* v23.193: hier stond innerText, en die laat weg wat in een dichtgeklapte <details> staat.
+     De imperativo heeft sinds deze versie een eigen microles, en die staat op plek 15 van de
+     leervolgorde. Zolang je daar nog niet bent, staat de kaart niet in de route maar in de
+     naslaglijst eronder, en die is dichtgeklapt. De kaart is er dus wel en is één tik verderop.
+     Vandaar textContent: de vraag is of de kaart op de pagina staat, niet of hij openstaat. */
+  const grammDom = await page.evaluate(() => (document.getElementById('cheat').textContent || ''));
+  ok(/El imperativo/.test(grammDom), 'Grammatica-tab draagt de imperativo-kaart');
+  const lesErBij = await page.evaluate(() => !!gcConcept('imperativo'));
+  ok(lesErBij, 'CONTROLE: en er is inmiddels ook een microles voor de imperativo');
   ok(grammText.indexOf("Se impersonal: how something 'gets done'") !== -1, 'Grammatica-tab toont se impersonal-titel');
   ok(grammText.indexOf('Quantities: un poco de') !== -1, 'Grammatica-tab toont hoeveelheden-titel');
 

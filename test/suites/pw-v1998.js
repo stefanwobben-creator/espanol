@@ -206,8 +206,11 @@ async function nieuwProfiel(page) {
     const titels = Array.prototype.map.call(el.querySelectorAll('[data-gwstart] b, #spiekNaslag details summary'), (e) => e.textContent.trim());
     const dubbel = titels.filter((t, i) => titels.indexOf(t) !== i);
     // de naslaglijst mag alleen bestaan als er spiekbrieven zijn waar geen onderwerp bij hoort
-    let wees = 0;
-    CHEATSHEET.forEach((c, i) => { if (!gwOnderwerpVoorSpiek(i)) wees++; });
+    /* v23.193: vragen in plaats van narekenen. Hier stond de regel nog een keer uitgeschreven
+       ("geen onderwerp voor deze kaart"), en toen de app zijn definitie aanscherpte liepen de twee
+       uit elkaar en werd deze proef rood op iets wat klopte. spiekWeesLijst() is nu de enige plek
+       waar staat welke kaarten nergens in de route staan. */
+    const wees = spiekWeesLijst().length;
     return { dubbel, wees, naslag: !!document.getElementById('spiekNaslag'), tekst: el.innerText };
   });
   console.log('  weesspiekbrieven ::', gram.wees, '· naslaglijst ::', gram.naslag);

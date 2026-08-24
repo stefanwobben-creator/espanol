@@ -176,7 +176,24 @@ const { chromium } = require('playwright');
   ok(nesting.n === 1 && nesting.diep === 0, 'drie keer scannen levert nog steeds één markering op, zonder nesting');
 
   // --- 7. Echt in de app: de spiekbriefjes/grammatica ---
-  await page.evaluate(() => show('spiekbrief'));
+  /* v23.193: eerst alle lessen op gedaan zetten. gwGenLijst() toont een onderwerp pas als de les
+     die ernaar verwijst is aangebroken, dus op een vers profiel staan er drie, en wélke drie is
+     toeval. Deze proef ging daarmee over de vraag of er toevallig een vakterm in die drie stond, en
+     ze werd rood zodra er een concept bij kwam dat een van die kaarten overnam. Met alle lessen open
+     staat de hele lijst er en toetst dit weer wat het hoort te toetsen: markeert de app vaktermen op
+     het scherm waar de gebruiker ze tegenkomt. */
+  await page.evaluate(() => {
+    (tLessons() || []).forEach(function (l) {
+      S.lessons[l.id] = Object.assign(S.lessons[l.id] || {}, { done: true });
+    });
+    try { persist(); } catch (e) {}
+    // eerdere proeven in deze suite openen een wizard; die neemt de tab over (renderCheat)
+    gwSess = null; gcLeesId = null;
+    // en de hele route uitklappen, anders staat alleen "wat vandaag telt" op het scherm
+    S.gcAlles = true;
+    show('spiekbrief');
+    renderCheat();
+  });
   await page.waitForTimeout(500);
   const inApp = await page.locator('#cheat .jrg').count();
   ok(inApp > 0, 'op de grammatica-pagina staan gemarkeerde vaktermen (' + inApp + ')');
