@@ -113,6 +113,12 @@
        border:1.5px solid var(--border); background:var(--card); font-size:1rem; cursor:pointer; color:var(--ink);}
   .opt.correct{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
   .opt.wrong{border-color:var(--red); background:var(--red-soft); color:var(--red);}
+  /* v23.189: dezelfde twee kleuren voor de opfrisser. Die markeerde alleen het juiste
+     antwoord, en niet dat van jou, dus bij twee opties was niet te zien welke van de twee
+     je had aangetikt. Het toetsje doet dit al sinds jaar en dag met .correct en .wrong; dit
+     zijn dezelfde variabelen op een knop die geen .opt is. */
+  .gw-optie.juist{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
+  .gw-optie.jouw{border-color:var(--red); background:var(--red-soft); color:var(--red);}
   .progressbar{height:8px; background:var(--border); border-radius:99px; overflow:hidden; margin:8px 0 4px;}
   .progressbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .3s;}
   details{border:1px solid var(--border); border-radius:var(--radius); background:var(--card);
@@ -1537,7 +1543,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.188";
+var APP_VERSIE = "v23.190";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -31664,7 +31670,22 @@ function gramDueTop(){
    morgen vooraan in de wachtrij, en dan wél als hele microles: twee keer mis is geen geheugenkwestie
    meer. */
 function gcOpfrisId(cid){ return "opfris-" + String(cid || "").replace(/^concept-/, ""); }
+/* v23.190. Hier stond gcOpfrisOnderwerp() zelf, en die bouwde bij ELKE aanroep een nieuwe
+   vraag. gwKies() en renderCheat() halen het onderwerp allebei opnieuw op, dus één klik
+   raakte drie verschillende trekkingen: je klikte op de opties van A, werd afgerekend tegen
+   B, en zag de markering van C. Gemeten: acht van de acht opfrissers wisselden binnen vijf
+   aanroepen, acht van de acht microlessen niet.
+
+   Dat verschil zat 'm in de cache van gcOnderwerp(), met daarboven al sinds v20.5 precies de
+   waarschuwing waar dit in liep: "BINNEN een sessie moet het object stil blijven staan".
+   De opfrisser van v23.73 ging daar langsheen. Nu gaat hij er doorheen, met dezelfde sleutel
+   en dezelfde vernieuwing bij de start (zie gwStart). */
 function gcOpfrisOnderwerp(id){
+  var key = id + "|" + profLang();
+  if(!gcCache[key]) gcCache[key] = gcOpfrisBouw(id);
+  return gcCache[key];
+}
+function gcOpfrisBouw(id){
   var cid = String(id || "").replace(/^opfris-/, "");
   var c = gcConcept(cid);
   if(!c) return null;
@@ -31980,7 +32001,9 @@ function gcOnderwerp(id){
 }
 function gcVernieuw(id){
   delete gcCache[id + "|" + profLang()];
-  return gcOnderwerp(id);
+  /* v23.190: via gwOnderwerp() en niet via gcOnderwerp(), want die kent alleen concept-ids.
+     Met de oude regel bouwde een opfris-id na het legen nooit meer terug. */
+  return gwOnderwerp(id);
 }
 function gcLijst(){
   /* v23.53: dit gaf alle drieentwintig concepten in arrayvolgorde. Nu in leervolgorde, en alleen
@@ -33674,7 +33697,10 @@ function gwStart(id, stap){
   if(opfris) return gwStart(opfris, 0);
   // v20.5: een conceptles wordt bij elke start opnieuw gegenereerd. Je kunt geen antwoord
   // onthouden van een vraag die nog niet bestond.
-  if(/^concept-/.test(id || "")) gcVernieuw(id);
+  /* v23.190: en de opfrisser net zo goed. Hij zit sinds deze versie in dezelfde cache, en
+     zonder deze regel zou hij daardoor juist het omgekeerde krijgen: elke dag dezelfde vraag.
+     Vers bij de start, stil binnen de sessie. */
+  if(/^(concept|opfris)-/.test(id || "")) gcVernieuw(id);
   var o = gwOnderwerp(id);
   if(!o) return;
   var v = gwVoortgang(id);
@@ -34108,9 +34134,13 @@ function renderGramWiz(){
       "<p class='big' style='margin:6px 0 12px'>"+gwVraagTekst(q)+"</p>"+
       "<div style='display:flex; flex-direction:column; gap:8px' id='gwOpties'>"+
       opties.map(function(t, i){
-        var klasse = "ghost";
-        if(beantwoord && i === q.g) klasse = "primary";
-        return "<button type='button' class='"+klasse+" gw-optie' data-gwo='"+i+"' "+(beantwoord?"disabled ":"")+"style='text-align:left'>"+t+"</button>";
+        /* v23.189: twee dingen tegelijk zichtbaar, precies zoals het toetsje het doet. Hier
+           stond alleen "het juiste antwoord wordt primary", dus jouw eigen keuze liet geen
+           spoor achter en met twee opties was de oranje knop niet thuis te brengen. */
+        var klasse = "ghost gw-optie";
+        if(beantwoord && i === q.g) klasse += " juist";
+        else if(beantwoord && i === gwSess.gekozen) klasse += " jouw";
+        return "<button type='button' class='"+klasse+"' data-gwo='"+i+"' "+(beantwoord?"disabled ":"")+"style='text-align:left'>"+t+"</button>";
       }).join("")+"</div>";
     if(beantwoord){
       var goed = gwSess.gekozen === q.g;
