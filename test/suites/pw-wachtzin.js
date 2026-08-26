@@ -21,8 +21,10 @@
 //
 // WAT DEZE SUITE BEWAAKT
 //
-//   1. DE WACHTZIN TELT. Niet alleen "er zijn er drie nodig" maar hoeveel je er hebt, en vanaf
-//      wanneer de volgende kan komen.
+//   1. DE WACHTZIN TELT. Niet alleen "er zijn er meer nodig" maar hoeveel je er hebt, waarover ze
+//      verspreid staan, en over hoeveel dagen je er bent als je blijft komen.
+//      v23.198: de eenheid is van weken naar dagen gegaan, want het weekritme volgde de kalender in
+//      plaats van de gebruiker. De reden dat deze suite bestaat is niet veranderd.
 //   2. OP BEIDE SCHERMEN HETZELFDE. De zin stond op twee plekken met twee formuleringen; nu komt hij
 //      uit één functie. Twee plekken die hetzelfde uitleggen lopen uit elkaar.
 //   3. EN HIJ VERDWIJNT ALS HET KAN. Het controlegeval: bij drie metingen staat er een tempo en geen
@@ -70,37 +72,43 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     S.lang = 'nl';
 
     // ---- 1 t/m 3. de wachtzin ----
-    // precies de stand van Stefan op 21 augustus: twee weken in de nieuwe maat
-    S.meting = {
-      '2026-W33': { d: '2026-08-11', dekw: { A1: 180, A2: 90 }, dek: { A1: 150, A2: 70 } },
-      '2026-W34': { d: '2026-08-18', dekw: { A1: 215, A2: 110 }, dek: { A1: 175, A2: 85 } }
-    };
+    /* v23.198: hier stonden twee WEEKmetingen en de zin telde naar drie maandagen toe. De
+       voorspelling rekent sinds die versie op dagpunten, precies omdat het weekritme de kalender
+       volgde in plaats van de gebruiker (Stefan, 26 aug: "als je dagelijks meet en je ziet iemand
+       komt dagelijks heb je sneller goede data"). De reden dat deze suite bestaat verandert daar
+       niet door: het scherm hoort te zeggen hoeveel je er hebt en wanneer de volgende komt, in
+       plaats van alleen dat er meer nodig zijn. Alleen de eenheid is veranderd.
+
+       Drie dagpunten over drie dagen: te weinig bewijs én te weinig spreiding, dus de zin hoort er
+       nog te staan. */
+    S.meting = {};
+    S.dagMeting = {};
+    for (var dI = 2; dI >= 0; dI--) {
+      S.dagMeting[addDays(today(), -dI)] = { dekw: { A1: 180 + (2 - dI) * 4, A2: 90 }, dek: { A1: 150, A2: 70 } };
+    }
     S.doelNiv = 'A1'; S.doelDatum = '2026-12-01';
     uit.stand = tempoStand('A1');
-    uit.maandag = komendeMaandag();
     uit.zin = tempoWachtZin('A1');
-    /* De vroegst mogelijke dag is de eerstvolgende maandag, want een meting wordt geschreven zodra
-       je de app voor het eerst in een nieuwe ISO-week opent. */
-    uit.isMaandag = (function () {
-      try { return new Date(uit.maandag + 'T00:00:00').getDay() === 1; } catch (e) { return false; }
-    })();
-    uit.inToekomst = uit.maandag > today();
 
     show('voortgang', true); renderStats();
     const scherm = document.getElementById('statsCard').textContent.replace(/\s+/g, ' ');
     uit.opVoortgang = scherm.indexOf(uit.zin.trim().slice(0, 40)) !== -1;
-    uit.hoeVaak = (scherm.match(/van de 3/g) || []).length;
+    uit.hoeVaak = (scherm.match(/dagmeting/g) || []).length;
     uit.fragment = (scherm.match(/Wat je nu haalt[^]{0,150}/) || [''])[0];
 
-    // 3. het controlegeval: met drie metingen is de wachtzin weg
-    S.meting['2026-W35'] = { d: '2026-08-25', dekw: { A1: 250, A2: 130 }, dek: { A1: 200, A2: 95 } };
-    uit.metDrie = {
+    // 3. het controlegeval: met genoeg dagpunten over genoeg dagen is de wachtzin weg
+    S.dagMeting = {};
+    for (var dJ = 13; dJ >= 0; dJ--) {
+      S.dagMeting[addDays(today(), -dJ)] = { dekw: { A1: 180 + (13 - dJ) * 4, A2: 90 }, dek: { A1: 150, A2: 70 } };
+    }
+    uit.metGenoeg = {
       stand: tempoStand('A1'),
       zin: tempoWachtZin('A1'),
       tempo: (function () { try { const m = tempoMeting('A1'); return m ? m.gem : null; } catch (e) { return 'FOUT'; } })()
     };
     renderStats();
-    uit.metDrieOpScherm = document.getElementById('statsCard').textContent.indexOf('van de 3') === -1;
+    uit.metGenoegOpScherm = document.getElementById('statsCard').textContent.indexOf('dagmeting') === -1;
+    S.dagMeting = {};
 
     // ---- 4 en 5. het woordenboek noemt de zoeklijst, en dat getal is waar ----
     S.meting = {};
@@ -138,22 +146,25 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- 1. de wachtzin telt --');
   console.log('   "' + r.zin + '"');
-  ok(r.stand.heeft === 2 && r.stand.nodig === 3, 'de app weet hoeveel metingen je hebt (' + r.stand.heeft + ' van ' + r.stand.nodig + ')');
-  ok(/2 van de 3/.test(r.zin), 'en zegt dat ook, in plaats van alleen dat er drie nodig zijn');
-  ok(r.isMaandag, 'de genoemde dag is een maandag, want dat is de vroegst mogelijke (' + r.maandag + ')');
-  ok(r.inToekomst, 'en hij ligt in de toekomst');
-  ok(/10 augustus/.test(r.zin), 'met erbij sinds wanneer een meting meetelt');
+  ok(r.stand.heeft === 3 && r.stand.nodig === 5,
+    'de app weet hoeveel metingen je hebt (' + r.stand.heeft + ' van ' + r.stand.nodig + ')');
+  ok(/3 dagmetingen/.test(r.zin), 'en zegt dat ook, in plaats van alleen dat er meer nodig zijn');
+  ok(/2 dagen/.test(r.zin), 'met erbij waarover ze verspreid staan, want dat is de tweede drempel');
+  ok(/(\d+) dag(en)?\.$/.test(r.zin.trim()), 'en over hoeveel dagen je er bent als je blijft komen ("' + r.zin.trim().slice(-40) + '")');
+  ok(!/maandag/.test(r.zin),
+    'CONTROLE: en er staat geen maandag meer in, want je wacht op jezelf en niet op de kalender');
 
   console.log('\n-- 2. op beide schermen dezelfde zin --');
   ok(r.opVoortgang, 'de zin staat op Voortgang');
   console.log('   "' + r.fragment.slice(0, 130) + '"');
   ok(r.hoeVaak >= 1, 'en op elke plek waar de voorspelling zwijgt (' + r.hoeVaak + 'x)');
 
-  console.log('\n-- 3. het controlegeval: bij drie metingen is hij weg --');
-  ok(r.metDrie.stand.genoeg, 'met drie metingen is het genoeg');
-  ok(r.metDrie.zin === '', 'dan levert de wachtzin niets meer op');
-  ok(typeof r.metDrie.tempo === 'number', 'en er komt een tempo uit (' + r.metDrie.tempo + ' per week)');
-  ok(r.metDrieOpScherm, 'het scherm zegt niet meer dat er iets ontbreekt');
+  console.log('\n-- 3. het controlegeval: bij genoeg dagpunten is hij weg --');
+  ok(r.metGenoeg.stand.genoeg, 'veertien dagpunten over veertien dagen is genoeg');
+  ok(r.metGenoeg.zin === '', 'dan levert de wachtzin niets meer op');
+  ok(typeof r.metGenoeg.tempo === 'number' && Math.abs(r.metGenoeg.tempo - 28) < 0.01,
+    'en er staat een tempo dat klopt: +4 per dag is 28 per week (' + r.metGenoeg.tempo + ')');
+  ok(r.metGenoegOpScherm, 'en het scherm noemt geen dagmetingen meer');
 
   console.log('\n-- 4. de woorden achter de zoekbalk zijn er nog --');
   console.log('   ' + r.uitLessen + ' woordgroepen uit je lessen, ' + r.freqN + ' in de zoeklijst erachter');

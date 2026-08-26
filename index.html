@@ -1544,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.202";
+var APP_VERSIE = "v23.203";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7171,6 +7171,7 @@ function serverPull(p){
       S = normaliseerState(res.state);
       mengMeting(metingVoor);   // v19.83: weekmetingen overleven een pull
       snapshotSchrijf();
+      try { dagMetingSchrijf(); } catch(e){}
       store.save(S);
       mergeServerGroepen(res);
       updateBadge(); updateGoalUI();
@@ -8074,6 +8075,7 @@ function boot(){
   // is zou een stille bulkpromotie zijn eigen geschiedenis overschrijven.
   if(p.track === "a2" && S.claim === null && !(S.txp > 0)) niveauClaim(0);
   snapshotSchrijf(); // v19.83: nulmeting van de week, onzichtbaar
+  dagMetingSchrijf(); // v23.198: en één punt per dag, want daar hangt de voorspelling aan
   // proeverij verzilveren: XP + SRS-start van de 3 proefwoordjes verhuizen mee naar dit profiel
   var pd0 = proefData();
   if(pd0 && pd0.klaar && !S.proefVerzilverd){
@@ -9077,6 +9079,93 @@ function snapshotSchrijf(){
    tempo toeval. */
 /* v23.38. De weekmetingen die in de maat van deze pagina staan: actief bijgehouden, dus bewezen
    vast plus onderweg. Metingen van voor v23.37 kennen dekw niet en horen hier niet bij. */
+/* ================= DE DAGMETING (v23.198) =================
+   Stefan, 26 aug: "als je dagelijks meet en je ziet iemand komt dagelijks heb je sneller goede
+   data om een voorspelling te doen dan iemand die af en toe komt toch?"
+
+   Ja, en dat stond precies verkeerd om. De weekmeting hierboven legt één punt per kalenderweek
+   vast, dus wie 36 dagen op rij komt heeft er evenveel als wie twee keer per maand komt. Hier komt
+   één regel per DAG bij, met dezelfde maat (dekw), zodat het aantal punten volgt hoe vaak jij er
+   bent in plaats van hoeveel maandagen er voorbij zijn.
+
+   Twee velden en niet meer: dek (bewezen vast) en dekw (wat je actief bijhoudt). De inspanning per
+   dag staat al in S.dagStats; wat daar ontbrak was de voortgang, en dat is precies het getal dat de
+   voorspelling nodig heeft.
+
+   De pot wordt afgekapt op DAGMETING_MAX dagen. Een reeks die eeuwig doorgroeit in localStorage is
+   een lek, en meer dan een jaar terugkijken voegt aan een tempo van vandaag niets toe. */
+var DAGMETING_MAX = 400;
+function dagMetingSchrijf(){
+  try{
+    S.dagMeting = S.dagMeting || {};
+    /* de weekmetingen die er al liggen gaan mee als startpunt. Dat mag, want het is dezelfde maat
+       (dekw) op een datum die de weekregel zelf draagt: exact, geen schatting. Terugrekenen uit
+       due en box zou wél een schatting zijn, en die helt naar "recent" en belooft dus te veel. */
+    var wk;
+    for(wk in (S.meting || {})){
+      var wm = S.meting[wk];
+      if(!wm || !wm.d || !wm.dekw) continue;
+      if(!S.dagMeting[wm.d]) S.dagMeting[wm.d] = {dek:wm.dek, dekw:wm.dekw, uitWeek:1};
+    }
+    var t = today();
+    if(S.dagMeting[t] && !S.dagMeting[t].uitWeek) return;   // vandaag al echt gemeten
+    var c = voortgangTellers();
+    S.dagMeting[t] = {dek:c.dek, dekw:c.dekw};
+    var dagen = Object.keys(S.dagMeting).sort();
+    while(dagen.length > DAGMETING_MAX) delete S.dagMeting[dagen.shift()];
+    persist();
+  }catch(e){}                                // een meter mag de app nooit omver duwen
+}
+/* Het tempo uit de dagreeks: een kleinste-kwadratenlijn, en de marge is twee standaardfouten op de
+   helling. Niet het gemiddelde van de verschillen, want dat is precies wat een reeks van twee
+   punten deed en dat gaf geen enkele onzekerheidsmaat.
+
+   Twee drempels, en ze meten twee verschillende dingen. TEMPO_MIN_PUNTEN gaat over hoeveel bewijs
+   er is; TEMPO_MIN_SPAN gaat over waarover. Vijf metingen uit drie dagen zeggen iets over drie
+   dagen en niets over een tempo, dus daar hoort de voorspeller nog te zwijgen. */
+var TEMPO_MIN_PUNTEN = 5;
+var TEMPO_MIN_SPAN = 7;
+function dagMetingPunten(niveau){
+  var d = S.dagMeting || {}, ds = Object.keys(d).sort(), uit = [], i, m, x0 = null;
+  for(i = 0; i < ds.length; i++){
+    m = d[ds[i]];
+    if(!m || !m.dekw || typeof m.dekw[niveau] !== "number") continue;
+    if(x0 === null) x0 = ds[i];
+    uit.push({dag:ds[i], x:dagMetingDelta(x0, ds[i]), y:m.dekw[niveau]});
+  }
+  return uit;
+}
+/* Niet dagenSinds() genoemd, en dat is geen smaak. Die naam is al bezet (regel ~21742, één
+   argument, telt vanaf een datum tot vandaag). Twee function-declaraties met dezelfde naam is geen
+   fout in JavaScript: de laatste wint stilletjes, en de eerste aanroeper krijgt een functie die
+   iets anders betekent. Precies dezelfde botsing als de Door-knop van v23.197, nu in de namen in
+   plaats van in de id's. Zie tools/dubbelenaam.js, die dit voortaan narekent. */
+function dagMetingDelta(a, b){
+  var p = String(a).split("-"), q = String(b).split("-");
+  if(p.length !== 3 || q.length !== 3) return 0;
+  return Math.round((Date.UTC(+q[0], +q[1]-1, +q[2]) - Date.UTC(+p[0], +p[1]-1, +p[2])) / 86400000);
+}
+function tempoDagMeting(niveau){
+  var p = dagMetingPunten(niveau);
+  if(p.length < TEMPO_MIN_PUNTEN) return null;
+  var span = p[p.length-1].x - p[0].x;
+  if(span < TEMPO_MIN_SPAN) return null;
+  var n = p.length, sx = 0, sy = 0, i;
+  for(i = 0; i < n; i++){ sx += p[i].x; sy += p[i].y; }
+  var mx = sx / n, my = sy / n, sxx = 0, sxy = 0;
+  for(i = 0; i < n; i++){ sxx += (p[i].x - mx) * (p[i].x - mx); sxy += (p[i].x - mx) * (p[i].y - my); }
+  if(sxx <= 0) return null;
+  var hel = sxy / sxx;                        // per dag
+  var sse = 0, e;
+  for(i = 0; i < n; i++){ e = p[i].y - (my + hel * (p[i].x - mx)); sse += e * e; }
+  /* de standaardfout van de helling. Bij n = 2 is er geen vrijheidsgraad over en is dit oneindig;
+     dat kan hier niet voorkomen omdat TEMPO_MIN_PUNTEN op vijf staat, maar de deling wordt
+     afgeschermd omdat een NaN op dit scherm er precies zo uitziet als een getal. */
+  var se = n > 2 ? Math.sqrt((sse / (n - 2)) / sxx) : 0;
+  return {gem: hel * 7, marge: 2 * se * 7, weken: span / 7,
+          nu: p[p.length-1].y, punten: n, dagen: span, bron:"dag"};
+}
+
 function metingenNieuweMaat(niveau){
   var ws = Object.keys(S.meting || {}).sort(), uit = [], i, m;
   for(i = 0; i < ws.length; i++){
@@ -9101,9 +9190,15 @@ function metingenNieuweMaat(niveau){
    (snapshotSchrijf), dus de vroegst mogelijke dag is de eerstvolgende maandag. */
 var TEMPO_NODIG = 3;
 function tempoStand(niveau){
-  var n = 0;
-  try { n = metingenNieuweMaat(niveau).length; } catch(e){ n = 0; }
-  return {heeft:n, nodig:TEMPO_NODIG, genoeg:n >= TEMPO_NODIG};
+  /* v23.198: sinds de dagmeting wacht je niet meer op maandagen maar op dagen dat je er bent.
+     Deze functie voedt de wachtzin, dus hij moet dezelfde drempels gebruiken als tempoDagMeting();
+     twee plekken met elk hun eigen drempel is een zin die iets anders belooft dan de meter doet. */
+  var p = [];
+  try { p = dagMetingPunten(niveau); } catch(e){ p = []; }
+  var span = p.length ? p[p.length-1].x - p[0].x : 0;
+  var genoeg = p.length >= TEMPO_MIN_PUNTEN && span >= TEMPO_MIN_SPAN;
+  return {heeft:p.length, nodig:TEMPO_MIN_PUNTEN, span:span, spanNodig:TEMPO_MIN_SPAN,
+          genoeg:genoeg, dag:true};
 }
 function komendeMaandag(){
   var d;
@@ -9116,17 +9211,34 @@ function komendeMaandag(){
 function tempoWachtZin(niveau){
   var st = tempoStand(niveau);
   if(st.genoeg) return "";
-  var m = komendeMaandag();
-  return ct("Je hebt er " + st.heeft + " van de " + st.nodig + ". ",
-            "You have " + st.heeft + " of " + st.nodig + ". ") +
-    (m ? ct("De volgende kan er vanaf maandag " + datumUit(m) + " bij, de eerste keer dat je de app die week opent.",
-            "The next one can arrive from Monday " + datumUit(m) + ", the first time you open the app that week.")
-       : ct("De volgende komt de eerste keer dat je de app in een nieuwe week opent.",
-            "The next one arrives the first time you open the app in a new week.")) +
-    ct(" Een weekmeting telt pas mee sinds 10 augustus, toen de maat van de balk hierboven werd vastgelegd.",
-       " A weekly measurement only counts since 10 August, when the unit of the bar above was fixed.");
+  /* v23.198: dit zei "de volgende kan er vanaf maandag bij". Dat klopte en het was het antwoord op
+     de verkeerde vraag: je wachtte op de kalender in plaats van op jezelf. Nu wachten allebei de
+     drempels op dagen dat je er bent, en de zin zegt welke van de twee nog niet gehaald is. */
+  var mistPunten = st.heeft < st.nodig;
+  var nogPunten = Math.max(0, st.nodig - st.heeft);
+  var nogSpan = Math.max(0, st.spanNodig - st.span);
+  var nog = Math.max(nogPunten, nogSpan);
+  return ct("Je hebt " + st.heeft + " dagmeting" + (st.heeft === 1 ? "" : "en") + " over " + st.span + " dag" + (st.span === 1 ? "" : "en") + ". ",
+            "You have " + st.heeft + " daily measurement" + (st.heeft === 1 ? "" : "s") + " across " + st.span + " day" + (st.span === 1 ? "" : "s") + ". ") +
+    ct("Er is een lijn nodig door minstens " + st.nodig + " metingen over minstens " + st.spanNodig + " dagen; " +
+       (mistPunten && nogSpan > nogPunten
+         ? "de spreiding is nu wat ontbreekt."
+         : "elke dag dat je de app opent komt er een punt bij.") + " ",
+       "A line needs at least " + st.nodig + " measurements across at least " + st.spanNodig + " days; " +
+       (mistPunten && nogSpan > nogPunten
+         ? "the spread is what is missing now."
+         : "every day you open the app adds a point.") + " ") +
+    ct("Kom je elke dag, dan is dat over " + nog + " dag" + (nog === 1 ? "" : "en") + ".",
+       "If you come every day, that is " + nog + " day" + (nog === 1 ? "" : "s") + " away.");
 }
 function tempoMeting(niveau){
+  /* v23.198: de dagreeks gaat voor. Eén functie blijft de bron voor voortgangBand() en
+     voorspelWaar(), want twee plekken die allebei een tempo uitrekenen lopen uit elkaar en dan
+     spreekt hetzelfde scherm zichzelf tegen. De weekreeks blijft eronder liggen als terugval voor
+     wie nog geen dagpunten heeft. */
+  var dag = null;
+  try { dag = tempoDagMeting(niveau); } catch(e){ dag = null; }
+  if(dag) return dag;
   var reeks = metingenNieuweMaat(niveau);
   if(reeks.length < 3) return null;
   var d = [], i;
@@ -28929,6 +29041,7 @@ function meetVerstuur(){
 function meetBewaar(tekst, taak, r){
   var w = meetWeek();
   try { snapshotSchrijf(); } catch(e){}
+  try { dagMetingSchrijf(); } catch(e){}
   S.meting = S.meting || {};
   if(!S.meting[w]) S.meting[w] = {d:today()};
   var rauw = (r && Array.isArray(r.fouten)) ? r.fouten : [];
