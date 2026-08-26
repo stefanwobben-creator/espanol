@@ -88,9 +88,19 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.hoorN = rij.length;
     uit.optiesN = rij.length ? rij[0].opties.length : 0;
     uit.t1Opties = rij.length ? rij[0].opties.every(function (o) { return t1.indexOf(o) !== -1; }) : false;
-    // de vertalingen van dit lied horen er in stap 1 niet te staan
-    uit.t1Vertaling = (sg.oogst || []).filter(function (o) { return t1.indexOf(o.nl) !== -1; }).length;
-    uit.t1Uitleg = (sg.oogst || []).filter(function (o) { return o.u && t1.indexOf(o.u) !== -1; }).length;
+    // de vertalingen van dit lied horen er in stap 1 niet te staan. Gemeten buiten de vaste
+    // stapkop: die instructiezin is gewone Nederlandse lopende tekst ("je hoeft alleen te horen
+    // wat er staat") en botste op 26 aug met de oogst-vertaling "alleen" van No Me Dejes Solo —
+    // een dagafhankelijke valse rode, want welk lied aan de beurt is rouleert per dag.
+    const t1Kaal = (function () {
+      const k = document.getElementById('songView').cloneNode(true);
+      k.querySelectorAll('.kicker').forEach(function (kick) {
+        if (/Stap 1\/3/.test(kick.textContent) && kick.closest('.card')) kick.closest('.card').remove();
+      });
+      return k.textContent.replace(/\s+/g, ' ');
+    })();
+    uit.t1Vertaling = (sg.oogst || []).filter(function (o) { return t1Kaal.indexOf(o.nl) !== -1; }).length;
+    uit.t1Uitleg = (sg.oogst || []).filter(function (o) { return o.u && t1Kaal.indexOf(o.u) !== -1; }).length;
 
     // ---- 3. de afleiders zijn echt ----
     const eigenEs = (sg.oogst || []).map(function (o) { return o.es; });
