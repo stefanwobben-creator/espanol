@@ -145,13 +145,17 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     }
     renderFun();
     uit.eind = {
-      door: !!document.getElementById('btnLesFlowDoor'),
+      /* v23.197: de Door-knop had een id en heeft nu een class, omdat vier schermen hem tekenden
+         en getElementById() de eerste in de pagina gaf in plaats van die op je scherm. Zoek hem
+         daarom binnen de kaart waar hij op staat, precies zoals de app het nu doet. */
+      door: !!document.querySelector('#funCard .lesflow-door'),
       // in je dagles staat er geen "volgende stap": dat is morgen
       volgendeStap: !!document.getElementById('btnLesVerder'),
       opnieuw: !!document.getElementById('btnLesOpnieuw')
     };
     const stapVoorKlik = lesSpel && lesSpel.stap;
-    if (document.getElementById('btnLesFlowDoor')) document.getElementById('btnLesFlowDoor').click();
+    const dk = document.querySelector('#funCard .lesflow-door');
+    if (dk) dk.click();
     uit.naDoor = { stap: lesFlow && lesFlow.stap, lesSpel: !!lesSpel, stapMax: brokLees(lesId(uit.rij)).stapMax };
     uit.stapVoorKlik = stapVoorKlik;
     // en morgen sta je een stap verder

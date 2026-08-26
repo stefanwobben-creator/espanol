@@ -1544,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.201";
+var APP_VERSIE = "v23.202";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13140,10 +13140,10 @@ function renderFunRompecabezas(){
               "<span class='zoekmee'>+" + g.punten + "</span></div>";
           }).join("")
         : "<p class='muted'>" + ct("Geen enkele vorm gemaakt. Volgende keer beter.","No forms built. Next time.") + "</p>") +
-      (inFlow ? "<div class='row' style='margin-top:10px'><button class='primary' id='btnLesFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
+      (inFlow ? "<div class='row' style='margin-top:10px'>" + lesFlowDoorHtml() + "</div>"
               : "<div class='row' style='margin-top:10px'><button class='primary' id='btnRvNieuw'>" + ct("Nog een potje","Another round") + "</button>" +
                 "<button class='ghost' id='btnRvDrill'>" + ct("Oude oefenmodus","Old drill mode") + "</button></div>" + naRondeHtml());
-    if(inFlow){ document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); }; return; }
+    if(inFlow){ lesFlowDoorBind(el); return; }
     document.getElementById("btnRvNieuw").onclick = function(){ rvNieuweRonde(); renderFunRompecabezas(); };
     document.getElementById("btnRvDrill").onclick = function(){ S.rvDrill = 1; persist(); conjRonde = null; conjIdx = null; renderFunConjugadorDrill(); };
     naRondeWire();
@@ -13338,14 +13338,14 @@ function renderConjugadorRondeKlaar(){
       (conjRonde.besteStreak > 1 ? " · 🔥 " + ct("beste streak: ","best streak: ") + conjRonde.besteStreak : "") +
     "</div>"+
     (bonus > 0 ? "<p class='muted'>+" + bonus + " 🫒 " + ct("tapas bonus!","tapas bonus!") + "</p>" : "")+
-    (inFlowCj ? "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
+    (inFlowCj ? "<div class='row'>" + lesFlowDoorHtml() + "</div>"
       : "<div class='row'><button class='primary' id='btnCjNieuweRonde'>" + ct("Nieuwe ronde","New round") + "</button>"+
         "<button class='ghost' id='btnRvTerug'>🧩 " + ct("Terug naar het spel","Back to the game") + "</button>"+
         "<button class='ghost' id='btnFunTerug'>" + funTerugLabel() + "</button></div>") + naRondeHtml();
   el.innerHTML = html;
   naRondeWire();
   if(inFlowCj){
-    document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
+    lesFlowDoorBind(el);
     return;
   }
   document.getElementById("btnCjNieuweRonde").onclick = function(){ conjugadorNieuweRonde(); renderFunConjugadorDrill(); };
@@ -13975,8 +13975,8 @@ function renderQuestion(){
       el.innerHTML = lesFlowBannerHtml()+
         "<span class='kicker'>"+quizTitel(qz)+"</span>"+
         "<p class='big'>"+st.score+" / "+gesteld+"</p><p>"+msg+"</p>"+
-        "<div class='row'><button class='primary' id='btnLesFlowDoor'>"+ct("Door →","Continue →")+"</button></div>";
-      document.getElementById("btnLesFlowDoor").onclick = function(){ lesFlowVolgende(); };
+        "<div class='row'>" + lesFlowDoorHtml() + "</div>";
+      lesFlowDoorBind(el);
       return;
     }
     /* v23.97: onder een matig toetsje stond "lees de spiekbrief en probeer opnieuw", en er was geen
@@ -15745,6 +15745,29 @@ function lesFlowQuizId(){
 function lesFlowStap(){
   try { lesFrameSync(); } catch(e){}
 }
+/* v23.197: de "Door →" knop van de dagles, op één plek.
+
+   Hier stonden zes losse kopieën, waarvan vier met hetzelfde id (btnLesFlowDoor). Drie daarvan
+   wonen in tab-speeltuin, dat in de pagina vóór tab-toetsjes staat, en show() verbergt een tabblad
+   zonder de inhoud weg te gooien. Stond er dus een vormenblok in je dagles, dan bleef die knop
+   staan, gaf document.getElementById() hém in plaats van de knop op de toetsuitslag, en kreeg de
+   knop die je aankeek nooit een klikafhandeling. Dat is de vastloper van 23, 24 en 26 augustus.
+
+   De reparatie is niet "vier verschillende id's" maar "zoek niet in het hele document als je weet
+   in welk element je net getekend hebt". De bind-functie krijgt die container mee en kijkt er
+   niet buiten. Daarmee kan een oude knop in een ander tabblad er per constructie niet meer
+   tussenkomen, en maakt het niet uit hoeveel schermen deze knop tekenen. */
+function lesFlowDoorHtml(label){
+  return "<button class='primary lesflow-door'>" + (label || ct("Door →", "Continue →")) + "</button>";
+}
+function lesFlowDoorBind(el, fn){
+  if(!el) return null;
+  var b = el.querySelector(".lesflow-door");
+  if(!b) return null;
+  b.onclick = fn || function(){ lesFlowVolgende(); };
+  return b;
+}
+
 function lesFlowVolgende(){
   /* v23.169: met een bodem eronder. Zie de kop van de patch: zonder deze try/catch was een fout
      halverwege de flow niet te onderscheiden van een knop die niets doet, en dat is precies wat
@@ -19635,7 +19658,7 @@ function renderFunLes(){
           /* v23.160: in je dagles is dit blok één stap. Er staat dus geen "volgende stap" maar
              "Door", en de volgende stap krijg je morgen. Wie meer wil kan de les altijd los doen. */
           (inFlowLes
-            ? "<button class='primary' id='btnLesFlowDoor'>" + ct("Door \u2192", "Continue \u2192") + "</button>"
+            ? lesFlowDoorHtml()
             : (gehaald && L.stap < LES_STAPPEN.length - 1
                 ? "<button class='primary' id='btnLesVerder'>" + ct("Volgende stap \u2192", "Next step \u2192") + "</button>"
                 : "") +
@@ -19646,8 +19669,7 @@ function renderFunLes(){
       el.innerHTML = html;
       /* de stap gaat af zodra je hem gehaald hebt, ook in de dagles: anders krijg je morgen weer
          dezelfde stap en komt de les nooit vooruit */
-      var bd = document.getElementById("btnLesFlowDoor");
-      if(bd) bd.onclick = function(){ if(gehaald) lesStapAf(); lesSpel = null; lesFlowVolgende(); };
+      lesFlowDoorBind(el, function(){ if(gehaald) lesStapAf(); lesSpel = null; lesFlowVolgende(); });
       var bv = document.getElementById("btnLesVerder");
       if(bv) bv.onclick = function(){ lesStapAf(); L.stap++; L.i = 0; L.goed = 0; L.gekozen = null; L.opties = null; L.over = null; renderFunLes(); };
       var bk = document.getElementById("btnLesKlaar");
@@ -24047,10 +24069,9 @@ function renderSongQuiz(sg, i, score){
     el.innerHTML = "<p class='big'>"+score+"/"+sg.vragen.length+"</p><p class='muted'>"+(score===sg.vragen.length?ct("¡Perfecto! Je luistert als een local. (+"+xpw()+")","¡Perfecto! You listen like a local. (+"+xpw()+")"):ct("Kijk de taaloogst nog eens en luister opnieuw.","Look at the word harvest again and listen once more."))+"</p>"+
       (geoogst ? "<div class='feedback ok'>"+musOogstGedaanTxt(geoogst)+"</div>" : "")+
       (lesFlow && lesFlow.stap === "input" && lesFlow.gekozenSpel === "musica"
-        ? "<div class='row' style='margin-top:8px'><button class='primary' id='btnMusFlowDoor'>"+ct("Door →","Continue →")+"</button></div>"
+        ? "<div class='row' style='margin-top:8px'>" + lesFlowDoorHtml() + "</div>"
         : "");
-    var door = document.getElementById("btnMusFlowDoor");
-    if(door) door.onclick = function(){ lesFlowVolgende(); };
+    lesFlowDoorBind(el);
     return;
   }
   var v = sg.vragen[i];
@@ -27886,7 +27907,7 @@ function renderFunAudicion(){
       audGoed + "/" + sc.vragen.length + ct(" goed"," correct") +
       (audGehoord > 1 ? " · " + audGehoord + ct(" keer geluisterd"," listens") : "") + "</div>" +
       (lesFlow && (lesFlow.stap === "produceren" || lesFlow.stap === "input") && lesFlow.gekozenSpel === "audi"
-        ? "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudFlowDoor'>" + ct("Door →","Continue →") + "</button></div>"
+        ? "<div class='row' style='margin-top:8px'>" + lesFlowDoorHtml() + "</div>"
         : "<div class='row' style='margin-top:8px'><button class='primary' id='btnAudNieuw'>" +
           ct("Volgende scene →","Next scene →") + "</button></div>" + naRondeHtml());
   }
@@ -27897,8 +27918,7 @@ function renderFunAudicion(){
   /* v23.77: terug naar de plank in plaats van blind de volgende scene. Je hebt er net een af; dit
      is precies het moment waarop je wil zien wat dat opende. */
   if(bn) bn.onclick = function(){ audStop(); audMenu = true; renderFunAudicion(); };
-  var bf = document.getElementById("btnAudFlowDoor");
-  if(bf) bf.onclick = function(){ audStop(); persist(); lesFlowVolgende(); };
+  lesFlowDoorBind(el, function(){ audStop(); persist(); lesFlowVolgende(); });
   naRondeWire();
   el.querySelectorAll("[data-aherhaal]").forEach(function(b){
     b.onclick = function(){ audGehoord++; audSpeel(+b.getAttribute("data-aherhaal")); };
