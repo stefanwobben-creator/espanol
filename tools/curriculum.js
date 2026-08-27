@@ -37,8 +37,12 @@ const HART_PAD = path.join(__dirname, "avondrun-hart.json");   // elke nacht een
 
 /* Wat de run vannacht deed, in een bestand. Zonder dit is de enige manier om te zien of de avondrun
    ooit iets heeft geleverd: commits van de bot tellen. Dat is geen meting, dat is archeologie. */
+/* v23.199: mis en kaalVerloop erbij. Ze staan hier expliciet en niet alleen daar waar ze gezet
+   worden, zodat de vorm van de hartslag op één plek te lezen is: dat bestand is 's ochtends het
+   enige wat je opent als er iets niet klopt. */
 const HART = { staat: { wanneer: null, gelukt: false, ladder: null, voorraadDagen: null,
                         beloofd: null, geleverd: null, versie: null, klachten: [],
+                        mis: null, kaalVerloop: null,
                         reden: "de run is niet afgemaakt" } };
 
 /* Elke klacht ging naar stderr en daarmee naar een log dat niemand opent. Nu komt hij er ook in het
@@ -396,6 +400,34 @@ const STIJL = `Stijl-eisen (belangrijk):
   Het antwoord zelf zetten wij er machinaal bij; dat hoef jij niet over te typen. Laat "alt" gerust
   leeg als er geen echte varianten zijn.`;
 
+/* ---------- de beloftes, per stuk nagerekend (v23.199) ----------
+
+   Hier stond een optelling: alle beloftes bij elkaar tegen alle leveringen bij elkaar, en rood
+   alleen als er in totaal niets uit kwam. Vier beloftes in één getal, en dan kan een nacht die het
+   ene deel volledig laat vallen groen zijn omdat het andere deel wel iets opleverde. Dat is precies
+   wat er elf nachten is gebeurd met de kale zinnen: elke nacht beloofd, elke nacht nul geleverd,
+   elke nacht groen.
+
+   Een controle waarin de goede en de foute uitkomst dezelfde waarde krijgen, controleert niets.
+   Dus per soort, en de soorten staan hier één keer opgeschreven in plaats van twee keer verspreid
+   over een optelling. */
+const BELOFTE_SOORTEN = [
+  { sleutel: "gaten",     naam: "de gaten uit het foutenlog", geleverd: g => g.zinnen },
+  { sleutel: "toetsje",   naam: "het nieuwe toetsje",         geleverd: g => g.toetsjes },
+  { sleutel: "kaal",      naam: "de kale zinnen",             geleverd: g => g.kaal },
+  { sleutel: "nieuweLes", naam: "de nieuwe les",              geleverd: g => g.nieuweLes }
+];
+function beloftesNagerekend(beloofd, geleverd) {
+  const b = beloofd || {}, g = geleverd || {};
+  const mis = [];
+  BELOFTE_SOORTEN.forEach(s => {
+    if (!(b[s.sleutel] > 0)) return;                  // niets beloofd, dus niets te missen
+    const n = s.geleverd(g) || 0;
+    if (n === 0) mis.push(s.naam);
+  });
+  return mis;
+}
+
 /* ---------- kale zinnen per tijd (v23.175) ----------
 
    Waarom dit gat niet uit het foutenlog komt zoals alle andere: het is geen gat in wat Stefan fout
@@ -412,6 +444,7 @@ const STIJL = `Stijl-eisen (belangrijk):
 const KAAL_TIJDEN = ["indefinido", "imperfecto", "perfecto", "subjuntivo"];
 const KAAL_DOEL = 16;              // zoveel kale zinnen per tijd zijn genoeg voor vier ronden
 const KAAL_PER_NACHT = 4;
+const KAAL_POGINGEN = 2;           // v23.199: zie de kop bij de kale stap in main()
 
 function kaleGaten(inv) {
   const per = {};
@@ -965,6 +998,37 @@ function zeefKaal(items) {
   return goed;
 }
 
+/* ---------- zelftest van de beloftecontrole (v23.199) ----------
+   Het geval dat elf nachten groen bleef, en het controlegeval ernaast. */
+function zelftestBelofte() {
+  let mis = 0;
+  const proef = (goed, wat) => { console.log((goed ? "  ok   " : "  FOUT ") + wat); if (!goed) mis++; };
+
+  const beloofd = { gaten: 2, toetsje: 1, kaal: 1, nieuweLes: 1 };
+
+  /* precies de nacht van 26 augustus: vijf drillzinnen en een toetsje geleverd, nul kale zinnen.
+     De oude optelling gaf hier groen, want vijf plus een is niet nul. */
+  const echteNacht = beloftesNagerekend(beloofd, { zinnen: 5, toetsjes: 1, kaal: 0, nieuweLes: 1 });
+  proef(echteNacht.length === 1 && /kale zinnen/.test(echteNacht[0]),
+    "de nacht van 26 aug wordt gezien: " + JSON.stringify(echteNacht));
+
+  /* het controlegeval: een nacht waarin alles geleverd is, mag niet rood worden. Zonder deze proef
+     haalt "altijd rood" de proef hierboven ook. */
+  proef(beloftesNagerekend(beloofd, { zinnen: 5, toetsjes: 1, kaal: 4, nieuweLes: 1 }).length === 0,
+    "een volledige nacht blijft groen");
+
+  /* en wat niet beloofd is, kan niet missen */
+  proef(beloftesNagerekend({ gaten: 2, toetsje: 0, kaal: 0, nieuweLes: 0 },
+                           { zinnen: 5, toetsjes: 0, kaal: 0, nieuweLes: 0 }).length === 0,
+    "een soort die niet beloofd was telt niet mee");
+
+  /* alles beloofd en niets geleverd blijft rood, en noemt alle vier de soorten */
+  proef(beloftesNagerekend(beloofd, { zinnen: 0, toetsjes: 0, kaal: 0, nieuweLes: 0 }).length === 4,
+    "een lege nacht noemt alle vier de soorten");
+
+  return mis;
+}
+
 /* ---------- zelftest van de zeef (v23.177) ----------
    Draait in de avondrun, met precies de twee zinnen die run #25 lieten klappen. */
 function zelftestZeef() {
@@ -1031,7 +1095,7 @@ function zelftestZeef() {
 /* ================= 4. uitvoeren ================= */
 
 async function main() {
-  if (OPT.zelftest) return zelftestZeef();   // v23.177
+  if (OPT.zelftest) return zelftestZeef() + zelftestBelofte();   // v23.177, v23.199
   const inv = lib.inventaris();
   const logboek = leesLogs();
   const an = analyseer(logboek, inv);
@@ -1116,10 +1180,27 @@ async function main() {
   if (kaal.length) try {
     const gat = kaal[0];
     const n = Math.min(KAAL_PER_NACHT, gat.tekort);
-    console.log(`  ${gat.tag}: ${n} kale zinnen maken…`);
-    const ruw = zeefKaal(await maakZinnen(gat, n, inv, reparatie.sentences, motor));
-    const goed = await keurZinnen(ruw, motor);
-    if (!goed.length) console.error(`    ${gat.tag}: niets overgebleven`);
+    /* v23.199: twee pogingen. De zeef is met opzet ruim ("fout naar de veilige kant is afkeuren",
+       zie TIJDSWOORDEN in content-lib), en een model dat een natuurlijke verledentijdszin schrijft
+       grijpt naar ayer, una vez, el otro día. Eén keer opnieuw vragen is wat een mens zou doen en
+       het kost een halve minuut. Blijft het dán leeg, dan is er iets anders aan de hand en hoort de
+       nacht dat te melden in plaats van te blijven proberen.
+
+       En het telwerk per stap gaat de hartslag in. Tot nu toe verdwenen de afkeuringen van zeefKaal
+       in stderr, en dus wist niemand 's ochtends of het de zeef was of de tegenlezer. Elf nachten
+       lang was dat het verschil tussen "ik weet het" en "ik gok". */
+    let goed = [], telling = [];
+    for (let poging = 1; poging <= KAAL_POGINGEN && !goed.length; poging++) {
+      console.log(`  ${gat.tag}: ${n} kale zinnen maken…` + (poging > 1 ? ` (poging ${poging})` : ""));
+      const gemaakt = await maakZinnen(gat, n, inv, reparatie.sentences, motor);
+      const gezeefd = zeefKaal(gemaakt);
+      goed = await keurZinnen(gezeefd, motor);
+      telling.push({ poging, gemaakt: gemaakt.length, naZeef: gezeefd.length, naKeuring: goed.length });
+    }
+    HART.staat.kaalVerloop = telling;
+    telling.forEach(t => console.log(
+      `    poging ${t.poging}: ${t.gemaakt} gemaakt → ${t.naZeef} door de zeef → ${t.naKeuring} door de tegenlezer`));
+    if (!goed.length) console.error(`    ${gat.tag}: niets overgebleven na ${telling.length} poging(en)`);
     else {
       /* NIET aan een les hangen, om dezelfde reden als het toetsje hieronder: een extra zin
          in de lesindeling verhoogt de eis om de volgende les te ontgrendelen. Deze zinnen
@@ -1196,11 +1277,13 @@ async function main() {
      content-lib niet haalt. Elk van die paden schreef een klacht naar stderr en liep door, en de run
      eindigde groen met "geen wijzigingen". Vanaf nu geldt: wat het besluit beloofde, moet er zijn.
      Nul geleverd op een gevulde belofte is een mislukte nacht en die hoort rood te zijn. */
+  /* v23.199: per soort, niet op de som. Zie de kop van beloftesNagerekend(). */
   const b = HART.staat.beloofd || { gaten: 0, toetsje: 0, kaal: 0, nieuweLes: 0 };
   const beloofd = b.gaten + b.toetsje + (b.kaal || 0) + b.nieuweLes;
-  const geleverd = reparatie.sentences.length + reparatie.quizzes.length + (nieuweLes ? 1 : 0);
-  if (beloofd > 0 && geleverd === 0) {
-    HART.staat.reden = "het besluit vroeg om " + beloofd + " stuk(ken) werk en er is niets van weggeschreven";
+  const mis = beloftesNagerekend(b, HART.staat.geleverd);
+  if (mis.length) {
+    HART.staat.mis = mis;
+    HART.staat.reden = "beloofd en niet geleverd: " + mis.join(", ");
     console.error("MISLUKT: " + HART.staat.reden + ". Kijk hierboven welk onderdeel afhaakte.");
     return 1;
   }
