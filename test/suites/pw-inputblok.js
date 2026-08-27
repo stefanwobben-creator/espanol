@@ -18,7 +18,10 @@
 //
 // WAT DEZE SUITE BEWAAKT
 //
-//   1. HET BLOK ZIT IN DE LES. Na het toetsje komt lezen of luisteren, en pas daarna het schrijven.
+//   1. HET BLOK ZIT IN DE LES. v23.200: na het toetsje komt eerst het SCHRIJVEN en dan pas lezen of
+//      luisteren. Dat is een omkering van v23.140 en geen reparatie: gemeten over Stefans 38 dagen
+//      werden de inputblokken 29 keer bereikt en de productieblokken 8 keer, terwijl productie
+//      vrijwel dagelijks wordt aangeboden. Het korte blok stond achter het lange te wachten.
 //   2. EN IN HET PLAN, VOORAF. Wie op Vandaag kijkt ziet het staan voordat hij begint. Een blok dat
 //      halverwege opduikt is precies de verrassing waar je op afhaakt.
 //   3. DE APP KIEST. Even dagen lezen, oneven luisteren. Zelf kiezen betekent nooit luisteren.
@@ -79,22 +82,27 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const kaart = document.querySelector('#tab-lessen .card');
     uit.scherm = kaart ? kaart.textContent.replace(/\s+/g, ' ') : '';
 
-    // ---- 1. het blok zit in de les, na het toetsje en voor het schrijven ----
+    /* ---- 1. het blok zit in de les ----
+       v23.200: na het toetsje komt het schrijven, en het inputblok staat daar weer achter. */
     lesFlowStart();
     lesFlow.stap = 'toetsjes';
     lesFlow.quizzesTeDoen = [];
     lesFlowVolgendeKern();
     uit.naToets = lesFlow ? lesFlow.stap : null;
     uit.naToetsV = lesFlow ? lesFlow.vaardigheid : null;
-    uit.naam = lesFlowStapNaam();
-    uit.num = lesFlowStapNum();
-    uit.tot = lesFlowStapTotaal();
+    uit.zinnen = lesFlow ? lesFlow.vertalenTeGaan : null;
 
-    // ---- 5. je komt er ook weer uit ----
+    // ---- 5. en daarna komt het inputblok ----
     lesFlowVolgendeKern();
     uit.naInput = lesFlow ? lesFlow.stap : null;
     uit.naInputV = lesFlow ? lesFlow.vaardigheid : null;
-    uit.zinnen = lesFlow ? lesFlow.vertalenTeGaan : null;
+    uit.naam = lesFlowStapNaam();
+    uit.num = lesFlowStapNum();
+    uit.tot = lesFlowStapTotaal();
+    /* v23.200: de vaardigheid wordt genoteerd bij het VERLATEN van het inputblok, en sinds deze
+       versie is dat het einde van de les in plaats van de overgang naar het schrijven. Dus nog één
+       stap verder voordat we kijken. */
+    lesFlowVolgendeKern();
     uit.gedaan = S.lesFlowSpel ? Object.keys(S.lesFlowSpel) : [];
 
     // ---- 4. is er niets, dan is er niets ----
@@ -120,22 +128,22 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- 2. het blok staat in het plan, vooraf --');
   ok(r.stappen.indexOf('input') !== -1, 'het plan kent de stap (nu: ' + JSON.stringify(r.stappen) + ')');
-  ok(r.stappen.indexOf('input') === r.stappen.indexOf('toetsjes') + 1 ||
-     r.stappen.indexOf('toetsjes') === -1, 'en hij staat na het toetsje');
-  ok(r.stappen.indexOf('input') < r.stappen.indexOf('produceren'), 'en vóór het schrijven');
+  ok(r.stappen.indexOf('input') > r.stappen.indexOf('toetsjes'), 'en hij staat na het toetsje');
+  ok(r.stappen.indexOf('input') > r.stappen.indexOf('produceren'),
+     'en ná het schrijven (v23.200: het korte blok wacht niet meer op het lange)');
   ok(r.blok && r.blok.min >= 1, 'met minuten erbij (nu: ' + (r.blok || {}).min + ')');
   ok(r.scherm.indexOf(r.blok ? r.blok.naam : 'zzz') !== -1, 'en het staat op Vandaag voordat je begint');
 
   console.log('\n-- 1. het blok zit in de les --');
-  ok(r.naToets === 'input', 'na het toetsje komt het inputblok (nu: ' + r.naToets + ')');
-  ok(r.naToetsV === r.keuze, 'met de vaardigheid van vandaag (nu: ' + r.naToetsV + ')');
-  ok(/Lezen|Luisteren/.test(r.naam), 'de banner noemt het bij naam (nu: "' + r.naam + '")');
-  ok(r.num === r.tot - 1, 'en het is de een-na-laatste stap (nu: ' + r.num + ' van ' + r.tot + ')');
-
-  console.log('\n-- 5. je komt er ook weer uit --');
-  ok(r.naInput === 'produceren', 'daarna het schrijven (nu: ' + r.naInput + ')');
-  ok(r.naInputV === 'schrijven', 'en dat is echt schrijven (nu: ' + r.naInputV + ')');
+  ok(r.naToets === 'produceren', 'na het toetsje komt het schrijven (nu: ' + r.naToets + ')');
+  ok(r.naToetsV === 'schrijven', 'en dat is echt schrijven (nu: ' + r.naToetsV + ')');
   ok(r.zinnen >= 1, 'met zinnen om te maken (nu: ' + r.zinnen + ')');
+
+  console.log('\n-- 5. en daarna het inputblok --');
+  ok(r.naInput === 'input', 'daarna komt lezen of luisteren (nu: ' + r.naInput + ')');
+  ok(r.naInputV === r.keuze, 'met de vaardigheid van vandaag (nu: ' + r.naInputV + ')');
+  ok(/Lezen|Luisteren/.test(r.naam), 'de banner noemt het bij naam (nu: "' + r.naam + '")');
+  ok(r.num === r.tot, 'en het is nu de laatste stap (nu: ' + r.num + ' van ' + r.tot + ')');
   ok(r.gedaan.indexOf(r.keuze) !== -1, 'de vaardigheid is als gedaan genoteerd, dus morgen komt de andere');
 
   console.log('\n-- 4. het controlegeval: is er niets, dan is er niets --');

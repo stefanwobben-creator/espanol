@@ -95,9 +95,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.tweedeKeer = musOogstBij(sg);
     uit.gedaan = musGedaan(sg);
 
-    // ---- 5. en je komt er weer uit ----
+    /* ---- 5. en je komt er weer uit ----
+       v23.200: na het toetsje komt eerst het schrijven, en het lied staat daar weer achter. Zie de
+       kop van pw-inputblok voor waarom die twee zijn omgedraaid. */
     lesFlowStart();
     lesFlow.stap = 'toetsjes'; lesFlow.quizzesTeDoen = [];
+    lesFlowVolgendeKern();
+    uit.stapNaToets = lesFlow.stap;
     lesFlowVolgendeKern();
     uit.stapNaInput = lesFlow.stap;
     uit.vaardigheid = lesFlow.vaardigheid;
@@ -142,11 +146,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(r.gedaan, 'en het lied telt als gedaan, dus morgen komt er een ander');
 
   console.log('\n-- 5. en je komt er weer uit --');
-  ok(r.stapNaInput === 'input', 'na het toetsje komt het inputblok (nu: ' + r.stapNaInput + ')');
+  ok(r.stapNaToets === 'produceren', 'na het toetsje komt het schrijven (nu: ' + r.stapNaToets + ')');
+  ok(r.stapNaInput === 'input', 'en dáárna het inputblok (nu: ' + r.stapNaInput + ')');
   ok(r.vaardigheid === 'musica', 'met het lied als vaardigheid (nu: ' + r.vaardigheid + ')');
   ok(r.gekozenSpel === 'musica', 'en het lied staat echt open (nu: ' + r.gekozenSpel + ')');
   ok(r.banner === 'Liedje', 'de banner noemt het bij naam (nu: "' + r.banner + '")');
-  ok(r.naLied === 'produceren', 'en daarna ga je door naar het schrijven (nu: ' + r.naLied + ')');
+  ok(r.naLied === 'klaar', 'en na het lied is de les klaar (nu: ' + r.naLied + ')');
 
   // Escuchar kende de stap "input" niet: dat was de doodlopende weg uit v23.140
   const audi = await page.evaluate(() => {

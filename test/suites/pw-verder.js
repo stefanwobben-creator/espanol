@@ -230,7 +230,13 @@ async function bewaard(page) {
   await page.evaluate(() => { lesFlowStart(); });
   await page.waitForTimeout(500);
   ok(!!(await bewaard(page)), 'er staat weer een herstelpunt');
-  await page.evaluate(() => { lesFlow.stap = 'produceren'; lesFlow.vaardigheid = null; lesFlow.vaardigheidRij = []; lesFlowVolgende(); });
+  /* v23.200: het schrijven staat sinds deze versie vóór het lees- of luisterblok, dus na
+     "produceren" kan er nog één stap komen. De bewering gaat over het herstelpunt aan het EIND van
+     de les, dus lopen we door tot de les echt afgelopen is in plaats van tot een vaste stap. */
+  await page.evaluate(async () => {
+    lesFlow.stap = 'produceren'; lesFlow.vaardigheid = null; lesFlow.vaardigheidRij = [];
+    for (let i = 0; i < 4 && lesFlow; i++) lesFlowVolgende();
+  });
   await page.waitForTimeout(800);
   ok((await bewaard(page)) === null, 'na het afronden van de les is het herstelpunt opgeruimd');
 

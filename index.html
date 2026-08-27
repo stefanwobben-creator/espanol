@@ -1544,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.204";
+var APP_VERSIE = "v23.205";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -11145,6 +11145,43 @@ function stripAcc(s){
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 }
 
+/* ================= WELKE STAND HIELP (v23.200) =================
+   Stefan, 27 aug: "ik heb trouwens idee dat zinnen maken, typen ook heel goed werkt."
+
+   Dat was niet te toetsen. Een zin draagt wel of hij gehaald is en of er een fout open staat, maar
+   niet in wélke stand het goede antwoord kwam. Zonder dat veld blijft "typen werkt beter dan
+   tegels" een gevoel, en een gevoel is geen grond om de steiger korter te maken.
+
+   Eén regel per zin, overschreven bij elk goed antwoord: welke stand, en wanneer. Over twee weken
+   is de vraag te beantwoorden op zijn eigen data: van de zinnen die het laatst via typen goed
+   gingen, hoeveel hebben er sindsdien een nieuwe fout opgelopen, tegenover die via tegels?
+
+   Bewust niet per woord maar per zin. De zin is waar de stand aan hangt; een woord kan uit drie
+   verschillende oefeningen omhoog komen en dan meet je een mengsel. */
+function zinRouteBij(id, modus){
+  try {
+    if(!id) return;
+    S.zinRoute = S.zinRoute || {};
+    S.zinRoute[id] = {r: modus === "moeilijk" ? "typ" : "tegel", d: today()};
+  } catch(e){}                       // een meter mag de app nooit omver duwen
+}
+/* Wat er van die reeks te zeggen valt, op één plek zodat het scherm en een latere ronde hetzelfde
+   getal lezen. Een zin telt als "weer misgegaan" als er ná de goede beurt een fout is bijgekomen. */
+function zinRouteStand(){
+  var uit = {typ:{n:0, mis:0}, tegel:{n:0, mis:0}};
+  try {
+    var r = S.zinRoute || {}, id;
+    for(id in r){
+      var e = r[id], vak = e && uit[e.r];
+      if(!vak) continue;
+      vak.n++;
+      var f = S.errors["zin:" + id];
+      if(f && f.count > 0 && f.dag && f.dag > e.d) vak.mis++;
+    }
+  } catch(e){}
+  return uit;
+}
+
 var sIdx = null;
 function sAdaptiefModus(s){
   /* v21.4: de makkelijke stand was meerkeuze tussen vier hele zinnen, en die kun je vaak raden op
@@ -11664,12 +11701,14 @@ function checkSentence(){
     html = "<div class='feedback ok'>¡Perfecto! ✓ (+"+xpExact+" "+xpw()+")</div>";
     S.done[s.id] = true; gehaald = true; addXP(xpExact);
     foutGoedeBeurt(s.id, "zin");   // v23.94
+    zinRouteBij(s.id, modus);      // v23.200: welke stand hielp
     if(modus === "moeilijk"){ compMark("schrijven", s.id); S.getypt = getyptN() + 1; }
     trackPoging(false);
   } else if(loose){
     html = "<div class='feedback bijna'>"+ct("Bijna! Alleen de accenten: ","Almost! Just the accents: ")+"<b>"+s.es+"</b> (+4 "+xpw()+")</div>";
     S.done[s.id] = true; gehaald = true; addXP(4); compMark("schrijven", s.id); trackPoging(false);
     foutGoedeBeurt(s.id, "zin");   // v23.94
+    zinRouteBij(s.id, modus);      // v23.200: een accentfout is nog steeds productie
   } else {
     var d = bestDiff(given, s);
     /* v23.101 (punt 34): hier eindigde het. De zin kreeg een strafregistratie en de regel erachter
@@ -15264,21 +15303,14 @@ function dagPlan(){
     blokken.push({stap:"toetsjes", naam:ct("Toetsje","Quiz"), draad:ct("sneller","fluency"),
       wat:qn + " " + ct("vragen","questions"), sec:qn * sec});
   }
-  /* v23.140: de derde draad. Tussen het toetsje en het schrijven, want het is input en input hoort
-     vóór wat je er zelf mee doet. De tijd is een kwart van je dag, hetzelfde budget dat
-     vaardigheidTijd() al aan een vaardigheidsblok gaf. */
+  /* v23.140: de derde draad. v23.200: verhuisd naar ACHTER het schrijven. De oude kop hier zei
+     "input hoort vóór wat je er zelf mee doet", en dat klopt binnen één sessie, maar alleen als je
+     ze allebei haalt. Gemeten over Stefans 38 dagen: lezen 16 keer geopend, vertalen 4 keer. Het
+     korte blok hoort niet achter het lange te wachten. Deze volgorde loopt gelijk met
+     lesFlowVolgendeKern(); pw-dagvolgorde bewaakt dat ze niet uit elkaar lopen. De tijd is een
+     kwart van je dag, hetzelfde budget dat vaardigheidTijd() al aan een vaardigheidsblok gaf. */
   var inputV = null;
   try { inputV = lesFlowInputKeuze(); } catch(e){ inputV = null; }
-  if(inputV){
-    var musDag = inputV === "musica" ? musVanDag() : null;
-    blokken.push({stap:"input", draad:ct("begrijpen","input"),
-      naam: inputV === "musica" ? ct("Liedje","Song")
-          : inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
-      wat: inputV === "musica" ? (musDag ? musDag.titel : "M\u00fasica")
-         : inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
-                              : ct("een gesprek","one conversation"),
-      sec: doelMinuten() * 60 * 0.25, vaardigheid: inputV});
-  }
   /* v23.150: om de dag is het schrijfblok een gesprek. Allebei zelf iets maken, maar bij vertalen
      ligt de zin vast en bij praten kies je zelf wat je zegt. */
   var praat = false;
@@ -15298,6 +15330,16 @@ function dagPlan(){
   } else if(kanSchrijven){
     blokken.push({stap:"produceren", naam:ct("Schrijven","Writing"), draad:ct("zelf maken","output"),
       wat:SCHRIJF_PER_LES + " " + ct("zinnen","sentences"), sec:SCHRIJF_PER_LES * SCHRIJF_SEC});
+  }
+  if(inputV){
+    var musDag = inputV === "musica" ? musVanDag() : null;
+    blokken.push({stap:"input", draad:ct("begrijpen","input"),
+      naam: inputV === "musica" ? ct("Liedje","Song")
+          : inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
+      wat: inputV === "musica" ? (musDag ? musDag.titel : "M\u00fasica")
+         : inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
+                              : ct("een gesprek","one conversation"),
+      sec: doelMinuten() * 60 * 0.25, vaardigheid: inputV});
   }
   var tot = 0;
   blokken.forEach(function(b, i){
@@ -16017,26 +16059,19 @@ function lesFlowVolgendeKern(){
     // vijf tot tien zinnen ná het punt waarop je al klaar was. Drie zinnen is iets anders dan tien,
     // en het staat nu ín de les in plaats van erachter. Zelf iets produceren is bovendien het enige
     // moment van de dag waarop je het Spaans uit je hoofd moet halen in plaats van herkennen.
-    /* v23.140: eerst input, dan pas zelf iets maken. lesFlowOpenProductie() weet sinds v20.5 al hoe
-       het een hoofdstuk of een luisterscene opent; die machinerie wordt hier hergebruikt. */
-    var inputV = null;
-    try { inputV = lesFlowInputKeuze(); } catch(e){ inputV = null; }
-    if(inputV){
-      lesFlow.stap = "input";
-      lesFlow.vaardigheid = inputV;
-      lesFlow.vaardigheidRij = [];
-      lesFlowOpenProductie();
-      return;
-    }
+    /* v23.200: het schrijven ging hier ná het leesblok, en dat is omgedraaid.
+
+       v23.140 zette input bewust eerst ("eerst input, dan pas zelf iets maken"), en die redenering
+       klopt binnen één sessie, maar alleen als je ze allebei haalt. Gemeten over Stefans 38 dagen:
+       lezen 16 keer geopend, vertalen 4 keer. Hij haalt ze niet allebei, en dan wint het blok dat
+       vooraan staat.
+
+       Dit is dus een omkering van een eerdere beslissing en geen reparatie van een fout. De grond
+       eronder is niet "productie hoort voor input" maar: drie zinnen typen duurt twee minuten en
+       een hoofdstuk lezen een kwartier, en het korte blok hoort niet achter het lange te wachten.
+       Zeker niet als het het enige moment van de dag is waarop je het Spaans zelf moet ophalen. */
     if(lesFlowNaarProduceren()) return;   // v23.150
-    lesFlowKlaar();
-    return;
-  }
-  /* v23.140: klaar met lezen of luisteren, door naar het schrijven. Dezelfde afhandeling als
-     hieronder, maar met een vaste volgende stap in plaats van een rij vaardigheden. */
-  if(lesFlow.stap === "input"){
-    if(lesFlow.vaardigheid) S.lesFlowSpel[lesFlow.vaardigheid] = today();
-    if(lesFlowNaarProduceren()) return;   // v23.150
+    if(lesFlowNaarInput()) return;        // v23.200
     lesFlowKlaar();
     return;
   }
@@ -16049,9 +16084,32 @@ function lesFlowVolgendeKern(){
       lesFlowOpenProductie();
       return;
     }
+    /* v23.200: en dán het leesblok, in plaats van klaar. Zo blijft de derde draad in de les staan;
+       hij staat alleen niet meer vóór het stuk waar je het Spaans zelf moet maken. */
+    if(lesFlowNaarInput()) return;
     lesFlowKlaar();
     return;
   }
+  if(lesFlow.stap === "input"){
+    if(lesFlow.vaardigheid) S.lesFlowSpel[lesFlow.vaardigheid] = today();
+    lesFlowKlaar();
+    return;
+  }
+}
+
+/* v23.200: en één plek die het leesblok opent, om precies dezelfde reden als hieronder. Sinds het
+   schrijven vóór het lezen komt wordt deze stap vanaf twee plekken bereikt (na het toetsje als er
+   niets te schrijven is, en na het schrijven), en twee kopieën van deze vier regels zouden na één
+   ronde uit elkaar lopen. Geeft terug of er iets geopend is. */
+function lesFlowNaarInput(){
+  var v = null;
+  try { v = lesFlowInputKeuze(); } catch(e){ v = null; }
+  if(!v) return false;
+  lesFlow.stap = "input";
+  lesFlow.vaardigheid = v;
+  lesFlow.vaardigheidRij = [];
+  lesFlowOpenProductie();
+  return true;
 }
 
 // De lengte van elk blok komt uit je tijdbudget: bij 30 minuten zeven zinnen dictado, bij 5 twee.

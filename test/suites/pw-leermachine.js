@@ -239,6 +239,10 @@ const { chromium } = require('playwright');
       lesFlow.vertalenTeGaan--;
       if (lesFlow.vertalenTeGaan <= 0) { S.lesFlowSpel.vertalen = today(); lesFlowVolgende(); }
     }
+    /* v23.200: het schrijven staat sinds deze versie vóór het lees- of luisterblok, dus daarna kan
+       er nog één stap komen. De bewering van deze suite gaat over waar de VERPLICHTE les eindigt,
+       en die eindigt nog steeds vanzelf; hij eindigt alleen een blok later. */
+    for (let i = 0; i < 3 && lesFlow && lesFlow.stap === 'input'; i++) lesFlowVolgende();
     const feest = document.getElementById('feestWrap');
     if (feest && feest.remove) feest.remove();
     return { naToets, flowWeg: lesFlow === null, tekst: document.getElementById('lessonList').innerText };
@@ -246,7 +250,7 @@ const { chromium } = require('playwright');
   ok(stopt.naToets.spel === 'vertalen' && stopt.naToets.zinnen === 3,
     'na de toets volgen drie zinnen schrijven (' + stopt.naToets.spel + ', ' + stopt.naToets.zinnen + ')');
   ok(stopt.naToets.spel !== 'dictado', 'en geen verplicht dictado-blok');
-  ok(stopt.flowWeg === true, 'daarna is de les klaar');
+  ok(stopt.flowWeg === true, 'en daarna loopt de les vanzelf af, zonder ergens te blijven hangen');
   // let op de /i: de kicker staat in CSS op text-transform, dus innerText leest hem in kapitalen
   ok(/les afgerond|session complete/i.test(stopt.tekst), 'en je krijgt het afgerond-scherm');
 

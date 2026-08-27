@@ -91,10 +91,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const kaart = document.querySelector('#tab-lessen .card');
     uit.dagscherm = kaart ? kaart.textContent.replace(/\s+/g, ' ') : '';
 
-    // ---- 1. het is een blok in je les ----
+    /* ---- 1. het is een blok in je les ----
+       v23.200: het productieblok komt sinds deze versie na het TOETSJE en niet meer na het
+       lees- of luisterblok; die twee zijn omgedraaid omdat de inputblokken 29 keer werden bereikt
+       en de productieblokken 8. De claim van deze suite verandert niet (praten neemt om de dag de
+       plaats van schrijven in), alleen de stap waarvandaan je er komt. */
     lesFlowStart();
-    lesFlow.stap = 'input';
-    lesFlow.vaardigheid = 'lezen';
+    lesFlow.stap = 'toetsjes';
+    lesFlow.quizzesTeDoen = [];
     lesFlowVolgendeKern();
     uit.naInput = { stap: lesFlow.stap, v: lesFlow.vaardigheid, spel: lesFlow.gekozenSpel };
     uit.banner = lesFlowStapNaam();
@@ -117,7 +121,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const b2 = p2.blokken.filter(function (b) { return b.stap === 'produceren'; })[0];
     uit.evenBlok = b2 ? b2.naam : null;
     lesFlow = null; lesFlowStart();
-    lesFlow.stap = 'input'; lesFlow.vaardigheid = 'lezen';
+    lesFlow.stap = 'toetsjes'; lesFlow.quizzesTeDoen = [];
     lesFlowVolgendeKern();
     uit.evenNaInput = { v: lesFlow.vaardigheid, spel: lesFlow.gekozenSpel };
 

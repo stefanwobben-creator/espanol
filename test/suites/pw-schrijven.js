@@ -44,11 +44,15 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   });
   ok(na.stap === 'produceren' && na.vaardigheid === 'schrijven', 'de les gaat door naar schrijven (' + na.stap + '/' + na.vaardigheid + ')');
   ok(na.zichtbaar, 'en het scherm staat open');
-  /* v23.140: schrijven is niet meer stap 4 maar de laatste stap, en hoeveel dat er zijn hangt af
-     van of er vandaag iets te lezen of te luisteren is. De bewering blijft: schrijven sluit de les
-     af en heet Schrijven. */
-  ok(na.num === na.tot && /Schrijven/.test(na.naam || ''),
-    'het is de laatste stap en heet Schrijven (' + na.num + ' van ' + na.tot + ', ' + na.naam + ')');
+  /* v23.140 maakte schrijven de laatste stap; v23.200 zet hem juist vóór het lees- of luisterblok.
+     Reden: gemeten over Stefans 38 dagen werden de inputblokken 29 keer bereikt en de
+     productieblokken 8 keer, terwijl productie vrijwel dagelijks wordt aangeboden. Het korte blok
+     stond achter het lange te wachten. De bewering die overblijft is niet "schrijven is laatste"
+     maar "schrijven staat er en heet Schrijven". */
+  ok(/Schrijven/.test(na.naam || ''),
+    'de stap heet Schrijven (' + na.num + ' van ' + na.tot + ', ' + na.naam + ')');
+  ok(na.num < na.tot || na.num === na.tot,
+    'en hij heeft een plek in de rij (' + na.num + ' van ' + na.tot + ')');
 
   console.log('\n-- drie zinnen, niet tien --');
   ok(na.vast === 3, 'SCHRIJF_PER_LES is 3 (' + na.vast + ')');
@@ -70,8 +74,12 @@ const U = 'http://localhost:8321/espanol-stefan.html';
              schrijvenGehad: (S.lesFlowSpel || {}).schrijven === today() ||
                              (S.lesFlowSpel || {}).vertalen === today() };
   });
-  ok(af.flow === null, 'de les is afgelopen na de derde zin');
-  ok(af.klaar, 'en telt als afgemaakte dagles');
+  /* v23.200: na de derde zin is de les niet meer per se klaar; er kan nog een lees- of luisterblok
+     achteraan komen. Wat wél moet gelden is dat het schrijven is afgerond en de les doorloopt in
+     plaats van hier te blijven hangen. */
+  ok(af.flow === null || af.flow === 'input',
+    'na de derde zin gaat de les door of is hij klaar (nu: ' + af.flow + ')');
+  ok(af.schrijvenGehad, 'en het schrijven is genoteerd als gedaan vandaag');
   ok(af.schrijvenGehad, 'schrijven staat vandaag afgevinkt, dus je krijgt het niet nog eens voorgesteld');
 
   console.log('\n-- zonder zinnen valt de les niet stil --');
