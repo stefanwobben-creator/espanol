@@ -72,6 +72,12 @@ jobs:
         with:
           node-version: "20"
 
+      # 28 augustus: waar stond main toen wij begonnen? Zonder dit punt kan de stap onderaan niet
+      # zien of er tijdens de run iemand anders heeft gepubliceerd.
+      - name: Waar main stond bij de start
+        id: start
+        run: echo "hoofd=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Analyse (altijd, ook zonder sleutel)
         run: node tools/curriculum.js --analyse
 
@@ -91,6 +97,11 @@ jobs:
       # de twee zinnen die run #25 lieten stranden.
       - name: Zelftest van de zeef
         run: node tools/curriculum.js --zelftest
+
+      # 28 augustus: de regel die bepaalt of een klapper een tweede worp krijgt. Zie de kop van
+      # tools/avondrun-herkansing.js: dat onderscheid liep vijf nachten om de herkansing heen.
+      - name: Zelftest van de herkansing
+        run: node tools/avondrun-herkansing.js --zelftest
 
       # v23.179: de samenvoeging van het manifest. Zonder deze stap kan de regel "main wint waar
       # main een regel heeft" ongemerkt omklappen, en dan overschrijft de nachtrun de beschrijving
@@ -354,11 +365,70 @@ jobs:
           fi
           git push
 
+      # 28 AUGUSTUS: DE HARTSLAG MOET ERGENS STAAN WAAR HIJ NIET KAN VERDWIJNEN
+      #
+      # De hartslag is het enige kanaal waarlangs deze run vertelt wat er misging, en hij hing tot nu
+      # toe volledig aan een push. Die push zit achter `git pull --rebase`, en als die rebase mislukt
+      # eindigt de stap met een ::warning:: en exitcode 0: groen, en de hartslag blijft liggen.
+      # Gemeten op 28 augustus: tools/avondrun-hart.json op main dateert van 23 augustus, terwijl er
+      # sindsdien vijf runs waren. Vijf nachten lang was er dus geen enkele manier om te zien waarom.
+      #
+      # Een meldkanaal dat stil kan wegvallen is geen meldkanaal. De samenvatting van de run staat
+      # altijd op de pagina van die run, hangt aan niets, en overleeft elke mislukte push.
+      - name: Hartslag in de samenvatting
+        if: always()
+        run: |
+          {
+            echo "## Hartslag van deze run"
+            echo ""
+            echo '```json'
+            cat tools/avondrun-hart.json 2>/dev/null || echo '{"reden":"curriculum.js heeft geen hartslag weggeschreven"}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 28 AUGUSTUS: HEEFT IEMAND ANDERS ONDERTUSSEN GEPUBLICEERD?
+      #
+      # Er bleken twee nachtsystemen op deze repo te werken: deze Action (committer curriculum-bot)
+      # en een geplande Claude-taak van 22 juli (committer claude-nachttaak / "Claude (nachtrun)").
+      # De taak draaide om 02:00 UTC, deze Action om 02:50, allebei met dezelfde opdracht. Niemand
+      # merkte dat deze Action stukstond, want de inhoud verscheen toch wel: door de ander.
+      #
+      # Twee systemen die hetzelfde doen is de fout, en die is opgelost door de taak uit te zetten.
+      # Deze stap is de bewaking eromheen: verschijnt er tijdens de run een commit op main die niet
+      # van deze Action is, dan hoort dat op het scherm te staan in plaats van zich te uiten als een
+      # onverklaarbare rode run.
+      - name: Is main onder ons verschoven?
+        if: always()
+        run: |
+          git fetch origin main --quiet || exit 0
+          NU=$(git rev-parse FETCH_HEAD)
+          if [ "$NU" != "${{ steps.start.outputs.hoofd }}" ]; then
+            ANDER=$(git log --format='%an: %s' "${{ steps.start.outputs.hoofd }}..$NU" 2>/dev/null | grep -v 'curriculum-bot' | head -5)
+            if [ -n "$ANDER" ]; then
+              echo "::warning::main is tijdens deze run verschoven door iemand anders:"
+              echo "$ANDER"
+              {
+                echo "## Let op: main verschoof tijdens deze run"
+                echo ""
+                echo "Er is gepubliceerd door iets anders dan deze Action:"
+                echo ""
+                echo '```'
+                echo "$ANDER"
+                echo '```'
+                echo ""
+                echo "Twee systemen die dezelfde repo onderhouden verklaren rode runs die verder nergens op slaan."
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
       # Pas hier valt de run om. Alles hierboven heeft dan zijn werk gedaan: het bewijs is bewaard,
       # de hartslag staat op main, en de samenvatting vertelt welke suites rood waren.
       - name: Rood afsluiten als er niets gepubliceerd is
         if: steps.run.outcome == 'failure'
         run: |
           echo "De avondrun heeft niets gepubliceerd (${{ steps.run.outputs.wat }})."
-          echo "Het spoor van elke afgekeurde poging staat als artefact bij deze run."
+          # 28 augustus: hier stond alleen "kijk in het artefact", en het artefact is precies wat
+          # niemand opent. De reden staat in de hartslag en die is één regel; die hoort hier.
+          node -e "try{const h=require('./tools/avondrun-hart.json');console.log('Reden: '+(h.reden||'geen reden opgeschreven'));if(h.mis)console.log('Beloofd en niet geleverd: '+h.mis.join(', '));if(h.kaalVerloop)console.log('Kale zinnen: '+JSON.stringify(h.kaalVerloop));}catch(e){console.log('Geen hartslag: curriculum.js is niet aan zijn slotregel toegekomen.')}"
+          echo "De hele hartslag en het spoor van elke poging staan in de samenvatting van deze run."
           exit 1

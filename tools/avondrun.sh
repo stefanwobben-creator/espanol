@@ -36,6 +36,26 @@ mkdir -p "$WERK"
 
 zeg() { echo "$@"; }
 
+# 28 augustus: het bewijs wordt nu vanaf twee plekken bewaard (een afgekeurde poging én een klapper),
+# en twee kopieën van deze regels zouden na één ronde uit elkaar lopen.
+bewaar_bewijs() {
+  MAP="$BEWIJS/poging-$1"
+  mkdir -p "$MAP"
+  git diff > "$MAP/wat-de-bot-schreef.diff" 2>/dev/null || true
+  cp "${POORTLOG:-/dev/null}" "$MAP/poort.log" 2>/dev/null || true
+  cp index.html versie.txt "$MAP/" 2>/dev/null || true
+  cp tools/curriculum-laatste.json tools/avondrun-hart.json "$MAP/" 2>/dev/null || true
+  cp -r test/uitvoer "$MAP/schermen" 2>/dev/null || true
+  {
+    echo "### Poging $1: $2"
+    echo ""
+    echo '```'
+    cat tools/avondrun-hart.json 2>/dev/null | head -c 2000 || echo "(geen hartslag)"
+    echo '```'
+  } >> "$SAMENVATTING"
+  zeg "bewijs staat in $MAP"
+}
+
 poging=1
 while [ "$poging" -le "$MAX_POGINGEN" ]; do
   zeg ""
@@ -53,6 +73,32 @@ while [ "$poging" -le "$MAX_POGINGEN" ]; do
   if [ "$CODE" -ne 0 ]; then
     zeg "curriculum.js eindigde met code $CODE. Wat de run daar zelf over zegt:"
     cat tools/avondrun-hart.json 2>/dev/null || true
+
+    # 28 AUGUSTUS: EEN KLAPPER LIEP OM DE HERKANSING HEEN
+    #
+    # Hier stond `exit "$CODE"`, en dat is de reden dat de avondrun vijf nachten op rij rood stond
+    # met "niets gepubliceerd (geklapt)". Dit script heet "hoogstens twee pogingen" en heeft een lus
+    # die daarvoor bestaat, maar een klapper sprong er bij poging één meteen uit. De herkansing dekte
+    # dus alleen "de poort keurde de tekst af" en niet "de run viel om".
+    #
+    # En sinds v23.178 is dat tweede geval juist het gewone geval: toen kreeg curriculum.js exitcode
+    # 1 voor "beloofd en niets geleverd". De herkansing was er, en precies de meest voorkomende
+    # mislukking liep eromheen.
+    #
+    # Niet elke klapper verdient een herkansing: twaalf minuten opnieuw draaien om weer te horen dat
+    # er geen taalmodel is, kost een nacht en levert niets. Dat onderscheid is een regel met gevallen
+    # en staat daarom in tools/avondrun-herkansing.js, mét een zelftest. Zie de kop daar.
+    if node tools/avondrun-herkansing.js "$CODE" tools/avondrun-hart.json; then
+      if [ "$poging" -lt "$MAX_POGINGEN" ]; then
+        bewaar_bewijs "$poging" "klapper (code $CODE)"
+        git checkout -- . 2>/dev/null || true
+        cp "$BEWIJS/poging-$poging/avondrun-hart.json" tools/avondrun-hart.json 2>/dev/null || true
+        poging=$((poging + 1))
+        continue
+      fi
+      zeg "Ook de laatste poging klapte."
+    fi
+    bewaar_bewijs "$poging" "klapper (code $CODE)"
     echo "wat=geklapt" >> "$UIT"
     echo "pogingen=$poging" >> "$UIT"
     echo "code=$CODE" >> "$UIT"
