@@ -1602,7 +1602,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.211";
+var APP_VERSIE = "v23.212";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15909,8 +15909,11 @@ function lesFlowGramLijst(){
   if(rij.length){
     var top = rij[0];
     /* Twee keer mis op hetzelfde is geen geheugenkwestie: dan geen opfrisvraag maar de hele
-       microles, en die komt uit lesFlowGramId() hieronder. */
-    if(!((top.st.box || 0) === 0 && (top.st.fout || 0) >= 2)){
+       microles, en die komt uit lesFlowGramId() hieronder.
+       v23.212: tenzij er vandaag al een half bewijs ligt. Het doosje blijft dan op nul staan tot
+       het tweede bewijs er is, en zonder deze uitzondering zou de hele microles twee dagen achter
+       elkaar komen op een onderwerp dat je gisteren goed had. */
+    if(!((top.st.box || 0) === 0 && (top.st.fout || 0) >= 2 && !top.st.half)){
       var o = null;
       try { o = gcGebouwd(gcOpfrisId(top.c.id)); } catch(e){ o = null; }
       if(o) uit.push(o.id);
@@ -32736,7 +32739,27 @@ function gramLogVandaag(){
   return uit.sort(function(a, b){ return b.n - a.n; });
 }
 
-function gramBij(cid, goed){
+/* ================= v23.212: EEN MUNTJE IS EEN HALF BEWIJS =================
+
+   Van de 153 zinpatronen van de leermachine geven er 101 precies twee keuzes, en dat is geen
+   slordigheid maar de definitie van het onderwerp: het Nederlands heeft één woord waar het Spaans
+   er twee heeft (por/para, es/está, el/la, a of niets). Er is dus ook geen derde antwoord om erbij
+   te zetten, en een afleider die niemand kiest verlaagt de gokkans niet.
+
+   Wat wel kan: niet de vraag veranderen maar wat de app met het antwoord doet. Hier stond
+   één regel voor alles, en die gaf een muntworp hetzelfde gewicht als een getypt antwoord.
+
+   Gesimuleerd over 90 dagen met de echte GRAM_BOX, voor een leerling die het onderwerp NIET kent:
+   onder de oude regel eindigt hij in 65% van de lopen in doosje 3 of hoger, oftewel 8 tot 55 dagen
+   rust op iets wat hij niet kan. Onder deze regel is dat 17%. De prijs voor wie het wél kent:
+   vier extra beurten in drie maanden.
+
+   Twee halve bewijzen op twee verschillende dagen zijn samen een doosje. Gokken loopt daarmee van
+   50% naar 25% per doosje: precies de kans van een vierkeuzevraag. */
+function gramHalfBewijs(keuzes){ return keuzes === 2; }
+/* keuzes = uit hoeveel knoppen de leerling koos. Weggelaten of 0 betekent getypt of samengesteld
+   over een hele reeks, en dat telt vol: waar je niet kunt gokken hoeft er niets af. */
+function gramBij(cid, goed, keuzes){
   if(!cid) return;
   S.gram = S.gram || {};
   var st = S.gram[cid] || {box:0, due:"", goed:0, fout:0, laatst:""};
@@ -32746,17 +32769,26 @@ function gramBij(cid, goed){
 
   if(st.bd !== today()){
     st.bd = today();
-    if(goed){
-      st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
-      st.due = addDays(today(), GRAM_BOX[st.box]);
-    } else {
+    if(!goed){
+      st.half = 0;
       st.box = 0;
       st.due = addDays(today(), 1);
+    } else if(gramHalfBewijs(keuzes) && !st.half){
+      /* Het eerste halve bewijs. De doos blijft staan, maar je ziet het morgen terug: een tweede
+         meting die een week later komt meet een andere kennistoestand en bevestigt dus niets. */
+      st.half = 1;
+      st.due = addDays(today(), 1);
+    } else {
+      st.half = 0;
+      st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
+      st.due = addDays(today(), GRAM_BOX[st.box]);
     }
   } else if(!goed){
     /* Later op de dag alsnog mis. De doos blijft staan (het oordeel van vandaag is al geveld), maar
        je ziet het morgen terug in plaats van pas over drie of acht dagen. Zonder deze regel zou een
-       onderwerp dat je 's ochtends goed had en 's middags vijf keer fout gewoon wegzakken. */
+       onderwerp dat je 's ochtends goed had en 's middags vijf keer fout gewoon wegzakken.
+       v23.212: en een half bewijs van vanochtend is na vijf keer mis geen bewijs meer. */
+    st.half = 0;
     st.due = addDays(today(), 1);
   }
   S.gram[cid] = st;
@@ -32787,9 +32819,15 @@ function gramWachtrij(){
     /* Een openstaande fout (doosje nul) wacht niet op zijn datum. Dat stond al zo in de oude
        foutenpot en de reden klopt nog steeds: anders komt de fout die je net maakte pas morgen aan
        bod, en dat is precies de dag dat je hem al vergeten bent. Het verschil met vroeger is dat
-       één goed antwoord het doosje op één zet en de rekening daarmee sluit; vroeger bleef st.fout
-       staan en bleef het onderwerp levenslang vooraan. */
-    var open = (st.box || 0) === 0 && (st.fout || 0) > 0;
+       één goed antwoord de rekening sluit; vroeger bleef st.fout staan en bleef het onderwerp
+       levenslang vooraan.
+
+       v23.212: die rekening sloot doordat het doosje op één ging. Bij een tweekeuzevraag blijft
+       het doosje nu op nul staan en is het halve bewijs de sluiting. Zonder dit stukje zou een
+       goed beantwoord onderwerp de rest van de dag vooraan blijven staan terwijl de dagrem in
+       gramBij() het tweede antwoord van vandaag toch niet laat tellen: een slot dat op zichzelf
+       dichtklapt. */
+    var open = (st.box || 0) === 0 && (st.fout || 0) > 0 && !st.half;
     if(!open && st.due && st.due > t) return;
     uit.push({c:c, st:st});
   });
@@ -35159,7 +35197,10 @@ function gramAntwoord(o, stap, q, i){
      patronen. Draagt een stap een brok-id, dan gaat het antwoord daarheen. */
   if(stap && stap.brok){ brokBij(stap.brok, goed); return; }
   if(!o || !o.concept) return;
-  gramBij(o.concept, goed);
+  /* v23.212: het aantal knoppen gaat mee. Dit is de enige plek in de app waar een doosje omhoog
+     kan op een antwoord dat je ook had kunnen raden, en dus de enige plek die het hoeft door te
+     geven. De vraag draagt het feit al (q.o); geen enkele andere plek schrijft het opnieuw. */
+  gramBij(o.concept, goed, (q && q.o) ? q.o.length : 0);
   gramLog(o.concept, gwKanaal(o), goed);
 }
 function gwVolgende(){
