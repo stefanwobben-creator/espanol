@@ -36,6 +36,18 @@ const { chromium } = require('playwright');
   if (await skip.count()) await skip.click();
   await page.waitForTimeout(300);
 
+
+  /* v23.209: de zoekpil woont in de kop, en op een taakscherm is die kop weg. Dat is geen
+     ongelukje: de app zegt bij elk woordkaartje "probeer het antwoord eerst zelf te bedenken", en
+     een zoekknop naast die zin is een uitweg uit precies de poging die het werk doet. Buiten een
+     oefening is opzoeken juist wel de bedoeling, en daar staat de pil dus gewoon.
+
+     De app opent bij binnenkomst zelf je dagles, dus die pauzeren we hier eerst. Wat deze suite
+     bewaakt verandert daar niet door: er is één zoekingang, hij heet iets, en hij opent het
+     woordenboek. */
+  await page.evaluate(() => { try { if(document.getElementById('btnLesPauze')) lesFramePauze(); } catch(e){} });
+  await page.waitForTimeout(400);
+
   // ---- 1. de pil opent het woordenboek, leeg en met de cursor erin ----
   await page.click('#dicFab');
   await page.waitForTimeout(300);
