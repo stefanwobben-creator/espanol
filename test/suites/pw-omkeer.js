@@ -93,6 +93,12 @@ async function ronde(page, keuze) {
       totaal: p.totaal,
       dubbelzinnig: dubbelzinnig.length,
       voorbeeldFout: dubbelzinnig.slice(0, 2).map((x) => x.vorm + ' (' + x.v.inf + ', ' + x.t + ')'),
+      /* v23.213: en geen enkele vorm staat er twee keer in. Deze regel werd hiervoor alleen op de
+         ronde van twaalf gecontroleerd, en die trekt er twaalf uit 858: gemeten kwam de botsing in
+         0,2% van de rondes langs. De poort viel er dus ongeveer één keer per vijfhonderd runs op om
+         en zag er drie keer opnieuw draaien groen uit, wat er precies uitziet als flakiness terwijl
+         het een echte fout was. Hier is dezelfde regel deterministisch. */
+      vormen: new Set(p.items.map((x) => x.vorm)).size,
       tijden: conjOpenTijden(),
       // elk item moet een vorm hebben die ook echt uit conjVorm komt: geen losse tekst in de code
       klopt: p.items.every((x) => x.vorm === conjVorm(x.v, x.p, x.t)),
@@ -107,6 +113,9 @@ async function ronde(page, keuze) {
     pool.dubbelzinnig + (pool.voorbeeldFout.length ? ' — ' + pool.voorbeeldFout.join(', ') : '') + ')');
   ok(pool.dubbel > 0,
     'en de dubbelzinnige vormen bestaan wel degelijk, ze zijn er alleen uit gefilterd (' + pool.dubbel + ' stuks)');
+  ok(pool.vormen === pool.n,
+    'geen enkele vorm staat twee keer in de pool, ook niet uit twee verschillende tijden (' +
+    pool.vormen + '/' + pool.n + ')');
   ok(pool.klopt === true, 'elke vorm komt uit conjVorm(), er staat geen vervoeging in de schermcode');
   ok(JSON.stringify(pool.personen) === '[0,1,2,3,4,5]', 'alle zes de personen komen voor in de pool');
   ok(pool.tijden.indexOf('imperfecto') !== -1 && pool.tijden.indexOf('subjuntivo') !== -1,

@@ -1,4 +1,5 @@
-// pw-laadscherm.js (12 aug, v23.54) — het gordijn gaat open, altijd.
+// pw-laadscherm.js (12 aug, v23.54; meetmethode herzien 30 aug, v23.213) — het gordijn gaat open,
+// altijd.
 //
 // claude/lancering.md punt 2. Gemeten op traag 4G (1,6 Mbit, 300 ms rtt, cpu 4x geremd): de
 // statische HTML staat er na ~950 ms, het script is pas na ~13,5 seconden klaar. In dat gat zag je
@@ -41,13 +42,23 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     /* v23.55: sinds het vroege proefscherm gaat het gordijn al open zodra de eerste vraag getekend
        is, en dat is rond de 600 ms. Een waitForSelector gevolgd door een evaluate viel daardoor in
        de volle poort tussen wal en schip: het element was er bij de eerste stap en weg bij de
-       tweede. Eén lus die alles opneemt terwijl het gebeurt is hier het juiste gereedschap. */
-    page.goto(U, { waitUntil: 'commit' }).catch(() => {});
-    let gezienGordijn = null, gordijnWegBij = null, tEind = Date.now() + 90000;
-    while (Date.now() < tEind) {
-      const st = await page.evaluate(() => {
-        const el = document.getElementById('laadScherm');
-        const r = el ? el.getBoundingClientRect() : null;
+       tweede. Er kwam een lus voor in de plaats die om de 50 ms een evaluate deed.
+
+       30 aug (v23.213): die lus viel ook om, en om precies dezelfde reden een niveau dieper. Een
+       evaluate is een verzoek over een socket naar een browser waarvan de cpu hierboven vier keer
+       geremd is; in de volle poort (drie suites tegelijk) duurt zo'n rondje makkelijk honderden
+       milliseconden, en het gordijn staat er soms maar zo'n zeshonderd. Dan meet je niets en duurt
+       de suite ook nog de volle 90 seconden. De waarnemer was trager dan wat hij waarnam.
+
+       Nu kijkt de pagina naar zichzelf. Het opnameboekje wordt vóór elk paginascript geïnstalleerd
+       (addInitScript), een MutationObserver ziet het gordijn komen en gaan op het moment zelf, en
+       een tikker van 10 ms vult aan. Daarna leest deze suite gewoon het boekje: hoe traag dat
+       lezen is doet er niet meer toe, want het staat al opgeschreven. */
+    await ctx.addInitScript(() => {
+      window.__gordijn = {eerste:null, weg:null, dekteOoit:false};
+      var meet = function(){
+        var el = document.getElementById('laadScherm');
+        var r = el ? el.getBoundingClientRect() : null;
         return {
           er: !!el,
           dekt: !!(r && r.width > 300 && r.height > 700),
@@ -55,24 +66,46 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
           links: document.querySelectorAll('link[rel="stylesheet"]').length,
           proef: document.querySelectorAll('button[data-proef]').length > 0,
           form: !!document.getElementById('btnNewProf') &&
-                !document.getElementById('tab-profiel').classList.contains('hidden')
+                !!document.getElementById('tab-profiel') &&
+                !document.getElementById('tab-profiel').classList.contains('hidden'),
+          t: Date.now()
         };
-      }).catch(() => null);
-      if (st) {
-        if (st.er && !gezienGordijn) gezienGordijn = st;
-        if (!st.er && gezienGordijn && !gordijnWegBij) { gordijnWegBij = st; break; }
-      }
-      await new Promise((r) => setTimeout(r, 50));
+      };
+      var kijk = function(){
+        var g = window.__gordijn, st;
+        try { st = meet(); } catch(e){ return; }
+        if(st.er){
+          if(!g.eerste) g.eerste = st;
+          if(st.dekt) g.dekteOoit = true;
+        } else if(g.eerste && !g.weg){
+          g.weg = st;
+        }
+      };
+      try { new MutationObserver(kijk).observe(document.documentElement, {childList:true, subtree:true}); } catch(e){}
+      setInterval(kijk, 10);
+      kijk();
+    });
+    page.goto(U, { waitUntil: 'commit' }).catch(() => {});
+    let boekje = null, tEind = Date.now() + 90000;
+    while (Date.now() < tEind) {
+      boekje = await page.evaluate(() => window.__gordijn || null).catch(() => null);
+      if (boekje && boekje.eerste && boekje.weg) break;
+      await new Promise((r) => setTimeout(r, 100));
     }
+    const gezienGordijn = boekje && boekje.eerste;
+    const gordijnWegBij = boekje && boekje.weg;
     ok(!!gezienGordijn, 'het laadscherm staat er');
     ok(gezienGordijn && gezienGordijn.js === false,
       'en het staat er vóórdat het grote script klaar is (dát is het punt)');
-    ok(gezienGordijn && gezienGordijn.dekt === true, 'het dekt het scherm af, dus je ziet de dode kop niet meer');
+    ok(!!(boekje && boekje.dekteOoit), 'het dekt het scherm af, dus je ziet de dode kop niet meer');
     ok(gezienGordijn && gezienGordijn.links === 0,
       'de stijl komt uit het bestaande blok: geen extra verzoek op een trage lijn');
     ok(!!gordijnWegBij, 'en het gaat weer weg');
     ok(!!(gordijnWegBij && (gordijnWegBij.proef || gordijnWegBij.form)),
       'pas als er iets achter staat: een proefvraag of het aanmeldformulier');
+    if (gezienGordijn && gordijnWegBij) {
+      console.log('   het gordijn stond er ' + (gordijnWegBij.t - gezienGordijn.t) + ' ms');
+    }
     await ctx.close();
   }
 

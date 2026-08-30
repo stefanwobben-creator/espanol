@@ -1602,7 +1602,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.212";
+var APP_VERSIE = "v23.213";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -18436,6 +18436,13 @@ function conjOpenTijden(){
    vaak wél een voornaamwoord bij staat. */
 function omkeerPool(){
   var tijden = conjOpenTijden(), pool = [], dubbel = 0, totaal = 0;
+  /* v23.213: en over de pool als geheel, niet alleen binnen één werkwoord en één tijd.
+     Gemeten met alles open: 858 items, 837 verschillende vormen. "vivimos" is binnen het presente
+     eenduidig (nosotros) en binnen het indefinido ook, dus stond hij er twee keer in. In de vraag
+     staat de tijd niet, dus op het scherm waren dat twee keer dezelfde vraag.
+     Alle eenentwintig botsingen wijzen naar dezelfde persoon, dus er raakt geen enkele opgave weg:
+     de tweede kopie is dezelfde vraag met een etiket dat niemand ziet. */
+  var gezien = {};
   tijden.forEach(function(t){
     var verbs = conjVerbPool(t);
     verbs.forEach(function(v){
@@ -18446,8 +18453,10 @@ function omkeerPool(){
         totaal++;
         var uniek = true;
         for(var q = 0; q < vormen.length; q++) if(q !== p && vormen[q] === vorm) uniek = false;
-        if(uniek) pool.push({v:v, p:p, t:t, vorm:vorm});
-        else dubbel++;
+        if(!uniek){ dubbel++; continue; }
+        if(gezien[vorm]){ dubbel++; continue; }
+        gezien[vorm] = true;
+        pool.push({v:v, p:p, t:t, vorm:vorm});
       }
     });
   });
@@ -18455,7 +18464,8 @@ function omkeerPool(){
 }
 
 /* Een ronde van twaalf. Twee dingen bewust geregeld:
-     - niet twee keer dezelfde vorm in één ronde
+     - niet twee keer dezelfde vorm in één ronde. Die stond hier vanaf v23.109 als belofte en werd
+       nergens afgedwongen; sinds v23.213 zit hij in omkeerPool(), zodat elke aanroeper hem erft.
      - gespreid over de personen, want een ronde van acht keer "yo" meet één uitgang en niet zes.
    Zonder die spreiding zou de score omhoog kunnen zonder dat je meer weet, en dat is precies het
    soort meting waar deze week aan opgegaan is. */
