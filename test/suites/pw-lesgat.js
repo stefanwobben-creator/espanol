@@ -183,7 +183,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       let krijgt = 0;
       try { krijgt = gcMaakVragen(c, kan).length; } catch (e) {}
       mogelijk += kan; bereikbaar += Math.min(krijgt, kan);
-      if (krijgt < kan) uit.push(c.id + ': ' + kan + ' mogelijk, ' + krijgt + ' bereikbaar');
+      /* v23.208: hier stond `if (krijgt < kan)`, en dat is twee ruistrekkingen op exacte gelijkheid
+         vergelijken. `kan` is een schatting uit 300 willekeurige trekkingen per patroon en `krijgt`
+         is een tweede willekeurige greep uit dezelfde ruimte; die twee lopen af en toe één uit
+         elkaar zonder dat er iets stuk is. Op 30 augustus viel de poort daarop om
+         (pedirpreguntar: 17 mogelijk, 16 bereikbaar) en was hij daarna drie keer op rij groen.
+         Een poort die op ruis dichtvalt kan een goede nacht afkeuren.
+         De marge is met opzet klein: het defect waarvoor deze proef is gebouwd was 580 van de 1416,
+         een verlies van 59 procent, en dat haalt deze drempel met een factor twintig. */
+      if (krijgt < kan - 1 && krijgt < kan * 0.9) uit.push(c.id + ': ' + kan + ' mogelijk, ' + krijgt + ' bereikbaar');
     });
     return { mogelijk: mogelijk, bereikbaar: bereikbaar, mis: uit };
   });
@@ -191,6 +199,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(bereik.mis.length === 0,
     'elk concept levert alles wat zijn patronen kunnen maken (' + (bereik.mis.slice(0, 3).join(' · ') || 'geen verlies') + ')');
   ok(bereik.mogelijk > 1000, 'CONTROLE: en er is genoeg om over te tellen (' + bereik.mogelijk + ')');
+  /* en over alles heen wél een strakke eis, want per concept één item speling mag optellen tot iets
+     wat je niet meer wilt. Het defect van toen zat op 41 procent van dit getal. */
+  ok(bereik.bereikbaar >= bereik.mogelijk * 0.98,
+    'en over alle concepten heen komt er minstens 98 procent uit (' +
+      Math.round(1000 * bereik.bereikbaar / bereik.mogelijk) / 10 + '%)');
 
   // ---- 6. de twee aanhechtingen leggen ook echt uit ----
   console.log('\n-- 6. de aangehechte kaarten worden uitgelegd, niet alleen geclaimd --');
