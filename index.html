@@ -80,6 +80,19 @@
   .big{font-size:1.5rem; font-weight:700; margin:10px 0;}
   .tag{display:inline-block; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
        color:var(--muted); background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:2px 8px;}
+  /* ================= DE MAAT VAN EEN TIKDOEL (v23.210) =================
+     Gemeten over alle zeventien schermen: 189 tikdoelen, waarvan 152 onder de 44 pixels. Ik dacht
+     dat dat honderdvijftig losse plekken waren; gegroepeerd op klasse zijn het er elf, en de twee
+     grootste (primary en ghost, samen 124 van de 152) misten één tot vijf pixels.
+
+     Apple houdt 44 bij 44 aan, Google 48. De poort eist 44 (zie pw-tikdoel.js) en deze knoppen
+     krijgen 48, want daar passen ze ruim in. Een grens die je haalt is beter dan een grens die je
+     noemt.
+
+     min-height en geen height: een knop met twee regels tekst moet gewoon meegroeien. */
+  button.primary, button.ghost, button.good, button.bad{
+    min-height:48px; display:inline-flex; align-items:center; justify-content:center;
+  }
   button.primary{background:var(--accent); color:#fff; border:none; padding:12px 20px; border-radius:10px;
                  font-size:1rem; font-weight:700; cursor:pointer;}
   button.primary:active{transform:scale(.98);}
@@ -89,6 +102,10 @@
   button.bad{background:var(--red-soft); color:var(--red); border:1.5px solid var(--red); padding:12px 20px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer;}
   button.ghost:disabled{opacity:.5; cursor:default;}
   button.primary:disabled, button.bad:disabled{cursor:default;}
+  /* v23.210: de losse eindjes. modus-toets, btn en muziekchip zijn elk één of twee knoppen, te
+     weinig voor een eigen verhaal en te klein om te laten staan. TIKDOEL_MIN staat hier als
+     leesbaar getal zodat de proef en de stijl dezelfde grens noemen. */
+  .modus-toets, button.btn, .muziekchip{min-height:44px; display:inline-flex; align-items:center;}
   .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
   .row.center{justify-content:center;}
   input[type=text], input[type=email], textarea{width:100%; font-size:1.05rem; padding:12px; border:1.5px solid var(--border);
@@ -111,8 +128,12 @@
        padding:10px; margin-top:10px; border-radius:10px; border:1.5px dashed var(--border); background:var(--bg);}
   .dsleep-rij.leeg::before{content:attr(data-leeg); color:var(--muted); font-size:.9rem; align-self:center;}
   .dsleep-bank{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  /* v23.210: 39 pixels hoog is precies het formaat waarop je met een duim de tegel ernaast raakt,
+     en dit zijn de tegels die je tijdens een oefening aanraakt. Ook min-width, want een tegel met
+     een kort woordje erop (de, y, a) was maar dertig pixels breed. */
   .dtegel{padding:9px 13px; border-radius:9px; border:1.5px solid var(--border); background:var(--card);
-       color:var(--ink); font-size:1rem; font-family:inherit; cursor:pointer; line-height:1.2;}
+       color:var(--ink); font-size:1rem; font-family:inherit; cursor:pointer; line-height:1.2;
+       min-height:44px; min-width:44px; display:inline-flex; align-items:center; justify-content:center;}
   .dtegel:active{transform:translateY(1px);}
   .dtegel.op{border-color:var(--accent); background:var(--card);}
   .dtegel.weg{visibility:hidden;}
@@ -279,8 +300,11 @@
   .tapaknop:active{transform:scale(.98);}
   .tapaknop[disabled]{opacity:.8; cursor:default; border-style:dashed;}
   .tapamenu{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 4px;}
+  /* v23.210: 32 bij 32 was te klein om te raken, en dit zijn er achttien naast elkaar. Ze staan in
+     een raster, dus ze vloeien gewoon opnieuw uit. */
   .tapachip{font-size:1.15rem; line-height:1; padding:6px 8px; border-radius:10px; border:1px solid var(--border);
-    background:var(--card); cursor:pointer; filter:grayscale(1); opacity:.35;}
+    background:var(--card); cursor:pointer; filter:grayscale(1); opacity:.35;
+    min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center;}
   .tapachip.gehad{filter:none; opacity:1; background:var(--amber-soft); border-color:var(--amber-soft);}
   .tapachip.hoy{border-color:var(--amber); box-shadow:0 0 0 2px var(--amber-soft);}
   /* v19.49: mini-Chispa in de dagles + Tamagotchi-meters */
@@ -409,7 +433,8 @@
   .chbalktxt{flex:0 1 auto; min-width:0; line-height:1.3;}
   .chbalktxt b{font-size:1.02rem;}
   .chbalktxt span{display:block; font-size:.76rem; color:var(--muted);}
-  .chbalkop{flex:0 0 auto; width:32px; height:32px; border-radius:999px; cursor:pointer;
+  /* v23.210: was 32 bij 32, en dit is de enige weg van de zwevende balk naar Chispa zelf. */
+  .chbalkop{flex:0 0 auto; width:44px; height:44px; border-radius:999px; cursor:pointer;
             border:1px solid var(--border); background:var(--bg); color:var(--muted); font-size:1rem;}
   /* de props zijn getekend voor een podium van 360 breed; hier is het krap de helft */
   .chbalk .chvloer{top:62%; width:112px; height:32px; margin-left:-56px;}
@@ -483,7 +508,8 @@
   .bailehoy .es{font-weight:800;}
   .bailerij{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 2px;}
   .bailechip{font-size:.74rem; font-weight:700; border:1.5px solid var(--border); background:var(--card); color:var(--muted);
-             border-radius:999px; padding:5px 10px; cursor:pointer; transition:transform .12s ease;}
+             border-radius:999px; padding:5px 10px; cursor:pointer; transition:transform .12s ease;
+             min-height:44px; display:inline-flex; align-items:center;}   /* v23.210: was 26 hoog */
   .bailechip .es{font-weight:800; color:var(--ink);}
   .bailechip:hover{transform:scale(1.07) rotate(-2deg); border-color:var(--accent);}
   .bailechip.hoy{border-color:var(--amber); background:var(--amber-soft);}
@@ -498,7 +524,7 @@
   /* v19.76 - haar van jou maken. Een kleur kies je met je ogen, dus de knop is de kleur zelf en
      geen woord met een kleur ernaast. */
   .kleurrij{display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 2px;}
-  .kleurknop{width:38px; height:38px; border-radius:50%; border:3px solid var(--border); cursor:pointer; padding:0; position:relative;}
+  .kleurknop{width:44px; height:44px; border-radius:50%; border:3px solid var(--border); cursor:pointer; padding:0; position:relative;}   /* v23.210: was 38 */
   .kleurknop.aan{border-color:var(--ink); box-shadow:0 0 0 3px var(--card), 0 0 0 5px var(--accent-soft);}
   .kleurknop span{position:absolute; inset:6px; border-radius:50%;}
   .vormrij{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 2px;}
@@ -564,8 +590,10 @@
      het gebouwd. Een veld met een vergrootglas hoeft niemand uit te leggen. Het is geen echt
      invoerveld maar een knop die eruitziet als een zoekbalk: zo kost hij geen extra rij hoogte en
      springt het toetsenbord niet op als je hem per ongeluk raakt. */
+  /* v23.210: 34 hoog. Deze woont in de kop en viel daardoor buiten mijn eerste meting, die per
+     tabblad keek; pw-tikdoel.js loopt langs het hele document en vond hem alsnog. */
   .zoekpil{display:flex; align-items:center; gap:6px; flex:0 0 auto; cursor:pointer;
-           height:34px; padding:0 12px; border-radius:99px; border:1.5px solid var(--border);
+           min-height:44px; padding:0 12px; border-radius:99px; border:1.5px solid var(--border);
            background:var(--card); color:var(--muted); font-size:.85rem; font-weight:600;
            font-family:inherit;}
   .zoekpil:active{transform:scale(.97);}
@@ -639,7 +667,10 @@
   .avtopt{min-height:44px;}
   .escloopt .eschuppel{animation:eschop .32s ease-in-out infinite;}
   .appfooter{text-align:center; margin:30px 0 6px; font-size:.85rem; color:var(--muted);}
-  .appfooter a{color:var(--muted); text-decoration:none; border-bottom:1px dotted var(--muted);}
+  /* v23.210: zestien pixels hoog, en het zijn wel degelijk knoppen: rondleiding, uitleg, privacy.
+     inline-block met lucht eromheen, zodat de regel hetzelfde leest en het doel groter is. */
+  .appfooter a{color:var(--muted); text-decoration:none; border-bottom:1px dotted var(--muted);
+               display:inline-block; min-height:44px; line-height:44px; padding:0 4px;}
   .appfooter a:hover{color:var(--accent); border-color:var(--accent);}
   .dicrow{border-bottom:1px dashed var(--border);}
   .dichead{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; cursor:pointer;}
@@ -944,9 +975,11 @@
   .wbalk > span{flex:1 1 0; height:9px; border-radius:99px; background:var(--border);}
   .wbalk > span.aan{background:var(--green);}
   .wtel{font-size:.95rem; font-weight:700; margin:0 0 2px;}
-  button.mini{background:none; border:none; padding:5px 0; margin:6px 0 0; color:var(--muted);
+  /* v23.210: 25 pixels hoog, en dat is precies de knop waar je twee keer naar tikt. De padding gaat
+     omhoog in plaats van de letters, zodat de regel er hetzelfde uitziet en het doel groter is. */
+  button.mini{background:none; border:none; padding:11px 0; margin:2px 0 0; color:var(--muted);
               font-size:.85rem; font-weight:600; text-decoration:underline; cursor:pointer;
-              font-family:inherit; display:block;}
+              font-family:inherit; display:flex; align-items:center; min-height:44px;}
   .stoprij{margin-top:14px; padding-top:8px; border-top:1px dashed var(--border);}
   .stoprij button.mini{margin:0;}
   .waarom{background:var(--bg); border-left:3px solid var(--accent); border-radius:6px;
@@ -985,7 +1018,8 @@
   /* --- instellingen-uitklapper v19.71 --- */
   .instelrij{display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
              padding:2px 0; background:none; border:none; color:var(--ink); font-weight:700;
-             font-size:1rem; cursor:pointer; text-align:left;}
+             font-size:1rem; cursor:pointer; text-align:left;
+             min-height:44px;}   /* v23.210: was 23 hoog */
   .instelrij #instelPijl{color:var(--muted); font-size:.9rem;}
   #instelKop .muted{margin:6px 0 0; font-size:.85rem;}
   .gwuitleg{font-size:.97rem; line-height:1.55;}
@@ -1568,7 +1602,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.209";
+var APP_VERSIE = "v23.210";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -36304,6 +36338,7 @@ function alertBox(msg){
 
    Lezen en musica ook niet: daar is de tekst een pagina en zijn de vragen opgaven, binnen hetzelfde
    tabblad. Die twee hebben een derde stand nodig en die is er nog niet. */
+var TIKDOEL_MIN = 44;   // v23.210: Apple houdt 44 bij 44 aan; zie pw-tikdoel.js
 var TABS = [
   {id:"lessen", label:"Lessen", soort:"overzicht"},
   {id:"cursus", label:"Cursus", soort:"overzicht"},   // v19.90: de leerlijn, weg bij het profiel vandaan
