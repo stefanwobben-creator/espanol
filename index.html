@@ -1544,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.207";
+var APP_VERSIE = "v23.208";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13793,17 +13793,47 @@ function corrRegelNaam(r){ return profLang() === "nl" ? r.naam : r.naamEn; }
 function corrRegelWaarom(r){ return profLang() === "nl" ? r.waarom : r.waaromEn; }
 
 /* het Leitner-doosje per regel. Fout betekent niet "morgen weer", dat voelt als
-   straf; het betekent overmorgen, en dan opnieuw opbouwen. */
+   straf; het betekent overmorgen, en dan opnieuw opbouwen.
+
+   v23.208: dezelfde dagrem als gramBij() sinds v23.170. Die ronde repareerde de rem bij de
+   concepten en liet hem hier staan, en dat is dezelfde bug op de tweede plek.
+
+   Zonder rem schrijft elk antwoord naar de doos, dus het laatste antwoord van je sessie wint.
+   Nagemeten over 200 rondes van El Corrector, acht zinnen per ronde: in 188 ervan (94 procent) komt
+   minstens één regel meer dan eens langs, gemiddeld 5,9 unieke regels op acht zinnen, en de meest
+   voorkomende regel krijgt er gemiddeld 2,3. Een echte ronde uit die meting:
+
+       reflexivo acento reflexivo predicado lidwoord reflexivo porpara porpara
+
+   Drie keer reflexivo, oftewel "Me, te of se". Goed, goed, fout eindigt op doos 0; fout, goed, goed
+   eindigt op doos 1. Zelfde ronde, zelfde kennis, andere doos, alleen op volgorde. En omdat
+   corrRegelVolgorde() de regels die due zijn vooraan zet, krijgen juist de regels die je het meest
+   oefent de meeste beurten per ronde en dus de grootste kans om op een fout te eindigen. Hoe meer je
+   oefent, hoe vaster je op nul staat.
+
+   De reset zelf blijft volledig, en met opzet: één stap terug is op 22 augustus voorgesteld en
+   afgewezen (SuperMemo noemt het een onjuiste mutatie van Leitner, Anki reset volledig, en
+   lesFlowGramId() vuurt de microles af op doos 0). Zie claude/Leerkaart - de doos die niet omhoog
+   kon, en pw-doos.js, die die reset bewaakt.
+
+   De tellers goed en fout tellen elk antwoord; die zijn de geschiedenis en niet het oordeel. */
 function corrSrsBij(id, goed){
   S.corr = S.corr || {};
   var st = S.corr[id] || {box:0, due:"", goed:0, fout:0};
-  if(goed){
-    st.goed++;
-    st.box = Math.min((st.box || 0) + 1, CORR_INTERVALS.length - 1);
-    st.due = addDays(today(), CORR_INTERVALS[st.box]);
-  } else {
-    st.fout++;
-    st.box = 0;
+  if(goed) st.goed++; else st.fout++;
+  if(st.bd !== today()){
+    st.bd = today();
+    if(goed){
+      st.box = Math.min((st.box || 0) + 1, CORR_INTERVALS.length - 1);
+      st.due = addDays(today(), CORR_INTERVALS[st.box]);
+    } else {
+      st.box = 0;
+      st.due = addDays(today(), 2);
+    }
+  } else if(!goed){
+    /* Later op de dag alsnog mis. De doos blijft staan (het oordeel van vandaag is al geveld), maar
+       je ziet de regel overmorgen terug in plaats van pas over dertig dagen. Zonder deze regel zou
+       een regel die je 's ochtends goed had en 's middags drie keer fout gewoon wegzakken. */
     st.due = addDays(today(), 2);
   }
   S.corr[id] = st;
@@ -13851,7 +13881,9 @@ function corrBereikbaar(){
   return ids;
 }
 /* hoeveel regels staan er stevig? Dat is het enige getal dat dit spel over
-   grammatica kan claimen, en het gaat alleen omhoog als je ze blijft halen. */
+   grammatica kan claimen, en het gaat alleen omhoog als je ze blijft halen.
+   v23.208: "blijven halen" is sindsdien het eerste antwoord van de dag, niet het laatste van je
+   sessie. Zie de kop van corrSrsBij(). */
 function corrStevig(){
   var haalbaar = corrBereikbaar(), n = 0;
   haalbaar.forEach(function(id){
