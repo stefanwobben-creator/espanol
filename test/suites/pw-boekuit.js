@@ -82,6 +82,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
         m[d] = { d: d, dekw: { A1: 120 + i * 30, A2: 60 + i * 17 } };
       }
       S.meting = m;
+      /* v23.207: tempoMeting() leest sinds deze versie alleen de dagreeks. De weekmetingen komen
+         daarin terecht via de zaai van dagMetingSchrijf(), precies zoals bij het opstarten van de
+         app, dus die stap hoort hier ook te staan. Zonder hem meet deze suite een lege reeks. */
+      S.dagMeting = {};
+      dagMetingSchrijf();
     }
     function probeer(fn) {
       try { return { uit: fn() }; } catch (e) { return { fout: e.message }; }
@@ -93,14 +98,21 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       waar: probeer(function () { return voorspelWaar('A1', 13); }),
       html: probeer(function () { return voorspelHtml().replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); })
     };
-    // het controlegeval: twee metingen is geen tempo
-    meet(2);
+    /* het controlegeval: twee punten is geen tempo. Sinds v23.207 gaat dat over dagpunten, dus die
+       worden hier rechtstreeks gezet: meet(2) zou drie punten opleveren, want dagMetingSchrijf()
+       zet er ook eentje voor vandaag naast, en drie is genoeg. Dat is geen bug maar precies de
+       toestand die Stefan op 30 augustus had. */
+    S.meting = {};
+    S.dagMeting = {
+      '2026-07-27': { d: '2026-07-27', dek: { A1: 90, A2: 40 }, dekw: { A1: 120, A2: 60 } },
+      '2026-08-03': { d: '2026-08-03', dek: { A1: 95, A2: 44 }, dekw: { A1: 150, A2: 77 } }
+    };
     uit.twee = {
       tempo: probeer(function () { return tempoMeting('A1'); }),
       html: probeer(function () { return voorspelHtml().replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); })
     };
     // en helemaal niets gemeten mag ook niet omvallen
-    S.meting = {};
+    S.meting = {}; S.dagMeting = {};
     uit.nul = probeer(function () { return tempoMeting('A1'); });
     meet(4);
 
@@ -171,8 +183,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ['tempo', 'band', 'waar', 'html'].forEach(function (k) {
     ok(!r.vier[k].fout, k + '() valt niet om' + (r.vier[k].fout ? ': ' + r.vier[k].fout : ''));
   });
-  ok(r.vier.tempo.uit && r.vier.tempo.uit.weken === 4,
-    'en telt de weken die er zijn (' + (r.vier.tempo.uit || {}).weken + ', niet undefined of de woordenzoeker)');
+  /* v23.207: tempoMeting() heeft nog één bron (de dagreeks) en telt dus punten en dagen in plaats
+     van weken. De reden dat deze proef bestaat is niet veranderd: het veld moet een echt getal zijn
+     en niet undefined, want dat was de crash van v23.162 (`weken: ws.length`, met ws uit de
+     woordenzoeker). */
+  ok(r.vier.tempo.uit && r.vier.tempo.uit.punten >= 3 && r.vier.tempo.uit.dagen > 0,
+    'en telt de punten en dagen die er zijn (' + (r.vier.tempo.uit || {}).punten + ' punten over ' +
+    (r.vier.tempo.uit || {}).dagen + ' dagen, niet undefined of de woordenzoeker)');
   ok(r.vier.tempo.uit && r.vier.tempo.uit.gem > 0, 'met een tempo per week (' + (r.vier.tempo.uit || {}).gem + ')');
   ok(r.vier.band.uit && r.vier.band.uit.onder > 0, 'de band geeft een ondergrens in weken (' + (r.vier.band.uit || {}).onder + ')');
   ok(r.vier.html.uit && r.vier.html.uit.length > 40, 'en er staat een voorspelling op het scherm');
@@ -180,7 +197,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- 2. het controlegeval: en hij zwijgt als het moet --');
   ok(!r.twee.tempo.fout, 'met twee metingen valt hij ook niet om');
-  ok(r.twee.tempo.uit === null, 'maar rekent hij niets uit: met twee punten is elk tempo toeval');
+  ok(r.twee.tempo.uit === null, 'maar rekent hij niets uit: met twee punten is er geen marge te rekenen');
   ok(!r.nul.fout && r.nul.uit === null, 'en zonder metingen ook niet');
 
   console.log('\n-- 3. elk boek is via de plank te bereiken --');

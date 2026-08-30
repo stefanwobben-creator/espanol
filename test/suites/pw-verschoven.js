@@ -169,7 +169,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 8. hoe lang je nog te gaan hebt (v23.139) --');
   console.log('   ' + r.niveauHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150));
   ok(/woorden staan vast/.test(r.niveauHtml), 'de stand staat er: hoeveel van hoeveel');
-  ok(/weken/.test(r.niveauHtml), 'en iets over weken: of de schatting, of dat er nog gemeten wordt');
+  /* v23.207: de wachtkant van deze regel telt sinds die versie dagen in plaats van weken, want hij
+     komt nu uit tempoStand() zoals de drie andere plekken die wachten. De schatting zelf blijft in
+     weken staan; dat is de eenheid waarin je een doel zet. Allebei mag, niets is geen van beide. */
+  ok(/nog \d+ (tot \d+ )?weken|nog \d+ dag(en)? meten/.test(r.niveauHtml),
+    'en iets over hoe lang nog: of de schatting in weken, of hoeveel dagen er nog gemeten wordt');
   ok(!/doosje|stevig\b/.test(r.niveauHtml), 'zonder machinetaal');
   ok(r.niveauHtml.indexOf("class='card'") === -1, 'als regel, niet als eigen kaart: "en nu?" moet in de viering blijven passen');
 

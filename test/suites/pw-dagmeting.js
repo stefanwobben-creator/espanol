@@ -23,7 +23,7 @@
 //      deze proef is het een aanname en geen eigenschap.
 //   4. EÉN PUNT PER DAG. Twee keer openen op dezelfde dag schrijft geen tweede punt.
 //   5. DE WEEKMETINGEN GAAN MEE ALS STARTPUNT, op hun eigen datum. Exact, geen reconstructie.
-//   6. EN HIJ ZWIJGT ALS ER TE WEINIG LIGT, of als alle punten uit een paar dagen komen. Vijf
+//   6. EN HIJ ZWIJGT ALS ER TE WEINIG LIGT, of als alle punten uit een paar dagen komen. Drie
 //      metingen uit drie dagen zeggen iets over drie dagen en niets over een tempo.
 const { chromium } = require('playwright');
 
@@ -148,7 +148,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       return { tempo: tempoDagMeting('A2'), stand: tempoStand('A2') };
     }
     return {
-      teWeinig: zetReeks(4, 20),        // 4 punten over 20 dagen: te weinig bewijs
+      /* v23.207: TEMPO_MIN_PUNTEN ging van vijf naar drie, want drie is de bodem van de som (de
+         standaardfout van een helling deelt door n - 2) en daaronder is er geen marge. Vier punten
+         is sindsdien dus GENOEG bewijs; twee is het niet. De proef meet nog steeds hetzelfde: dat
+         hij zwijgt zolang er geen marge te rekenen valt. */
+      teWeinig: zetReeks(2, 20),        // 2 punten over 20 dagen: geen marge mogelijk
       teKort: zetReeks(8, 3),           // 8 punten over 3 dagen: te weinig spreiding
       goed: zetReeks(8, 20)
     };
@@ -159,7 +163,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
      op dezelfde datum, dus er blijven er vier over. Dat is precies het geval dat deze proef moet
      vangen (veel beurten, weinig dagen) en niet een fout in de opzet. */
   console.log('   genoeg          : ' + (stil.goed.tempo ? 'spreekt' : 'ZWIJGT'));
-  ok(!stil.teWeinig.tempo, 'vier punten is te weinig bewijs, dus geen tempo');
+  ok(!stil.teWeinig.tempo, 'twee punten geven geen marge, dus geen tempo');
   ok(!stil.teKort.tempo && stil.teKort.stand.span < 7,
     'CONTROLE: en punten uit ' + stil.teKort.stand.span + ' dagen ook niet, want dat is geen tempo maar een week');
   ok(!!stil.goed.tempo, 'en acht punten over twintig dagen spreekt wel');
