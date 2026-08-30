@@ -21,6 +21,19 @@
 //   - een goed antwoord levert geen regel op.
 //   - en zet ook geen enkel onderwerp op fout. Dat laatste is de duurste fout die deze verandering
 //     zou kunnen maken: een concept naar doos 0 duwen op grond van een goede beurt.
+//
+// v23.211 ERBIJ (Stefan, 30 aug: "grammatica maken en zinnen maken gaat nog niet zo goed")
+//
+//   4. VIER CONCEPTEN DIE ZWEGEN DOEN NU MEE. Van de 31 concepten hadden er 12 geen enkel woordpaar,
+//      en vier daarvan hebben ze wel: tijdmarkers (hace/desde/durante), imperativo (habla-hable,
+//      ven-viene), cortesia (podría-puedes) en posesivo (mi-mío). Maakte je precies die fout in een
+//      zin, dan zei de app alleen "Nog niet" met het verschil erbij.
+//   5. GEEN PAAR STAAT TWEE KEER IN DE TABEL. foutRegel() neemt de eerste treffer, dus een tweede
+//      eigenaar van hetzelfde paar komt per constructie nooit aan de beurt. Dat is precies waarom
+//      exclamacion géén qué-cómo heeft gekregen: comparar heeft dat paar al.
+//   6. ELK CONCEPT DRAAGT EEN ZIN OVER WAAROM DIE FOUT BLIJFT PLAKKEN, alle 31 (het veld `mis`).
+//   7. EN DIE ZIN STAAT OP HET FOUTMOMENT, niet alleen in de naslagtekst van de microles. Met het
+//      controlegeval: bij een goed antwoord staat hij er niet.
 const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
@@ -74,7 +87,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       dekking: FOUT_REGEL.length,
       alleBestaan: FOUT_REGEL.every((r) => !!gcConcept(r.cid)),
       // accentfouten horen hier nooit te komen: bestDiff vergelijkt zonder accenten
-      accent: regel('Mi hermana está alta', 'mi hermana esta alta')
+      accent: regel('Mi hermana está alta', 'mi hermana esta alta'),
+      // v23.211: de vier die tot deze versie zwegen
+      tijdmarkers: regel('Vivo aquí desde 2020', 'vivo aquí hace 2020'),
+      imperativo: regel('Habla más despacio', 'hable más despacio'),
+      imperativo2: regel('Ven aquí ahora', 'viene aquí ahora'),
+      cortesia: regel('¿Podría ayudarme?', '¿puedes ayudarme?'),
+      posesivo: regel('Este libro es mío', 'este libro es mi')
     };
   });
 
@@ -96,6 +115,44 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(t.goed === null, 'CONTROLE: een goed antwoord levert geen regel op (nu: ' + t.goed + ')');
   ok(t.accent === null, 'een missend accent is geen keuze en komt hier niet langs (nu: ' + t.accent + ')');
 
+  console.log('\n-- 4. vier concepten die tot v23.211 zwegen --');
+  ok(t.tijdmarkers === 'tijdmarkers', 'hace tegenover desde is tijdmarkers (nu: ' + t.tijdmarkers + ')');
+  ok(t.imperativo === 'imperativo' && t.imperativo2 === 'imperativo',
+    'habla tegenover hable en ven tegenover viene zijn imperativo (nu: ' + t.imperativo + ', ' + t.imperativo2 + ')');
+  ok(t.cortesia === 'cortesia', 'podría tegenover puedes is cortesia (nu: ' + t.cortesia + ')');
+  ok(t.posesivo === 'posesivo', 'mi tegenover mío is posesivo (nu: ' + t.posesivo + ')');
+
+  // ---- 5 en 6. de tabel en de zinnen ----
+  console.log('\n-- 5 en 6. geen paar twee keer, en elk concept draagt zijn zin --');
+  const tab = await page.evaluate(() => {
+    const gezien = {}, dubbel = [];
+    let paren = 0;
+    FOUT_REGEL.forEach(function (r) {
+      r.p.forEach(function (pr) {
+        paren++;
+        const sleutel = [pr[0], pr[1]].sort().join('|');
+        if (gezien[sleutel]) dubbel.push(sleutel + ' (' + gezien[sleutel] + ' en ' + r.cid + ')');
+        gezien[sleutel] = r.cid;
+      });
+    });
+    const zonderMis = [];
+    let kortste = 999, langste = 0;
+    GC_CONCEPTEN.forEach(function (c) {
+      let m = '';
+      try { m = gcHulpTekst(gcHulp(c.id), 'mis') || ''; } catch (e) {}
+      if (!m) zonderMis.push(c.id);
+      else { kortste = Math.min(kortste, m.length); langste = Math.max(langste, m.length); }
+    });
+    return { paren: paren, dubbel: dubbel, zonderMis: zonderMis, kortste: kortste,
+             langste: langste, concepten: GC_CONCEPTEN.length, tabel: FOUT_REGEL.length };
+  });
+  console.log('   ' + tab.tabel + ' van de ' + tab.concepten + ' concepten hebben paren, ' + tab.paren + ' paren in totaal');
+  console.log('   de zinnen bij een fout zijn ' + tab.kortste + ' tot ' + tab.langste + ' tekens');
+  ok(tab.dubbel.length === 0,
+    'geen enkel paar staat twee keer, want de eerste treffer wint (' + (tab.dubbel.join(' · ') || 'geen') + ')');
+  ok(tab.zonderMis.length === 0,
+    'elk concept draagt een zin over waarom die fout blijft plakken (' + (tab.zonderMis.join(', ') || 'geen ontbreekt') + ')');
+
   // ---- 2. en het gebeurt ook echt, via de gewone weg door checkSentence() ----
   await page.evaluate(() => show('vertalen'));
   await page.waitForTimeout(300);
@@ -114,6 +171,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.gram = JSON.parse(JSON.stringify(S.gram));
     uit.knop = !!document.getElementById('btnFoutRegel');
     uit.zegtRegel = /Ser of estar|Ser or estar/.test(document.getElementById('sFeedback').innerText || '');
+    /* v23.211: de zin die zegt waarom juist deze fout blijft terugkomen. Hij stond alleen in de
+       naslagtekst van de microles, dus je las hem nooit op het moment dat hij ergens over ging. */
+    uit.misZin = gcHulpTekst(gcHulp('serestar'), 'mis');
+    uit.zegtWaarom = (document.getElementById('sFeedback').innerText || '')
+      .replace(/\s+/g, ' ').indexOf(uit.misZin.slice(0, 40)) >= 0;
 
     // tegenproef: dezelfde zin goed getypt zet niets op fout
     S.gram = {};
@@ -123,6 +185,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     checkSentence();
     uit.gramNaGoed = JSON.parse(JSON.stringify(S.gram));
     uit.knopNaGoed = !!document.getElementById('btnFoutRegel');
+    uit.waaromNaGoed = (document.getElementById('sFeedback').innerText || '')
+      .replace(/\s+/g, ' ').indexOf(uit.misZin.slice(0, 40)) >= 0;
     return uit;
   });
 
@@ -133,12 +197,16 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'en zet dat onderwerp op doos 0, dus het komt morgen terug');
   ok(r.knop === true, 'er staat een knop onder je antwoord die de microles opent');
   ok(r.zegtRegel === true, 'en er staat bij welke regel het is, niet alleen dat het fout was');
+  ok(r.zegtWaarom === true,
+    'v23.211: en waarom juist die fout blijft plakken ("' + String(r.misZin).slice(0, 70) + '...")');
 
   console.log('\n-- de tegenproef --');
   ok(Object.keys(r.gramNaGoed || {}).length === 0,
     'CONTROLE: een goed antwoord zet geen enkel onderwerp op fout (nu: ' +
       JSON.stringify(r.gramNaGoed) + ')');
   ok(r.knopNaGoed === false, 'CONTROLE: en er staat geen oefenknop onder een goed antwoord');
+  ok(r.waaromNaGoed === false,
+    'CONTROLE: en die zin staat er ook niet, dus hij hoort echt bij de fout');
 
   // ---- 3. punt 23: de knop brengt je ook echt in de microles, niet in een overzicht ----
   // Een knop die naar een lijst met kaartjes gaat, is geen antwoord op "waar vind ik het toetsje".

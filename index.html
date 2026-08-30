@@ -1602,7 +1602,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.210";
+var APP_VERSIE = "v23.211";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -11395,6 +11395,27 @@ var FOUT_REGEL = [
   {cid:"negacion", p:[["nada","algo"],["nadie","alguien"],["nunca","siempre"],["ningun","algun"],
                       ["ninguna","alguna"],["tampoco","tambien"],["nada","nadie"]]},
   {cid:"futuroir", p:[["voy","ire"],["va","ira"],["vamos","iremos"],["van","iran"],["vas","iras"]]},
+  /* v23.211: vier concepten die tot nu toe zwegen terwijl ze wel degelijk schone paren hebben.
+     Maakte je deze fout in een zin, dan zei de app alleen "Nog niet" met het verschil erbij; nu
+     noemt hij de regel en zet hij het onderwerp op doosje 0 voor morgen.
+
+     Wat hier bewust NIET bij staat en waarom, zodat niemand het later alsnog "vergeten" noemt:
+     exclamacion zou qué-cómo willen, maar dat paar is al van comparar en foutRegel neemt de eerste
+     treffer, dus een tweede eigenaar komt per constructie nooit aan de beurt. gustarfamilie en
+     seimpersonal hebben alleen paren die al bij gustar staan, en cantidad overlapt met muymucho. */
+  {cid:"tijdmarkers", p:[["hace","desde"],["hace","durante"],["desde","durante"]]},
+  /* de tú-gebiedende wijs tegenover de derde persoon: habla (spreek!) tegenover hable (spreekt u).
+     Bewust zonder di-dice: "di" is ook de verleden tijd van dar, en dan zou de app een tijdfout
+     aanzien voor een gebiedende wijs. Een verkeerde diagnose is erger dan geen. */
+  {cid:"imperativo", p:[["habla","hable"],["come","coma"],["escribe","escriba"],
+                        ["ven","viene"],["haz","hace"],["pon","pone"],["sal","sale"]]},
+  {cid:"cortesia", p:[["podria","puedes"],["podrias","puedes"],["podria","puedo"],
+                      ["quisiera","quiero"],["quisiera","quisiste"]]},
+  /* mi tegenover mio: het bezittelijk voornaamwoord voor het zelfstandig naamwoord tegenover de
+     zelfstandige vorm erachter. tu-usted en tuyo-suyo staan al bij tuusted; dit zijn andere paren
+     en botsen er dus niet mee. */
+  {cid:"posesivo", p:[["mi","mio"],["mis","mios"],["tu","tuyo"],["su","suyo"],
+                      ["nuestro","nuestros"],["mi","mia"]]},
   /* De klassieke uitkomst van "de klinker wisselt niet mee": een leerling schrijft de stam van de
      infinitief. Dit is de enige plek waar de tabel een vorm bevat die geen goed Spaans is, en dat
      hoort zo: het is precies de vorm die je typt als je de regel niet kent. */
@@ -11810,6 +11831,21 @@ function checkSentence(){
     html += "<p class='muted' style='margin:8px 2px 0; font-size:.9rem'>"+
       ct("Je schreef "+fgG+" waar "+fgV+" hoort. Dat is geen woordje dat je miste maar een keuze, en daar hoort een regel bij: <b>"+fregel.naam+"</b>.",
          "You wrote "+fgG+" where "+fgV+" belongs. That is not a word you were missing but a choice, and there is a rule behind it: <b>"+fregel.naam+"</b>.")+"</p>";
+    /* v23.211: en waarom juist die fout blijft terugkomen.
+
+       Elk concept draagt zo'n zin (het veld `mis` in GC_HULP), alle 31, tussen de 84 en 211 tekens.
+       Bij reflexivo: "Se blijft vaak staan omdat je het werkwoord zo geleerd hebt: levantarse."
+       Ze stonden alle 31 in de naslagtekst van de microles, dus je las ze op het moment dat je iets
+       naslaat en nooit op het moment dat je precies die fout maakte.
+
+       Dit is geen nieuwe inhoud, alleen een andere plek. De feedback-meta-analyses gaan precies
+       hierover: informatie over de taak op het moment dat hij ergens over gaat, in plaats van
+       bekrachtiging achteraf. */
+    var fmis = "";
+    try { fmis = gcHulpTekst(gcHulp(fregel.cid), "mis"); } catch(e){ fmis = ""; }
+    if(fmis){
+      html += "<p class='muted' style='margin:6px 2px 0; font-size:.9rem'>" + veiligHtml(fmis) + "</p>";
+    }
   }
   /* v23.168: de goede zin één keer overtypen.
 
