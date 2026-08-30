@@ -58,6 +58,16 @@
   nav#nav button.active{color:var(--accent);}
   nav#nav button:active{background:var(--bg);}
   .wrap{padding-bottom:84px;}
+  /* ================= DE SCHIL VAN EEN TAAKSCHERM (v23.209) =================
+     Op een scherm met één opgave gaat alles weg wat je ogen van die opgave weghaalt. Gemeten op
+     Stefans telefoon stond de eerste vraag op 221 van de 844 pixels, en daarboven stonden zijn
+     eigen naam, een zoekknop en een dagbalk.
+
+     De onderbalk blijft met opzet staan: buiten een lopende les is dat je uitgang. Tijdens een les
+     verdwijnt hij al sinds v23.155 (body.in-les), en daar hoort de X bij die hieronder staat. */
+  body[data-schermsoort="taak"] header,
+  body[data-schermsoort="taak"] #goalLine,
+  body[data-schermsoort="taak"] #appFooter{ display:none !important; }
   .meerrij{display:flex; align-items:center; gap:12px; width:100%; text-align:left;
            border:1px solid var(--border); background:var(--card); border-radius:14px;
            padding:12px 14px; margin-bottom:8px; cursor:pointer;}
@@ -662,11 +672,25 @@
   /* v23.155: het frame om je dagles. Vast bovenaan, buiten alle tabbladen, zodat er tijdens je les
      precies één ding op het scherm staat dat niet per blok verandert. */
   #lesFrame{position:sticky; top:0; z-index:90; background:var(--bg); padding:8px 0 6px;
-            border-bottom:1px solid var(--border); margin:0 0 12px;}
+            border-bottom:1px solid var(--border); margin:0 0 12px;
+            /* v23.209: de uitgang en de voortgangsstrook op een rij. Ze stonden onder elkaar, en dat
+               kostte een halve regel op het scherm waar de opgave op staat. */
+            display:flex; align-items:center; gap:10px;}
   #lesFrame.leeg{display:none;}
-  #lesFrame .lesstrook{margin:0;}
-  #lesFrame .lesuit{display:block; margin-top:6px; font-size:.82rem; text-align:right;
-                    text-decoration:underline; cursor:pointer;}
+  #lesFrame .lesstrook{margin:0; flex:1 1 auto; min-width:0;}
+  /* v23.209: dit was een blokspan van twintig pixels hoog, rechts uitgelijnd en onderstreept. Twee
+     dingen mis: een onderstreepte link is het sterkste "dit is een website" signaal dat er bestaat,
+     en twintig pixels is het kleinste tikdoel op het scherm terwijl dit tijdens een les je enige
+     uitgang is; de tabbalk is dan weg, zie de regel hieronder. */
+  #lesFrame .lesuit{
+    display:flex; align-items:center; gap:6px; flex:0 0 auto;
+    min-width:44px; min-height:44px; padding:0 10px; margin:0;
+    border:0; background:none; color:var(--muted); cursor:pointer;
+    font-size:1.15rem; line-height:1; border-radius:12px; text-decoration:none;
+  }
+  #lesFrame .lesuit .lesuittxt{font-size:.8rem; font-weight:700;}
+  #lesFrame .lesuit:active{background:var(--bg);}
+  @media (max-width:360px){ #lesFrame .lesuit .lesuittxt{display:none;} }
   /* En de tabbalk gaat weg zolang je bezig bent. Vijf knoppen die je uitnodigen om ergens anders
      heen te gaan, precies terwijl je iets afmaakt, is de kern van "ik weet niet waar ik ben". */
   body.in-les nav#nav{display:none;}
@@ -1544,7 +1568,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.208";
+var APP_VERSIE = "v23.209";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15593,9 +15617,17 @@ function lesFrameSync(){
   }
   el.classList.remove("leeg");
   document.body.classList.add("in-les");
-  el.innerHTML = lesStrookHtml() +
-    "<span class='lesuit muted' id='btnLesPauze'>"+
-      ct("pauzeer je les","pause your session")+"</span>";
+  /* v23.209: dit was een onderstreepte tekstspan van twintig pixels hoog, rechts uitgelijnd. Twee
+     dingen mis: een onderstreepte link is het sterkste "dit is een website" signaal dat er bestaat,
+     en twintig pixels is het kleinste tikdoel op het scherm terwijl dit de enige uitgang is. Nu een
+     sluitknop van 44 bij 44 links in de strook, waar een sluitknop hoort. De tekst blijft ernaast
+     staan zolang er ruimte voor is, want een kale X zonder woord is een knop waarvan je niet weet
+     wat hij doet. */
+  el.innerHTML = "<button type='button' class='lesuit' id='btnLesPauze' " +
+      "title='" + ct("pauzeer je les", "pause your session") + "'>" +
+      "<span aria-hidden='true'>\u2715</span>" +
+      "<span class='lesuittxt'>" + ct("pauzeer", "pause") + "</span></button>" +
+    lesStrookHtml();
   var p = document.getElementById("btnLesPauze");
   if(p) p.onclick = lesFramePauze;
 }
@@ -36258,25 +36290,45 @@ function alertBox(msg){
 }
 
 /* ================= NAVIGATIE ================= */
+/* v23.209: elk scherm zegt zelf wat het is, en dat is het enige dat de schil aanstuurt.
+
+   TAAK       een opgave, een antwoord, een knop. Alles wat je ogen van die opgave weghaalt gaat
+              weg: de sitekop met je naam en de zoekknop, de dagbalk, de voettekst.
+   OVERZICHT  je leest en navigeert. Blijft een pagina met alles erop, en dat hoort zo.
+
+   Gemeten op 390 pixels breed: vertalen is 0,4 scherm hoog, woorden 0,5, speeltuin 0,8. Voortgang
+   is 4,9 en spiekbrief 3,5. Het waren altijd al twee soorten; er stond alleen nergens welke.
+
+   Toetsjes staat er met opzet niet bij. Dat tabblad is 12,5 schermen hoog met 57 kaarten, want het
+   draagt het menu en de toets tegelijk. Daar helpt geen schil; dat is een eigen ronde.
+
+   Lezen en musica ook niet: daar is de tekst een pagina en zijn de vragen opgaven, binnen hetzelfde
+   tabblad. Die twee hebben een derde stand nodig en die is er nog niet. */
 var TABS = [
-  {id:"lessen", label:"Lessen"},
-  {id:"cursus", label:"Cursus"},   // v19.90: de leerlijn, weg bij het profiel vandaan
-  {id:"voortgang", label:"Voortgang", nav:false},   // v23.32: eigen scherm, weg bij het profiel vandaan
-  {id:"woorden", label:"Woordjes"},
-  {id:"vertalen", label:"Vertalen"},
-  {id:"toetsjes", label:"Toetsjes", nav:false}, // v19.47: geen eigen tab meer, zit nu in Grammatica
-  {id:"lezen", label:"Lezen"},
-  {id:"chispa", label:"Chispa", nav:false},
-  {id:"chat", label:"Praten met Chispa", nav:false},   // v23.144
-  {id:"meting", label:"De weekmeting", nav:false},     // v23.174
-  {id:"perfil", label:"Profiel", nav:false},
-  {id:"steun", label:"Steun", nav:false},
-  {id:"privacy", label:"Privacy", nav:false},
-  {id:"musica", label:"Música", nav:false},
-  {id:"oefenen", label:"Oefenen", nav:false},
-  {id:"speeltuin", label:"Speeltuin"},
-  {id:"spiekbrief", label:"Grammatica"}
+  {id:"lessen", label:"Lessen", soort:"overzicht"},
+  {id:"cursus", label:"Cursus", soort:"overzicht"},   // v19.90: de leerlijn, weg bij het profiel vandaan
+  {id:"voortgang", label:"Voortgang", nav:false, soort:"overzicht"},   // v23.32: eigen scherm, weg bij het profiel vandaan
+  {id:"woorden", label:"Woordjes", soort:"taak"},
+  {id:"vertalen", label:"Vertalen", soort:"taak"},
+  {id:"toetsjes", label:"Toetsjes", nav:false, soort:"overzicht"}, // v19.47: geen eigen tab meer, zit nu in Grammatica
+  {id:"lezen", label:"Lezen", soort:"overzicht"},
+  {id:"chispa", label:"Chispa", nav:false, soort:"overzicht"},
+  {id:"chat", label:"Praten met Chispa", nav:false, soort:"taak"},   // v23.144
+  {id:"meting", label:"De weekmeting", nav:false, soort:"taak"},     // v23.174
+  {id:"perfil", label:"Profiel", nav:false, soort:"overzicht"},
+  {id:"steun", label:"Steun", nav:false, soort:"overzicht"},
+  {id:"privacy", label:"Privacy", nav:false, soort:"overzicht"},
+  {id:"musica", label:"Música", nav:false, soort:"overzicht"},
+  {id:"oefenen", label:"Oefenen", nav:false, soort:"overzicht"},
+  {id:"speeltuin", label:"Speeltuin", soort:"taak"},
+  {id:"spiekbrief", label:"Grammatica", soort:"overzicht"}
 ];
+/* Eén plek leest dat veld. Staat er niets, dan is het een overzicht: een scherm dat vergeet zijn
+   soort te noemen hoort niets kwijt te raken. */
+function tabSoort(id){
+  for(var i = 0; i < TABS.length; i++){ if(TABS[i].id === id) return TABS[i].soort || "overzicht"; }
+  return "overzicht";
+}
 
 function navPush(state){
   try{ gezienBij(state); }catch(e){}
@@ -36422,6 +36474,10 @@ function show(tabId, skipPush){
   TABS.forEach(function(t){
     document.getElementById("tab-"+t.id).classList.toggle("hidden", t.id!==tabId);
   });
+  /* v23.209: de enige plek die de soort zet. Alles wat de schil doet hangt hieraan, en geen enkele
+     renderfunctie weet ervan. Een regel die voor zeventien schermen geldt, hoort door één plek
+     afgedwongen te worden. */
+  try { document.body.setAttribute("data-schermsoort", tabSoort(tabId)); } catch(e){}
   // v19.98: de vier vakken lichten op bij hun eigen tab; alles wat achter Meer zit laat Meer oplichten,
   // zodat je op elk scherm ziet via welke deur je binnenkwam.
   var inMeer = ["cursus","musica","chispa","perfil"].indexOf(tabId) !== -1;

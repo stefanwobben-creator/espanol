@@ -1,0 +1,1019 @@
+<title>Vamos dagles als scherm</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,600;0,700;0,800;0,900&display=swap">
+<style>
+/* ============================================================================
+   Vamos, de hele flow.
+
+   Palet, radius en accenten komen letterlijk uit index.html, zodat alles wat je
+   hier anders voelt aan de indeling ligt en niet aan een nieuw kleurtje.
+
+   De hele stelling in één regel: er zijn twee soorten scherm, en de app maakt
+   dat onderscheid nu nergens.
+
+     TAAK       een opgave, een antwoord, een knop. Neemt het scherm over: geen
+                kop, geen voettekst, geen onderbalk. Een X brengt je terug.
+     OVERZICHT  je leest en navigeert. Blijft een pagina, met de onderbalk in
+                beeld. Dat is goed; Duolingo doet het ook zo.
+
+   Elk scherm hieronder draagt zijn soort als veld, precies zoals TABS dat in de
+   echte app zou doen. De schil is CSS die aan body.taak hangt. Geen enkel
+   oefeningscherm weet ervan.
+   ========================================================================== */
+:root{
+  --bg:#faf6ef; --card:#ffffff; --ink:#2d2a26; --muted:#8a8378;
+  --accent:#d4552b; --accent-soft:#fbe8df; --accent-ink:#ffffff;
+  --green:#2e7d4f; --green-soft:#e3f2e8;
+  --red:#c0392b; --red-soft:#fdeae7;
+  --border:#e8e1d4; --rail:#ece4d6;
+  --schaduw:0 -6px 26px rgba(45,42,38,.10);
+  --frame:#2d2a26;
+  --ui:"Nunito", ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --lees:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17150f; --card:#221f18; --ink:#f3ece0; --muted:#a2998a;
+    --accent:#f0764a; --accent-soft:#3a231a; --accent-ink:#1b1610;
+    --green:#6bc48c; --green-soft:#1d3327;
+    --red:#f08a7c; --red-soft:#3a201d;
+    --border:#332e25; --rail:#2c2820;
+    --schaduw:0 -6px 26px rgba(0,0,0,.5);
+    --frame:#000000;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17150f; --card:#221f18; --ink:#f3ece0; --muted:#a2998a;
+  --accent:#f0764a; --accent-soft:#3a231a; --accent-ink:#1b1610;
+  --green:#6bc48c; --green-soft:#1d3327;
+  --red:#f08a7c; --red-soft:#3a201d;
+  --border:#332e25; --rail:#2c2820;
+  --schaduw:0 -6px 26px rgba(0,0,0,.5);
+  --frame:#000000;
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--lees); line-height:1.5;
+  min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:16px; padding:16px 12px;
+}
+button{font:inherit; color:inherit;}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+
+/* ---- het toestel ---------------------------------------------------------- */
+.toestel{
+  width:390px; height:844px; max-width:100%; max-height:calc(100dvh - 108px);
+  position:relative; overflow:hidden; background:var(--bg);
+  border-radius:40px; border:10px solid var(--frame);
+  box-shadow:0 30px 70px rgba(45,42,38,.28);
+  display:flex; flex-direction:column;
+}
+@media (max-width:430px){
+  body{padding:0; gap:0; justify-content:flex-start; overflow:hidden; height:100dvh;}
+  .toestel{width:100%; height:calc(100dvh - 60px); max-height:none; border-radius:0; border:0; box-shadow:none;}
+  .buiten{width:100%; padding:0 10px;}
+  .buiten .notitie{display:none;}
+  .regelrij{padding:6px 0; gap:6px;}
+  .schakel{font-size:.8rem; padding:7px 6px; min-height:44px;}
+}
+
+/* ---- zone 1: de kop. Twee gedaanten, één element. ------------------------- */
+.top{
+  flex:0 0 auto; display:flex; align-items:center; gap:12px;
+  padding:14px 16px 10px; padding-top:calc(14px + env(safe-area-inset-top,0px));
+}
+.top button{
+  border:0; background:none; cursor:pointer; padding:0;
+  width:44px; height:44px; display:grid; place-items:center;
+  border-radius:12px; font-size:1.35rem; line-height:1; color:var(--muted);
+  flex:0 0 auto;
+}
+.top button:active{background:var(--rail);}
+.balk{flex:1 1 auto; display:flex; gap:5px;}
+.balk i{flex:1 1 0; height:9px; border-radius:99px; background:var(--rail); overflow:hidden;}
+.balk i b{display:block; height:100%; width:0; background:var(--accent); border-radius:99px;
+          transition:width .45s cubic-bezier(.4,1.3,.6,1);}
+.balk i.klaar b, .balk i.nu b{width:100%;}
+/* de kop van een overzicht: titel plus vuurtje, geen voortgangsbalk */
+.paginakop{flex:1 1 auto; display:flex; align-items:baseline; justify-content:space-between; gap:10px; min-width:0;}
+.paginakop h1{font-family:var(--ui); font-weight:900; font-size:1.5rem; margin:0; letter-spacing:-.02em;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.vuur{font-family:var(--ui); font-weight:800; font-size:.95rem; color:var(--accent); white-space:nowrap;}
+body.overzicht .balk, body.overzicht #btnX{display:none;}
+body.taak .paginakop{display:none;}
+
+/* ---- zone 2 ---------------------------------------------------------------- */
+.midden{
+  flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+  padding:14px 20px 20px; display:flex; flex-direction:column; justify-content:flex-start;
+}
+.midden.midt{justify-content:center;}
+body.overzicht .midden{padding-bottom:14px;}
+
+/* Chispa geeft de opdracht, op de plek waar Duolingo zijn uil zet. */
+.mascotte{display:flex; align-items:flex-end; gap:10px; margin:0 0 22px;}
+.mascotte .chispakop{font-size:2.6rem; line-height:1; flex:0 0 auto; transform:translateY(2px);}
+.bubbel{
+  position:relative; margin:0; flex:1 1 auto;
+  background:var(--card); border:2px solid var(--border); border-radius:16px;
+  padding:11px 14px; font-family:var(--ui); font-weight:700; font-size:1rem; line-height:1.35;
+}
+.bubbel::before, .bubbel::after{
+  content:""; position:absolute; left:-9px; bottom:13px; width:0; height:0;
+  border:8px solid transparent; border-right-color:var(--border); border-left:0;
+}
+.bubbel::after{left:-6px; border-right-color:var(--card);}
+
+.vraagkop{font-family:var(--ui); font-weight:800; font-size:.76rem; letter-spacing:.12em;
+          text-transform:uppercase; color:var(--muted); margin:0 0 18px;}
+.prompt{font-family:var(--ui); font-weight:900; letter-spacing:-.02em; text-wrap:balance;
+        font-size:2.5rem; line-height:1.1; margin:0 0 6px;}
+.prompt.klein{font-size:1.85rem;}
+.onder{font-family:var(--ui); font-weight:700; color:var(--muted); margin:0 0 22px; font-size:1.02rem;}
+.zinvraag{font-family:var(--ui); font-weight:800; font-size:1.5rem; line-height:1.35; margin:0 0 8px;}
+.zinvraag u{text-decoration:none; color:var(--accent); letter-spacing:-.06em; font-weight:900;}
+
+.keuzes{display:flex; flex-direction:column; gap:12px; margin-top:6px;}
+.keuze{
+  min-height:60px; width:100%; text-align:left; padding:14px 18px;
+  font-family:var(--ui); font-weight:800; font-size:1.12rem;
+  background:var(--card); color:var(--ink);
+  border:2px solid var(--border); border-bottom-width:4px; border-radius:16px;
+  cursor:pointer; transition:transform .08s ease, border-color .12s ease, background .12s ease;
+}
+.keuze:active{transform:translateY(2px); border-bottom-width:2px;}
+.keuze[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft);}
+.keuze.goed{border-color:var(--green); background:var(--green-soft);}
+.keuze.mis{border-color:var(--red); background:var(--red-soft);}
+
+textarea.typ{
+  width:100%; min-height:104px; resize:none; padding:14px 16px;
+  font-family:var(--ui); font-weight:700; font-size:1.15rem; line-height:1.4;
+  background:var(--card); color:var(--ink);
+  border:2px solid var(--border); border-radius:16px;
+}
+textarea.typ::placeholder{color:var(--muted); font-weight:600;}
+
+.leesregel{font-family:var(--ui); font-weight:800; font-size:1.5rem; line-height:1.7; margin:0 0 14px;}
+.leesregel button{border:0; background:none; padding:0 1px; cursor:pointer; font:inherit;
+                  border-bottom:2px dotted var(--muted);}
+.leesregel button.uit{border-bottom-color:transparent; color:var(--accent);}
+
+/* de luisterknop van escuchar */
+.luister{
+  width:100%; min-height:96px; border-radius:20px; cursor:pointer; margin:0 0 20px;
+  background:var(--accent-soft); border:2px solid var(--accent); color:var(--accent);
+  font-family:var(--ui); font-weight:900; font-size:1.05rem;
+  display:flex; align-items:center; justify-content:center; gap:12px;
+}
+.luister span{font-size:2.2rem; line-height:1;}
+.luister:active{transform:translateY(2px);}
+.luister.traag{background:var(--card); border-color:var(--border); color:var(--muted);
+               min-height:52px; font-size:.95rem;}
+.luister.traag span{font-size:1.4rem;}
+
+/* de tegels van een spel */
+.tegelbak{display:flex; flex-wrap:wrap; gap:10px; min-height:64px; align-content:flex-start;
+          border-bottom:2px dashed var(--border); padding:8px 0 14px; margin-bottom:18px;}
+.tegels{display:flex; flex-wrap:wrap; gap:10px;}
+.tegel{
+  min-height:52px; padding:12px 16px; font-family:var(--ui); font-weight:800; font-size:1.05rem;
+  background:var(--card); border:2px solid var(--border); border-bottom-width:4px;
+  border-radius:14px; cursor:pointer;
+}
+.tegel:active{transform:translateY(2px); border-bottom-width:2px;}
+.tegel.op{opacity:.25; pointer-events:none;}
+
+.klaarblok{text-align:center;}
+.klaarblok .chispa{font-size:4.4rem; line-height:1; display:block; margin-bottom:10px;
+                   animation:hup .7s cubic-bezier(.3,1.6,.5,1);}
+@keyframes hup{0%{transform:scale(.4) rotate(-8deg); opacity:0;} 100%{transform:none; opacity:1;}}
+.cijfers{display:flex; gap:10px; margin-top:20px;}
+.cijfer{flex:1; background:var(--card); border:2px solid var(--border); border-radius:16px; padding:12px 8px;}
+.cijfer b{display:block; font-family:var(--ui); font-weight:900; font-size:1.6rem;
+          font-variant-numeric:tabular-nums; color:var(--accent);}
+.cijfer span{font-family:var(--ui); font-weight:700; font-size:.78rem; color:var(--muted);}
+.naslag{margin-top:26px; border-top:2px solid var(--border); padding-top:16px; text-align:left;}
+.naslag h4{font-family:var(--ui); font-weight:800; font-size:.76rem; letter-spacing:.12em;
+           text-transform:uppercase; color:var(--muted); margin:0 0 10px;}
+.naslag p{margin:0 0 10px; font-size:.97rem; line-height:1.6;}
+.naslag i{color:var(--accent); font-style:normal; font-weight:600;}
+
+/* ---- overzichtsonderdelen -------------------------------------------------- */
+.kaart{background:var(--card); border:2px solid var(--border); border-radius:20px; padding:16px; margin:0 0 12px;}
+.kaart h3{font-family:var(--ui); font-weight:900; font-size:1.2rem; margin:0 0 4px;}
+.kaart p{margin:0 0 12px; color:var(--muted); font-size:.94rem;}
+.kaart .hoofdknop{position:static;}
+.sectiekop{font-family:var(--ui); font-weight:800; font-size:.76rem; letter-spacing:.12em;
+           text-transform:uppercase; color:var(--muted); margin:22px 0 10px;}
+.rij{
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left; cursor:pointer;
+  min-height:64px; padding:12px 14px; margin:0 0 10px;
+  background:var(--card); border:2px solid var(--border); border-radius:16px;
+  font-family:var(--ui); font-weight:800; font-size:1.02rem;
+}
+.rij:active{transform:translateY(2px);}
+.rij .ico{font-size:1.7rem; line-height:1; flex:0 0 auto;}
+.rij .tek{flex:1 1 auto; min-width:0;}
+.rij .tek small{display:block; font-weight:700; font-size:.82rem; color:var(--muted);}
+.doosjes{display:flex; gap:3px; flex:0 0 auto;}
+.doosjes i{width:8px; height:18px; border-radius:3px; background:var(--rail);}
+.doosjes i.aan{background:var(--green);}
+.meter{height:14px; border-radius:99px; background:var(--rail); overflow:hidden; margin:8px 0 8px;}
+.meter b{display:block; height:100%; background:var(--accent);}
+.meter b:first-child{border-radius:99px 0 0 99px;}
+.meter b.zacht{background:var(--accent-soft); border-radius:0 99px 99px 0;}
+.kaart p.grootgetal, .grootgetal{
+  /* .kaart p is specifieker dan .grootgetal en won hier op font-size en kleur. Dat is precies de
+     botsing waar je op moet letten als je klassen stapelt. */
+  font-family:var(--ui); font-weight:900; font-size:3rem; line-height:1; margin:0 0 2px;
+  color:var(--ink); font-variant-numeric:tabular-nums;
+}
+.raster{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.raster .rij{margin:0; flex-direction:column; align-items:flex-start; gap:6px; min-height:96px;}
+
+/* ---- zone 3: de knop, en de onderbalk -------------------------------------- */
+.onderbalk{
+  flex:0 0 auto; position:relative; z-index:2;
+  padding:12px 20px calc(16px + env(safe-area-inset-bottom,0px));
+  background:var(--bg);
+}
+body.overzicht .onderbalk{display:none;}
+.hoofdknop{
+  width:100%; min-height:56px; border:0; border-radius:16px; cursor:pointer;
+  font-family:var(--ui); font-weight:900; font-size:1.05rem; letter-spacing:.02em;
+  text-transform:uppercase;
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:0 4px 0 rgba(45,42,38,.22);
+  transition:transform .08s ease, box-shadow .08s ease;
+}
+.hoofdknop:active{transform:translateY(4px); box-shadow:0 0 0 rgba(0,0,0,0);}
+.hoofdknop[disabled]{background:var(--rail); color:var(--muted); box-shadow:none; cursor:default;}
+.hoofdknop.stil{background:var(--card); color:var(--ink); border:2px solid var(--border); border-bottom-width:4px;}
+
+nav{
+  flex:0 0 auto; display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
+  background:var(--card); border-top:2px solid var(--border);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+}
+body.taak nav{display:none;}
+nav button{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  border:0; background:none; cursor:pointer; color:var(--muted);
+  min-height:52px; border-radius:12px; padding:4px 2px;
+  font-family:var(--ui); font-weight:800; font-size:.68rem; letter-spacing:-.01em;
+}
+nav button .navico{font-size:1.35rem; line-height:1;}
+nav button.actief{color:var(--accent);}
+nav button:active{background:var(--bg);}
+
+/* ---- het blad met de uitslag ---------------------------------------------- */
+.blad{
+  position:absolute; left:0; right:0; bottom:0; z-index:5;
+  transform:translateY(101%); transition:transform .28s cubic-bezier(.2,.9,.3,1);
+  background:var(--green-soft); border-top:2px solid var(--green);
+  border-radius:22px 22px 0 0; box-shadow:var(--schaduw);
+  padding:18px 20px calc(16px + env(safe-area-inset-bottom,0px));
+}
+.blad.mis{background:var(--red-soft); border-top-color:var(--red);}
+.blad.op{transform:translateY(0);}
+.blad h3{font-family:var(--ui); font-weight:900; font-size:1.28rem; margin:0 0 4px; color:var(--green);}
+.blad.mis h3{color:var(--red);}
+.blad p{margin:0 0 14px; font-size:.95rem; color:var(--ink);}
+.blad .hoofdknop{background:var(--green); color:#fff;}
+.blad.mis .hoofdknop{background:var(--red); color:#fff;}
+
+/* ---- de schakelaar die de oude chrome teruglegt --------------------------- */
+.chrome{display:none;}
+body.oud .chrome{display:block;}
+body.oud.taak nav{display:grid;}
+body.oud .hoofdknop{
+  width:auto; min-height:42px; padding:8px 16px; font-size:.95rem; text-transform:none;
+  border-radius:10px; box-shadow:none; letter-spacing:0;
+}
+body.oud .onderbalk{padding:8px 20px 0; text-align:left;}
+body.oud .keuze{min-height:38px; padding:7px 12px; font-size:.95rem; border-width:1px; border-radius:10px;}
+body.oud .tegel{min-height:34px; padding:6px 11px; font-size:.92rem; border-width:1px;}
+body.oud .rij{min-height:40px; padding:7px 10px; font-size:.92rem; border-width:1px; border-radius:10px;}
+body.oud .prompt{font-size:1.6rem;}
+body.oud .zinvraag{font-size:1.1rem;}
+body.oud .blad{position:static; transform:none; border-radius:0; box-shadow:none; border:0;
+               padding:10px 0 0; background:none;}
+body.oud .blad:not(.op){display:none;}
+body.oud .midden{justify-content:flex-start;}
+
+.sitekop{border-bottom:1px solid var(--border); margin:0 16px 8px; padding-bottom:10px;
+         display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.sitekop h1{font-family:var(--ui); font-size:1.35rem; margin:0; letter-spacing:-.02em;}
+.sitekop h1 span{color:var(--accent);}
+.sitekop .zoek{border:1px solid var(--border); background:var(--card); border-radius:99px;
+               padding:6px 14px; font-size:.85rem; cursor:pointer;}
+.tacobalk{display:flex; align-items:center; gap:8px; margin:0 16px 12px;}
+.tacobalk i{flex:1; height:10px; background:var(--rail); border-radius:99px;}
+.tacobalk span{font-size:.8rem; color:var(--muted); white-space:nowrap;}
+.pauzelink{display:block; text-align:right; margin:0 16px 6px; font-size:.85rem;
+           color:var(--muted); text-decoration:underline; cursor:pointer;}
+.voet{margin:14px 16px 0; text-align:center; font-size:.8rem; color:var(--muted); line-height:1.8;}
+.voet a{color:var(--muted); text-decoration:underline; cursor:pointer;}
+
+/* ---- buiten het toestel ---------------------------------------------------- */
+.buiten{width:390px; max-width:100%; display:flex; flex-direction:column; gap:8px;}
+.regelrij{display:flex; gap:8px; flex-wrap:wrap;}
+.schakel{
+  flex:1 1 auto; min-height:48px; padding:10px 14px; cursor:pointer;
+  font-family:var(--ui); font-weight:800; font-size:.88rem;
+  background:var(--card); color:var(--ink);
+  border:2px solid var(--border); border-radius:14px;
+}
+.schakel[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft); color:var(--accent);}
+.notitie{font-size:.85rem; color:var(--muted); margin:0; text-wrap:pretty;}
+.notitie b{color:var(--ink); font-family:var(--ui);}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important;}
+}
+</style>
+
+<div class="toestel" id="toestel">
+
+  <div class="top">
+    <button id="btnX" title="Sluiten" aria-label="Sluiten">&#10005;</button>
+    <div class="balk" id="balk"></div>
+    <div class="paginakop" id="paginakop"><h1 id="paginatitel">Vandaag</h1><span class="vuur">&#128293; 40</span></div>
+    <button id="btnGeluid" title="Geluid aan of uit" aria-label="Geluid aan of uit">&#128266;</button>
+  </div>
+
+  <div class="chrome">
+    <span class="pauzelink">pauzeer je les</span>
+    <div class="sitekop">
+      <h1>&#161;Vamos <span>Stefan</span>!</h1>
+      <span class="zoek">&#128269; Search</span>
+    </div>
+    <div class="tacobalk"><i></i><span>0/30 tacos</span></div>
+  </div>
+
+  <div class="midden" id="midden"></div>
+
+  <div class="onderbalk">
+    <button class="hoofdknop" id="knop">Door</button>
+  </div>
+
+  <div class="chrome voet">
+    &#10067; <a>Tour</a> &middot; &#128153; <a>Zo werkt het &amp; steun de app</a> &middot; &#128274; <a>Privacy</a> &middot; v23.208
+  </div>
+
+  <nav id="nav"></nav>
+
+  <div class="blad" id="blad" role="status" aria-live="polite">
+    <h3 id="bladKop"></h3>
+    <p id="bladTekst"></p>
+    <button class="hoofdknop" id="bladKnop">Door</button>
+  </div>
+</div>
+
+<div class="buiten">
+  <div class="regelrij">
+    <button class="schakel" id="schakelOud" aria-pressed="false">Oude opmaak</button>
+    <button class="schakel" id="schakelHome" style="flex:0 0 auto">Naar Vandaag</button>
+  </div>
+  <p class="notitie"><b>De hele flow, met echte inhoud uit Vamos.</b> Onderin staan vier plekken; alles wat een opgave is neemt het scherm over en geeft het daarna terug. Zet <i>Oude opmaak</i> aan om de sitekop, de tacobalk, de pauzelink, de voettekst en de knopmaten van vandaag over precies dezelfde schermen te leggen. Palet en accenten komen letterlijk uit index.html, dus wat je voelt is indeling.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =========================================================================
+     1. DE SCHERMEN, met hun soort. Dit is het veld dat in de echte app aan TABS
+        hangt, en het is het enige dat de schil aanstuurt.
+     ======================================================================= */
+  var SCHERMEN = {
+    vandaag:    {titel:"Vandaag",    soort:"overzicht", ico:"☀️", nav:"Vandaag"},
+    grammatica: {titel:"Grammatica", soort:"overzicht", ico:"📐", nav:"Grammatica"},
+    oefenen:    {titel:"Oefenen",    soort:"overzicht", ico:"✍️",  nav:"Oefenen"},
+    voortgang:  {titel:"Voortgang",  soort:"overzicht", ico:"📈", nav:"Voortgang"},
+    taak:       {titel:"",           soort:"taak"}
+  };
+
+  /* =========================================================================
+     2. DE TAKEN. Elke oefening is een rij stappen; de schil weet niet welke.
+        Alle zinnen, woorden, opties en verklaringen komen uit index.html.
+     ======================================================================= */
+  var TAKEN = {
+    dagles: {
+      naam:"Dagles", klaarKop:"¡Hecho!",
+      klaarOnder:"Chispa krijgt haar hapje: 🍄 los champiñones al ajillo.",
+      stappen:[
+        {soort:"kaart", kop:"Nieuw woord", es:"la parada", nl:"de halte",
+         meer:"Familie van parar (stoppen): la parada del autobús is de bushalte."},
+        {soort:"keuze", kop:"Grammatica · muy of mucho",
+         zin:"Estoy ___ cansado.", hint:"Ik ben heel moe.",
+         opties:["muy","mucho"], goed:0,
+         waarom:"Er staat een bijvoeglijk naamwoord achter, dus muy. Mucho kan daar niet staan."},
+        {soort:"keuze", kop:"Toetsje · cuesta of cuestan",
+         zin:"Me ___ aprender los verbos.", hint:"Het kost me moeite om de werkwoorden te leren.",
+         opties:["cuesta","cuestan"], goed:0,
+         waarom:"Aprender is een infinitief. Eén activiteit is enkelvoud, dus cuesta."},
+        {soort:"typ", kop:"Schrijven",
+         nl:"Het kost me moeite om de werkwoorden te leren.",
+         es:"Me cuesta aprender los verbos.", alt:["me cuesta aprender los verbos"],
+         waarom:"Aprender is een infinitief, dus enkelvoud, dus cuesta. Het onderwerp is het leren, niet ik."},
+        {soort:"lezen", kop:"Lezen",
+         woorden:[{es:"Prefiero",nl:"ik geef de voorkeur aan"},{es:"una",nl:"een"},{es:"casa",nl:"huis"},
+                  {es:"luminosa",nl:"licht"},{es:"con",nl:"met"},{es:"terraza",nl:"terras"}],
+         nl:"Ik geef de voorkeur aan een licht huis met terras.",
+         waarom:"Preferir is een schoenwerkwoord: prefiero, prefieres, prefiere. Luminosa krijgt een -a, want casa is vrouwelijk."}
+      ]
+    },
+
+    /* De microles van het concept reflexivo, in precies de volgorde die gcBouw() sinds v23.59
+       maakt: twee voorbeelden met de kern erboven, twee zonder een woord uitleg, en pas daarna de
+       vraag naar de regel met de hele tekst als naslag. */
+    reflexivo: {
+      naam:"Me, te of se", klaarKop:"Me, te of se",
+      klaarOnder:"Dit onderwerp schuift een doosje op en komt over drie dagen terug.",
+      stappen:[
+        {soort:"keuze", kop:"Me, te of se · probeer eens",
+         kern:"De uitgang verklapt het voornaamwoord. Eindigt het werkwoord op -o, dan me. Op -s, dan te. Anders se of nos.",
+         zin:"___ llamo temprano.", hint:"ik, heten", opties:["me","se","te"], goed:0,
+         waarom:"llamo is een ik-vorm, en bij ik hoort me.",
+         val:1, valWaarom:"Se blijft vaak staan omdat je het werkwoord zo geleerd hebt: levantarse. Maar se hoort alleen bij hij, zij, u en zij-meervoud, nooit bij een ik-vorm."},
+        {soort:"keuze", kop:"Me, te of se · probeer eens",
+         zin:"¿A qué hora ___ duchas?", hint:"jij, douchen", opties:["me","se","te"], goed:2,
+         waarom:"duchas is een jij-vorm, en bij jij hoort te.",
+         val:1, valWaarom:"Se hoort bij hij, zij en u. Bij een jij-vorm op -s hoort te."},
+        {soort:"keuze", kop:"Me, te of se · nog twee",
+         zin:"Mi hermano ___ llama tarde.", hint:"mijn broer, heten", opties:["se","te","me"], goed:0,
+         waarom:"llama is een hij- of zij-vorm, en daar hoort se bij."},
+        {soort:"keuze", kop:"Me, te of se · nog twee",
+         zin:"___ acostamos a las ocho.", hint:"wij, naar bed gaan", opties:["me","nos","se"], goed:1,
+         waarom:"Bij een wij-vorm hoort nos, niet se."},
+        {soort:"regel", kop:"Me, te of se · waarom dat zo is",
+         zin:"Waar hoort het voornaamwoord me, te of se bij?",
+         opties:["Bij de tijd van het werkwoord","Bij het lijdend voorwerp",
+                 "Bij de persoon van het werkwoord","Bij het geslacht van het onderwerp"], goed:2,
+         waarom:"Ik hoort bij me, jij bij te, hij, zij en u bij se. Se met een ik-vorm bestaat niet.",
+         naslag:"<p>Bij een wederkerend werkwoord doe je iets bij jezelf, en dan hoort het voornaamwoord bij dezelfde persoon als het werkwoord. Daar gaat het mis: <i>se</i> hoort bij hij, zij of u, nooit bij ik.</p><p><i>me levanto, te levantas, se levanta, nos levantamos, os levantáis, se levantan</i></p><p>Er zit een tweede beslissing in. Doe je het bij jezelf of bij iemand anders?</p><p><i>Me despierto a las siete.</i> is ik word om zeven uur wakker.<br><i>Despierto a mi hija a las siete.</i> is ik maak mijn dochter om zeven uur wakker.</p>"}
+      ]
+    },
+
+    escuchar: {
+      naam:"Escuchar", klaarKop:"Bien escuchado",
+      klaarOnder:"Wat je hoorde en niet zag, blijft het langst hangen.",
+      stappen:[
+        {soort:"luister", kop:"Luisteren", es:"La parada está cerca de aquí.",
+         vraag:"Wat hoor je?",
+         opties:["De halte is hier vlakbij.","De halte is hier ver vandaan.","Het park is hier vlakbij."],
+         goed:0, waarom:"cerca de aquí is hier vlakbij. Lejos zou ver zijn geweest."},
+        {soort:"luister", kop:"Luisteren", es:"Me cuesta aprender los verbos.",
+         vraag:"Wat hoor je?",
+         opties:["Ik leer de werkwoorden graag.","Het kost me moeite om de werkwoorden te leren.","De werkwoorden kosten veel geld."],
+         goed:1, waarom:"Costar betekent hier moeite kosten, niet geld kosten."},
+        {soort:"luister", kop:"Luisteren · en nu schrijven", es:"Prefiero una casa luminosa.",
+         schrijf:true, esKaal:"prefiero una casa luminosa",
+         vraag:"Schrijf wat je hoort.",
+         waarom:"Luminosa krijgt een -a, want casa is vrouwelijk."}
+      ]
+    },
+
+    spel: {
+      naam:"Rompecabezas", klaarKop:"¡Bien hecho!",
+      klaarOnder:"Drie zinnen gelegd. In de echte app telt dit als herkennen, niet als schrijven.",
+      stappen:[
+        {soort:"tegels", kop:"Leg de zin", nl:"De halte is hier vlakbij.",
+         es:["La","parada","está","cerca","de","aquí"], stoor:["lejos","el"],
+         waarom:"Estar voor een plek: la parada está. Ser kan hier niet."},
+        {soort:"tegels", kop:"Leg de zin", nl:"Mijn zus zorgt voor onze zieke oma.",
+         es:["Mi","hermana","cuida","de","nuestra","abuela","enferma"], stoor:["está","a"],
+         waarom:"Cuidar de of cuidar a, allebei goed. Enferma krijgt een -a, want abuela is vrouwelijk."},
+        {soort:"tegels", kop:"Leg de zin", nl:"Eet niet zo snel.",
+         es:["No","comas","tan","deprisa"], stoor:["mucho","muy"],
+         waarom:"No comas is de ontkennende gebiedende wijs. Deprisa is één woord."}
+      ]
+    }
+  };
+
+  /* =========================================================================
+     3. Geluid en trilling
+     ======================================================================= */
+  var geluidAan = true, ctx = null;
+  function tik(freqs, duur){
+    if(!geluidAan) return;
+    try{
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if(ctx.state === "suspended") ctx.resume();
+      freqs.forEach(function(f, i){
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        var t0 = ctx.currentTime + i * 0.09;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + duur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t0); o.stop(t0 + duur + 0.02);
+      });
+    }catch(e){}
+  }
+  function tril(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+  function jaGeluid(){ tik([660, 990], 0.16); tril(18); }
+  function neeGeluid(){ tik([180], 0.22); tril([12, 60, 12]); }
+  /* escuchar gebruikt de stem van het toestel. Geen netwerk, geen bestand; in de echte app staat
+     hier de ingesproken zin uit audio/. */
+  function zeg(tekst, traag){
+    try{
+      if(!window.speechSynthesis) return false;
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(tekst);
+      u.lang = "es-ES"; u.rate = traag ? 0.6 : 0.95;
+      speechSynthesis.speak(u);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  /* =========================================================================
+     4. De schil: één plek zet de soort, de CSS doet de rest
+     ======================================================================= */
+  var midden = document.getElementById("midden");
+  var knop = document.getElementById("knop");
+  var blad = document.getElementById("blad");
+  var bladKop = document.getElementById("bladKop");
+  var bladTekst = document.getElementById("bladTekst");
+  var bladKnop = document.getElementById("bladKnop");
+  var balk = document.getElementById("balk");
+  var nav = document.getElementById("nav");
+  var titelEl = document.getElementById("paginatitel");
+
+  var scherm = "vandaag";     // welk overzicht staat open
+  var taak = null;            // {sleutel, i, fase, gekozen, goed, fout, klaar, terug}
+  var streak = 40, tacos = 0, gedaanVandaag = false;
+  var doosjes = {reflexivo:0, pronombre:0, serestar:3, porpara:4, muymucho:2, genero:5};
+
+  function zetSoort(soort){
+    document.body.className =
+      soort + (document.body.classList.contains("oud") ? " oud" : "");
+  }
+  function veilig(t){ return String(t).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; }); }
+  function bubbel(t){
+    return '<div class="mascotte"><span class="chispakop">🦎</span>' +
+           '<p class="bubbel">' + veilig(t) + '</p></div>';
+  }
+  function zetKnop(tekst, aan, stil){
+    knop.textContent = tekst; knop.disabled = !aan;
+    knop.className = "hoofdknop" + (stil ? " stil" : "");
+  }
+  function sluitBlad(){ blad.className = "blad"; }
+
+  function tekenNav(){
+    nav.innerHTML = "";
+    Object.keys(SCHERMEN).forEach(function(id){
+      var s = SCHERMEN[id];
+      if(!s.nav) return;
+      var b = document.createElement("button");
+      b.className = (id === scherm ? "actief" : "");
+      b.innerHTML = '<span class="navico">' + s.ico + '</span><span>' + veilig(s.nav) + '</span>';
+      b.onclick = function(){ ga(id); };
+      nav.appendChild(b);
+    });
+  }
+
+  /* =========================================================================
+     5. De overzichten
+     ======================================================================= */
+  function ga(id){
+    taak = null; scherm = id; sluitBlad();
+    zetSoort("overzicht");
+    titelEl.textContent = SCHERMEN[id].titel;
+    midden.className = "midden"; midden.scrollTop = 0;
+    tekenNav();
+    if(id === "vandaag")    return tekenVandaag();
+    if(id === "grammatica") return tekenGrammatica();
+    if(id === "oefenen")    return tekenOefenen();
+    if(id === "voortgang")  return tekenVoortgang();
+  }
+
+  function tekenVandaag(){
+    midden.innerHTML =
+      '<div class="kaart">' +
+        '<h3>' + (gedaanVandaag ? "Je les van vandaag zit erop" : "Vijf minuten en dat is het") + '</h3>' +
+        '<p>' + (gedaanVandaag
+          ? "Chispa heeft haar hapje gehad. Alles hierna is bonus."
+          : "5 woorden, dan kort: grammatica, een toetsje en oefenen.") + '</p>' +
+        '<button class="hoofdknop" data-start="dagles">' +
+          (gedaanVandaag ? "Nog een keer" : "Start je les") + '</button>' +
+      '</div>' +
+      '<p class="sectiekop">Los oefenen</p>' +
+      '<button class="rij" data-start="escuchar"><span class="ico">🎧</span>' +
+        '<span class="tek">Escuchar<small>Drie zinnen, luisteren en schrijven</small></span></button>' +
+      '<button class="rij" data-start="spel"><span class="ico">🧩</span>' +
+        '<span class="tek">Rompecabezas<small>Leg drie zinnen uit tegels</small></span></button>' +
+      '<button class="rij" data-start="reflexivo"><span class="ico">🩺</span>' +
+        '<span class="tek">Me, te of se<small>Je zwakste regel, vijf vragen</small></span></button>';
+    bindStarts();
+  }
+
+  function doosjeHtml(n){
+    var h = "";
+    for(var i = 0; i < 5; i++) h += '<i class="' + (i < n ? "aan" : "") + '"></i>';
+    return '<span class="doosjes">' + h + '</span>';
+  }
+  function tekenGrammatica(){
+    var lijst = [
+      {id:"reflexivo",   naam:"Me, te of se",  sub:"11 fout van 22 beurten", ico:"🩺", taak:"reflexivo"},
+      {id:"pronombre",   naam:"Lo, la of le",  sub:"9 fout van 16 beurten",  ico:"👉"},
+      {id:"muymucho",    naam:"Muy of mucho",  sub:"vandaag geoefend",       ico:"⚖️"},
+      {id:"serestar",    naam:"Ser of estar",  sub:"komt over 5 dagen",      ico:"🏠"},
+      {id:"porpara",     naam:"Por of para",   sub:"komt over 12 dagen",     ico:"➡️"},
+      {id:"genero",      naam:"El of la",      sub:"staat stevig",           ico:"🔤"}
+    ];
+    midden.innerHTML =
+      '<p class="sectiekop">Waar je nu staat</p>' +
+      lijst.map(function(r){
+        return '<button class="rij"' + (r.taak ? ' data-start="' + r.taak + '"' : '') + '>' +
+          '<span class="ico">' + r.ico + '</span>' +
+          '<span class="tek">' + veilig(r.naam) + '<small>' + veilig(r.sub) + '</small></span>' +
+          doosjeHtml(doosjes[r.id] || 0) + '</button>';
+      }).join("") +
+      '<p class="sectiekop">Waarom deze volgorde</p>' +
+      '<div class="kaart"><p style="margin:0">Bovenaan staat wat vandaag aan de beurt is. Een regel die je vaker goed dan fout doet zakt vanzelf naar onderen, en komt later terug.</p></div>';
+    bindStarts();
+  }
+
+  function tekenOefenen(){
+    midden.innerHTML =
+      '<p class="sectiekop">Kies een vorm</p>' +
+      '<div class="raster">' +
+      [{n:"Escuchar", s:"luisteren", i:"🎧", t:"escuchar"},
+       {n:"Rompecabezas", s:"zinnen leggen", i:"🧩", t:"spel"},
+       {n:"Me, te of se", s:"grammatica", i:"🩺", t:"reflexivo"},
+       {n:"Dagles", s:"vijf stappen", i:"☀️", t:"dagles"}].map(function(o){
+        return '<button class="rij" data-start="' + o.t + '"><span class="ico">' + o.i + '</span>' +
+               '<span class="tek">' + o.n + '<small>' + o.s + '</small></span></button>';
+      }).join("") + '</div>';
+    bindStarts();
+  }
+
+  function tekenVoortgang(){
+    midden.innerHTML =
+      '<div class="kaart">' +
+        '<p style="margin:0 0 2px; color:var(--muted); font-weight:700">Wat je actief bijhoudt</p>' +
+        '<p class="grootgetal">639</p>' +
+        '<div class="meter" style="display:flex"><b style="width:10.3%"></b><b class="zacht" style="width:68.4%"></b></div>' +
+        '<p style="margin:0">84 bewezen vast en 555 onderweg, van de 812 woorden op A1 en A2.</p>' +
+      '</div>' +
+      '<div class="kaart">' +
+        '<h3>Op koers</h3>' +
+        '<p style="margin:0">Je haalt er ongeveer 28 per week en je hebt er 16,8 nodig. De band loopt van 26 tot 31 en wordt smaller met elke dag die je meet.</p>' +
+      '</div>' +
+      '<p class="sectiekop">Deze week</p>' +
+      '<div class="raster">' +
+        '<div class="rij" style="cursor:default"><span class="tek">1396<small>beurten</small></span></div>' +
+        '<div class="rij" style="cursor:default"><span class="tek">7/7<small>dagen</small></span></div>' +
+        '<div class="rij" style="cursor:default"><span class="tek">130<small>minuten</small></span></div>' +
+        '<div class="rij" style="cursor:default"><span class="tek">31%<small>fout</small></span></div>' +
+      '</div>' +
+      '<p class="sectiekop">Zwakke plekken</p>' +
+      '<button class="rij" data-start="reflexivo"><span class="ico">🩺</span>' +
+        '<span class="tek">Me, te of se<small>11 fout van 22 beurten</small></span>' + doosjeHtml(doosjes.reflexivo) + '</button>' +
+      '<button class="rij" style="cursor:default"><span class="ico">👉</span>' +
+        '<span class="tek">Lo, la of le<small>9 fout van 16 beurten</small></span>' + doosjeHtml(doosjes.pronombre) + '</button>';
+    bindStarts();
+  }
+
+  function bindStarts(){
+    midden.querySelectorAll("[data-start]").forEach(function(b){
+      b.onclick = function(){ start(b.getAttribute("data-start")); };
+    });
+  }
+
+  /* =========================================================================
+     6. Een taak neemt het scherm over
+     ======================================================================= */
+  function start(sleutel){
+    taak = {sleutel:sleutel, i:0, fase:"vraag", gekozen:null, goed:0, fout:0, klaar:false, terug:scherm};
+    zetSoort("taak");
+    tekenTaak();
+  }
+  function stappen(){ return TAKEN[taak.sleutel].stappen; }
+
+  function tekenBalk(){
+    balk.innerHTML = "";
+    var n = stappen().length;
+    for(var k = 0; k < n; k++){
+      var seg = document.createElement("i");
+      if(k < taak.i || taak.klaar) seg.className = "klaar";
+      else if(k === taak.i) seg.className = "nu";
+      seg.innerHTML = "<b></b>";
+      balk.appendChild(seg);
+    }
+    var nu = balk.children[taak.i];
+    if(nu && !taak.klaar) nu.firstChild.style.width = (taak.fase === "vraag" ? "18%" : "100%");
+  }
+
+  function toonBlad(goed, kop, tekst){
+    blad.className = "blad op" + (goed ? "" : " mis");
+    bladKop.textContent = kop;
+    bladTekst.innerHTML = tekst;
+    bladKnop.textContent = taak.i === stappen().length - 1 ? "Afronden" : "Door";
+    if(goed){ taak.goed++; jaGeluid(); } else { taak.fout++; neeGeluid(); }
+    setTimeout(function(){ try{ bladKnop.focus({preventScroll:true}); }catch(e){} }, 300);
+  }
+
+  function tekenTaak(){
+    sluitBlad();
+    taak.fase = "vraag"; taak.gekozen = null;
+    midden.className = "midden"; midden.scrollTop = 0;
+    tekenBalk();
+    if(taak.klaar) return tekenTaakKlaar();
+    var s = stappen()[taak.i];
+    if(s.soort === "kaart")  return tekenKaart(s);
+    if(s.soort === "keuze" || s.soort === "regel") return tekenKeuze(s);
+    if(s.soort === "typ")    return tekenTyp(s);
+    if(s.soort === "lezen")  return tekenLezen(s);
+    if(s.soort === "luister")return tekenLuister(s);
+    if(s.soort === "tegels") return tekenTegels(s);
+  }
+
+  function tekenKaart(s){
+    midden.innerHTML =
+      '<p class="vraagkop">' + veilig(s.kop) + '</p>' +
+      bubbel("Wat betekent dit? Bedenk het eerst zelf.") +
+      '<p class="prompt">' + veilig(s.es) + '</p>' +
+      '<div id="antw" hidden>' +
+        '<p class="prompt klein" style="color:var(--accent)">' + veilig(s.nl) + '</p>' +
+        '<p class="onder" style="font-weight:600">' + veilig(s.meer) + '</p>' +
+      '</div>';
+    zetKnop("Toon antwoord", true);
+    knop.onclick = function(){
+      document.getElementById("antw").hidden = false;
+      taak.fase = "antwoord"; tekenBalk();
+      midden.insertAdjacentHTML("beforeend",
+        '<div class="keuzes" style="margin-top:16px">' +
+          '<button class="keuze" data-w="1">Die wist ik</button>' +
+          '<button class="keuze" data-w="0">Nog niet</button></div>');
+      midden.querySelectorAll(".keuze").forEach(function(b){
+        b.onclick = function(){
+          var wist = b.getAttribute("data-w") === "1";
+          toonBlad(wist, wist ? "Genoteerd" : "Komt terug",
+            wist ? "<b>la parada</b> schuift een doosje op en komt over drie dagen terug."
+                 : "<b>la parada</b> blijft in het eerste doosje en staat morgen weer voor je.");
+        };
+      });
+      zetKnop("Kies hierboven", false);
+    };
+  }
+
+  function tekenKeuze(s){
+    midden.innerHTML =
+      '<p class="vraagkop">' + veilig(s.kop) + '</p>' +
+      bubbel(s.kern || (s.soort === "regel" ? "En nu de regel zelf." : "Vul aan.")) +
+      '<p class="zinvraag">' + veilig(s.zin).replace("___", "<u>____</u>") + '</p>' +
+      (s.hint ? '<p class="onder">' + veilig(s.hint) + '</p>' : '<div style="height:10px"></div>') +
+      '<div class="keuzes">' + s.opties.map(function(o, k){
+        return '<button class="keuze" data-k="' + k + '" aria-pressed="false">' + veilig(o) + '</button>';
+      }).join("") + '</div>';
+    zetKnop("Controleer", false);
+    midden.querySelectorAll(".keuze").forEach(function(b){
+      b.onclick = function(){
+        midden.querySelectorAll(".keuze").forEach(function(x){ x.setAttribute("aria-pressed","false"); });
+        b.setAttribute("aria-pressed","true");
+        taak.gekozen = +b.getAttribute("data-k");
+        zetKnop("Controleer", true); tril(8);
+      };
+    });
+    knop.onclick = function(){
+      if(taak.gekozen === null) return;
+      var goed = taak.gekozen === s.goed;
+      midden.querySelectorAll(".keuze").forEach(function(x, k){
+        if(k === s.goed) x.classList.add("goed");
+        else if(k === taak.gekozen) x.classList.add("mis");
+        x.style.pointerEvents = "none";
+      });
+      taak.fase = "antwoord"; tekenBalk(); zetKnop("Controleer", false);
+      /* koos je de klassieke val, dan hoor je waarom juist die fout zo hardnekkig is. Die zin staat
+         in de app al klaar (het veld `mis` bij het concept) maar zit daar in de naslag, dus je leest
+         hem nooit op het moment dat hij ergens over gaat. */
+      var uitleg = (!goed && s.val !== undefined && taak.gekozen === s.val && s.valWaarom)
+        ? "<b>" + veilig(s.valWaarom) + "</b>" : veilig(s.waarom);
+      toonBlad(goed, goed ? "Klopt" : "Het is " + s.opties[s.goed], uitleg);
+    };
+  }
+
+  function kaal(t){
+    return String(t).toLowerCase().replace(/[.,!?¿¡]/g, "")
+      .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+  }
+  function verschilHtml(gegeven, moetKaal){
+    var mijn = kaal(gegeven).split(" "), moet = moetKaal.split(" ");
+    return moet.map(function(w, k){
+      return mijn[k] === w ? veilig(w) : "<b style='color:var(--red)'>" + veilig(w) + "</b>";
+    }).join(" ");
+  }
+
+  function tekenTyp(s){
+    midden.innerHTML =
+      '<p class="vraagkop">' + veilig(s.kop) + '</p>' +
+      bubbel("Schrijf deze zin in het Spaans.") +
+      '<p class="zinvraag">' + veilig(s.nl) + '</p>' +
+      '<textarea class="typ" id="invoer" rows="3" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Typ hier"></textarea>';
+    var inv = document.getElementById("invoer");
+    zetKnop("Controleer", false);
+    inv.oninput = function(){ zetKnop("Controleer", inv.value.trim().length > 2); };
+    knop.onclick = function(){
+      var g = kaal(inv.value);
+      var goed = g === kaal(s.es) || (s.alt || []).some(function(a){ return kaal(a) === g; });
+      inv.disabled = true;
+      taak.fase = "antwoord"; tekenBalk(); zetKnop("Controleer", false);
+      toonBlad(goed, goed ? "¡Perfecto!" : "Nog niet",
+        goed ? veilig(s.waarom) : "Het is: " + verschilHtml(inv.value, kaal(s.es)) + "<br>" + veilig(s.waarom));
+    };
+  }
+
+  function tekenLezen(s){
+    midden.innerHTML =
+      '<p class="vraagkop">' + veilig(s.kop) + '</p>' +
+      bubbel("Tik op een woord dat je niet kent.") +
+      '<p class="leesregel" id="lees">' + s.woorden.map(function(w, k){
+        return '<button data-k="' + k + '">' + veilig(w.es) + '</button>';
+      }).join(" ") + '.</p>';
+    document.getElementById("lees").querySelectorAll("button").forEach(function(b){
+      b.onclick = function(){
+        var w = s.woorden[+b.getAttribute("data-k")];
+        b.classList.add("uit"); b.textContent = w.nl; tril(6);
+        setTimeout(function(){ b.textContent = w.es; b.classList.remove("uit"); }, 1400);
+      };
+    });
+    zetKnop("Ik snap de zin", true);
+    knop.onclick = function(){
+      taak.fase = "antwoord"; tekenBalk(); zetKnop("Ik snap de zin", false);
+      toonBlad(true, "Gelezen", "<b>" + veilig(s.nl) + "</b><br>" + veilig(s.waarom));
+    };
+  }
+
+  /* escuchar: de zin staat nergens op het scherm. Dat is het hele punt van luisteren, en het is
+     precies waarom dit scherm het minst tegen een sitekop kan: alles wat je ogen trekt is ruis. */
+  function tekenLuister(s){
+    var gesproken = false;
+    midden.innerHTML =
+      '<p class="vraagkop">' + veilig(s.kop) + '</p>' +
+      bubbel(s.vraag) +
+      '<button class="luister" id="btnHoor"><span>🔊</span> Speel af</button>' +
+      '<button class="luister traag" id="btnTraag"><span>🐌</span> Langzaam</button>' +
+      (s.schrijf
+        ? '<textarea class="typ" id="invoer" rows="3" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Typ wat je hoort"></textarea>'
+        : '<div class="keuzes">' + s.opties.map(function(o, k){
+            return '<button class="keuze" data-k="' + k + '" aria-pressed="false">' + veilig(o) + '</button>';
+          }).join("") + '</div>');
+    var hoor = function(traag){
+      gesproken = true;
+      if(!zeg(s.es, traag)){
+        tik([520, 660, 590], 0.12);
+        var b = document.getElementById("btnHoor");
+        if(b) b.innerHTML = '<span>🔊</span> Geen stem op dit toestel';
+      }
+    };
+    document.getElementById("btnHoor").onclick = function(){ hoor(false); };
+    document.getElementById("btnTraag").onclick = function(){ hoor(true); };
+    hoor(false);
+
+    if(s.schrijf){
+      var inv = document.getElementById("invoer");
+      zetKnop("Controleer", false);
+      inv.oninput = function(){ zetKnop("Controleer", inv.value.trim().length > 2); };
+      knop.onclick = function(){
+        var goed = kaal(inv.value) === s.esKaal;
+        inv.disabled = true;
+        taak.fase = "antwoord"; tekenBalk(); zetKnop("Controleer", false);
+        toonBlad(goed, goed ? "¡Perfecto!" : "Je hoorde:",
+          (goed ? "" : verschilHtml(inv.value, s.esKaal) + "<br>") + veilig(s.waarom));
+      };
+    }else{
+      zetKnop("Controleer", false);
+      midden.querySelectorAll(".keuze").forEach(function(b){
+        b.onclick = function(){
+          midden.querySelectorAll(".keuze").forEach(function(x){ x.setAttribute("aria-pressed","false"); });
+          b.setAttribute("aria-pressed","true");
+          taak.gekozen = +b.getAttribute("data-k");
+          zetKnop("Controleer", true); tril(8);
+        };
+      });
+      knop.onclick = function(){
+        if(taak.gekozen === null) return;
+        var goed = taak.gekozen === s.goed;
+        midden.querySelectorAll(".keuze").forEach(function(x, k){
+          if(k === s.goed) x.classList.add("goed");
+          else if(k === taak.gekozen) x.classList.add("mis");
+          x.style.pointerEvents = "none";
+        });
+        taak.fase = "antwoord"; tekenBalk(); zetKnop("Controleer", false);
+        toonBlad(goed, goed ? "Klopt" : "Je hoorde:", "<b>" + veilig(s.es) + "</b><br>" + veilig(s.waarom));
+      };
+    }
+  }
+
+  function tekenTegels(s){
+    var gelegd = [];
+    var pool = s.es.concat(s.stoor).slice().sort(function(){ return Math.random() - 0.5; });
+    function verf(){
+      document.getElementById("bak").innerHTML = gelegd.map(function(w, k){
+        return '<button class="tegel" data-terug="' + k + '">' + veilig(w) + '</button>';
+      }).join("");
+      document.getElementById("pool").querySelectorAll(".tegel").forEach(function(t){
+        var w = t.getAttribute("data-w");
+        var nodig = pool.filter(function(x){ return x === w; }).length;
+        var op = gelegd.filter(function(x){ return x === w; }).length;
+        t.classList.toggle("op", op >= nodig);
+      });
+      document.getElementById("bak").querySelectorAll("[data-terug]").forEach(function(b){
+        b.onclick = function(){ gelegd.splice(+b.getAttribute("data-terug"), 1); verf(); tril(6); };
+      });
+      zetKnop("Controleer", gelegd.length === s.es.length);
+    }
+    midden.innerHTML =
+      '<p class="vraagkop">' + veilig(s.kop) + '</p>' +
+      bubbel(s.nl) +
+      '<div class="tegelbak" id="bak"></div>' +
+      '<div class="tegels" id="pool">' + pool.map(function(w){
+        return '<button class="tegel" data-w="' + veilig(w) + '">' + veilig(w) + '</button>';
+      }).join("") + '</div>';
+    document.getElementById("pool").querySelectorAll(".tegel").forEach(function(t){
+      t.onclick = function(){ gelegd.push(t.getAttribute("data-w")); verf(); tril(6); };
+    });
+    verf();
+    knop.onclick = function(){
+      var goed = gelegd.join(" ") === s.es.join(" ");
+      taak.fase = "antwoord"; tekenBalk(); zetKnop("Controleer", false);
+      document.getElementById("pool").style.pointerEvents = "none";
+      document.getElementById("bak").style.pointerEvents = "none";
+      toonBlad(goed, goed ? "Klopt" : "Het is:",
+        (goed ? "" : "<b>" + veilig(s.es.join(" ")) + "</b><br>") + veilig(s.waarom));
+    };
+  }
+
+  function tekenTaakKlaar(){
+    var T = TAKEN[taak.sleutel];
+    var laatste = stappen()[stappen().length - 1];
+    midden.className = "midden" + (laatste.naslag ? "" : " midt");
+    midden.innerHTML =
+      '<div class="klaarblok">' +
+        '<span class="chispa">🦎</span>' +
+        '<p class="prompt" style="font-size:2rem">' + veilig(T.klaarKop) + '</p>' +
+        '<p class="onder">' + veilig(T.klaarOnder) + '</p>' +
+        '<div class="cijfers">' +
+          '<div class="cijfer"><b>' + taak.goed + '</b><span>goed</span></div>' +
+          '<div class="cijfer"><b>' + taak.fout + '</b><span>nog niet</span></div>' +
+          '<div class="cijfer"><b>' + (taak.goed * 5 + taak.fout) + '</b><span>tacos</span></div>' +
+        '</div>' +
+      '</div>' +
+      (laatste.naslag ? '<div class="naslag"><h4>De hele regel</h4>' + laatste.naslag + '</div>' : '');
+    zetKnop("Terug naar " + SCHERMEN[taak.terug].titel, true);
+    knop.onclick = function(){
+      tacos += taak.goed * 5 + taak.fout;
+      if(taak.sleutel === "dagles") gedaanVandaag = true;
+      if(taak.sleutel === "reflexivo" && taak.fout === 0) doosjes.reflexivo = Math.min(5, doosjes.reflexivo + 1);
+      ga(taak.terug);
+    };
+  }
+
+  bladKnop.onclick = function(){
+    sluitBlad();
+    if(taak.i === stappen().length - 1){ taak.klaar = true; tekenTaak(); return; }
+    taak.i++; tekenTaak();
+  };
+
+  /* de uitgang. Zonder deze knop mag de kop niet weg: "pauzeer je les" is precies het mechanisme
+     waarmee de vastlopers van 23 tot 26 augustus doorbroken werden. */
+  document.getElementById("btnX").onclick = function(){
+    if(!taak) return;
+    sluitBlad();
+    midden.className = "midden midt";
+    midden.innerHTML =
+      '<div class="klaarblok">' +
+        '<p class="prompt" style="font-size:1.8rem">Gepauzeerd</p>' +
+        '<p class="onder">Je bent bij stap ' + (taak.i + 1) + ' van ' + stappen().length + '. Er gaat niets verloren.</p>' +
+        '<div class="keuzes" style="margin-top:6px">' +
+          '<button class="keuze" id="btnDoor">Verder waar je was</button>' +
+          '<button class="keuze" id="btnWeg">Terug naar ' + veilig(SCHERMEN[taak.terug].titel) + '</button>' +
+        '</div></div>';
+    zetKnop("Kies hierboven", false);
+    document.getElementById("btnDoor").onclick = tekenTaak;
+    document.getElementById("btnWeg").onclick = function(){ ga(taak.terug); };
+  };
+
+  document.getElementById("btnGeluid").onclick = function(){
+    geluidAan = !geluidAan;
+    this.textContent = geluidAan ? "🔊" : "🔇";
+    if(geluidAan) jaGeluid(); else { try{ speechSynthesis.cancel(); }catch(e){} }
+  };
+
+  var schakelOud = document.getElementById("schakelOud");
+  schakelOud.onclick = function(){
+    var aan = document.body.classList.toggle("oud");
+    schakelOud.setAttribute("aria-pressed", aan ? "true" : "false");
+    schakelOud.textContent = aan ? "Nieuwe opmaak" : "Oude opmaak";
+  };
+  document.getElementById("schakelHome").onclick = function(){ ga("vandaag"); };
+
+  ga("vandaag");
+})();
+</script>
