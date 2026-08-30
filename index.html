@@ -1544,7 +1544,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.205";
+var APP_VERSIE = "v23.206";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -28641,6 +28641,27 @@ function vgWeken(nivs){
   }
   return uit;
 }
+/* v23.206: welke reeks tekent de lijn hieronder.
+
+   Tot deze versie was dat altijd de weekreeks, terwijl de meter sinds v23.203 de dagreeks gebruikt.
+   Twee reeksen onder één kop lopen uit elkaar, en dat deden ze ook: op Stefans scherm stond "639
+   woorden houd je actief bij" boven een lijn die op 621 eindigde met het woord "nu" erbij. 621 was
+   zijn laatste weekmeting, van zes dagen eerder.
+
+   De dagreeks gaat voor zodra er twee punten liggen, want met één punt is er geen lijn. Daaronder
+   ligt de weekreeks als terugval, in dezelfde maat (dekw), zodat iemand die net begint niet naar
+   een leeg vak kijkt. */
+function vgReeks(nivs){
+  var d = S.dagMeting || {}, ds = Object.keys(d).sort(), uit = [], i, m;
+  for(i = 0; i < ds.length; i++){
+    m = d[ds[i]];
+    if(!m || !m.dekw) continue;
+    uit.push({d: ds[i], actief: vgSomVeld(m.dekw, nivs), bron: "dag"});
+  }
+  if(uit.length >= 2) return uit;
+  return vgWeken(nivs).filter(function(x){ return x.actief !== null; })
+    .map(function(x){ return {d: x.d, actief: x.actief, bron: "week"}; });
+}
 function vgRij(naam, sub, pct, cijf, soort){
   return "<div class='vgMeet'><span>"+naam+(sub ? "<span>"+sub+"</span>" : "")+"</span>"+
     "<span class='vgStaaf'><i class='"+(soort || "")+"' style='width:"+
@@ -28763,7 +28784,7 @@ function vgLijnHtml(c){
      tekende hij bewezen vast, en dan loopt er een lijn naar 4 onder een kop van 357. Weken van vóór
      deze versie hebben dat veld niet, dus die doen niet mee; staan er nog geen twee, dan staat er
      één regel in plaats van een grafiek. Geen lijn is beter dan een lijn in de verkeerde eenheid. */
-  var wk = vgWeken(c.samen.nivs).filter(function(x){ return x.actief !== null; });
+  var wk = vgReeks(c.samen.nivs);
   if(wk.length < 2){
     return "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
       ct("De lijn hierbij komt zodra er twee weekmetingen liggen die dit getal bewaren. Tot v23.36 "+
@@ -28771,15 +28792,19 @@ function vgLijnHtml(c){
          "The line here appears once two weekly measurements store this number. Until v23.36 they "+
          "only stored the proven part, which is a different number than the one above.")+"</p>";
   }
-  /* De schaal loopt tot je eigen hoogste punt en niet tot de noemer. Eerst deed hij dat wel, en dan
+  /* De schaal loopt tot even boven je eigen hoogste punt en niet tot de noemer. Eerst deed hij dat wel, en dan
      plakt een reeks van 20 naar 54 als een streep tegen de bodem: een groeigrafiek die geen groei
      laat zien. De noemer staat een regel hoger al in de balk; deze lijn beantwoordt een andere
      vraag, namelijk of het de goede kant op gaat. Het hoogste getal staat erbij, anders is een
      eigen schaal een truc. */
-  var top = 0, i, x, y, d = "", pad = "";
-  for(i = 0; i < wk.length; i++) top = Math.max(top, wk[i].actief);
-  if(top <= 0) return "";
-  top = Math.ceil(top * 1.15);
+  var hoogst = 0, i, x, y, d = "", pad = "";
+  for(i = 0; i < wk.length; i++) hoogst = Math.max(hoogst, wk[i].actief);
+  if(hoogst <= 0) return "";
+  /* v23.206: hier stond top = ceil(max * 1,15) en daarna "de schaal loopt tot 715, je eigen hoogste
+     punt". 715 was niet zijn hoogste punt maar de bovenkant van de as, vijftien procent erboven
+     zodat de lijn niet tegen de rand plakt. Twee dingen, één naam, en het getal dat hij wél zocht
+     (621) stond er niet bij. Nu staan ze allebei, elk met wat het is. */
+  var top = Math.ceil(hoogst * 1.15);
   var W = 600, H = 130, L = 8, R = 8, T = 10, B = 18;
   for(i = 0; i < wk.length; i++){
     x = L + (W - L - R) * (i / (wk.length - 1));
@@ -28795,10 +28820,14 @@ function vgLijnHtml(c){
       "' r='4' fill='var(--accent)'></circle>"+
     "</svg>"+
     "<p class='muted' style='margin:0; font-size:.8rem'>"+
+      /* v23.206: "nu" alleen als het laatste punt echt van vandaag is. Anders staat er de datum van
+         dat punt, want een lijn die gisteren eindigt en "nu" zegt spreekt de kop erboven tegen. */
       ct("Wat je actief bijhoudt, van <b>"+wk[0].actief+"</b> op "+datumUit(wk[0].d)+" naar <b>"+
-         wk[wk.length-1].actief+"</b> nu. De schaal loopt tot "+top+", je eigen hoogste punt.",
+         wk[wk.length-1].actief+"</b> "+(wk[wk.length-1].d === today() ? "nu" : "op "+datumUit(wk[wk.length-1].d))+
+         ". Je hoogste punt is "+hoogst+"; de as loopt tot "+top+" zodat de lijn niet tegen de rand plakt.",
          "What you actively keep up, from <b>"+wk[0].actief+"</b> on "+datumUit(wk[0].d)+" to <b>"+
-         wk[wk.length-1].actief+"</b> now. The scale runs to "+top+", your own highest point.")+"</p>";
+         wk[wk.length-1].actief+"</b> "+(wk[wk.length-1].d === today() ? "now" : "on "+datumUit(wk[wk.length-1].d))+
+         ". Your highest point is "+hoogst+"; the axis runs to "+top+" so the line doesn't hug the edge.")+"</p>";
 }
 
 /* ---------- 4. Onderweg ---------- */
@@ -35717,10 +35746,22 @@ function doelRegelHtml(){
 function voorspelHtml(){
   var h = "<h2 style='margin-top:16px'>"+ct("Waar je straks staat 🔭","Where you'll be 🔭")+"</h2>";
   if(!voorspelWaar("A1", voorspelWk)){
-    var gemeten = Object.keys(S.meting || {}).length, nog = Math.max(1, 3 - gemeten);
+    /* v23.206: hier stond het aantal WEEKmetingen naast een poort die sinds v23.203 op DAGmetingen
+       staat, en "nog <b>1</b> week te gaan" uit nog = max(1, 3 - gemeten). Met vijf weekmetingen gaf
+       dat max(1, -2) = 1: een getal dat door de klem nooit meer kon veranderen, dus daar stond
+       eeuwig "nog 1 week". Stefan las dat naast "over 2 dagen" op de doelkaart en had gelijk dat het
+       niet kon kloppen.
+
+       De wachtzin komt nu uit tempoWachtZin(), dezelfde functie die de doelkaart voedt, die aan
+       tempoStand() hangt, die dezelfde twee drempels gebruikt als tempoDagMeting(). Eén keten van de
+       meter naar de zin, dus er is geen plek meer waar ze uit elkaar kunnen lopen. */
+    var wz = tempoWachtZin("A1");
     return h + "<p class='muted'>"+
-      ct("Nog niet te zeggen. "+weekMetingZin(gemeten)+" Vanaf drie kan hier een strook staan in plaats van een gok. Nog <b>"+nog+"</b> "+(nog === 1 ? "week" : "weken")+" te gaan.",
-         "Can't be said yet. "+weekMetingZin(gemeten)+" From three on a band can appear here instead of a guess. <b>"+nog+"</b> more "+(nog === 1 ? "week" : "weeks")+" to go.")+"</p>"+
+      ct("Nog niet te zeggen. ", "Can't be said yet. ") +
+      (wz ? wz + ct(" Dan staat hier een strook in plaats van een gok.",
+                    " Then a band appears here instead of a guess.")
+          : ct("De reeks ligt er, maar een lijn erdoorheen levert nog geen tempo op.",
+               "The series is there, but a line through it yields no pace yet.")) + "</p>"+
       doelRegelHtml();
   }
   var opties = [{w:4, nl:"over een maand", en:"in a month"},
