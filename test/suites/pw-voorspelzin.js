@@ -76,11 +76,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   // ---- 1 en 2. de wachtzin ----
   console.log('\n-- 1 en 2. de voorspelling wacht in dezelfde eenheid als de doelkaart --');
-  /* vijf weekmetingen, twee met dekw: precies wat er bij Stefan ligt. Drie met dekw zou de
-     weekterugval van tempoMeting() laten aanslaan, en dan meet proef 1 niets. */
-  await zet([[d13, 493], [d6, 621], [d0, 639]],
+  /* vijf weekmetingen in de pot, waarvan er maar één dekw draagt, en twee dagpunten. Zo staat de
+     meter nog stil (TEMPO_MIN_PUNTEN is sinds v23.207 drie) terwijl de oude teller vijf zou hebben
+     geroepen. Dat verschil is precies wat deze proef meet. */
+  await zet([[d13, 493], [d6, 621]],
             [['2026-W31', await D(-27), null], ['2026-W32', await D(-20), null],
-             ['2026-W33', await D(-17), null], ['2026-W34', d13, 493], ['2026-W35', d6, 621]]);
+             ['2026-W33', await D(-17), null], ['2026-W34', await D(-10), null],
+             ['2026-W35', d6, 621]]);
 
   const w = await page.evaluate(() => {
     return { voorspel: voorspelHtml().replace(/<[^>]+>/g, ''),
@@ -94,7 +96,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'de voorspelling gebruikt letterlijk de wachtzin van de doelkaart');
   ok(!/nog\s*1\s*week/i.test(w.voorspel) && !/weekmeting/i.test(w.voorspel),
     'en telt geen weken of weekmetingen meer (dit was de bug)');
-  ok(/\b2\s*dagen\b/.test(w.voorspel),
+  ok(/dan is dat over 1 dag\./.test(w.voorspel),
     'hij zegt hoeveel dagen het nog is, uit dezelfde drempels als de meter (' + w.stand.heeft + '/' + w.stand.nodig + ')');
 
   /* CONTROLE: zonder dit zou proef 1 ook slagen op een scherm dat altijd wacht. Vijf dagpunten over
