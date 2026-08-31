@@ -66,7 +66,7 @@ const NL = /\b(niet|geen|wordt|werkwoorden|vervoeging(en)?|oefenen|volgende|opni
 
   // ---------- 1. elk scherm ----------
   const schermen = ['lessen', 'chispa', 'perfil', 'speeltuin', 'toetsjes', 'woorden',
-                    'vertalen', 'lezen', 'spiekbrief', 'privacy', 'steun', 'musica'];
+                    'vertalen', 'lezen', 'spiekbrief', 'privacy', 'steun'];
   for (const s of schermen) {
     await page.evaluate((n) => { scopeLesson = null; try { show(n); } catch (e) {} }, s);
     await page.waitForTimeout(300);
@@ -163,7 +163,6 @@ const NL = /\b(niet|geen|wordt|werkwoorden|vervoeging(en)?|oefenen|volgende|opni
     }
     (typeof QUIZZES === 'undefined' ? [] : QUIZZES).forEach((qz) => (qz.vragen || []).forEach((v) => keurV(v, 'quiz ' + qz.id)));
     (typeof BOOK === 'undefined' ? [] : BOOK).forEach((h) => (h.vragen || []).forEach((v) => keurV(v, 'boek ' + h.id)));
-    (typeof SONGS === 'undefined' ? [] : SONGS).forEach((sg) => (sg.vragen || []).forEach((v) => keurV(v, 'song ' + sg.id)));
     (typeof PLACEMENT === 'undefined' ? [] : PLACEMENT).forEach((v) => keurV(v, 'niveautest'));
     return uit;
   }, NL.source);

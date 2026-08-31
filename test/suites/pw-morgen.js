@@ -59,45 +59,50 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   const r = await page.evaluate(() => {
     const uit = {};
-    S.lang = 'nl'; S.musKlaar = {}; S.chat = null;
+    S.lang = 'nl'; S.chat = null;
     S.vert = { trede: 3, reeks: 0 };
 
     // ---- 5. de dagsleutel kan ook een andere dag zijn ----
-    uit.zelfdeAlsVandaag = dagHashVoor(today(), 'musica') === dayHash('musica');
-    uit.andersDanMorgen = dagHashVoor(addDays(today(), 1), 'musica') !== dayHash('musica');
+    uit.zelfdeAlsVandaag = dagHashVoor(today(), 'input') === dayHash('input');
+    uit.andersDanMorgen = dagHashVoor(addDays(today(), 1), 'input') !== dayHash('input');
 
-    // ---- 1 en 2. het klopt met het rooster, en met naam ----
-    // morgen is dag N+1; zet de teller zo dat morgen een liedjesdag is
-    S.dagen = { count: MUS_OM_DE - 1 };            // morgen = MUS_OM_DE -> liedje
-    const morgenLied = musVanDag(addDays(today(), 1));
-    uit.liedTitel = morgenLied ? morgenLied.titel : null;
+    /* v23.218: hier stonden proef 1 en 2, over "morgen zing je mee met <titel>". Muziek is eruit,
+       dus dat bericht bestaat niet meer. Wat morgenZin() verder aankondigt (praten, de weekmeting,
+       een nieuw hoofdstuk) wordt hieronder nog gewoon getoetst. */
     uit.liedZin = morgenZin();
-    // en dat is echt het lied dat het rooster morgen geeft: zet de teller op morgen en vraag het
-    S.dagen = { count: MUS_OM_DE };
-    uit.echtBeurt = musDagBeurt();
 
     // ---- 3. op een gewone dag staat er niets extra ----
-    // een dag die geen liedjesdag is en geen praatdag: even, en niet deelbaar door MUS_OM_DE
+    /* v23.218: hier stond ook "en niet deelbaar door MUS_OM_DE". Sinds muziek eruit is, is een
+       gewone dag simpelweg een dag waarop morgen even is: dan is er geen praatdag. */
     let gewoon = null;
     for (let d = 3; d < 40 && gewoon === null; d++) {
       const morgen = d + 1;
-      if ((morgen % MUS_OM_DE) !== 0 && (morgen % 2) === 0) gewoon = d;
+      if ((morgen % 2) === 0) gewoon = d;
     }
     S.dagen = { count: gewoon };
     uit.gewoonDag = gewoon;
     uit.gewoonExtra = morgenBijzonder().length;
     uit.gewoonZin = morgenZin();
 
-    // ---- 4. twee dingen op één dag wordt één zin ----
-    let beide = null;
-    for (let d = 3; d < 60 && beide === null; d++) {
-      const morgen = d + 1;
-      if ((morgen % MUS_OM_DE) === 0 && (morgen % 2) === 1) beide = d;
-    }
-    S.dagen = { count: beide };
-    uit.beideDag = beide;
-    uit.beideN = morgenBijzonder().length;
-    uit.beideZin = morgenZin();
+    /* ---- 4. twee dingen op één dag wordt één zin ----
+
+       Deze proef zocht een dag waarop een liedje én een gesprek samenvielen. Sinds v23.218 kan
+       morgenBijzonder() nog maar één ding aankondigen (het gesprek met Chispa), dus zo'n dag
+       bestaat niet meer en de samenvoegregel in morgenBijzonderZin() zou onbeproefd blijven.
+
+       Onbeproefde code die er wel is, is erger dan geen code: de volgende aankondiging die erbij
+       komt erft een regel waar nooit iemand naar gekeken heeft. Dus toetsen we de regel zelf in
+       plaats van een samenloop van de kalender: leg er twee (en drie) meldingen in en kijk wat
+       eruit komt. */
+    const echteBijzonder = morgenBijzonder;
+    morgenBijzonder = function () { return ['ding een', 'ding twee']; };
+    uit.beideN = 2;
+    uit.beideZin = morgenBijzonderZin();
+    morgenBijzonder = function () { return ['een', 'twee', 'drie']; };
+    uit.drieZin = morgenBijzonderZin();
+    morgenBijzonder = function () { return []; };
+    uit.geenZin = morgenBijzonderZin();
+    morgenBijzonder = echteBijzonder;
 
     // ---- de rem: op trede 1 belooft hij geen gesprek ----
     S.vert = { trede: 1, reeks: 0 };
@@ -118,9 +123,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- 1 en 2. het klopt met het rooster, en met naam --');
   console.log('   ' + r.liedZin);
-  ok(r.echtBeurt, 'morgen is echt een liedjesdag volgens het rooster zelf');
-  ok(/zingt mee/.test(r.liedZin), 'de zin zegt dat je gaat zingen');
-  ok(r.liedTitel && r.liedZin.indexOf(r.liedTitel) !== -1, 'met de naam van het lied erbij (' + r.liedTitel + ')');
+  ok(!/zingt mee/.test(r.liedZin),
+    'CONTROLE: het morgenbericht belooft geen liedje meer, want dat scherm is er niet (v23.218)');
 
   console.log('\n-- 3. het controlegeval: op een gewone dag staat er niets extra --');
   console.log('   ' + r.gewoonZin);
@@ -128,11 +132,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(!/zingt mee|Chispa/.test(r.gewoonZin), 'en de zin belooft dus ook niets');
   ok(r.gewoonZin.length > 10, 'maar er staat nog steeds een regel over morgen');
 
-  console.log('\n-- 4. twee dingen op één dag wordt één zin --');
-  console.log('   ' + r.beideZin);
-  ok(r.beideN === 2, 'na dag ' + r.beideDag + ' komen er twee dingen (' + r.beideN + ')');
-  ok(/zingt mee/.test(r.beideZin) && /Chispa/.test(r.beideZin), 'allebei staan ze erin');
-  ok((r.beideZin.match(/\. En /g) || []).length === 1, 'in één zin, niet twee keer "En"');
+  console.log('\n-- 4. meerdere meldingen worden één zin --');
+  console.log('   twee ::' + r.beideZin);
+  console.log('   drie ::' + r.drieZin);
+  ok(/ding een/.test(r.beideZin) && /ding twee/.test(r.beideZin), 'allebei staan ze erin');
+  ok((r.beideZin.match(/En /g) || []).length === 1, 'in één zin, niet twee keer "En"');
+  ok(/ en /.test(r.beideZin), 'met "en" ertussen en geen komma bij twee');
+  ok(/een, twee en drie/.test(r.drieZin), 'bij drie: komma, komma, en (' + r.drieZin.trim() + ')');
+  ok(r.geenZin === '', 'CONTROLE: en zonder meldingen komt er niets bij, ook geen losse punt');
 
   console.log('\n-- de remmen --');
   ok(r.tredeEenN === 0, 'op trede 1 van de zinnenladder belooft hij geen gesprek');

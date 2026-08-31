@@ -1552,11 +1552,6 @@ function vroegVraag(){
   </section>
 
   <!-- MÚSICA -->
-  <section id="tab-musica" class="hidden">
-    <div id="songList"></div>
-    <div id="songView" class="hidden"></div>
-  </section>
-
   <!-- WOORDJES -->
   <section id="tab-woorden" class="hidden">
     <div class="card" id="wCard"></div>
@@ -1602,7 +1597,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.217";
+var APP_VERSIE = "v23.218";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7039,8 +7034,7 @@ function normaliseerState(s){
   if(s.doelNiv === undefined) s.doelNiv = null;
   if(s.doelMnd === undefined) s.doelMnd = null;
   if(s.doelDatum === undefined) s.doelDatum = null;
-  // v19.92: de muziekbeheerrol en het speeltuinfilter.
-  if(s.mbeheer === undefined) s.mbeheer = false;
+  // v19.92: het speeltuinfilter. De muziekbeheerrol die hier ook stond is met v23.218 weg.
   if(s.speelAlles === undefined) s.speelAlles = false;
   /* v20.0: een woord komt alleen nog in de laatste doos na een check die je niet zelf beoordeelt
      (st.k, zie wCheckAntwoord). Wie van voor v20.0 komt heeft die check nooit kunnen doen, dus
@@ -8106,8 +8100,6 @@ function boot(){
   store.key = p.key;
   S = normaliseerState(store.load()); // v19.56: dezelfde normalisatie als bij een pull van de server
   mijnWoordenInPool();   // v23.133: WORDS is hierboven gebouwd zonder S, dus je eigen woorden pas hier
-  // v19.92: ?beheer=chispa pas hier verzilveren, want hierboven kwam S vers uit de opslag.
-  if(pendingBeheer && S.mbeheer !== true){ S.mbeheer = true; pendingBeheer = false; }
   if(!S.lang) S.lang = p.lang || "nl"; // moedertaal per profiel, synct mee via S
   /* v23.49: wie eerder Duits of Frans koos (of kreeg, want de detectie deed dat vanzelf) zit
      nog op een taal die de app maar voor negen van de 936 teksten kan waarmaken. Zonder deze
@@ -10237,13 +10229,6 @@ function morgenBijzonder(){
   var d = 0, uit = [];
   try { d = dagenTotaal() + 1; } catch(e){ return uit; }
   if(d <= 1) return uit;
-  var morgenDatum = addDays(today(), 1);
-  try {
-    if((d % MUS_OM_DE) === 0){
-      var sg = musVanDag(morgenDatum);
-      if(sg) uit.push(ct("je zingt mee met "+sg.titel, "you sing along with "+sg.titel));
-    }
-  } catch(e){}
   try {
     /* praatKan() vraagt onder meer of je vandaag al gepraat hebt, en dat zegt niets over morgen.
        Wat wél over morgen gaat is de trede: sta je nog op één, dan is vrij praten ook morgen een
@@ -15461,12 +15446,9 @@ function dagPlan(){
       wat:SCHRIJF_PER_LES + " " + ct("zinnen","sentences"), sec:SCHRIJF_PER_LES * SCHRIJF_SEC});
   }
   if(inputV){
-    var musDag = inputV === "musica" ? musVanDag() : null;
     blokken.push({stap:"input", draad:ct("begrijpen","input"),
-      naam: inputV === "musica" ? ct("Liedje","Song")
-          : inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
-      wat: inputV === "musica" ? (musDag ? musDag.titel : "M\u00fasica")
-         : inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
+      naam: inputV === "lezen" ? ct("Lezen","Reading") : ct("Luisteren","Listening"),
+      wat: inputV === "lezen" ? ct("een stukje uit je boek","a piece from your book")
                               : ct("een gesprek","one conversation"),
       sec: doelMinuten() * 60 * 0.25, vaardigheid: inputV});
   }
@@ -15596,7 +15578,6 @@ function lesFlowStapNaam(f){
   if(f.stap === "grammatica") return ct("Grammatica","Grammar");
   if(f.stap === "vormen") return ct("Vormen","Forms");
   if(f.stap === "toetsjes") return ct("Toetsjes","Quizzes");
-  if(f.stap === "input" && f.vaardigheid === "musica") return ct("Liedje","Song");
   if(f.stap === "produceren" && f.vaardigheid === "meting") return ct("De weekmeting","The measurement");
   if(f.stap === "produceren" && f.vaardigheid === "praten") return ct("Praten","Talking");
   if(f.stap === "input" || f.stap === "produceren"){
@@ -15891,9 +15872,8 @@ function huidigeLes(){
    plan staat en de les gewoon vier stappen telt. Een plan dat iets belooft wat er niet is, is
    erger dan een korter plan (v23.135). */
 function lesFlowInputKeuze(){
-  /* v23.148: eens per drie actieve dagen is het inputblok een lied. Dat gaat vóór de wisseling
-     tussen lezen en luisteren, want die twee komen elke andere dag langs en het lied niet. */
-  try { if(musDagBeurt()) return "musica"; } catch(e){}
+  /* v23.148 zette hier eens per drie dagen een lied vóór lezen en luisteren. Muziek is er sinds
+     v23.218 niet meer, dus het inputblok wisselt weer tussen die twee. */
   var lezen = null, audi = false;
   try { lezen = lesFlowBoekHoofdstuk(); } catch(e){ lezen = null; }
   /* audOpen(sc) vraagt of één scene open is; wat we hier nodig hebben is of er überhaupt iets
@@ -16297,18 +16277,6 @@ function lesFlowOpenProductie(){
     if(h){ lesFlow.gekozenSpel = "boek"; show("lezen"); startBoek(h.id); return; }
     // het boek gaat pas open na je eerste afgeronde les; tot die tijd een andere vaardigheid
     v = lesFlow.vaardigheid = (lesFlow.vaardigheidRij || []).indexOf("luisteren") >= 0 ? "schrijven" : "luisteren";
-  }
-  if(v === "musica"){
-    /* v23.148: het lied van vandaag. Het opent zijn eigen tabblad, net als lezen dat doet, en komt
-       terug via de knop onder de quizuitslag. */
-    var sgDag = musVanDag();
-    if(sgDag){
-      lesFlow.gekozenSpel = "musica";
-      show("musica");
-      openSong(sgDag, true);
-      return;
-    }
-    v = lesFlow.vaardigheid = "luisteren";
   }
   if(v === "luisteren"){
     /* v21.4: het luisterblok was dictado, en dat traint transcriberen in plaats van begrijpen.
@@ -20621,7 +20589,6 @@ function renderFunTijdvorm(){
      open     een eigen afhandeling, voor het enige spel dat geen funView is */
 function spelInfo(){
   return [
-    {v:"musica",  id:"ftMusica",  e:"\ud83c\udfb5",            t:"M\u00fasica",            s:fx("muS"), open:function(){ show("musica"); }},
     /* v23.188: de woordenzoeker had als enige rasterspel geen verse, dus je kwam terug op het
      raster dat je al had uitgespeeld. Zelfde afspraak als bij Letras en Crucigrama. */
  {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS"), verse:function(){ ws = null; }},
@@ -20675,8 +20642,10 @@ function speelTegels(){ return spelInfo().filter(function(x){ return !x.gram; })
    de regel bij de rest.
 
    v23.147: Aventura stond hier ook, als "het grote spel". Dat spel is er niet meer. */
-var SPEL_VAST = ["musica"];
-var SPEL_ROTEERT_NIET = ["musica", "duel"];
+/* v23.218: hier stond ["musica"]. Muziek was het enige vaste tegeltje; nu is er geen vast
+   tegeltje meer en toont de speeltuin alleen het spel van vandaag vooraan. */
+var SPEL_VAST = [];
+var SPEL_ROTEERT_NIET = ["duel"];
 /* En het spel van vandaag is dat wat je het langst niet geopend hebt. Nooit geopend telt als het
    langst geleden: daar is de kans het grootst dat je iets vindt.
 
@@ -20802,11 +20771,6 @@ function dagSpeelHtml(){
 }
 function speelNaar(v){
   funView = v;
-  /* v23.65: Música staat sinds deze versie ook in de dagrotatie (op dag 1 is het naast Aventura het
-     enige dat echt kan draaien). Maar het is geen speeltuinweergave: het heeft een eigen tabblad,
-     en renderFun() kent geen tak voor "musica". Zonder deze regel landde je op het speeltuinmenu.
-     De speeltuin zelf deed dit al goed, met show("musica") in zijn eigen draadje. */
-  if(v === "musica"){ show("musica"); return; }
   /* v23.77: hier stond een regel voor dictado, die twee variabelen leegzette die nergens
      meer bestaan: het scherm is er sinds v21.4 niet meer. Stefan, 13 aug: "dictado kan weg en werd
      vervangen door escuchar." In de plaats daarvan land je bij Escuchar altijd op de plank, ook als
@@ -22354,7 +22318,9 @@ function tapaMenuWire(el){
 }
 var CHISPA_WENSEN = [
   {id:"tapa",   e:"🫒", es:"Hoy Chispa quiere una tapa.",        nl:"Chispa wil vandaag een tapa.",          en:"Chispa wants a tapa today."},
-  {id:"musica", e:"🎶", es:"Hoy Chispa quiere música.",          nl:"Chispa wil vandaag muziek.",            en:"Chispa wants music today."},
+  /* v23.218: heette "musica", maar ging over dansen en niet over het muziektabblad. Je vervult
+     hem met chispaBaila(), chispaFiesta() of chispaSerenade(), en die drie zijn er gewoon nog. */
+  {id:"baile",  e:"💃", es:"Hoy Chispa quiere bailar.",         nl:"Chispa wil vandaag dansen.",            en:"Chispa wants to dance today."},
   /* v23.35: de wens "haar cadeautje openmaken" is weg. Het dagcadeautje had een knop en die knop
      is weg, dus die wens was niet meer te vervullen, en een wens die je niet kunt vervullen is erger
      dan geen wens. De drie die overblijven kunnen alle drie: een tapa geven, laten dansen, aaien. */
@@ -23102,7 +23068,7 @@ function chispaBaila(baile, stilBeeld){
   chispaMove(b.klas, duur, function(){ chispaVloer(false); chispaReis(false); }, tempo);
   chispaZorgTik();
   if(gewekt) chispaSlaapHerstel(duur + 1700);   // daarna mag ze weer verder slapen
-  if(chispaWensDoe("musica")) chispaHerrenderStraks(4800);
+  if(chispaWensDoe("baile")) chispaHerrenderStraks(4800);
   else if(nieuw) chispaHerrenderStraks(4800);
   return true;
 }
@@ -23124,7 +23090,7 @@ function chispaFiesta(){
   chispaReis(true, 7250);   // de vier stappen van de choreografie duren samen precies zo lang
   chispaNotas(12);
   chispaZorgTik();
-  chispaWensDoe("musica");
+  chispaWensDoe("baile");
   chispaSerenadeAudio();
   var stappen = [
     {k:"chgiro",     ms:1350, prop:null},
@@ -23209,7 +23175,7 @@ function chispaSerenade(){
   chispaMove("chguitarra", duurMs);
   chispaZorgTik();
   chispaSerenadeAudio();
-  if(chispaWensDoe("musica")) chispaHerrenderStraks(duurMs + 400);
+  if(chispaWensDoe("baile")) chispaHerrenderStraks(duurMs + 400);
   setTimeout(function(){
     document.querySelectorAll(".amigo").forEach(function(a){ a.classList.remove("amigobounce"); });
   }, duurMs);
@@ -23851,603 +23817,10 @@ function feedPet(gekozen){
     ? {es:"Mmm... gracias. Mañana la como.", nl:"Mmm... dankje. Morgen eet ik hem op.", en:"Mmm... thanks. I'll eat it tomorrow."}
     : {es:"¡Ñam ñam! ¡"+res.tapa.es+"! ¡Qué rico!", nl:res.tapa.nl+"! Wat is deze tapa lekker!", en:res.tapa.en+"! What a great tapa!"});
 }
-/* ================= MÚSICA ================= */
-var SONGS = [
- {id:"song-bachata", titel:"La Bachata", artiest:"Manuel Turizo", yt:"TiM_TFpT_DE", lvl:"A2",
-  intro:"Dé perfecte les-2-song: hij staat vól indefinido. En je danst hem toch al.",
-  oogst:[
-   {es:"te bloqueé", nl:"ik blokkeerde je", u:"Indefinido van bloquear, mét de -qué spellingregel die je kent van practiqué. Het hele lied is één grote indefinido-oefening."},
-   {es:"me enamoré (de ti)", nl:"ik werd verliefd (op jou)", u:"Enamorarse de = verliefd worden op. Wederkerend + indefinido: me enamoré."},
-   {es:"borré", nl:"ik wiste / verwijderde", u:"Borrar = wissen (foto's, berichten...). Regelmatige indefinido: borré."},
-   {es:"olvidarte", nl:"jou vergeten", u:"Het pronomen plakt achteraan de infinitief: olvidar + te. Zelfde truc als escribirlas."},
-   {es:"volver a verte", nl:"jou weer zien", u:"Volver a + infinitief = opnieuw iets doen. Ken je van 'se volvieron a casar' uit de Frida-tekst."},
-   {es:"no sé", nl:"ik weet (het) niet", u:"Van saber. Mét accent op sé, anders staat er 'se' (zich)."},
-   {es:"lo que", nl:"wat / dat wat", u:"Lo que pasó = wat er gebeurde. Handige verbinder die je constant hoort."}
-  ],
-  vragen:[
-   {q:"'Te bloqueé' is dezelfde spellingtruc als...", qe:"'Te bloqueé' uses the same spelling trick as...", optse:["practiqué","empecé"], ue:"Bloquear ends in a -quear/-car sound: qu keeps the k sound before the é. Just like practicar → practiqué.", opts:["practiqué","empecé"], c:0, u:"Bloquear eindigt op -quear/-car-klank: qu bewaart de k-klank voor de é. Net als practicar → practiqué."},
-   {q:"'Me enamoré' staat in de...", qe:"'Me enamoré' is in the...", optse:["indefinido","perfecto"], ue:"One word, accent on the é: indefinido. It happened and it is over (hence the heartbreak).", opts:["indefinido","perfecto"], c:0, u:"Eén woord, accent op de é: indefinido. Het gebeurde en is afgesloten (vandaar het verdriet)."},
-   {q:"'Volver a verte' betekent...", qe:"'Volver a verte' means...", optse:["to see you again","to come back in order to see"], ue:"Volver a + infinitive = to do something again. Volver a ver = to see again.", opts:["jou weer zien","terugkomen om te zien"], c:0, u:"Volver a + infinitief = iets opnieuw doen. Volver a ver = weer zien."}
-  ]},
- {id:"song-ojitos", titel:"Ojitos Lindos", artiest:"Bad Bunny ft. Bomba Estéreo", yt:"wAjHQXrIj9o", lvl:"A0/A2",
-  intro:"Rustig, duidelijk gezongen en vol verkleinwoordjes: perfect om je oor te trainen.",
-  oogst:[
-   {es:"ojitos lindos", nl:"mooie oogjes", u:"Ojos + -itos = oogjes. Het Spaans is dol op verkleinwoorden: -ito/-ita maakt alles kleiner én liever."},
-   {es:"lindo / linda", nl:"mooi, lief", u:"Synoniem van bonito. In Latijns-Amerika hoor je lindo vaker dan in Spanje."},
-   {es:"un poquito", nl:"een klein beetje", u:"Poco + -ito. Nog zo'n verkleinwoord: un poquito is nóg minder dan un poco."},
-   {es:"mírame", nl:"kijk naar me", u:"Gebiedende wijs mira + me eraan vastgeplakt. Daarom het accent: mírame."},
-   {es:"bailar", nl:"dansen", u:"Regelmatig -ar werkwoord. Bailo, bailas, baila..."},
-   {es:"cerquita", nl:"lekker dichtbij", u:"Cerca (dichtbij) + -ita. Verkleinwoord van een bijwoord, heel typisch spreektaal."}
-  ],
-  vragen:[
-   {q:"Wat doet -ito/-ita met een woord?", qe:"What does -ito/-ita do to a word?", optse:["makes it smaller and more affectionate","makes it plural"], ue:"Ojitos = little eyes, poquito = a little bit. A diminutive, in other words.", opts:["kleiner en liever maken","meervoud maken"], c:0, u:"Ojitos = oogjes, poquito = beetje-tje. Verkleinwoord dus."},
-   {q:"'Mírame' betekent...", qe:"'Mírame' means...", optse:["look at me","I look"], ue:"Mira (look!) + me (at me). The pronoun sticks to the end of the imperative.", opts:["kijk naar me","ik kijk"], c:0, u:"Mira (kijk!) + me (naar mij). Pronomen plakt aan de gebiedende wijs vast."},
-   {q:"Lindo is een synoniem van...", qe:"Lindo is a synonym of...", optse:["bonito","grande"], ue:"Lindo = pretty or sweet, just like bonito.", opts:["bonito","grande"], c:0, u:"Lindo = mooi/lief, net als bonito."}
-  ]},
- {id:"song-suavemente", titel:"Suavemente", artiest:"Elvis Crespo", yt:"WPiEbYSF9kE", lvl:"A0/A2",
-  intro:"Dé merengue-klassieker, en taalkundig een cadeautje: het hele refrein is twee woorden die je meteen kunt ontleden.",
-  oogst:[
-   {es:"suavemente", nl:"zachtjes", u:"Suave (zacht) + -mente = zachtjes. Elk bijvoeglijk naamwoord + -mente wordt een bijwoord: rápidamente, lentamente."},
-   {es:"bésame", nl:"kus me", u:"Besa (kus!) + me eraan vastgeplakt, mét accent. Zelfde opbouw als mírame uit Ojitos Lindos."},
-   {es:"besar / el beso", nl:"kussen / de kus", u:"Werkwoord en zelfstandig naamwoord uit dezelfde familie."},
-   {es:"quiero", nl:"ik wil", u:"Van querer, een schoenwerkwoord: quiero, quieres, quiere. Quiero + infinitief = ik wil ...en."},
-   {es:"sentir", nl:"voelen", u:"Quiero sentir = ik wil voelen. Ken je van sentirse (zich voelen), hier zonder se: iets voelen."},
-   {es:"los labios", nl:"de lippen", u:"Handig lichaamsdeel-woord. Let op: gewoon met los, niet met 'mijn' zoals in het Nederlands."}
-  ],
-  vragen:[
-   {q:"Wat doet -mente met een woord?", qe:"What does -mente do to a word?", optse:["it becomes an adverb (softly)","it becomes plural"], ue:"Suave → suavemente. It turns an adjective into an adverb: soft becomes softly.", opts:["het wordt een bijwoord (zachtjes)","het wordt meervoud"], c:0, u:"Suave → suavemente, net als ons -jes: zacht → zachtjes."},
-   {q:"'Bésame' is opgebouwd als...", qe:"'Bésame' is built as...", optse:["kiss + me","I kiss"], ue:"Imperative besa + me. The accent shows up because the stress has to stay where it was.", opts:["kus + me","ik kus"], c:0, u:"Gebiedende wijs besa + me. Het accent komt erbij omdat de klemtoon moet blijven liggen."},
-   {q:"'Quiero sentir' betekent...", qe:"'Quiero sentir' means...", optse:["I want to feel","I feel myself"], ue:"Querer + infinitive. 'I feel' about yourself would be me siento.", opts:["ik wil voelen","ik voel me"], c:0, u:"Querer + infinitief. 'Ik voel me' zou me siento zijn."}
-  ]},
- {id:"song-camisa", titel:"La Camisa Negra", artiest:"Juanes", yt:"Mf5Y1iaH1J4", lvl:"A0/A2",
-  intro:"Juanes' klassieker, hier in de versie mét ondertiteling in beeld. Vol tener, kleuren en gevoelens.",
-  oogst:[
-   {es:"tengo la camisa negra", nl:"ik heb het zwarte overhemd aan", u:"Tener voor wat je aanhebt/hebt. En kijk: camisa is vrouwelijk, dus negrA. Kleuren passen zich aan."},
-   {es:"la camisa", nl:"het overhemd, de blouse", u:"Kledingwoord. In de kledingles (AULA 1 unit 4) komen er meer."},
-   {es:"negro / negra", nl:"zwart", u:"Kleur als bijvoeglijk naamwoord: el gato negro, la camisa negra."},
-   {es:"hoy", nl:"vandaag", u:"Hét signaalwoord voor de pretérito perfecto: hoy he tenido un mal día."},
-   {es:"por eso", nl:"daarom", u:"Handige verbinder die je constant nodig hebt. Ken je uit de Frida-tekst: por eso pasó..."},
-   {es:"la mentira", nl:"de leugen", u:"Bij het werkwoord mentir (liegen). Mentira! roep je ook als 'niet waar!'."},
-   {es:"me duele", nl:"het doet me pijn", u:"Doler werkt precies als gustar en costar: me duele la cabeza (enkelvoud), me duelen los pies (meervoud). AULA 2 les 8!"}
-  ],
-  vragen:[
-   {q:"Waarom is het 'la camisa negrA' en niet 'negro'?", qe:"Why is it 'la camisa negrA' and not 'negro'?", optse:["camisa is feminine","black is always negra"], ue:"Colours adapt to the noun: el gato negro, la camisa negra.", opts:["camisa is vrouwelijk","zwart is altijd negra"], c:0, u:"Kleuren passen zich aan het woord aan: el gato negro, la camisa negra."},
-   {q:"'Me duele' werkt hetzelfde als...", qe:"'Me duele' works the same way as...", optse:["me gusta / me cuesta","yo tengo"], ue:"The flipped build: the thing that hurts is the subject. Me duele la cabeza.", opts:["me gusta / me cuesta","yo tengo"], c:0, u:"De omgekeerde bouw: het ding dat pijn doet is het onderwerp. Me duele la cabeza."},
-   {q:"'Hoy' is een signaalwoord voor...", qe:"'Hoy' is a signal word for...", optse:["the perfecto (he tenido)","the indefinido (tuve)"], ue:"Today is still running, so perfecto.", opts:["de perfecto (he tenido)","de indefinido (tuve)"], c:0, u:"Vandaag loopt nog, dus perfecto."}
-  ]},
- {id:"song-mayores", titel:"Mayores", artiest:"Becky G ft. Bad Bunny", yt:"GMFewiplIbw", lvl:"A2",
-  intro:"Eén grote gustar-oefening met een knipoog: het refrein is letterlijk de grammatica van les 1.",
-  oogst:[
-   {es:"a mí me gustan mayores", nl:"ik val op ouderen", u:"Kijk: gustAN, meervoud, omdat 'mayores' meervoud is. Precies de cuesta/cuestan-regel. En 'a mí' vooraan is extra nadruk: ík."},
-   {es:"mayor / mayores", nl:"ouder / ouderen", u:"De vergrotende trap van grande. Mi hermano mayor = mijn oudere broer."},
-   {es:"así como tú", nl:"zoals jij", u:"Así como = (net) zoals. Handig vergelijkingswoord."},
-   {es:"el caballero", nl:"de heer, de gentleman", u:"Letterlijk 'ruiter' (van caballo, paard), maar het betekent gewoon heer."},
-   {es:"la boca", nl:"de mond", u:"Lichaamsdeel. Ook in uitdrukkingen: cerrar la boca = je mond houden."},
-   {es:"me encanta", nl:"ik vind het geweldig", u:"Encantar is de sterkere broer van gustar, zelfde bouw: me encanta (ev), me encantan (mv)."}
-  ],
-  vragen:[
-   {q:"Waarom is het 'me gustAN mayores'?", qe:"Why is it 'me gustAN mayores'?", optse:["mayores is plural","gustan is more polite"], ue:"The verb follows the subject (the older ones), not 'I'. Same rule as me cuestan las palabras.", opts:["mayores is meervoud","gustan is beleefder"], c:0, u:"Het werkwoord volgt het onderwerp (de ouderen), niet 'ik'. Zelfde regel als me cuestan las palabras."},
-   {q:"'Mayor' is de vergrotende trap van...", qe:"'Mayor' is the comparative of...", optse:["grande","malo"], ue:"Grande → mayor (older, bigger). Just like bueno → mejor.", opts:["grande","malo"], c:0, u:"Grande → mayor (ouder/groter). Net als bueno → mejor."},
-   {q:"'A mí me gusta' met 'a mí' erbij betekent...", qe:"'A mí me gusta' with 'a mí' added means...", optse:["extra emphasis: I do (whatever others think)","nothing extra"], ue:"A mí doubles the 'to me' for emphasis or contrast: a mí me gustan mayores, y ¿a ti?", opts:["extra nadruk: ík (wat anderen ook vinden)","niets extra's"], c:0, u:"A mí verdubbelt het 'aan mij' voor nadruk of contrast: a mí me gustan mayores, y ¿a ti?"}
-  ]},
- {id:"song-chantaje", titel:"Chantaje", artiest:"Shakira ft. Maluma", yt:"6Mgqbai3fKo", lvl:"A2",
-  intro:"Shakira en Maluma over emotionele spelletjes, en stiekem een ser/estar-les.",
-  oogst:[
-   {es:"el chantaje", nl:"de chantage", u:"Van het Franse chantage. Hacer chantaje = chanteren."},
-   {es:"cuando estás bien", nl:"wanneer het goed met je gaat", u:"EstAr voor hoe je je voelt/toestand: estás bien. Niet ser: het gaat over nu, niet over karakter."},
-   {es:"te alejas de mí", nl:"je neemt afstand van mij", u:"Alejarse de = afstand nemen van, wederkerend: me alejo, te alejas. Van lejos (ver)."},
-   {es:"conmigo / contigo", nl:"met mij / met jou", u:"Speciale vormpjes: niet 'con mí' maar conmigo. Verder gewoon con él, con ella."},
-   {es:"puro", nl:"puur, alleen maar", u:"In spreektaal: pura mentira = alleen maar leugens."},
-   {es:"me tienes", nl:"je hebt me (in je macht)", u:"Tener + persoon: me tienes loco = je maakt me gek (letterlijk: je hebt me gek)."}
-  ],
-  vragen:[
-   {q:"'Cuando estás bien' gebruikt estar omdat...", qe:"'Cuando estás bien' uses estar because...", optse:["it is a state right now","bien always takes estar... and that is the same thing","Shakira likes it better"], ue:"How you are doing is a state: estar. ¿Cómo estás? Estoy bien.", opts:["het een toestand van nu is","bien altijd estar krijgt... en dat is hetzelfde","Shakira dat mooier vindt"], c:0, u:"Hoe het mét je gaat is een toestand: estar. ¿Cómo estás? Estoy bien."},
-   {q:"'Met mij' is in het Spaans...", qe:"'With me' in Spanish is...", optse:["conmigo","con mí"], ue:"A small exception you simply have to know: conmigo, contigo.", opts:["conmigo","con mí"], c:0, u:"Uitzonderingsvormpje dat je gewoon moet kennen: conmigo, contigo."},
-   {q:"'Alejarse de' betekent...", qe:"'Alejarse de' means...", optse:["to move away from","to come closer"], ue:"From lejos (far): literally 'to make yourself far from'.", opts:["afstand nemen van","dichterbij komen"], c:0, u:"Van lejos (ver): letterlijk 'zich ver maken van'."}
-  ]},
- {id:"song-yquefue", titel:"¿Y Qué Fue?", artiest:"Don Miguelo", yt:"MD_GclD50QU", lvl:"A2",
-  intro:"Dominicaanse meezinger, en de titel alleen al is jouw huiswerk van vandaag: fue!",
-  oogst:[
-   {es:"¿y qué fue?", nl:"en wat gebeurde er? / en wat werd het?", u:"Daar is fue weer: hier van SER (wat wás het). Jouw ser-of-ir-les in drie woorden."},
-   {es:"dime", nl:"zeg (het) me", u:"Di (zeg!) + me. Onregelmatige gebiedende wijs van decir, met het pronomen vastgeplakt."},
-   {es:"lo que", nl:"wat, dat wat", u:"Lo que pasó = wat er gebeurde. Kenden we al uit La Bachata; zo vaak komt hij dus voorbij."},
-   {es:"te vas", nl:"je gaat weg", u:"Irse = weggaan: me voy, te vas. Mét se erbij is het vertrekken, zonder (ir) is het ergens heen gaan."},
-   {es:"bailando", nl:"dansend / aan het dansen", u:"Het gerundio van bailar. Estoy bailando = ik ben aan het dansen. Komt in AULA 2 les 5."},
-   {es:"la gente", nl:"de mensen", u:"Enkelvoud in het Spaans! La gente baila (niet bailan): 'het volk danst'."}
-  ],
-  vragen:[
-   {q:"'¿Y qué fue?': die fue is hier van...", qe:"'¿Y qué fue?' - here that fue comes from...", optse:["ser (what was it)","ir (where did it go)"], ue:"There is no 'a' behind it and it asks what happened or what it was: ser.", opts:["ser (wat was het)","ir (waar ging het heen)"], c:0, u:"Er staat geen 'a' achter en het vraagt naar wat er gebeurde/was: ser."},
-   {q:"'Dime' is opgebouwd als...", qe:"'Dime' is built as...", optse:["tell + me","I tell"], ue:"Imperative di + me. Just like bésame and mírame: the pronoun goes at the end.", opts:["zeg + me","ik zeg"], c:0, u:"Gebiedende wijs di + me. Net als bésame en mírame: pronomen achteraan."},
-   {q:"'La gente' krijgt in het Spaans...", qe:"In Spanish, 'la gente' takes...", optse:["a singular verb","a plural verb"], ue:"La gente es/baila/quiere: grammatically singular, even though it is a lot of people.", opts:["een enkelvoudig werkwoord","een meervoudig werkwoord"], c:0, u:"La gente es/baila/quiere: grammaticaal enkelvoud, ook al zijn het veel mensen."}
-  ]},
- {id:"song-laperla", titel:"La Perla", artiest:"Calle 13 ft. Rubén Blades", yt:"jM2T1j-Y6Tg", lvl:"A2",
-  intro:"Een meesterwerk over een wijk in Puerto Rico. Tekstueel pittig, dus pak wat je pakken kunt en laat de rest muziek zijn.",
-  oogst:[
-   {es:"la perla", nl:"de parel", u:"Ook de naam van de wijk in San Juan waar het lied over gaat."},
-   {es:"el barrio", nl:"de wijk, de buurt", u:"Kernwoord van het lied én van AULA 1 les 8 (El barrio ideal)."},
-   {es:"la esquina", nl:"de (straat)hoek", u:"En la esquina = op de hoek. Waar het leven zich afspeelt in dit lied."},
-   {es:"oye", nl:"hé, luister", u:"Gebiedende wijs van oír (horen). Dé manier om iemands aandacht te trekken: ¡oye!"},
-   {es:"el sueño", nl:"de droom (én de slaap)", u:"Tener sueño = slaap hebben; tener un sueño = een droom hebben. Context beslist."},
-   {es:"no hay", nl:"er is geen / er zijn geen", u:"Hay = er is/er zijn. No hay problema. Komt in AULA 1 les 3."}
-  ],
-  vragen:[
-   {q:"'El barrio' betekent...", qe:"'El barrio' means...", optse:["the neighbourhood","the bar"], ue:"The neighbourhood. La Perla is one such barrio in San Juan.", opts:["de wijk","de bar"], c:0, u:"De buurt/wijk. La Perla is zo'n barrio in San Juan."},
-   {q:"'¡Oye!' gebruik je om...", qe:"You use '¡Oye!' to...", optse:["get someone's attention","say goodbye"], ue:"Imperative of oír: listen! hey!", opts:["iemands aandacht te trekken","afscheid te nemen"], c:0, u:"Gebiedende wijs van oír: luister! hé!"},
-   {q:"'No hay' betekent...", qe:"'No hay' means...", optse:["there is/are no","he does not have"], ue:"Hay = there is, there are. No hay = there is no. 'He does not have' would be no tiene.", opts:["er is/zijn geen","hij heeft niet"], c:0, u:"Hay = er is, er zijn. No hay = er is geen. 'Hij heeft niet' zou no tiene zijn."}
-  ]},
- {id:"song-nomedejes", titel:"No Me Dejes Solo", artiest:"Daddy Yankee ft. Wisin & Yandel", yt:"TzKW-XqIjBg", lvl:"A2",
-  intro:"Reggaeton-klassieker van Barrio Fino — en de titel is meteen een les: dejar, precies het werkwoord uit je les over vragen en lenen.",
-  oogst:[
-   {es:"no me dejes solo", nl:"laat me niet alleen", u:"Dejar ken je als 'uitlenen' (¿me dejas tu móvil?), maar de basisbetekenis is 'laten/achterlaten'. Hier ontkennende gebiedende wijs: no dejes."},
-   {es:"dejar", nl:"laten, achterlaten (én uitlenen)", u:"Eén werkwoord, twee gezichten: déjame = laat me, ¿me dejas...? = leen je me...? Context beslist."},
-   {es:"solo / sola", nl:"alleen", u:"Past zich aan: él está solo, ella está sola. Met estar, want alleen zijn is (hopelijk) tijdelijk."},
-   {es:"quédate", nl:"blijf", u:"Quedarse = blijven, gebiedende wijs mét vastgeplakt voornaamwoord: quédate. Zelfde truc als fríela uit de kookles."},
-   {es:"conmigo", nl:"met mij", u:"Con + mí wordt één woord: conmigo. En met jou? Contigo."},
-   {es:"la calle", nl:"de straat", u:"Waar reggaeton geboren is. En la calle = op straat."},
-   {es:"bailando", nl:"dansend / aan het dansen", u:"Gerundio van bailar. Estamos bailando = we zijn aan het dansen — estar + gerundio uit les 5."}
-  ],
-  vragen:[
-   {q:"'No me dejes solo' is...", qe:"'No me dejes solo' is...", optse:["a negative imperative","a question"], ue:"No + dejes (subjunctive form) = negative imperative: do not leave! Compare the cooking lesson: no añadas demasiada sal.", opts:["een ontkennende gebiedende wijs","een vraag"], c:0, u:"No + dejes (subjuntivo-vorm) = ontkennende gebiedende wijs: laat niet! Vergelijk uit de kookles: no añadas demasiada sal."},
-   {q:"'¿Me dejas tu móvil?' betekent...", qe:"'¿Me dejas tu móvil?' means...", optse:["will you lend me your phone?","are you leaving your phone behind?"], ue:"In a question like this, dejar means 'to lend', the same as ¿me prestas...?", opts:["leen je me je telefoon?","laat je je telefoon achter?"], c:0, u:"In een vraag als deze betekent dejar 'uitlenen', hetzelfde als ¿me prestas...?"},
-   {q:"'Conmigo' betekent...", qe:"'Conmigo' means...", optse:["with me","at my place"], ue:"Con + mí = conmigo, one word. Contigo = with you.", opts:["met mij","bij mij thuis"], c:0, u:"Con + mí = conmigo, één woord. Contigo = met jou."}
-  ]},
- {id:"song-ahoraes", titel:"Ahora Es", artiest:"Wisin & Yandel", yt:"ov4r-qNND-I", lvl:"A2",
-  intro:"El dúo de la historia. De titel is twee woordjes die je constant nodig hebt: ahora (nu) — het tegenovergestelde van antes uit je imperfecto-les.",
-  oogst:[
-   {es:"ahora es", nl:"nu is het (zover)", u:"Ahora = nu. Hét signaalwoord voor het heden, tegenover antes (vroeger): antes bailaba salsa, ahora bailo reggaeton."},
-   {es:"la noche", nl:"de nacht, de avond", u:"Esta noche = vanavond. Vrouwelijk, ondanks de -e: la noche buena."},
-   {es:"muévete", nl:"beweeg!, kom in beweging!", u:"Moverse (o→ue), gebiedende wijs met vastgeplakt voornaamwoord: muévete. Let op het accent dat erbij komt."},
-   {es:"no te detengas", nl:"stop niet", u:"Detenerse = stoppen (vervoegt als tener). Ontkennende gebiedende wijs: no te detengas."},
-   {es:"la pista", nl:"de (dans)vloer", u:"La pista de baile = de dansvloer. Ook: la pista de tenis, en zelfs 'de aanwijzing' bij een speurtocht."},
-   {es:"solita", nl:"helemaal alleen", u:"Sola + verkleinuitgang -ita = solita. Het Spaans plakt -ito/-ita overal op: un momentito, despacito."},
-   {es:"esperar", nl:"wachten (én hopen)", u:"No esperes más = wacht niet langer. Eén werkwoord voor wachten én hopen — context beslist."}
-  ],
-  vragen:[
-   {q:"Het tegenovergestelde van 'ahora' is...", qe:"The opposite of 'ahora' is...", optse:["antes","luego"], ue:"Antes = before, ahora = now. Exactly the contrast from your imperfecto lesson: antes vivía..., ahora vivo...", opts:["antes","luego"], c:0, u:"Antes = vroeger, ahora = nu. Precies het contrast van je imperfecto-les: antes vivía..., ahora vivo..."},
-   {q:"'Muévete' krijgt een accent omdat...", qe:"'Muévete' gets an accent because...", optse:["the pronoun is attached at the end","mover is irregular"], ue:"Mueve + te = muévete: the extra syllable does not move the stress, so you pin it down with an accent.", opts:["het voornaamwoord achteraan vastgeplakt zit","mover onregelmatig is"], c:0, u:"Mueve + te = muévete: door het extra lettergreepje verschuift de klemtoon niet, dus schrijf je hem met een accent vast."},
-   {q:"'Solita' is...", qe:"'Solita' is...", optse:["a diminutive of sola","another word for sun"], ue:"Sola + -ita. Diminutives make it softer or sweeter: solita = all by her little self.", opts:["een verkleinvorm van sola","een ander woord voor zon"], c:0, u:"Sola + -ita. Verkleinvormen maken het zachter of liever: solita = helemaal alleentjes."}
-  ]},
- {id:"song-miswing", titel:"Mi Swing Es Tropical", artiest:"Nickodemus & Quantic", yt:"tcOsJ149ZE8", lvl:"A2",
-  intro:"Zonnige New York-salsa, wereldberoemd geworden door de iPod-reclame. De titelzin draagt het hele nummer; de oogst hieronder is de salsa-woordenschat die erbij hoort.",
-  oogst:[
-   {es:"mi swing es tropical", nl:"mijn swing is tropisch", u:"De titelzin, eindeloos herhaald. Ser voor een eigenschap: mi swing ES tropical. Zo ook: soy optimista, la música es alegre."},
-   {es:"el ritmo", nl:"het ritme", u:"Sleutelwoord van elke salsa. Ook als compliment, met het ¡qué...! uit les 6: ¡qué ritmo tienes!"},
-   {es:"tocar", nl:"(een instrument) bespelen", u:"Tocar la conga, tocar la guitarra. Hetzelfde werkwoord als 'aanraken' — muziek maken is in het Spaans letterlijk aanraken."},
-   {es:"el sabor", nl:"de smaak, de flair", u:"Ken je uit je kookles: la comida tiene mucho sabor. In muziek betekent con sabor: met gevoel, met pit."},
-   {es:"gozar", nl:"genieten", u:"Salsa-woord bij uitstek: ¡goza! = geniet! Synoniem van disfrutar de uit je uitgaansles."},
-   {es:"la clave", nl:"de clave, de sleutel", u:"Het houten tik-patroon waar alle salsa op drijft. Ook figuurlijk: la clave del éxito = de sleutel tot succes."},
-   {es:"suave", nl:"zacht, soepel", u:"Tómalo suave = doe het rustig aan. Ken je al van Suavemente uit je liedjeslijst — één woord, twee liedjes."}
-  ],
-  vragen:[
-   {q:"'Mi swing es tropical' gebruikt ser omdat...", qe:"'Mi swing es tropical' uses ser because...", optse:["it describes a characteristic","it is about a place"], ue:"Characteristics and character take ser: mi swing es tropical, soy optimista. A place would take estar: estoy en Nueva York.", opts:["het een eigenschap beschrijft","het over een plaats gaat"], c:0, u:"Eigenschappen en karakter krijgen ser: mi swing es tropical, soy optimista. Een plaats zou estar krijgen: estoy en Nueva York."},
-   {q:"'El sabor' betekent hier...", qe:"Here, 'el sabor' means...", optse:["the taste, the flair","the smell"], ue:"You know sabor from food (lesson 7: la comida tiene sabor), but music with sabor = music with feeling. Smell is el olor.", opts:["de smaak, de flair","de geur"], c:0, u:"Sabor ken je van eten (les 7: la comida tiene sabor), maar muziek met sabor = muziek met gevoel. De geur is el olor."},
-   {q:"'Gozar' is een synoniem van...", qe:"'Gozar' is a synonym of...", optse:["disfrutar","esperar"], ue:"Both mean to enjoy. Disfrutar does take a fixed preposition: disfrutar DE la obra de teatro (one fixed expression, so not 'del teatro').", opts:["disfrutar","esperar"], c:0, u:"Allebei = genieten. Disfrutar krijgt wel een vaste prepositie: disfrutar DE la obra de teatro (één vast begrip, dus niet 'del teatro')."}
-  ]},
- {id:"song-unsueno", titel:"Un Sueño y Nada Más", artiest:"Polo Montañez", yt:"VtrsTomjCM4", lvl:"A2",
-  intro:"Cubaanse klassieker van Polo Montañez, de 'guajiro natural' die met alleen een gitaar en het platteland van Pinar del Río wereldberoemd werd. De titelzin zegt het al: dit blijft dromen. De oogst hieronder is de droom-woordenschat die erbij hoort.",
-  oogst:[
-   {es:"un sueño y nada más", nl:"een droom en meer niet", u:"De titelzin. Nada más achter iets = 'meer niet, dat is alles': un café y nada más. Let op: el sueño is de droom, maar tener sueño = slaap hebben."},
-   {es:"soñar con", nl:"dromen van", u:"Vaste prepositie: sueño CONtigo, sueño con una casa — nooit 'soñar de'. Net zoals disfrutar DE zijn vaste voorzetsel heeft (les 6)."},
-   {es:"el nido", nl:"het nest", u:"In liefdesliedjes bijna altijd figuurlijk: un nido de amor = een liefdesnestje. En ja, ook dat van Chispa is een nido."},
-   {es:"la nube", nl:"de wolk", u:"Ken je van Chispa's straattaal: estar en las nubes = met je hoofd in de wolken zitten — precies waar deze dromer woont."},
-   {es:"la luna", nl:"de maan", u:"Met las estrellas (de sterren) het vaste decor van elk Spaans liefdeslied; Polo's andere grote hit heet niet voor niets Un Montón de Estrellas."},
-   {es:"quisiera", nl:"ik zou willen", u:"De zachte, dromerige vorm van querer — voorzichtiger dan quiero. Dezelfde beleefde toon als podrías uit je verzoekjes-les (les 5)."},
-   {es:"el guajiro", nl:"de plattelander (Cuba)", u:"Cubaans woord voor boer of man van het land. Polo Montañez noemde zichzelf el guajiro natural — zo hoor je meteen waar deze gitaarklank vandaan komt."}
-  ],
-  vragen:[
-   {q:"'Sueño contigo' betekent...", qe:"'Sueño contigo' means...", optse:["I dream of you","I feel sleepy around you"], ue:"Soñar con = to dream of or about, with the fixed preposition con. To be sleepy is tener sueño: tengo sueño.", opts:["ik droom van jou","ik ben slaperig bij jou"], c:0, u:"Soñar con = dromen van/over, met vaste prepositie con. Slaperig zijn is tener sueño: tengo sueño."},
-   {q:"'Un café y nada más' betekent...", qe:"'Un café y nada más' means...", optse:["just a coffee, nothing more","one more coffee on top"], ue:"Nada más after something = 'and that is all'. The title works the same way: it is a dream, nothing more.", opts:["alleen een koffie, meer niet","nog een koffie erbij"], c:0, u:"Nada más achter iets = 'en dat is alles'. Zo werkt ook de titel: het is een droom, meer niet."},
-   {q:"In een liefdeslied hoor je vaak 'quisiera' in plaats van 'quiero' omdat...", qe:"In a love song you often hear 'quisiera' instead of 'quiero' because...", optse:["it sounds softer and more dreamy","it is a command"], ue:"Quisiera is the careful wish form of querer, the same soft tone as podrías for polite questions (lesson 5). A command would be the imperativo, and that barely exists here.", opts:["het zachter en dromeriger klinkt","het een bevel is"], c:0, u:"Quisiera is de voorzichtige wens-vorm van querer, dezelfde zachte toon als podrías bij beleefd vragen (les 5). Een bevel zou juist de imperativo zijn: ¡quiere!... en die bestaat hier niet eens echt."}
-    ]},
- {id:"song-brujeria", titel:"Brujer\u00eda", artiest:"El Gran Combo de Puerto Rico", yt:"IufC8UoWHVk", lvl:"A2",
-  intro:"Salsa van El Gran Combo de Puerto Rico, al zestig jaar \u2018La Universidad de la Salsa\u2019. De zanger zoekt een verklaring voor een liefde die sterker is dan hijzelf, en vindt er maar \u00e9\u00e9n: dit moet wel brujer\u00eda zijn \u2014 hekserij. De oogst hieronder is de betoverings-woordenschat die erbij hoort.",
-  oogst:[
-   {es:"la brujer\u00eda", nl:"de hekserij", u:"De titel. Woorden op -er\u00eda zijn vaak een vak of een winkel: la panader\u00eda, la taquer\u00eda \u2014 hier dus het \u2018vak\u2019 van de bruja."},
-   {es:"la bruja / el brujo", nl:"de heks / de tovenaar", u:"Vrouwelijk op -a, mannelijk op -o, net als chica/chico. In salsa is de bruja vaak de verklaring voor een liefde die je niet kunt uitleggen."},
-   {es:"embrujado / embrujada", nl:"behekst", u:"Participio als toestand, dus met estar: estoy embrujado = ik ben behekst. Zelfde patroon als estar cansado uit je gezondheidsles (les 8): een toestand, geen eigenschap."},
-   {es:"el hechizo", nl:"de betovering", u:"Familie van hecho (gemaakt, van hacer): iets wat je \u2018aangedaan\u2019 is. Het werkwoord is hechizar = beheksen."},
-   {es:"enamorarse de", nl:"verliefd worden op", u:"Vaste prepositie DE, niet con: me enamor\u00e9 de ella. Reflexief \u00e9n indefinido tegelijk \u2014 precies het patroon dat je kent uit La Bachata in je liedjeslijst."},
-   {es:"la culpa", nl:"de schuld", u:"Tener la culpa = de schuld hebben: yo no tengo la culpa, \u00a1fue la brujer\u00eda! Vast met tener, net als tener suerte en tener sue\u00f1o."},
-   {es:"el coraz\u00f3n", nl:"het hart", u:"Woorden op -\u00f3n zijn mannelijk: el coraz\u00f3n. In het meervoud verschuift de klemtoon vanzelf goed en verdwijnt het accent: corazones."}
-  ],
-  vragen:[
-   {q:"'Estoy embrujado' betekent...", qe:"'Estoy embrujado' means...", optse:["I am bewitched","I am a wizard"], ue:"Participio as a state, so with estar: estoy embrujado = I am bewitched. The wizard himself is el brujo: soy brujo, with ser, because that is what you are.", opts:["ik ben behekst","ik ben een tovenaar"], c:0, u:"Participio als toestand, dus met estar: estoy embrujado = ik ben behekst. De tovenaar z\u00e9lf is el brujo: soy brujo, met ser, want dat is wat je b\u00e9nt."},
-   {q:"Waarom is het 'el coraz\u00f3n' en niet 'la coraz\u00f3n'?", qe:"Why is it 'el coraz\u00f3n' and not 'la coraz\u00f3n'?", optse:["words ending in -\u00f3n are masculine","hearts are romantic, so feminine"], ue:"Words in -\u00f3n are masculine: el coraz\u00f3n, el mont\u00f3n. The plural loses the written accent: corazones.", opts:["woorden op -\u00f3n zijn mannelijk","harten zijn romantisch, dus vrouwelijk"], c:0, u:"Woorden op -\u00f3n zijn mannelijk: el coraz\u00f3n, el mont\u00f3n. Het meervoud verliest het geschreven accent: corazones."},
-   {q:"'Yo no tengo la culpa' betekent...", qe:"'Yo no tengo la culpa' means...", optse:["it is not my fault","I have no luck"], ue:"Tener la culpa = to be to blame, a fixed tener-expression like tener suerte (to be lucky) and tener sue\u00f1o (to be sleepy). No luck would be no tengo suerte.", opts:["het is niet mijn schuld","ik heb geen geluk"], c:0, u:"Tener la culpa = de schuld hebben, een vaste tener-uitdrukking net als tener suerte (geluk hebben) en tener sue\u00f1o (slaap hebben). Geen geluk zou no tengo suerte zijn."}
-  ]},
- {id:"song-soloquise", titel:"Solo Quise Quererte", artiest:"Kewin Cosmos", yt:"fLHs2gkDJ_0", lvl:"A2",
-  intro:"Bachata van Kewin Cosmos. De titel zegt het al: solo quise quererte, ik wilde je alleen maar liefhebben — en dat is meteen een dubbele grammatica-les: quise (indefinido van querer) plus quererte (het pronomen achteraan de infinitief). De oogst hieronder is de bachata-hartzeer-woordenschat die erbij hoort.",
-  oogst:[
-   {es:"solo quise quererte", nl:"ik wilde je alleen maar liefhebben", u:"De titel. Quise = indefinido van querer; quererte = querer + te. Twee dingen die je allebei al oefent, in vijf woorden."},
-   {es:"quise", nl:"ik wilde", u:"Onregelmatige indefinido met u-stam: quise, quisiste, quiso. Zelfde familie als tuve, pude en puse."},
-   {es:"quererte", nl:"jou liefhebben", u:"Het pronomen plakt achteraan de infinitief: querer + te. Precies de truc van olvidarte uit La Bachata."},
-   {es:"el corazón", nl:"het hart", u:"Hét bachata-woord. In het meervoud verschuift de klemtoon en verdwijnt het accent: corazones."},
-   {es:"me duele", nl:"het doet me pijn", u:"Doler werkt als gustar (ken je van les 8): me duele el corazón, letterlijk 'het hart doet mij pijn'."},
-   {es:"llorar", nl:"huilen", u:"Regelmatig -ar-werkwoord. In zo ongeveer elke bachata te horen: lloro, lloraba, lloré."},
-   {es:"te fuiste", nl:"je ging weg", u:"Indefinido van irse (weggaan). Let op: fuiste is óók de indefinido van ser — alleen de context vertelt je welke het is."}
-  ],
-  vragen:[
-   {q:"Quise is de indefinido van...", qe:"Quise is the indefinido of...", optse:["querer","quedar"], ue:"Querer has an irregular u-stem in the indefinido: quise, just like tuve (tener) and pude (poder). Quedar is regular: quedé.", opts:["querer","quedar"], c:0, u:"Querer heeft een onregelmatige u-stam in de indefinido: quise, net als tuve (tener) en pude (poder). Quedar is regelmatig: quedé."},
-   {q:"'Quererte' = querer + te. Wanneer mag het pronomen zo achteraan plakken?", qe:"'Quererte' = querer + te. When can the pronoun attach at the end like that?", optse:["after an infinitive: volver a verte","always, also on a conjugated form"], ue:"After an infinitive (or gerundio/imperative) the pronoun attaches: quererte, verte. With a conjugated form it goes in front: te quiero.", opts:["achter een infinitief: volver a verte","altijd, ook bij een vervoegde vorm"], c:0, u:"Achter een infinitief (of gerundio/imperativo) plakt het pronomen vast: quererte, verte. Bij een vervoegde vorm staat het ervóór: te quiero."},
-   {q:"Waarom zingt hij quise (indefinido) en niet quería (imperfecto)?", qe:"Why does he sing quise (indefinido) and not quería (imperfecto)?", optse:["it's over and done: a closed-off fact","it's background: it lasted a long time"], ue:"He looks back on something finished: I (only) wanted to love you — closed off, so indefinido. Quería would paint the background of an ongoing feeling. The same choice as in your relatar quiz.", opts:["het is voorbij en afgesloten: een afgerond feit","het is achtergrond: het duurde lang"], c:0, u:"Hij kijkt terug op iets wat af is: ik wilde je (alleen maar) liefhebben — afgesloten, dus indefinido. Quería zou de achtergrond van een doorlopend gevoel schetsen. Precies de keuze uit je relatar-toetsje."}
-  ]},
- {id:"song-chevere", titel:"CHÉVERE", artiest:"ARIA VEGA & Ryan Castro", yt:"IAMBPsFPK0I", lvl:"A2",
-  intro:"Reggaeton uit Colombia: Ryan Castro komt uit Medellín. De titel ken je al van Chispa's straattaal: chévere = top, gaaf — hét Latijns-Amerikaanse woord voor wat in Spanje guay is. De oogst hieronder is de Colombiaanse feest-woordenschat die bij dit nummer hoort.",
-  oogst:[
-   {es:"chévere", nl:"top, gaaf, cool", u:"De titel. In heel Latijns-Amerika te horen (vooral Colombia en Venezuela); de Spaanse tegenhanger is guay. Uit Chispa's straattaal-collectie!"},
-   {es:"pasarlo chévere", nl:"het naar je zin hebben", u:"Variant van pasarlo bien. En let op het werkwoord: ¿qué tal lo pasaste? — pasar ken je ook van ¿qué pasó? = wat is er gebeurd?"},
-   {es:"la rumba", nl:"het feest", u:"Colombiaans voor fiesta. Irse de rumba = gaan stappen. Het woord gaf zijn naam aan het muziekgenre."},
-   {es:"el ambiente", nl:"de sfeer", u:"Hay buen ambiente = er hangt een goede sfeer. Stond deze week nog in je foutenlog — hier komt hij terug in feestcontext."},
-   {es:"bailar contigo", nl:"met jou dansen", u:"Niet con ti maar één woord: contigo. Net als conmigo = met mij. Vaste reggaeton-woorden."},
-   {es:"el parcero / parce", nl:"vriend, maat (Colombia)", u:"Hét Medellín-woord, Ryan Castro's thuisstad. Zoals España tío zegt en México güey."},
-   {es:"gozar", nl:"genieten, losgaan", u:"Gozar (de) = genieten van, het feest-synoniem van disfrutar de — mét hetzelfde vaste de erachter."}
-  ],
-  vragen:[
-   {q:"Chévere hoor je vooral in Latijns-Amerika. Wat zeggen ze in Spanje?", qe:"Chévere is mostly Latin American. What do they say in Spain?", optse:["guay","talla"], ue:"Guay is the Spanish counterpart of chévere. La talla is a clothing size — nothing to do with it.", opts:["guay","talla"], c:0, u:"Guay is de Spaanse tegenhanger van chévere. La talla is een kledingmaat — heeft er niets mee te maken."},
-   {q:"'Bailar contigo' = met jou dansen. Waarom niet 'con ti'?", qe:"'Bailar contigo' = to dance with you. Why not 'con ti'?", optse:["mí and ti merge with con: conmigo, contigo","con always takes tú"], ue:"After con, mí and ti become one word: conmigo, contigo. All other pronouns stay separate: con él, con nosotros.", opts:["mí en ti versmelten met con: conmigo, contigo","na con komt altijd tú"], c:0, u:"Na con versmelten mí en ti tot één woord: conmigo, contigo. Alle andere voornaamwoorden blijven los: con él, con nosotros."},
-   {q:"'¿Qué tal lo pasaste?' — welk werkwoord zit hier in de indefinido?", qe:"'¿Qué tal lo pasaste?' — which verb is in the indefinido here?", optse:["pasar (pasaste, like pasó)","poner (you put)"], ue:"Pasaste is the tú-form of pasar in the indefinido — same family as ¿qué pasó? = what happened? Poner would be pusiste.", opts:["pasar (pasaste, net als pasó)","poner (jij zette)"], c:0, u:"Pasaste is de tú-vorm van pasar in de indefinido — zelfde familie als ¿qué pasó? = wat is er gebeurd? Poner zou pusiste zijn."}
-  ]},
- {id:"song-fukuoka", titel:"Bachata en Fukuoka", artiest:"Juan Luis Guerra", yt:"DBu6FZr95mk", lvl:"A2",
-  intro:"Bachata van de Dominicaanse meester Juan Luis Guerra: hij reist naar Japan en leert het publiek in Fukuoka de bachata. De oogst hieronder is de reis- en muziek-woordenschat die bij dit nummer hoort.",
-  oogst:[
-   {es:"la bachata", nl:"de bachata", u:"Het genre uit de Dominicaanse Republiek — én een oude bekende: La Bachata van Manuel Turizo staat al in je liedjeslijst."},
-   {es:"tocar la guitarra", nl:"gitaar spelen", u:"Bij een instrument gebruik je tocar, nooit jugar (dat is voor spelletjes: jugar al fútbol). Tocar is ook gewoon aanraken."},
-   {es:"lejos de", nl:"ver van", u:"Fukuoka está muy lejos de la República Dominicana. Vast voorzetsel de erachter, net als cerca de en delante de — die laatste stond deze week nog in je foutenlog."},
-   {es:"enseñar", nl:"leren (aan een ander), laten zien", u:"Hij enseña het publiek de bachata. Staat als eigen woord in je lijst en ging deze week nog mis: enseñar = aanleren, aprender = zelf leren."},
-   {es:"bailar pegadito", nl:"dicht tegen elkaar dansen", u:"Zó dans je een bachata. Pegado = geplakt (van pegar), en het verkleinwoord -ito maakt het liefkozend: pegadito."},
-   {es:"el viaje", nl:"de reis", u:"Van viajar. ¡Buen viaje! = goede reis! Hier een reis van de Caraïben naar Japan."},
-   {es:"el mar", nl:"de zee", u:"Tussen die twee ligt een hele oceaan. Meestal el mar, maar dichters en zeelieden zeggen la mar."}
-  ],
-  vragen:[
-   {q:"Gitaar spelen = ___ la guitarra?", qe:"To play the guitar = ___ la guitarra?", opts:["tocar","jugar"], optse:["tocar","jugar"], c:0, u:"Bij instrumenten altijd tocar. Jugar is voor spellen en sport: jugar al fútbol.", ue:"With instruments always tocar. Jugar is for games and sports: jugar al fútbol."},
-   {q:"De juf ___ español a los niños.", qe:"The teacher ___ español a los niños.", opts:["enseña","aprende"], optse:["enseña","aprende"], c:0, u:"Enseñar = leren aan een ander (aanleren); aprender = zelf leren. Los niños aprenden, la profesora enseña.", ue:"Enseñar = to teach someone; aprender = to learn yourself. Los niños aprenden, la profesora enseña."},
-   {q:"Fukuoka está muy lejos ___ España.", qe:"Fukuoka está muy lejos ___ España.", opts:["de","que"], optse:["de","que"], c:0, u:"Lejos de en cerca de hebben een vast de. Que hoort bij vergelijkingen: más grande que.", ue:"Lejos de and cerca de take a fixed de. Que belongs to comparisons: más grande que."}
-  ]},
- {id:"song-orion", titel:"Orión", artiest:"Boza & Elena Rose", yt:"Z2pblquztK0", lvl:"A2",
-  intro:"Een melodieuze reggaeton-ballad genoemd naar het sterrenbeeld Orión: Boza komt uit Panama, Elena Rose is Venezolaans. De oogst hieronder is de sterren- en gemis-woordenschat die bij dit nummer hoort.",
-  oogst:[
-   {es:"la estrella", nl:"de ster", u:"Orión is een sterrenbeeld: una constelación. Ook figuurlijk, net als in het Nederlands: una estrella de la música."},
-   {es:"el cielo", nl:"de hemel, de lucht", u:"Mirar al cielo = naar de hemel kijken. En het is ook een koosnaampje: mi cielo."},
-   {es:"brillar", nl:"schijnen, stralen", u:"Las estrellas brillan. Regelmatig -ar-werkwoord, ook figuurlijk: hoy brillas = vandaag straal je."},
-   {es:"buscarte", nl:"jou zoeken", u:"Het pronomen plakt achteraan de infinitief: buscar + te — zelfde truc als olvidarte uit La Bachata."},
-   {es:"extrañar", nl:"missen (Lat-Am)", u:"Te extraño = ik mis je. Boza is Panamees, Elena Rose Venezolaans — in Spanje zeggen ze meestal echar de menos: te echo de menos."},
-   {es:"soñar con", nl:"dromen van", u:"Vast voorzetsel con, niet de: sueño contigo = ik droom van jou. En een o→ue-schoenwerkwoord: sueño, sueñas, soñamos."},
-   {es:"la noche", nl:"de nacht", u:"Sterren zie je alleen 's nachts: por la noche. Buenas noches werkt bij aankomst én bij vertrek."}
-  ],
-  vragen:[
-   {q:"'Ik droom van jou' = sueño ___", qe:"'I dream about you' = sueño ___", opts:["contigo","de ti"], optse:["contigo","de ti"], c:0, u:"Soñar heeft een vast con, en con + ti versmelt tot contigo — ken je van bailar contigo uit CHÉVERE.", ue:"Soñar takes a fixed con, and con + ti merges into contigo — you know it from bailar contigo in CHÉVERE."},
-   {q:"In Spanje zeg je voor 'ik mis je' meestal:", qe:"In Spain, 'I miss you' is usually:", opts:["te echo de menos","te extraño"], optse:["te echo de menos","te extraño"], c:0, u:"Extrañar is vooral Latijns-Amerikaans; de Spaanse variant is echar de menos. Allebei goed Spaans, maar met een andere thuisbasis.", ue:"Extrañar is mostly Latin American; the Spanish variant is echar de menos. Both are good Spanish, with different home turf."},
-   {q:"Waarom mag 'buscarte' aan één stuk?", qe:"Why can 'buscarte' be one word?", opts:["achter een infinitief mag het pronomen vastplakken","te staat altijd vóór het werkwoord"], optse:["after an infinitive the pronoun can attach","te always goes before the verb"], c:0, u:"Aan een infinitief (en een gerundio of bevel) mag het pronomen achteraan plakken: buscarte, olvidarte. Bij een vervoegde vorm staat het ervoor: te busco.", ue:"To an infinitive (and a gerund or command) the pronoun can attach at the end: buscarte, olvidarte. With a conjugated form it goes in front: te busco."}
-  ]}
-];
 
-function ytId(url){
-  if(!url) return null;
-  var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/);
-  return m ? m[1] : (url.match(/^[A-Za-z0-9_-]{8,}$/) ? url : null);
-}
 
-var SONG_OOGST = [
- {match:"sigue", lvl:"A2", intro:"Reggaeton met een cadeautje: de titel zelf is een gebiedende wijs. Sigue = ga door!",
-  oogst:[
-   {es:"sigue", nl:"ga door / ga verder", u:"Imperativo van seguir (e→i). Hetzelfde werkwoord ken je uit de app: seguir = volgen, doorgaan."},
-   {es:"no pares", nl:"stop niet", u:"Negatieve imperativo van parar: no + subjuntivo-vorm. No pares = niet stoppen dus!"},
-   {es:"bailando", nl:"dansend, aan het dansen", u:"Gerundio van bailar. Estar + gerundio = ermee bezig zijn: estamos bailando."},
-   {es:"conmigo / contigo", nl:"met mij / met jou", u:"Onthoud: niet con mí of con ti, maar één woord: conmigo, contigo."},
-   {es:"otra vez", nl:"nog een keer, opnieuw", u:"Letterlijk: een andere keer. Hoor je in zó veel liedjes: otra vez, una vez más."}
-  ],
-  vragen:[
-   {q:"'Sigue' is de gebiedende wijs van...", opts:["seguir","sentir"], c:0, u:"Seguir (e→i): sigo, sigues, sigue... en als bevel: ¡sigue!"},
-   {q:"'No pares' betekent...", opts:["stop niet","niet praten"], c:0, u:"Parar = stoppen. No pares = stop niet, ga door."}
-  ]},
- {match:"tu eres ajena", lvl:"A2", intro:"Klassieke bachata vol ser-vormen en gevoelswoorden die je uit je lessen kent.",
-  oogst:[
-   {es:"tú eres", nl:"jij bent", u:"Ser, niet estar: het gaat om wie ze wezenlijk is (van een ander), niet waar ze is."},
-   {es:"ajena / ajeno", nl:"van een ander", u:"Cosa ajena = andermans bezit. Tú eres ajena = je bent (de geliefde) van iemand anders."},
-   {es:"me duele", nl:"het doet me pijn", u:"Doler werkt als gustar: me duele el corazón = mijn hart doet pijn. Komt in AULA les 8!"},
-   {es:"el corazón", nl:"het hart", u:"Hét bachata-woord. Meervoud: los corazones."},
-   {es:"amarte", nl:"jou liefhebben", u:"Amar + te: het pronomen plakt achteraan de infinitief, net als olvidarte in La Bachata."},
-   {es:"aunque", nl:"hoewel, ook al", u:"Handig verbindingswoord: aunque me duele = ook al doet het me pijn."}
-  ],
-  vragen:[
-   {q:"'Tú eres ajena' gebruikt ser omdat...", opts:["het een eigenschap/identiteit is","ze ergens is"], c:0, u:"Ser voor wat iemand ís; estar voor plaats of tijdelijke toestand."},
-   {q:"'Me duele' werkt grammaticaal zoals...", opts:["me gusta","yo hablo"], c:0, u:"Doler en gustar draaien de zin om: het onderwerp is wat pijn doet of bevalt."}
-  ]},
- {match:"chan chan", lvl:"A0/A2", intro:"Cubaanse klassieker van Buena Vista Social Club: rustig tempo, perfect om je oor te trainen. Het lied reist van dorp naar dorp.",
-  oogst:[
-   {es:"de ... a ...", nl:"van ... naar ...", u:"De Alto Cedro a Marcané: zo beschrijf je een route. De Madrid a Alicante."},
-   {es:"quiero", nl:"ik wil", u:"Van querer (e→ie): quiero, quieres, quiere... Ook: ik hou van je = te quiero."},
-   {es:"el camino", nl:"de weg, het pad", u:"Ken je uit het frequentiewoordenboek: camino = weg; en el camino = onderweg."},
-   {es:"el mar", nl:"de zee", u:"Die ken je al uit je lessen! Junto al mar = aan zee."},
-   {es:"la vergüenza", nl:"de schaamte", u:"Qué vergüenza = wat gênant. Mooi woord om de ü-klank te oefenen: ver-gwen-sa."}
-  ],
-  vragen:[
-   {q:"'De Alto Cedro a Marcané' beschrijft...", opts:["een route (van... naar...)","een tijdstip"], c:0, u:"de + plaats + a + plaats = van A naar B. Het hele lied is een reisje door Cuba."},
-   {q:"'Quiero' komt van...", opts:["querer","quedar"], c:0, u:"Querer (e→ie) = willen, houden van."}
-  ]},
- {match:"si antes te hubiera conocido", lvl:"A2", intro:"Karol G met een titel die één grote grammaticales is: wat als ik je eerder had gekend?",
-  oogst:[
-   {es:"si te hubiera conocido antes", nl:"als ik je eerder had gekend", u:"Sneak preview van B1: si + hubiera + participio = een als-het-anders-was-gelopen-fantasie. Herken hem, gebruiken komt later."},
-   {es:"conocido", nl:"gekend, leren kennen", u:"Participio van conocer, dat je al kent: conocí a mi pareja bailando salsa."},
-   {es:"antes", nl:"eerder, vroeger", u:"Tegenhanger van después (daarna). Antes de + infinitief = voordat."},
-   {es:"bailar contigo", nl:"met jou dansen", u:"Twee bekenden in één: bailar + contigo. Dé zin voor op de salsavloer."},
-   {es:"el destino", nl:"het lot, de bestemming", u:"Dubbele betekenis: je reisbestemming én het noodlot. Liedjes gebruiken vooral die tweede."}
-  ],
-  vragen:[
-   {q:"'Conocido' is het participio van...", opts:["conocer","cocinar"], c:0, u:"Conocer = kennen/leren kennen. Cocinar = koken (dat doe jij met Japans eten)."},
-   {q:"'Si... hubiera...' drukt uit:", opts:["een fantasie over hoe het had kunnen lopen","een plan voor morgen"], c:0, u:"Verleden-hypothese: het is niet gebeurd, maar stel je voor. B1-grammatica, alvast in je oor."}
-  ]},
- {match:"que calor", lvl:"A0/A2", intro:"Major Lazer met J Balvin: één grote warmte-les, en je kent de kern al uit je eigen lessen.",
-  oogst:[
-   {es:"qué calor", nl:"wat is het heet!", u:"Uitroep: ¡qué + zelfstandig naamwoord! Vergelijk hace calor (het is warm) uit je A0-les: dat is de neutrale melding, dit is de verzuchting."},
-   {es:"baila", nl:"dans!", u:"Imperativo van bailar. Baila conmigo = dans met me."},
-   {es:"despacio", nl:"langzaam", u:"Ken je uit het frequentiewoordenboek (en van dat andere liedje). Tegenovergestelde: rápido."},
-   {es:"el verano", nl:"de zomer", u:"Seizoenen: primavera, verano, otoño, invierno. In Alicante duurt el verano lekker lang."},
-   {es:"la playa", nl:"het strand", u:"Die ken je al! Vamos a la playa is nu dus geen loze kreet meer."}
-  ],
-  vragen:[
-   {q:"'¡Qué calor!' verhoudt zich tot 'hace calor' als...", opts:["uitroep tegenover neutrale mededeling","verleden tegenover heden"], c:0, u:"Hace calor = het is warm (feit). ¡Qué calor! = pff, wat een hitte (gevoel)."},
-   {q:"'Baila' is...", opts:["een bevel: dans!","hij danste"], c:0, u:"Imperativo van bailar. Hij danste zou bailó zijn (indefinido)."}
-  ]}
-];
-function songOogstVoor(titel){
-  var t = stripAcc(String(titel||"").toLowerCase()).replace(/[^a-z0-9 ]/g, "").trim();
-  if(!t) return null;
-  for(var i = 0; i < SONG_OOGST.length; i++){
-    if(t.indexOf(SONG_OOGST[i].match) !== -1) return SONG_OOGST[i];
-  }
-  return null;
-}
-/* v19.92 - wie mag de liedjeslijst aanraken.
-   De lijst SONGS staat in de broncode; niemand kan hem via de app veranderen. Wat wel kon was
-   per bezoeker de video vervangen of een liedje wegstoppen, en dat zag eruit als beheer over
-   iets gedeelds. Dat halen we weg voor iedereen behalve de beheerder. Dit is geen beveiliging
-   (er valt niets te beveiligen, alles is lokaal), het is een rolverdeling die het scherm
-   eerlijk maakt over wat je er kunt. Aanzetten met ?beheer=chispa achter de URL, eenmalig;
-   het blijft in je profiel staan en reist dus mee met je sync-code. */
-function muziekBeheer(){
-  try { return S.mbeheer === true; } catch(e){ return false; }
-}
-function renderSongs(){
-  document.getElementById("songView").classList.add("hidden");
-  var el = document.getElementById("songList");
-  el.classList.remove("hidden");
-  // v19.67: de muziekpagina was de laatste hele pagina die alleen Nederlands sprak.
-  var html = "<div class='card'><h2>Música 🎵</h2><p class='muted'>"+
-    ct("Leer Spaans met liedjes: kijk de video en oogst de taal eruit. Er komt regelmatig nieuwe muziek bij.",
-       "Learn Spanish with songs: watch the video and harvest the language out of it. New music is added regularly.")+"</p>"+
-    "<div class='row'><button class='ghost' id='btnMusTerug'>← "+ct("Speeltuin","Playground")+"</button></div></div>";
-  /* v23.148: hetzelfde lied als het inputblok van je les zou kiezen, uit dezelfde functie. Twee
-     plekken die allebei "het liedje van vandaag" zeggen en een ander lied bedoelen, is precies de
-     tweede waarheid waar deze app het meeste last van heeft gehad. */
-  var vandaag = musVanDag();
-  if(vandaag){
-    html += "<div class='card'><span class='kicker'>"+ct("Het liedje van vandaag","Today's song")+"</span>"+
-      "<div class='lesson' data-song='"+vandaag.id+"' style='opacity:1'><div class='lnum'>🎵</div>"+
-      "<div class='lbody'><b>"+vandaag.titel+"</b><span>"+vandaag.artiest+" · "+
-        (musGedaan(vandaag) ? ct("al gedaan, nog een keer mag","done already, again is fine")
-                            : ct((vandaag.oogst||[]).length+" uitdrukkingen om mee te nemen",
-                                 (vandaag.oogst||[]).length+" phrases to take with you"))+
-      "</span></div><div class='lstatus'>▶</div></div></div>";
-  }
-  var p0 = activeProfile();
-  var mijnNiveau = p0 && p0.track === "beginner" ? "A0" : "A2";
-  var lijst = SONGS.slice().sort(function(a, b){
-    var aPast = (a.lvl||"").indexOf(mijnNiveau) !== -1 ? 0 : 1;
-    var bPast = (b.lvl||"").indexOf(mijnNiveau) !== -1 ? 0 : 1;
-    return aPast - bPast;
-  });
-  lijst.forEach(function(sg){
-    if(S.songHide && S.songHide[sg.id]) return;
-    var past = (sg.lvl||"").indexOf(mijnNiveau) !== -1;
-    var sub = sg.artiest + " · " + sg.lvl + (past ? "" : ct(" · 🔥 voor gevorderden, maar meeluisteren mag altijd"," · 🔥 for advanced learners, but listening along is always allowed"));
-    html += "<div class='lesson"+(past?"":" locked")+"' data-song='"+sg.id+"' style='opacity:1'><div class='lnum'>🎵</div>"+
-      "<div class='lbody'><b>"+sg.titel+"</b><span>"+sub+"</span></div><div class='lstatus'>▶</div></div>";
-  });
-  if(S.songHide && Object.keys(S.songHide).length){
-    html += "<p class='muted'><a href='#' id='songUnhide'>"+ct(Object.keys(S.songHide).length+" verborgen liedje(s) terugzetten", "restore "+Object.keys(S.songHide).length+" hidden song(s)")+"</a></p>";
-  }
-  function normTitel(t){ return stripAcc(String(t||"").toLowerCase()).replace(/[^a-z0-9 ]/g,"").trim(); }
-  (S.mySongs||[]).forEach(function(ms, i){
-    // niet dubbel tonen als het liedje inmiddels als echt lesje in de app zit
-    var mijn = normTitel(ms.titel);
-    var alGedekt = SONGS.some(function(sg){
-      if(sg.yt === ms.yt) return true;
-      var off = normTitel(sg.titel);
-      return off.length > 3 && (mijn.indexOf(off) !== -1 || off.indexOf(mijn) !== -1);
-    });
-    if(alGedekt) return;
-    var heeftOogst = (ms.oogst && ms.oogst.length) || songOogstVoor(ms.titel);
-    html += "<div class='lesson' data-mysong='"+i+"'><div class='lnum'>🎵</div>"+
-      "<div class='lbody'><b>"+ms.titel+"</b><span>"+ct("zelf toegevoegd · ","added by you · ")+(heeftOogst ? ct("met taaloogst 🌾","with a language harvest 🌾") : ct("taaloogst volgt bij de nachtelijke update","harvest follows in the nightly update"))+"</span></div><div class='lstatus'>▶</div></div>";
-  });
-  html += "<div class='card'><h2>"+ct("Zelf een lied toevoegen","Add a song yourself")+"</h2>"+
-    "<p class='muted'>"+ct("Plak een YouTube-link. De video werkt direct; de woordjes en uitleg maakt Claude bij de volgende wekelijkse update.",
-      "Paste a YouTube link. The video works right away; Claude makes the words and the explanation in the next weekly update.")+"</p>"+
-    "<input type='text' id='songUrl' placeholder='https://www.youtube.com/watch?v=...' autocomplete='off'>"+
-    "<input type='text' id='songTitel' placeholder='"+ct("Titel en artiest","Title and artist")+"' autocomplete='off' style='margin-top:8px'>"+
-    "<div class='row'><button class='primary' id='btnAddSong'>"+ct("Toevoegen","Add")+"</button></div>"+
-    "<p class='muted hidden' id='songHint' style='margin-top:8px'></p></div>";
-  el.innerHTML = html;
-  var bmt = document.getElementById("btnMusTerug");
-  if(bmt) bmt.onclick = function(){ show("speeltuin"); };
-  var unh = document.getElementById("songUnhide");
-  if(unh) unh.onclick = function(ev){ if(ev && ev.preventDefault) ev.preventDefault(); S.songHide = {}; persist(); renderSongs(); };
-  el.querySelectorAll("[data-song]").forEach(function(d){
-    d.onclick = function(){ openSong(SONGS.filter(function(x){ return x.id===d.getAttribute("data-song"); })[0]); };
-  });
-  el.querySelectorAll("[data-mysong]").forEach(function(d){
-    d.onclick = function(){ openSong((S.mySongs||[])[+d.getAttribute("data-mysong")]); };
-  });
-  var ba = document.getElementById("btnAddSong");
-  if(ba) ba.onclick = function(){
-    var url = (document.getElementById("songUrl").value||"").trim();
-    var tit = (document.getElementById("songTitel").value||"").trim() || ct("Mijn lied","My song");
-    var id = ytId(url);
-    var hint = document.getElementById("songHint");
-    hint.classList.remove("hidden");
-    if(!id){ hint.textContent = ct("Hmm, dat lijkt geen YouTube-link. Kopieer de link van de video (Delen → Kopieer link).","Hmm, that doesn't look like a YouTube link. Copy the link from the video (Share → Copy link)."); return; }
-    S.mySongs = S.mySongs || [];
-    S.mySongs.push({id:"my-"+id, titel:tit, artiest:"", yt:id, lvl:"", intro:ct("Taaloogst volgt bij de eerstvolgende nachtelijke update.","The language harvest follows in the next nightly update."), oogst:[], vragen:[], eigen:true});
-    persist();
-    logServer("lied", {titel:tit, yt:id, url:"https://www.youtube.com/watch?v="+id});
-    var mail = "mailto:stefanwobben@gmail.com?subject="+encodeURIComponent("espanol-lied")+
-      "&body="+encodeURIComponent("Taaloogst graag voor: "+tit+"\nhttps://www.youtube.com/watch?v="+id+"\nProfiel: "+(activeProfile()?activeProfile().name:""));
-    hint.innerHTML = ct("Toegevoegd! 🎵 <a href='"+mail+"'>Tik hier om het taaloogst-verzoek te versturen</a> (opent je mailapp, alleen op verzenden tikken).",
-      "Added! 🎵 <a href='"+mail+"'>Tap here to send the harvest request</a> (opens your mail app, you only have to tap send).");
-    renderSongs();
-  };
-}
 
-function openSong(sg, skipPush){
-  if(!sg) return;
-  // zelf toegevoegd liedje zonder oogst: kijk of de bibliotheek hem kent (jouw eigen video blijft)
-  if(sg.eigen && (!sg.oogst || !sg.oogst.length)){
-    var bib = songOogstVoor(sg.titel);
-    if(bib){
-      sg = Object.assign({}, sg, {lvl:bib.lvl, intro:bib.intro, oogst:bib.oogst, vragen:bib.vragen, eigen:true});
-    }
-  }
-  if(!skipPush){
-    navPush({t:"song", id:sg.id});
-    musStap = 1; musHoorI = 0; musHoorGoed = 0;   // v23.149: een verse opening begint bij luisteren
-  }
-  document.getElementById("songList").classList.add("hidden");
-  var el = document.getElementById("songView");
-  el.classList.remove("hidden");
-  var ytEff = (S.songYt && S.songYt[sg.id]) || sg.yt;
-  var html = "<div class='card'><span class='kicker'>Música · "+(sg.lvl||"")+"</span>"+
-    "<p class='big' style='margin:4px 0'>"+sg.titel+"</p><p class='muted'>"+sg.artiest+"</p>"+
-    "<div class='ytwrap'><iframe src='https://www.youtube-nocookie.com/embed/"+ytEff+"' title='"+sg.titel+"' allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' allowfullscreen></iframe></div>"+
-    /* v23.149: de intro staat in stap 2 en niet in stap 1. Hij is Nederlands en vertelt waar het
-       lied over gaat, en in stap 1 is de vraag juist wat je hoort zonder dat je het al weet. */
-    (musStap === 2 ? "<p>"+(sg.intro||"")+"</p>" : "")+
-    "<p class='muted'>"+ct("Tip: zet ondertiteling (CC) aan in de speler.",
-                           "Tip: turn on subtitles (CC) in the player.")+"</p></div>"+
-    musStapKop(sg);   /* v23.149 */
-  /* v23.149: stap 1 is luisteren, en dan hoort de oogst er nog niet te staan. De hele vraag "welke
-     van deze drie hoor je" is weg als de goede er in het Nederlands naast staat. */
-  if(musStap === 1){
-    html += musHoorHtml(sg);
-  }
-  if(musStap >= 2 && sg.oogst && sg.oogst.length){
-    html += "<div class='card'><h2>De taaloogst 🌾</h2>";
-    sg.oogst.forEach(function(o){
-      html += "<div class='oogst'><b>"+o.es+"</b> · "+o.nl+
-        (musStap === 2 ? "<span class='muted'>"+o.u+"</span>" : "")+"</div>";
-    });
-    if(musStap === 2){
-      html += "<div class='row' style='margin-top:10px'><button class='primary' id='btnMusStap3'>"+
-        ct("Nu meezingen \u2192","Now sing along \u2192")+"</button></div>";
-    }
-    /* v23.148: de knop is er voor wie de quiz overslaat. Wie hem afmaakt krijgt hetzelfde
-       automatisch; het is dezelfde functie. In stap 3, want daarvoor heb je ze nog niet gehad. */
-    if(musStap >= 3) html += musOogstRegelHtml(sg);
-    html += "</div>";
-  }
-  if(musStap >= 3 && sg.vragen && sg.vragen.length){
-    html += "<div class='card'><h2>Snap je het lied?</h2><div id='songQuiz'></div></div>";
-  }
-  // v19.92: alleen je eigen toegevoegde liedje (of de beheerder) krijgt de knoppen die iets
-  // veranderen. De rest krijgt de terugknop, en een tekstlink om het liedje voor zichzelf weg
-  // te leggen. Dat laatste raakt niemand anders en is met een tik terug te draaien.
-  var magBeheren = !!(sg.eigen || muziekBeheer());
-  var terugKnop = "<button class='ghost' id='btnSongTerug'>← "+ct("Terug naar M\u00fasica","Back to M\u00fasica")+"</button>";
-  html += "<div class='card'><span class='kicker'>"+(magBeheren ? ct("Beheer","Manage") : ct("Dit liedje","This song"))+"</span>"+
-    (magBeheren
-      ? "<div class='row'><button class='ghost' id='btnSongVideo'>🔁 "+ct("Andere video","Other video")+"</button>"+
-        "<button class='ghost' id='btnSongWeg'>🗑 "+(sg.eigen ? ct("Verwijder liedje","Delete song") : ct("Verberg liedje","Hide song"))+"</button>"+
-        terugKnop+"</div>"
-      : "<div class='row'>"+terugKnop+"</div>"+
-        "<button class='mini' id='btnSongWeg'>"+ct("Dit liedje hoeft voor mij niet","I can do without this song")+"</button>"+
-        "<p class='muted' style='font-size:.85rem; margin:6px 0 0'>"+
-          ct("De liedjes in de lijst horen bij de app: je kunt ze niet aanpassen of weggooien. Zelf een lied toevoegen mag wel, onderaan M\u00fasica.",
-             "The songs in the list belong to the app: you cannot change or delete them. Adding a song of your own is fine, at the bottom of M\u00fasica.")+"</p>")+
-    "<div id='songBeheerFb'></div></div>";
-  el.innerHTML = html;
-  /* v23.149 */
-  if(musStap === 1) musHoorWire(sg);
-  var b3 = document.getElementById("btnMusStap3");
-  if(b3) b3.onclick = function(){ musStap = 3; openSong(sg, true); };
-  musOogstWire(sg);   // v23.148
-  document.getElementById("btnSongTerug").onclick = renderSongs;
-  var bv = document.getElementById("btnSongVideo");
-  if(bv) bv.onclick = function(){
-    var fb = document.getElementById("songBeheerFb");
-    fb.innerHTML = "<input type='text' id='songNieuwUrl' autocomplete='off' placeholder='Plak de nieuwe YouTube-link (bijv. een versie mét lyrics)' style='margin-top:8px'>"+
-      "<div class='row'><button class='primary' id='btnSongUrlOk'>Vervang video</button></div>";
-    document.getElementById("btnSongUrlOk").onclick = function(){
-      var id = ytId((document.getElementById("songNieuwUrl").value||"").trim());
-      if(!id){ toast(ct("Dat lijkt geen YouTube-link.","That does not look like a YouTube link.")); return; }
-      if(sg.eigen){
-        sg.yt = id;
-        (S.mySongs||[]).forEach(function(ms){ if(ms.id === sg.id) ms.yt = id; });
-      } else {
-        S.songYt = S.songYt || {};
-        S.songYt[sg.id] = id;
-      }
-      persist();
-      toast(ct("Video vervangen 🔁","Video replaced 🔁"));
-      openSong(sg);
-    };
-  };
-  var bw = document.getElementById("btnSongWeg");
-  if(bw) bw.onclick = function(){
-    if(sg.eigen){
-      S.mySongs = (S.mySongs||[]).filter(function(ms){ return ms.id !== sg.id; });
-    } else {
-      S.songHide = S.songHide || {};
-      S.songHide[sg.id] = true;
-    }
-    persist();
-    toast(sg.eigen ? "Liedje verwijderd." : "Liedje verborgen (terugzetten kan onderaan de lijst).");
-    renderSongs();
-  };
-  el.querySelectorAll(".oogst b").forEach(function(b){
-    b.onclick = function(){ verbPopup(b.textContent); };
-  });
-  if(musStap >= 3 && sg.vragen && sg.vragen.length) renderSongQuiz(sg, 0, 0);
-}
 
-function renderSongQuiz(sg, i, score){
-  var el = document.getElementById("songQuiz");
-  if(!el) return;
-  if(i >= sg.vragen.length){
-    if(score === sg.vragen.length){ confetti(["🎵","🎉","⭐️"], 16); }
-    /* v23.148: hier hield het op. Je had een lied gekeken, zeven uitgelegde uitdrukkingen gelezen en
-       drie vragen beantwoord, en er bleef niets van staan omdat de machine niet wist dat je het
-       gezien had. Nu gaan de uitdrukkingen naar je woorden, en zie je ze de komende dagen terug. */
-    var geoogst = 0;
-    try { geoogst = musOogstBij(sg); } catch(e){ geoogst = 0; }
-    el.innerHTML = "<p class='big'>"+score+"/"+sg.vragen.length+"</p><p class='muted'>"+(score===sg.vragen.length?ct("¡Perfecto! Je luistert als een local. (+"+xpw()+")","¡Perfecto! You listen like a local. (+"+xpw()+")"):ct("Kijk de taaloogst nog eens en luister opnieuw.","Look at the word harvest again and listen once more."))+"</p>"+
-      (geoogst ? "<div class='feedback ok'>"+musOogstGedaanTxt(geoogst)+"</div>" : "")+
-      (lesFlow && lesFlow.stap === "input" && lesFlow.gekozenSpel === "musica"
-        ? "<div class='row' style='margin-top:8px'>" + lesFlowDoorHtml() + "</div>"
-        : "");
-    lesFlowDoorBind(el);
-    return;
-  }
-  var v = sg.vragen[i];
-  var html = "<p><b>"+(i+1)+"/"+sg.vragen.length+" · "+vraagTekst(v)+"</b></p>";
-  vraagOpts(v).forEach(function(o, idx){ html += "<button class='opt' data-i='"+idx+"'>"+o+"</button>"; });
-  html += "<div id='songQFb'></div>";
-  el.innerHTML = html;
-  el.querySelectorAll(".opt").forEach(function(b){
-    b.onclick = function(){
-      var goed = +b.getAttribute("data-i") === v.c;
-      el.querySelectorAll(".opt")[v.c].classList.add("correct");
-      if(!goed) b.classList.add("wrong");
-      /* v23.148: een fout hier verdween. De vragen gaan over de grammatica van het lied (indefinido,
-         wederkerend, pronomen achter de infinitief), dus ze horen in dezelfde foutenlijst als de
-         rest; El Corrector en de foutenlus putten daaruit. */
-      if(!goed){ try { logError(sg.id + "-q" + i, "song", sg.id, vraagTekst(v)); } catch(e){} }
-      addXP(goed ? 2 : 1);
-      document.getElementById("songQFb").innerHTML = "<div class='uitleg'><b>"+(goed?ct("Goed! ","Correct! "):"")+"</b>"+vraagWaarom(v)+"</div>"+
-        "<div class='row'><button class='primary' id='btnSongNext'>"+(i+1<sg.vragen.length?ct("Volgende →","Next →"):ct("Uitslag →","Result →"))+"</button></div>";
-      document.getElementById("btnSongNext").onclick = function(){ renderSongQuiz(sg, i+1, score + (goed?1:0)); };
-    };
-  });
-}
 
 /* ================= VERVOEGINGS-POPUP ================= */
 /* ================= WAAROM DE AI NIET ANTWOORDT (v23.70) =================
@@ -24671,7 +24044,6 @@ var TXT = {
   spelen:{nl:"Spelen",en:"Play",fr:"Jouer",de:"Spielen"},
   oefenen:{nl:"Oefenen",en:"Practise",fr:"S'entraîner",de:"Üben"},
   chispa:{nl:"Chispa",en:"Chispa",fr:"Chispa",de:"Chispa"},
-  musica:{nl:"Música",en:"Música",fr:"Música",de:"Música"},
   perfil:{nl:"Profiel",en:"Profile",fr:"Profil",de:"Profil"},
   toonAntwoord:{nl:"Toon antwoord",en:"Show answer",fr:"Voir la réponse",de:"Antwort zeigen"},
   watBetekent:{nl:"Wat betekent dit?",en:"What does this mean?",fr:"Qu'est-ce que ça veut dire ?",de:"Was bedeutet das?"},
@@ -24858,7 +24230,6 @@ function meerItems(){
   return [
     {id:"cursus", ico:"\uD83D\uDDFA\uFE0F", uit:ct("Je leerlijn: welke les je waar bent gebleven.",
       "Your course: which lesson you left off at.")},
-    {id:"musica", ico:"\uD83C\uDFB5", uit:ct("Liedjes met vragen erbij.", "Songs with questions alongside.")},
     {id:"chispa", ico:"\uD83E\uDD8E", uit:ct("Hoe het met je axolotl gaat.", "How your axolotl is doing.")},
     /* v23.32: Voortgang staat hier als eigen regel. Niet alleen omdat pw-v1998 eist dat elke tab
        via de balk of via Meer te bereiken is (die eis is terecht), maar omdat de omschrijving bij
@@ -26143,10 +25514,6 @@ function zoekIndex(){
     uit.push({soort:"verhaal", id:h.id, es:h.titel, nl:ct("hoofdstuk ","chapter ") + h.num, ico:"📖",
               zoek:[h.titel, h.tekst || ""].map(zoekPlat)});
   });
-  (typeof SONGS !== "undefined" ? SONGS : []).forEach(function(g){
-    uit.push({soort:"lied", id:g.id, es:g.titel, nl:g.artiest || "", ico:"🎵",
-              zoek:[g.titel, g.artiest || ""].map(zoekPlat)});
-  });
   (typeof AUDICIONES !== "undefined" ? AUDICIONES : []).forEach(function(sc){
     uit.push({soort:"scene", id:sc.id, es:(profLang() === "nl" ? sc.titel : sc.titelEn), nl:"Escuchar", ico:"👂",
               zoek:[sc.titel, sc.titelEn || ""].concat(sc.lineas.map(function(l){ return l.es; })).map(zoekPlat)});
@@ -26250,7 +25617,6 @@ function zoekGaNaar(soort, id){
   }
   if(soort === "concept"){ show("spiekbrief"); gcLeesOpen(id); return; }
   if(soort === "verhaal"){ show("lezen"); startBoek(id); return; }
-  if(soort === "lied"){ show("musica"); return; }
   if(soort === "scene"){
     var sc = AUDICIONES.filter(function(x){ return x.id === id; })[0];
     if(!sc) return;
@@ -26467,44 +25833,21 @@ function vormAnalyse(qRaw){
   if(m2 && VORM_ONREG_STAM[m2[1]]) push(VORM_ONREG_STAM[m2[1]], "indefinido", m2[2] === "e" ? "yo" : "él/ella");
   return hits.slice(0, 4);
 }
-/* ================= HET LIEDJE VAN VANDAAG (v23.148) =================
+/* ================= WAAR HET LIEDJE VAN VANDAAG STOND (v23.148, weg in v23.218) =================
 
-   Stefan: "musica mag blijven maar dan moet er automatisch een liedje van de dag of om de x dagen
-   komen. En de leeroutput moet ook hoger."
+   Stefan vroeg in augustus om "een liedje van de dag of om de x dagen, en de leeroutput moet ook
+   hoger". Het eerste is gebouwd, het tweede nooit gehaald: het lied bleef vier minuten video, zeven
+   uitdrukkingen en drie meerkeuzevragen.
 
-   Waarom eens per drie dagen en niet elke dag: een lied is vier minuten video plus de oogst lezen
-   plus drie vragen. Dat is ruim twee keer een stukje hoofdstuk. Elke dag zou het inputblok laten
-   uitdijen en de andere twee draden verdringen.
+   Op 31 augustus bleek dat drie van de zeventien liedjes een verzonnen taaloogst hadden, en bij het
+   nameten van de vraag "is muziek dit waard" kwam eruit dat de gemeten winst van muziek (onvrijwillige
+   herhaling, letterlijke gesproken productie) bij een dosis van uren zit, en dat meerkeuze precies
+   de toetsvorm is waarop zingen géén voordeel heeft. musVanDag() koos bovendien elke keer een nieuw
+   lied, dus je zag er een pas na 51 dagen terug: herhaling geminimaliseerd.
 
-   Waarom vast per dag en niet willekeurig per klik: anders is "het liedje van vandaag" een ander
-   lied als je twee keer kijkt, en dan betekent de naam niets. dagenTotaal() telt jouw actieve dagen,
-   dus de teller loopt op jouw tempo en niet op de kalender. */
-var MUS_OM_DE = 3;
+   Deze regel blijft hier staan zodat de volgende die "we moeten iets met muziek doen" denkt, weet
+   dat het er is geweest en waarom het weg is. */
 
-function musLijst(){
-  if(typeof SONGS === "undefined") return [];
-  return SONGS.filter(function(sg){
-    if(S.songHide && S.songHide[sg.id]) return false;
-    return !!(sg.oogst && sg.oogst.length);
-  });
-}
-function musGedaan(sg){ return !!(sg && S.musKlaar && S.musKlaar[sg.id]); }
-/* Eerst de liedjes die je nog nooit hebt afgemaakt, en pas als die op zijn de rest. Binnen elke
-   groep beslist de dag, niet het toeval. */
-function musVanDag(datum){
-  var alles = musLijst();
-  if(!alles.length) return null;
-  var vers = alles.filter(function(sg){ return !musGedaan(sg); });
-  var pot = vers.length ? vers : alles;
-  return pot[dagHashVoor(datum || today(), "musica") % pot.length];   // v23.153: ook voor morgen
-}
-/* Is het inputblok van vandaag een lied? Alleen als er nog liedjes zijn en de teller op nul staat.
-   Dag 0 telt niet mee: op dag een is het dagscherm het eerste wat een vreemde ziet (v23.135). */
-function musDagBeurt(){
-  if(!musVanDag()) return false;
-  var d = dagenTotaal();
-  return d > 1 && (d % MUS_OM_DE) === 0;
-}
 
 /* Wat het achterlaat. Dezelfde machinerie als v23.133 voor opgezochte leeswoorden: een eigen rij in
    S.mijn, een rij in WORDS zodat de kaartjes ergens uit kunnen putten, en een doosje 0 in de SRS.
@@ -26512,10 +25855,6 @@ function musDagBeurt(){
    Het verschil met v23.133 zit in het waarom, niet in de code: daar zocht je het woord zelf op, en
    dat opzoeken is het bewijs dat je het wilde weten. Hier krijg je de uitdrukking aangereikt, en dan
    is zeven keer vragen "wil je deze onthouden?" zeven keer dezelfde vraag. Dus gaan ze in één keer,
-   en staat er daarna wat er gebeurd is. */
-function musPlat(es){
-  return stripAcc(String(es || "").toLowerCase()).replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
-}
 /* v23.149, Stefan: "als het uitdrukkingen zijn niet meer dan 5 woorden dan kan het."
 
    Gemeten over alle 92 oogstregels: 28 van één woord, 43 van twee, 12 van drie, 6 van vier, 3 van
@@ -26524,65 +25863,6 @@ function musPlat(es){
 
    Waarom vijf: langer dan dat is geen brokje meer maar een zin, en een zin op een kaartje vraagt
    iets anders van je dan een uitdrukking. Zinnen maken doe je in het schrijfblok. */
-var MUS_MAX_WOORDEN = 5;
-function musTeLang(es){
-  return musPlat(es).split(" ").filter(Boolean).length > MUS_MAX_WOORDEN;
-}
-function musOogstDoel(o){
-  if(!o || !o.es || !o.nl) return null;
-  if(musTeLang(o.es)) return null;
-  var plat = musPlat(o.es);
-  if(!plat) return null;
-  return {id:mijnWoordId(plat), eigen:true, plat:plat, es:o.es, nl:o.nl};
-}
-function musOogstOpen(sg){
-  if(!sg || !sg.oogst) return [];
-  return sg.oogst.map(musOogstDoel).filter(function(d){ return d && !mijnHeeft(d); });
-}
-function musOogstBij(sg){
-  var open = musOogstOpen(sg), n = 0;
-  open.forEach(function(d){ if(mijnBij(d)) n++; });
-  if(sg && sg.id){
-    S.musKlaar = S.musKlaar || {};
-    S.musKlaar[sg.id] = today();
-    try { persist(); } catch(e){}
-  }
-  return n;
-}
-/* Zeg wat er gebeurt, niet hoe de machine heet (v23.139). Geen doosjes, geen SRS, geen "kaartjes":
-   je ziet ze terug, en wanneer. */
-function musOogstRegelHtml(sg){
-  var open = musOogstOpen(sg).length;
-  var totaal = (sg && sg.oogst && sg.oogst.length) || 0;
-  if(!totaal) return "";
-  if(!open){
-    return "<p class='muted' style='margin:8px 0 0'>"+
-      ct("Deze "+totaal+" uitdrukkingen staan al bij je woorden.",
-         "These "+totaal+" phrases are already in your words.")+"</p>";
-  }
-  return "<p class='muted' style='margin:8px 0 0'>"+
-      ct(open+" van deze uitdrukkingen "+(open === 1 ? "kun" : "kun")+" je bij je woorden zetten. Dan komen ze de komende dagen terug.",
-         "You can add "+open+" of these phrases to your words. Then they come back over the next days.")+"</p>"+
-    "<div class='row' style='margin-top:6px'><button class='ghost' id='btnMusOogst'>"+
-      ct("Bij mijn woorden","Add to my words")+"</button></div><div id='musOogstFb'></div>";
-}
-function musOogstWire(sg){
-  var b = document.getElementById("btnMusOogst");
-  if(!b) return;
-  b.onclick = function(){
-    var n = musOogstBij(sg);
-    var fb = document.getElementById("musOogstFb");
-    if(fb) fb.innerHTML = "<div class='feedback ok'>"+musOogstGedaanTxt(n)+"</div>";
-    b.disabled = true;
-  };
-}
-function musOogstGedaanTxt(n){
-  if(!n) return ct("Die stonden er al in.","Those were already in there.");
-  return ct(n+" "+(n === 1 ? "uitdrukking staat" : "uitdrukkingen staan")+" nu bij je woorden. Morgen zie je "+
-              (n === 1 ? "hem" : "ze")+" terug.",
-            n+" "+(n === 1 ? "phrase is" : "phrases are")+" now in your words. You'll see "+
-              (n === 1 ? "it" : "them")+" again tomorrow.");
-}
 
 /* ================= HET LIEDBLOK IN DRIE STAPPEN (v23.149) =================
 
@@ -26602,111 +25882,11 @@ function musOogstGedaanTxt(n){
 
    De afleiders komen uit andere liedjes en zijn niet verzonnen: even echt, even lang, even moeilijk.
    Dan gaat de vraag over wat je hoort en niet over welke er het gekst uitziet. */
-var MUS_HOOR_N = 3;        // hoeveel keer "welke hoor je?"
-var MUS_HOOR_OPTIES = 3;   // hoeveel keuzes per vraag
-var musStap = 1;
-var musHoorI = 0, musHoorGoed = 0;
 
-function musHoorRij(sg){
-  if(!sg || !sg.oogst) return [];
-  /* Vast per lied en niet per klik: wie halverwege terugbladert hoort niet ineens andere brokjes.
-     Alleen brokjes van twee woorden of meer, want één woord is in een lied niet te horen als keuze. */
-  var eigen = sg.oogst.filter(function(o){ return musPlat(o.es).split(" ").filter(Boolean).length >= 2; });
-  if(eigen.length < 2) eigen = sg.oogst.slice();
-  var vreemd = [];
-  musLijst().forEach(function(ander){
-    if(ander.id === sg.id) return;
-    (ander.oogst || []).forEach(function(o){
-      if(musPlat(o.es).split(" ").filter(Boolean).length < 2) return;
-      vreemd.push(o.es);
-    });
-  });
-  var rij = [], i, j, h;
-  for(i = 0; i < Math.min(MUS_HOOR_N, eigen.length); i++){
-    h = dayHash(sg.id + "-hoor-" + i);
-    var goed = eigen[(h + i) % eigen.length].es;
-    var opties = [goed];
-    for(j = 0; j < MUS_HOOR_OPTIES - 1 && vreemd.length; j++){
-      var kand = vreemd[(h + j * 7 + i * 13) % vreemd.length];
-      if(opties.indexOf(kand) === -1) opties.push(kand);
-    }
-    // door elkaar, maar wel vast: dezelfde vraag geeft dezelfde volgorde
-    opties.sort(function(a, b){ return ((h + a.length) % 7) - ((h + b.length) % 7); });
-    rij.push({goed:goed, opties:opties});
-  }
-  return rij;
-}
 
-function musStapKop(sg){
-  var namen = [ct("Luisteren","Listen"), ct("De woorden erbij","The words"), ct("Meezingen","Sing along")];
-  var h = "<div class='card'><span class='kicker'>"+
-    ct("Stap ","Step ")+musStap+"/3 \u00b7 "+namen[musStap - 1]+"</span>";
-  if(musStap === 1){
-    h += "<p style='margin:4px 0'>"+ct("Luister eerst. Je hoeft nog niet te snappen wat er staat: je hoeft alleen te horen wat er staat.",
-                                       "Listen first. You don't have to understand yet: you only have to hear what is there.")+"</p>";
-  } else if(musStap === 2){
-    h += "<p style='margin:4px 0'>"+ct("Deze uitdrukkingen kwamen net langs. Nu de betekenis erbij.",
-                                       "These phrases just went past. Now the meaning.")+"</p>";
-  } else {
-    h += "<p style='margin:4px 0'>"+ct("Nu weet je wat er staat. Zet hem nog een keer aan en zing deze stukjes mee als ze langskomen. Hard mag.",
-                                       "Now you know what it says. Play it once more and sing these bits along when they come by. Loudly is fine.")+"</p>";
-  }
-  return h + "</div>";
-}
 
-function musHoorHtml(sg){
-  var rij = musHoorRij(sg);
-  if(!rij.length) return "<div class='card'><div class='row'><button class='primary' id='btnMusStap2'>"+
-    ct("Verder \u2192","Continue \u2192")+"</button></div></div>";
-  if(musHoorI >= rij.length){
-    return "<div class='card'><div class='feedback "+(musHoorGoed === rij.length ? "ok" : "bijna")+"'>"+
-      musHoorGoed+"/"+rij.length+" "+ct("gehoord","heard")+"</div>"+
-      "<div class='row' style='margin-top:8px'><button class='primary' id='btnMusStap2'>"+
-        ct("Wat betekenen ze? \u2192","What do they mean? \u2192")+"</button></div></div>";
-  }
-  var v = rij[musHoorI];
-  var h = "<div class='card'><p><b>"+(musHoorI + 1)+"/"+rij.length+" \u00b7 "+
-    ct("Welke van deze drie hoor je in het lied?","Which of these three do you hear in the song?")+"</b></p>";
-  v.opties.forEach(function(o, i){ h += "<button class='opt es' data-hoor='"+i+"'>"+o+"</button>"; });
-  return h + "<div id='musHoorFb'></div></div>";
-}
 
-function musHoorWire(sg){
-  var rij = musHoorRij(sg);
-  var v = rij[musHoorI];
-  var wrap = document.getElementById("songView");
-  if(!wrap) return;
-  var door = document.getElementById("btnMusStap2");
-  if(door) door.onclick = function(){ musStap = 2; openSong(sg, true); };
-  if(!v) return;
-  wrap.querySelectorAll("[data-hoor]").forEach(function(b){
-    b.onclick = function(){
-      var gekozen = v.opties[+b.getAttribute("data-hoor")];
-      var goed = gekozen === v.goed;
-      wrap.querySelectorAll("[data-hoor]").forEach(function(x){
-        if(v.opties[+x.getAttribute("data-hoor")] === v.goed) x.classList.add("correct");
-      });
-      if(!goed) b.classList.add("wrong");
-      if(goed) musHoorGoed++;
-      addXP(goed ? 2 : 1);
-      document.getElementById("musHoorFb").innerHTML =
-        "<div class='row' style='margin-top:8px'><button class='primary' id='btnMusHoorNext'>"+
-          ct("Volgende \u2192","Next \u2192")+"</button></div>";
-      document.getElementById("btnMusHoorNext").onclick = function(){
-        musHoorI++; openSong(sg, true);
-      };
-    };
-  });
-}
 
-function songWoordenLijst(){
-  var out = [];
-  if(typeof SONGS === "undefined") return out;
-  SONGS.forEach(function(song){
-    (song.oogst || []).forEach(function(o){ out.push({es: o.es, nl: o.nl, u: o.u, song: song}); });
-  });
-  return out;
-}
 // Chispa-boek-woorden (tag "boek-N") blijven op slot in het woordenboek tot dat hoofdstuk ontgrendeld is
 // (29 juli, v19.42-vervolg: Stefans bevestigde keuze "Lock ze tot je dat hoofdstuk leest" — consistent met
 // hoe het boek zelf al toegang gate via boekOntgrendeld()). Woorden zonder boek-tag zijn altijd zichtbaar.
@@ -26840,10 +26020,12 @@ function renderDic(){
     }
     html += "</div>";
   });
-  // woorden uit de liedjes (Música): groeit mee met elk liedverzoek — Stefans wens 29 juli dat het
-  // woordenboek zich blijft aanvullen buiten de vaste leswoordenschat om. Staat hier al boven het
-  // zoekblok omdat de dedup hieronder moet weten wat er verder al op het scherm komt.
-  var songWs = songWoordenLijst();
+  /* v23.218: hier stond de taaloogst van de liedjes (113 uitdrukkingen). Muziek is eruit, dus die
+     bron is er niet meer. Wat Stefan al geoogst had staat gewoon in S.mijn en komt via
+     mijnWoordenInPool() nog steeds in WORDS terecht; alleen de nog niet opgepakte uitdrukkingen
+     zijn weg. De lege lijst blijft staan zodat de dedup en de zoekvolgorde hieronder hun vorm
+     houden: die code gaat over meer dan alleen deze bron. */
+  var songWs = [];
   var songHits = q ? songWs.filter(function(o){
     return stripAcc(o.es.toLowerCase()).indexOf(q) !== -1 || stripAcc(o.nl.toLowerCase()).indexOf(q) !== -1;
   }) : songWs;
@@ -29640,7 +28822,6 @@ function joinViaLink(gcode, poging){
 }
 var pendingGroep = null;
 var pendingDuel = null; // v19.57: een duel-uitnodiging is nu ook een link, niet alleen een code
-var pendingBeheer = false; // v19.92: de muziekbeheerrol, pas toepassen als S geladen is
 
 /* v23.86: waar kwam iemand vandaan? Eén keer, bij het eerste bezoek, en daarna nooit meer.
 
@@ -29728,7 +28909,6 @@ try{
     // v19.92: eenmalig de muziekbeheerrol aanzetten. Staat in S, dus reist mee met je sync-code
     // naar je andere apparaten en blijft daar staan.
     var bm = location.search.match(/[?&]beheer=([a-z0-9]+)/i);
-    if(bm && bm[1].toLowerCase() === "chispa") pendingBeheer = true;
     // v19.58: de maatje-link is een eigen paginaatje (maatje.html), want een maatje hoort de app
     // niet te krijgen. Landt hij toch hier (oude link, verkeerd geplakt), dan sturen we hem door
     // in plaats van hem een profielformulier voor te schotelen dat hij niet nodig heeft.
@@ -36476,7 +35656,6 @@ var TABS = [
   {id:"perfil", label:"Profiel", nav:false, soort:"overzicht"},
   {id:"steun", label:"Steun", nav:false, soort:"overzicht"},
   {id:"privacy", label:"Privacy", nav:false, soort:"overzicht"},
-  {id:"musica", label:"Música", nav:false, soort:"overzicht"},
   {id:"oefenen", label:"Oefenen", nav:false, soort:"overzicht"},
   {id:"speeltuin", label:"Speeltuin", soort:"taak"},
   {id:"spiekbrief", label:"Grammatica", soort:"overzicht"}
@@ -36638,7 +35817,7 @@ function show(tabId, skipPush){
   try { document.body.setAttribute("data-schermsoort", tabSoort(tabId)); } catch(e){}
   // v19.98: de vier vakken lichten op bij hun eigen tab; alles wat achter Meer zit laat Meer oplichten,
   // zodat je op elk scherm ziet via welke deur je binnenkwam.
-  var inMeer = ["cursus","musica","chispa","perfil"].indexOf(tabId) !== -1;
+  var inMeer = ["cursus","chispa","perfil"].indexOf(tabId) !== -1;
   // Oefenen licht op zodra je in een oefening zit, ook als die technisch in de speeltuinkaart woont.
   var inOefen = OEFEN_TABS.indexOf(tabId) !== -1 ||
                 (tabId === "speeltuin" && inOefenFunView(funView));
@@ -36694,7 +35873,6 @@ function show(tabId, skipPush){
   }
   if(tabId==="privacy"){ renderPrivacy(); }
   if(tabId==="speeltuin"){ renderFun(); }
-  if(tabId==="musica"){ renderSongs(); }
   if(tabId==="spiekbrief"){ renderCheat(); }
   if(tabId==="steun"){
     renderHoeWerkt();
@@ -36788,11 +35966,6 @@ function show(tabId, skipPush){
         show("lessen", true);
         var l = findLesson(st.id);
         if(l) openLesson(l, true);
-      } else if(st.t === "song"){
-        show("musica", true);
-        var sg = SONGS.filter(function(x){ return x.id === st.id; })[0] ||
-                 (S.mySongs||[]).filter(function(x){ return x.id === st.id; })[0];
-        if(sg) openSong(sg, true);
       } else if(st.t === "fun"){
         duelCur = null; funView = st.v;
         show("speeltuin", true);

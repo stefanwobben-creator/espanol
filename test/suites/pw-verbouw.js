@@ -190,7 +190,21 @@ async function lesVandaag(page, af) {
         .every(b => speelKlaar(b.getAttribute('data-speel'))) : false
     };
   });
-  ok(kaart.er && kaart.rijen >= 1, 'de speelkaart toont regels in plaats van tegels (' + kaart.rijen + ')');
+  /* v23.218: hier stond `kaart.rijen >= 1`. Die proef hield stand doordat Música als enige spel
+     geen materiaal-eis had en dus altijd meedeed. Muziek is eruit, en op de beginnerstrack met nul
+     geleerde woorden (dag één van Elise) staan alle zes de spellen op slot. Gemeten in precies deze
+     proef: srs 0, dagkeuze leeg, "ws:nee kruis:nee letras:nee adiv:nee clas:nee mem:nee".
+
+     Wat deze proef nu bewaakt is niet het aantal maar de eerlijkheid, en dat is de regel uit v23.65:
+     niets aanbieden mag, een lege kaart zonder uitleg niet. Staat er niets, dan hoort de kaart te
+     zeggen waarom en wanneer het wel kan. */
+  ok(kaart.er, 'de speelkaart staat er');
+  if (kaart.rijen >= 1) {
+    ok(kaart.allemaalSpeelbaar, 'alles wat de kaart aanbiedt is ook echt speelbaar (' + kaart.rijen + ' regels)');
+  } else {
+    ok(/komen erbij|meer woorden|coming|more words/i.test(kaart.tekst),
+      'staat er niets, dan zegt de kaart waarom en wanneer het wel kan ("' + kaart.tekst.slice(0, 70) + '")');
+  }
   /* v19.92: een knop op je dagscherm die uitkomt op "leer eerst wat meer woordjes" leert je dat de
      knoppen hier niet betrouwbaar zijn. Vóór v23.65 stond er een noodgreep in dagSpelKeuze() die
      precies dat deed zodra niets kon. */

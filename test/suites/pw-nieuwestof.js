@@ -152,7 +152,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 4. en het inputblok vindt het --');
   ok(!!r.boekHoofdstuk, 'het leesblok van je les vindt een hoofdstuk (' + r.boekHoofdstuk + ')');
   ok(r.audOpen > 0, 'en het luisterblok vindt scenes (' + r.audOpen + ')');
-  ok(['lezen', 'luisteren', 'musica'].indexOf(r.inputKeuze) !== -1, 'dus het inputblok heeft iets te doen (' + r.inputKeuze + ')');
+  ok(['lezen', 'luisteren'].indexOf(r.inputKeuze) !== -1, 'dus het inputblok heeft iets te doen (' + r.inputKeuze + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 

@@ -116,7 +116,9 @@ const { chromium } = require('playwright');
   ok(!/grote woordenboek|big dictionary/i.test(kaart), 'ook het oude kopje "uit het grote woordenboek" is nergens meer');
   ok(!/frequentierang|frequency rank|frequentieplek/i.test(kaart), 'geen uitleg over frequentieranglijsten in de kaart');
   ok(rijen.every((r) => !/#\d+/.test(r.tekst)), 'geen enkele rij draagt een #frequentienummer');
-  ok(/🎵/.test(kaart), 'het liedjesblok houdt wel zijn eigen kopje (Stefan: "uit liedjes is wel grappig")');
+  /* v23.218: hier stond een proef op het liedjesblok met het 🎵-kopje. Dat blok werd gevoed door
+     songWoordenLijst() en muziek is eruit. Wat Stefan zelf uit een lied had opgepakt staat in
+     S.mijn en blijft gewoon doorzoekbaar; zie pw-muziekweg.js. */
 
   // --- 5. v19.54: elke rij zet de vertaling direct achter het woord ---
   const lesH = lesRijen(rijen);

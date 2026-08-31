@@ -77,7 +77,7 @@ async function nieuwProfiel(page) {
   const bedekt = await page.evaluate(() => {
     const nr = document.getElementById('nav').getBoundingClientRect();
     const uit = [];
-    ['lessen', 'woorden', 'speeltuin', 'cursus', 'vertalen', 'lezen', 'spiekbrief', 'musica', 'perfil'].forEach((t) => {
+    ['lessen', 'woorden', 'speeltuin', 'cursus', 'vertalen', 'lezen', 'spiekbrief', 'perfil'].forEach((t) => {
       show(t);
       const sec = document.getElementById('tab-' + t);
       Array.prototype.forEach.call(sec.querySelectorAll('button, a, input'), (el) => {

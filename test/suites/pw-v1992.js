@@ -72,7 +72,8 @@ async function wegMetOverlays(page) {
   ok(menu.klaar.length >= 1 && menu.klaar.length < menu.klaar.length + menu.straks, 'niet alles staat meteen open (' + menu.klaar.length + ' klaar, ' + menu.straks + ' grijs)');
   // v23.147: Aventura is geschrapt (2057 regels, geen spoor van gebruik). Musica staat er nog.
   ok(menu.klaar.indexOf('ftAvt') === -1, 'Aventura is er niet meer');
-  ok(menu.klaar.indexOf('ftMusica') !== -1, 'Musica staat er altijd');
+  /* v23.218: hier stond ok(...'ftMusica'...). Muziek is eruit; Música was het enige spel zonder
+     materiaal-eis en dus de enige die op dag 1 altijd meedeed. */
   // v21.5: de Conjugador is naar Oefenen verhuisd; de Speeltuin heeft alleen nog spelletjes.
   // v23.145: Palabra Duel staat niet meer vooraan (die heeft een tweede speler nodig), maar hij is
   // er nog wel, achter "alle spellen".
@@ -128,64 +129,16 @@ async function wegMetOverlays(page) {
   });
   console.log('  dagspellen ::', dag.v.join(','));
   ok(dag.alle, 'elk aangeboden dagspel kan vandaag iets tonen');
-  ok(dag.v.length >= 1, 'er blijft altijd iets over om te spelen');
+  /* v23.218: hier stond `dag.v.length >= 1`. Deze proef zet S.srs op leeg, en Música was het enige
+     spel zonder materiaal-eis; die garantie is met muziek meeverdwenen. Wat overeind blijft is de
+     regel die er echt toe doet en die hierboven staat: alles wat wordt aangeboden kan ook echt.
+     v23.65 koos daar bewust voor ("niets aanbieden is het eerlijke antwoord"). */
+  ok(dag.v.length === 0 || dag.alle, 'of er is niets, of alles wat er is kan echt (' + dag.v.length + ')');
 
-  console.log('\n-- musica: anderen mogen toevoegen, niet aanpassen of weggooien --');
-  await page.evaluate(() => { S.mbeheer = false; S.songHide = {}; S.mySongs = []; try { persist(); } catch (e) {} show('musica'); });
-  await page.waitForTimeout(400);
-  await page.evaluate(() => { openSong(SONGS[0]); });
-  await page.waitForTimeout(400);
-  await page.screenshot({ path: 'shot-v1992-song-gast.png' });
-  const gast = await page.evaluate(() => ({
-    video: !!document.getElementById('btnSongVideo'),
-    weg: document.getElementById('btnSongWeg') ? document.getElementById('btnSongWeg').className : null,
-    wegTekst: document.getElementById('btnSongWeg') ? document.getElementById('btnSongWeg').textContent : '',
-    terug: !!document.getElementById('btnSongTerug'),
-    tekst: document.getElementById('songView').innerText
-  }));
-  ok(!gast.video, 'geen "Andere video" voor een gast');
-  ok(gast.weg === 'mini', 'weghalen is een minilink, geen prullenbakknop');
-  ok(!/🗑|Verwijder/.test(gast.wegTekst), 'de tekst belooft geen verwijderen');
-  ok(gast.terug, 'de terugknop staat er nog');
-  ok(/toevoegen/.test(gast.tekst), 'de uitleg zegt dat toevoegen wel mag');
-  ok(!/[—–]|--/.test(gast.tekst), 'geen streepjes in de nieuwe muziekteksten');
-
-  console.log('\n-- weghalen is lokaal en omkeerbaar --');
-  await wegMetOverlays(page);
-  await page.click('#btnSongWeg'); await page.waitForTimeout(400);
-  const verborgen = await page.evaluate(() => ({ hide: !!(S.songHide && S.songHide[SONGS[0].id]), songs: SONGS.length }));
-  ok(verborgen.hide, 'het liedje is lokaal verborgen');
-  ok(verborgen.songs > 0, 'de bibliotheek zelf is niet aangeraakt');
-  await page.evaluate(() => { S.songHide = {}; try { persist(); } catch (e) {} });
-
-  console.log('\n-- eigen liedje houdt volledige controle --');
-  await page.evaluate(() => {
-    S.mySongs = [{ id: 'my-test123', titel: 'Mijn lied', artiest: 'Ik', yt: 'test123', lvl: 'A1', intro: '', oogst: [], vragen: [], eigen: true }];
-    try { persist(); } catch (e) {}
-    openSong(S.mySongs[0]);
-  });
-  await page.waitForTimeout(400);
-  const eigen = await page.evaluate(() => ({
-    video: !!document.getElementById('btnSongVideo'),
-    weg: document.getElementById('btnSongWeg') ? document.getElementById('btnSongWeg').className : null
-  }));
-  ok(eigen.video, 'bij je eigen lied mag je de video wisselen');
-  ok(eigen.weg === 'ghost', 'bij je eigen lied is verwijderen een gewone knop');
-
-  console.log('\n-- beheerrol via ?beheer=chispa --');
-  await page.goto(U + '?beheer=chispa'); await page.waitForTimeout(900); await wegMetOverlays(page);
-  const beheer = await page.evaluate(() => ({ m: S.mbeheer, url: location.search }));
-  ok(beheer.m === true, 'de beheerrol staat aan na de link');
-  ok(beheer.url === '', 'de parameter is uit de url gepoetst');
-  await page.evaluate(() => { S.songHide = {}; show('musica'); openSong(SONGS[0]); });
-  await page.waitForTimeout(400);
-  await page.screenshot({ path: 'shot-v1992-song-beheer.png' });
-  const bh = await page.evaluate(() => ({
-    video: !!document.getElementById('btnSongVideo'),
-    weg: document.getElementById('btnSongWeg') ? document.getElementById('btnSongWeg').className : null
-  }));
-  ok(bh.video, 'de beheerder ziet "Andere video"');
-  ok(bh.weg === 'ghost', 'de beheerder ziet de gewone weghaalknop');
+  /* v23.218: hier stonden vier blokken over de muziekpagina: wie de video mag wisselen, wie een
+     liedje mag verbergen, wat er met een eigen liedje mag, en de beheerrol via ?beheer=chispa.
+     Muziek is er niet meer, en de beheerrol bestond alleen om de liedjeslijst te mogen aanraken.
+     Zie pw-muziekweg.js voor wat er in plaats daarvan bewaakt wordt. */
 
   console.log('\n-- speeltuin blijft werken: een spel openen --');
   await page.evaluate(() => { S.speelAlles = true; try { persist(); } catch (e) {} show('speeltuin'); });
