@@ -103,6 +103,13 @@ jobs:
       - name: Zelftest van de herkansing
         run: node tools/avondrun-herkansing.js --zelftest
 
+      # 31 augustus: de levering zelf. Deze proef bouwt een echt kaal repository, laat main eronder
+      # vandaan bewegen zoals de logboek-Action elke nacht doet, en levert dan af. Hij staat hier
+      # tussen de andere zelftests omdat het afleveren acht nachten lang de stille blokkade was:
+      # er werd wél gegenereerd en wél ingesproken, en het kwam alleen nooit op main.
+      - name: Zelftest van de levering
+        run: sh tools/avondrun-leveren.sh --zelftest
+
       # v23.179: de samenvoeging van het manifest. Zonder deze stap kan de regel "main wint waar
       # main een regel heeft" ongemerkt omklappen, en dan overschrijft de nachtrun de beschrijving
       # van een mp3 die hij zelf net heeft teruggezet.
@@ -289,89 +296,45 @@ jobs:
       # niets te dichten (wat=niets) of ging de poort dicht (wat=afgekeurd), dan is er geen
       # publicatiestap, maar de achterstand aan opnames is er dan nog steeds. Publiceerde de
       # reparatiestap hierboven de audio al, dan valt er hier gewoon niets meer toe te voegen.
+      # DE HARTSLAG EN DE OPNAMES OP MAIN KRIJGEN
+      #
+      # Hier stond een blok van veertig regels shell dat eindigde op `git pull --rebase` en dan
+      # `git push`. Die rebase mislukte acht nachten op rij (23 t/m 30 augustus), waarna de stap met
+      # een ::warning:: en exitcode 0 eindigde. Groen dus, en de hartslag en de opnames van die
+      # nacht bleven liggen. Gemeten gevolg: avondrun-hart.json stond acht dagen stil, en er is elke
+      # nacht voor ongeveer 18.500 ElevenLabs-tekens ingesproken dat daarna is weggegooid.
+      #
+      # Wat deze stap wil afleveren zijn geen commits maar bestanden, en voor bestanden is rebasen
+      # het verkeerde gereedschap: op deze main publiceren drie schrijvers, en de logboek-Action
+      # wordt door GitHub steeds later ingepland (van 02:30 naar 13:01), dus main verschuift
+      # tegenwoordig middenin het venster van de avondrun.
+      #
+      # tools/avondrun-leveren.sh zet de lading apart, pakt verse main, legt de bestanden erop,
+      # committeert één keer en pusht. Geweigerd omdat iemand er ondertussen overheen ging? Dan
+      # opnieuw met nog versere main, drie pogingen. De foutregel van git gaat mee de melding in en
+      # het script eindigt op 1, want een levering die stil wegvalt en groen blijft is precies hoe
+      # dit acht nachten kon duren. De proef staat in het script zelf en draait hierboven mee.
       - name: Hartslag en audio wegschrijven
         if: always()
         run: |
           [ -f tools/avondrun-hart.json ] || exit 0
           git config user.name "curriculum-bot"
           git config user.email "actions@users.noreply.github.com"
-          # Zelfde reden als bij de audiostap hierboven: wat al op main staat wint, zodat een re-run
-          # niet met zijn eigen eerdere push gaat vechten. Dit is waar run #14 rood op ging.
-          git fetch origin main --quiet || true
-          # 23 AUGUSTUS (v23.179): HET MANIFEST HOORT NIET BIJ DE TERUGZETTING
-          #
-          # Hier stond `git checkout FETCH_HEAD -- audio` zonder uitzondering, en dat is precies waarom
-          # audio/stemmen.json sinds 16 augustus niet meer is bijgewerkt terwijl er wel elke nacht is
-          # ingesproken. Voor de mp3's klopt de regel: die staan niet op main, dus die blijven staan.
-          # Maar het manifest staat er wel, dus dat werd teruggezet naar de oude versie, en daarmee was
-          # de administratie van wat deze run zojuist insprak weg.
-          #
-          # Gevolg, gemeten op 23 augustus: 102 mp3's op schijf zonder regel in het manifest. Elke
-          # nacht zag de audiostap dezelfde 102 als "onbekende stem", sprak ze opnieuw in, en gooide de
-          # administratie opnieuw weg. Vannacht kwam het aantal boven de alarmgrens van 80 en werd er
-          # helemaal niets meer ingesproken. Een lus die zichzelf voedt en daarna zichzelf blokkeert.
-          #
-          # Dus: het manifest wordt apart gehouden en daarna samengevoegd. Regel: wat op main staat
-          # wint, want als main een mp3 heeft die deze checkout over de onze heen zet, dan hoort de
-          # regel van main erbij. Wat alleen wij hebben vullen we aan.
-          cp audio/stemmen.json "$RUNNER_TEMP/stemmen-van-deze-run.json" 2>/dev/null || true
-          git checkout FETCH_HEAD -- audio 2>/dev/null || true
-          node tools/stemmen-samenvoegen.js "$RUNNER_TEMP/stemmen-van-deze-run.json" || true
-
-          # 22 AUGUSTUS: DE HARTSLAG NAM DE OPNAMES MEE IN ZIJN VAL
-          #
-          # Hier stond: alles in één commit, dan `git pull --rebase`, dan pushen. Twee nachten op rij
-          # liep dat vast met "CONFLICT (content): Merge conflict in tools/avondrun-hart.json", en
-          # daarmee stopte de hele stap. De opnames zaten in diezelfde commit, dus die bleven ook
-          # liggen: dát is de reden dat de zes nieuwe luisterscenes van v23.157 twee nachten lang
-          # geen stem kregen. De poort die roodstond was vervelend maar overleefbaar; deze regel was
-          # de echte blokkade.
-          #
-          # De oorzaak is een categoriefout. De hartslag is een momentopname van déze run en hoort
-          # nooit samengevoegd te worden met die van een vorige: bij een botsing wint per definitie
-          # de nieuwste. Git weet dat niet en probeert netjes te mergen.
-          #
-          # Dus in twee stappen, en in deze volgorde:
-          #   1. de opnames eerst. Dat zijn nieuwe bestanden en die botsen nooit.
-          #   2. gelijklopen met main, met niets van deze run meer in de weg.
-          #   3. de hartslag pas dáárna terugzetten en committen, zodat hij niets meer hoeft te mengen.
-          HART=$(mktemp)
-          cp tools/avondrun-hart.json "$HART"
-          # en meteen terug naar de versie van HEAD, zodat de werkmap schoon is als we zo gaan
-          # rebasen. Zonder dit moet git hem stashen en botst hij alsnog bij het terugzetten
-          # ("Applying autostash resulted in conflicts"), wat dezelfde ellende in een ander jasje is.
-          git checkout -- tools/avondrun-hart.json 2>/dev/null || true
-
-          git add audio
-          N=$(git diff --cached --name-only | wc -l | tr -d ' ')
-          if [ "$N" = "0" ]; then
-            echo "geen nieuwe opnames"
-          else
-            git commit -q -m "avondrun: $N opnames"
-          fi
-
-          if ! git pull --rebase; then
-            git rebase --abort 2>/dev/null || true
-            echo "::warning::rebase mislukt; hartslag en opnames blijven liggen tot de volgende run."
-            exit 0
-          fi
-
-          cp "$HART" tools/avondrun-hart.json
-          git add tools/avondrun-hart.json
-          if git diff --cached --quiet; then
-            echo "hartslag ongewijzigd"
-          else
-            git commit -q -m "avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
-          fi
-          git push
+          REGEL="avondrun: hartslag $(node -e "const h=require('./tools/avondrun-hart.json'); console.log(h.gepubliceerd ? 'geleverd' : 'niets geleverd (' + (h.reden||'geen reden') + ')')")"
+          sh tools/avondrun-leveren.sh "$REGEL" tools/avondrun-hart.json audio
 
       # 28 AUGUSTUS: DE HARTSLAG MOET ERGENS STAAN WAAR HIJ NIET KAN VERDWIJNEN
       #
       # De hartslag is het enige kanaal waarlangs deze run vertelt wat er misging, en hij hing tot nu
-      # toe volledig aan een push. Die push zit achter `git pull --rebase`, en als die rebase mislukt
-      # eindigt de stap met een ::warning:: en exitcode 0: groen, en de hartslag blijft liggen.
-      # Gemeten op 28 augustus: tools/avondrun-hart.json op main dateert van 23 augustus, terwijl er
-      # sindsdien vijf runs waren. Vijf nachten lang was er dus geen enkele manier om te zien waarom.
+      # toe volledig aan een push. Die push zat achter `git pull --rebase`, en als die rebase mislukte
+      # eindigde de stap met een ::warning:: en exitcode 0: groen, en de hartslag bleef liggen.
+      # Gemeten op 28 augustus: tools/avondrun-hart.json op main dateerde van 23 augustus, terwijl er
+      # sindsdien vijf runs waren. Op 31 augustus waren dat er acht, en toen is de rebase vervangen
+      # door tools/avondrun-leveren.sh (v23.217).
+      #
+      # Die vervanging maakt deze stap niet overbodig, integendeel. Ook een levering die drie keer
+      # opnieuw probeert kan uiteindelijk falen, en dan hoort de reden nog steeds ergens te staan
+      # waar hij niet aan een push hangt.
       #
       # Een meldkanaal dat stil kan wegvallen is geen meldkanaal. De samenvatting van de run staat
       # altijd op de pagina van die run, hangt aan niets, en overleeft elke mislukte push.
