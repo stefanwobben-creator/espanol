@@ -80,16 +80,38 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('   ' + telling.metVert.length + ' hoofdstukken met vertaling, ' + telling.zonder + ' zonder');
   ok(telling.mis.length === 0, 'geen enkele vertaling loopt uit de pas (' + (telling.mis.join('; ') || 'geen') + ')');
   ok(telling.metVert.length >= 10, 'en er is genoeg vertaald om iets te kunnen aantonen (' + telling.metVert.length + ')');
-  ok(telling.zonder > 0, 'CONTROLE: er zijn ook hoofdstukken zonder, dus proef 2 gaat ergens over');
+  /* v23.221: hier stond ok(telling.zonder > 0). Dat hield stand zolang er toevallig hoofdstukken
+     zónder vertaling waren, en sinds Chispa en Don Quijote vertaald zijn is dat er geen meer. Toen
+     viel deze proef om terwijl er niets kapot was.
+
+     Dit is de derde keer in twee dagen dat een controlegeval sneuvelt omdat het van de data afhing
+     (pw-morgen bij het morgenbericht, pw-stem bij de reeks zonder verteller, en nu deze). De regel
+     die daaruit volgt: een controlegeval hoor je te BOUWEN, niet te VINDEN. Wat je vindt verdwijnt
+     zodra iemand de data opruimt, en dan lijkt het net of de regel niet meer geldt. */
+  ok(telling.zonder === 0,
+    'elk hoofdstuk op de plank heeft nu een vertaling (' + telling.zonder + ' zonder)');
 
   // ---- 2 t/m 4. het scherm ----
   console.log('\n-- 2 t/m 4. het knopje en de onthulling --');
-  const zonderId = await page.evaluate(() => (BOOK.filter(function (h) { return !h.vert; })[0] || {}).id);
-  const geen = await page.evaluate((id) => {
-    show('lezen', true); startBoek(id);
-    return { knoppen: document.querySelectorAll('#lezenCard .leesvertknop').length };
-  }, zonderId);
-  ok(geen.knoppen === 0, 'een hoofdstuk zonder vertaling heeft geen enkel knopje (' + zonderId + ')');
+  /* Het geval "hoofdstuk zonder vertaling" bestaat op de plank niet meer, dus zetten we er zelf
+     een neer. Dat is niet alleen netter maar ook scherper: nu weet je zeker dat het aan het
+     ontbrekende veld ligt en niet aan iets anders in dat ene hoofdstuk. */
+  const geen = await page.evaluate(() => {
+    const hfd = { id: 'zonder-1', num: 1, deel: 'Proef', titel: 'Zonder vertaling', drempel: 0,
+                  tekst: 'Primera frase.\n\nSegunda frase.', vragen: [], reflectie: '' };
+    BOOK.push(hfd);
+    let uit;
+    try {
+      show('lezen', true); startBoek('zonder-1');
+      uit = { knoppen: document.querySelectorAll('#lezenCard .leesvertknop').length,
+              alineas: document.querySelectorAll('#lezenCard p').length };
+    } catch (e) { uit = { fout: e.message }; }
+    BOOK.pop();
+    return uit;
+  });
+  console.log('   verzonnen hoofdstuk zonder vert: ' + JSON.stringify(geen));
+  ok(geen.knoppen === 0, 'een hoofdstuk zonder vertaling heeft geen enkel knopje');
+  ok(geen.alineas >= 2, 'CONTROLE: en het hoofdstuk werd wel degelijk getekend, dus de nul zegt iets');
 
   const metId = telling.metVert[0];
   const voor = await page.evaluate((id) => {
