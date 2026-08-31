@@ -1602,7 +1602,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.213";
+var APP_VERSIE = "v23.215";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -2207,6 +2207,8 @@ var SENTENCES = [
  {"id": "s273", "lvl": 2, "nl": "Als je me je fiets leent, geef ik hem je zondag terug.", "en": "If you lend me your bike, I'll give it back to you on Sunday.", "es": "Si me prestas tu bici, te la devuelvo el domingo.", "alt": ["si me prestas tu bici te la devuelvo el domingo", "si me prestas tu bicicleta, te la devuelvo el domingo"], "uitleg": "Devolver = teruggeven, je meest gemiste kaartje deze week (negen keer erbij). Nieuwe invalshoek: het is de vaste partner van prestar (lenen aan) — me prestas, te devuelvo. In het presente is het een o→ue-schoenwerkwoord: devuelvo, devuelves. En te la: eerst de persoon (te), dan het ding (la, want la bici).", "ue": "Devolver = to give back, your most-missed card this week (nine more). New angle: it is the fixed partner of prestar (to lend) — me prestas, te devuelvo. In the present it is an o→ue boot verb: devuelvo, devuelves. And te la: person first (te), then the thing (la, for la bici).", "tag": "les5"},
  {"id": "s274", "lvl": 2, "nl": "Eindelijk heb ik de verloren sleutels gevonden.", "en": "I have finally found the lost keys.", "es": "Por fin he encontrado las llaves perdidas.", "alt": ["por fin he encontrado las llaves perdidas", "he encontrado por fin las llaves perdidas"], "uitleg": "Encontrado = participio van encontrar, vier verse missers als kaartje. In het presente wisselt de stam (encuentro), maar het participio is gewoon regelmatig: encontrado. En zie het verschil met perdido: na haber verandert het participio nooit (he perdido las llaves), maar als bijvoeglijk naamwoord buigt het mee — las llaves perdidas.", "ue": "Encontrado = participle of encontrar, four fresh misses as a card. The stem changes in the present (encuentro), but the participle is simply regular: encontrado. And note the contrast with perdido: after haber the participle never changes (he perdido las llaves), but as an adjective it agrees — las llaves perdidas.", "tag": "relatar"},
  {"id": "s275", "lvl": 2, "nl": "In de winter trek ik mijn jas aan om niet ziek te worden.", "en": "In winter I put on my coat so I don't get sick.", "es": "En invierno me pongo el abrigo para no ponerme enfermo.", "alt": ["en invierno me pongo el abrigo para no ponerme enfermo", "me pongo el abrigo en invierno para no ponerme enfermo"], "uitleg": "Ponerse is twee werkwoorden in één, en allebei zitten ze in deze zin: me pongo el abrigo = ik trek mijn jas aan (kleding), en ponerse enfermo = ziek wórden (een verandering: ponerse nervioso, ponerse rojo). Let op el abrigo, niet mi — bij kleding met een reflexief werkwoord gebruikt het Spaans het lidwoord, net als bij me duele el oído.", "ue": "Ponerse is two verbs in one, and both are in this sentence: me pongo el abrigo = I put on my coat (clothing), and ponerse enfermo = to get sick (a change: ponerse nervioso, ponerse rojo). Note el abrigo, not mi — with clothing and a reflexive verb Spanish uses the article, just like me duele el oído.", "tag": "salud"},
+ {"id": "s276", "lvl": 2, "nl": "Dit recept is eenvoudig: je hebt maar drie ingrediënten nodig.", "en": "This recipe is simple: you only need three ingredients.", "es": "Esta receta es sencilla: solo necesitas tres ingredientes.", "alt": ["esta receta es sencilla solo necesitas tres ingredientes", "esta receta es sencilla, solo necesitas tres ingredientes"], "uitleg": "Sencillo = eenvoudig, simpel — vier verse missers als kaartje deze week. Het buigt mee met het zelfstandig naamwoord: una receta sencilla, un plato sencillo. Synoniem van fácil, tegenovergestelde van complicado. En het woord kan meer: un billete sencillo = een enkeltje, una persona sencilla = een bescheiden, gewoon mens.", "ue": "Sencillo = simple, plain — four fresh misses as a card this week. It agrees with the noun: una receta sencilla, un plato sencillo. Synonym of fácil, opposite of complicado. And it does more: un billete sencillo = a one-way ticket, una persona sencilla = a modest, down-to-earth person.", "tag": "cocina"},
+ {"id": "s277", "lvl": 2, "nl": "Deze schoenen zijn kapot: ik gooi ze in de vuilnisbak.", "en": "These shoes are broken: I'm throwing them in the bin.", "es": "Estos zapatos están rotos: los tiro a la basura.", "alt": ["estos zapatos están rotos los tiro a la basura", "estos zapatos están rotos, los tiro a la basura", "estos zapatos estan rotos los tiro a la basura"], "uitleg": "Tirar = gooien én weggooien, vier verse missers als kaartje (en je kaartje kent nog een derde betekenis: trekken — tirar de la puerta). Tirar a la basura = in de vuilnisbak gooien. Los tiro: het lijdend voorwerp (los zapatos) schuift als los vóór het werkwoord. En están rotos: estar bij een toestand, met roto als onregelmatig participio van romper.", "ue": "Tirar = to throw and to throw away, four fresh misses as a card (and your card knows a third meaning: to pull — tirar de la puerta). Tirar a la basura = to throw in the bin. Los tiro: the direct object (los zapatos) moves in front of the verb as los. And están rotos: estar for a state, with roto as the irregular participle of romper.", "tag": "les4"}
 ];
 
 var QUIZZES = [
@@ -4012,9 +4014,9 @@ var C_WORDS = [
  {id:"cv368", es:"funcionar", nl:"werken, functioneren", tag:"cerv-wonen", sl:"funcionar"},
  {id:"cv369", es:"alcohol", nl:"alcohol", tag:"cerv-gezondheid", sl:"alcohol"},
  {id:"cv370", es:"ladrón", nl:"dief", tag:"cerv-diensten", sl:"ladron"},
- {id:"cv371", es:"deprisa", nl:"snel, vlug", tag:"cerv-hoeveel", sl:"deprisa"},
+ {id:"cv371", es:"deprisa", nl:"snel, vlug", tag:"cerv-hoeveel", sl:"deprisa", meer:"bijwoord, één woord: ¡ven deprisa! = kom snel; familie van la prisa — tener prisa = haast hebben"},
  {id:"cv372", es:"entrenador", nl:"trainer, coach", tag:"cerv-vrije-tijd", sl:"entrenador"},
- {id:"cv373", es:"tamaño", nl:"grootte, formaat", tag:"cerv-hoeveel", sl:"tamano"},
+ {id:"cv373", es:"tamaño", nl:"grootte, formaat", tag:"cerv-hoeveel", sl:"tamano", meer:"¿de qué tamaño es? = hoe groot is het? — zelfstandig naamwoord (el tamaño), geen werkwoordsvorm"},
  {id:"cv374", es:"derechos", nl:"rechten", tag:"cerv-politiek", sl:"derechos"},
  {id:"cv375", es:"profundo", nl:"diep", tag:"cerv-hoeveel", sl:"profundo"},
  {id:"cv376", es:"discutir", nl:"discussiëren, ruziën", tag:"cerv-relaties", sl:"discutir"},
@@ -5021,7 +5023,7 @@ var C_WORDS = [
 ];
 
 var TRACKS = {
-  a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-27"},
+  a2:       {label:"A2 · AULA 2", words:WORDS, sentences:SENTENCES, quizzes:QUIZZES, cheat:CHEATSHEET, batch:"batch-28"},
   beginner: {label:"A0 · AULA 1", words:B_WORDS, sentences:B_SENTENCES, quizzes:B_QUIZZES, cheat:B_CHEATSHEET, batch:"a0-batch-10"}
 };
 
@@ -5103,7 +5105,8 @@ var EXTRA_CONTENT = {
     "s260",
     "s261",
     "s267",
-    "s270"
+    "s270",
+    "s277"
    ],
    "quizzes": []
   },
@@ -5290,7 +5293,8 @@ var EXTRA_CONTENT = {
     "s228",
     "s242",
     "s262",
-    "s271"
+    "s271",
+    "s276"
    ],
    "quizzes": []
   },
@@ -24082,6 +24086,38 @@ var SONGS = [
    {q:"Chévere hoor je vooral in Latijns-Amerika. Wat zeggen ze in Spanje?", qe:"Chévere is mostly Latin American. What do they say in Spain?", optse:["guay","talla"], ue:"Guay is the Spanish counterpart of chévere. La talla is a clothing size — nothing to do with it.", opts:["guay","talla"], c:0, u:"Guay is de Spaanse tegenhanger van chévere. La talla is een kledingmaat — heeft er niets mee te maken."},
    {q:"'Bailar contigo' = met jou dansen. Waarom niet 'con ti'?", qe:"'Bailar contigo' = to dance with you. Why not 'con ti'?", optse:["mí and ti merge with con: conmigo, contigo","con always takes tú"], ue:"After con, mí and ti become one word: conmigo, contigo. All other pronouns stay separate: con él, con nosotros.", opts:["mí en ti versmelten met con: conmigo, contigo","na con komt altijd tú"], c:0, u:"Na con versmelten mí en ti tot één woord: conmigo, contigo. Alle andere voornaamwoorden blijven los: con él, con nosotros."},
    {q:"'¿Qué tal lo pasaste?' — welk werkwoord zit hier in de indefinido?", qe:"'¿Qué tal lo pasaste?' — which verb is in the indefinido here?", optse:["pasar (pasaste, like pasó)","poner (you put)"], ue:"Pasaste is the tú-form of pasar in the indefinido — same family as ¿qué pasó? = what happened? Poner would be pusiste.", opts:["pasar (pasaste, net als pasó)","poner (jij zette)"], c:0, u:"Pasaste is de tú-vorm van pasar in de indefinido — zelfde familie als ¿qué pasó? = wat is er gebeurd? Poner zou pusiste zijn."}
+  ]},
+ {id:"song-fukuoka", titel:"Bachata en Fukuoka", artiest:"Juan Luis Guerra", yt:"DBu6FZr95mk", lvl:"A2",
+  intro:"Bachata van de Dominicaanse meester Juan Luis Guerra: hij reist naar Japan en leert het publiek in Fukuoka de bachata. De oogst hieronder is de reis- en muziek-woordenschat die bij dit nummer hoort.",
+  oogst:[
+   {es:"la bachata", nl:"de bachata", u:"Het genre uit de Dominicaanse Republiek — én een oude bekende: La Bachata van Manuel Turizo staat al in je liedjeslijst."},
+   {es:"tocar la guitarra", nl:"gitaar spelen", u:"Bij een instrument gebruik je tocar, nooit jugar (dat is voor spelletjes: jugar al fútbol). Tocar is ook gewoon aanraken."},
+   {es:"lejos de", nl:"ver van", u:"Fukuoka está muy lejos de la República Dominicana. Vast voorzetsel de erachter, net als cerca de en delante de — die laatste stond deze week nog in je foutenlog."},
+   {es:"enseñar", nl:"leren (aan een ander), laten zien", u:"Hij enseña het publiek de bachata. Staat als eigen woord in je lijst en ging deze week nog mis: enseñar = aanleren, aprender = zelf leren."},
+   {es:"bailar pegadito", nl:"dicht tegen elkaar dansen", u:"Zó dans je een bachata. Pegado = geplakt (van pegar), en het verkleinwoord -ito maakt het liefkozend: pegadito."},
+   {es:"el viaje", nl:"de reis", u:"Van viajar. ¡Buen viaje! = goede reis! Hier een reis van de Caraïben naar Japan."},
+   {es:"el mar", nl:"de zee", u:"Tussen die twee ligt een hele oceaan. Meestal el mar, maar dichters en zeelieden zeggen la mar."}
+  ],
+  vragen:[
+   {q:"Gitaar spelen = ___ la guitarra?", qe:"To play the guitar = ___ la guitarra?", opts:["tocar","jugar"], optse:["tocar","jugar"], c:0, u:"Bij instrumenten altijd tocar. Jugar is voor spellen en sport: jugar al fútbol.", ue:"With instruments always tocar. Jugar is for games and sports: jugar al fútbol."},
+   {q:"De juf ___ español a los niños.", qe:"The teacher ___ español a los niños.", opts:["enseña","aprende"], optse:["enseña","aprende"], c:0, u:"Enseñar = leren aan een ander (aanleren); aprender = zelf leren. Los niños aprenden, la profesora enseña.", ue:"Enseñar = to teach someone; aprender = to learn yourself. Los niños aprenden, la profesora enseña."},
+   {q:"Fukuoka está muy lejos ___ España.", qe:"Fukuoka está muy lejos ___ España.", opts:["de","que"], optse:["de","que"], c:0, u:"Lejos de en cerca de hebben een vast de. Que hoort bij vergelijkingen: más grande que.", ue:"Lejos de and cerca de take a fixed de. Que belongs to comparisons: más grande que."}
+  ]},
+ {id:"song-orion", titel:"Orión", artiest:"Boza & Elena Rose", yt:"Z2pblquztK0", lvl:"A2",
+  intro:"Een melodieuze reggaeton-ballad genoemd naar het sterrenbeeld Orión: Boza komt uit Panama, Elena Rose is Venezolaans. De oogst hieronder is de sterren- en gemis-woordenschat die bij dit nummer hoort.",
+  oogst:[
+   {es:"la estrella", nl:"de ster", u:"Orión is een sterrenbeeld: una constelación. Ook figuurlijk, net als in het Nederlands: una estrella de la música."},
+   {es:"el cielo", nl:"de hemel, de lucht", u:"Mirar al cielo = naar de hemel kijken. En het is ook een koosnaampje: mi cielo."},
+   {es:"brillar", nl:"schijnen, stralen", u:"Las estrellas brillan. Regelmatig -ar-werkwoord, ook figuurlijk: hoy brillas = vandaag straal je."},
+   {es:"buscarte", nl:"jou zoeken", u:"Het pronomen plakt achteraan de infinitief: buscar + te — zelfde truc als olvidarte uit La Bachata."},
+   {es:"extrañar", nl:"missen (Lat-Am)", u:"Te extraño = ik mis je. Boza is Panamees, Elena Rose Venezolaans — in Spanje zeggen ze meestal echar de menos: te echo de menos."},
+   {es:"soñar con", nl:"dromen van", u:"Vast voorzetsel con, niet de: sueño contigo = ik droom van jou. En een o→ue-schoenwerkwoord: sueño, sueñas, soñamos."},
+   {es:"la noche", nl:"de nacht", u:"Sterren zie je alleen 's nachts: por la noche. Buenas noches werkt bij aankomst én bij vertrek."}
+  ],
+  vragen:[
+   {q:"'Ik droom van jou' = sueño ___", qe:"'I dream about you' = sueño ___", opts:["contigo","de ti"], optse:["contigo","de ti"], c:0, u:"Soñar heeft een vast con, en con + ti versmelt tot contigo — ken je van bailar contigo uit CHÉVERE.", ue:"Soñar takes a fixed con, and con + ti merges into contigo — you know it from bailar contigo in CHÉVERE."},
+   {q:"In Spanje zeg je voor 'ik mis je' meestal:", qe:"In Spain, 'I miss you' is usually:", opts:["te echo de menos","te extraño"], optse:["te echo de menos","te extraño"], c:0, u:"Extrañar is vooral Latijns-Amerikaans; de Spaanse variant is echar de menos. Allebei goed Spaans, maar met een andere thuisbasis.", ue:"Extrañar is mostly Latin American; the Spanish variant is echar de menos. Both are good Spanish, with different home turf."},
+   {q:"Waarom mag 'buscarte' aan één stuk?", qe:"Why can 'buscarte' be one word?", opts:["achter een infinitief mag het pronomen vastplakken","te staat altijd vóór het werkwoord"], optse:["after an infinitive the pronoun can attach","te always goes before the verb"], c:0, u:"Aan een infinitief (en een gerundio of bevel) mag het pronomen achteraan plakken: buscarte, olvidarte. Bij een vervoegde vorm staat het ervoor: te busco.", ue:"To an infinitive (and a gerund or command) the pronoun can attach at the end: buscarte, olvidarte. With a conjugated form it goes in front: te busco."}
   ]}
 ];
 
