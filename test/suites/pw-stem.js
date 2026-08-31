@@ -257,7 +257,35 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 6. het controlegeval: geen verteller, geen knop, geen opname --');
   const stil = appKant.ids.filter(function (id) { return !appKant.knop[id]; });
   console.log('   zonder knop: ' + (stil.join(', ') || 'geen'));
-  ok(stil.length > 0, 'er is een reeks zonder verteller, dus dit geval wordt echt getest');
+  /* v23.220: hier stond ok(stil.length > 0). Dat hield stand zolang er toevallig een reeks zonder
+     verteller op de plank stond, en dat was La cocina española (stem:false). Die is er op Stefans
+     verzoek af, en toen viel deze proef om terwijl er niets kapot was.
+
+     Een controlegeval dat afhangt van wat er toevallig in de data staat, is geen controlegeval: het
+     verdwijnt zodra iemand die data opruimt, en dan lijkt het net of de regel niet meer geldt. Dus
+     bouwen we het geval nu zelf, net als bij morgenBijzonderZin() in pw-morgen (v23.218). */
+  const verzonnen = await page.evaluate(() => {
+    const reeks = { id: 'proefstil', pre: 'stil-', nl: 'Proef', en: 'Test', stem: false,
+                    soortNl: 'proef', soortEn: 'test', omNl: '', omEn: '' };
+    const hfd = { id: 'stil-1', num: 1, deel: 'Proef', titel: 'Zonder stem', drempel: 0,
+                  tekst: 'Una frase de prueba.', vragen: [], reflectie: '' };
+    LEES_REEKSEN.push(reeks);
+    BOOK.push(hfd);
+    let knop = null;
+    try { show('lezen', true); startBoek('stil-1'); knop = !!document.getElementById('btnBoekLuister'); }
+    catch (e) { knop = 'FOUT: ' + e.message; }
+    /* en meteen weer weg: een proef die de app achterlaat met verzonnen data is een proef die de
+       volgende proef laat omvallen */
+    LEES_REEKSEN.pop();
+    BOOK.pop();
+    return { knop: knop, reeksenNa: LEES_REEKSEN.length, boekNa: BOOK.length };
+  });
+  console.log('   verzonnen reeks zonder verteller: knop = ' + verzonnen.knop);
+  ok(verzonnen.knop === false,
+    'een reeks zonder verteller krijgt geen luisterknop, ook al staat het hoofdstuk er wel');
+  ok(stil.length === 0,
+    'CONTROLE: en op de echte plank heeft elke reeks er een, dus er is niets stilzwijgend stil (' +
+    (stil.join(', ') || 'alle drie') + ')');
   ok(zonderStem.length === 0,
     'en die staat ook niet op de lijst van de nachtrun (' + (zonderStem.join(', ') || 'geen') + ')');
 
