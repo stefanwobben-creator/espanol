@@ -496,13 +496,27 @@ function valideer(nieuw, inv) {
 
 function jsonRegel(obj) { return " " + JSON.stringify(obj); }
 
+/* 30 augustus. Wat staat er vlak vóór de sluithaak: een element, een komma, of niets?
+   Deze vraag stond hier niet, en het antwoord werd aangenomen. Acht nachten lang plakte de
+   invoeger hieronder een komma achter een komma, en ",," is in JavaScript geen scheidingsteken
+   maar een overgeslagen plek: [1,2,,] heeft lengte 3. De telling na afloop kwam daardoor één te
+   hoog uit, pasToe() draaide het bestand terug, en de avondrun publiceerde niets. */
+function staartVanArray(src, sluit) {
+  const voor = src.slice(0, sluit).replace(/\s*$/, "");
+  const laatste = voor[voor.length - 1];
+  if (laatste === "[") return { voor, scheiding: "" };   // de array is leeg
+  if (laatste === ",") return { voor, scheiding: "" };   // er staat al een komma
+  return { voor, scheiding: "," };
+}
+
 function voegToeAanArray(src, naam, items) {
   if (!items || !items.length) return src;
   const { sluit } = vindArray(src, naam);
-  // laatste item krijgt een komma, nieuwe items komen elk op een eigen regel vóór de sluithaak
-  const voor = src.slice(0, sluit).replace(/\s*$/, "");
+  // nieuwe items komen elk op een eigen regel vóór de sluithaak; of er een komma vóór moet, staat
+  // in het bestand en niet in een aanname (zie staartVanArray hierboven)
+  const { voor, scheiding } = staartVanArray(src, sluit);
   const blok = items.map(jsonRegel).join(",\n");
-  return voor + ",\n" + blok + "\n" + src.slice(sluit);
+  return voor + scheiding + "\n" + blok + "\n" + src.slice(sluit);
 }
 
 function schrijfExtra(src, extra) {
@@ -562,15 +576,51 @@ function pasToe(nieuw, opties) {
   const mis = Object.keys(verwacht).filter(k => na[k].length !== verwacht[k]);
   if (mis.length) {
     fs.writeFileSync(INDEX, voor.src);            // terugdraaien
-    return { ok: false, fouten: ["telling klopt niet na schrijven: " + mis.join(", ") + " — bestand teruggedraaid"] };
+    /* 30 augustus: hier stond alleen de naam van de lijst. Acht nachten op rij las Stefan
+       "telling klopt niet na schrijven: sentences" en dat was alles wat de app erover kwijt wilde.
+       Met de drie getallen erbij was het een avond werk geweest in plaats van acht nachten:
+       271 + 2 = 273 verwacht, 274 gevonden, dus er kwam er één te veel bij en niet één te weinig.
+       Dat verschil wijst meteen naar de invoeger en niet naar het taalmodel. */
+    const uitleg = mis.map(k =>
+      k + ": " + voor[k].length + " + " + ((nieuw[k === "cheat" ? "cheat" : k] || []).length) +
+      " = " + verwacht[k] + " verwacht, " + na[k].length + " gevonden" +
+      " (" + (na[k].length > verwacht[k] ? "+" : "") + (na[k].length - verwacht[k]) + ")").join("; ");
+    return { ok: false, fouten: ["telling klopt niet na schrijven: " + uitleg + " — bestand teruggedraaid"] };
   }
   return { ok: true, versie: bump.versie, aantallen: verwacht, waarschuwingen };
 }
 
 module.exports = { altWaarschuwingen, altVoornaamwoorden, tijdsaanduidingen, isKaleZin,
                    INDEX, VERSIE, inventaris, leesArray, leesLessen, leesExtra,
-                   valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie,
+                   valideer, pasToe, volgendeId, voegToeAanArray, bumpVersie, staartVanArray,
                    altNorm, altKaal, herstelAlt, lektHetAntwoord, topPuntkomma };
+
+/* ---------- de proef bij de komma van 30 augustus ----------
+
+   Deze staat los van de grote zelftest hieronder, want hij hoort bij de invoeger en niet bij de
+   inhoud. Hij draait op een stukje broncode in het geheugen: geen index.html, geen taalmodel, geen
+   netwerk. Dat is met opzet, want de fout die hij bewaakt was er een van tekens en niet van
+   betekenis, en hij lag acht nachten onder een run van dertien minuten. */
+function proefInvoegen() {
+  const gevallen = [
+    { naam: "zonder komma",  src: 'var T = [\n {"id":1}\n];\n', erbij: 2, verwacht: 3 },
+    { naam: "met komma",     src: 'var T = [\n {"id":1},\n];\n', erbij: 2, verwacht: 3 },
+    { naam: "lege array",    src: 'var T = [\n];\n',              erbij: 2, verwacht: 2 },
+    { naam: "twee erin",     src: 'var T = [\n {"id":1},\n {"id":2}\n];\n', erbij: 1, verwacht: 3 }
+  ];
+  const uit = [];
+  gevallen.forEach(g => {
+    const items = []; for (let i = 0; i < g.erbij; i++) items.push({ id: 90 + i });
+    const na = voegToeAanArray(g.src, "T", items);
+    // eslint-disable-next-line no-new-func
+    const lijst = new Function("return " + vindArray(na, "T").tekst)();
+    const gaten = []; for (let i = 0; i < lijst.length; i++) if (!(i in lijst)) gaten.push(i);
+    uit.push({ naam: g.naam, verwacht: g.verwacht, kreeg: lijst.length,
+               gaten: gaten.length, ok: lijst.length === g.verwacht && gaten.length === 0 });
+  });
+  return uit;
+}
+module.exports.proefInvoegen = proefInvoegen;
 
 /* ---------- zelftest ---------- */
 
