@@ -935,7 +935,14 @@
   .plankSoort{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);}
   .plankBalk{height:8px; border-radius:4px; background:var(--border); overflow:hidden; margin:8px 0 6px;}
   .plankBalk div{height:100%; background:var(--accent);}
-  .lw{cursor:pointer; border-radius:3px; padding:0 1px; margin:0 -1px;}
+  .leesvert{margin:-6px 0 12px}
+.leesvertknop{background:none; border:0; color:var(--muted); font-size:.78rem; padding:0 6px;
+  min-height:44px; min-width:44px; cursor:pointer; text-align:left}
+.leesvertknop.aan{color:var(--accent)}
+.leesvertnl{margin:0 0 0 10px; padding:6px 10px; border-left:2px solid var(--rand);
+  color:var(--muted); font-size:.92rem}
+.leesvertnl.weg{display:none}
+.lw{cursor:pointer; border-radius:3px; padding:0 1px; margin:0 -1px;}
   .lw.aan{background:var(--accent-soft); box-shadow:0 0 0 1px var(--accent) inset;}
   /* v23.22: de betekenis hoort bij het woord en niet onder de bladzijde. Onderaan betekent scrollen,
      en na het scrollen moet je je zin terugzoeken; dan is de hulp duurder dan het opzoeken zelf. */
@@ -1597,7 +1604,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.218";
+var APP_VERSIE = "v23.219";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -6271,7 +6278,15 @@ var BOOK = [
    {q:"¿De qué tienen miedo los ricos?", opts:["De perder sus tierras","De la escuela","De los maestros"], c:0},
    {q:"¿Qué pasa entre los vecinos de los pueblos?", opts:["Trabajan juntos","Dejan de saludarse","Se van del país"], c:1}
   ],
-  reflectie:"¿Conoces un lugar donde la gente también está dividida en dos mitades?"},
+  reflectie:"¿Conoces un lugar donde la gente también está dividida en dos mitades?",
+  vert:[
+   "In 1931 verandert Spanje. De koning verlaat het land en de Republiek komt.",
+   "Veel mensen zijn blij. Eindelijk mogen de mannen stemmen, en de vrouwen ook. Er gaan nieuwe scholen open. De onderwijzers komen naar de kleine dorpen, waar vroeger bijna niemand kon lezen.",
+   "Maar niet iedereen is blij. De rijken zijn bang hun land te verliezen. De Kerk is bang haar plek in de scholen te verliezen. De militairen zijn bang voor de wanorde.",
+   "Spanje is een land van twee helften. De ene helft wil snel de toekomst in. De andere helft wil blijven waar hij is.",
+   "In de cafés praten en ruziën de mensen. In de dorpen groeten de buren elkaar niet meer. Een man die zus stemt drinkt niet meer met de man die zo stemt.",
+   "Niemand weet nog dat dit gaat eindigen in een oorlog. Maar de afstand tussen de twee helften wordt elke maand groter."
+  ]},
 
  {id:"hist-2", num:2, deel:"España: los años de Franco", titel:"Julio de 1936", drempel:0,
   tekst:"Es julio de 1936. Hace calor. Es verano y mucha gente está de vacaciones.\n\n"+
@@ -6286,7 +6301,15 @@ var BOOK = [
    {q:"¿Quién para a los militares en Madrid y Barcelona?", opts:["Otros países","La gente de la calle","La policía del rey"], c:1},
    {q:"¿Cuánto dura la guerra al final?", opts:["Tres días","Casi tres años","Diez años"], c:1}
   ],
-  reflectie:"¿Por qué crees que la gente normal salió a la calle sin armas?"},
+  reflectie:"¿Por qué crees que la gente normal salió a la calle sin armas?",
+  vert:[
+   "Het is juli 1936. Het is warm. Het is zomer en veel mensen zijn op vakantie.",
+   "Op 17 juli komt een groep militairen in opstand tegen de regering. Het begint in Afrika, in Marokko, en bereikt Spanje de dag erna. Een van die militairen heet Francisco Franco.",
+   "De militairen verwachten in drie of vier dagen te winnen. Ze winnen niet.",
+   "In Madrid en Barcelona gaan de mensen de straat op. Arbeiders, studenten, vrouwen, oude mannen. Het zijn geen soldaten en ze hebben bijna geen wapens, maar ze houden de militairen tegen in de twee grootste steden van het land.",
+   "Zo breekt Spanje in een paar dagen in tweeën. Er zijn steden van de ene kant en steden van de andere. Er zijn families met een broer aan elke kant.",
+   "Wat drie dagen zou duren, duurt bijna drie jaar."
+  ]},
 
  {id:"hist-3", num:3, deel:"España: los años de Franco", titel:"Guernica", drempel:0,
   tekst:"Guernica es un pueblo pequeño en el norte, en el País Vasco. Los lunes hay mercado. La gente va a comprar y a vender, como siempre.\n\n"+
@@ -6301,7 +6324,15 @@ var BOOK = [
    {q:"¿Qué hace Picasso cuando lee las noticias?", opts:["Vuelve a España","Pinta un cuadro","Escribe una carta al rey"], c:1},
    {q:"¿De qué colores es el cuadro?", opts:["Blanco, negro y gris","Rojo y amarillo","Azul y verde"], c:0}
   ],
-  reflectie:"¿Crees que un cuadro puede contar una historia mejor que un periódico?"},
+  reflectie:"¿Crees que un cuadro puede contar una historia mejor que un periódico?",
+  vert:[
+   "Guernica is een klein dorp in het noorden, in Baskenland. Op maandag is er markt. De mensen gaan er kopen en verkopen, zoals altijd.",
+   "26 april 1937 is een maandag. In de middag komen er Duitse vliegtuigen. Ze zijn bevriend met Franco en helpen de militairen.",
+   "De vliegtuigen zoeken geen soldaten. Ze zoeken het dorp. Ze bombarderen urenlang, tot in de nacht. Als ze klaar zijn is bijna heel Guernica kapot of verbrand.",
+   "Het is een van de eerste keren in de geschiedenis dat een heel dorp zo wordt gebombardeerd, met gewone mensen erin. De kranten van de wereld schrijven erover.",
+   "In Parijs leest een Spaanse schilder het nieuws. Hij heet Pablo Picasso. Hij begint aan een enorm doek, in wit, zwart en grijs. Er staat een paard dat schreeuwt, een moeder met haar kind, een lamp erboven.",
+   "Het schilderij heet Guernica. Nog steeds kennen veel mensen die naam van het schilderij, en pas daarna van het dorp."
+  ]},
 
  {id:"hist-4", num:4, deel:"España: los años de Franco", titel:"1939: el final y el principio", drempel:0,
   tekst:"El 1 de abril de 1939, Franco escribe que la guerra ha terminado. Su lado ha ganado.\n\n"+
@@ -6316,7 +6347,15 @@ var BOOK = [
    {q:"¿Cuántos años gobierna Franco?", opts:["Tres años","Treinta y seis años","Diez años"], c:1},
    {q:"¿Por qué vive con miedo la gente que se queda?", opts:["Porque no hay comida","Porque un vecino puede escribir tu nombre","Porque hay aviones"], c:1}
   ],
-  reflectie:"¿Qué llevarías contigo si tuvieras que salir de tu país a pie?"},
+  reflectie:"¿Qué llevarías contigo si tuvieras que salir de tu país a pie?",
+  vert:[
+   "Op 1 april 1939 schrijft Franco dat de oorlog voorbij is. Zijn kant heeft gewonnen.",
+   "Voor het halve Spanje is die dag het einde van niets. Het is het begin van iets anders.",
+   "Bijna een half miljoen mensen verlaten het land. Ze trekken te voet over de bergen naar Frankrijk, met kinderen en koffers. Veel van hen denken dat ze over een paar maanden terugkomen. Sommigen komen veertig jaar later terug. Anderen nooit.",
+   "Wie blijft, leeft met angst. Een buurman kan je naam op een briefje schrijven. Eén woord in een café kan je in de gevangenis doen belanden.",
+   "Franco gaat zesendertig jaar over Spanje regeren. Niemand stemt. Er zijn geen vrije kranten. Er is maar één partij.",
+   "De kinderen die in 1939 geboren worden, zijn opa voordat ze een andere regering zien."
+  ]},
 
  {id:"hist-5", num:5, deel:"España: los años de Franco", titel:"Los años del hambre", drempel:0,
   tekst:"Los años cuarenta se llaman en España los años del hambre.\n\n"+
@@ -6330,7 +6369,14 @@ var BOOK = [
    {q:"¿Qué es una fiesta para los niños?", opts:["Pan con aceite y azúcar","Carne los domingos","Café de verdad"], c:0},
    {q:"¿Por qué muchas abuelas españolas no tiran comida?", opts:["Porque cocinan mucho","Porque vivieron el hambre","Porque no les gusta comprar"], c:1}
   ],
-  reflectie:"¿Hay una costumbre en tu familia que viene de una época difícil?"},
+  reflectie:"¿Hay una costumbre en tu familia que viene de una época difícil?",
+  vert:[
+   "De jaren veertig heten in Spanje de hongerjaren.",
+   "Er is bijna niets te eten. De regering geeft elk gezin een distributieboekje: een papiertje met vakjes voor het brood, de olie, de suiker. Met dat papiertje kun je weinig kopen, en veel dagen is er zelfs dat niet.",
+   "De mensen leren koken zonder spullen. Soep van water en oud brood. Koffie gemaakt van een andere plant, want koffie is er niet. De kinderen eten brood met olie en suiker, en dat is een feest.",
+   "In de dorpen gaan de mensen het veld in om planten voor de soep te zoeken. In de steden is er een geheime markt waar alles veel meer kost. Bijna iedereen koopt daar weleens, ook al mag het niet.",
+   "Veel Spanjaarden van nu herinneren zich een oma die nooit eten weggooide. Geen kruimel brood. Nu weet je waarom."
+  ]},
 
  {id:"hist-6", num:6, deel:"España: los años de Franco", titel:"Lo que no se dice", drempel:0,
   tekst:"En los años cincuenta, España está tranquila. Pero es una tranquilidad rara.\n\n"+
@@ -6344,7 +6390,14 @@ var BOOK = [
    {q:"¿Qué saben muchos niños sobre un tío?", opts:["Que vive en Francia","Que no está, pero no saben por qué","Que fue militar"], c:1},
    {q:"Según el texto, ¿qué es el silencio?", opts:["Paz de verdad","Una manera de vivir juntos sin mirarse","Una idea de los periódicos"], c:1}
   ],
-  reflectie:"¿Hay algo de lo que en tu familia no se hablaba?"},
+  reflectie:"¿Hay algo de lo que en tu familia no se hablaba?",
+  vert:[
+   "In de jaren vijftig is Spanje rustig. Maar het is een vreemde rust.",
+   "In de kranten staat alleen goed nieuws. Alle films gaan eerst langs een kantoor, en daar knipt een man eruit wat hem niet bevalt: een kus, een woord, een idee. In de liefdesscènes van de films kussen soms een broer en een zus elkaar, omdat ze het verhaal hebben veranderd zodat het geen geliefden zijn.",
+   "Thuis praten de mensen zacht. Ouders vertellen hun kinderen niet wat er in de oorlog is gebeurd. Veel kinderen weten dat er een oom is die er niet is, maar niet waar of waarom. Niemand vraagt het.",
+   "Er zijn dorpen waar iedereen weet wie in 1936 wiens naam heeft opgeschreven. En er zijn dorpen waar iedereen zijn brood gewoon in dezelfde winkel blijft kopen, zonder iets te zeggen.",
+   "De stilte is geen vrede. Het is een manier om samen te leven zonder elkaar aan te kijken."
+  ]},
 
  {id:"hist-7", num:7, deel:"España: los años de Franco", titel:"Sol, playa y un coche pequeño", drempel:0,
   tekst:"En los años sesenta llega algo nuevo a España: turistas.\n\n"+
@@ -6358,7 +6411,14 @@ var BOOK = [
    {q:"¿Por qué es el turismo un problema para el gobierno?", opts:["Porque trae la vida de fuera","Porque no trae dinero","Porque los hoteles son caros"], c:0},
    {q:"¿Qué cambia con el Seat 600?", opts:["La gente va al mar por primera vez","Hay elecciones","Los turistas se van"], c:0}
   ],
-  reflectie:"¿Puede un país cambiar por fuera sin cambiar por dentro?"},
+  reflectie:"¿Puede un país cambiar por fuera sin cambiar por dentro?",
+  vert:[
+   "In de jaren zestig komt er iets nieuws naar Spanje: toeristen.",
+   "Ze komen uit Noord-Europa, met de bus en met de auto. Ze zoeken zon, strand en goedkoop eten. Aan de kust beginnen ze hoge hotels te bouwen, het een na het ander, heel snel en bijna zonder plan.",
+   "De toeristen brengen geld mee, maar ook iets anders: het leven van buiten. Ze brengen muziek mee, andere kleren, vrouwen in bikini. Voor de regering is dat een probleem, en voor veel jonge Spanjaarden is het een raam.",
+   "In de steden verschijnt een kleine, goedkope auto: de Seat 600. Er past een heel gezin in, opeengepakt. Ermee gaan mensen die nooit hun dorp uit waren geweest voor het eerst naar zee.",
+   "Spanje begint geld te krijgen. Maar het heeft nog steeds geen verkiezingen, geen vrije kranten en geen tweede partij. Het land wordt vanbuiten modern en blijft vanbinnen hetzelfde."
+  ]},
 
  {id:"hist-8", num:8, deel:"España: los años de Franco", titel:"Una maleta hacia el norte", drempel:0,
   tekst:"En los mismos años sesenta, casi dos millones de españoles hacen la maleta. No se van de vacaciones. Se van a trabajar.\n\n"+
@@ -6372,7 +6432,14 @@ var BOOK = [
    {q:"¿Qué hace el dinero que mandan a casa?", opts:["Compra casas y televisiones","Paga la guerra","Va al gobierno"], c:0},
    {q:"¿Qué pasa con los hijos de los que se quedan fuera?", opts:["Vuelven solos","Crecen hablando dos lenguas","No aprenden español"], c:1}
   ],
-  reflectie:"¿Conoces a alguien que se fue a otro país a trabajar? ¿Qué mandaba a casa?"},
+  reflectie:"¿Conoces a alguien que se fue a otro país a trabajar? ¿Qué mandaba a casa?",
+  vert:[
+   "In diezelfde jaren zestig pakken bijna twee miljoen Spanjaarden hun koffer. Ze gaan niet op vakantie. Ze gaan werken.",
+   "Ze gaan naar Duitsland, Zwitserland, Frankrijk, België en Nederland. Ze werken in fabrieken en in mijnen. Veel van hen zijn jonge mannen uit kleine dorpen, die nog nooit sneeuw hadden gezien.",
+   "Ze schrijven brieven naar huis en sturen elke maand geld. Dat geld komt in de dorpen aan en koopt een huis, een koe, een televisie. Zonder dat geld groeit het Spanje van de jaren zestig niet zo hard.",
+   "Met kerst komen ze met de auto terug, allemaal samen, met cadeaus in de kofferbak. De kinderen van het dorp komen naar buiten om de auto's met buitenlands kenteken te zien.",
+   "Sommigen komen na tien of twintig jaar voorgoed terug. Anderen blijven daar, en hun kinderen groeien tweetalig op. Nog steeds zijn er Spaanse families in Rotterdam en Utrecht die begonnen met een koffer en een contract."
+  ]},
 
  {id:"hist-9", num:9, deel:"España: los años de Franco", titel:"20 de noviembre de 1975", drempel:0,
   tekst:"Franco es viejo y está enfermo. Durante semanas, la televisión habla cada día de su salud. La gente escucha y no dice nada en voz alta.\n\n"+
@@ -6386,7 +6453,14 @@ var BOOK = [
    {q:"¿Por qué algunos abren la botella con la puerta cerrada?", opts:["Porque es de noche","Porque todavía tienen miedo","Porque no hay vasos"], c:1},
    {q:"¿Qué no sabe España ese día?", opts:["Si va a haber otra guerra o algo distinto","Quién era Franco","Dónde está Madrid"], c:0}
   ],
-  reflectie:"¿Qué crees que sentirías si nunca hubieras votado y de repente pudieras?"},
+  reflectie:"¿Qué crees que sentirías si nunca hubieras votado y de repente pudieras?",
+  vert:[
+   "Franco is oud en ziek. Wekenlang praat de televisie elke dag over zijn gezondheid. De mensen luisteren en zeggen hardop niets.",
+   "Op 20 november 1975 verschijnt er een man op televisie die huilend zegt: —Spanjaarden, Franco is dood.",
+   "Het land reageert op heel verschillende manieren. Er zijn mensen die op straat huilen. Er zijn mensen die thuis een fles opentrekken, met de deur dicht en met zachte stem, omdat ze nog steeds bang zijn. En er zijn heel veel mensen die simpelweg niet weten wat er morgen gebeurt.",
+   "Niemand heeft ooit gestemd. Bijna niemand herinnert zich een andere regering. De militairen zijn er nog. In andere landen van Europa zijn dictaturen geëindigd in nog meer geweld.",
+   "Die dag weet Spanje nog niet of er opnieuw een oorlog komt of iets anders."
+  ]},
 
  {id:"hist-10", num:10, deel:"España: los años de Franco", titel:"Aprender a hablar otra vez", drempel:0,
   tekst:"Después de 1975 pasa algo que casi nadie esperaba: no hay otra guerra.\n\n"+
@@ -6400,7 +6474,14 @@ var BOOK = [
    {q:"¿Qué aceptan casi todos para que la Transición salga bien?", opts:["No mirar atrás","Salir del país","Cerrar los periódicos"], c:0},
    {q:"¿Quiénes empiezan a hacer preguntas más tarde?", opts:["Los militares","Los nietos","Los turistas"], c:1}
   ],
-  reflectie:"¿Es mejor olvidar para vivir juntos, o hablar aunque duela?"},
+  reflectie:"¿Es mejor olvidar para vivir juntos, o hablar aunque duela?",
+  vert:[
+   "Na 1975 gebeurt er iets wat bijna niemand had verwacht: er komt geen nieuwe oorlog.",
+   "In een paar jaar verandert Spanje van boven tot onder. De partijen komen terug. De mensen die in 1939 vertrokken komen terug, inmiddels oud. In 1977 zijn er verkiezingen, de eerste in eenenveertig jaar. Er zijn opa's die voor het eerst van hun leven stemmen, met hun pasje in de hand en hun zondagse kleren aan.",
+   "Om dit allemaal goed te laten gaan aanvaardt bijna iedereen één ding: niet achteromkijken. Er komen geen processen. Er worden geen namen gezocht. Dat besluit wordt later het pact van het vergeten genoemd.",
+   "Jarenlang werkt het. Maar de kleinkinderen beginnen vragen te stellen die hun ouders niet stelden. Waar is mijn overgrootvader? Waarom weet niemand in welk veld hij ligt?",
+   "Nog steeds worden er in Spanje graven geopend en botten uit de oorlog gezocht. Tachtig jaar later leert het land nog steeds praten over wat er is gebeurd."
+  ]},
 
  /* ================= LA COCINA, deel 1: lo que ya era vegano =================
     Stefan, 13 aug: "typische spaanse recepten (en dan wel vegan gemaakt)", en op de vraag of het
@@ -7250,6 +7331,12 @@ function logServer(kind, payload){
     payload.minuten = doelMinuten();
     payload.lessenAf = doneLessonCount();
     payload.gezien = S.gezien || {};   // v23.145: waar je liep, niet alleen waar je struikelde
+    /* v23.219: lezen was het enige onderdeel waarvan er niets in dit logje stond. leesZoek telt
+       sinds v23.21 elke opzoeking en is nooit ergens heen gegaan; leesVert telt sinds vandaag welke
+       alinea's je in het Nederlands wilde zien. Samen zijn dat de twee maten waarmee de app kan
+       gaan zien wat voor jou te zwaar is, in plaats van het uit een woordenlijst te schatten. */
+    payload.leesZoek = S.leesZoek || {};
+    payload.leesVert = S.leesVert || {};
   }catch(e){}
   api("/api/log", "POST", {code: ensureCode(p), kind: kind, payload: payload});
 }
@@ -14980,6 +15067,49 @@ function leesDekking(h){
    staat hier als lijst en niet in de DOM, want uit de DOM teruglezen zou betekenen dat de opmaak de
    betekenis bepaalt. */
 var leesWoorden = [];
+/* ================= DE TREDE TUSSEN ÉÉN WOORD EN DE HELE TEKST (v23.219) =================
+
+   Stefan: "ik begrijp de grote lijn maar heb nog DeepL nodig." Het leesscherm kon precies één
+   ding: tik op een woord, krijg dat woord. Wie de woorden kent en de zin niet rond krijgt, had
+   hier niets, en ging dus de app uit.
+
+   Per ALINEA en niet per zin, en dat is Stefans eigen keuze met de goede reden erbij: per zin lees
+   je algauw regel voor regel in het Nederlands mee, en dan is het Spaans versiering geworden.
+
+   De tik is niet alleen een dienst maar ook de meting. Lezen was het enige onderdeel waar de app
+   niets van je terugkreeg (twintig bezoeken, nul fouten, nul opzoekingen in het logboek), en
+   daarom kon geen enkel niveau-etiket ooit kloppen. Nul tikken in een hoofdstuk betekent te
+   makkelijk, een tik op elke alinea betekent te zwaar. */
+function leesVertHtml(h, i){
+  var v = h && h.vert;
+  if(!v || !v[i]) return "";
+  return "<div class='leesvert'>" +
+    "<button type='button' class='leesvertknop' data-vert='" + i + "'>" +
+    ct("Nederlands", "Dutch") + "</button>" +
+    "<p class='leesvertnl weg' data-vertnl='" + i + "'>" + veiligHtml(v[i]) + "</p></div>";
+}
+/* Per hoofdstuk bijhouden WELKE alinea's je hebt opengeklapt, niet hoe vaak je tikte. Twee keer op
+   dezelfde alinea is dezelfde alinea, en anders meet je driftig tikken in plaats van moeite. */
+function leesVertBij(h, i){
+  if(!h || !h.id) return;
+  try {
+    S.leesVert = S.leesVert || {};
+    var r = S.leesVert[h.id] || (S.leesVert[h.id] = {});
+    if(r[i]) return;
+    r[i] = today();
+    persist();
+  } catch(e){}
+}
+/* Hoeveel van de alinea's van dit hoofdstuk heb je vertaald willen zien. Dit getal is de bedoeling
+   van deze hele ronde; het sturen dat erop volgt komt pas als er een week of twee data ligt. */
+function leesVertStand(h){
+  try {
+    var r = (S.leesVert || {})[h.id] || {};
+    var n = Object.keys(r).length;
+    var totaal = (h.vert || []).length;
+    return {n:n, totaal:totaal};
+  } catch(e){ return {n:0, totaal:0}; }
+}
 function leesTekstHtml(p){
   var veilig = String(p).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return veilig.replace(/([A-Za-z\u00c0-\u024f]+)/g, function(m){
@@ -14991,6 +15121,9 @@ function leesTekstHtml(p){
 /* Onder het woord als het past, anders erboven, en altijd binnen de kaart. Gerekend met
    getBoundingClientRect en niet met offsetTop, want de alinea's zitten in elementen met hun eigen
    positie en dan klopt offsetTop niet meer zodra er ergens iets verandert aan de opmaak. */
+/* v23.219: het knopje is klein en grijs, de vertaling staat ingesprongen en in een andere kleur.
+   Allebei met opzet: het moet te vinden zijn en niet uitnodigen. De knop haalt wel de 44 pixels van
+   TIKDOEL_MIN (v23.210), want een tikdoel is een tikdoel. */
 function leesTooltipPlaats(el, span){
   var kaart = document.getElementById("lezenCard");
   if(!kaart) return;
@@ -15136,8 +15269,8 @@ function renderBoekLectura(){
   /* v23.81: enkele regelovergangen worden <br>. Een recept heeft een ingrediëntenlijst, en zonder
      dit wordt "1 kg de tomates 1 pepino 1 pimiento verde" één doorlopende zin. Voor de bestaande
      hoofdstukken verandert er niets: geteld over alle drieëntwintig, nul enkele regelovergangen. */
-  var paras = h.tekst.split("\n\n").map(function(p){
-    return "<p>"+p.split("\n").map(leesTekstHtml).join("<br>")+"</p>";
+  var paras = h.tekst.split("\n\n").map(function(p, i){
+    return "<p>"+p.split("\n").map(leesTekstHtml).join("<br>")+"</p>"+leesVertHtml(h, i);
   }).join("");
   var inFlowBoek = !!(lesFlow && lesFlow.stap === "produceren" && lesFlow.gekozenSpel === "boek");
   el.innerHTML = (inFlowBoek ? lesFlowBannerHtml() : "")+"<span class='kicker'>"+h.deel+" · "+ct("Hoofdstuk ","Chapter ")+h.num+"</span>"+
@@ -15166,6 +15299,19 @@ function renderBoekLectura(){
     // v23.133: de knop in de tooltip staat binnen deze kaart, dus zonder deze regel zou hij de
     // tooltip sluiten in plaats van het woord toe te voegen.
     if(t && t.id === "btnLeesMijn"){ leesMijnKlik(); return; }
+    /* v23.219: de Nederlandse regel onder een alinea. Vóór de tooltip-afhandeling, want deze knop
+       staat binnen dezelfde kaart en zou anders als "ergens anders" gelden en de tooltip sluiten. */
+    if(t && t.classList && t.classList.contains("leesvertknop")){
+      var vi = t.getAttribute("data-vert");
+      var vp = el.querySelector("[data-vertnl='" + vi + "']");
+      if(vp){
+        var open = !vp.classList.contains("weg");
+        vp.classList.toggle("weg");
+        t.classList.toggle("aan", !open);
+        if(!open) leesVertBij(h, +vi);
+      }
+      return;
+    }
     if(t && t.id === "btnLeesAlles"){ leesAllesKlik(); return; }
     // ergens anders tikken sluit de tooltip: dat is de gebaarloze manier om hem weg te krijgen
     if(!t || !t.classList || !t.classList.contains("lw")){ leesVerberg(); return; }
