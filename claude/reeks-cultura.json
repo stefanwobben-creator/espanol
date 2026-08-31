@@ -1,0 +1,292 @@
+{
+  "_over": "Reeks 'España por dentro' (v23.223). Tien hoofdstukken over hoe Spanje van binnen werkt. Maat: ongeveer 190 woorden, 8 a 9 woorden per zin, een concreet tafereel eerst en de verklaring daarna. Elk hoofdstuk herhaalt zijn kernwoorden minstens drie keer, zodat het lezen zelf het inslijpen doet. De reeks loopt van de tafel (1) naar de tafel terug (10).",
+  "_maat": "Stefan, 31 aug, over hoofdstuk 1: 'dit is een goede tekst die ik zo 90% comfortabel kan lezen.' Dat is de ijkzin voor deze hele reeks.",
+  "vida-1": {
+    "titel": "La cena de las diez",
+    "tekst": [
+      "En España se cena tarde. Muy tarde. En Holanda la gente cena a las seis. En Madrid, a las diez de la noche, los restaurantes están llenos.",
+      "¿Por qué? Hay una razón fácil y una difícil.",
+      "La fácil es la luz. España está muy al oeste, pero tiene la misma hora que Berlín. En verano, en Madrid, el sol se pone a las diez menos cuarto. A las ocho todavía es de día. Nadie cena cuando hay sol.",
+      "La difícil es la historia. Antes de 1940, España tenía la hora de Londres. Franco la cambió a la hora de Berlín. La guerra terminó, pero la hora se quedó. Los españoles viven desde entonces con una hora prestada.",
+      "Entre la comida y la cena hay muchas horas. Por eso existe la merienda: un café y algo dulce, a las seis. Y por eso existen las tapas. No son una cena. Son lo que comes mientras esperas la cena.",
+      "Un holandés en Madrid tiene hambre a las siete. A las nueve ya no puede más. A las diez, cuando por fin llega la comida, ya es otra persona."
+    ],
+    "vert": [
+      "In Spanje eet men laat. Heel laat. In Nederland eten mensen om zes uur. In Madrid zitten de restaurants om tien uur 's avonds vol.",
+      "Waarom? Er is een makkelijke reden en een moeilijke.",
+      "De makkelijke is het licht. Spanje ligt ver naar het westen, maar heeft dezelfde tijd als Berlijn. In de zomer gaat de zon in Madrid om kwart voor tien onder. Om acht uur is het nog dag. Niemand eet als de zon schijnt.",
+      "De moeilijke is de geschiedenis. Voor 1940 had Spanje de tijd van Londen. Franco veranderde die naar de tijd van Berlijn. De oorlog liep af, maar de tijd bleef. Spanjaarden leven sindsdien met een geleende klok.",
+      "Tussen de lunch en het avondeten zitten veel uren. Daarom bestaat de merienda: een koffie en iets zoets, om zes uur. En daarom bestaan de tapas. Het is geen avondeten. Het is wat je eet terwijl je op het avondeten wacht.",
+      "Een Nederlander in Madrid heeft om zeven uur honger. Om negen uur kan hij niet meer. Om tien uur, als het eten eindelijk komt, is hij iemand anders geworden."
+    ],
+    "vragen": [
+      {"q": "¿A qué hora se cena en Madrid?", "opts": ["A las seis", "A las diez", "A las ocho"], "c": 1},
+      {"q": "¿Qué hora tiene España desde 1940?", "opts": ["La de Londres", "La de Berlín", "La de Lisboa"], "c": 1},
+      {"q": "¿Qué es la merienda?", "opts": ["Un café y algo dulce a las seis", "La comida del mediodía", "Una fiesta de verano"], "c": 0},
+      {"q": "¿Qué son las tapas, según el texto?", "opts": ["La cena", "Lo que comes mientras esperas la cena", "El desayuno"], "c": 1}
+    ],
+    "reflectie": "¿A qué hora cenas tú? ¿Podrías esperar hasta las diez?"
+  },
+  "vida-2": {
+    "titel": "La sobremesa",
+    "tekst": [
+      "La comida ha terminado. Los platos están vacíos. El café ya está frío. Y nadie se levanta de la mesa.",
+      "Esto tiene un nombre: la sobremesa. Es el tiempo que pasas en la mesa después de comer. Puede durar veinte minutos. Puede durar dos horas.",
+      "En la sobremesa se habla de todo. Del trabajo, de la familia, de política, del pueblo. Alguien pide otro café. Alguien cuenta la misma historia de siempre. Nadie mira el reloj.",
+      "En un restaurante español, el camarero no trae la cuenta. Tienes que pedirla tú. No es que se haya olvidado. Es que traerla sería decir: ya podéis iros.",
+      "Para un extranjero esto es raro. Ha venido a comer y la comida ya está. ¿Qué hace ahora aquí sentado?",
+      "Pero la comida nunca era el motivo. La comida era la excusa para sentarse juntos. Por eso la mesa no se levanta cuando se acaba el plato.",
+      "Un holandés mira el reloj. Un español mira a la gente."
+    ],
+    "vert": [
+      "De maaltijd is afgelopen. De borden zijn leeg. De koffie is al koud. En niemand staat op van tafel.",
+      "Dit heeft een naam: de sobremesa. Het is de tijd die je na het eten aan tafel doorbrengt. Het kan twintig minuten duren. Het kan twee uur duren.",
+      "Tijdens de sobremesa wordt overal over gepraat. Over het werk, over de familie, over politiek, over het dorp. Iemand bestelt nog een koffie. Iemand vertelt hetzelfde verhaal als altijd. Niemand kijkt op de klok.",
+      "In een Spaans restaurant brengt de ober de rekening niet. Je moet er zelf om vragen. Het is niet dat hij het vergeten is. Het is dat de rekening brengen zou betekenen: jullie mogen nu gaan.",
+      "Voor een buitenlander is dat vreemd. Hij is komen eten en het eten is al op. Wat doet hij hier nu nog zitten?",
+      "Maar het eten was nooit de reden. Het eten was het excuus om samen te gaan zitten. Daarom staat de tafel niet op als het bord leeg is.",
+      "Een Nederlander kijkt op de klok. Een Spanjaard kijkt naar de mensen."
+    ],
+    "vragen": [
+      {"q": "¿Qué es la sobremesa?", "opts": ["Un plato típico", "El tiempo en la mesa después de comer", "Una mesa pequeña"], "c": 1},
+      {"q": "¿Por qué el camarero no trae la cuenta?", "opts": ["Porque se olvida", "Porque sería decir que ya puedes irte", "Porque no hay camareros"], "c": 1},
+      {"q": "¿Cuánto puede durar una sobremesa?", "opts": ["Siempre cinco minutos", "De veinte minutos a dos horas", "Toda la noche"], "c": 1},
+      {"q": "Según el texto, ¿cuál era el motivo de la comida?", "opts": ["Comer bien", "Sentarse juntos", "Pagar poco"], "c": 1}
+    ],
+    "reflectie": "¿Cuánto tiempo te quedas tú en la mesa después de comer?"
+  },
+  "vida-3": {
+    "titel": "Dos apellidos",
+    "tekst": [
+      "García López. Fernández Ruiz. Todos los españoles tienen dos apellidos.",
+      "El primero viene del padre. El segundo viene de la madre. Los dos van siempre juntos, en todos los papeles, toda la vida.",
+      "Y hay algo más importante: una mujer no cambia de apellido cuando se casa. María García sigue siendo María García a los veinte años, a los cuarenta y a los ochenta. Su marido no aparece en su nombre.",
+      "Para un holandés esto es sorprendente. En su país, muchas mujeres toman el apellido del marido. En España nadie lo entendería. ¿Por qué ibas a perder tu nombre?",
+      "Desde hace unos años los padres también pueden elegir el orden. Primero la madre, después el padre, si así lo quieren.",
+      "El sistema tiene una ventaja práctica. Con dos apellidos hay muchas menos confusiones. En un pueblo con cien Garcías, el segundo apellido dice de qué familia eres.",
+      "Y tiene una consecuencia más callada. En España sabes siempre de quién eres hijo, y también de quién eres hija."
+    ],
+    "vert": [
+      "García López. Fernández Ruiz. Alle Spanjaarden hebben twee achternamen.",
+      "De eerste komt van de vader. De tweede komt van de moeder. Die twee gaan altijd samen, op alle papieren, het hele leven.",
+      "En er is iets belangrijkers: een vrouw verandert niet van achternaam als ze trouwt. María García blijft María García op haar twintigste, op haar veertigste en op haar tachtigste. Haar man komt niet in haar naam voor.",
+      "Voor een Nederlander is dat verrassend. In zijn land nemen veel vrouwen de achternaam van hun man aan. In Spanje zou niemand dat begrijpen. Waarom zou je je naam verliezen?",
+      "Sinds een paar jaar mogen ouders ook de volgorde kiezen. Eerst de moeder, dan de vader, als ze dat zo willen.",
+      "Het systeem heeft een praktisch voordeel. Met twee achternamen zijn er veel minder verwarringen. In een dorp met honderd Garcías zegt de tweede achternaam uit welke familie je komt.",
+      "En het heeft een stiller gevolg. In Spanje weet je altijd wiens zoon je bent, en ook wiens dochter."
+    ],
+    "vragen": [
+      {"q": "¿De quién viene el primer apellido?", "opts": ["Del padre", "De la madre", "Del abuelo"], "c": 0},
+      {"q": "¿Qué pasa con el apellido de una mujer cuando se casa?", "opts": ["Toma el del marido", "No cambia", "Lo pierde"], "c": 1},
+      {"q": "¿Qué pueden elegir los padres desde hace unos años?", "opts": ["El orden de los apellidos", "El número de apellidos", "El nombre del pueblo"], "c": 0},
+      {"q": "¿Para qué sirve el segundo apellido en un pueblo?", "opts": ["Para pagar menos", "Para saber de qué familia eres", "Para viajar"], "c": 1}
+    ],
+    "reflectie": "¿Cómo se llama tu madre? ¿Cuál sería tu segundo apellido en España?"
+  },
+  "vida-4": {
+    "titel": "El paseo",
+    "tekst": [
+      "Son las ocho de la tarde. Hace menos calor. Y de pronto la calle se llena de gente.",
+      "No van a ningún sitio. Están dando un paseo.",
+      "Van andando despacio, en parejas o en grupos pequeños. Hay abuelos con bastón. Hay padres con niños. Hay chicos de dieciséis años que caminan detrás, muy serios.",
+      "Todos hacen el mismo camino: hasta el final de la calle principal, y luego otra vez hacia atrás. Se saludan, se paran, hablan cinco minutos y siguen.",
+      "En muchos países la gente sale para hacer algo: comprar, correr, tomar algo. Aquí el paseo es la actividad entera. No hay un objetivo detrás.",
+      "El paseo tiene una función, aunque nadie la diga en voz alta. Es la hora en que el pueblo se ve a sí mismo. Sabes quién ha vuelto, quién está enfermo, quién sale ahora con quién.",
+      "Un extranjero pregunta adónde vais. La respuesta es que no vais a ninguna parte.",
+      "Ese es el plan."
+    ],
+    "vert": [
+      "Het is acht uur 's avonds. Het is minder warm. En opeens loopt de straat vol mensen.",
+      "Ze gaan nergens heen. Ze maken een wandeling.",
+      "Ze lopen langzaam, in paren of in kleine groepjes. Er zijn opa's met een wandelstok. Er zijn ouders met kinderen. Er zijn jongens van zestien die er heel serieus achteraan lopen.",
+      "Iedereen loopt dezelfde route: tot het eind van de hoofdstraat, en dan weer terug. Ze groeten elkaar, blijven staan, praten vijf minuten en lopen door.",
+      "In veel landen gaan mensen naar buiten om iets te doen: winkelen, hardlopen, iets drinken. Hier is de wandeling de hele activiteit. Er zit geen doel achter.",
+      "De wandeling heeft een functie, ook al zegt niemand die hardop. Het is het uur waarop het dorp zichzelf ziet. Je weet wie er terug is, wie er ziek is, wie er nu met wie omgaat.",
+      "Een buitenlander vraagt waar jullie heen gaan. Het antwoord is dat jullie nergens heen gaan.",
+      "Dat is het plan."
+    ],
+    "vragen": [
+      {"q": "¿A qué hora empieza el paseo?", "opts": ["A las ocho de la tarde", "A las dos", "A medianoche"], "c": 0},
+      {"q": "¿Adónde va la gente?", "opts": ["Al mercado", "A ninguna parte", "A la playa"], "c": 1},
+      {"q": "¿Quién sale a pasear?", "opts": ["Solo los jóvenes", "Solo los abuelos", "Gente de todas las edades"], "c": 2},
+      {"q": "¿Qué función tiene el paseo?", "opts": ["Es la hora en que el pueblo se ve a sí mismo", "Sirve para hacer deporte", "Sirve para comprar comida"], "c": 0}
+    ],
+    "reflectie": "¿Sales tú a andar sin ir a ningún sitio? ¿Cuándo fue la última vez?"
+  },
+  "vida-5": {
+    "titel": "La semana de agosto",
+    "tekst": [
+      "Hay pueblos en España donde viven trescientas personas. En agosto, durante una semana, viven dos mil.",
+      "Son las fiestas del pueblo. Siempre la misma semana, siempre desde hace cien años.",
+      "Vuelve todo el mundo. Los que se fueron a Madrid a trabajar. Los que se fueron a Alemania o a Suiza en los años sesenta. Sus hijos, que ya son de la ciudad, y sus nietos, que hablan como los de la ciudad.",
+      "Las casas cerradas se abren. Se limpian las ventanas. En la plaza ponen luces de colores y un escenario pequeño.",
+      "Hay una orquesta que toca hasta las cuatro de la mañana. Hay misa, aunque mucha gente no va. Hay una comida en la calle con mesas larguísimas.",
+      "Y durante siete días el pueblo está entero otra vez.",
+      "El domingo por la tarde se van los coches, uno detrás de otro. El lunes la plaza está vacía y las luces siguen colgadas.",
+      "Trescientas personas se quedan y esperan once meses."
+    ],
+    "vert": [
+      "Er zijn dorpen in Spanje waar driehonderd mensen wonen. In augustus wonen er een week lang tweeduizend.",
+      "Het zijn de dorpsfeesten. Altijd dezelfde week, altijd al honderd jaar lang.",
+      "Iedereen komt terug. Zij die naar Madrid vertrokken om te werken. Zij die in de jaren zestig naar Duitsland of Zwitserland gingen. Hun kinderen, die inmiddels van de stad zijn, en hun kleinkinderen, die praten als stadsmensen.",
+      "De gesloten huizen gaan open. De ramen worden gelapt. Op het plein hangen ze gekleurde lampjes op en zetten ze een klein podium neer.",
+      "Er is een orkest dat tot vier uur 's nachts speelt. Er is een mis, ook al gaan veel mensen niet. Er is een maaltijd op straat aan hele lange tafels.",
+      "En zeven dagen lang is het dorp weer compleet.",
+      "Zondagmiddag rijden de auto's weg, de een na de ander. Maandag is het plein leeg en hangen de lampjes er nog.",
+      "Driehonderd mensen blijven achter en wachten elf maanden."
+    ],
+    "vragen": [
+      {"q": "¿Cuánta gente vive normalmente en el pueblo?", "opts": ["Dos mil", "Trescientas", "Cien"], "c": 1},
+      {"q": "¿Cuándo son las fiestas?", "opts": ["En agosto", "En invierno", "En abril"], "c": 0},
+      {"q": "¿Adónde se fueron muchos en los años sesenta?", "opts": ["A Alemania o a Suiza", "A América", "A África"], "c": 0},
+      {"q": "¿Qué pasa el lunes?", "opts": ["Empieza otra fiesta", "La plaza está vacía", "Llega más gente"], "c": 1}
+    ],
+    "reflectie": "¿Hay una semana del año en la que vuelve toda tu familia?"
+  },
+  "vida-6": {
+    "titel": "El bar de la esquina",
+    "tekst": [
+      "En España hay más bares por persona que en casi cualquier otro país de Europa. En una calle normal puede haber tres.",
+      "Y no son bares de noche. Son otra cosa.",
+      "A las siete de la mañana entra un hombre con ropa de trabajo y pide un café. A las once entran dos señoras después de la compra. A las dos come allí media oficina. A las seis hay niños tomando un refresco con sus abuelos. A las nueve alguien ve el fútbol.",
+      "El mismo sitio, el mismo camarero, todo el día.",
+      "La razón es sencilla y tiene que ver con las casas. Los pisos españoles son pequeños. No hay sitio para recibir a diez personas. El bar es la habitación que falta en tu casa.",
+      "Por eso el camarero sabe cómo te llamas. Por eso te pone lo de siempre sin preguntar. Por eso se puede entrar solo sin sentirse solo.",
+      "No vas al bar a beber. Vas al bar a estar."
+    ],
+    "vert": [
+      "In Spanje zijn er meer bars per persoon dan in bijna elk ander land van Europa. In een gewone straat kunnen er drie zijn.",
+      "En het zijn geen nachtbars. Het is iets anders.",
+      "Om zeven uur 's ochtends komt er een man in werkkleren binnen die een koffie bestelt. Om elf uur komen er twee dames na het boodschappen doen. Om twee uur eet daar het halve kantoor. Om zes uur zitten er kinderen met hun opa's en oma's aan de limonade. Om negen uur kijkt iemand naar het voetbal.",
+      "Dezelfde plek, dezelfde ober, de hele dag.",
+      "De reden is simpel en heeft met de huizen te maken. Spaanse appartementen zijn klein. Er is geen plek om tien mensen te ontvangen. De bar is de kamer die in je huis ontbreekt.",
+      "Daarom weet de ober hoe je heet. Daarom zet hij zonder te vragen je vaste bestelling neer. Daarom kun je alleen naar binnen zonder je alleen te voelen.",
+      "Je gaat niet naar de bar om te drinken. Je gaat naar de bar om te zijn."
+    ],
+    "vragen": [
+      {"q": "¿Cuántos bares puede haber en una calle normal?", "opts": ["Ninguno", "Tres", "Veinte"], "c": 1},
+      {"q": "¿Quién entra en el bar a las siete de la mañana?", "opts": ["Un hombre con ropa de trabajo", "Niños con sus abuelos", "Media oficina"], "c": 0},
+      {"q": "¿Por qué es tan importante el bar?", "opts": ["Porque la comida es barata", "Porque los pisos son pequeños", "Porque hay televisión"], "c": 1},
+      {"q": "Según el texto, ¿para qué vas al bar?", "opts": ["Para beber", "Para estar", "Para trabajar"], "c": 1}
+    ],
+    "reflectie": "¿Tienes tú un sitio así cerca de tu casa? ¿Cómo se llama?"
+  },
+  "vida-7": {
+    "titel": "Tú y usted",
+    "tekst": [
+      "En español hay dos maneras de decir tú. Está el tú y está el usted.",
+      "Usted es la forma de respeto. Se usa con gente mayor, con un médico, en una carta oficial. El verbo cambia: usted tiene, usted puede, usted dice.",
+      "Pero aquí pasa algo interesante. El usted se está yendo.",
+      "Los abuelos de hoy hablaban de usted a sus propios padres. En muchas casas, un hijo no podía tutear a su padre. Era una distancia normal dentro de la familia.",
+      "Ahora casi nadie hace eso. Los estudiantes tutean a sus profesores. En una tienda te hablan de tú sin pensarlo. Un hombre de setenta años puede pedirte que le hables de tú, y se molesta un poco si no lo haces.",
+      "Muchos extranjeros aprenden el usted en clase y luego no lo oyen casi nunca.",
+      "El consejo práctico es fácil. Con alguien mucho mayor, empieza con usted. Si quiere el tú, te lo va a decir enseguida.",
+      "En cincuenta años España ha cambiado de pronombre."
+    ],
+    "vert": [
+      "In het Spaans zijn er twee manieren om jij te zeggen. Er is tú en er is usted.",
+      "Usted is de beleefdheidsvorm. Je gebruikt hem bij oudere mensen, bij een dokter, in een officiële brief. Het werkwoord verandert: usted tiene, usted puede, usted dice.",
+      "Maar hier gebeurt iets interessants. Het usted verdwijnt.",
+      "De opa's en oma's van nu spraken hun eigen ouders met usted aan. In veel huizen kon een zoon zijn vader niet tutoyeren. Het was een normale afstand binnen de familie.",
+      "Nu doet bijna niemand dat meer. Studenten tutoyeren hun docenten. In een winkel spreken ze je zonder erbij na te denken met jij aan. Een man van zeventig kan je vragen om jij te zeggen, en is een beetje beledigd als je het niet doet.",
+      "Veel buitenlanders leren usted in de les en horen het daarna bijna nooit.",
+      "Het praktische advies is makkelijk. Bij iemand die veel ouder is, begin je met usted. Als hij tú wil, zegt hij het meteen.",
+      "In vijftig jaar is Spanje van voornaamwoord veranderd."
+    ],
+    "vragen": [
+      {"q": "¿Qué es usted?", "opts": ["La forma de respeto", "Un nombre", "Un verbo"], "c": 0},
+      {"q": "¿Cómo hablaban los abuelos de hoy a sus padres?", "opts": ["De tú", "De usted", "En inglés"], "c": 1},
+      {"q": "¿Qué hacen ahora los estudiantes con sus profesores?", "opts": ["Los tutean", "Les hablan de usted", "No les hablan"], "c": 0},
+      {"q": "¿Qué consejo da el texto?", "opts": ["Usar siempre usted", "Empezar con usted si alguien es mucho mayor", "No hablar con desconocidos"], "c": 1}
+    ],
+    "reflectie": "¿Existe en tu lengua una diferencia entre tú y usted? ¿La usas?"
+  },
+  "vida-8": {
+    "titel": "Más de una lengua",
+    "tekst": [
+      "El castellano se habla en toda España. Pero en varias regiones hay otra lengua oficial al lado.",
+      "En Cataluña y en Valencia se habla catalán. En Galicia, gallego. En el País Vasco, euskera.",
+      "El catalán y el gallego se parecen bastante al castellano. Si lees un cartel en gallego, entiendes casi todo. El gallego y el portugués son casi hermanos.",
+      "El euskera es otra historia. No se parece a ninguna lengua de Europa. Nadie sabe de dónde viene. Estaba allí antes que el latín, y sigue allí.",
+      "En esas regiones muchos niños estudian en las dos lenguas. La gente cambia de una a otra en la misma conversación, sin avisar.",
+      "Durante los años de Franco, esas lenguas no se podían usar en la escuela ni en los papeles del Estado. Se hablaban en casa y en voz baja.",
+      "Hoy los carteles de la calle están en dos lenguas. Una encima de la otra, en la misma señal.",
+      "Un país, varias maneras de nombrar las cosas."
+    ],
+    "vert": [
+      "Het Castiliaans wordt in heel Spanje gesproken. Maar in verschillende regio's is er daarnaast een tweede officiële taal.",
+      "In Catalonië en in Valencia wordt Catalaans gesproken. In Galicië Galicisch. In Baskenland Baskisch.",
+      "Het Catalaans en het Galicisch lijken behoorlijk op het Castiliaans. Als je een bord in het Galicisch leest, begrijp je bijna alles. Galicisch en Portugees zijn bijna broers.",
+      "Het Baskisch is een ander verhaal. Het lijkt op geen enkele taal van Europa. Niemand weet waar het vandaan komt. Het was er al voor het Latijn, en het is er nog steeds.",
+      "In die regio's leren veel kinderen in beide talen. Mensen wisselen midden in hetzelfde gesprek van de een naar de ander, zonder waarschuwing.",
+      "Tijdens de jaren van Franco mochten die talen niet op school of in de papieren van de staat gebruikt worden. Ze werden thuis gesproken, en zacht.",
+      "Vandaag staan de straatborden in twee talen. De een boven de ander, op hetzelfde bord.",
+      "Eén land, meerdere manieren om de dingen te benoemen."
+    ],
+    "vragen": [
+      {"q": "¿Dónde se habla euskera?", "opts": ["En Galicia", "En el País Vasco", "En Valencia"], "c": 1},
+      {"q": "¿A qué lengua se parece mucho el gallego?", "opts": ["Al portugués", "Al euskera", "Al alemán"], "c": 0},
+      {"q": "¿Qué tiene de especial el euskera?", "opts": ["Es muy nuevo", "No se parece a ninguna lengua de Europa", "Solo lo hablan los niños"], "c": 1},
+      {"q": "¿Qué pasaba con esas lenguas en los años de Franco?", "opts": ["Eran obligatorias", "No se podían usar en la escuela", "Se enseñaban en la universidad"], "c": 1}
+    ],
+    "reflectie": "¿Se habla en tu país más de una lengua? ¿Dónde?"
+  },
+  "vida-9": {
+    "titel": "La siesta que casi nadie duerme",
+    "tekst": [
+      "Todo el mundo cree que los españoles duermen la siesta. Es lo primero que dicen los extranjeros.",
+      "La verdad es más aburrida. Entre semana, casi nadie duerme la siesta. Si trabajas en una oficina en Madrid, no vas a tu casa a dormir. No te daría tiempo.",
+      "Lo que sí existe es el corte del mediodía. Muchos negocios cierran de dos a cinco. La tienda de la esquina baja la persiana y vuelve a abrir por la tarde.",
+      "Ese corte tiene un origen duro. Después de la guerra, mucha gente tenía dos trabajos para poder comer. Terminaban uno a las dos y empezaban el otro a las cuatro. El descanso del mediodía no era descanso: era el viaje de un trabajo al otro.",
+      "El resultado se quedó, aunque el motivo ya no está. Por eso se sale de trabajar a las siete o a las ocho. Por eso se cena a las diez. Por eso el día entero va más tarde.",
+      "La siesta de verdad existe, pero es del domingo. Después de una comida larga, en el sofá, veinte minutos.",
+      "Eso sí lo hace todo el mundo."
+    ],
+    "vert": [
+      "Iedereen denkt dat Spanjaarden een siësta doen. Het is het eerste wat buitenlanders zeggen.",
+      "De waarheid is saaier. Doordeweeks doet bijna niemand een siësta. Als je op een kantoor in Madrid werkt, ga je niet naar huis om te slapen. Daar zou je de tijd niet voor hebben.",
+      "Wat wel bestaat is de onderbreking van de middag. Veel zaken sluiten van twee tot vijf. De winkel op de hoek doet het rolluik omlaag en gaat 's middags weer open.",
+      "Die onderbreking heeft een harde oorsprong. Na de oorlog hadden veel mensen twee banen om te kunnen eten. Ze stopten met de ene om twee uur en begonnen met de andere om vier uur. De middagpauze was geen pauze: het was de reis van de ene baan naar de andere.",
+      "Het gevolg is gebleven, ook al is de reden er niet meer. Daarom ga je om zeven of acht uur van je werk. Daarom eet je om tien uur. Daarom loopt de hele dag later.",
+      "De echte siësta bestaat wel, maar die is van de zondag. Na een lange maaltijd, op de bank, twintig minuten.",
+      "Dat doet wel iedereen."
+    ],
+    "vragen": [
+      {"q": "¿Duermen la siesta los españoles entre semana?", "opts": ["Casi nadie", "Todos", "Solo los niños"], "c": 0},
+      {"q": "¿Qué hacen muchos negocios de dos a cinco?", "opts": ["Cierran", "Abren más", "Bajan los precios"], "c": 0},
+      {"q": "¿Por qué existía el corte del mediodía?", "opts": ["Para dormir", "Para ir de un trabajo a otro", "Para comer en familia"], "c": 1},
+      {"q": "¿Cuándo es la siesta de verdad?", "opts": ["El lunes", "El domingo", "En agosto"], "c": 1}
+    ],
+    "reflectie": "¿Duermes tú alguna vez después de comer? ¿Te sienta bien o mal?"
+  },
+  "vida-10": {
+    "titel": "La abuela",
+    "tekst": [
+      "Es domingo. Son las dos y media. En la mesa hay catorce personas.",
+      "Están los hijos, sus parejas, los nietos, un primo que ha venido de Valencia y una vecina que vive sola. En la cabecera está la abuela, que ha cocinado para todos y que casi no se sienta.",
+      "Esta comida se repite cada domingo. No se avisa y no se pregunta. Simplemente se va.",
+      "Entre semana la abuela también trabaja. Recoge a los niños del colegio a las cinco. Les da la merienda. Los tiene en su casa hasta que los padres salen de trabajar, a las ocho.",
+      "En muchos países ese trabajo lo hace una guardería. Aquí lo hacen las abuelas, y son millones.",
+      "No siempre es fácil. Hay abuelas de setenta y cinco años que están cansadas y no lo dicen. La familia funciona porque alguien no dice que está cansada.",
+      "Al final de la comida, alguien intenta ayudar en la cocina. Ella dice que no hace falta, que se sienten, que todavía hay postre.",
+      "Y la mesa se queda dos horas más."
+    ],
+    "vert": [
+      "Het is zondag. Het is half drie. Aan tafel zitten veertien mensen.",
+      "Er zijn de kinderen, hun partners, de kleinkinderen, een neef die uit Valencia is gekomen en een buurvrouw die alleen woont. Aan het hoofd zit de oma, die voor iedereen gekookt heeft en die bijna niet gaat zitten.",
+      "Deze maaltijd herhaalt zich elke zondag. Er wordt niet afgesproken en niet gevraagd. Je gaat er gewoon heen.",
+      "Doordeweeks werkt de oma ook. Ze haalt de kinderen om vijf uur van school. Ze geeft ze wat te eten. Ze houdt ze bij haar thuis tot de ouders om acht uur van hun werk komen.",
+      "In veel landen doet een kinderopvang dat werk. Hier doen de oma's het, en het zijn er miljoenen.",
+      "Het is niet altijd makkelijk. Er zijn oma's van vijfenzeventig die moe zijn en het niet zeggen. Het gezin draait omdat iemand niet zegt dat ze moe is.",
+      "Aan het eind van de maaltijd probeert iemand te helpen in de keuken. Zij zegt dat het niet hoeft, dat ze moeten gaan zitten, dat er nog toetje is.",
+      "En de tafel blijft nog twee uur zitten."
+    ],
+    "vragen": [
+      {"q": "¿Cuántas personas hay en la mesa?", "opts": ["Catorce", "Cuatro", "Cuarenta"], "c": 0},
+      {"q": "¿Qué hace la abuela entre semana?", "opts": ["Trabaja en una oficina", "Recoge a los niños del colegio", "Viaja a Valencia"], "c": 1},
+      {"q": "¿Quién hace en otros países el trabajo de las abuelas?", "opts": ["Una guardería", "Los vecinos", "Nadie"], "c": 0},
+      {"q": "¿Por qué dice el texto que no siempre es fácil?", "opts": ["Porque la comida es cara", "Porque hay abuelas cansadas que no lo dicen", "Porque la casa es pequeña"], "c": 1}
+    ],
+    "reflectie": "¿Quién sostiene tu familia sin decir que está cansado?"
+  }
+}
