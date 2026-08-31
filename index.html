@@ -820,36 +820,6 @@
   .krabtoggle:hover{border-color:var(--accent); color:var(--accent);}
   .krabtoggle.dicht{border-style:solid; color:var(--accent); border-color:var(--accent);}
   .krabpal{display:flex; flex-wrap:wrap; gap:6px; margin:7px 0 0 22px;}
-  /* de muur (v22.7) */
-  .muurTegel{background:linear-gradient(160deg,#fff 0%, var(--accent-soft) 100%); border:1.5px solid #f0cbb8;
-             border-radius:14px; padding:12px; margin:8px 0;}
-  .muurTegel.ik{border-color:var(--accent);}
-  .muurTegelKop{display:flex; align-items:center; gap:11px;}
-  .muurPop{flex:0 0 auto; width:64px; height:64px;}
-  .muurPop svg{width:100%; height:100%; display:block;}
-  .muurWie{font-size:.72rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#a1522f;}
-  .muurGroot{font-size:1.05rem; font-weight:800; line-height:1.3;}
-  .muurOnder{font-size:.83rem; color:#8a6552; margin-top:7px;}
-  .muurRij{padding:10px 0; border-bottom:1px solid var(--border);}
-  .muurRij:last-of-type{border-bottom:none;}
-  .muurZin{font-size:.94rem;}
-  .muurDetail{font-size:.8rem; color:var(--muted); font-style:italic;}
-  .muurWan{font-size:.72rem; color:var(--muted);}
-  .muurBadge{font-size:.68rem; font-weight:800; padding:1px 7px; border-radius:99px;
-             background:var(--accent-soft); color:#a1522f;}
-  .muurKnoppen{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;}
-  .muurRk{border:1.5px solid var(--border); background:var(--card); border-radius:99px;
-          padding:3px 9px; font-size:1rem; cursor:pointer; line-height:1.35;}
-  .muurRk.muurMeer{font-size:.78rem; font-weight:700; color:var(--muted);}
-  .muurRe{font-size:.84rem; color:var(--green); font-weight:600; margin-top:6px;}
-  .muurDans{display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #f0cbb8;
-            border-radius:14px; padding:5px 13px 5px 6px; margin-top:7px;}
-  .muurDansPop{flex:0 0 auto; width:44px; height:44px;}
-  .muurDansPop svg{width:100%; height:100%; display:block;}
-  .muurDansVan{display:block; font-size:.66rem; font-weight:800; letter-spacing:.05em;
-               text-transform:uppercase; color:var(--muted);}
-  .muurDansEs{display:block; font-size:.9rem; font-weight:800; color:var(--accent);}
-  .muurDansNl{display:block; font-size:.74rem; color:var(--muted); font-style:italic;}
   /* voortgang (v23.0): de kop is een aantal, de legenda geeft elke laag een naam */
   .vgKop{text-align:center; padding:2px 0 0;}
   .vgGroot{font-size:2.4rem; font-weight:800; line-height:1; letter-spacing:-.03em;}
@@ -1604,7 +1574,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.221";
+var APP_VERSIE = "v23.222";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16655,28 +16625,6 @@ function lesFlowWinst(){
      vreemde heeft er vijf): de poort van v23.43 verbergt de tegel wél, maar dit voorstel roept
      speelNaar("corr") rechtstreeks aan. Een tweede deur naar dezelfde gesloten kamer, precies op
      het moment dat iemand besluit of hij doorgaat. */
-  /* v23.156: en de vraag van vandaag staat daar weer vóór.
-
-     Waarom vóór het gesprek met Chispa: allebei zijn ze productie en allebei zijn ze er één per dag,
-     maar hier leest een echt mens mee. Dat is het enige voorstel met een publiek, en het is precies
-     de draad waar Vamos het dunst in zit. Chispa is er morgen ook nog; je groep schrijft vandaag. */
-  try {
-    if(muurGroep() && !dagZinMijn()){
-      var dv = dagVraag();
-      return {icon:"\ud83d\udc65",
-        kop:ct("De vraag van vandaag","Today's question"),
-        waarom:ct("\u201c"+dv.es+"\u201d ("+dv.nl+") Eén zin, en je groep leest mee. Schrijven voor iemand die het echt leest is iets anders dan schrijven voor een toets.",
-                  "\u201c"+dv.es+"\u201d ("+dv.en+") One sentence, and your group reads it. Writing for someone who really reads it is not the same as writing for a test."),
-        knop:ct("Schrijf je zin","Write your sentence"),
-        /* v23.167: hier stond show("perfil"). #dagzinInp staat niet op Profiel maar op Vandaag,
-           in muurHtml(), dus deze knop bracht je naar een scherm zonder invoerveld. Nu naar Vandaag,
-           waar het veld staat en waar het sinds deze versie ook pas verschijnt als je les af is:
-           precies het moment waarop dit voorstel gedaan wordt. */
-        doe:function(){ show("lessen"); setTimeout(function(){
-          var el = document.getElementById("dagzinInp"); if(el) el.focus();
-        }, 300); }};
-    }
-  } catch(e){}
   /* v23.144: het gesprek staat op plek twee, vóór je route.
 
      Waarom vóór: een route is er altijd en heeft tientallen stappen, dus alles wat erachter staat
@@ -21183,352 +21131,37 @@ function thuisKaartWire(wortel){
   if(nee) nee.onclick = function(){ S.thuis = 99; persist(); renderLessons(); };
 }
 
-/* ================= DE MUUR (v22.7) =================
-   Vier ontwerpregels, en ze zijn alle vier een reactie op wat er eerst stond.
+/* ================= WAAR DE MUUR EN DE DAGVRAAG STONDEN (v22.7 - v23.222) =================
 
-   1. Gebeurtenissen, geen aanwezigheid. "Ilona kent nu 100 woorden" is inhoud, "dag 12" is een
-      streak. De groepkaart had een weekklassement met een winnaar; hier staat geen enkel getal dat
-      van twee mensen tegelijk is. Twee mensen op verschillende niveaus vergelijken op hetzelfde
-      getal kan namelijk nooit kloppen.
-   2. Een regel per persoon per dag, de zwaarste die er die dag was. Zonder die regel verdrinken de
-      mijlpalen in dagoogst zodra er meer dan twee maatjes zijn. Hij is expres uit te leggen in één
-      zin, net als de regel achter de navigatiebalk.
-   3. Jij staat er zelf tussen. Dat moest wel toen de meldingsbalk bovenin verdween, en het is beter:
-      je ziet je eigen week in dezelfde lijst en met dezelfde maat als die van je maatjes.
-   4. Wegblijven is onzichtbaar. Er is geen gebeurtenis voor niets doen, en dus ook geen manier om
-      te zien dat iemand een week oversloeg. Schaamte is een slechte motor.
+   Hier stonden twee schermen die het sociale moesten dragen, en ze zijn allebei weg omdat ze niet
+   gebruikt werden. Wat ze probeerden, en wat de volgende poging moet meenemen:
 
-   De reacties lopen over de krabbels-tabel die er al was: PRIMARY KEY (van, naar, dag), dus precies
-   één per persoon per dag. Dat past één op één op een muur die één regel per persoon per dag toont. */
-var muurData = null, muurBezig = false, muurGehaald = 0, muurOpen = "";
-// Namen komen van andere profielen en gaan als HTML het scherm op, dus altijd hierlangs.
-function muurEsc(x){ return String(x == null ? "" : x)
-  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+   DE MUUR (v22.7) had vier regels, en ze zijn alle vier nog goed. 1. Gebeurtenissen, geen
+   aanwezigheid: "Ilona kent nu 100 woorden" is inhoud, "dag 12" is een streak. 2. Eén regel per
+   persoon per dag, de zwaarste die er die dag was, anders verdrinken mijlpalen zodra er meer dan
+   twee maatjes zijn. 3. Jij staat er zelf tussen, in dezelfde lijst en met dezelfde maat. 4.
+   Wegblijven is onzichtbaar: er is geen gebeurtenis voor niets doen, want schaamte is een slechte
+   motor. Nergens stond een getal dat van twee mensen tegelijk was.
 
-function muurGroep(){ return (S.groepen && S.groepen[0]) || null; }
+   DE VRAAG VAN VANDAAG (v23.156) was het enige in de app dat Chispa niet kan: je schrijft voor een
+   echt mens die het gaat lezen. Niet synchroon (drie gebruikers die op verschillende momenten
+   oefenen leveren een leeg chatvenster op, en een leeg venster meldt elke dag dat er niemand is),
+   maar wel echt: één vraag per dag, voor iedereen in de groep dezelfde, en de anderen zie je pas
+   ná je eigen zin.
 
-/* ================= DE VRAAG VAN DE DAG (v23.156) =================
+   WAT ER MIS WAS, EN DAT ZIT NIET IN DIE REGELS. Beide schermen kwamen pas in beeld na "les af"
+   (v23.167). Dat is verdedigd met een meting erbij: "schrijft hij minder vaak een zin dan
+   hiervoor". Het antwoord na twee weken was nul zinnen. Een uitnodiging om te schrijven die je
+   alleen ziet als je die dag al klaar bent, komt aan op het moment dat je weggaat.
 
-   Stefan: "we hadden ook chatten met anderen."
+   Stefan, 31 aug: "de muur was er om het sociale te bevorderen maar dat wordt niet echt gebruikt,
+   dus dat moeten we helemaal opnieuw ontwerpen, en dan kunnen we het nu beter eerst weghalen, maar
+   wel blijven meten op de achtergrond."
 
-   Praten met Chispa staat er sinds v23.144; praten met een echt mens niet. Wat er tussen mensen was
-   is de krabbel: een emoji met een vaste Spaanse zin. Een schouderklopje, geen gesprek.
-
-   Waarom dit geen chatvenster is: drie gebruikers die op verschillende momenten oefenen, leveren een
-   leeg venster op. Dat is het probleem van Palabra Duel, en een leeg venster is erger dan geen,
-   want het meldt elke dag dat er niemand is.
-
-   Dus niet synchroon, wel echt: één vraag per dag, voor iedereen in je groep dezelfde, en je ziet
-   wat de anderen schreven. Wie 's ochtends oefent en wie 's avonds komt, komen elkaar tegen zonder
-   tegelijk online te zijn.
-
-   Dit is het enige in de app wat Chispa niet kan: je schrijft voor een echt mens die het gaat lezen. */
-var DAGVRAGEN = [
-  {es:"\u00bfQu\u00e9 has hecho hoy?",            nl:"Wat heb je vandaag gedaan?",          en:"What did you do today?"},
-  {es:"\u00bfQu\u00e9 comiste ayer?",             nl:"Wat heb je gisteren gegeten?",        en:"What did you eat yesterday?"},
-  {es:"\u00bfC\u00f3mo es tu barrio?",            nl:"Hoe is jouw buurt?",                  en:"What's your neighbourhood like?"},
-  {es:"\u00bfQu\u00e9 haces los domingos?",       nl:"Wat doe je op zondag?",               en:"What do you do on Sundays?"},
-  {es:"\u00bfAd\u00f3nde quieres viajar?",        nl:"Waar wil je naartoe reizen?",         en:"Where do you want to travel?"},
-  {es:"\u00bfQu\u00e9 m\u00fasica te gusta?",         nl:"Naar welke muziek luister je graag?", en:"What music do you like?"},
-  {es:"\u00bfC\u00f3mo empieza tu d\u00eda?",         nl:"Hoe begint jouw dag?",                en:"How does your day start?"},
-  {es:"\u00bfQu\u00e9 vas a hacer este fin de semana?", nl:"Wat ga je dit weekend doen?",   en:"What are you doing this weekend?"},
-  {es:"\u00bfQui\u00e9n es importante para ti?",  nl:"Wie is belangrijk voor je?",          en:"Who is important to you?"},
-  {es:"\u00bfQu\u00e9 te hizo re\u00edr esta semana?", nl:"Waar moest je deze week om lachen?", en:"What made you laugh this week?"}
-];
-var DAGZIN_MAX = 140;
-function dagVraag(datum){
-  return DAGVRAGEN[dagHashVoor(datum || today(), "dagvraag") % DAGVRAGEN.length];
-}
-function dagZinMijn(){
-  var d = S.dagzin;
-  return (d && d.d === today() && d.es) ? d : null;
-}
-function dagZinBij(es){
-  var t = String(es || "").trim().slice(0, DAGZIN_MAX);
-  if(!t) return false;
-  S.dagzin = {d:today(), v:dagVraag().es, es:t};
-  /* Het telt als produceren, net als de zinnen en het gesprek: je hebt zelf iets gemaakt. En het
-     vinkje zorgt dat de app het vandaag niet nog een keer voorstelt. */
-  S.lesFlowSpel = S.lesFlowSpel || {};
-  S.lesFlowSpel.groepszin = today();
-  addXP(4);
-  persist();
-  try { syncUp(); } catch(e){}   // meteen zichtbaar voor je groep, niet pas bij de volgende sync
-  return true;
-}
-/* Wat de anderen schreven. Pas ná jouw eigen zin: anders lees je in plaats van dat je schrijft, en
-   dan is het geen productie meer. Dat is dezelfde reden waarom een toets je het antwoord niet toont
-   voordat je hebt geantwoord. */
-function dagZinAnderen(){
-  var ik = "";
-  try { ik = String(krabbelIkBen() || "").toLowerCase(); } catch(e){}
-  var sp = (muurData && muurData.spelers) || [];
-  return sp.filter(function(x){
-    if(String(x.naam).toLowerCase() === ik) return false;
-    return !!(x.dagzin && x.dagzin.d === today() && x.dagzin.es);
-  }).map(function(x){ return {naam:x.naam, es:x.dagzin.es}; });
-}
-function dagZinHtml(){
-  if(!muurGroep()) return "";
-  var v = dagVraag(), mijn = dagZinMijn();
-  var h = "<div class='card' id='dagzinCard'><span class='kicker'>"+
-      ct("De vraag van vandaag","Today's question")+" \u00b7 "+ct("je groep leest mee","your group reads along")+"</span>"+
-    "<p class='big es' style='margin:4px 0 2px'>"+muurEsc(v.es)+"</p>"+
-    "<p class='muted' style='margin:0 0 8px; font-size:.88rem'>"+muurEsc(ct(v.nl, v.en))+"</p>";
-  if(!mijn){
-    h += "<input type='text' id='dagzinInp' maxlength='"+DAGZIN_MAX+"' autocomplete='off' "+
-           "placeholder='"+ct("Eén zin in het Spaans","One sentence in Spanish")+"'>"+
-      "<div class='row' style='margin-top:8px'><button class='primary' id='btnDagzin'>"+
-        ct("Zet hem erbij","Post it")+"</button></div>"+
-      "<p class='muted' style='margin:6px 0 0; font-size:.85rem'>"+
-        ct("Eén zin, en fout mag. Daarna zie je wat de anderen schreven.",
-           "One sentence, and mistakes are fine. Then you see what the others wrote.")+"</p>";
-    return h + "</div>";
-  }
-  h += "<div class='oogst'><b>"+muurEsc(ct("Jij","You"))+"</b> \u00b7 <span class='es'>"+muurEsc(mijn.es)+"</span></div>";
-  /* v23.168: en wat eraan mankeert, onder je eigen zin. Stefan, 22 aug: "deze is leuk maar hij
-     corrigeert niet mijn fout." Dat klopte: er ging niets langs een check.
-     Het staat er als mededeling en niet als oordeel: geen XP-gevolg, geen fout in S.errors, en het
-     plaatsen wordt er niet door tegengehouden. Zie de kop van de patch voor waarom modeloordelen
-     hier niet in je herhaalwachtrij mogen. */
-  if(mijn.naast){
-    h += "<p class='muted' style='margin:4px 0 8px; font-size:.88rem'>\ud83e\udd16 "+muurEsc(mijn.naast)+"</p>";
-  } else if(mijn.wacht){
-    h += "<p class='muted' style='margin:4px 0 8px; font-size:.88rem'>\ud83e\udd16 "+
-      ct("Even kijken wat er van je zin te zeggen valt...","Let me see what there is to say about your sentence...")+"</p>";
-  }
-  var and = dagZinAnderen();
-  h += and.length
-    ? and.map(function(a){
-        return "<div class='oogst'><b>"+muurEsc(a.naam)+"</b> \u00b7 <span class='es'>"+muurEsc(a.es)+"</span></div>";
-      }).join("")
-    : "<p class='muted' style='margin:8px 0 0; font-size:.88rem'>"+
-        ct("De anderen hebben vandaag nog niets geschreven. Kom er later op terug.",
-           "The others have not written anything yet today. Come back later.")+"</p>";
-  return h + "</div>";
-}
-function dagZinWire(){
-  var b = document.getElementById("btnDagzin"), inp = document.getElementById("dagzinInp");
-  if(!b || !inp) return;
-  function teken(){
-    var el = document.getElementById("dagzinCard");
-    if(!el) return;
-    var n = document.createElement("div");
-    n.innerHTML = dagZinHtml();
-    if(n.firstChild){ el.parentNode.replaceChild(n.firstChild, el); dagZinWire(); }
-  }
-  function zet(){
-    if(!dagZinBij(inp.value)) return;
-    if(S.dagzin) S.dagzin.wacht = true;
-    teken();
-    try { muurGehaald = 0; muurHaal(); } catch(e){}
-    /* v23.168: modus "gesprek" bestaat al en zijn veld `naast` is precies dit: wat er van de
-       laatste zin van de leerling te zeggen valt, in het Nederlands. Eén beurt is genoeg; het
-       antwoord van Chispa (res.es) laten we hier liggen, want deze kaart is voor je groep en niet
-       voor een gesprek. Mislukt de aanroep, dan verdwijnt de wachtregel en staat er verder niets:
-       een correctie die niet komt mag geen foutmelding worden. */
-    try {
-      api("/api/ai/chat", "POST", {modus:"gesprek", niveau:chatNiveau(),
-                                   beurten:[{van:"jij", es:S.dagzin.es}]}).then(function(res){
-        if(!S.dagzin) return;
-        S.dagzin.wacht = false;
-        if(res && res.ok && res.naast) S.dagzin.naast = String(res.naast).slice(0, 400);
-        persist();
-        teken();
-      });
-    } catch(e){ if(S.dagzin){ S.dagzin.wacht = false; teken(); } }
-  }
-  b.onclick = zet;
-  inp.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); zet(); } };
-}
-function muurGisteren(){
-  var d = new Date(Date.now() - 86400000);
-  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-}
-function muurLesTitel(id){
-  var uit = null;
-  ["a2", "beginner"].forEach(function(t){
-    ((TRACKS[t] && TRACKS[t].lessons) || []).forEach(function(l){ if(l.id === id) uit = l; });
-  });
-  return uit;
-}
-
-// Van een mijlpaal-id naar een regel op de muur. Alles wat hier staat komt uit bestaande lijsten.
-function muurMijlpaalZin(id){
-  var m;
-  if((m = /^woorden-(\d+)$/.exec(id)))
-    return {gewicht:3, zin:ct("kent nu " + m[1] + " woorden", "now knows " + m[1] + " words"),
-            detail:ct("Toen hij begon waren het er nul.", "When they started there were none."), balk:null};
-  if((m = /^les-(.+)$/.exec(id))){
-    var l = muurLesTitel(m[1]);
-    return {gewicht:3, zin:ct("heeft les " + (l ? l.num + " · " + l.titel : m[1]) + " af",
-                              "finished lesson " + (l ? l.num + " · " + l.titel : m[1])),
-            detail: l ? (profLang() === "nl" ? l.doel : (l.doelEn || l.doel)) : ""};
-  }
-  if((m = /^baile-(.+)$/.exec(id))){
-    var b = BAILES.filter(function(x){ return x.id === m[1]; })[0];
-    if(!b) return null;
-    return {gewicht:3, zin:ct("leerde " + b.es + " dansen", "learned to dance " + b.es),
-            detail: b.land + " · " + b.zeg};
-  }
-  if((m = /^boek-(.+)$/.exec(id))){
-    var h = BOOK.filter(function(x){ return x.id === m[1]; })[0];
-    if(!h) return null;
-    return {gewicht:3, zin:ct("las hoofdstuk " + h.num + " uit", "finished chapter " + h.num),
-            detail: h.titel};
-  }
-  return null;
-}
-
-/* De selectieregel. Per persoon per dag hoogstens één regel: de zwaarste. Daarna nieuwste eerst,
-   hoogstens tien. Geen populariteit, geen aanbeveling, niets dat leert wat je graag ziet. */
-function muurGebeurtenissen(spelers){
-  var dagen = [today(), muurGisteren()], uit = [];
-  (spelers || []).forEach(function(p){
-    dagen.forEach(function(d){
-      var beste = null;
-      var mp = p.mijlpalen || {};
-      Object.keys(mp).forEach(function(id){
-        if(mp[id] !== d) return;                     // "oud" en andere dagen vallen hier vanzelf af
-        var z = muurMijlpaalZin(id);
-        if(z && (!beste || z.gewicht > beste.gewicht))
-          beste = {wie:p.naam, speler:p, dag:d, soort:"mijl", zin:z.zin, detail:z.detail};
-      });
-      if(!beste){
-        var o = (p.oogst || {})[d];
-        if(o && (o.w || o.z)){
-          var st = [];
-          if(o.w) st.push(o.w + " " + ct(o.w === 1 ? "nieuw woord" : "nieuwe woorden", o.w === 1 ? "new word" : "new words"));
-          if(o.z) st.push(o.z + " " + ct(o.z === 1 ? "zin" : "zinnen", o.z === 1 ? "sentence" : "sentences"));
-          beste = {wie:p.naam, speler:p, dag:d, soort:"dag",
-                   zin:ct("leerde " + st.join(" en "), "learned " + st.join(" and ")), detail:""};
-        }
-      }
-      if(beste) uit.push(beste);
-    });
-  });
-  return uit.sort(function(a, b){
-    if(a.dag !== b.dag) return a.dag < b.dag ? 1 : -1;
-    return (b.soort === "mijl" ? 1 : 0) - (a.soort === "mijl" ? 1 : 0);
-  }).slice(0, 10);
-}
-
-function muurReactiesVoor(ev){
-  var naar = String(ev.wie).toLowerCase();
-  return ((muurData && muurData.krabbels) || []).filter(function(k){
-    return k.naar === naar && k.dag === ev.dag;
-  });
-}
-function muurReactieHtml(k){
-  var van = k.van.charAt(0).toUpperCase() + k.van.slice(1);
-  if(k.sleutel === "baile"){
-    var sp = ((muurData && muurData.spelers) || []).filter(function(x){ return String(x.naam).toLowerCase() === k.van; })[0];
-    var b = BAILES.filter(function(x){ return x.id === ((sp && sp.baile) || "salsa"); })[0] || BAILES[0];
-    return "<div class='muurDans'><div class='muurDansPop " + b.klas + "'>" +
-      petSVGVoor(sp && sp.wear, sp && sp.txp, sp && sp.petKleur) + "</div>" +
-      "<div><span class='muurDansVan'>" + muurEsc(van) + " · " + b.e + " " + muurEsc(b.es) + "</span>" +
-      "<span class='muurDansEs'>" + muurEsc(b.zeg) + "</span>" +
-      "<span class='muurDansNl'>" + muurEsc(profLang() === "nl" ? b.zegnl : (b.zegen || b.zegnl)) + "</span></div></div>";
-  }
-  var kr = KRABBELS.filter(function(x){ return x.k === k.sleutel; })[0];
-  return "<div class='muurRe'>" + (kr ? kr.e + " " + muurEsc(kr.es) : "👏") + " <b>" + muurEsc(van) + "</b></div>";
-}
-
-function muurItemHtml(ev, ik){
-  var eigen = String(ev.wie).toLowerCase() === ik;
-  var naam = eigen ? ct("Jij", "You") : muurEsc(ev.wie);
-  var reacties = muurReactiesVoor(ev).map(muurReactieHtml).join("");
-  var sleutel = ev.wie + "|" + ev.dag;
-  var knoppen = eigen ? "" :
-    "<div class='muurKnoppen'>" +
-      (muurOpen === sleutel
-        ? KRABBELS.concat([{k:"baile", e:"💃", es:ct("dansje", "a dance")}]).map(function(kr){
-            return "<button class='muurRk' data-mk='" + muurEsc(sleutel + "|" + kr.k) + "'>" + kr.e + "</button>";
-          }).join("")
-        : "<button class='muurRk muurMeer' data-mopen='" + muurEsc(sleutel) + "'>" +
-          ct("Reageren", "React") + " …</button>") +
-    "</div>";
-
-  if(ev.soort === "mijl" && ev.dag === today()){
-    var p = ev.speler;
-    return "<div class='muurTegel" + (eigen ? " ik" : "") + "'>" +
-      "<div class='muurTegelKop'><div class='muurPop'>" +
-        petSVGVoor(p.wear, p.txp, p.petKleur) + "</div><div>" +
-        "<div class='muurWie'>" + (eigen ? ct("Jouw mijlpaal", "Your milestone") : muurEsc(ev.wie)) + "</div>" +
-        "<div class='muurGroot'>" + muurEsc(ev.zin) + "</div></div></div>" +
-      (ev.detail ? "<div class='muurOnder'>" + muurEsc(ev.detail) + "</div>" : "") +
-      reacties + knoppen + "</div>";
-  }
-  return "<div class='muurRij'>" +
-    "<div class='muurZin'><b>" + naam + "</b> " + muurEsc(ev.zin) +
-      (ev.soort === "mijl" ? " <span class='muurBadge'>" + ct("mijlpaal", "milestone") + "</span>" : "") + "</div>" +
-    (ev.detail ? "<div class='muurDetail'>" + muurEsc(ev.detail) + "</div>" : "") +
-    "<div class='muurWan'>" + (ev.dag === today() ? ct("vandaag", "today") : ct("gisteren", "yesterday")) + "</div>" +
-    reacties + knoppen + "</div>";
-}
-
-function muurHtml(){
-  var g = muurGroep();
-  if(!g) return "";
-  /* v23.13. Hier stond een kop "De muur 👥". Stefan: "muur is beetje rare naam, ik denk dat we gewoon
-     direct resultaat kunnen laten zien en het geen naam/titel hoeven te geven." Dezelfde ingreep als
-     bij het woordenboek: een kop die vertelt wat je al ziet, is een regel die je moet lezen voordat je
-     bij het antwoord bent. De regels spreken voor zich. */
-  if(!muurData) return "<div class='card' id='muurCard'>" +
-    "<p class='muted' style='margin:0'>" + ct("Even ophalen…", "Loading…") + "</p></div>";
-  var ik = krabbelIkBen();
-  var lijst = muurGebeurtenissen(muurData.spelers);
-  /* De uitleg onderaan ("één regel per persoon per dag") is met de kop meegegaan: die legde een regel
-     uit die je alleen merkt als je hem mist, en tot die tijd is het een zin die niets doet. */
-  return dagZinHtml() +   /* v23.156: de vraag van vandaag staat boven de muur */
-    "<div class='card' id='muurCard'>" +
-    (lijst.length
-      ? lijst.map(function(ev){ return muurItemHtml(ev, ik); }).join("")
-      : "<p class='muted' style='margin:0'>" + ct("Deze week nog niets. Zodra iemand iets leert, staat het hier.",
-                                 "Nothing yet this week. As soon as someone learns something, it shows up here.") + "</p>") +
-    "</div>";
-}
-
-function muurHaal(){
-  var g = muurGroep();
-  if(!g || muurBezig || (Date.now() - muurGehaald) < 60000) return;
-  muurBezig = true;
-  api("/api/groep/" + g.gcode).then(function(res){
-    muurBezig = false;
-    if(res && res.ok){ muurData = res; muurGehaald = Date.now(); muurTeken(); }
-  });
-}
-function muurTeken(){
-  var el = document.getElementById("muurCard");
-  if(!el) return;
-  var nieuw = document.createElement("div");
-  nieuw.innerHTML = muurHtml();
-  if(nieuw.firstChild){ el.parentNode.replaceChild(nieuw.firstChild, el); muurWire(); }
-  try { dagZinWire(); } catch(e){}   // v23.156
-}
-function muurWire(){
-  var el = document.getElementById("muurCard");
-  if(!el) return;
-  el.querySelectorAll("[data-mopen]").forEach(function(b){
-    b.onclick = function(){ muurOpen = b.getAttribute("data-mopen"); muurTeken(); };
-  });
-  el.querySelectorAll("[data-mk]").forEach(function(b){
-    b.onclick = function(){
-      var d = b.getAttribute("data-mk").split("|");   // naam | dag | sleutel
-      var g = muurGroep(), ik = krabbelIkBen();
-      if(!g || !ik) return;
-      muurOpen = "";
-      // meteen tonen, niet wachten op de server: een schouderklopje dat een seconde hangt is geen
-      // schouderklopje meer. Gaat het mis, dan staat het bij de volgende ophaal gewoon niet meer.
-      muurData.krabbels = (muurData.krabbels || []).filter(function(k){
-        return !(k.van === ik && k.naar === d[0].toLowerCase() && k.dag === d[1]);
-      });
-      muurData.krabbels.push({van:ik, naar:d[0].toLowerCase(), sleutel:d[2], dag:d[1]});
-      muurTeken();
-      api("/api/krabbel", "POST", {van:ik, naar:d[0].toLowerCase(), sleutel:d[2], dag:d[1], gcode:g.gcode});
-    };
-  });
-}
+   HET METEN LOOPT DOOR. syncUp() stuurt de hele state naar /api/sync, dus S.mijlpalen, de dagoogst
+   en S.groepen komen er nog elke dag aan. De muur was alleen een lezer (/api/groep/:gcode), en die
+   endpoints staan er nog. Wie dit opnieuw ontwerpt heeft dus de gebeurtenissen van alle dagen
+   ertussen, en hoeft niet vanaf nul te beginnen met tellen. */
 
 function renderLessons(){
   curLesson = null; scopeLesson = null;
@@ -21556,12 +21189,6 @@ function renderLessons(){
     html += samenKaartNu(true);
     // v19.69: het dagbord. Wat is er nieuw, hoe loopt het, waar kan ik nu spelen.
     html += dagNieuwsHtml();
-    /* v22.7: de muur. v23.167: hij staat nu achter je les in plaats van eronder, en dat is de
-       duurste regel van deze versie: schrijft je groep iets terwijl jij je les niet doet, dan zie
-       je het pas morgen. Ik neem die prijs omdat de muur pas iets waard is als je zelf geschreven
-       hebt (dagZinAnderen toont de anderen pas ná je eigen zin), en dat schrijven hoort in je les.
-       Meting als dit fout is: schrijft hij minder vaak een zin dan hiervoor. */
-    html += muurHtml();
     html += dagLijnHtml();
     html += dagSpeelHtml();
   }
@@ -21570,10 +21197,6 @@ function renderLessons(){
   listEl.innerHTML = html;
   dagBordWire(listEl);
   thuisKaartWire(listEl);
-  /* v23.167: alleen als de muur er staat. muurWire() en muurHaal() zijn veilig zonder kaart
-     (beide beginnen met een getElementById-controle), maar muurHaal() doet een netwerkverzoek en
-     dat is voor een scherm zonder muur een vraag om niets. */
-  if(lesAf){ muurWire(); muurHaal(); try { dagZinWire(); } catch(e){} }
   var bsf = document.getElementById("btnStartLesFlow");
   // v20.2: dezelfde knop, twee betekenissen, en de app kiest welke. Nooit allebei tegelijk in beeld.
   if(bsf) bsf.onclick = function(){ if(lesFlowHervatKan() && !dagKlaar()) lesFlowHervat(); else lesFlowStart(); };
@@ -29638,7 +29261,7 @@ function renderGroepen(){
         var kan = [];
         if(sp.woorden !== undefined) kan.push("<b>"+sp.woorden+"</b> "+(profLang()==="nl"?"woorden":"words"));
         if(sp.lessen) kan.push(sp.lessen+" "+(profLang()==="nl"?(sp.lessen===1?"les":"lessen"):(sp.lessen===1?"lesson":"lessons")));
-        return "<div class='duelrow'><span><b>"+muurEsc(sp.naam)+"</b> <span class='muted'>· "+lvl+"</span></span>"+
+        return "<div class='duelrow'><span><b>"+veiligHtml(sp.naam)+"</b> <span class='muted'>· "+lvl+"</span></span>"+
           "<span class='muted'>"+(kan.join(" · ") || "&nbsp;")+"</span></div>";
       }).join("");
     });

@@ -37,10 +37,15 @@
 //   3. DE FOUT KRIJGT EEN IDENTITEIT. Niet "zin s142 ging fout" maar "waar 'es' hoorde stond
 //      'está'". Zonder dat is "maak ik deze fout vaker" onbeantwoordbaar, en dan is de meting die
 //      moet uitwijzen of deze hele laag iets doet niet te maken.
-//   4. HET CONTROLEGEVAL: DE CORRECTIE OP DE VRAAG VAN DE DAG BLIJFT BUITEN JE DOSSIER. Hij komt in
-//      beeld, en hij verandert je XP niet en zet niets in S.errors. Dit is de regel die het
-//      precisieprobleem hierboven afvangt, en het is precies het soort regel dat later per ongeluk
-//      wordt omgedraaid omdat "die fouten zijn toch nuttig".
+//   4. HET CONTROLEGEVAL: EEN MODELOORDEEL BLIJFT BUITEN JE DOSSIER. Het komt in beeld, en het
+//      zet niets in S.errors. Dit is de regel die het precisieprobleem hierboven afvangt, en het
+//      is precies het soort regel dat later per ongeluk wordt omgedraaid omdat "die fouten zijn
+//      toch nuttig".
+//
+//      v23.222: dit werd gemeten op de vraag van de dag, en die bestaat niet meer. Het gesprek met
+//      Chispa doet hetzelfde: chatStuur() zet res.naast onder jouw beurt. Dat is nu de plek waar
+//      een model iets over je Spaans zegt, dus daar hoort dit controlegeval. En het is de betere
+//      plek, want dit blok zit in je dagles en de vraag van de dag stond ernaast.
 const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
@@ -153,15 +158,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'en beide kanten van dat paar zijn ingevuld');
   ok(!!zin.paren && zin.paren.length <= 4, 'hoogstens vier paren, want dit staat in localStorage');
 
-  // ---- 4. de vraag van de dag ----
+  // ---- 4. het gesprek met Chispa ----
   const dag = await page.evaluate(async () => {
     const uit = {};
     S.lang = 'nl';
-    S.groepen = [{ gcode: 'PROEF1', naam: 'pw' }];
-    muurData = { ok: true, spelers: [] };
-    muurGehaald = Date.now();
-    S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;   // v23.167: de muur staat achter je les
-    S.dagzin = null;
+    S.chat = null;
 
     /* De aanroep wordt onderschept, want deze suite gaat over wat de app met het antwoord doet en
        niet over of het model bereikbaar is. Het antwoord is met opzet een correctie die ergens op
@@ -176,38 +177,38 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       return Promise.resolve({ ok: true });
     };
 
-    show('lessen', true); renderLessons();
-    const inp = document.getElementById('dagzinInp');
+    show('chat', true);
+    try { renderChat(); } catch (e) { uit.tekenFout = e.message; }
+    const inp = document.getElementById('chatInvoer');
     uit.veld = !!inp;
     const xpVoor = S.txp || 0;
     const foutenVoor = Object.keys(S.errors).length;
     if (inp) {
       inp.value = 'he reíando qué una video';
-      document.getElementById('btnDagzin').click();
-      uit.direct = document.getElementById('dagzinCard').textContent.replace(/\s+/g, ' ');
+      document.getElementById('chatStuur').click();
+      uit.direct = document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ');
       await new Promise(function (r) { setTimeout(r, 250); });
-      uit.na = document.getElementById('dagzinCard').textContent.replace(/\s+/g, ' ');
+      uit.na = document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ');
     }
     uit.geroepen = geroepen;
     uit.xpVerschil = (S.txp || 0) - xpVoor;
     uit.foutenErbij = Object.keys(S.errors).length - foutenVoor;
-    uit.bewaard = !!(S.dagzin && S.dagzin.naast);
+    uit.bewaard = (chatStand().beurten || []).some(function (b) { return b.van === 'jij' && b.naast; });
     window.api = echt;
     return uit;
   });
 
-  console.log('\n-- 4. de vraag van de dag krijgt een antwoord --');
+  console.log('\n-- 4. je zin in het gesprek krijgt een oordeel --');
+  ok(!dag.tekenFout, 'het gespreksscherm tekent' + (dag.tekenFout ? ': ' + dag.tekenFout : ''));
   ok(dag.veld, 'het invoerveld staat er');
   ok(!!dag.geroepen && dag.geroepen.modus === 'gesprek', 'je zin gaat langs de check');
-  ok(!!dag.geroepen && Array.isArray(dag.geroepen.beurten) && dag.geroepen.beurten.length === 1,
-    'met precies jouw ene zin erin');
-  ok(/Even kijken/.test(dag.direct || ''), 'meteen na het plaatsen staat er dat hij ernaar kijkt');
-  ok(/moet "me hizo reír" zijn/.test(dag.na || ''), 'en daarna staat de correctie onder je eigen zin');
-  ok(dag.bewaard, 'hij wordt bewaard, dus een hertekening gooit hem niet weg');
+  ok(/Chispa denkt na/.test(dag.direct || ''), 'meteen na het versturen staat er dat ze ernaar kijkt');
+  ok(/moet "me hizo reír" zijn/.test(dag.na || ''), 'en daarna staat het oordeel onder je eigen zin');
+  ok(dag.bewaard, 'het wordt bewaard, dus een hertekening gooit het niet weg');
 
-  console.log('\n   het controlegeval: en verder verandert er niets');
-  ok(dag.xpVerschil === 4, 'de XP is die van het plaatsen en niet meer of minder (' + dag.xpVerschil + ')');
+  console.log('\n   het controlegeval: en verder verandert er niets aan je dossier');
   ok(dag.foutenErbij === 0, 'er komt niets in je foutenlogboek (' + dag.foutenErbij + ' erbij)');
+  ok(dag.xpVerschil === 3, 'de XP is die van het versturen en niet meer of minder (' + dag.xpVerschil + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 

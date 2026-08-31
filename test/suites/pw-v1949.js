@@ -168,44 +168,25 @@ const { chromium } = require('playwright');
 
   /* ---------------- verzoek 6: krabbels, alleen in het Spaans ----------------
      v22.9: dit werd getest op het familie-klassement, en dat scherm is opgeheven (geen competitie).
-     De wens erachter staat nog fier overeind en is verhuisd naar de muur: je kunt een schouderklopje
-     achterlaten, en je kunt daarbij niets anders dan Spaans. Dus wordt hij nu daar gecontroleerd. */
+     De wens erachter verhuisde naar de muur: je kunt een schouderklopje achterlaten, en je kunt
+     daarbij niets anders dan Spaans.
+
+     v23.222: de muur is ook opgeheven, en daarmee de laatste plek waar je een krabbel kon
+     versturen. Wat er van dit verzoek overblijft is het palet zelf, dat nog gelezen wordt om
+     binnengekomen krabbels op je dagbord te tonen. Dat is minder dan er stond, en het staat hier
+     expres zo: de eis "als je iemand iets stuurt, dan in het Spaans" geldt nog, er is alleen
+     tijdelijk geen scherm dat hem uitvoert. Wie het sociale opnieuw ontwerpt, begint hier. */
   const palet = await page.evaluate(() => {
     const uit = KRABBELS.map((k) => k.es);
-    return { aantal: uit.length, teksten: uit };
+    return { aantal: uit.length, teksten: uit, verstuur: typeof krabbelStuur, muur: typeof muurHtml };
   });
   ok(palet.aantal >= 8, 'er is genoeg keuze om iets persoonlijks te sturen (' + palet.aantal + ' krabbels)');
   ok(palet.teksten.some((t) => /plátano/i.test(t)), 'de banaan die Stefan vroeg zit erbij, als ¡Un plátano para ti!');
   ok(palet.teksten.some((t) => /Choca esos cinco/i.test(t)), 'de high-five zit erbij, als ¡Choca esos cinco!');
   const nlWoorden = /\b(je|een|voor|goed|hoi|gaan|hallo|knuffel)\b/i;
   ok(!palet.teksten.some((t) => nlWoorden.test(t)), 'geen enkele krabbel bevat Nederlands: alleen in het Spaans');
-
-  // De muur bouwt de reactieknoppen uit datzelfde palet, en er is nergens een vrij tekstveld.
-  const muur = await page.evaluate(() => {
-    const vandaag = today();
-    S.groepen = [{ gcode: 'gtest', naam: 'Proef' }];
-    muurData = { ok: true, krabbels: [], spelers: [
-      { naam: 'Elise', niveau: 'a2', txp: 900, wear: {}, baile: 'salsa', mijlpalen: {},
-        oogst: { [vandaag]: { w: 4, z: 2 } } }
-    ] };
-    muurOpen = 'Elise|' + vandaag;
-    const el = document.createElement('div');
-    el.innerHTML = muurHtml();
-    /* v23.156: er staat sinds die versie een veld op dit scherm, voor de vraag van de dag. Dat is
-       iets anders dan waar v19.49 over ging: dat verbood vrije tekst als REACTIE op iemands regel
-       ("een krabbel achterlaten, maar alleen in het Spaans"). De vraag van de dag is geen reactie
-       op een persoon maar een antwoord op een Spaanse vraag, en het veld zegt dat ook. Wat hier
-       bewaakt blijft is de reactie zelf: die gaat nog steeds via het vaste palet. */
-    const muurKaart = el.querySelector('#muurCard') || el;
-    return {
-      knoppen: el.querySelectorAll('[data-mk]').length,
-      velden: muurKaart.querySelectorAll('input, textarea').length,
-      dagzinVeld: !!el.querySelector('#dagzinInp')
-    };
-  });
-  ok(muur.knoppen >= 8, 'de muur zet dat palet als knoppen neer (' + muur.knoppen + ')');
-  ok(muur.velden === 0, 'reageren op iemands regel kan alleen met het vaste palet, niet met vrije tekst');
-  ok(muur.dagzinVeld, 'het enige tekstveld hier is de vraag van de dag (v23.156), en dat is geen reactie');
+  ok(palet.muur === 'undefined' && palet.verstuur === 'undefined',
+    'en er is op dit moment geen scherm dat er een verstuurt, dus ook geen vrij tekstveld');
 
   const echte = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED/.test(e));
   ok(echte.length === 0, 'geen JS-fouten in eigen app-code (' + echte.length + ' gevonden, ' + (errors.length - echte.length) + ' netwerkruis genegeerd)');

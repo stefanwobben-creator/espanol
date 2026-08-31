@@ -8,7 +8,8 @@
 //
 // Gemeten wat er stond: renderLessons() tekende zeven kaarten onder elkaar en de dagles was de
 // eerste van zeven. Je uitnodiging voor een maatje, het nieuws van vandaag, de vraag van vandaag,
-// de muur van je groep, je veertiendaagse strook, drie speltegels, en de installatiekaart. Dat is
+// de muur van je groep (die twee zijn er sinds v23.222 niet meer), je veertiendaagse strook, drie
+// speltegels, en de installatiekaart. Dat is
 // geen dagscherm maar een menu, en van de zeven kaarten waren er vijf leuker dan beginnen.
 //
 // Sinds v23.167 heeft de dag een voorkant en een achterkant: vóór je les staat er alleen je les,
@@ -17,20 +18,24 @@
 // WAT DEZE SUITE BEWAAKT
 //
 //   1. VÓÓR JE LES STAAT ER ÉÉN DING. Niet "minder dingen" maar precies dit: de leskaart en de
-//      installatiekaart, en geen muur, geen spellen, geen strook, geen nieuws. Dit is de hele
+//      installatiekaart, en geen spellen, geen strook, geen nieuws. Dit is de hele
 //      beslissing, dus dit is wat rood hoort te worden als iemand er later een kaart bij zet.
 //   2. EN HET IS ER NOG. Weghalen was niet de bedoeling; achter de les zetten wel. Zodra de les af
 //      is hoort alles terug te zijn, en dat wordt hier geteld en niet aangenomen.
-//   3. DE VRAAG VAN VANDAAG LANDT WAAR HET INVOERVELD STAAT. Het controlegeval, en het is de bug
-//      die deze verbouwing zichtbaar maakte: het voorstel na de les deed show("perfil") terwijl
-//      #dagzinInp op Vandaag staat. Die knop bracht je naar een scherm zonder invoerveld, en dat
-//      kon niemand zien omdat niets de route naliep. Hier wordt hij nagelopen.
+//   3. HET VOORSTEL NA JE LES LANDT ERGENS. Het controlegeval, en het is de bug die deze
+//      verbouwing zichtbaar maakte: het voorstel deed show("perfil") terwijl het veld waar het
+//      naar wees op Vandaag stond. Een knop die je naar een scherm brengt zonder het ding dat hij
+//      belooft, ziet niemand, want niets loopt de route na. Hier wordt hij nagelopen.
+//
+//      v23.222: die knop was toen "de vraag van vandaag", en die bestaat niet meer. De regel
+//      erachter geldt nog voor elk voorstel dat lesFlowWinst() geeft, dus die wordt nu getest op
+//      het voorstel dat er die dag ís, in plaats van op één met naam.
 //
 // WAT DEZE SUITE BEWUST NIET DOET
 //
-// Eisen dat de muur en de spellen onbereikbaar zijn vóór je les. Ze zijn het niet, en dat hoort:
-// Spelen staat in de balk en de omweg mag bestaan. Wat niet mag is dat de omweg de eerste optie is,
-// en dat is precies wat hier gemeten wordt.
+// Eisen dat de spellen onbereikbaar zijn vóór je les. Ze zijn het niet, en dat hoort: Spelen staat
+// in de balk en de omweg mag bestaan. Wat niet mag is dat de omweg de eerste optie is, en dat is
+// precies wat hier gemeten wordt.
 const { chromium } = require('playwright');
 
 const U = 'http://localhost:8321/espanol-stefan.html';
@@ -61,15 +66,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const uit = {};
     S.lang = 'nl';
 
-    /* Een groep, anders bestaat de muur sowieso niet en zou punt 1 groen staan om de verkeerde
-       reden: "de muur staat er niet" is geen meting als er nooit een muur is. muurGroep() leest
-       S.groepen[0]; dit is precies wat samenMee() erin zet. */
+    /* Een groep, want die hoort bij het geval dat hier gemeten wordt: iemand die met anderen
+       leert. Sinds v23.222 tekent dat niets extra's op dit scherm, en dat is precies wat punt 1
+       en 2 nu ook laten zien. */
     S.groepen = [{ gcode: 'PROEF1', naam: 'pw' }];
-    /* En de muurdata er meteen bij. Zonder muurData tekent muurHtml() alleen "Even ophalen…" en
-       laat het de vraag van vandaag weg; die haalt hij normaal van de server, en die is er hier
-       niet. Zonder deze regel meet punt 2 dus de netwerkverbinding en niet de beslissing. */
-    muurData = { ok: true, spelers: [] };
-    muurGehaald = Date.now();
 
     function foto() {
       const el = document.getElementById('lessonList');
@@ -77,8 +77,6 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       return {
         kaarten: el.querySelectorAll('.card').length,
         les: !!document.getElementById('btnStartLesFlow') || !!document.getElementById('btnLesOpnieuw') || !!document.getElementById('btnDagToch'),
-        muur: !!document.getElementById('muurCard'),
-        dagzin: !!document.getElementById('dagzinInp'),
         spellen: el.querySelectorAll('[data-speel]').length,
         lijn: !!document.getElementById('btnLijnMeer'),
         nieuws: el.querySelectorAll('[data-nwgo]').length,
@@ -96,15 +94,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     renderLessons();
     uit.na = foto();
 
-    // ---- 3. het controlegeval: waar landt "de vraag van vandaag" ----
+    // ---- 3. het controlegeval: het voorstel na je les landt op één scherm ----
     /* Niet nagerekend maar nagelopen: het voorstel wordt opgehaald zoals de app hem na de les
-       toont, de knop wordt gedrukt, en daarna kijken we of het invoerveld waar hij naartoe wijst er
-       ook echt staat. Dat is de enige vorm die deze bug had kunnen vangen. */
-    S.dagzin = null;
+       toont, de knop wordt gedrukt, en daarna kijken we waar je terechtkomt. Dat is de enige vorm
+       die de bug van v23.167 had kunnen vangen (een knop naar een scherm zonder het ding dat hij
+       belooft), en hij werkt voor elk voorstel, niet alleen voor die ene met naam. */
     let v = null;
     try { v = lesFlowWinst(); } catch (e) { uit.winstFout = e.message; }
     uit.voorstelKop = v ? v.kop : null;
-    if (v && /vraag van vandaag/i.test(v.kop || '')) {
+    if (v && typeof v.doe === 'function') {
       show('perfil', true);                 // eerst ergens anders heen, zodat de sprong iets doet
       try { v.doe(); } catch (e) { uit.doeFout = e.message; }
       uit.naSprong = {
@@ -116,8 +114,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
               return el && !el.classList.contains('hidden');
             });
           return uit.length === 1 ? uit[0] : uit.join('+') || null;
-        })(),
-        veld: !!document.getElementById('dagzinInp')
+        })()
       };
     }
     return uit;
@@ -126,8 +123,6 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 1. vóór je les staat er één ding --');
   console.log('   ' + r.voor.kaarten + ' kaarten · "' + r.voor.tekst.slice(0, 90) + '"');
   ok(r.voor.les, 'je les staat er');
-  ok(!r.voor.muur, 'de muur van je groep staat er niet');
-  ok(!r.voor.dagzin, 'de vraag van vandaag staat er niet');
   ok(r.voor.spellen === 0, 'er staan geen speltegels (' + r.voor.spellen + ')');
   ok(!r.voor.lijn, 'je veertiendaagse strook staat er niet');
   ok(r.voor.nieuws === 0, 'en er staat geen nieuws dat je ergens anders heen stuurt (' + r.voor.nieuws + ')');
@@ -135,19 +130,17 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 2. en na je les is alles er weer --');
   console.log('   ' + r.na.kaarten + ' kaarten');
   ok(r.na.kaarten > r.voor.kaarten, 'er komt echt iets bij (' + r.voor.kaarten + ' → ' + r.na.kaarten + ')');
-  ok(r.na.muur, 'de muur is terug');
-  ok(r.na.dagzin, 'de vraag van vandaag is terug');
   ok(r.na.spellen > 0, 'de speltegels zijn terug (' + r.na.spellen + ')');
   ok(r.na.lijn, 'je strook is terug');
 
-  console.log('\n-- 3. het controlegeval: de vraag van vandaag landt op het invoerveld --');
+  console.log('\n-- 3. het controlegeval: het voorstel na je les landt op één scherm --');
   console.log('   voorstel: ' + (r.voorstelKop || 'geen'));
+  ok(!!r.voorstelKop, 'er is na je les een voorstel' + (r.winstFout ? ' (' + r.winstFout + ')' : ''));
   if (r.naSprong) {
-    ok(r.naSprong.scherm === 'lessen', 'de knop brengt je naar Vandaag (' + r.naSprong.scherm + ')');
-    ok(r.naSprong.veld === true, 'en daar staat het invoerveld waar hij op mikt');
+    ok(!!r.naSprong.scherm && r.naSprong.scherm.indexOf('+') === -1,
+      'de knop brengt je naar precies één scherm (' + r.naSprong.scherm + ')');
   } else {
-    ok(false, 'het voorstel "de vraag van vandaag" kwam niet naar boven, dus de sprong is niet getest'
-      + (r.winstFout ? ' (' + r.winstFout + ')' : ''));
+    ok(false, 'het voorstel had geen knop, dus de sprong is niet getest');
   }
 
   ok(!r.doeFout, 'de knop klapt niet' + (r.doeFout ? ': ' + r.doeFout : ''));
