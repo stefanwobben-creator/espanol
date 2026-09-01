@@ -182,8 +182,18 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.fout.met = vormRijVandaag();
     uit.fout.wat = (dagPlan().blokken.filter(function (b) { return b.stap === 'vormen'; })[0] || {}).wat;
     /* Het controlegeval: is het indefinido af, dan hoort hij naar de volgende rij mét fouten te
-       gaan en niet terug naar boven. Een lijst die van boven af loopt zou hier presente zeggen. */
-    S.brok['les.indefinido'] = { stapMax: LES_STAPPEN.length - 1 };
+       gaan en niet terug naar boven. Een lijst die van boven af loopt zou hier presente zeggen.
+
+       v23.227: "het indefinido" is sinds die versie niet één rij meer maar zeven (de tijd plus zes
+       patroonrijen), en die dragen allemaal t === 'indefinido'. Alleen de tijdrij afvinken laat de
+       patroonrijen staan, en die winnen dan terecht met dezelfde vijftien fouten. Dus worden ze nu
+       allemaal afgevinkt, en dat is meteen scherper: de vraag is of hij naar de volgende TIJD gaat
+       als er in deze niets meer te doen is. */
+    lesRijIds().forEach(function (id) {
+      var r = null;
+      try { r = lesRij(id); } catch (e) { r = null; }
+      if (r && r.t === 'indefinido') S.brok[lesId(id)] = { stapMax: LES_STAPPEN.length - 1 };
+    });
     dagPlanVerval();
     uit.fout.naAf = vormRijVandaag();
     S.errors = {}; S.brok = {};

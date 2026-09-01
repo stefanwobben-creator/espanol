@@ -58,8 +58,13 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   // ---- 1. de rekensom ----
   const som = await page.evaluate(() => {
+    /* v23.227: alleen de rijen van het presente. Sinds die versie heeft het indefinido zijn eigen
+       zes rijen, en deze rekensom gaat over de 22 onregelmatige VAN HET PRESENTE. Zonder deze
+       grens telt hij leer mee als "regelmatig werkwoord in een rij", terwijl leer regelmatig is in
+       het presente en onregelmatig in het indefinido. */
     const rijen = {};
-    CONJ_PATRONEN.forEach((p) => { rijen[p.id] = conjPatroonPool(p.id).map((v) => v.inf); });
+    CONJ_PATRONEN.filter((p) => conjPatroonTijd(p) === 'presente')
+      .forEach((p) => { rijen[p.id] = conjPatroonPool(p.id).map((v) => v.inf); });
     const reg = VERBOS.filter((v) => conjPatroon(v).regelmatig).map((v) => v.inf);
     const onreg = VERBOS.filter((v) => !conjPatroon(v).regelmatig).map((v) => v.inf);
     const gedekt = {};
@@ -77,7 +82,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(som.reg + som.onreg === som.n,
     'alle ' + som.n + ' werkwoorden zijn ingedeeld (' + som.reg + ' regelmatig, ' + som.onreg + ' niet)');
   ok(som.onreg === 22, 'tweeëntwintig onregelmatige in het presente (nu: ' + som.onreg + ')');
-  ok(Object.keys(som.rijen).length === 6, 'zes rijen (nu: ' + Object.keys(som.rijen).length + ')');
+  ok(Object.keys(som.rijen).length === 6, 'zes presente-rijen (nu: ' + Object.keys(som.rijen).length + ')');
   ok(som.ongedekt.length === 0,
     'DE REGEL: elke onregelmatige zit in minstens één rij (buiten de boot: ' + (som.ongedekt.join(', ') || 'geen') + ')');
   ok(som.teVeel.length === 0,
@@ -101,7 +106,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       nep: conjPatroonPool('schoen.ie').map((v) => v.inf).indexOf('merlar') !== -1,
       nepPatroon: conjPatroon(nep),
       netjes: conjPatroon(netjes).regelmatig,
-      inRij: CONJ_PATRONEN.filter((p) => conjPatroonPool(p.id).some((v) => v.inf === 'zomper')).length
+      inRij: CONJ_PATRONEN.filter((p) => conjPatroonTijd(p) === 'presente')
+               .filter((p) => conjPatroonPool(p.id).some((v) => v.inf === 'zomper')).length
     };
     VERBOS.splice(VERBOS.length - 2, 2);
     return uit;
@@ -162,13 +168,20 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   // v23.127: een mengrij is ook geen tijd, maar hij put uit alle zes en heeft dus zijn eigen
   // meting verderop. Deze blokken gaan over de zes patroonrijen.
-  const patronen = uitslag.filter((u) => u.tijd === false && !u.mix);
+  const patronen = uitslag.filter((u) => u.tijd === false && !u.mix && u.t === 'presente');
   ok(uitslag.every((u) => u.gestart), 'elke rij start (' + uitslag.filter((u) => !u.gestart).map((u) => u.id).join(', ') + ')');
   ok(uitslag.every((u) => u.klaar),
     'DE REGEL: elke rij loopt alle ' + (await page.evaluate(() => LES_STAPPEN.length)) + ' stappen uit (mis: ' +
     (uitslag.filter((u) => !u.klaar).map((u) => u.id).join(', ') || 'geen') + ')');
-  ok(patronen.length === 6, 'zes daarvan zijn een patroon (nu: ' + patronen.length + ')');
-  ok(patronen.every((u) => u.t === 'presente'), 'CONTROLE: een patroonles staat altijd in het presente');
+  ok(patronen.length === 6, 'zes daarvan zijn een presente-patroon (nu: ' + patronen.length + ')');
+  /* v23.227: hier stond "een patroonles staat altijd in het presente". Dat was waar zolang er geen
+     andere tijd rijen had, en het was precies de aanname die het bouwen ervan blokkeerde. Wat er nu
+     staat is de regel die overblijft: een patroonrij staat in een tijd die ook echt open is, en
+     nooit in "mix". */
+  const indefRijen = uitslag.filter((u) => u.tijd === false && !u.mix && u.t !== 'presente');
+  ok(indefRijen.length > 0, 'en er zijn ook patroonrijen in een andere tijd (' + indefRijen.length + ')');
+  ok(indefRijen.every((u) => u.t === 'indefinido'),
+    'die allemaal in het indefinido staan (' + indefRijen.map((u) => u.t).join(', ') + ')');
 
   console.log('\n-- de voortgang staat onder de rij --');
   uitslag.forEach((u) => {
@@ -274,9 +287,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   // tener stond vooraan in schoen.ie en heeft óók een yo op -go, dus deed een les over e → ie zijn
   // voorbeeld met "tengo". Dat is het tegenvoorbeeld. Het model mag in maar één rij staan.
   const model = await page.evaluate(() => CONJ_PATRONEN.map((p) => {
-    const v = conjPatroonModel(p.id);
-    return { id: p.id, inf: v ? v.inf : null, rijen: v ? conjPatroonAantal(v) : 0,
-             kanEnkel: conjPatroonPool(p.id).some((w) => conjPatroonAantal(w) === 1) };
+    const v = conjPatroonModel(p.id), t = conjPatroonTijd(p);
+    // v23.227: per tijd geteld, want "in hoeveel rijen sta je" is een vraag binnen één tijd
+    return { id: p.id, inf: v ? v.inf : null, rijen: v ? conjPatroonAantal(v, t) : 0,
+             kanEnkel: conjPatroonPool(p.id).some((w) => conjPatroonAantal(w, t) === 1) };
   }));
   console.log('\n-- het modelwerkwoord --');
   model.forEach((m) => ok(m.rijen === 1 || !m.kanEnkel,
