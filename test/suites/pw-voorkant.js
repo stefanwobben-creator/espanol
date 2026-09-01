@@ -78,7 +78,6 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
         kaarten: el.querySelectorAll('.card').length,
         les: !!document.getElementById('btnStartLesFlow') || !!document.getElementById('btnLesOpnieuw') || !!document.getElementById('btnDagToch'),
         spellen: el.querySelectorAll('[data-speel]').length,
-        lijn: !!document.getElementById('btnLijnMeer'),
         nieuws: el.querySelectorAll('[data-nwgo]').length,
         tekst: t.slice(0, 160)
       };
@@ -124,14 +123,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('   ' + r.voor.kaarten + ' kaarten · "' + r.voor.tekst.slice(0, 90) + '"');
   ok(r.voor.les, 'je les staat er');
   ok(r.voor.spellen === 0, 'er staan geen speltegels (' + r.voor.spellen + ')');
-  ok(!r.voor.lijn, 'je veertiendaagse strook staat er niet');
   ok(r.voor.nieuws === 0, 'en er staat geen nieuws dat je ergens anders heen stuurt (' + r.voor.nieuws + ')');
 
   console.log('\n-- 2. en na je les is alles er weer --');
   console.log('   ' + r.na.kaarten + ' kaarten');
   ok(r.na.kaarten > r.voor.kaarten, 'er komt echt iets bij (' + r.voor.kaarten + ' → ' + r.na.kaarten + ')');
   ok(r.na.spellen > 0, 'de speltegels zijn terug (' + r.na.spellen + ')');
-  ok(r.na.lijn, 'je strook is terug');
 
   console.log('\n-- 3. het controlegeval: het voorstel na je les landt op één scherm --');
   console.log('   voorstel: ' + (r.voorstelKop || 'geen'));

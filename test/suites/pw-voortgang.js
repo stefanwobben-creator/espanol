@@ -74,19 +74,25 @@ const U = 'http://localhost:8321/espanol-stefan.html';
     try { persist(); } catch (e) {}
   });
 
-  console.log('\n-- het scherm bestaat en is bereikbaar vanaf Vandaag --');
+  /* v23.224: hier stond dat de knop "Alle cijfers" op Vandaag staat en je hierheen brengt. Die
+     knop is met de kaart "Waar je staat" van het dagscherm af (Stefan: "deze functionaliteit mag
+     wel uit het scherm"). Wat overblijft is de eis die er echt toe doet: het scherm bestaat, het
+     is bereikbaar, en het is NIET je profiel. De route ernaartoe loopt nu via de balk. */
+  console.log('\n-- het scherm bestaat en is bereikbaar --');
   await page.evaluate(() => { scopeLesson = null; show('lessen'); });
   await page.waitForTimeout(400);
-  const knop = await page.evaluate(() => !!document.getElementById('btnLijnMeer'));
-  ok(knop, 'op Vandaag staat de knop naar je cijfers');
-  await page.evaluate(() => { document.getElementById('btnLijnMeer').click(); });
+  const weg = await page.evaluate(() => !!document.getElementById('btnLijnMeer'));
+  ok(!weg, 'op Vandaag staat geen knop naar je cijfers meer (v23.224)');
+  await page.evaluate(() => { show('voortgang'); });
   await page.waitForTimeout(500);
   const open = await page.evaluate(() => ({
     zichtbaar: !document.getElementById('tab-voortgang').classList.contains('hidden'),
-    profiel: !document.getElementById('tab-perfil').classList.contains('hidden')
+    profiel: !document.getElementById('tab-perfil').classList.contains('hidden'),
+    inBalk: TABS.some(function (t) { return t.id === 'voortgang'; })
   }));
-  ok(open.zichtbaar, 'de knop brengt je op het voortgangsscherm');
-  ok(!open.profiel, 'en niet meer op je profiel');
+  ok(open.zichtbaar, 'het voortgangsscherm gaat open');
+  ok(!open.profiel, 'en het is niet je profiel');
+  ok(open.inBalk, 'en het staat als eigen scherm in TABS, dus het is te bereiken');
 
   console.log('\n-- de zes blokken staan in Stefans volgorde --');
   const volgorde = await page.evaluate(() => {

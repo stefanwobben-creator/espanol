@@ -218,8 +218,12 @@ async function verseBezoeker(page, niveau) {
     kracht: vandaag.kracht, geoefend: vandaag.geoefend, klikbaar: vandaag.klikbaar }));
   ok(vandaag.kracht === 0 && vandaag.geoefend > 0,
     'er staan wel woorden in je lijst, maar kracht is nul (die weegt naar hoe lang je ze vasthoudt)');
+  /* v23.224: dit was een echte proef zolang de kaart bestond (hij hoorde op dag 1 niets te tonen,
+     want alles wat hij kon tonen was nul). Sinds die versie staat hij op geen enkele dag meer op
+     Vandaag, dus de proef is nu een vaststelling. Hij blijft staan omdat hij precies zou afgaan
+     als iemand de kaart terugzet zonder de dag-1-vraag opnieuw te stellen. */
   ok(!vandaag.lijnKaart,
-    'de lijnkaart staat er niet, want alles wat hij kan tonen is nul');
+    'de lijnkaart staat er niet (v23.224: op geen enkele dag meer)');
   ok(!/van je 3 woorden, gewogen naar/.test(vandaag.tekst),
     'en dus ook niet het eerste getal dat een vreemde van deze app te zien kreeg: een 0');
   ok(/EVEN SPELEN/.test(vandaag.tekst),

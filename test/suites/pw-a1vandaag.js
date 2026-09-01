@@ -2,8 +2,13 @@
 //
 // v23.64: dat blijft, maar de vorm niet. De balk met de legenda van vier doosnamen is naar
 // Voortgang verhuisd (Stefan: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?") en op
-// Vandaag staat één zin in woorden. Deze suite meet nu allebei de plekken, en vooral de grens
-// ertussen: op Vandaag hoogstens twee getallen, op Voortgang de balk mét de uitleg erbij.
+// Vandaag bleef één zin in woorden staan.
+//
+// v23.224: ook die zin is weg (Stefan: "deze functionaliteit mag wel uit het scherm"). Daarmee is
+// v19.99 als SCHERMREGEL vervallen: op Vandaag staat niet meer wat je kunt. De zorg eronder is niet
+// vervallen en die staat nu ergens anders: wat je kunt hoort te bestaan, uitlegbaar en op één
+// plek. Deze suite bewaakt dus twee dingen: op Vandaag staat er niets van, en op Voortgang staat de
+// balk compleet, mét de uitleg die Stefans vraag beantwoordt.
 const { chromium } = require('playwright');
 let fout = 0;
 function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); }
@@ -80,12 +85,9 @@ async function nieuwProfiel(page) {
     try { persist(); } catch (e) {}
   });
 
-  console.log('\n-- op Vandaag staat een zin, geen dashboard (v23.64) --');
-  /* 22 aug, v23.167: het dagscherm heeft een voorkant en een achterkant. Vóór je les staat alleen
-     je les; de lijnkaart komt pas tevoorschijn als je les af is. Deze suite gaat over wat er in
-     die kaart staat, niet over wanneer hij verschijnt, dus zetten we de les van vandaag op af en
-     kijken daarna. Zonder die regel is er geen kaart om te meten en wordt elk "geen balk, geen
-     legenda, geen tegels" waar omdat er niets is. */
+  console.log('\n-- op Vandaag staat er niets van (v23.224) --');
+  /* De les van vandaag gaat op af, want vóór je les staat er sowieso weinig. Zonder die regel zou
+     "er staat geen cijferblok" waar zijn om de verkeerde reden: er staat dan bijna niets. */
   await page.evaluate(() => {
     S.lesFlow = S.lesFlow || {}; S.lesFlow[today()] = true;
     try { persist(); } catch (e) {}
@@ -93,43 +95,21 @@ async function nieuwProfiel(page) {
   });
   await page.waitForTimeout(500);
   const opDag = await page.evaluate(() => {
-    const kaart = document.getElementById('lijnKaart');
+    const lijst = document.getElementById('lessonList');
     return {
-      kaart: !!kaart,
+      kaart: !!document.getElementById('lijnKaart'),
       balk: !!document.getElementById('dagBasisBalk'),
-      legenda: !!document.querySelector('#lijnKaart .vgLegenda'),
-      tegels: !!document.querySelector('#lijnKaart .statgrid'),
-      tekst: kaart ? kaart.innerText.replace(/\s+/g, ' ') : ''
+      legenda: !!(lijst && lijst.querySelector('.vgLegenda')),
+      strook: !!(lijst && lijst.querySelector('.lijnstrook')),
+      kaarten: lijst ? lijst.querySelectorAll('.card').length : -1,
+      tekst: lijst ? lijst.innerText.replace(/\s+/g, ' ') : ''
     };
   });
-  ok(opDag.kaart, 'er staat een blok "waar je staat" op het dagscherm');
-  /* Stefan, 12 aug: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?" Geteld op zijn
-     scherm: negen getallen in deze ene kaart, waarvan er vier namen van SRS-doosjes droegen. Die
-     kaart staat nu op Voortgang, met de uitleg erbij (v23.66). Hier blijft één zin over. */
-  ok(!opDag.balk, 'maar geen balk meer');
-  ok(!opDag.legenda, 'geen legenda met vier doosnamen');
-  ok(!opDag.tegels, 'en geen tegels met kracht en foutpercentage');
-  /* Niveaucodes eerst weg: "A1" is geen getal maar een naam, en die hoort er juist te staan.
-     Wat overblijft mag er hoogstens één zijn. Op Stefans scherm stonden er negen. */
-  const getallen = (opDag.tekst.replace(/\b[ABC][12]\b/g, '') .match(/\d+/g) || []);
-  ok(getallen.length <= 1, 'hoogstens één getal in het hele blok (' + getallen.join(',') + ')');
-  ok(/A1/.test(opDag.tekst), 'de zin noemt je niveau (' + opDag.tekst + ')');
-  /* v19.99 staat overeind en dat is precies waarom hier een zin staat en niet niets. Stefans
-     kritiek op Duolingo was "ik doe de habit maar ik leer niks"; een dagscherm met alleen staafjes
-     is dat. Bewijs hoeft alleen geen dashboard te zijn. */
-  ok(/begonnen|onderweg|helft|rond/i.test(opDag.tekst),
-     'en hij zegt in woorden hoe ver je bent, niet in een percentage');
-
-  console.log('\n-- wat je kunt staat boven hoe vaak je kwam --');
-  const volgorde = await page.evaluate(() => {
-    const k = document.querySelector('#lijnKaart .kicker');
-    const strook = document.querySelector('#lijnKaart .lijnstrook');
-    if (!k || !strook) return null;
-    return { basis: Math.round(k.getBoundingClientRect().top), habit: Math.round(strook.getBoundingClientRect().top) };
-  });
-  ok(!!volgorde, 'de veertiendaagse strook staat in dezelfde kaart');
-  ok(volgorde && volgorde.basis < volgorde.habit,
-    'de zin staat boven de staafjes (' + (volgorde ? volgorde.basis + ' vs ' + volgorde.habit : '-') + ')');
+  ok(!opDag.kaart && !opDag.balk, 'geen cijferblok op het dagscherm');
+  ok(!opDag.legenda && !opDag.strook, 'geen legenda en geen veertien staafjes');
+  ok(!/waar je staat|jouw lijn|alle cijfers/i.test(opDag.tekst),
+     'en de woorden staan er ook niet meer (' + opDag.tekst.slice(0, 90) + ')');
+  ok(opDag.kaarten > 0, 'CONTROLE: er staat wel degelijk iets op het scherm, dus de nullen zeggen iets (' + opDag.kaarten + ' kaarten)');
 
   console.log('\n-- en de balk zelf staat op Voortgang, mét uitleg --');
   await page.evaluate(() => show('voortgang'));

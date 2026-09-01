@@ -8,12 +8,18 @@
 // knop naar cijfers die nog nergens over gingen, en drie chipjes met een nul erin.
 //
 // Wat deze suite vastlegt, en dat is bewust in twee richtingen:
-//   - dag een is klein. Geen nieuwskaart, geen lijnkaart, geen chiprij: alleen starten en spelen.
+//   - dag een is klein. Geen nieuwskaart, geen chiprij: alleen starten en spelen.
 //   - en alles komt terug op het moment dat het over jou gaat. Per blok wordt hier de context
 //     neergezet die het verdient, en daarna moet het er ook echt staan. Weglaten mag nooit
 //     verstoppen worden; dat verschil is het hele verhaal van v19.64 en het geldt hier ook.
 //   - de basisbalk gaat over jouw niveau, niet over een hardgecodeerde A1. Sinds v20.3 telt
 //     daarvoor alleen bewijs mee en niet je eigen claim; die grens ligt hieronder vast.
+//
+// v23.224: de kaart "Waar je staat" is van Vandaag af (Stefan: "deze functionaliteit mag wel uit
+// het scherm"). Alles wat hier over die kaart ging, gaat nu over het voortgangsscherm, waar de balk
+// mét legenda al stond. De regel eronder verandert niet: de balk moet jouw niveau noemen en een
+// claim is geen bewijs. Wat wél weg is: de vraag of het blok zichzelf op tijd toont, want het staat
+// niet meer op het scherm waar dat over ging.
 const { chromium } = require('playwright');
 let fout = 0;
 function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); }
@@ -83,10 +89,14 @@ async function dagFoto(page) {
   return page.evaluate(() => {
     const lijst = document.getElementById('lessonList');
     return {
-      nieuws: !!document.getElementById('nieuwsKaart'),
-      lijn: !!document.getElementById('lijnKaart'),
-      basis: !!document.getElementById('dagBasisBalk'),
-      strook: !!document.querySelector('#lijnKaart .lijnstrook'),
+      /* v23.224: binnen het DAGSCHERM kijken en niet in het hele document. dagBasisBalk bestaat
+         nog gewoon, alleen op Voortgang, en dat tabblad blijft in de DOM staan als je wegklikt.
+         Zonder deze scope zou "staat er nog een balk op Vandaag" altijd waar zijn, om precies de
+         reden die onderaan deze suite al een keer is opgeschreven. */
+      nieuws: !!(lijst && lijst.querySelector('#nieuwsKaart')),
+      lijn: !!(lijst && lijst.querySelector('#lijnKaart')),
+      basis: !!(lijst && lijst.querySelector('#dagBasisBalk')),
+      peil: !!(lijst && lijst.querySelector('#peilKaart')),
       speel: !!document.getElementById('speelKaart'),
       start: !!document.getElementById('btnStartLesFlow'),
       ritme: !!document.querySelector('.ritme'),
@@ -121,12 +131,17 @@ async function dagFoto(page) {
   const rel1 = await page.evaluate(() => dagRelevantie());
   ok(dag1.speel, 'en zodra je les af is staat hij er wel, want dan kan spelen altijd');
   ok(!dag1.nieuws, 'geen nieuwskaart die meldt dat er geen nieuws is');
-  ok(!dag1.lijn, 'geen lijnkaart met een lege balk en dertien gaten');
+  ok(!dag1.lijn, 'geen cijferkaart (v23.224: die staat op geen enkele dag meer op Vandaag)');
   ok(!dag1.ritme, 'geen chiprij met alleen maar nullen');
   ok(dag1.kaarten <= 3, 'hoogstens drie kaarten op dag een (' + dag1.kaarten + ')');
   ok(!/0\/5|0\/30|0%/.test(dag1.tekst), 'nergens een nul als stand: ' + dag1.tekst.slice(0, 110));
-  ok(rel1.nieuws === false && rel1.basis === false && rel1.lijn === false,
+  ok(rel1.nieuws === false,
     'dagRelevantie() zegt zelf ook dat er niets te melden is (' + JSON.stringify(rel1) + ')');
+  /* v23.224: `basis` en `lijn` waren de twee vragen van de cijferkaart. Die kaart is weg, dus
+     horen de velden het ook te zijn: een veld dat niemand leest is precies waar over een half jaar
+     weer een blok uit groeit. */
+  ok(!('basis' in rel1) && !('lijn' in rel1),
+    'en de twee velden van de cijferkaart zijn uit dagRelevantie verdwenen');
   // v23.64: chipHerhaal bestaat niet meer. Stefan: "herhaling bij? waarom staat dat hier is dat
   // ook een extra knop? verwarrend." Wat deze regel bewaakt blijft hetzelfde: op dag een staat er
   // geen enkel chipje, en dagRelevantie() zegt dat zelf ook.
@@ -135,31 +150,33 @@ async function dagFoto(page) {
   ok(!('chipHerhaal' in rel1), 'het vinkje "herhalingen bij" is helemaal weg, ook uit dagRelevantie');
   ok(rel1.niveau === 'A1', 'het niveau van een vers profiel is A1 (' + rel1.niveau + ')');
 
-  console.log('\n-- de basisbalk komt zodra er iets onderweg is --');
+  console.log('\n-- de basisbalk staat op Voortgang, en gaat over jouw niveau --');
   const gezet = await zetOnderweg(page, 2, 'A1');
   ok(gezet === 2, 'er zijn twee A1-woorden in doos 3 gezet (' + gezet + ')');
   await dagOpnieuw(page);
   const naBasis = await dagFoto(page);
-  /* v23.64: op Vandaag staat geen balk meer maar één zin. Stefan: "leuk statistieken maar hoe
-     moet ik die lezen wat zeggen die?" De balk met legenda staat op Voortgang, waar de uitleg
-     erbij staat. Wat deze plek bewaakt is onveranderd: het blok verschijnt pas zodra er iets
-     onderweg is, en het noemt jouw niveau. */
-  ok(!naBasis.basis, 'er staat geen balk meer op Vandaag (die staat op Voortgang)');
-  ok(naBasis.lijn, 'maar de kaart is er wel zodra er iets onderweg is');
-  ok(!naBasis.strook, 'en de staafjes nog niet: één blok tegelijk, elk om zijn eigen reden');
+  /* v23.64 haalde de balk van Vandaag af en zette er één zin voor in de plaats. v23.224 heeft ook
+     die zin weggehaald. Wat hier overblijft is de eis dat Vandaag er niets van terugkrijgt, en dat
+     de balk op Voortgang wél zegt over welk niveau hij gaat. */
+  ok(!naBasis.basis && !naBasis.lijn, 'op Vandaag staat er niets van (geen balk, geen kaart)');
   const noemA1 = await page.evaluate(() => PCIC_NOEMER.A1);
-  ok(/\bA1\b/.test(naBasis.tekst), 'de zin noemt jouw niveau (' + naBasis.tekst.slice(0, 120) + ')');
-  ok(!new RegExp('\\b' + noemA1 + '\\b').test(naBasis.tekst),
-    'en niet ook nog de noemer: die hoort bij de balk, en die staat hier niet meer');
+  const vgA1 = await page.evaluate(() => {
+    show('voortgang');
+    const el = document.getElementById('voortgangCard') || document.getElementById('tab-voortgang');
+    return { balk: !!document.getElementById('dagBasisBalk'),
+             tekst: (el.innerText || '').replace(/\s+/g, ' ') };
+  });
+  ok(vgA1.balk, 'op Voortgang staat de balk wel');
+  ok(/\bA1\b/.test(vgA1.tekst), 'en die noemt jouw niveau (' + vgA1.tekst.slice(0, 90) + ')');
+  ok(new RegExp('\\b' + noemA1 + '\\b').test(vgA1.tekst),
+    'met de noemer erbij, want zonder noemer is de balk maatloos (' + noemA1 + ')');
 
-  console.log('\n-- de lijn komt vanaf twee dagen --');
+  console.log('\n-- het dagdoel staat op één plek --');
   await page.evaluate(() => { S.xp[today()] = 12; try { persist(); } catch (e) {} });
   await dagOpnieuw(page);
-  const eenDag = await dagFoto(page);
-  ok(!eenDag.strook, 'met één dag is er nog geen lijn om te tekenen');
-  /* v23.31: het dagdoel-chipje is weg van de leskaart. Het stond twee keer op hetzelfde scherm,
-     want bovenin staat dezelfde stand al in de strook. Deze test bewaakt vanaf nu dat het bij die
-     ene plek blijft: eentje op het dagscherm, niet nul en niet twee. */
+  /* v23.31: het dagdoel-chipje is weg van de leskaart. Het stond twee keer op hetzelfde scherm.
+     Deze test bewaakt vanaf nu dat het bij die ene plek blijft: eentje op het dagscherm, niet nul
+     en niet twee. */
   const doelPlekken = await page.evaluate(() => ({
     lijst: /dagdoel/i.test((document.getElementById('lessonList') || {}).innerText || ''),
     kop: ((document.getElementById('goalTxt') || {}).innerText || '')
@@ -170,16 +187,11 @@ async function dagFoto(page) {
   await page.evaluate(() => { S.xp[addDays(today(), -1)] = 10; try { persist(); } catch (e) {} });
   await dagOpnieuw(page);
   const tweeDagen = await dagFoto(page);
-  ok(tweeDagen.strook, 'vanaf de tweede dag verschijnt de strook');
-  ok(/jouw lijn/i.test(tweeDagen.tekst), 'met zijn eigen kopje erboven');
-  /* v23.64: de balk is van dit scherm af, dus wordt hier de zin gemeten die ervoor in de plaats
-     kwam. De regel eronder is dezelfde als in v19.99: wat je kunt staat boven hoe vaak je kwam. */
-  const volgorde = await page.evaluate(() => {
-    const k = document.querySelector('#lijnKaart .kicker');
-    const s = document.querySelector('#lijnKaart .lijnstrook');
-    return { basis: Math.round(k.getBoundingClientRect().top), lijn: Math.round(s.getBoundingClientRect().top) };
-  });
-  ok(volgorde.basis < volgorde.lijn, 'wat je kunt staat nog steeds boven hoe vaak je kwam');
+  /* v23.224: hier stond dat de strook vanaf de tweede dag verschijnt. De veertien staafjes zijn
+     met de kaart mee weg. Wat ervoor in de plaats staat is de omgekeerde eis: twee dagen oefenen
+     zet geen enkel blok terug op dit scherm. */
+  ok(!tweeDagen.lijn && !/jouw lijn/i.test(tweeDagen.tekst),
+    'twee dagen oefenen zet de strook niet terug op Vandaag');
 
   console.log('\n-- de chipjes zeggen alleen iets als er iets in staat --');
   const chipNieuw = await page.evaluate(() => {
@@ -249,8 +261,15 @@ async function dagFoto(page) {
   await dagOpnieuw(page);
   const naA2 = await dagFoto(page);
   ok(a2 === 3, 'er zijn drie A2-woorden onderweg gezet (' + a2 + ')');
+  /* v23.224: dit las de kaart op Vandaag. Die is weg, dus wordt dezelfde vraag op Voortgang
+     gesteld: noemt de balk het niveau waar hij over gaat? */
   const kop = await page.evaluate(() => {
-    const kaart = document.getElementById('lijnKaart');
+    show('voortgang');
+    /* De kaart waar de BALK in zit, niet de eerste kaart van het scherm. Op Voortgang staat
+       bovenaan "Je week", en die noemt geen niveau; dan zou deze proef groen of rood worden om
+       iets dat er niets mee te maken heeft. */
+    const b = document.getElementById('dagBasisBalk');
+    const kaart = b ? b.closest('.card') : null;
     return kaart ? kaart.innerText.replace(/\s+/g, ' ') : '';
   });
   /* v23.0: het kopje heet "Waar je staat" in plaats van "Je basis". Wat deze test bewaakt is niet
@@ -264,15 +283,14 @@ async function dagFoto(page) {
      hij moet meegroeien met het niveau, want anders meet de balk iets anders dan de lezer denkt.
      Erbij: wat je op A1 hebt opgebouwd mag niet van het scherm verdwijnen op de dag dat je A1
      haalt, en dat is precies wat een noemer van 403 zou betekenen. */
-  /* v23.64: de noemer staat bij de balk, en die staat op Voortgang. Wat op Vandaag overblijft is
-     de zin, en die moet wél meegroeien met je niveau: hij noemt A1 en A2 samen. De noemer zelf
-     wordt op zijn nieuwe plek gecontroleerd, in pw-a1vandaag. */
+  /* v23.224: de zin op Vandaag bestond niet meer, dus wordt hier hetzelfde op Voortgang gevraagd:
+     de balk moet A1 en A2 samen noemen en niet het losse niveaugetal doen alsof het de noemer is. */
   const samenA2 = await page.evaluate(() => PCIC_NOEMER.A1 + PCIC_NOEMER.A2);
   ok(samenA2 !== noemA1, 'de noemer van A1 en A2 samen verschilt van die van A1 (' + samenA2 + ' tegenover ' + noemA1 + ')');
-  ok(/A1 en A2/.test(naA2.tekst),
-     'de zin op Vandaag noemt allebei de niveaus (' + naA2.tekst.slice(0, 130) + ')');
-  ok(naA2.tekst.indexOf('403') === -1,
-     'en niet het losse niveaugetal');
+  ok(/A1 en A2|A1-A2/.test(kop),
+     'de balk noemt allebei de niveaus (' + kop.slice(0, 130) + ')');
+  ok(!naA2.lijn && !naA2.basis,
+     'en op Vandaag staat er nog steeds niets van');
 
   /* v23.64. Hier stond document.querySelectorAll('.bar.duo') na show('perfil'), en dat telde het
      hele document: het dagscherm blijft in de DOM staan als je van tabblad wisselt, dus de balk die

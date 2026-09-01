@@ -966,11 +966,6 @@
   .nwrij:last-child{border-bottom:none; padding-bottom:2px;}
   .nwrij[data-nwgo]{cursor:pointer;}
   .nwrij .nwe{flex:0 0 auto; font-size:1.15rem; line-height:1.25;}
-  .lijnstrook{display:flex; align-items:flex-end; gap:4px; height:38px; margin-top:10px;}
-  .lijnstaaf{flex:1; border-radius:3px 3px 0 0; background:var(--border);}
-  .lijnstaaf.half{background:var(--amber-soft); border-bottom:2px solid var(--amber);}
-  .lijnstaaf.vol{background:var(--green-soft); border-bottom:2px solid var(--green);}
-  .lijnstaaf[data-vandaag]{outline:2px solid var(--accent); outline-offset:1px;}
   .speelgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
   .speelknop{display:flex; flex-direction:column; align-items:center; gap:4px; padding:14px 8px;
              border-radius:var(--radius); border:1.5px solid var(--border); background:var(--card);
@@ -1574,7 +1569,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.223";
+var APP_VERSIE = "v23.224";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -18233,23 +18228,17 @@ function dagKrabbels(){
 function peilSchattingStil(niv){ try { return niveauSchatting(niv); } catch(e){ return null; } }
 function peilAanbodStil(){ try { return peilAanbod(); } catch(e){ return null; } }
 function dagRelevantie(){
-  var t = today(), tel = voortgangTellers(), niv = balkNiveau();
-  var onderweg = Math.max((tel.dek && tel.dek[niv]) || 0, (tel.dekw && tel.dekw[niv]) || 0);
-  var open = 0, dagenMetXp = 0, i, d, st;
-  for(i = 0; i < WORDS.length; i++){ st = S.srs[WORDS[i].id]; if(st && st.due <= t) open++; }
-  for(i = 0; i < 14; i++){ d = addDays(t, -i); if(((S.xp && S.xp[d]) || 0) > 0) dagenMetXp++; }
+  var t = today(), niv = balkNiveau();
+  /* v23.224: hier stonden ook `basis` en `lijn`, de twee vragen van de kaart "Waar je staat". Die
+     kaart is van dit scherm af, dus leest niemand ze meer. Met hen mee gingen twee lussen: een over
+     alle WORDS en een over veertien dagen, allebei bij elke keer dat het dagscherm tekent.
+
+     En `open`: een teller die met een volledige lus over WORDS werd gevuld en vervolgens nergens
+     werd teruggegeven. Die stond er al langer dood bij. */
   return {
     // een kaart die meldt dat er niets te melden is, is zelf de melding
     nieuws: dagNieuwsRegels().length > 0,
-    // je basis verschijnt zodra er iets onderweg is. Doos 3 kost ongeveer een week, of staat er
-    // meteen als je je niveau geclaimd hebt. Daarvoor kan de balk niets anders tonen dan 0%, en
-    // een balk die dagenlang stil staat leert je vooral dat de balk niets zegt (zie v19.87).
-    // v20.3: en ook zodra er een schatting ligt of er een peiling aan te bieden is, want dan
-    // heeft de balk iets te zeggen wat je nergens anders ziet.
-    basis: onderweg > 0 || !!peilSchattingStil(niv) || !!peilAanbodStil(),
-    // een lijn heb je pas vanaf twee punten. Een staafje en dertien gaten is geen lijn.
-    lijn: dagenMetXp >= 2,
-    // deze drie stonden er ook als ze nul waren, en nul is geen bericht
+    // deze twee stonden er ook als ze nul waren, en nul is geen bericht
     chipNieuw: newToday() > 0,
     /* v23.64: chipHerhaal is weg. Zie de toelichting bij het chipsblok in dagRitmeHtml(). */
     chipDoel: ((S.xp && S.xp[t]) || 0) > 0,
@@ -18338,56 +18327,27 @@ function dagNieuwsHtml(){
 }
 /* jouw lijn: veertien dagen in één strook, geen tabel. De hoogte is je xp, de kleur zegt of je je
    dagdoel haalde. Eén klik en je staat bij de cijfers op Profiel. */
-function dagLijnHtml(){
-  var t = today(), doel = dagdoel(), max = 1, xs = [];
-  for(var i = 13; i >= 0; i--){
-    var d = addDays(t, -i);
-    var x = (S.xp && S.xp[d]) || 0;
-    if(x > max) max = x;
-    xs.push({d:d, x:x});
-  }
-  var actief = xs.filter(function(a){ return a.x > 0; }).length;
-  var gehaald = xs.filter(function(a){ return a.x >= doel; }).length;
-  var staven = xs.map(function(a, i){
-    var h = Math.max(3, Math.round(34 * a.x / max));
-    var cls = "lijnstaaf" + (a.x >= doel ? " vol" : (a.x > 0 ? " half" : ""));
-    return "<span class='"+cls+"'"+(i===13?" data-vandaag='1'":"")+" style='height:"+h+"px' title='"+a.d+" \u00b7 "+a.x+" "+xpw()+"'></span>";
-  }).join("");
-  var dg = dagenTotaal();
-  // v20.1: de balk en de staafjes zijn twee aparte berichten en verschijnen apart. Zegt geen van
-  // beide iets, dan is er ook geen kaart, en geen knop naar cijfers die nog nergens over gaan.
-  var rel = dagRelevantie();
-  /* v23.64. Hier stond dagBasisRegelHtml(): de grote teller, de balk in drie tinten, de legenda van
-     vier woorden en de noemer. Plus dagKerncijfersHtml() met kracht en foutpercentage. Samen negen
-     van de elf getallen die op dit scherm stonden.
+/* v23.224: het enige dat van de kaart "Waar je staat" op Vandaag overblijft.
 
-     Stefan: "leuk statistieken maar hoe moet ik die lezen wat zeggen die?" Dat is de juiste vraag,
-     en het antwoord stond nergens op dit scherm. De vier woorden van de legenda zijn namen van
-     SRS-doosjes; "vast" is doos 5 en die kost 25 dagen.
+   De peiling is geen statistiek maar een handeling: twintig woorden, ongeveer een minuut, en
+   daarna weet de app beter wat je al kent. peilAanbod() bepaalt wanneer hij langskomt, en dat is
+   hoogstens eens per paar weken. Op de dagen dat er niets aan te bieden is staat hier niets.
 
-     Er gaat niets verloren. De hele kaart staat op Voortgang (vgVastKaart, mét legenda) en de twee
-     tegels staan lager op datzelfde scherm uitgesplitst, elk met een alinea eronder. De knop
-     "Alle cijfers" hieronder brengt je er in één tik heen.
-
-     Wat blijft is de reden waarom v19.99 die balk hier neerzette: Stefans kritiek op Duolingo was
-     "ik doe de habit maar ik leer niks", en een dagscherm met alleen staafjes is precies dat. Maar
-     bewijs hoeft geen dashboard te zijn. Eén zin doet hetzelfde werk. */
-  var basis = rel.basis ? dagBasisZinHtml() : "";
-  if(!basis && !rel.lijn) return "";
-  return "<div class='card' id='lijnKaart'>"+basis+
-    /* v23.2: de veertien staafjes gaan onder een vouw. Ze meten hoe vaak je kwam, niet wat je kunt,
-       en dit blok gaat over de vraag "waar sta ik". Niet weg, wel weg van je eerste blik. */
-    (rel.lijn
-      ? "<details style='margin-top:10px'><summary class='muted' style='cursor:pointer; font-size:.85rem'>"+
-          ct("Jouw lijn","Your line")+"</summary>"+
-        "<div class='lijnstrook'>"+staven+"</div>"+
-        "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
-          ct("Laatste 14 dagen \u00b7 "+actief+" dagen geoefend \u00b7 dagdoel gehaald op "+gehaald,
-             "Last 14 days \u00b7 practised on "+actief+" days \u00b7 daily goal reached on "+gehaald)+
-          (dg >= 3 ? " \u00b7 "+ct(dg+" dagen in totaal", dg+" days in total") : "")+"</p></details>"
-      : "")+
-    "<div class='row' style='margin-top:8px'><button class='ghost' id='btnLijnMeer'>"+ct("Alle cijfers","All the numbers")+" \u2192</button></div></div>";
+   Waarom hij niet met de cijfers is meegegaan: hij staat ook op Voortgang (in dagBasisRegelHtml),
+   maar een aanbod dat alleen op een scherm staat dat je zelden opzoekt wordt nooit aangenomen. En
+   de schatting die eruit komt is precies wat de leesplank nodig heeft om te kunnen sturen. */
+function dagPeilKaartHtml(){
+  var aanbod = null;
+  try { aanbod = peilAanbod(); } catch(e){ aanbod = null; }
+  if(!aanbod) return "";
+  return "<div class='card' id='peilKaart'><span class='kicker'>"+
+    ct("Even peilen","A quick check")+"</span>"+
+    "<p class='muted' style='margin:6px 0 10px; font-size:.9rem'>"+
+      ct("Hiermee schat de app beter in wat je al kent, en dat bepaalt wat hij je voorlegt.",
+         "This helps the app judge what you already know, and that decides what it puts in front of you.")+
+    "</p>"+dagPeilKnopHtml(aanbod)+"</div>";
 }
+
 
 /* v19.99. Stefans kritiek op Duolingo, letterlijk: "ik doe de habit maar ik leer niks."
    Op Vandaag stond tot nu toe alleen de habit: veertien staafjes en een dagdoel. Het bewijs
@@ -18535,59 +18495,6 @@ function vgLegendaUitlegHtml(n){
        "The four add up to "+n+". That is why the bar has three shades: you can check the sum yourself.")+"</p>";
   return "<details style='margin-top:10px'><summary class='muted' style='cursor:pointer; font-size:.85rem'>"+
     ct("Wat betekenen deze woorden?","What do these words mean?")+"</summary>"+r+"</details>";
-}
-function dagBasisStand(pct){
-  if(pct < 8) return 0;
-  if(pct < 40) return 1;
-  if(pct < 70) return 2;
-  if(pct < 95) return 3;
-  return 4;
-}
-function dagBasisZinHtml(){
-  var c = voortgangCijfers();
-  var sm = c.samen;
-  var n = sm.noem || 390;
-  var w = sm.actief;
-  var aanbod = null;
-  try { aanbod = peilAanbod(); } catch(e){ aanbod = null; }
-  if(w <= 0 && !c.schat && !aanbod) return "";
-  var nivTxt = samenNivTekst(sm.nivs) || c.niv;
-  var pct = n ? Math.round(100 * Math.min(n, w + sm.geschat) / n) : 0;
-  var stand = dagBasisStand(pct);
-  var zinNl = [
-    "Je bent net begonnen aan " + nivTxt + ".",
-    "Je bent onderweg in " + nivTxt + ".",
-    "Je bent over de helft van " + nivTxt + ".",
-    nivTxt + " is bijna rond.",
-    nivTxt + " is zo goed als rond."
-  ][stand];
-  var zinEn = [
-    "You have just started on " + nivTxt + ".",
-    "You are on your way in " + nivTxt + ".",
-    "You are past the halfway point of " + nivTxt + ".",
-    nivTxt + " is nearly complete.",
-    nivTxt + " is as good as complete."
-  ][stand];
-  /* Eén getal erbij, en het is het enige getal op dit scherm dat over jouw werk gaat in plaats van
-     over de administratie: hoeveel woorden je op dit moment actief bijhoudt. Staat er nul, dan
-     staat er niets: nul is geen bericht (zie dagRelevantie).
-
-     En als de peiling het zware werk doet, staat dat erbij. Anders leest "je bent over de helft van
-     A1, je houdt er 7 actief bij" als een tegenspraak, en dan gaat de lezer aan allebei de helften
-     twijfelen. Op de balk was dat opgelost met een aparte tint en het woord "geschat"; in een zin
-     moet het met woorden. */
-  if(w > 0 && sm.geschat > w){
-    zinNl = zinNl.replace(/\.$/, "") + ", volgens je peiling. Zelf houd je er " + w + " actief bij.";
-    zinEn = zinEn.replace(/\.$/, "") + ", according to your check. You are actively keeping up " + w + " yourself.";
-  } else if(w > 0){
-    zinNl += " Je houdt er " + w + " actief bij.";
-    zinEn += " You are actively keeping up " + w + " of them.";
-  }
-  /* Geen niveau in de kop: dat staat in de zin eronder, en twee weergaven van hetzelfde getal is
-     precies de fout waar dit scherm sinds v23.0 mee bezig is. */
-  return "<span class='kicker'>"+ct("Waar je staat","Where you are")+"</span>"+
-    "<p style='margin:6px 0 0'>"+ct(zinNl, zinEn)+"</p>"+
-    (aanbod ? "<div style='margin-top:10px'>"+dagPeilKnopHtml(aanbod)+"</div>" : "");
 }
 /* ================= DE TWEE KERNCIJFERS (v23.14, sinds v23.64 alleen nog op je profiel) =========
    Punt 1 van de werklijst. Naast de balk hoort op Vandaag te staan hoeveel woorden je geoefend
@@ -21315,9 +21222,6 @@ function dagBordWire(el){
     var g = b.getAttribute("data-nwgo");
     b.onclick = function(){ if(g === "conj") speelNaar("conj"); else show(g); };
   });
-  var bl = document.getElementById("btnLijnMeer");
-  // v23.32: naar het voortgangsscherm, niet meer naar je profiel
-  if(bl) bl.onclick = function(){ show("voortgang"); };
   var bp = document.getElementById("btnPeilStart");
   if(bp) bp.onclick = function(){ peilStart(); };
   el.querySelectorAll("[data-speel]").forEach(function(b){
@@ -21518,7 +21422,7 @@ function renderLessons(){
     html += samenKaartNu(true);
     // v19.69: het dagbord. Wat is er nieuw, hoe loopt het, waar kan ik nu spelen.
     html += dagNieuwsHtml();
-    html += dagLijnHtml();
+    html += dagPeilKaartHtml();
     html += dagSpeelHtml();
   }
   // v20.4: onderaan, want hij gaat niet over vandaag leren maar over hoe je hier morgen weer komt.

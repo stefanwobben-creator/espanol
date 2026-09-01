@@ -80,10 +80,11 @@ async function balk(page) {
 async function basis(page) {
   return page.evaluate(() => {
     const balk = document.getElementById('dagBasisBalk');
-    /* v23.64: de kaart heet nog steeds lijnKaart, maar de balk zit er niet meer in. De tekst die
-       deze suite leest (de knop, de uitleg eronder, de stapzin) hoort bij de kaart en niet bij de
-       balk, dus wordt de kaart rechtstreeks opgezocht. */
-    const kaart = document.getElementById('lijnKaart') || (balk ? balk.closest('.card') : null);
+    /* v23.64: de kaart heette lijnKaart en de balk zat er niet meer in, dus werd de kaart
+       rechtstreeks opgezocht. v23.224: die kaart is van Vandaag af en het aanbod heeft zijn eigen
+       kaartje gekregen (peilKaart), want een aanbod dat alleen op Voortgang staat wordt nooit
+       aangenomen. De rest van deze suite verandert niet: dezelfde knop, dezelfde tekst. */
+    const kaart = document.getElementById('peilKaart') || (balk ? balk.closest('.card') : null);
     const knop = document.getElementById('btnPeilStart');
     return {
       balk: !!balk,
@@ -221,7 +222,7 @@ async function beantwoord(page, aantal) {
   const aanbod = await basis(page);
   ok(aanbod.knop, 'na een afgeronde les staat het aanbod er');
   ok(/Klopt dit ongeveer/i.test(aanbod.knopTekst), 'de knop zegt waar het over gaat (' + aanbod.knopTekst + ')');
-  ok(aanbod.knopKaart === 'lijnKaart', 'en hij staat in de bestaande kaart, niet in een nieuw blok (' + aanbod.knopKaart + ')');
+  ok(aanbod.knopKaart === 'peilKaart', 'en hij staat in zijn eigen kaartje op Vandaag (' + aanbod.knopKaart + ')');
   ok(/telt niet mee voor je punten/i.test(aanbod.tekst), 'met erbij dat het niet voor je punten telt');
   ok(!/—|–|--/.test(aanbod.tekst), 'geen streepjes in de tekst');
 
@@ -356,11 +357,16 @@ async function beantwoord(page, aantal) {
   await page.waitForTimeout(600);
   await page.click('#btnPeilStop');
   await page.waitForTimeout(400);
-  /* v23.64: waar de balk stond staat nu de kaart met de zin, en die draagt hetzelfde id. Wat deze
-     regel bewaakt is onveranderd: stoppen brengt je terug op je dagscherm en niet in het niets. */
-  const gestopt = await page.evaluate(() => ({ nu: peilNu, lijn: !!document.getElementById('lijnKaart') }));
+  /* Wat deze regel bewaakt is onveranderd: stoppen brengt je terug op je dagscherm en niet in het
+     niets. v23.224: er wordt niet meer op de cijferkaart gemikt (die is weg) maar op de leskaart,
+     want dat is het blok dat op Vandaag altijd staat. */
+  const gestopt = await page.evaluate(() => ({
+    nu: peilNu,
+    dag: !document.getElementById('tab-lessen').classList.contains('hidden'),
+    lijst: ((document.getElementById('lessonList') || {}).querySelectorAll ? document.getElementById('lessonList').querySelectorAll('.card').length : 0)
+  }));
   ok(gestopt.nu === null, 'de peiling is weg');
-  ok(gestopt.lijn, 'en je staat gewoon terug op je dagscherm');
+  ok(gestopt.dag && gestopt.lijst > 0, 'en je staat gewoon terug op je dagscherm (' + gestopt.lijst + ' kaarten)');
 
   ok(errs.length === 0, 'geen javascriptfouten: ' + errs.slice(0, 3).join(' | '));
   await browser.close();
