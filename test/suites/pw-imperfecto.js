@@ -158,7 +158,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'een brok-antwoord landt in S.brok onder zijn eigen id (' + pot.naBrok.brok.join() + ')');
   ok(pot.naBrok.gram.length === 0,
     'en niet in de doos van het onderwerp (nu: ' + pot.naBrok.gram.join() + ')');
-  ok(pot.naPatroon.gram.join() === 'indefimperf',
+  /* v23.228: de sleutel draagt sinds die versie de patroonindex ("indefimperf#0"). Wat deze proef
+     bewaakt verandert daar niet door: een brok-antwoord hoort in S.brok en een gewone patroonvraag
+     in S.gram. Het gaat om de POT waarin hij landt, niet om de naam van het vakje erin. */
+  ok(pot.naPatroon.gram.length === 1 && /^indefimperf(#\d+)?$/.test(pot.naPatroon.gram[0]),
     'CONTROLE: een gewone patroonvraag landt nog steeds in S.gram (' + pot.naPatroon.gram.join() + ')');
   ok(pot.naPatroon.brok.length === 0, 'CONTROLE: en die raakt S.brok niet aan');
 

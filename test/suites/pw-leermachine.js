@@ -180,7 +180,10 @@ const { chromium } = require('playwright');
     const q = gwOnderwerp(gwSess.id).stappen[0].vragen[0];
     const mis = q.g === 0 ? 1 : 0;
     gwKies(mis);
-    const st = S.gram.serestar || {};
+    /* v23.228: het doosje zit op het patroon, dus S.gram.serestar bestaat niet meer als enige
+       vakje. gramLees() vat de doosjes van dit concept samen, en dat is precies de vraag hier:
+       komt de fout bij het ONDERWERP aan. */
+    const st = gramLees('serestar') || {};
     gwSluit();
     return { fout: st.fout, due: st.due, morgen: addDays(today(), 1) };
   });

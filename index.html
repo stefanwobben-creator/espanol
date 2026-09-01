@@ -1569,7 +1569,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.227";
+var APP_VERSIE = "v23.228";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16437,7 +16437,7 @@ function lesFlowGramLijst(){
        elkaar komen op een onderwerp dat je gisteren goed had. */
     if(!((top.st.box || 0) === 0 && (top.st.fout || 0) >= 2 && !top.st.half)){
       var o = null;
-      try { o = gcGebouwd(gcOpfrisId(top.c.id)); } catch(e){ o = null; }
+      try { o = gcGebouwd(gcOpfrisId(top.c.id, top.pi)); } catch(e){ o = null; }
       if(o) uit.push(o.id);
     }
   }
@@ -16447,7 +16447,10 @@ function lesFlowGramLijst(){
      "opfris-genero" met "concept-genero": verschillende strings, dus hetzelfde onderwerp kon twee
      keer in dezelfde les staan, één keer als opfrisvraag en één keer als volledige microles. Met
      twee lessen op een dag zijn dat er vier, en dat is een deel van Stefans "heel veel el of la". */
-  var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, ""); };
+  /* v23.228: de patroonindex hoort ook weg bij het ontdubbelen. "opfris-genero#1" en
+     "concept-genero" gaan over hetzelfde onderwerp, en twee keer genero in \u00e9\u00e9n les is precies wat
+     v23.170 kwam repareren. */
+  var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, "").split("#")[0]; };
   var alHier = uit.map(kaal);
   if(gid && alHier.indexOf(kaal(gid)) === -1) uit.push(gid);
   return uit;
@@ -32222,8 +32225,66 @@ function gcConceptenVoorSpiek(i){
 }
 
 /* ---- het geheugen per concept ---- */
+/* ================= HET DOOSJE ZIT OP HET PATROON (v23.228) =================
+
+   Stefan: "el la los las die ken ik echt wel, de grammaticale regel, maar deze blijft terugkomen."
+
+   Gemeten in zijn eigen logboek: genero 55 goed tegen 17 fout, en na 72 beurten nog steeds doos 2.
+   Terwijl comparar met vijf beurten op doos 5 staat. Meer oefenen zakt je, en dat kan niet.
+
+   De oorzaak is dat er één doos was voor vijf patronen. Hij kent de regel (-ci\u00f3n is la), de -or, en
+   het meervoud; hij mist de Griekse val (el problema, el tema), en dat is geen regel maar een
+   lijstje woorden. \u00c9\u00e9n misser op die val zette de doos van alle vijf naar nul.
+
+   Vanaf nu heeft elk patroon zijn eigen doos, onder de sleutel "concept#index". En de KALE sleutel
+   (zonder #) blijft bestaan met een eigen betekenis: fouten die je in het wild maakt. gramBij()
+   wordt namelijk op zes plaatsen aangeroepen die geen patroon kennen (een quiz, de tegels, een
+   fout in een vrije zin, de Clasificador, El Corrector). Dat is bewijs over het concept en niet
+   over \u00e9\u00e9n patroon, en het is het beste signaal dat de app heeft: het komt uit echt gebruik. Dus
+   krijgt het zijn eigen doosje in plaats van alle andere te resetten. */
+function gramSleutel(cid, pi){
+  return (pi === undefined || pi === null || pi === "") ? String(cid) : String(cid) + "#" + pi;
+}
+function gramRuw(sleutel){
+  return (S.gram && S.gram[sleutel]) || null;
+}
+function gramPatroonN(cid){
+  var c = null;
+  try { c = gcConcept(String(cid).split("#")[0]); } catch(e){ c = null; }
+  return (c && c.patronen) ? c.patronen.length : 0;
+}
+/* Alle doosjes van dit concept die al bestaan: de patronen die je hebt gedaan, plus de kale sleutel
+   als je de fout ooit in het wild hebt gemaakt. Een doosje dat er niet is, is geen nul maar een
+   onbekende: nooit gedaan is kennismaking en geen herhaling. */
+function gramDoosjes(cid){
+  var s = String(cid || "").split("#")[0], uit = [], n = gramPatroonN(s), i, st;
+  st = gramRuw(s);
+  if(st) uit.push({sleutel:s, pi:null, st:st});
+  for(i = 0; i < n; i++){
+    st = gramRuw(gramSleutel(s, i));
+    if(st) uit.push({sleutel:gramSleutel(s, i), pi:i, st:st});
+  }
+  return uit;
+}
+/* Een concept is zo sterk als zijn ZWAKSTE doosje, en dat is de eerlijke samenvatting: je kent el
+   of la pas als je de val ook kent. De tellers worden opgeteld, want die zijn je geschiedenis. */
 function gramLees(cid){
-  return (S.gram && S.gram[cid]) || {box:0, due:"", goed:0, fout:0, laatst:""};
+  var s = String(cid || "");
+  if(s.indexOf("#") !== -1) return gramRuw(s) || {box:0, due:"", goed:0, fout:0, laatst:""};
+  var d = gramDoosjes(s);
+  if(!d.length) return {box:0, due:"", goed:0, fout:0, laatst:""};
+  var zwak = null, goed = 0, fout = 0, laatst = "";
+  d.forEach(function(x){
+    var st = x.st;
+    goed += st.goed || 0;
+    fout += st.fout || 0;
+    if((st.laatst || "") > laatst) laatst = st.laatst || "";
+    if(!zwak
+       || (st.box || 0) < (zwak.box || 0)
+       || ((st.box || 0) === (zwak.box || 0) && (st.due || "") < (zwak.due || ""))) zwak = st;
+  });
+  return {box: zwak.box || 0, due: zwak.due || "", half: zwak.half || 0, bd: zwak.bd || "",
+          goed: goed, fout: fout, laatst: laatst, doosjes: d.length};
 }
 /* v23.170: HET EERSTE ANTWOORD VAN DE DAG BESLIST.
 
@@ -32322,10 +32383,14 @@ function gramLogVandaag(){
 function gramHalfBewijs(keuzes){ return keuzes === 2; }
 /* keuzes = uit hoeveel knoppen de leerling koos. Weggelaten of 0 betekent getypt of samengesteld
    over een hele reeks, en dat telt vol: waar je niet kunt gokken hoeft er niets af. */
-function gramBij(cid, goed, keuzes){
+/* v23.228: `pi` erbij. Zonder patroonindex schrijft hij naar de kale sleutel, en dat is precies wat
+   de zes aanroepers buiten de microles moeten doen: die weten welk concept fout ging maar niet welk
+   patroon, want hun bewijs komt uit een vrije zin of een spel. */
+function gramBij(cid, goed, keuzes, pi){
   if(!cid) return;
   S.gram = S.gram || {};
-  var st = S.gram[cid] || {box:0, due:"", goed:0, fout:0, laatst:""};
+  var sleutel = gramSleutel(cid, pi);
+  var st = S.gram[sleutel] || {box:0, due:"", goed:0, fout:0, laatst:""};
   // de tellers lopen altijd door; die zijn de geschiedenis en niet het oordeel
   if(goed) st.goed++;
   else { st.fout++; st.laatst = today(); }
@@ -32370,7 +32435,7 @@ function gramBij(cid, goed, keuzes){
     st.box = Math.min((st.boxVoor || 0) + 1, GRAM_BOX.length - 1);
     st.due = addDays(today(), GRAM_BOX[st.box]);
   }
-  S.gram[cid] = st;
+  S.gram[sleutel] = st;
 }
 function gramAangeraakt(cid){
   var st = gramLees(cid);
@@ -32391,10 +32456,13 @@ function gramAangeraakt(cid){
    bestaan voor de cijfers op je profiel; ze sturen alleen niets meer aan. */
 function gramWachtrij(){
   var t = today(), uit = [];
+  /* v23.228: per DOOSJE en niet per concept. Een concept met vijf patronen levert dus hoogstens
+     vijf regels, en elke regel weet welk patroon hij is. Een patroon dat je nog nooit hebt gedaan
+     heeft geen doosje en staat hier dus niet: kennismaking hoort in de les, niet in de wachtrij. */
   GC_CONCEPTEN.forEach(function(c){
-    if(!gramAangeraakt(c.id)) return;          // nooit gedaan is geen herhaling maar kennismaking
-    try { if(!gcConceptOpen(c.id)) return; } catch(e){}
-    var st = gramLees(c.id);
+    try { if(!gcConceptOpen(c.id)) return; } catch(e){ return; }
+    gramDoosjes(c.id).forEach(function(d){
+    var st = d.st;
     /* Een openstaande fout (doosje nul) wacht niet op zijn datum. Dat stond al zo in de oude
        foutenpot en de reden klopt nog steeds: anders komt de fout die je net maakte pas morgen aan
        bod, en dat is precies de dag dat je hem al vergeten bent. Het verschil met vroeger is dat
@@ -32408,7 +32476,8 @@ function gramWachtrij(){
        dichtklapt. */
     var open = (st.box || 0) === 0 && (st.fout || 0) > 0 && !st.half;
     if(!open && st.due && st.due > t) return;
-    uit.push({c:c, st:st});
+    uit.push({c:c, pi:d.pi, st:st});
+    });
   });
   uit.sort(function(a, b){
     if((a.st.box || 0) !== (b.st.box || 0)) return (a.st.box || 0) - (b.st.box || 0);
@@ -32427,11 +32496,15 @@ function gramWachtrij(){
    Een concept met doosje nul en minstens één fout is een openstaande rekening. */
 function gramFoutTop(){
   var uit = [];
+  /* v23.228: per doosje. Een concept waarvan \u00e9\u00e9n patroon op nul staat heeft een openstaande
+     rekening op dat patroon, en niet op zichzelf. */
   GC_CONCEPTEN.forEach(function(c){
-    var st = gramLees(c.id);
-    if(!st.fout) return;
-    if((st.box || 0) > 0) return;           // je had hem daarna weer goed: geen openstaande rekening
-    uit.push({c:c, st:st});
+    gramDoosjes(c.id).forEach(function(d){
+      var st = d.st;
+      if(!st.fout) return;
+      if((st.box || 0) > 0) return;         // je had hem daarna weer goed: geen openstaande rekening
+      uit.push({c:c, pi:d.pi, st:st});
+    });
   });
   if(!uit.length) return null;
   uit.sort(function(a, b){ return (a.st.laatst || "") < (b.st.laatst || "") ? 1 : -1; });
@@ -32506,12 +32579,22 @@ function gramDueTop(){
    grammaticastap daarmee en gaat daarna door naar het nieuwe onderwerp. Fout? Dan staat het concept
    morgen vooraan in de wachtrij, en dan wél als hele microles: twee keer mis is geen geheugenkwestie
    meer. */
-function gcOpfrisId(cid){ return "opfris-" + String(cid || "").replace(/^concept-/, ""); }
+/* v23.228: met een patroonindex erachter, als de wachtrij er een geeft. "opfris-genero#1" is de
+   opfrisser over de Griekse val; "opfris-genero" is de oude vorm en put uit alle patronen, en die
+   blijft nodig voor het doosje van de vrije zin. */
+function gcOpfrisId(cid, pi){
+  var kaal = String(cid || "").replace(/^(concept|opfris)-/, "").split("#")[0];
+  return "opfris-" + gramSleutel(kaal, pi);
+}
 /* v23.225: hoeveel vragen een opfrisser en een drill hebben. Als getal en niet als losse cijfers in
    de code, want de proef in pw-opfris.js rekent ermee en die mag niet zijn eigen aanname doen. */
 var GC_OPFRIS_VRAGEN = 2;
 var GC_DRILL_VRAGEN = 5;
-function gcDrillId(cid){ return "drill-" + String(cid || "").replace(/^(concept|opfris)-/, ""); }
+/* De drill blijft over het hele concept gaan, ook als je op \u00e9\u00e9n patroon omkwam: vijf vragen uit
+   dezelfde val is drillen op vijf keer hetzelfde woord, en dan oefen je de vorm en niet de keuze. */
+function gcDrillId(cid){
+  return "drill-" + String(cid || "").replace(/^(concept|opfris)-/, "").split("#")[0];
+}
 /* Vijf verse vragen over hetzelfde concept, aangeboden op het moment dat er net iets misging.
 
    Stefan, 1 sep: "die was te moeilijk, dus daar zou je nu verwachten dat er een extra los komt."
@@ -32552,7 +32635,9 @@ function gcDrillBouw(id){
    (gcGebouwd) met een register van bouwers, en dit is nog alleen de bouwer. Een tweede
    opvrager die de cache oversla­at kan niet meer bestaan, want er is niets om over te slaan. */
 function gcOpfrisBouw(id){
-  var cid = String(id || "").replace(/^opfris-/, "");
+  var sleutel = String(id || "").replace(/^opfris-/, "");
+  var cid = sleutel.split("#")[0];
+  var pi = sleutel.indexOf("#") === -1 ? null : parseInt(sleutel.split("#")[1], 10);
   var c = gcConcept(cid);
   if(!c) return null;
   /* v23.225: twee vragen in plaats van één. Stefan: "dat ik maar een vraag krijg, dat voelt beetje
@@ -32561,8 +32646,15 @@ function gcOpfrisBouw(id){
 
      Twee en niet drie: dit is een opfrisser en geen les. Hij hoort in een halve minuut klaar te
      zijn, want hij staat vóór het echte onderwerp in dezelfde dagles. */
+  /* v23.228: uit \u00e9\u00e9n patroon als de wachtrij er een aanwees. Dit is de helft waar het effect
+     vandaan komt: kwam je om op de Griekse val, dan krijg je de Griekse val, en niet vier keer op
+     vijf iets wat je allang kunt. */
   var vragen = [];
-  try { vragen = gcMaakVragen(c, GC_OPFRIS_VRAGEN); } catch(e){ vragen = []; }
+  try {
+    vragen = (pi === null || isNaN(pi))
+      ? gcMaakVragen(c, GC_OPFRIS_VRAGEN)
+      : gcVragenUitPatroon(c, pi, GC_OPFRIS_VRAGEN);
+  } catch(e){ vragen = []; }
   if(vragen.length < GC_OPFRIS_VRAGEN) return null;
   var naam = ct(c.naam, c.naamEn || c.naam);
   return {
@@ -32622,6 +32714,28 @@ function gcMaakVragen(c, n){
     try { q = p(); } catch(e){ q = null; }
     if(!q || gezien[q.v]) continue;
     gezien[q.v] = 1;
+    /* v23.228: welk patroon deze vraag maakte. Zonder dit weet gramAntwoord() alleen wélk concept
+       fout ging en niet wélke regel, en dan kan het doosje niet op het patroon zitten. Dezelfde
+       vorm als v23.168 bij de zinnen: niet "s142 ging fout" maar "ser en estar liepen door
+       elkaar". */
+    q.pi = (start + ronde - 1 + c.patronen.length * 99) % c.patronen.length;
+    uit.push(gcSchud(q));
+  }
+  return uit;
+}
+/* Vragen uit \u00e9\u00e9n patroon. De opfrisser gebruikt dit sinds v23.228: de wachtrij levert een patroon
+   en niet een concept, dus de vraag hoort over dat patroon te gaan. */
+function gcVragenUitPatroon(c, pi, n){
+  var p = c && c.patronen && c.patronen[pi];
+  if(typeof p !== "function") return [];
+  var uit = [], gezien = {}, poging = 0;
+  while(uit.length < n && poging < n * 25){
+    poging++;
+    var q = null;
+    try { q = p(); } catch(e){ q = null; }
+    if(!q || gezien[q.v]) continue;
+    gezien[q.v] = 1;
+    q.pi = pi;
     uit.push(gcSchud(q));
   }
   return uit;
@@ -34655,8 +34769,17 @@ function gwOpfrisInPlaats(id, stap){
   var v = null;
   try { v = gwVoortgangLees(id); } catch(e){ return null; }
   if(!v || !v.klaar) return null;                           // nog niet afgerond
+  /* v23.228: het zwakste doosje van dit concept, want dat is waar de opfrisser over hoort te gaan.
+     Is er nog geen enkel patroondoosje, dan de oude vorm over alle patronen. */
   var oid = null;
-  try { oid = gcOpfrisId(id); } catch(e){ return null; }
+  try {
+    var cid = String(id).replace(/^concept-/, "");
+    var d = gramDoosjes(cid).slice().sort(function(a, b){
+      if((a.st.box || 0) !== (b.st.box || 0)) return (a.st.box || 0) - (b.st.box || 0);
+      return (a.st.due || "") < (b.st.due || "") ? -1 : 1;
+    })[0];
+    oid = gcOpfrisId(cid, d ? d.pi : null);
+  } catch(e){ return null; }
   var o = null;
   try { o = gcGebouwd(oid); } catch(e){ o = null; }
   return o ? oid : null;                                    // alleen als er ook echt een vraag is
@@ -34822,7 +34945,9 @@ function gramAntwoord(o, stap, q, i){
   /* v23.212: het aantal knoppen gaat mee. Dit is de enige plek in de app waar een doosje omhoog
      kan op een antwoord dat je ook had kunnen raden, en dus de enige plek die het hoeft door te
      geven. De vraag draagt het feit al (q.o); geen enkele andere plek schrijft het opnieuw. */
-  gramBij(o.concept, goed, (q && q.o) ? q.o.length : 0);
+  /* v23.228: en het patroon gaat mee. Draagt de vraag er geen (dat kan bij een handgeschreven
+     wizardstap), dan landt het antwoord op de kale sleutel, net als voorheen. */
+  gramBij(o.concept, goed, (q && q.o) ? q.o.length : 0, (q && typeof q.pi === "number") ? q.pi : null);
   gramLog(o.concept, gwKanaal(o), goed);
 }
 function gwVolgende(){
@@ -35265,7 +35390,7 @@ function wireGramWiz(el){
   /* v23.225: stap 0, want een drill heeft er maar één. Zonder dat cijfer zou gwStart() de opgeslagen
      voortgang van dit id volgen en die staat na één ronde op "klaar". */
   b = document.getElementById("gwDrill");
-  if(b) b.onclick = function(){ gwStart(gcDrillId(gwSess.id.replace(/^concept-/, "")), 0); };
+  if(b) b.onclick = function(){ gwStart(gcDrillId(gwSess.id), 0); };
   b = document.getElementById("gwHerhaalAlles"); if(b) b.onclick = function(){ gwStart(gwSess.id, 0); };
   b = document.getElementById("gwNaarDrill"); if(b) b.onclick = function(){
     var o = gwOnderwerp(gwSess.id);
