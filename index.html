@@ -1569,7 +1569,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.225";
+var APP_VERSIE = "v23.226";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -21174,12 +21174,92 @@ function dagSpeelRij(g){
       "<span class='sprij'><b>"+g.t+"</b><span class='muted'>"+spelZin(g.s)+"</span></span>"+
       "<span class='sppijl'>\u25b6</span></button>";
 }
+/* ================= HET ZWAKKE PUNT VAN DEZE WEEK (v23.226) =================
+
+   Stefan: "kijken of je er eentje toont of iets wat zwakke punt is waar ik nog wat meer kan
+   oefenen."
+
+   ZEVEN DAGEN, EN NIET ALLES. S.errors bewaart je hele historie, en daarin wint "woord" altijd:
+   334 tegen 130 zinnen, 40 conj, 22 corrector. Dat is blootstelling en geen zwakte; hij doet nu
+   eenmaal het meest met woorden. Een teller waarin het vaakst geoefende onderdeel per definitie
+   wint, meet de oefening en niet de leerling. De regels dragen sinds v22.0 een `dag`, dus zeven
+   dagen terugkijken kost niets extra's.
+
+   GRAMMATICA STAAT ER BEWUST NIET BIJ. Die heeft sinds v23.225 zijn eigen vervolg (de drill van
+   vijf, direct na de misser) en lesFlowWinst() zet een fout concept al bovenaan het voorstel na je
+   les. Een derde plek die hetzelfde aanwijst maakt het drukker, niet duidelijker. */
+var ZWAK_DAGEN = 7;
+var ZWAK_SOORT = [
+  {soorten:["conj", "verbo"],     spel:"conj",
+   nl:"werkwoordsvormen",         en:"verb forms"},
+  {soorten:["zin", "corrector"],  spel:"corr",
+   nl:"hele zinnen",              en:"whole sentences"},
+  {soorten:["escucha"],           spel:"audi",
+   nl:"luisteren",                en:"listening"},
+  {soorten:["woord", "quiz"],     spel:"",     // leeg: dan kiest de dagrotatie een woordspel
+   nl:"losse woorden",            en:"single words"}
+];
+/* Een rij voor de kaart, uit spelInfo() of uit oefenItems(). De Conjugador, El Corrector en
+   Escuchar hebben geen speeltegel: ze staan onder Oefenen, en dat is precies waarom ze hier alleen
+   verschijnen als de kaart "Even oefenen" heet. */
+function zwakRij(v){
+  var g = null;
+  try { g = spelInfoVan(v); } catch(e){ g = null; }
+  if(g) return g;
+  var o = null;
+  try {
+    oefenItems().forEach(function(x){ if(x.id === v) o = x; });
+  } catch(e2){ o = null; }
+  return o ? {v:o.id, e:o.ico, t:o.t, s:o.s} : null;
+}
+function dagZwakPunt(){
+  var grens = addDays(today(), -ZWAK_DAGEN), tel = {};
+  var e, k;
+  for(k in (S.errors || {})){
+    e = S.errors[k];
+    if(!e || !e.dag || e.dag < grens) continue;
+    tel[e.type] = (tel[e.type] || 0) + (e.count || 1);
+  }
+  var beste = null;
+  ZWAK_SOORT.forEach(function(z){
+    var n = 0;
+    z.soorten.forEach(function(s){ n += tel[s] || 0; });
+    if(!n) return;
+    /* Alleen als het spel vandaag ook echt iets kan tonen. Een knop die uitkomt op "leer eerst
+       wat meer woordjes" leert je dat de knoppen hier niet betrouwbaar zijn (v19.92). */
+    var v = z.spel;
+    if(!v){
+      var w = dagSpelKeuze(1)[0];
+      if(!w) return;
+      v = w.v;
+    } else {
+      try { if(!speelKlaar(v)) return; } catch(err){ return; }
+    }
+    if(!beste || n > beste.n) beste = {n:n, v:v, nl:z.nl, en:z.en};
+  });
+  return beste;
+}
+
 function dagSpeelHtml(){
   /* v23.147: hier stond Aventura vast bovenaan en kwamen er twee wisselende bij. Nu drie
-     wisselende, want die vaste plek hoorde bij een spel dat er niet meer is. */
-  var keus = dagSpelKeuze(3);
+     wisselende, want die vaste plek hoorde bij een spel dat er niet meer is.
+     v23.226: en nu één, gekozen uit je fouten van de afgelopen week. Drie willekeurige knoppen
+     naast elkaar stellen drie keer dezelfde vraag ("wil je dit?") en geven nul keer een antwoord
+     ("hier valt voor jou wat te halen"). */
+  var zwak = null;
+  try { zwak = dagZwakPunt(); } catch(e){ zwak = null; }
+  var keus = zwak ? [zwakRij(zwak.v)].filter(Boolean) : dagSpelKeuze(1);
+  if(zwak && !keus.length){ zwak = null; keus = dagSpelKeuze(1); }
   var knoppen = "";
   keus.forEach(function(k){ knoppen += dagSpeelRij(k); });
+  /* De reden staat vóór de knop en niet erna: hij is het antwoord op "waarom deze", en die vraag
+     stel je terwijl je ernaar kijkt. Geen reden als er niets te wijzen valt; een verzonnen reden
+     is erger dan geen (nul is geen bericht, zie dagRelevantie). */
+  var reden = zwak
+    ? "<p class='muted' style='margin:0 0 8px; font-size:.88rem'>"+
+        ct("Deze week ging het "+zwak.n+" keer mis op "+zwak.nl+".",
+           "This week you got "+zwak.n+" wrong on "+zwak.en+".")+"</p>"
+    : "";
   /* v23.65. Stefan: "waarom heb ik die unlocked? dan wil ik toch alle spellen zien maar met eentje
      die niet locked is." Het antwoord stond op het volgende scherm en niet hier: daar staan de
      dichte spellen grijs onder de open, met de eis erbij (v19.92). Alleen wist je op deze kaart
@@ -21188,9 +21268,11 @@ function dagSpeelHtml(){
   try {
     dicht = dagSpellen().filter(function(x){ return !speelKlaar(x.v); }).length;
   } catch(e){ dicht = 0; }
-  return "<div class='card' id='speelKaart'><span class='kicker'>"+ct("Even spelen","Play something")+"</span>"+
+  return "<div class='card' id='speelKaart'><span class='kicker'>"+
+      (zwak ? ct("Even oefenen","A bit of practice") : ct("Even spelen","Play something"))+"</span>"+
+    reden+
     "<div class='speellijst'>"+knoppen+"</div>"+
-    (dicht > 0
+    (dicht > 0 && !zwak
       ? "<p class='muted' style='margin:8px 0 0; font-size:.85rem'>"+
           ct("Nog "+dicht+" "+(dicht === 1 ? "spel komt" : "spellen komen")+" erbij als je meer woorden kent.",
              "Another "+dicht+" "+(dicht === 1 ? "game joins" : "games join")+" in once you know more words.")+"</p>"
