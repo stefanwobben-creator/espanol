@@ -27,20 +27,24 @@
 //
 // WAT DEZE SUITE BEWAAKT
 //
-//   1. ALLEEN HET EERSTE ANTWOORD TELT VOOR DE DOOS. Wat je daarna die dag nog doet, verandert hem
-//      niet meer. Dit is het defect zelf, en het is met drie regels na te rekenen in plaats van met
-//      vier weken veldmeting.
-//      Let op de precieze formulering, want mijn eerste versie hiervan was onzin: goed-dan-fout en
-//      fout-dan-goed hóren te verschillen, want hun eerste antwoord verschilt. Wat niet mocht
-//      verschillen is [goed] tegenover [goed, fout]: dezelfde start, ander vervolg, en onder de
-//      oude regel liep dat uiteen van doos 3 naar doos 0.
-//   2. HET EERSTE ANTWOORD BESLIST, DE REST VAN DE DAG NIET. Een goede start klimt, ook als er
-//      later fouten volgen. Vijf goede antwoorden achter elkaar klimmen niet vijf dozen.
+//   1. DE VOLGORDE VAN JE ANTWOORDEN DOET ER NIET TOE. Dit is het defect zelf, en het is met drie
+//      regels na te rekenen in plaats van met vier weken veldmeting.
+//
+//      v23.225 heeft de regel hier aangescherpt, en het loont om te lezen waarom. De reparatie van
+//      v23.170 maakte het EERSTE antwoord van de dag beslissend: dat haalde de volgorde-afhankelijk-
+//      heid eruit voor [goed] tegenover [goed, fout], maar liet hem staan tussen [goed, fout] en
+//      [fout, goed]. Dat viel niet op zolang een opfrisser één vraag had. Met twee vragen wel:
+//      eerste goed, tweede fout, en je stond een doos hóger dan voor je begon.
+//
+//      De regel is nu: de dag wordt als geheel afgerekend, vanaf de doos waar hij vanochtend stond.
+//      Eén misser vandaag en de promotie gaat niet door, in welke volgorde dan ook.
+//   2. VIJF GOEDE ANTWOORDEN KLIMMEN ÉÉN DOOS, NIET VIJF. De dagrem, en die blijft.
 //   3. DE RESET IS ER NOG. Het controlegeval, en het is de helft die het makkelijkst per ongeluk
-//      wegvalt als iemand later "die straf is wel streng" denkt: een fout eerste antwoord gaat
-//      helemaal terug naar doos 0, niet één stapje.
-//   4. EEN MISSER LATER OP DE DAG VERDWIJNT NIET. De doos blijft staan, maar je ziet het onderwerp
-//      morgen terug in plaats van pas over dagen.
+//      wegvalt als iemand later "die straf is wel streng" denkt: een foute dag gaat helemaal terug
+//      naar doos 0, niet één stapje.
+//   4. EEN MISSER LATER OP DE DAG HAALT DE PROMOTIE WEG. Tot v23.225 bleef de doos staan en werd
+//      alleen de datum teruggetrokken; dat was precies het gat waardoor een tweede vraag je hoger
+//      kon zetten dan je stond.
 //   5. HETZELFDE ONDERWERP STAAT NIET TWEE KEER IN ÉÉN LES. De opfrisser heet "opfris-genero" en de
 //      microles "concept-genero", en de ontdubbeling vergeleek de hele string.
 const { chromium } = require('playwright');
@@ -83,7 +87,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       return { box: st.box, due: st.due, goed: st.goed, fout: st.fout };
     }
 
-    // ---- 1. alleen het eerste antwoord telt voor de doos ----
+    // ---- 1. de volgorde doet er niet toe ----
     uit.alleenGoed = dag(2, [true]);
     uit.goedDanFout = dag(2, [true, false]);
     uit.goedDanTweeFout = dag(2, [true, false, false]);
@@ -93,14 +97,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
        oude regel eindigde dit onherroepelijk op doos 0. */
     uit.echteDag = dag(2, [true, true, true, false, true, true, true, true]);
 
-    // ---- 2. het eerste antwoord beslist ----
+    // ---- 2. de dagrem ----
     uit.vijfGoed = dag(1, [true, true, true, true, true]);
 
     // ---- 3. de reset is er nog ----
     uit.fouteStart = dag(4, [false]);
     uit.foutMetGoedErna = dag(4, [false, true, true, true]);
 
-    // ---- 4. een misser later op de dag verdwijnt niet ----
+    // ---- 4. een misser later op de dag haalt de promotie weg ----
     uit.morgen = addDays(today(), 1);
     uit.laatFout = dag(3, [true, false]);
     uit.zonderFout = dag(3, [true]);
@@ -123,23 +127,29 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     return uit;
   });
 
-  console.log('\n-- 1. alleen het eerste antwoord telt voor de doos --');
+  console.log('\n-- 1. de volgorde van je antwoorden doet er niet toe --');
   console.log('   [goed]=' + r.alleenGoed.box + ' [goed,fout]=' + r.goedDanFout.box +
     ' [goed,fout,fout]=' + r.goedDanTweeFout.box + ' · [fout]=' + r.alleenFout.box +
     ' [fout,goed]=' + r.foutDanGoed.box);
-  ok(r.alleenGoed.box === r.goedDanFout.box && r.goedDanFout.box === r.goedDanTweeFout.box,
-    'na een goede start verandert geen enkele fout van die dag je doos nog');
-  ok(r.alleenFout.box === r.foutDanGoed.box,
-    'en na een foute start geen enkel goed antwoord van die dag');
-  /* De tegenmeting, anders is punt 1 groen te krijgen door de doos nooit te laten bewegen: een
-     goede start en een foute start moeten juist wél verschillen. */
+  ok(r.goedDanFout.box === r.foutDanGoed.box,
+    'goed-dan-fout en fout-dan-goed komen op hetzelfde uit ('
+      + r.goedDanFout.box + ' en ' + r.foutDanGoed.box + ')');
+  ok(r.goedDanFout.box === r.goedDanTweeFout.box && r.goedDanFout.box === r.alleenFout.box,
+    'en hoeveel goede antwoorden er ook omheen staan, één misser is één misser');
+  /* De tegenmeting, anders is punt 1 groen te krijgen door de doos nooit te laten bewegen: een dag
+     zonder missers en een dag met een misser moeten juist wél uit elkaar lopen. */
   ok(r.alleenGoed.box !== r.alleenFout.box,
-    'terwijl een goede en een foute start wél uit elkaar lopen ('
+    'terwijl een schone dag en een dag met een misser wél uit elkaar lopen ('
       + r.alleenGoed.box + ' tegen ' + r.alleenFout.box + ')');
   console.log('   een dag met één misser tussen zeven goede: doos ' + r.echteDag.box);
-  ok(r.echteDag.box === 3, 'een dag die goed begint klimt, ook met een misser erin (doos ' + r.echteDag.box + ', was 2)');
+  /* v23.225: hier stond `=== 3`, oftewel: die dag klimt gewoon. Dat was de andere kant van
+     hetzelfde gat. Een dag waarin je het onderwerp een keer mist is geen dag waarop je bewezen
+     hebt dat je het kunt, en de datum alleen terugtrekken deed net alsof dat wel zo was. */
+  ok(r.echteDag.box === 0,
+    'zeven goede antwoorden met één misser ertussen leveren geen promotie op (doos ' + r.echteDag.box + ')');
+  ok(r.echteDag.due === r.morgen, 'en het onderwerp komt morgen terug');
 
-  console.log('\n-- 2. het eerste antwoord beslist, de rest van de dag niet --');
+  console.log('\n-- 2. de dagrem: vijf goede antwoorden klimmen één doos --');
   ok(r.vijfGoed.box === 2, 'vijf goede antwoorden klimmen één doos, niet vijf (' + r.vijfGoed.box + ')');
   ok(r.vijfGoed.goed === 5, 'de teller loopt wel gewoon door (' + r.vijfGoed.goed + ')');
 
@@ -149,9 +159,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'een fout eerste antwoord gaat helemaal terug naar 0, ook met goede antwoorden erna (' + r.foutMetGoedErna.box + ')');
   ok(r.foutMetGoedErna.due === r.morgen, 'en komt morgen terug');
 
-  console.log('\n-- 4. een misser later op de dag verdwijnt niet --');
-  console.log('   met misser: due ' + r.laatFout.due + ' · zonder: due ' + r.zonderFout.due);
-  ok(r.laatFout.box === r.zonderFout.box, 'de doos van vandaag staat al vast en beweegt niet meer');
+  console.log('\n-- 4. een misser later op de dag haalt de promotie weg --');
+  console.log('   met misser: doos ' + r.laatFout.box + ' due ' + r.laatFout.due +
+    ' · zonder: doos ' + r.zonderFout.box + ' due ' + r.zonderFout.due);
+  ok(r.laatFout.box < r.zonderFout.box,
+    'een misser na een goed antwoord laat de doos niet staan maar haalt de promotie weg ('
+      + r.laatFout.box + ' tegen ' + r.zonderFout.box + ')');
   ok(r.laatFout.due === r.morgen, 'maar je ziet het morgen terug in plaats van over dagen');
   ok(r.zonderFout.due !== r.morgen, 'terwijl een dag zonder missers zijn volle wachttijd houdt (' + r.zonderFout.due + ')');
 

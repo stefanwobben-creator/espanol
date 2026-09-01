@@ -1569,7 +1569,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.224";
+var APP_VERSIE = "v23.225";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -32093,29 +32093,45 @@ function gramBij(cid, goed, keuzes){
   if(goed) st.goed++;
   else { st.fout++; st.laatst = today(); }
 
+  /* v23.225: de dag wordt als geheel afgerekend in plaats van op het eerste antwoord.
+
+     Hier stond een tak voor "eerste antwoord van vandaag" en een tak voor "later op de dag". Het
+     oordeel viel bij het eerste antwoord en kon daarna alleen nog de due-datum terugtrekken, niet
+     de doos. Met één vraag per opfrisser viel dat niet op. Met twee vragen wel: eerste goed, tweede
+     fout, en je stond een doos hoger dan voordat je begon.
+
+     Nu onthoudt de doos waar hij aan het begin van vandaag stond, en wordt de stand bij elk antwoord
+     opnieuw berekend vanaf dát punt. Daarmee is de uitkomst niet meer afhankelijk van de volgorde
+     waarin je de vragen toevallig goed of fout had, en kan geen enkel aantal extra antwoorden op
+     dezelfde dag de doos verder duwen dan één stap. */
   if(st.bd !== today()){
     st.bd = today();
-    if(!goed){
-      st.half = 0;
-      st.box = 0;
-      st.due = addDays(today(), 1);
-    } else if(gramHalfBewijs(keuzes) && !st.half){
-      /* Het eerste halve bewijs. De doos blijft staan, maar je ziet het morgen terug: een tweede
-         meting die een week later komt meet een andere kennistoestand en bevestigt dus niets. */
-      st.half = 1;
-      st.due = addDays(today(), 1);
-    } else {
-      st.half = 0;
-      st.box = Math.min((st.box || 0) + 1, GRAM_BOX.length - 1);
-      st.due = addDays(today(), GRAM_BOX[st.box]);
-    }
-  } else if(!goed){
-    /* Later op de dag alsnog mis. De doos blijft staan (het oordeel van vandaag is al geveld), maar
-       je ziet het morgen terug in plaats van pas over drie of acht dagen. Zonder deze regel zou een
-       onderwerp dat je 's ochtends goed had en 's middags vijf keer fout gewoon wegzakken.
-       v23.212: en een half bewijs van vanochtend is na vijf keer mis geen bewijs meer. */
+    st.boxVoor = st.box || 0;    // waar stond hij toen vandaag begon
+    st.dagMis = 0;
+    st.dagGoed = 0;
+  }
+  if(goed) st.dagGoed = (st.dagGoed || 0) + 1;
+  else st.dagMis = (st.dagMis || 0) + 1;
+
+  if(st.dagMis){
+    /* Eén misser vandaag en de promotie gaat niet door, hoeveel je er daarna ook goed hebt. Dit is
+       bewust hetzelfde harde oordeel als voorheen: de zachtere variant is in v23.208 voorgesteld en
+       door Stefan afgewezen. Wat je hierna nog oefent is oefening, geen herkansing. */
     st.half = 0;
+    st.box = 0;
     st.due = addDays(today(), 1);
+  } else if(gramHalfBewijs(keuzes) && st.dagGoed < 2 && !st.half){
+    /* Het eerste halve bewijs. De doos blijft staan, maar je ziet het morgen terug: een tweede
+       meting die een week later komt meet een andere kennistoestand en bevestigt dus niets.
+       v23.225: `st.dagGoed < 2` erbij. Twee goede tweekeuzevragen op dezelfde dag is samen 25
+       procent raden, en dat is minder dan de 33 procent van één driekeuzevraag die hier altijd al
+       als vol bewijs gold. Bewijs is een kans, geen gebeurtenis. */
+    st.half = 1;
+    st.due = addDays(today(), 1);
+  } else {
+    st.half = 0;
+    st.box = Math.min((st.boxVoor || 0) + 1, GRAM_BOX.length - 1);
+    st.due = addDays(today(), GRAM_BOX[st.box]);
   }
   S.gram[cid] = st;
 }
@@ -32254,6 +32270,42 @@ function gramDueTop(){
    morgen vooraan in de wachtrij, en dan wél als hele microles: twee keer mis is geen geheugenkwestie
    meer. */
 function gcOpfrisId(cid){ return "opfris-" + String(cid || "").replace(/^concept-/, ""); }
+/* v23.225: hoeveel vragen een opfrisser en een drill hebben. Als getal en niet als losse cijfers in
+   de code, want de proef in pw-opfris.js rekent ermee en die mag niet zijn eigen aanname doen. */
+var GC_OPFRIS_VRAGEN = 2;
+var GC_DRILL_VRAGEN = 5;
+function gcDrillId(cid){ return "drill-" + String(cid || "").replace(/^(concept|opfris)-/, ""); }
+/* Vijf verse vragen over hetzelfde concept, aangeboden op het moment dat er net iets misging.
+
+   Stefan, 1 sep: "die was te moeilijk, dus daar zou je nu verwachten dat er een extra los komt."
+   Dat kwam er niet: er stond een grijze zin ("klik gerust nog een keer door deze stap heen") en het
+   onderwerp kwam pas de volgende dag terug.
+
+   Dit kan je doosje niet omhoog duwen en dat hoeft hier niet afgedwongen te worden: gramBij() ziet
+   sinds v23.225 dat er vandaag een misser was en laat de promotie dan vallen, hoeveel je er hierna
+   ook goed hebt. Oefening, geen herkansing. */
+function gcDrillBouw(id){
+  var cid = String(id || "").replace(/^drill-/, "");
+  var c = gcConcept(cid);
+  if(!c) return null;
+  var vragen = [];
+  try { vragen = gcMaakVragen(c, GC_DRILL_VRAGEN); } catch(e){ vragen = []; }
+  if(!vragen.length) return null;
+  var naam = ct(c.naam, c.naamEn || c.naam);
+  return {
+    icon: c.icon || "\ud83c\udfaf",
+    id: id, concept: cid, drill: true,
+    titel: ct("Nog even oefenen: " + naam, "A bit more practice: " + naam),
+    titelEn: "A bit more practice: " + (c.naamEn || c.naam),
+    pitch: ct(vragen.length + " nieuwe vragen. Ze tellen niet mee voor je doosje.",
+              vragen.length + " fresh questions. They do not count towards your box."),
+    pitchEn: vragen.length + " fresh questions. They do not count towards your box.",
+    stappen: [{ kop: ct("Nog even oefenen", "A bit more practice"),
+                kopEn: "A bit more practice",
+                uitleg: "", uitlegEn: "",
+                vragen: vragen }]
+  };
+}
 /* v23.190/191. Hier stond gcOpfrisOnderwerp(), die bij ELKE aanroep een nieuwe vraag bouwde
    en daarmee langs de cache van gcOnderwerp() heen ging. gwKies() en renderCheat() halen het
    onderwerp allebei opnieuw op, dus één klik raakte drie trekkingen: je klikte op de opties
@@ -32266,9 +32318,15 @@ function gcOpfrisBouw(id){
   var cid = String(id || "").replace(/^opfris-/, "");
   var c = gcConcept(cid);
   if(!c) return null;
+  /* v23.225: twee vragen in plaats van één. Stefan: "dat ik maar een vraag krijg, dat voelt beetje
+     raar." Dat gevoel klopte met een getal erachter: één driekeuzevraag is 33 procent raden, en een
+     goed antwoord zette het doosje toch een hele stap verder. Twee vragen maakt er 11 procent van.
+
+     Twee en niet drie: dit is een opfrisser en geen les. Hij hoort in een halve minuut klaar te
+     zijn, want hij staat vóór het echte onderwerp in dezelfde dagles. */
   var vragen = [];
-  try { vragen = gcMaakVragen(c, 1); } catch(e){ vragen = []; }
-  if(!vragen.length) return null;
+  try { vragen = gcMaakVragen(c, GC_OPFRIS_VRAGEN); } catch(e){ vragen = []; }
+  if(vragen.length < GC_OPFRIS_VRAGEN) return null;
   var naam = ct(c.naam, c.naamEn || c.naam);
   return {
     /* v23.180: het icoon stond hier niet, en renderGramWiz() zet o.icon vóór de stapkop.
@@ -32278,8 +32336,8 @@ function gcOpfrisBouw(id){
     id: id, concept: cid, opfris: true,
     titel: ct("Even opfrissen: " + naam, "Quick refresher: " + naam),
     titelEn: "Quick refresher: " + (c.naamEn || c.naam),
-    pitch: ct("Eén vraag. Je had dit al een keer goed.", "One question. You had this right before."),
-    pitchEn: "One question. You had this right before.",
+    pitch: ct("Twee vragen. Je had dit al een keer goed.", "Two questions. You had this right before."),
+    pitchEn: "Two questions. You had this right before.",
     stappen: [{ kop: ct("Even opfrissen", "Quick refresher"),
                 kopEn: "Quick refresher",
                 uitleg: "", uitlegEn: "",
@@ -32657,7 +32715,8 @@ function gcBouw(id){
 var gcCache = {};
 var GC_BOUWERS = [
   {pre: "concept-", bouw: function(id){ return gcBouw(id.replace(/^concept-/, "")); }},
-  {pre: "opfris-",  bouw: function(id){ return gcOpfrisBouw(id); }}
+  {pre: "opfris-",  bouw: function(id){ return gcOpfrisBouw(id); }},
+  {pre: "drill-",   bouw: function(id){ return gcDrillBouw(id); }}
 ];
 function gcBouwerVoor(id){
   var s = String(id || "");
@@ -34892,7 +34951,17 @@ function renderGramWiz(){
                             "part "+(gwSess.stap+1)+" of "+o.stappen.length+" of this topic")
           : "")+
       "</div>"+
-      (perfect ? "" : "<p class='muted'>"+ct("Klik gerust nog een keer door deze stap heen, dat is precies waar hij voor is.","Feel free to run through this step again, that's exactly what it's for.")+"</p>")+
+      /* v23.225: hier stond alleen een grijze zin ("klik gerust nog een keer door deze stap heen").
+         Dat is een uitnodiging zonder knop, en op het moment dat je net iets fout had is dat precies
+         het moment waarop je hem nodig hebt. Nu een echte knop, en alleen als er iets misging en het
+         onderwerp een concept heeft om vragen uit te maken. */
+      (perfect ? "" : (o.concept && !o.drill
+        ? "<div class='row' style='margin-top:10px'><button class='ghost' id='gwDrill'>\u2795 "+
+            ct("Nog "+GC_DRILL_VRAGEN+" van dit onderwerp","Another "+GC_DRILL_VRAGEN+" of this topic")+"</button></div>"+
+          "<p class='muted' style='margin:6px 0 0; font-size:.85rem'>"+
+            ct("Verse vragen, en ze tellen niet mee voor je doosje.",
+               "Fresh questions, and they do not count towards your box.")+"</p>"
+        : "<p class='muted'>"+ct("Klik gerust nog een keer door deze stap heen, dat is precies waar hij voor is.","Feel free to run through this step again, that's exactly what it's for.")+"</p>"))+
       /* v23.63. Stefan: "wat me hier echt opvalt zou de vele call to actions, dat is verwarrend ook
          al is de primaire rood." Hier stonden er vier: "Verder met je les" (rood), "Volgende stap",
          "Deze stap opnieuw" en "Terug". Op stap 1 van 3 bood de app dus drie manieren om weg te gaan
@@ -34956,6 +35025,10 @@ function wireGramWiz(el){
   b = document.getElementById("gwVolgende"); if(b) b.onclick = gwVolgende;
   b = document.getElementById("gwVolgendeStap"); if(b) b.onclick = gwVolgendeStap;
   b = document.getElementById("gwHerhaal"); if(b) b.onclick = function(){ gwStart(gwSess.id, gwSess.stap); };
+  /* v23.225: stap 0, want een drill heeft er maar één. Zonder dat cijfer zou gwStart() de opgeslagen
+     voortgang van dit id volgen en die staat na één ronde op "klaar". */
+  b = document.getElementById("gwDrill");
+  if(b) b.onclick = function(){ gwStart(gcDrillId(gwSess.id.replace(/^concept-/, "")), 0); };
   b = document.getElementById("gwHerhaalAlles"); if(b) b.onclick = function(){ gwStart(gwSess.id, 0); };
   b = document.getElementById("gwNaarDrill"); if(b) b.onclick = function(){
     var o = gwOnderwerp(gwSess.id);

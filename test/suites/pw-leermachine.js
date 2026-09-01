@@ -408,10 +408,14 @@ const { chromium } = require('playwright');
     'een fout op reflexivo zet die vooraan in de dagles (' + inFlow.lijst.join(', ') + ')');
   ok(inFlow.sess === 'opfris-reflexivo' && inFlow.lees === null,
     'en in de dagelijkse les kom je nog steeds meteen in de oefening');
-  /* De opfrisser is het verschil tussen herhalen en opnieuw leren: één stap, één vraag, geen
-     uitleg. Zonder die eis is hij een tweede microles en wordt de dag alleen maar langer. */
-  ok(inFlow.stappen === 1 && inFlow.vragen === 1,
-    'en het is één stap met één vraag, geen tweede les (' + inFlow.stappen + ' stappen, ' + inFlow.vragen + ' vragen)');
+  /* De opfrisser is het verschil tussen herhalen en opnieuw leren: één stap, geen uitleg, en kort.
+     Zonder die eis is hij een tweede microles en wordt de dag alleen maar langer.
+     v23.225: het aantal vragen ging van één naar twee, want één driekeuzevraag is 33 procent raden
+     en zette het doosje toch een hele stap verder. Wat hier bewaakt blijft is de grens: één stap, en
+     hoogstens een handvol vragen. Het exacte getal staat in GC_OPFRIS_VRAGEN en wordt in
+     pw-gramflow.js tegen de app zelf gelegd. */
+  ok(inFlow.stappen === 1 && inFlow.vragen >= 1 && inFlow.vragen <= 3,
+    'en het is één korte stap, geen tweede les (' + inFlow.stappen + ' stappen, ' + inFlow.vragen + ' vragen)');
   await page.evaluate(() => { gwSluit(); });
 
   /* ---------------- 9. de tab opent kort (v20.7) ----------------

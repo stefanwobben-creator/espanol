@@ -129,6 +129,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     }
     gramLog('proefc', 'microles', true);
     uit.dagenBewaard = Object.keys(S.gramLog).length;
+    uit.opfrisVragen = GC_OPFRIS_VRAGEN;
     return uit;
   });
 
@@ -140,7 +141,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('   ' + JSON.stringify(r.naKlaar));
   ok(!!r.naKlaar && /^opfris-/.test(r.naKlaar.id), 'de app opent de opfrisser (' + (r.naKlaar || {}).id + ')');
   ok(!!r.naKlaar && r.naKlaar.stappen === 1, 'die één stap heeft');
-  ok(!!r.naKlaar && r.naKlaar.vragen === 1, 'met één vraag erin');
+  /* v23.225: hier stond `=== 1`. De opfrisser heeft twee vragen gekregen, want één driekeuzevraag
+     is 33 procent raden en zette het doosje toch een hele stap verder. Het getal komt uit de app
+     (GC_OPFRIS_VRAGEN) en niet uit deze suite: een proef die zijn eigen aanname meeneemt kan hem
+     niet weerspreken. */
+  ok(!!r.naKlaar && r.naKlaar.vragen === r.opfrisVragen,
+    'met ' + r.opfrisVragen + ' vragen erin (' + (r.naKlaar || {}).vragen + ')');
 
   console.log('\n-- 2. het controlegeval: onafgerond hervat gewoon --');
   console.log('   ' + JSON.stringify(r.naHalf));
