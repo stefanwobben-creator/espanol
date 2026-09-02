@@ -175,7 +175,11 @@
   .boxrow .bar .merk{position:absolute; top:0; width:2px; height:100%; background:var(--text); opacity:.45;}
   .warn{background:var(--amber-soft); color:var(--amber); border-radius:10px; padding:10px 14px; font-size:.88rem; margin-bottom:14px;}
   .goalline{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
-  .goalbar{flex:1; height:9px; background:var(--border); border-radius:99px; overflow:hidden;}
+  /* v23.229: de tekst rechts is langer geworden (les én doel). De balk mag daarvoor krimpen, want
+     de tekst draagt de getallen, maar hij mag niet tot nul krimpen: dan staat er een streepje van
+     niets naast een zin, en dat leest als een fout. */
+  .goalbar{flex:1 1 auto; min-width:48px; height:9px; background:var(--border);
+           border-radius:99px; overflow:hidden;}
   .goalbar > div{height:100%; background:var(--accent); border-radius:99px; transition:width .4s;}
   .goalbar > div.done{background:var(--green);}
   .goaltxt{font-size:.8rem; color:var(--muted); white-space:nowrap; font-weight:600;}
@@ -1569,7 +1573,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.228";
+var APP_VERSIE = "v23.229";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8822,6 +8826,30 @@ function miniPetVerversen(){
   mp.onclick = function(){ scopeLesson = null; show("chispa"); };
 }
 
+/* ================= WAAR STAAT JE DAGLES? (v23.229) =================
+
+   Stefan: "wellicht is een ander opzet nog beter, bijv dat je kan zien hoever je bent in je dagles
+   maar ook tov je doel."
+
+   Drie toestanden en niet meer: af, halverwege, nog te doen. De getallen komen uit
+   lesFlowStapNum/lesFlowStapTotaal; hier wordt geen enkel totaal opnieuw opgeschreven, want vier
+   plekken die zelf "4" schreven was de fout die v23.135 opruimde.
+
+   Halverwege betekent hier altijd een GEPAUZEERDE les, want tijdens een lopende les is de dagbalk
+   weg (zie de schil hierboven). Dat is geen gat maar de verdeling: binnen de les vertelt het
+   lesframe waar je bent, buiten de les vertelt de dagbalk het. */
+function dagLesLabel(){
+  var t = today();
+  if(S.lesFlow && S.lesFlow[t]) return ct("les af ✓","lesson done ✓");
+  var f = lesFlow;
+  if(!f && S.lesFlowNu && S.lesFlowNu.d === t) f = S.lesFlowNu;
+  if(f && f.stap){
+    var n = 0, tot = 0;
+    try { n = lesFlowStapNum(f); tot = lesFlowStapTotaal(f); } catch(e){ n = 0; tot = 0; }
+    if(n > 0 && tot > 0) return ct("les ","lesson ") + n + "/" + tot;
+  }
+  return ct("les nog te doen","lesson to do");
+}
 function updateGoalUI(){
   var t = today();
   var x = S.xp[t] || 0;
@@ -8829,9 +8857,14 @@ function updateGoalUI(){
   var fill = document.getElementById("goalFill");
   fill.style.width = pct + "%";
   fill.className = x >= dagdoel() ? "done" : "";
+  /* v23.229: de balk blijft het dagdoel, want dat is wat de dag sluit. De tekst zegt er nu bij
+     waar je les staat, want dat is waar je aan begint als je de app opent. */
   var dl = dagenLabel();
-  document.getElementById("goalTxt").textContent =
-    (x >= dagdoel() ? "doel gehaald ✓" : x + "/" + dagdoel() + " "+xpw()+"") + (dl ? " · " + dl : "");
+  var stukken = [dagLesLabel(),
+                 x >= dagdoel() ? ct("doel gehaald ✓","goal reached ✓")
+                                : x + "/" + dagdoel() + " " + xpw()];
+  if(dl) stukken.push(dl);
+  document.getElementById("goalTxt").textContent = stukken.join(" · ");
   miniPetVerversen();
   var un = document.getElementById("userName");
   if(un){ un.onclick = function(){ scopeLesson = null; show("perfil"); }; }
@@ -16206,10 +16239,12 @@ function lesFrameSync(){
     el.innerHTML = "";
     el.classList.add("leeg");
     document.body.classList.remove("in-les");
+    schilSync();                 // v23.229: de les is uit, dus je schil komt terug
     return;
   }
   el.classList.remove("leeg");
   document.body.classList.add("in-les");
+  schilSync();                   // v23.229: in een les is elk scherm één opgave
   /* v23.209: dit was een onderstreepte tekstspan van twintig pixels hoog, rechts uitgelijnd. Twee
      dingen mis: een onderstreepte link is het sterkste "dit is een website" signaal dat er bestaat,
      en twintig pixels is het kleinste tikdoel op het scherm terwijl dit de enige uitgang is. Nu een
@@ -28193,6 +28228,9 @@ function funTerug(){
 function renderFun(){
   var el = document.getElementById("funCard");
   if(!el) return;
+  /* v23.229: hier wisselt het speeltuinmenu met een lopend spel, zonder dat show() eraan te pas
+     komt. Zonder deze regel houdt de speeltuin de schil van het vorige scherm. */
+  schilSync();
   if(duelCur){ renderDuel(); return; }
   if(funView === "ws"){ renderFunWs(); return; }
   if(funView === "mem"){ renderFunMem(); return; }
@@ -36181,8 +36219,8 @@ var TABS = [
   {id:"lessen", label:"Lessen", soort:"overzicht"},
   {id:"cursus", label:"Cursus", soort:"overzicht"},   // v19.90: de leerlijn, weg bij het profiel vandaan
   {id:"voortgang", label:"Voortgang", nav:false, soort:"overzicht"},   // v23.32: eigen scherm, weg bij het profiel vandaan
-  {id:"woorden", label:"Woordjes", soort:"taak"},
-  {id:"vertalen", label:"Vertalen", soort:"taak"},
+  {id:"woorden", label:"Woordjes", soort:"overzicht"},     // v23.229: buiten een les je eigen sessie
+  {id:"vertalen", label:"Vertalen", soort:"overzicht"},    // v23.229: idem
   {id:"toetsjes", label:"Toetsjes", nav:false, soort:"overzicht"}, // v19.47: geen eigen tab meer, zit nu in Grammatica
   {id:"lezen", label:"Lezen", soort:"overzicht"},
   {id:"chispa", label:"Chispa", nav:false, soort:"overzicht"},
@@ -36192,7 +36230,9 @@ var TABS = [
   {id:"steun", label:"Steun", nav:false, soort:"overzicht"},
   {id:"privacy", label:"Privacy", nav:false, soort:"overzicht"},
   {id:"oefenen", label:"Oefenen", nav:false, soort:"overzicht"},
-  {id:"speeltuin", label:"Speeltuin", soort:"taak"},
+  /* v23.229: het speeltuinMENU is een pagina, een lopend SPEL is een opgave. Dat verschil zit in
+     funView en nergens anders, dus staat het hier en niet in een if ergens in de schil. */
+  {id:"speeltuin", label:"Speeltuin", soort:"overzicht", bezig:function(){ return !!funView; }},
   {id:"spiekbrief", label:"Grammatica", soort:"overzicht"}
 ];
 /* Eén plek leest dat veld. Staat er niets, dan is het een overzicht: een scherm dat vergeet zijn
@@ -36200,6 +36240,53 @@ var TABS = [
 function tabSoort(id){
   for(var i = 0; i < TABS.length; i++){ if(TABS[i].id === id) return TABS[i].soort || "overzicht"; }
   return "overzicht";
+}
+/* ================= DE SCHIL HANGT AAN DE TOESTAND (v23.229) =================
+
+   Stefan, 2 sep: "als ik nu navigeer bijv naar woordjes of spelletjes dan mis ik nu wel de header
+   met vamos Stefan, chispa en de zoekfunctie en ook de progress indicator."
+
+   v23.209 haalde de sitekop, de dagbalk en de voettekst weg op vijf tabbladen. De meting
+   daarachter klopte (de eerste vraag stond op 221 van de 844 pixels), maar de vraag was te grof:
+   het TABBLAD besliste, terwijl de TOESTAND hoort te beslissen. Woordjes tijdens je dagles is één
+   opgave. Woordjes waar je zelf naartoe klikt is je eigen sessie, en dan is het wegnemen van je
+   naam, je zoekknop en je dagbalk geen rust maar verlies.
+
+   Drie regels, in deze volgorde:
+     - loopt er een les, dan is elk scherm een opgave (het lesframe draagt de stap en de uitgang);
+     - een scherm dat uit zichzelf één opgave is (chat, de weekmeting) blijft dat altijd;
+     - een scherm dat bezig is (een lopend spel in de speeltuin) telt ook als opgave.
+
+   Nog steeds zet één plek het attribuut, en nog steeds weet geen enkele renderfunctie ervan. */
+function tabBezig(id){
+  for(var i = 0; i < TABS.length; i++){
+    if(TABS[i].id === id) return !!(TABS[i].bezig && TABS[i].bezig());
+  }
+  return false;
+}
+function schermSoort(id){
+  if(lesFlow && lesFlow.stap) return "taak";
+  if(tabSoort(id) === "taak") return "taak";
+  return tabBezig(id) ? "taak" : "overzicht";
+}
+/* Welk scherm staat er nu? De tabs zijn de waarheid. Een tweede variabele die hetzelfde bijhoudt
+   loopt er vroeg of laat naast, en dan verbergt de app zijn kop op een pagina. */
+function schermNu(){
+  for(var i = 0; i < TABS.length; i++){
+    var el = document.getElementById("tab-" + TABS[i].id);
+    if(el && !el.classList.contains("hidden")) return TABS[i].id;
+  }
+  return null;
+}
+function schilSync(tabId){
+  try {
+    var id = tabId || schermNu();
+    if(id) document.body.setAttribute("data-schermsoort", schermSoort(id));
+  } catch(e){}
+  /* De dagbalk hoort bij de schil, en hij zegt sinds v23.229 waar je dagles staat. Dan moet hij
+     ook op dezelfde momenten opnieuw geschreven worden: tot nu toe gebeurde dat alleen als je
+     punten veranderden, en dan stond er na het pauzeren van je les nog de stand van daarvoor. */
+  try { if(document.getElementById("goalTxt")) updateGoalUI(); } catch(e){}
 }
 
 function navPush(state){
@@ -36346,10 +36433,12 @@ function show(tabId, skipPush){
   TABS.forEach(function(t){
     document.getElementById("tab-"+t.id).classList.toggle("hidden", t.id!==tabId);
   });
-  /* v23.209: de enige plek die de soort zet. Alles wat de schil doet hangt hieraan, en geen enkele
-     renderfunctie weet ervan. Een regel die voor zeventien schermen geldt, hoort door één plek
-     afgedwongen te worden. */
-  try { document.body.setAttribute("data-schermsoort", tabSoort(tabId)); } catch(e){}
+  /* v23.209/v23.229: de enige plek die de soort zet. Alles wat de schil doet hangt hieraan, en
+     geen enkele renderfunctie weet ervan. Een regel die voor zeventien schermen geldt, hoort door
+     één plek afgedwongen te worden. Sinds v23.229 kijkt hij ook naar de toestand, en daarom staan
+     de twee andere aanroepen hieronder: een les die start of stopt en een spel dat begint of
+     eindigt wisselen van soort zonder dat er een tabblad verandert. */
+  schilSync(tabId);
   // v19.98: de vier vakken lichten op bij hun eigen tab; alles wat achter Meer zit laat Meer oplichten,
   // zodat je op elk scherm ziet via welke deur je binnenkwam.
   var inMeer = ["cursus","chispa","perfil"].indexOf(tabId) !== -1;
