@@ -609,7 +609,14 @@
   .zoekrij .zb b{display:block; color:var(--ink);}
   .zoekrij .zb span{display:block; color:var(--muted); font-size:.85rem;}
   .lt-woord{text-align:center; font-size:1.6rem; font-weight:800; letter-spacing:.12em;
-            min-height:2.1rem; margin:10px 0 6px; color:var(--accent);}
+            min-height:2.1rem; margin:10px 0 2px; color:var(--accent);}
+  /* v23.232: rood zodra het woord lang genoeg is en niet in deze puzzel zit, groen als het er wel
+     in zit. Zonder dit staat er een woord op je scherm en zegt de app niets. */
+  .lt-woord.mis{color:var(--red);}
+  .lt-woord.raak{color:var(--green);}
+  .lt-melding{text-align:center; min-height:1.2rem; font-size:.85rem; margin-bottom:6px;}
+  .lt-melding .mis{color:var(--red);}
+  .lt-melding .raak{color:var(--green); font-weight:600;}
   .lt-letter{font-size:1.15rem; font-weight:800; min-width:44px; text-align:center;}
   .lt-lijst{margin-top:14px; display:flex; flex-direction:column; gap:4px;}
   .lt-rij{display:flex; gap:10px; align-items:baseline; padding:6px 10px; border-radius:9px;
@@ -1573,7 +1580,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.231";
+var APP_VERSIE = "v23.232";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -13689,6 +13696,20 @@ function ltNieuw(){
 function ltHuidig(){
   return ltSpel.gekozen.map(function(i){ return ltSpel.letters[i]; }).join("");
 }
+/* v23.232. Stefan: "als ik een antwoord intyp wordt het vakje niet groen of rood."
+
+   Klopt, en het was erger dan geen kleur: bij een goed woord gebeurde alles (punt, piep, confetti)
+   en bij een fout woord LETTERLIJK NIETS. Je stond met vijf letters op je scherm en de app zweeg.
+   ltSpel.melding bestond al als veld en werd nergens getoond.
+
+   ltStaat() zegt wat er van het woord onder je duim te vinden is; renderFunLetras() kleurt ermee.
+   Eén functie, want de kleur en de melding horen niet uit elkaar te lopen. */
+function ltStaat(){
+  if(!ltSpel) return "";
+  var w = ltHuidig();
+  if(w.length < LT_MIN) return "";
+  return ltSpel.doelen.some(function(d){ return ltPlat(d.es) === w; }) ? "raak" : "mis";
+}
 function ltCheck(){
   var w = ltHuidig();
   if(w.length < LT_MIN) return;
@@ -13696,7 +13717,7 @@ function ltCheck(){
   if(raak && !ltSpel.gevonden[ltPlat(raak.es)]){
     ltSpel.gevonden[ltPlat(raak.es)] = 1;
     ltSpel.gekozen = [];
-    ltSpel.melding = "";
+    ltSpel.melding = raak.es + " \u00b7 " + raak.nl;
     addXP(1);
     /* v23.11: Letras gaf tot nu toe alleen XP en raakte je woordjes niet aan, terwijl elk ander spel
        dat sinds v19.89 wel doet. Een half uur Letras kon dus per definitie niets opleveren op het
@@ -13752,14 +13773,34 @@ function ltIdVoor(plat){
 
 /* Je puzzel overleeft het sluiten van de app: half uitspelen mag, morgen ligt hij er nog. Alleen de
    letters en wat je gevonden hebt gaan mee; de doelen worden opnieuw afgeleid uit dezelfde letters. */
+/* v23.232: één plek die een puzzel echt weggooit, geheugen en opslag tegelijk. */
+function ltVergeet(){
+  ltSpel = null;
+  try { delete S.letras; persist(); } catch(e){}
+}
 function ltBewaar(){
   if(!ltSpel){ delete S.letras; persist(); return; }
-  S.letras = {letters: ltSpel.letters.join(""), gevonden: Object.keys(ltSpel.gevonden)};
+  /* v23.232: de vlag "af" wordt hier gezet, door de enige die het zeker weet: het spel dat op dit
+     moment loopt en zijn eigen doelenlijst kent. ltHerstel() leest hem en rekent niets na. */
+  var af = ltSpel.doelen.length > 0 &&
+           Object.keys(ltSpel.gevonden).length >= ltSpel.doelen.length;
+  S.letras = {letters: ltSpel.letters.join(""), gevonden: Object.keys(ltSpel.gevonden), af: af ? 1 : 0};
   persist();
 }
 function ltHerstel(){
   var b = S && S.letras;
   if(!b || !b.letters) return false;
+  /* v23.232, en dit is de vangregel. Er zijn meer wegen naar dit scherm dan er verversingen zijn
+     (de tegel, de dagkaart, de terugknop van de browser, een herstart), en langs elk van die wegen
+     is een uitgespeelde puzzel hetzelfde: niets om naar terug te keren. Dus wordt hij hier
+     geweigerd, op de enige plek waar alle wegen samenkomen.
+
+     De vlag komt uit ltBewaar() en wordt hier niet opnieuw uitgerekend. Dat was de eerste poging,
+     en die was onbetrouwbaar: ltHerstel() bouwt de doelenlijst opnieuw uit de letters, en die lijst
+     hoeft niet dezelfde te zijn als waarmee je speelde (LT_MAX_DOELEN kapt hem af). Een puzzel die
+     af was kon zo alsnog als onaf terugkomen. Wie het weet schrijft het op; wie het niet weet
+     rekent het niet na. */
+  if(b.af){ try { delete S.letras; persist(); } catch(e){} return false; }
   var basis = String(b.letters).split("").sort().join("");
   var wb = ltWoordenboek(), doelen = [];
   Object.keys(wb).forEach(function(k){
@@ -13798,7 +13839,15 @@ function renderFunLetras(){
         : ct("Je speelt met de " + hor + " meestgebruikte woorden. Nog " + ltTotVolgend() + " woorden vast en er komen er " + LT_PER_STAP + " bij.",
              "You're playing with the " + hor + " most common words. " + ltTotVolgend() + " more words solid and " + LT_PER_STAP + " more join in.")) +
     "</p>" +
-    "<div class='lt-woord'>" + (huidig || "&nbsp;") + "</div>" +
+    "<div class='lt-woord " + ltStaat() + "'>" + (huidig || "&nbsp;") + "</div>" +
+    /* De regel onder het woord. Bij een vondst staat hier wát je vond en wat het betekent: dat is
+       het moment waarop er iets te leren valt, en dat moment stond leeg. Bij een te lang woord dat
+       er niet in zit staat er waarom er niets gebeurt. */
+    "<div class='lt-melding'>" +
+      (ltStaat() === "mis"
+        ? "<span class='mis'>" + ct(huidig + " staat niet in deze puzzel", huidig + " is not in this puzzle") + "</span>"
+        : (ltSpel.melding ? "<span class='raak'>\u2713 " + ltSpel.melding + "</span>" : "&nbsp;")) +
+    "</div>" +
     "<div class='dsleep-bank' style='justify-content:center'>" + ltSpel.letters.map(function(L, i){
       var op = ltSpel.gekozen.indexOf(i) !== -1;
       return "<button type='button' class='dtegel lt-letter" + (op ? " weg" : "") + "' data-ltl='" + i + "'" +
@@ -13823,12 +13872,12 @@ function renderFunLetras(){
   el.querySelectorAll("[data-ltl]").forEach(function(b){
     b.onclick = function(){ ltTik(parseInt(b.getAttribute("data-ltl"), 10)); };
   });
-  document.getElementById("btnLtWis").onclick = function(){ ltSpel.gekozen = []; renderFunLetras(); };
+  document.getElementById("btnLtWis").onclick = function(){ ltSpel.gekozen = []; ltSpel.melding = ""; renderFunLetras(); };
   document.getElementById("btnLtSchud").onclick = function(){
     ltSpel.letters = geschud(ltSpel.letters); ltSpel.gekozen = []; ltBewaar(); renderFunLetras();
   };
   document.getElementById("btnLtNieuw").onclick = function(){ ltNieuw(); renderFunLetras(); };
-  document.getElementById("btnFunTerug").onclick = function(){ ltSpel = null; funView = null; renderFun(); };
+  document.getElementById("btnFunTerug").onclick = function(){ ltVergeet(); funView = null; renderFun(); };
   if(klaar) naRondeWire();
 }
 
@@ -14787,7 +14836,9 @@ function renderQuestion(){
       "<button class='ghost' id='btnMenu'>"+ct("Terug naar toetsjes","Back to quizzes")+"</button></div>";
     document.getElementById("btnRetry").onclick = function(){ startQuiz(qz.id); };
     var bns = document.getElementById("btnNaarSpiek");
-    if(bns) bns.onclick = function(){ closeQuiz(); show("spiekbrief"); };
+    /* v23.232: naar de kaart die bij dít toetsje hoort, niet naar het tabblad. qz.spiek stond er
+       al; er was alleen geen manier om er één te openen. */
+    if(bns) bns.onclick = function(){ closeQuiz(); spiekOpen(qz.spiek[0]); };
     document.getElementById("btnMenu").onclick = closeQuiz;
     return;
   }
@@ -21235,10 +21286,15 @@ function renderFunTijdvorm(){
 function spelInfo(){
   return [
     /* v23.188: de woordenzoeker had als enige rasterspel geen verse, dus je kwam terug op het
-     raster dat je al had uitgespeeld. Zelfde afspraak als bij Letras en Crucigrama. */
+     raster dat je al had uitgespeeld. Zelfde afspraak als bij Letras en Crucigrama.
+
+     v23.232: en Letras had die afspraak wél, maar hij deed niets. `ltSpel = null` maakt het
+     geheugen leeg, waarna renderFunLetras() met ltHerstel() de puzzel uit S.letras terugzet,
+     inclusief alles wat je al gevonden had. Een verversing die alleen het geheugen leegmaakt
+     terwijl de opslag hem terugzet, verandert niets. */
  {v:"ws",      id:"ftWs",      e:"\ud83d\udd0d",            t:fx("wsT"),               s:fx("wsS"), verse:function(){ ws = null; }},
     {v:"kruis",   id:"ftKruis",   e:"\u270f\ufe0f",            t:"Crucigrama",            s:fx("krS"), verse:function(){ kruisLos = null; }},
-    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",            t:"Letras",                s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock."), verse:function(){ ltSpel = null; }},
+    {v:"letras",  id:"ftLetras",  e:"\ud83d\udd24",            t:"Letras",                s:ct("Zeven letters, hoeveel woorden haal je eruit? Geen klok.","Seven letters, how many words can you find? No clock."), verse:function(){ ltVergeet(); }},
     {v:"adiv",    id:"ftAdiv",    e:"\ud83d\udfe9",            t:"Adivina",               s:ct("Raad het woord in vijf pogingen. De eerste letter krijg je.","Guess the word in five tries. You get the first letter."), verse:function(){ adivSpel = null; }},
     {v:"clas",    id:"ftClas",    e:"\u26a1",                  t:"Clasificador",          s:ct("Links of rechts, en het gaat steeds sneller.","Left or right, and it keeps speeding up."), verse:function(){ clNieuwSpel(); }},
     /* v23.106: geen spel maar een meting, en hij staat hier omdat dit de plek is waar je iets
@@ -34877,6 +34933,40 @@ function gwSluit(){
    Wie door wil lezen bladert met vorige/volgende door alle concepten heen, als een boekje. De
    dagelijkse les gaat nog steeds rechtstreeks naar het oefenen: daar heb je die keuze niet nodig. */
 var gcLeesId = null;
+/* ================= EEN SPIEKBRIEF DIE JE KUNT OPENEN (v23.232) =================
+
+   Stefan: "het spiekbriefje kan ik ook niet vinden."
+
+   Onder een matig toetsje stond een knop "Spiekbrief", en die deed show("spiekbrief"). Dat is het
+   TABBLAD, dat Grammatica heet en begint met de route van 31 onderwerpen. De spiekbrief zelf staat
+   verderop op dat scherm, en dan alleen als hij geen eigen onderwerpkaart heeft: spiekNaslagHtml()
+   toont met opzet alleen de weeskaarten. Voor een toetsje mét onderwerpkaart was de spiekbrief via
+   die knop dus nergens te vinden.
+
+   Terwijl de knop wist welke kaart erbij hoorde: qz.spiek staat er, dat is de index in CHEATSHEET.
+   Wat ontbrak was een manier om er één te openen. Nu is er er één, en iedereen die naar een
+   spiekbrief wijst gebruikt hem. */
+var spiekLeesIdx = null;
+var spiekVerseOpen = false;
+function spiekOpen(idx){
+  if(idx === undefined || idx === null) { show("spiekbrief"); return; }
+  spiekLeesIdx = +idx;
+  spiekVerseOpen = true;
+  gwSess = null; gcLeesId = null;
+  show("spiekbrief");
+  try { window.scrollTo(0, 0); } catch(e){}
+}
+function spiekLeesHtml(){
+  var c = CHEATSHEET[spiekLeesIdx];
+  if(!c) return "";
+  /* De weg terug staat boven én onder, want een spiekbrief is lang en je bent hier gekomen vanaf
+     een toetsje waar je nog mee bezig was. */
+  var terug = "<div class='row'><button class='ghost' id='btnSpiekTerug'>" +
+    ct("\u2190 Terug naar Grammatica","\u2190 Back to Grammar") + "</button></div>";
+  return "<div class='card'><span class='kicker'>" + ct("Spiekbrief","Cheat sheet") + "</span>" +
+    "<h2 style='margin-top:2px'>" + spiekTitel(c) + "</h2>" + terug +
+    "<div style='margin-top:10px'>" + spiekHtml(c) + "</div>" + terug + "</div>";
+}
 function gcLeesOpen(id){
   gcLeesId = (id || "").replace(/^concept-/, "");
   gwSess = null;
@@ -35062,9 +35152,36 @@ function gwKaartHtml(o){
 // Dat is het enige getal dat hier iets betekent: wanneer komt dit terug.
 /* v23.159: die status stond alleen in gcKaartHtml, en de route hieronder heeft hem ook nodig. Een
    tweede plek die hetzelfde uitrekent is een tweede waarheid, dus hij staat nu een keer. */
+/* ================= WANNEER IS EEN ONDERWERP "FOUT GEGAAN"? (v23.232) =================
+
+   Stefan: "el la los las die ken ik echt wel (...) het blijft fout zeggen terwijl ik nu al dagen
+   lang alles goed doe."
+
+   Op vier plekken stond hetzelfde oordeel met de hand uitgeschreven:
+
+       st.fout && (st.box || 0) === 0
+
+   Sinds v23.228 is st.fout de OPTELSOM van alle fouten ooit en st.box het ZWAKSTE doosje van het
+   concept. Voor de planning is dat precies goed (een concept is zo sterk als zijn zwakste patroon),
+   maar als oordeel deugt het niet. Bij genero staat de kale sleutel (fouten in het wild, buiten de
+   microles) op doos 0, en die komt daar alleen vanaf als er toevallig weer een quiz of een tegel op
+   dat concept langskomt. Tot die tijd is het antwoord op "ging dit fout?" altijd ja.
+
+   En dat deed meer dan een rood woordje op de route: gcVandaagLijst() zet alles wat "fout ging"
+   vooraan, dus El of la werd elke dag opnieuw gekozen als het onderwerp van vandaag. Precies de
+   klacht.
+
+   Nu leest het de DATUM in plaats van de optelsom, op één plek. Een fout van vorige maand is geen
+   bericht. */
+var GC_VERS_DAGEN = 2;
+function gcStaatFout(st){
+  if(!st || !st.laatst) return false;
+  if((st.box || 0) !== 0) return false;
+  return st.laatst >= addDays(today(), -GC_VERS_DAGEN);
+}
 function gcStatusHtml(cid){
   var st = gramLees(cid);
-  if(st.fout && (st.box || 0) === 0) return "<span style='color:var(--red)'>" + ct("fout gegaan", "got this wrong") + "</span>";
+  if(gcStaatFout(st)) return "<span style='color:var(--red)'>" + ct("fout gegaan", "got this wrong") + "</span>";
   if(!st.goed && !st.fout) return ct("nog niet gedaan", "not done yet");
   return ct("doos ", "box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1);
 }
@@ -35093,7 +35210,7 @@ function gcKaartHtml(o){
    tabbladen is precies waarom Stefan schreef dat hij niet weet waar hij wat kan vinden. */
 function gcRouteRijHtml(c, nr, vandaagSet){
   var open = gcConceptOpen(c.id), st = gramLees(c.id);
-  var af = (st.goed || 0) > 0 && (st.box || 0) > 0 && !(st.fout && (st.box || 0) === 0);
+  var af = (st.goed || 0) > 0 && (st.box || 0) > 0 && !gcStaatFout(st);
   var nu = !!vandaagSet[c.id];
   /* Het cijfer is de plek in de route en blijft dus altijd staan, ook bij een slot: anders telt de
      lijst 1, 3, 5 en is de route juist niet meer te lezen. Het slot hoort rechts, bij de rest van de
@@ -35192,7 +35309,7 @@ function gcVandaagLijst(){
   gcGeordend().forEach(function(c){
     var st = gramLees(c.id);
     if(!st.goed && !st.fout){ if(open[c.id]) nieuw.push(c); return; }
-    if(st.fout && (st.box || 0) === 0){ fout.push({c:c, st:st}); return; }
+    if(gcStaatFout(st)){ fout.push({c:c, st:st}); return; }
     if(!st.due || st.due <= t) due.push({c:c, st:st});
   });
   function opBox(a, b){ return (a.st.box || 0) - (b.st.box || 0); }
@@ -35209,7 +35326,7 @@ function gcVandaagReden(){
   gcVandaagLijst().forEach(function(c){
     var st = gramLees(c.id);
     if(!st.goed && !st.fout) nieuw++;
-    else if(st.fout && (st.box || 0) === 0) fout++;
+    else if(gcStaatFout(st)) fout++;
     else terug++;
   });
   var d = [];
@@ -35598,6 +35715,15 @@ function renderCheat(){
   if(gcLeesId){
     el.innerHTML = renderGcLees();
     wireGramWiz(el);
+    jargonScan(el);
+    return;
+  }
+  // v23.232: één spiekbrief, opengeslagen, met een weg terug.
+  if(spiekLeesIdx !== null && CHEATSHEET[spiekLeesIdx]){
+    el.innerHTML = spiekLeesHtml();
+    el.querySelectorAll("#btnSpiekTerug").forEach(function(b){
+      b.onclick = function(){ spiekLeesIdx = null; renderCheat(); try { window.scrollTo(0, 0); } catch(e){} };
+    });
     jargonScan(el);
     return;
   }
@@ -36480,6 +36606,10 @@ function show(tabId, skipPush){
   if(tabId==="vertalen"){ renderSentence(true); }
   if(tabId==="toetsjes"){ closeQuiz(); }
   if(tabId==="lezen"){ closeBoek(); }
+  // v23.232: een opengeslagen spiekbrief hoort bij de reis ernaartoe, niet bij het tabblad. Kom je
+  // hier langs de gewone weg binnen, dan zie je weer de route.
+  if(tabId==="spiekbrief" && !spiekVerseOpen){ spiekLeesIdx = null; }
+  spiekVerseOpen = false;
   if(tabId==="cursus"){ renderCursus(); }
   if(tabId==="voortgang"){ renderVoortgang(); }
   if(tabId==="chispa"){ renderChispaPagina(); }
