@@ -5,7 +5,8 @@
     "dialogo-a": "nTkjq09AuYgsNR8E4sDe",
     "dialogo-b": "OjrdP8Z2fWjVyt0scrL7",
     "hist": "YKrm0N1EAM9Bw27j8kuD",
-    "quijote": "wfTWLJ20rcMqvU8gIiAB"
+    "quijote": "wfTWLJ20rcMqvU8gIiAB",
+    "cultura": "YKrm0N1EAM9Bw27j8kuD"
   },
   "boek": {
     "boek-1": {
@@ -2325,6 +2326,114 @@
       "model": "eleven_multilingual_v2",
       "hash": "a1825d9dd20d17de",
       "tekens": 48
+    },
+    "s278": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d4196a60668bf6e5",
+      "tekens": 44
+    },
+    "s279": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "95aad2f2c4bba3dc",
+      "tekens": 49
+    },
+    "s280": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f3bb161388e0c2c4",
+      "tekens": 47
+    },
+    "s281": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "f71972bd29bf758e",
+      "tekens": 50
+    },
+    "s282": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "5b92a613914081c5",
+      "tekens": 22
+    },
+    "s283": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cada5d76723b9cc2",
+      "tekens": 31
+    },
+    "s284": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "55915bd3e4162185",
+      "tekens": 36
+    },
+    "s285": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7ec748a94a2f892e",
+      "tekens": 28
+    },
+    "s286": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b046b12e611c8134",
+      "tekens": 30
+    },
+    "s287": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d060d85bda6d4a2a",
+      "tekens": 49
+    },
+    "s288": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "b51ca3a562dac213",
+      "tekens": 47
+    },
+    "s289": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "46ea5eb21479ffb5",
+      "tekens": 51
+    },
+    "s290": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "98b153f7983599d2",
+      "tekens": 52
+    },
+    "s291": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "7a21a96775fd93a4",
+      "tekens": 56
+    },
+    "s292": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "49f98954a8a676d8",
+      "tekens": 57
+    },
+    "s293": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "90f6c7e0e3cc3ed7",
+      "tekens": 53
+    },
+    "s295": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "9b88765b25d9793a",
+      "tekens": 41
+    },
+    "s296": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "cdded7cf9fc7675b",
+      "tekens": 53
     }
   },
   "dialogo-a": {
@@ -3113,6 +3222,68 @@
       "model": "eleven_multilingual_v2",
       "hash": "5d8645076667be84",
       "tekens": 906
+    }
+  },
+  "cultura": {
+    "vida-1": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "ab598bf5890d51d6",
+      "tekens": 934
+    },
+    "vida-2": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "27214f61933f1639",
+      "tekens": 865
+    },
+    "vida-3": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "2dc854756292e638",
+      "tekens": 949
+    },
+    "vida-4": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "c92a7ab2824f6439",
+      "tekens": 858
+    },
+    "vida-5": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "fab95d2d5d2fb474",
+      "tekens": 872
+    },
+    "vida-6": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "3634b061fb959eda",
+      "tekens": 812
+    },
+    "vida-7": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "6418cc86813895b5",
+      "tekens": 886
+    },
+    "vida-8": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "bdda86e325071da5",
+      "tekens": 889
+    },
+    "vida-9": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "d9627ed76fef34e5",
+      "tekens": 952
+    },
+    "vida-10": {
+      "voice": "YKrm0N1EAM9Bw27j8kuD",
+      "model": "eleven_multilingual_v2",
+      "hash": "7c8e5d404ec246ff",
+      "tekens": 925
     }
   }
 }

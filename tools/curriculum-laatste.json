@@ -1,31 +1,71 @@
 {
- "wanneer": "2026-08-22T08:38:01.494Z",
- "versie": "v23.166",
+ "wanneer": "2026-09-03T06:42:59.232Z",
+ "versie": "v23.230",
  "gaten": [
-  {
-   "tag": "basis",
-   "soort": "verschijnsel",
-   "fouten": 26
-  },
   {
    "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 16
+   "fouten": 25
+  },
+  {
+   "tag": "les2",
+   "soort": "verschijnsel",
+   "fouten": 23
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s247",
-   "s248",
-   "s249",
-   "s250",
-   "s251",
-   "s252",
-   "s253"
+   "s278",
+   "s279",
+   "s280",
+   "s281",
+   "s282",
+   "s283",
+   "s284",
+   "s285",
+   "s286",
+   "s287",
+   "s288"
   ],
   "toetsjes": [
-   "q-relatar-extra6"
+   "q-imperativo-extra7"
   ]
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-12",
+  "num": 12,
+  "niveau": "B1",
+  "titel": "De vuelta al trabajo después de las vacaciones",
+  "doel": "Leren praten over de terugkeer naar werk of studie na vakantie, inclusief gevoelens, plannen en praktische zaken.",
+  "doelEn": "To talk about returning to work or study after holidays, including feelings, plans and practical matters.",
+  "spiek": [
+   30
+  ],
+  "words": [
+   "w314",
+   "w315",
+   "w316",
+   "w317",
+   "w318",
+   "w319",
+   "w320",
+   "w321",
+   "w322",
+   "w323",
+   "w324",
+   "w325",
+   "w326",
+   "w327"
+  ],
+  "sents": [
+   "s289",
+   "s290",
+   "s291",
+   "s292",
+   "s293",
+   "s295",
+   "s296"
+  ],
+  "quizzes": []
+ }
 }
