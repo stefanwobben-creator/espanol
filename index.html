@@ -1586,7 +1586,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.234";
+var APP_VERSIE = "v23.235";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16569,6 +16569,20 @@ function lesFlowGramLijst(){
   var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, "").split("#")[0]; };
   var alHier = uit.map(kaal);
   if(gid && alHier.indexOf(kaal(gid)) === -1) uit.push(gid);
+
+  /* v23.235: de onderhoudsbeurt, achteraan. Het leren staat vooraan omdat dat het werk van de dag
+     is; het onderhoud is een tik op iets dat je al kunt. Hij komt er alleen als er echt iets
+     vervallen is op doos 3 of hoger, dus op de meeste dagen verandert er niets aan je les. */
+  var oh = null;
+  try { oh = gramOnderhoudTop(); } catch(e){ oh = null; }
+  if(oh){
+    var ohId = gcOpfrisId(oh.c.id, oh.pi);
+    if(uit.map(kaal).indexOf(kaal(ohId)) === -1){
+      var ohO = null;
+      try { ohO = gcGebouwd(ohId); } catch(e){ ohO = null; }
+      if(ohO) uit.push(ohO.id);
+    }
+  }
   return uit;
 }
 function lesFlowGramId(){
@@ -32664,6 +32678,37 @@ function gramAangeraakt(cid){
    De pot is weg. gramBij() geeft een fout al "morgen" mee en een goed antwoord een langere adem,
    dus een wachtrij op vervaldatum zet fouten vanzelf vooraan. De tellers st.goed en st.fout blijven
    bestaan voor de cijfers op je profiel; ze sturen alleen niets meer aan. */
+/* ================= LEREN EN ONDERHOUDEN ZIJN TWEE BUDGETTEN (v23.235) =================
+
+   Stefan: "maar hoe kan ik dan progressie maken want met grammatica doen we ook spaced repetition
+   toch?"
+
+   De wachtrij hieronder ziet alles wat toe is, ook buiten de focus van v23.234. Alleen pakt
+   lesFlowGramLijst() daar precies één regel uit: rij[0]. En de wachtrij is oplopend op DOOS
+   gesorteerd, want het zwakste hoort vooraan.
+
+   Gevolg: zolang er íets op doos 0 staat komt doos 4 nooit aan de beurt. In Stefans logboek staan
+   zestien onderwerpen op doos 0, 1 of 2, en zijn negen op doos 5 vervallen tussen 1 en 26 oktober.
+   Vanaf 1 oktober zou de herhaling van alles wat hij al kan stilletjes stoppen.
+
+   Dat is het spiegelbeeld van het lege midden: onderaan komt niets omhoog en bovenaan valt straks
+   alles om, en het is dezelfde oorzaak. Eén lijst die twee verschillende dingen moet doen.
+
+   Verwerven en onderhouden zijn niet hetzelfde werk en horen dus niet om dezelfde plek te vechten.
+   Deze functie levert de onderhoudskant: het langst vervallen doosje dat al op doos 3 of hoger
+   staat. Is er niets, dan komt er ook niets bij; nul is geen bericht. */
+var GRAM_ONDERHOUD_DOOS = 3;
+function gramOnderhoudTop(){
+  var rij = [];
+  try { rij = gramWachtrij(); } catch(e){ rij = []; }
+  var kand = rij.filter(function(x){ return (x.st.box || 0) >= GRAM_ONDERHOUD_DOOS; });
+  if(!kand.length) return null;
+  /* Op vervaldatum en niet op doos: bij onderhoud telt wie het langst wacht, niet wie het zwakst
+     is. Wie op doos gaat sorteren bouwt de rij van hierboven na, en dan wint doos 3 altijd van
+     doos 5 en komt doos 5 nooit meer aan bod. */
+  kand.sort(function(a, b){ return (a.st.due || "") < (b.st.due || "") ? -1 : 1; });
+  return kand[0];
+}
 function gramWachtrij(){
   var t = today(), uit = [];
   /* v23.228: per DOOSJE en niet per concept. Een concept met vijf patronen levert dus hoogstens
