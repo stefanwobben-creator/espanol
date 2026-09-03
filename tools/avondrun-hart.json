@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-02T06:49:09.171Z",
+ "wanneer": "2026-09-03T07:03:24.929Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,24 +10,17 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 10,
   "toetsjes": 1,
   "kaal": 3,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
- "versie": "v23.229",
+ "versie": "v23.230",
  "klachten": [
-  "s289: afgekeurd — De zin 'Perdí las llaves y tuve que forzar la puerta' is grammaticaal correct maar inhoudelijk onwaarschijnlijk: niemand forceert een deur omdat hij zijn sleutels verliest (tenzij het een extreme situatie is).",
-  "s291: afgekeurd — De zin is grammaticaal correct, maar de uitleg klopt niet: 'pedir' heeft wel een onregelmatige ik-vorm ('pido'), maar in de zin staat 'quiero pedir', wat correct is en geen onregelmatigheid vereist.",
-  "s293: afgekeurd — De uitleg is onjuist: bij werkwoorden die een duur aangeven (trabajar) gebruik je de perfecto (he trabajado) voor recente acties, maar de zin zelf is correct en natuurlijk.",
-  "2 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 3: De zin is grammaticaal correct, maar de uitleg klopt niet: 'pidió que' is geen subjuntivo, maar een indicativo (pretérito indefinido). De subjuntivo zou 'pidiera' of 'pidiese' zijn, maar dat past niet in deze context.)",
-  "nieuwe les AFGEKEURD:\n - zin 1 (s289): veld \"tag\" ontbreekt\n - zin 2 (s290): veld \"tag\" ontbreekt\n - zin 3 (s292): veld \"tag\" ontbreekt\n - zin 4 (s294): veld \"tag\" ontbreekt\n - zin 5 (s295): veld \"tag\" ontbreekt\n - zin 6 (s296): veld \"tag\" ontbreekt",
-  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+  "s280: afgekeurd — De zin is grammaticaal correct maar inhoudelijk onzin: 'Het kost haar moeite om de prijs van de koffie te betalen' is onnatuurlijk in het Spaans en in het Nederlands. Niemand zegt dit in een normale situatie.",
+  "s286: afgekeurd — De Spaanse zin gebruikt 'cantina' (informeel, vooral in Latijns-Amerika) in plaats van 'cantine' (Spaans, Spanje), wat onnatuurlijk klinkt voor een leerapp gericht op Spanje."
  ],
- "mis": [
-  "de nieuwe les"
- ],
+ "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
@@ -36,11 +29,11 @@
    "naKeuring": 3
   }
  ],
- "reden": "de run is niet afgemaakt",
+ "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
  "geweigerd": 0,
- "gegenereerd": false,
+ "gegenereerd": true,
  "gepubliceerd": false,
- "status": "geklapt",
+ "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-09-02T06:51:14.184Z"
+ "afgemaakt": "2026-09-03T07:11:35.951Z"
 }
