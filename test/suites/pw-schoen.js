@@ -52,6 +52,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   await page.waitForTimeout(400);
   await page.evaluate(() => {
     S.lang = 'nl'; S.speelAlles = true;
+    /* v23.234: deze suite gaat over de oefening en niet over de tijdpoort. Die poort houdt een
+       ongelezen tijd tegen (zie pw-focus), en zonder dit zou elke proef hieronder de poort meten. */
+    S.tijdGelezen = {}; (typeof TIJDEN !== 'undefined' ? TIJDEN : []).forEach(function (t) { S.tijdGelezen[t.id] = today(); });
     S.conjOpen = CONJ_FASES.length - 1; S.conjFase = CONJ_FASES[CONJ_FASES.length - 1].id;
     try { persist(); } catch (e) {}
   });

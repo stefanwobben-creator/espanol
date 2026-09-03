@@ -1586,7 +1586,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.233";
+var APP_VERSIE = "v23.234";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -19843,7 +19843,25 @@ function tijdenIngangHtml(){
          "Presente, indefinido, imperfecto, subjuntivo: what they mean, in plain language with English examples.") +
     "</span></span></button>";
 }
-function gramHomeHtml(){ return tijdenIngangHtml() + gramRouteHtml() + gramOefenHtml(); }
+/* v23.234: een limiet die je niet ziet voelt als willekeur. Deze zegt waaraan je werkt en wat er
+   moet gebeuren voordat er iets bij komt. */
+function gcFocusRegelHtml(){
+  var rij = [];
+  try { rij = gcFocus(); } catch(e){ rij = []; }
+  if(!rij.length) return "";
+  var namen = rij.map(function(id){
+    var c = gcConcept(id);
+    return "<b>" + (c ? ct(c.naam, c.naamEn) : id) + "</b>";
+  }).join(ct(" en ", " and "));
+  return "<div class='card' id='gcFocus' style='padding:12px 14px; margin-bottom:12px'>" +
+    "<span class='kicker'>" + ct("Waar je nu aan werkt", "What you are working on") + "</span>" +
+    "<p style='margin:4px 0 0'>" + namen + "</p>" +
+    "<p class='muted' style='margin:6px 0 0; font-size:.85rem'>" +
+      ct("Er komt pas iets nieuws bij als hier iets op doos " + GC_FOCUS_KLAAR + " staat. Minder tegelijk, verder komen.",
+         "Nothing new joins until one of these reaches box " + GC_FOCUS_KLAAR + ". Fewer at a time, further along.") +
+    "</p></div>";
+}
+function gramHomeHtml(){ return tijdenIngangHtml() + gcFocusRegelHtml() + gramRouteHtml() + gramOefenHtml(); }
 function gramHomeWire(){
   var bt = document.getElementById("btnTijdenKaart");
   if(bt) bt.onclick = tijdenOpen;
@@ -20603,6 +20621,21 @@ function renderFunLes(){
     });
     var tb0 = document.getElementById("btnFunTerug");
     if(tb0) tb0.onclick = terug;
+    return;
+  }
+
+  /* v23.234: de poort. Een tijd die je nog nooit gelezen hebt wordt niet gedrild; eerst vier regels
+     over wat hij DOET, dan pas de vormen. Eenmalig per tijd, en een rij zonder bekende tijd (een
+     patroonrij binnen het presente bijvoorbeeld) draagt de tijd van zijn tijdrij, dus die is dan al
+     gelezen. */
+  var _poortT = null;
+  try { _poortT = (lesRij(lesSpel.rij) || {}).t; } catch(e){ _poortT = null; }
+  if(_poortT && tijdVan(_poortT) && !tijdGelezen(_poortT)){
+    el.innerHTML = tijdPoortHtml(_poortT);
+    var bTb = document.getElementById("btnTijdBegrepen");
+    if(bTb) bTb.onclick = function(){ tijdLees(_poortT); renderFunLes(); };
+    var bTl = document.getElementById("btnFunTerug");
+    if(bTl) bTl.onclick = terug;
     return;
   }
 
@@ -32309,6 +32342,46 @@ function gcOpenSet(){
   });
   return open;
 }
+/* ================= HOOGSTENS TWEE ONDERHANDEN (v23.234) =================
+
+   Stefan, op het advies om minder tegelijk te doen: "dwing dit meer af."
+
+   Gemeten in zijn logboek: 25 onderwerpen, 16 op doos 0, 1 of 2, en NUL op doos 3 of 4. Overal een
+   beetje, nergens iets af. gcOpenSet() houdt alles open wat je ooit hebt aangeraakt, en dat is
+   terecht (fouten moeten terug kunnen komen), maar gcVandaagLijst() koos daar elke dag opnieuw uit.
+   Met zestien kandidaten is dat rondjes draaien.
+
+   Een onderwerp verlaat de focus pas als het op doos 3 staat. Dat is drie schone beurten, dus het
+   slot kan niet klemmen; het duurt alleen zolang als het duurt. Pas dan schuift het volgende uit de
+   leervolgorde erin.
+
+   De focus wordt BEWAARD (S.gramFocus). Elke dag opnieuw de twee zwakste kiezen zou hetzelfde
+   rondjes draaien opleveren met een kleiner getal: je moet aan hetzelfde blijven werken, ook op de
+   dag dat er iets anders toevallig zwakker staat. */
+var GC_FOCUS_N = 2;
+var GC_FOCUS_KLAAR = 3;
+function gcFocusKlaar(id){
+  try { return (gramLees(id).box || 0) >= GC_FOCUS_KLAAR; } catch(e){ return false; }
+}
+function gcFocus(){
+  var open = {};
+  try { open = gcOpenSet(); } catch(e){ open = {}; }
+  var rij = [];
+  try {
+    rij = (S.gramFocus || []).filter(function(id){ return open[id] && !gcFocusKlaar(id); });
+  } catch(e){ rij = []; }
+  if(rij.length < GC_FOCUS_N){
+    gcGeordend().forEach(function(c){
+      if(rij.length >= GC_FOCUS_N) return;
+      if(!open[c.id] || gcFocusKlaar(c.id) || rij.indexOf(c.id) !== -1) return;
+      rij.push(c.id);
+    });
+  }
+  try {
+    if((S.gramFocus || []).join(",") !== rij.join(",")){ S.gramFocus = rij.slice(); persist(); }
+  } catch(e){}
+  return rij.slice();
+}
 function gcConceptOpen(id){
   id = String(id || "").replace(/^concept-/, "");
   if(GC_ORDE.indexOf(id) === -1) return gcVoorOk(id);   // handgeschreven wizard zonder concept
@@ -35051,6 +35124,58 @@ var TIJD_KEUZES = [
   vb:"Ik WEET dat hij komt. Ik WIL dat hij komt.",
   vbEn:"I KNOW he is coming. I WANT him to come."}
 ];
+/* ================= EEN ONGELEZEN TIJD WORDT NIET GEDRILD (v23.234) =================
+
+   Stefan, op het advies om de kaart één keer te lezen: "dwing dit meer af."
+
+   Terecht. v23.233 zette de kaart achter een knop, en een knop kun je negeren; precies dat wás de
+   klacht. Het vormenblok begint nu met de uitleg van zijn eigen tijd, en pas daarna met de oefening.
+
+   Eenmalig per tijd, dus hoogstens zes keer. Dat is de grens tussen afdwingen en zeuren: een poort
+   die elke dag terugkomt is geen poort maar een drempel, en dan klik je hem weg zonder te lezen.
+
+   Openklappen op de kaart zelf telt ook. De handeling is wat telt, niet de plek. */
+function tijdVan(id){
+  for(var i = 0; i < TIJDEN.length; i++){ if(TIJDEN[i].id === id) return TIJDEN[i]; }
+  return null;
+}
+function tijdGelezen(id){
+  try { return !!(S.tijdGelezen || {})[id]; } catch(e){ return true; }
+}
+function tijdLees(id){
+  if(!id || !tijdVan(id)) return;
+  try {
+    S.tijdGelezen = S.tijdGelezen || {};
+    if(!S.tijdGelezen[id]){ S.tijdGelezen[id] = today(); persist(); }
+  } catch(e){}
+}
+/* De poort zelf: dezelfde inhoud als één rij op de kaart, maar uitgeklapt en met een knop eronder.
+   Niet de hele kaart: je staat op het punt om ÉÉN tijd te oefenen, en de andere vijf zijn dan ruis. */
+function tijdPoortHtml(id){
+  var t = tijdVan(id);
+  if(!t) return "";
+  var vb = (profLang() === "nl" ? t.vb : (t.vbEn || t.vb));
+  return "<div class='card'><span class='kicker'>" +
+      ct("Eerst even dit", "First, this") + "</span>" +
+    "<h2 style='margin-top:2px'>" + t.es + "</h2>" +
+    "<p class='muted' style='margin:0 0 10px'>" + ct(t.nl, t.en) + "</p>" +
+    "<p style='margin:0 0 8px'><b>" + ct("Wat doet hij?", "What does it do?") + "</b><br>" +
+      ct(t.doet, t.doetEn) + "</p>" +
+    "<p class='muted' style='margin:0 0 8px; font-size:.88rem'><b>" +
+      ct("Je herkent hem aan:", "You spot it by:") + "</b> " + t.herken + "</p>" +
+    "<ul style='margin:0 0 8px; padding-left:18px'>" +
+      vb.map(function(x){ return "<li>" + x + "</li>"; }).join("") + "</ul>" +
+    "<p style='margin:0 0 8px'><span class='es'>" + t.es1 + "</span> \u00b7 " +
+      "<span class='muted'>" + t.nl1 + "</span></p>" +
+    "<p class='muted' style='margin:0 0 12px; font-size:.88rem'>" + ct(t.let, t.letEn) + "</p>" +
+    "<div class='row'><button class='primary' id='btnTijdBegrepen'>" +
+      ct("Begrepen, aan de slag", "Got it, let's go") + " \u2192</button>" +
+      "<button class='ghost' id='btnFunTerug'>" + ct("Later", "Later") + "</button></div>" +
+    "<p class='muted' style='margin:10px 0 0; font-size:.8rem'>" +
+      ct("Dit zie je één keer per tijd. Daarna staat de uitleg bij Grammatica.",
+         "You see this once per tense. After that the explanation lives under Grammar.") + "</p>" +
+    "</div>";
+}
 var tijdenOpenNu = false;
 function tijdenOpen(){
   tijdenOpenNu = true;
@@ -35061,7 +35186,7 @@ function tijdenOpen(){
 }
 function tijdenRijHtml(t){
   var vb = (profLang() === "nl" ? t.vb : (t.vbEn || t.vb));
-  return "<details class='tijdrij'><summary><b>" + t.es + "</b> \u00b7 " +
+  return "<details class='tijdrij' data-tijd='" + t.id + "'><summary><b>" + t.es + "</b> \u00b7 " +
       ct(t.nl, t.en) + "</summary><div class='inner'>" +
     "<p style='margin:2px 0 8px'>" + ct(t.doet, t.doetEn) + "</p>" +
     "<p class='muted' style='margin:0 0 8px; font-size:.85rem'>" +
@@ -35507,21 +35632,32 @@ function gcVandaagLijst(){
      onderwerp in het bestand (muymucho). Nu de leervolgorde, en alleen wat open staat. Wat je al
      hebt aangeraakt telt altijd mee, ook als het inmiddels buiten het venster valt: fouten moeten
      terug kunnen komen. */
-  var t = today(), fout = [], due = [], nieuw = [], open = gcOpenSet();
+  /* v23.234: hier stond "twee plekken voor wat terug moet komen, en altijd een plek voor iets
+     nieuws: anders zou een slechte week je nooit meer iets nieuws laten zien." Die derde plek is
+     weg, en dat is een echte prijs.
+
+     Hij is bewust betaald. De gemeten toestand was niet "te weinig nieuws" maar zestien halve
+     onderwerpen en nul op doos 3 of 4. Wat er nu gebeurt is dat er pas iets nieuws bij komt als er
+     iets af is, en dat is precies wat Stefan vroeg af te dwingen. */
+  var t = today(), fout = [], due = [], rest = [], focus = {}, open = {};
+  gcFocus().forEach(function(id){ focus[id] = 1; });
+  try { open = gcOpenSet(); } catch(e){ open = {}; }
   gcGeordend().forEach(function(c){
     var st = gramLees(c.id);
-    if(!st.goed && !st.fout){ if(open[c.id]) nieuw.push(c); return; }
-    if(gcStaatFout(st)){ fout.push({c:c, st:st}); return; }
-    if(!st.due || st.due <= t) due.push({c:c, st:st});
+    /* Een VERSE fout telt altijd mee, ook buiten de focus. De focus zegt waar je systematisch aan
+       bouwt; iets wat gisteren misging is geen nieuw project maar een reparatie, en die hoort
+       dezelfde week terug te komen. gcStaatFout() is twee dagen breed, dus dit dooft vanzelf.
+       Zonder deze uitzondering zou een fout in een vrije zin pas maanden later aan de beurt zijn,
+       en dan is de app niet streng maar doof. */
+    if(open[c.id] && gcStaatFout(st)){ fout.push({c:c, st:st}); return; }
+    if(!focus[c.id]) return;
+    if(!st.goed && !st.fout){ rest.push({c:c, st:st}); return; }
+    if(!st.due || st.due <= t){ due.push({c:c, st:st}); return; }
+    rest.push({c:c, st:st});
   });
   function opBox(a, b){ return (a.st.box || 0) - (b.st.box || 0); }
   fout.sort(opBox); due.sort(opBox);
-  // twee plekken voor wat terug moet komen, en altijd een plek voor iets nieuws:
-  // anders zou een slechte week je nooit meer iets nieuws laten zien
-  var uit = fout.concat(due).slice(0, 2).map(function(x){ return x.c; });
-  if(nieuw.length) uit.push(nieuw[0]);
-  if(!uit.length) uit = gcGeordend().filter(function(c){ return open[c.id]; }).slice(0, 3);
-  return uit;
+  return fout.concat(due).concat(rest).slice(0, GC_FOCUS_N).map(function(x){ return x.c; });
 }
 function gcVandaagReden(){
   var t = today(), fout = 0, terug = 0, nieuw = 0;
@@ -35925,6 +36061,11 @@ function renderCheat(){
     el.innerHTML = tijdenKaartHtml();
     el.querySelectorAll("#btnTijdenTerug").forEach(function(b){
       b.onclick = function(){ tijdenOpenNu = false; renderCheat(); try { window.scrollTo(0, 0); } catch(e){} };
+    });
+    /* v23.234: hier lezen telt ook. Wie de kaart doorneemt hoort straks in zijn les niet nog een
+       keer tegengehouden te worden; de handeling is wat telt, niet de plek. */
+    el.querySelectorAll("[data-tijd]").forEach(function(d){
+      d.addEventListener("toggle", function(){ if(d.open) tijdLees(d.getAttribute("data-tijd")); });
     });
     jargonScan(el);
     return;

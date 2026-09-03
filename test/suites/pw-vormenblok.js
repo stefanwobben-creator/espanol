@@ -62,6 +62,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const r = await page.evaluate(() => {
     const uit = {};
     S.lang = 'nl';
+    /* v23.234: deze suite gaat over de oefening en niet over de tijdpoort. Die poort houdt een
+       ongelezen tijd tegen (zie pw-focus), en zonder dit zou elke proef hieronder de poort meten. */
+    S.tijdGelezen = {}; (typeof TIJDEN !== 'undefined' ? TIJDEN : []).forEach(function (t) { S.tijdGelezen[t.id] = today(); });
     S.lessons = S.lessons || {};
     (tLessons() || []).forEach(function (l) {
       S.lessons[l.id] = { done: true, woorden: true, zinnen: true, quiz: true, spiek: true };
