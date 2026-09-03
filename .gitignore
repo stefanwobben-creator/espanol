@@ -19,3 +19,6 @@ _to_delete/
 # dat bij hem al los in de map ligt ("already exists in working directory"). git am weigert dan, en
 # laat een halve .git/rebase-apply achter waar elke volgende poging over struikelt.
 vamos-*.patch
+
+# python-cache van tools/nachtpatch.py
+tools/__pycache__/
