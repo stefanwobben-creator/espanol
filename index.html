@@ -72,6 +72,12 @@
            border:1px solid var(--border); background:var(--card); border-radius:14px;
            padding:12px 14px; margin-bottom:8px; cursor:pointer;}
   .meerrij .mi{font-size:1.35rem; line-height:1; flex:0 0 auto;}
+  /* v23.233: de rijen op de kaart van de tijden. Dichtgeklapt zie je zes namen, opengeklapt één
+     tijd tegelijk; zes tijden tegelijk uitgeklapt is een muur tekst en dan leest niemand hem. */
+  .tijdrij{border:1px solid var(--border); border-radius:12px; padding:10px 12px; margin-bottom:6px;
+           background:var(--card);}
+  .tijdrij > summary{cursor:pointer; font-size:.95rem;}
+  .tijdrij .inner{padding-top:8px;}
   .meerrij b{display:block; font-size:.98rem;}
   .meerrij span{display:block; color:var(--muted); font-size:.82rem; margin-top:2px;}
   .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
@@ -1580,7 +1586,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.232";
+var APP_VERSIE = "v23.233";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -19826,8 +19832,21 @@ function gramOefenHtml(){
            "The exercises the routes will draw on. You may do them separately already; some only start to mean something once you are further along.")) +
     "</p>" + r.nu + r.straks + "</div>";
 }
-function gramHomeHtml(){ return gramRouteHtml() + gramOefenHtml(); }
+/* v23.233: bovenaan, want dit is wat je nodig hebt vóórdat de route ergens over gaat. Eén regel,
+   in de vorm die de app al voor dit soort ingangen gebruikt (meerrij), zodat er geen kaart bij komt
+   op een scherm dat al vol staat. */
+function tijdenIngangHtml(){
+  return "<button class='meerrij' id='btnTijdenKaart' style='margin-bottom:12px'>" +
+    "<span class='mi'>\ud83d\udcd8</span><span><b>" +
+      ct("Wat doet een tijd eigenlijk?", "What does a tense actually do?") + "</b><span>" +
+      ct("Presente, indefinido, imperfecto, subjuntivo: wat ze betekenen, in gewone taal en met Nederlandse voorbeelden.",
+         "Presente, indefinido, imperfecto, subjuntivo: what they mean, in plain language with English examples.") +
+    "</span></span></button>";
+}
+function gramHomeHtml(){ return tijdenIngangHtml() + gramRouteHtml() + gramOefenHtml(); }
 function gramHomeWire(){
+  var bt = document.getElementById("btnTijdenKaart");
+  if(bt) bt.onclick = tijdenOpen;
   var p = gramPadNu();
   var bv = document.getElementById("btnGramVerder");
   if(bv && p) bv.onclick = function(){ padView = p.id; gramPadGa(p, gramPadVolgende(p)); };
@@ -34933,6 +34952,154 @@ function gwSluit(){
    Wie door wil lezen bladert met vorige/volgende door alle concepten heen, als een boekje. De
    dagelijkse les gaat nog steeds rechtstreeks naar het oefenen: daar heb je die keuze niet nodig. */
 var gcLeesId = null;
+/* ================= DE KAART VAN DE TIJDEN (v23.233) =================
+
+   Stefan: "ik weet gewoon ook nog niet zo goed wat presente, de subjuntivo, aanvoegende wijs,
+   verleden tijd enzo allemaal is. Dus die basisregel ken ik nog niet, maar ik moet direct ook nog
+   het juiste woord erbij kiezen."
+
+   Twee dingen tegelijk, en het eerste stond nergens uitgelegd. De app heeft een hele machine voor
+   VORMEN (zes patroonrijen per tijd, een doosje per patroon, de les in stappen) en van de 46
+   spiekbrieven gaat er geen enkele over wat een tijd DOET.
+
+   Daarom staan de voorbeelden hieronder in het NEDERLANDS. De vraag "welke tijd hoort hier" kun je
+   in je eigen taal al stellen en beantwoorden, en dan doe je maar één ding tegelijk. Het Spaanse
+   zinnetje staat erbij als illustratie, niet als opgave. Geen enkele vervoegingstabel: die staan
+   al in de les en in de spiekbrieven, en dat is precies de verkeerde volgorde voor wie hier komt.
+
+   Wat je hier NIET vindt is een compleet overzicht van het Spaanse werkwoordsysteem. Zes tijden,
+   de zes die deze app gebruikt, en de drie keuzes waar het in de praktijk om gaat. */
+var TIJDEN = [
+ {id:"presente", es:"el presente", nl:"tegenwoordige tijd", en:"present tense",
+  doet:"Wat nu waar is, wat je altijd doet, en wat er over vijf minuten gaat gebeuren.",
+  doetEn:"What is true now, what you always do, and what happens five minutes from now.",
+  herken:"vandaag, altijd, elke dag, meestal, nu",
+  vb:["Ik woon in Spanje.", "Elke ochtend drink ik koffie.", "Straks bel ik je."],
+  vbEn:["I live in Spain.", "Every morning I drink coffee.", "I will call you in a bit."],
+  es1:"Vivo en Espa\u00f1a.", nl1:"Ik woon in Spanje.",
+  let:"Het Spaans gebruikt hem ook voor de nabije toekomst, net als wij: \u2018straks bel ik je\u2019.",
+  letEn:"Spanish also uses it for the near future, just like English does with \u2018I am calling you later\u2019."},
+
+ {id:"indefinido", es:"el pret\u00e9rito indefinido", nl:"verleden tijd: wat er gebeurde",
+  en:"simple past: what happened",
+  doet:"E\u00e9n gebeurtenis in het verleden, met een begin en een eind. Hij is af.",
+  doetEn:"One event in the past, with a beginning and an end. It is finished.",
+  herken:"gisteren, vorige week, in 1999, opeens, toen",
+  vb:["Gisteren brak de vaas.", "In 2019 verhuisde ik naar Madrid.", "Opeens ging de telefoon."],
+  vbEn:["Yesterday the vase broke.", "In 2019 I moved to Madrid.", "Suddenly the phone rang."],
+  es1:"Ayer se rompi\u00f3 el jarr\u00f3n.", nl1:"Gisteren brak de vaas.",
+  let:"Let op: het Nederlands heeft hier \u00e9\u00e9n vorm waar het Spaans er twee heeft. \u2018Ik speelde\u2019 kan jugu\u00e9 zijn (\u00e9\u00e9n keer, af) of jugaba (elke zomer, gewoonte). Dat is de belangrijkste reden dat dit lastig is: je moet een keuze maken die je in je eigen taal nooit hoeft te maken. Dit is de tijd van het VERHAAL: wat er gebeurde, in volgorde.",
+  letEn:"Note: English has one form here where Spanish has two. \u2018I played\u2019 can be jugu\u00e9 (once, finished) or jugaba (every summer, a habit). That is the main reason this is hard: you have to make a choice your own language never asks of you. This is the tense of the STORY: what happened, in order."},
+
+ {id:"imperfecto", es:"el pret\u00e9rito imperfecto", nl:"verleden tijd: hoe het was",
+  en:"imperfect: how things were",
+  doet:"Hoe het toen was. Een toestand, een gewoonte, of iets dat nog aan de gang was.",
+  doetEn:"How things were back then. A state, a habit, or something still going on.",
+  herken:"vroeger, altijd, elke zomer, terwijl, toen ik klein was",
+  vb:["Vroeger woonde ik in een dorp.", "Ze was moe.", "Terwijl ik kookte, ging de bel."],
+  vbEn:["I used to live in a village.", "She was tired.", "While I was cooking, the bell rang."],
+  es1:"Cuando era ni\u00f1o, viv\u00eda en un pueblo.", nl1:"Toen ik een kind was, woonde ik in een dorp.",
+  let:"Dit is de tijd van het DECOR: hoe het eruitzag toen het verhaal gebeurde.",
+  letEn:"This is the tense of the SCENERY: what it looked like while the story happened."},
+
+ {id:"perfecto", es:"el pret\u00e9rito perfecto", nl:"voltooid tegenwoordige tijd",
+  en:"present perfect",
+  doet:"Iets dat al gebeurd is, maar binnen een tijdvak dat nog loopt.",
+  doetEn:"Something that already happened, but inside a period that is still running.",
+  herken:"vandaag, deze week, dit jaar, ooit, al, nog niet",
+  vb:["Vandaag heb ik drie koppen koffie gedronken.", "Ik heb die film nog niet gezien.", "Ben je ooit in Sevilla geweest?"],
+  vbEn:["Today I have had three cups of coffee.", "I have not seen that film yet.", "Have you ever been to Seville?"],
+  es1:"Hoy he bebido tres caf\u00e9s.", nl1:"Vandaag heb ik drie koffie gedronken.",
+  let:"Het verschil met de indefinido zit niet in de gebeurtenis maar in het TIJDVAK: vandaag loopt nog, gisteren niet.",
+  letEn:"The difference with the indefinido is not the event but the PERIOD: today is still running, yesterday is not."},
+
+ {id:"futuroir", es:"ir a + infinitief", nl:"toekomende tijd met \u2018gaan\u2019",
+  en:"going to + verb",
+  doet:"Een plan of een voornemen. Letterlijk: ik ga iets doen.",
+  doetEn:"A plan or an intention. Literally: I am going to do something.",
+  herken:"morgen, volgende week, straks, van plan",
+  vb:["Morgen ga ik het proberen.", "We gaan een feest organiseren.", "Ik ga even bellen."],
+  vbEn:["Tomorrow I am going to try it.", "We are going to throw a party.", "I am going to make a call."],
+  es1:"Ma\u00f1ana voy a intentarlo.", nl1:"Morgen ga ik het proberen.",
+  let:"Het Spaans heeft ook een echte toekomende tijd (har\u00e9, ir\u00e9), maar in gesproken taal wint \u2018ir a\u2019 het ruimschoots.",
+  letEn:"Spanish also has a real future tense (har\u00e9, ir\u00e9), but in speech \u2018ir a\u2019 wins by a mile."},
+
+ {id:"subjuntivo", es:"el subjuntivo", nl:"aanvoegende wijs",
+  en:"subjunctive",
+  doet:"Geen tijd maar een STEMMING. Je zegt niet dat iets zo is, maar dat je het wilt, betwijfelt, hoopt of erover voelt.",
+  doetEn:"Not a tense but a MOOD. You are not saying something is so; you want it, doubt it, hope it or feel about it.",
+  herken:"ik wil dat, ik hoop dat, misschien, het is jammer dat, zodat",
+  vb:["Ik wil dat je komt. (je komt nog niet)", "Ik hoop dat het lukt. (het is nog niet gelukt)", "Het is jammer dat hij weggaat."],
+  vbEn:["I want you to come. (you are not coming yet)", "I hope it works out. (it has not yet)", "It is a shame that he is leaving."],
+  es1:"Quiero que vengas.", nl1:"Ik wil dat je komt.",
+  let:"Het Nederlands heeft hem bijna niet meer (\u2018leve de koning\u2019, \u2018het ga je goed\u2019), en dat is precies waarom hij vreemd voelt. De truc is niet de vorm maar de vraag: BEWEER ik iets, of wil, hoop of betwijfel ik het?",
+  letEn:"English barely has it left (\u2018if I were you\u2019, \u2018long live the king\u2019), which is exactly why it feels odd. The trick is not the form but the question: am I STATING something, or wanting, hoping or doubting it?"}
+];
+/* De drie keuzes waar het in de praktijk op vastloopt. Ze staan apart omdat een lijstje van zes
+   tijden je nog niet vertelt welke twee je tegen elkaar afweegt, en dat is wat je in een zin doet. */
+var TIJD_KEUZES = [
+ {vraag:"Is het af, of was het aan de gang?", vraagEn:"Is it finished, or was it going on?",
+  a:"af \u2192 indefinido", b:"aan de gang \u2192 imperfecto",
+  vb:"Terwijl ik KOOKTE (aan de gang), GING de bel (af).",
+  vbEn:"While I WAS COOKING (going on), the bell RANG (finished)."},
+ {vraag:"Loopt het tijdvak nog?", vraagEn:"Is the period still running?",
+  a:"nog bezig: vandaag, deze week \u2192 perfecto", b:"voorbij: gisteren, vorig jaar \u2192 indefinido",
+  vb:"VANDAAG heb ik gebeld. GISTEREN belde ik.",
+  vbEn:"TODAY I have called. YESTERDAY I called."},
+ {vraag:"Beweer je het, of wil of betwijfel je het?", vraagEn:"Are you stating it, or wanting or doubting it?",
+  a:"beweren \u2192 gewone vorm (indicativo)", b:"willen, hopen, twijfelen, voelen \u2192 subjuntivo",
+  vb:"Ik WEET dat hij komt. Ik WIL dat hij komt.",
+  vbEn:"I KNOW he is coming. I WANT him to come."}
+];
+var tijdenOpenNu = false;
+function tijdenOpen(){
+  tijdenOpenNu = true;
+  gwSess = null; gcLeesId = null; spiekLeesIdx = null;
+  spiekVerseOpen = true;             // dezelfde afspraak als spiekOpen: niet wissen bij binnenkomst
+  show("spiekbrief");
+  try { window.scrollTo(0, 0); } catch(e){}
+}
+function tijdenRijHtml(t){
+  var vb = (profLang() === "nl" ? t.vb : (t.vbEn || t.vb));
+  return "<details class='tijdrij'><summary><b>" + t.es + "</b> \u00b7 " +
+      ct(t.nl, t.en) + "</summary><div class='inner'>" +
+    "<p style='margin:2px 0 8px'>" + ct(t.doet, t.doetEn) + "</p>" +
+    "<p class='muted' style='margin:0 0 8px; font-size:.85rem'>" +
+      ct("Je herkent hem aan: ", "You spot it by: ") + t.herken + "</p>" +
+    "<ul style='margin:0 0 8px; padding-left:18px'>" +
+      vb.map(function(x){ return "<li>" + x + "</li>"; }).join("") + "</ul>" +
+    "<p style='margin:0 0 6px'><span class='es'>" + t.es1 + "</span> \u00b7 " +
+      "<span class='muted'>" + t.nl1 + "</span></p>" +
+    "<p class='muted' style='margin:0; font-size:.88rem'>" + ct(t.let, t.letEn) + "</p>" +
+    "</div></details>";
+}
+function tijdenKaartHtml(){
+  var terug = "<div class='row'><button class='ghost' id='btnTijdenTerug'>" +
+    ct("\u2190 Terug naar Grammatica", "\u2190 Back to Grammar") + "</button></div>";
+  return "<div class='card'><span class='kicker'>" + ct("De tijden", "The tenses") + "</span>" +
+    "<h2 style='margin-top:2px'>" +
+      ct("Wat doet een tijd eigenlijk?", "What does a tense actually do?") + "</h2>" + terug +
+    "<p style='margin-top:10px'>" +
+      ct("Een tijd is geen sier. Hij zegt <b>wanneer</b> iets gebeurde en, belangrijker, <b>hoe je ernaar kijkt</b>: als iets dat af is, of als iets dat aan de gang was. Het Spaans dwingt je die keuze te maken waar het Nederlands hem vaak in het midden laat, en d\u00e1\u00e1r zit het werk.",
+         "A tense is not decoration. It says <b>when</b> something happened and, more importantly, <b>how you look at it</b>: as something finished, or as something that was going on. Spanish forces you to make that choice where English often leaves it open, and that is where the work is.") +
+    "</p>" +
+    "<p class='muted' style='margin:0 0 12px'>" +
+      ct("De voorbeelden hieronder staan met opzet in het Nederlands. De vraag \u2018welke tijd hoort hier\u2019 kun je in je eigen taal al beantwoorden, en dan hoef je maar \u00e9\u00e9n ding tegelijk te doen. De Spaanse vorm komt daarna.",
+         "The examples below are deliberately in English. You can answer \u2018which tense goes here\u2019 in your own language first, and then you only do one thing at a time. The Spanish form comes after.") +
+    "</p>" +
+    "<h3 style='margin:14px 0 6px'>" + ct("De zes op een rij", "The six of them") + "</h3>" +
+    TIJDEN.map(tijdenRijHtml).join("") +
+    "<h3 style='margin:18px 0 6px'>" + ct("En dit zijn de drie keuzes", "And these are the three choices") + "</h3>" +
+    "<p class='muted' style='margin:0 0 8px; font-size:.88rem'>" +
+      ct("In een zin weeg je nooit zes tijden tegen elkaar af. Je staat steeds voor \u00e9\u00e9n van deze drie vragen.",
+         "In a sentence you never weigh six tenses against each other. You are always facing one of these three questions.") + "</p>" +
+    TIJD_KEUZES.map(function(k){
+      return "<div class='card' style='margin:0 0 8px; padding:12px'>" +
+        "<b>" + ct(k.vraag, k.vraagEn) + "</b>" +
+        "<p class='muted' style='margin:6px 0 4px'>" + k.a + "<br>" + k.b + "</p>" +
+        "<p style='margin:0; font-size:.9rem'>" + ct(k.vb, k.vbEn) + "</p></div>";
+    }).join("") + terug + "</div>";
+}
 /* ================= EEN SPIEKBRIEF DIE JE KUNT OPENEN (v23.232) =================
 
    Stefan: "het spiekbriefje kan ik ook niet vinden."
@@ -35179,11 +35346,46 @@ function gcStaatFout(st){
   if((st.box || 0) !== 0) return false;
   return st.laatst >= addDays(today(), -GC_VERS_DAGEN);
 }
+/* ================= WAT DE DOOS NIET ZEGT (v23.233) =================
+
+   Stefan: "ik heb niet echt het gevoel dat ik door de oefeningen het beter word."
+
+   Gemeten in zijn eigen logboek, over tien opnames: muymucho 75% goed en de doos ging van 3 naar
+   0; genero 62% goed en de doos ging van 2 naar 0; over alle onderwerpen samen 70% goed. Hij werd
+   in dat venster dus wél beter, en het enige wat op zijn scherm stond was "doos 0/5".
+
+   De doosregel zelf blijft zoals hij is: één misser op een dag zet hem naar nul, en Stefan heeft
+   het zachter maken in v23.208 afgewezen en houdt daaraan vast. Wat verandert is dat de app erbij
+   zegt wat hij óók weet. S.gramLog ligt er sinds v23.211, zeven dagen diep, en werd tot nu toe
+   alleen door de suite gelezen. Dat venster staat nu open.
+
+   Onder de drie beurten staat er niets: 1 van de 1 is geen percentage, en nul is geen bericht. */
+var GRAMWEEK_MIN = 3;
+function gramWeek(cid){
+  var n = 0, goed = 0, s = String(cid || "").split("#")[0];
+  try {
+    var log = S.gramLog || {};
+    Object.keys(log).forEach(function(dag){
+      var r = (log[dag] || {})[s];
+      if(!r) return;
+      n += r.n || 0;
+      goed += r.goed || 0;
+    });
+  } catch(e){ return null; }
+  if(n < GRAMWEEK_MIN) return null;
+  return {n:n, goed:goed, pct: Math.round(100 * goed / n)};
+}
+function gramWeekHtml(cid){
+  var w = gramWeek(cid);
+  if(!w) return "";
+  return " <span class='muted' style='font-size:.72rem'>\u00b7 " +
+    w.pct + "% " + ct("goed deze week", "correct this week") + "</span>";
+}
 function gcStatusHtml(cid){
   var st = gramLees(cid);
-  if(gcStaatFout(st)) return "<span style='color:var(--red)'>" + ct("fout gegaan", "got this wrong") + "</span>";
+  if(gcStaatFout(st)) return "<span style='color:var(--red)'>" + ct("fout gegaan", "got this wrong") + "</span>" + gramWeekHtml(cid);
   if(!st.goed && !st.fout) return ct("nog niet gedaan", "not done yet");
-  return ct("doos ", "box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1);
+  return ct("doos ", "box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1) + gramWeekHtml(cid);
 }
 /* Waarom staat dit onderwerp nog dicht? "Nog 20 komen later" zei niet welke, niet waarom, en niet
    wat je ervoor moet doen. De voorwaarde staat in GC_VOOR en die is gewoon te lezen. */
@@ -35715,6 +35917,15 @@ function renderCheat(){
   if(gcLeesId){
     el.innerHTML = renderGcLees();
     wireGramWiz(el);
+    jargonScan(el);
+    return;
+  }
+  // v23.233: de kaart van de tijden, opengeslagen, met een weg terug.
+  if(tijdenOpenNu){
+    el.innerHTML = tijdenKaartHtml();
+    el.querySelectorAll("#btnTijdenTerug").forEach(function(b){
+      b.onclick = function(){ tijdenOpenNu = false; renderCheat(); try { window.scrollTo(0, 0); } catch(e){} };
+    });
     jargonScan(el);
     return;
   }
@@ -36608,7 +36819,7 @@ function show(tabId, skipPush){
   if(tabId==="lezen"){ closeBoek(); }
   // v23.232: een opengeslagen spiekbrief hoort bij de reis ernaartoe, niet bij het tabblad. Kom je
   // hier langs de gewone weg binnen, dan zie je weer de route.
-  if(tabId==="spiekbrief" && !spiekVerseOpen){ spiekLeesIdx = null; }
+  if(tabId==="spiekbrief" && !spiekVerseOpen){ spiekLeesIdx = null; tijdenOpenNu = false; }
   spiekVerseOpen = false;
   if(tabId==="cursus"){ renderCursus(); }
   if(tabId==="voortgang"){ renderVoortgang(); }
