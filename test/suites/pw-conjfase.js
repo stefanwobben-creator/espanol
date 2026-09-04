@@ -163,7 +163,20 @@ const { chromium } = require('playwright');
   ok(unlock.top === null && unlock.topOpen === ladder.ids.length - 1, 'bovenaan de ladder gebeurt er niets raars');
   ok(unlock.venster.n === 10 && unlock.venster.goed === 0, 'de teller kijkt naar je laatste tien, niet naar alles ooit (' + JSON.stringify(unlock.venster) + ')');
 
-  // ---------- 6. de migratie: niemand raakt kwijt wat hij had ----------
+  // ---------- 6. de migratie: waar zet hij je neer ----------
+  //
+  // v23.236: hier stond "niemand raakt kwijt wat hij had", en twee proeven eisten dat wie ooit een
+  // conjugatie had geoefend de HELE ladder open kreeg. Vriendelijk bedoeld, en gemeten in Stefans
+  // logboek liep het zo af: 42 conj:-sleutels in zijn foutenboek, dus trede 13 van 13, "alles door
+  // elkaar", zonder ooit een trede beklommen te hebben. Zijn woorden op 4 september: "die oefening
+  // met alle tijden is veel te moeilijk want ik moet alle tijden van alle werkwoorden herkennen
+  // terwijl ik net tegenwoordige tijd ken."
+  //
+  // Een oefengeschiedenis zegt dat je het presente hebt gezien, niet dat je de subjuntivo kunt. Dus:
+  // het hele presente, en klimmen. Wat er niet verandert is dat je nooit terugvalt naar trede 1; dat
+  // is de belofte die deze twee proeven eigenlijk moesten bewaken, en die staat er nu als zodanig.
+  // Afpakken is het ook niet: naast de meter staat sinds v23.236 een knop "Ik kan dit al".
+  // Zie pw-tredes.js voor de migratie van een bestaande stand.
   const migratie = await page.evaluate(() => {
     const bewaardO = S.conjOpen, bewaardE = S.errors, bewaardS = S.conjStap;
     const uit = {};
@@ -187,8 +200,14 @@ const { chromium } = require('playwright');
   });
   ok(migratie.beginner === 0, 'een nieuwe A0-gebruiker begint onderaan de ladder (fase 1)');
   ok(migratie.a2 === migratie.presenteIdx, 'wie A2 kiest start bij het volledige presente en hoeft de -ar/-er/-ir-trap niet op (' + migratie.a2 + ')');
-  ok(migratie.geoefend === migratie.max, 'wie al conjugaties geoefend had, krijgt de hele ladder open — een update pakt je niets af');
-  ok(migratie.oudeStap === migratie.max, 'en wie in v19.67 al breed had gekozen ook, ook al is dat een A0-profiel');
+  ok(migratie.geoefend === migratie.presenteIdx,
+    'wie al conjugaties geoefend had begint bij het hele presente, niet op de eindstand van de ladder (' + migratie.geoefend + ')');
+  ok(migratie.geoefend > 0,
+    'CONTROLE: maar hij valt ook niet terug naar trede 1, want dat is wat deze proef altijd moest bewaken');
+  ok(migratie.oudeStap === migratie.presenteIdx,
+    'en wie in v19.67 al breed had gekozen ook, ook al is dat een A0-profiel (' + migratie.oudeStap + ')');
+  ok(migratie.geoefend !== migratie.max,
+    'CONTROLE: niemand krijgt de hele ladder cadeau; dat was de oorzaak van "veel te moeilijk"');
   ok(migratie.kapot === migratie.presenteIdx, 'zonder leesbaar profiel valt hij terug op het presente in plaats van te crashen');
 
   // ---------- 7. de fasekaart op het scherm ----------

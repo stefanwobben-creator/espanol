@@ -1586,7 +1586,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.235";
+var APP_VERSIE = "v23.236";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -9927,7 +9927,7 @@ function quizSrsBij(qz, pct){
   }
   S.quizSrs[qz.id] = st;
   // v20.5: een toets raakt meestal een of twee concepten; die krijgen dezelfde uitslag
-  gcConceptenVoorQuiz(qz).forEach(function(cid){ gramBij(cid, pct >= 0.8); gramLog(cid, "toets", pct >= 0.8); });
+  gcConceptenVoorQuiz(qz).forEach(function(cid){ gramBij(cid, pct >= 0.8, 0, null, "toets"); });
   quizSpreid();
 }
 function quizDueList(){
@@ -12118,7 +12118,7 @@ function zinTegelsWire(el){
     // Een afleider aantikken is een echte conceptfout en zet dat doosje terug op nul.
     zTegel.rij.forEach(function(i){
       var t = zTegel.bank[i];
-      if(!t.echt && t.cid){ gramBij(t.cid, false); gramLog(t.cid, "tegels", false); }
+      if(!t.echt && t.cid){ gramBij(t.cid, false, 0, null, "tegels"); }
     });
     document.getElementById("sInput").value = zTegel.rij.map(function(i){ return zTegel.bank[i].woord; }).join(" ");
     checkSentence();
@@ -12330,7 +12330,7 @@ function checkSentence(){
        Dit gebeurt ook als je de knop hieronder nooit aanraakt, en dat is met opzet het belangrijkste
        deel: je hoeft niet te weten dat je iets fout doet om er beter in te worden. */
     fregel = foutRegel(d);
-    if(fregel){ gramBij(fregel.cid, false); gramLog(fregel.cid, "zin", false); }
+    if(fregel){ gramBij(fregel.cid, false, 0, null, "zin"); }
     if(d.m <= 2 && d.len - d.m >= Math.ceil(d.len/2)){
       /* v23.137. Hier stond: "Denk je dat jouw variant ook goed Spaans is? Kan zomaar: er zijn vaak
          meer goede vertalingen. Vraag het in de les of aan Claude." Dat is de app die weet dat hij
@@ -12886,13 +12886,48 @@ function conjFaseIdx(id){
 /* v23.107: de volgorde van de ladder vóór deze versie. Staat hier omdat hij nergens anders meer
    te vinden is, en dit is de enige plek die hem nog nodig heeft. */
 var CONJ_FASES_OUD11 = ["ar","er","ir","seis","onreg","presente","indefreg","indef","perfecto","subjuntivo","mix"];
-var CONJ_LADDER_NU = 13;
+/* Heeft deze trede het criterium gehaald? Dezelfde eis die conjProbeerOntgrendelen() stelt, want
+   twee plekken die "af" verschillend uitrekenen zijn twee waarheden. */
+function conjFaseAf(id){
+  var sc = conjFaseScore(id);
+  return sc.n >= CONJ_ONTGRENDEL_N && sc.goed >= CONJ_ONTGRENDEL_GOED;
+}
+/* ================= DE LADDER STOND OPEN OP DE BOVENSTE TREDE (v23.236) =================
+
+   Stefan: "die oefening met alle tijden is veel te moeilijk want ik moet alle tijden van alle
+   werkwoorden herkennen terwijl ik net tegenwoordige tijd ken."
+
+   Hieronder gaf conjOpenInit() aan iedereen met ook maar één conj:-fout in zijn foutenboek de hele
+   ladder open, en conjFaseNu() kiest bij gebrek aan een keuze de hoogste die openstaat. Stefan heeft
+   er 42, dus hij stond sinds dag één op trede dertien, "alles door elkaar", zonder ooit een trede
+   beklommen te hebben. En conjOpenTijden() leest dezelfde stand, dus zijn dagles bouwde vormenblokken
+   in alle vijf de tijden.
+
+   De migratie hieronder zet hem terug op "het hele presente". Alleen omlaag, nooit omhoog, en nooit
+   lager dan die trede: wie op trede 1 staat blijft daar. Wie de trede aantoonbaar heeft afgerond
+   blijft staan, en wie ooit zelf een trede opende (S.conjKlim) wordt met rust gelaten. Er wordt niets
+   afgepakt: naast de meter staat een knop "Ik kan dit al" die dezelfde sprong met de hand maakt.
+
+   EN DE MIGRATIE KON ZICHZELF SLOPEN. Hier stond de omnummering van de oude elfdelige ladder zonder
+   te kijken wélke versie hij verliet, dus hij draaide opnieuw bij elke volgende bump.
+   CONJ_FASES_OUD11[8] is "perfecto" en dat is in de dertiendelige lijst nummer 11 in plaats van 9:
+   wie op 9 stond zou naar 11 springen, twee tijden cadeau. Een migratie die twee keer kan draaien is
+   geen migratie. Elke stap kijkt nu naar de versie die hij verlaat, en doet zichzelf één keer. */
+var CONJ_LADDER_NU = 14;
 function conjLadderMigratie(){
-  if(S.conjLadder === CONJ_LADDER_NU) return;
-  if(typeof S.conjOpen === "number"){
+  var was = (typeof S.conjLadder === "number") ? S.conjLadder : 0;
+  if(was === CONJ_LADDER_NU) return;
+  if(was < 13 && typeof S.conjOpen === "number"){
     var oudId = CONJ_FASES_OUD11[S.conjOpen];
     var n = oudId ? conjFaseIdx(oudId) : -1;
     if(n >= 0) S.conjOpen = n;
+  }
+  if(was < 14 && typeof S.conjOpen === "number" && !S.conjKlim){
+    var p = conjFaseIdx("presente");
+    if(p >= 0 && S.conjOpen > p && !conjFaseAf("presente")){
+      S.conjOpen = p;
+      if(conjFaseIdx(S.conjFase) > p) S.conjFase = "presente";
+    }
   }
   S.conjLadder = CONJ_LADDER_NU;
   try { persist(); } catch(e){}
@@ -12904,13 +12939,14 @@ function conjOpenInit(){
   try {
     for(var k in S.errors){ if(k.indexOf("conj:") === 0){ geoefend = true; break; } }
   } catch(e){}
-  if(geoefend || S.conjStap === "breed" || S.conjStap === "tijden"){
-    open = CONJ_FASES.length - 1;
-  } else {
-    var p = null;
-    try { p = activeProfile(); } catch(e){}
-    open = (p && p.track === "beginner") ? 0 : conjFaseIdx("presente");
-  }
+  /* v23.236: hier kreeg wie al eens geoefend had de laatste trede van de ladder toegewezen, oftewel
+     de eindstand. Bedoeld als vriendelijkheid, in de praktijk een leerling die op "alles
+     door elkaar" begint zonder ooit een trede te hebben gehaald. Een oefengeschiedenis zegt dat je
+     het presente hebt gezien, niet dat je de subjuntivo kunt: dus het hele presente, en klimmen. */
+  if(S.conjStap === "breed" || S.conjStap === "tijden") geoefend = true;
+  var p = null;
+  try { p = activeProfile(); } catch(e){}
+  open = (p && p.track === "beginner" && !geoefend) ? 0 : conjFaseIdx("presente");
   S.conjOpen = open;
   try { persist(); } catch(e){}
   return open;
@@ -13144,6 +13180,7 @@ function conjProbeerOntgrendelen(){
   if(sc.n < CONJ_ONTGRENDEL_N || sc.goed < CONJ_ONTGRENDEL_GOED) return null;
   S.conjOpen = i + 1;
   S.conjFase = CONJ_FASES[i+1].id;
+  S.conjKlim = 1;   /* v23.236: wie zelf geklommen is, wordt door geen enkele migratie teruggezet */
   if(S.conjLaatste) S.conjLaatste[CONJ_FASES[i].id] = [];
   try { persist(); } catch(e){}
   return CONJ_FASES[i+1];
@@ -13173,6 +13210,13 @@ function conjFaseKaartHtml(){
            ct(CONJ_ONTGRENDEL_GOED+" van je laatste "+CONJ_ONTGRENDEL_N+" goed opent de volgende fase ("+vol+"/"+CONJ_ONTGRENDEL_GOED+")",
               CONJ_ONTGRENDEL_GOED+" out of your last "+CONJ_ONTGRENDEL_N+" correct opens the next phase ("+vol+"/"+CONJ_ONTGRENDEL_GOED+")")+
          "</p>"+
+         /* v23.236: de handrem. De app plaatst je op de trede waar het werk ligt, maar hij weet het
+            niet beter dan jij. Dit staat alleen op de bovenste open trede, want lager overslaan doet
+            niets: die zijn al open. */
+         (i === open
+           ? "<div class='row' style='margin:0 0 6px'><button type='button' class='ghost' id='btnCjOverslaan' style='padding:5px 10px; font-size:0.78rem; min-width:0'>"+
+               ct("Ik kan dit al, open de volgende", "I know this already, open the next one")+"</button></div>"
+           : "")+
          /* v23.111: een stille regel is een valstrik. Deze zin verschijnt alleen als je op dit
             moment in meerkeuze staat, want dan is hij van toepassing. */
          (conjModusNu() === "makkelijk"
@@ -13195,6 +13239,22 @@ function conjFaseKaartHtml(){
 function wireConjFaseKiezer(){
   var row = document.getElementById("cjFase");
   if(!row) return;
+  /* v23.236: met de hand een trede hoger. Precies één, want "sla alles over" is weer de eindstand
+     cadeau, en dat is nu juist wat we repareren. S.conjKlim erbij: vanaf nu is de stand een keuze
+     van de leerling en geen aanname van de app, en geen migratie zet hem meer terug. */
+  var ov = document.getElementById("btnCjOverslaan");
+  if(ov) ov.onclick = function(){
+    var i = conjFaseIdx(conjFaseNu().id);
+    if(i < 0 || i >= CONJ_FASES.length - 1 || i !== conjOpenMax()) return;
+    S.conjOpen = i + 1;
+    S.conjFase = CONJ_FASES[i+1].id;
+    S.conjKlim = 1;
+    try { persist(); } catch(e){}
+    conjIdx = pickConjugacion();
+    cjModusOverride = null;
+    cjMk = null;
+    renderFunConjugador();
+  };
   row.querySelectorAll(".cj-fase").forEach(function(b){
     b.onclick = function(){
       S.conjFase = b.getAttribute("data-f");
@@ -13513,7 +13573,7 @@ function clMis(gekozen){
   clStop();
   clSpel.levens--;
   clSpel.streak = 0;
-  gramBij(clSpel.c.id, false); gramLog(clSpel.c.id, "clasificador", false);
+  gramBij(clSpel.c.id, false, 0, null, "clasificador");
   clSpel.laatste = {goed:false, juist:clSpel.bakken[clSpel.item.g], w:profLang() === "nl" ? clSpel.item.w : (clSpel.item.wEn || clSpel.item.w),
                     gekozen:gekozen === null ? null : clSpel.bakken[gekozen]};
   /* v22.0: ook naar het foutenlogboek, niet alleen naar het Leitner-doosje. Anders ziet je
@@ -13535,7 +13595,7 @@ function clRaak(){
   clPiep(660 + Math.min(6, clSpel.streak) * 40, 0.09, "sine");
   clSpel.dans = clSpel.streak % CL_DANS_BIJ === 0;
   if(clSpel.dans){
-    gramBij(clSpel.c.id, true); gramLog(clSpel.c.id, "clasificador", true);
+    gramBij(clSpel.c.id, true, 0, null, "clasificador");
     clPiep(880, 0.14, "triangle");
     try { confetti(["💃","🔥","✨"], 14); } catch(e){}
   }
@@ -14509,7 +14569,7 @@ function corrSrsBij(id, goed){
   S.corr[id] = st;
   // v20.5: de fout gaat ook naar het concept, niet alleen naar de regel. Dit is precies wat
   // Stefan vroeg toen hij muy/mucho fout had: "neem je dat nu mee in de micro grammatica lessen?"
-  gramBij(gcConceptVoorCorr(id), goed); gramLog(gcConceptVoorCorr(id), "corrector", goed);
+  gramBij(gcConceptVoorCorr(id), goed, 0, null, "corrector");
 }
 function corrDueRegels(){
   var t = today();
@@ -32610,8 +32670,19 @@ function gramHalfBewijs(keuzes){ return keuzes === 2; }
 /* v23.228: `pi` erbij. Zonder patroonindex schrijft hij naar de kale sleutel, en dat is precies wat
    de zes aanroepers buiten de microles moeten doen: die weten welk concept fout ging maar niet welk
    patroon, want hun bewijs komt uit een vrije zin of een spel. */
-function gramBij(cid, goed, keuzes, pi){
+/* v23.236: het ledger wordt hier geschreven en niet meer door de aanroeper.
+
+   Zeven plekken deden dit tot nu toe met de hand, en alle zeven schreven ze twee regels achter
+   elkaar: gramBij() voor de doos, gramLog() voor het ledger. Zolang het ledger alleen een
+   weekpercentage voedde was een vergeten regel een schoonheidsfoutje. Sinds hierboven het oordeel
+   "fout gegaan" uit datzelfde ledger komt, is een vergeten regel een verkeerd oordeel.
+
+   Een regel die voor zeven plekken geldt hoort door één plek afgedwongen te worden. Het kanaal komt
+   mee als vijfde argument; wie het weglaat schrijft "overig", want dát er een beurt was is het
+   feit dat telt, en welk scherm hem gaf is de verfijning. */
+function gramBij(cid, goed, keuzes, pi, kanaal){
   if(!cid) return;
+  try { gramLog(cid, kanaal || "overig", !!goed); } catch(e){}
   S.gram = S.gram || {};
   var sleutel = gramSleutel(cid, pi);
   var st = S.gram[sleutel] || {box:0, due:"", goed:0, fout:0, laatst:""};
@@ -35229,10 +35300,46 @@ function tijdenOpen(){
   show("spiekbrief");
   try { window.scrollTo(0, 0); } catch(e){}
 }
+/* De tijden die op de conjugatieladder staan. Afgeleid en niet overgeschreven: futuroir staat wel
+   op deze kaart en niet op de ladder, en dan hoort er ook geen "komt later" bij te staan. */
+function tijdLadderTijden(){
+  var uit = [];
+  try {
+    CONJ_FASES.forEach(function(f){
+      if(f.tijd && f.tijd !== "mix" && uit.indexOf(f.tijd) === -1) uit.push(f.tijd);
+    });
+  } catch(e){ return []; }
+  return uit;
+}
+/* v23.236: zes tijden op een kaart terwijl je er één oefent, leest als een lijst van wat je nog
+   niet kunt. Deze regel zegt welke van de zes vandaag jouw werk is. */
+function tijdenLadderHtml(){
+  var f = null, open = [], lad = tijdLadderTijden();
+  try { f = conjFaseNu(); open = conjOpenTijden(); } catch(e){ return ""; }
+  if(!f || !lad.length) return "";
+  function naam(id){ var t = tijdVan(id); return t ? t.es : id; }
+  var dicht = lad.filter(function(x){ return open.indexOf(x) === -1; });
+  return "<p class='muted' id='tijdLadder' style='margin:0 0 12px; font-size:.85rem'>" +
+    ct("Je oefent nu: ", "You are drilling: ") + "<b>" +
+      (f.tijd === "mix" ? ct("alles door elkaar", "everything mixed") : naam(f.tijd)) + "</b>" +
+    (dicht.length ? " \u00b7 " + ct("nog dicht: ", "still locked: ") + dicht.map(naam).join(", ") : "") +
+    "</p>";
+}
 function tijdenRijHtml(t){
   var vb = (profLang() === "nl" ? t.vb : (t.vbEn || t.vb));
+  var merk = "";
+  try {
+    var lad = tijdLadderTijden();
+    if(lad.indexOf(t.id) !== -1){
+      var nu = conjFaseNu().tijd, open = conjOpenTijden();
+      if(t.id === nu) merk = " <span style='color:var(--accent); font-size:.76rem'>\u00b7 " +
+        ct("hier oefen je nu", "you are here") + "</span>";
+      else if(open.indexOf(t.id) === -1) merk = " <span class='muted' style='font-size:.76rem'>\u00b7 " +
+        ct("komt later", "comes later") + "</span>";
+    }
+  } catch(e){ merk = ""; }
   return "<details class='tijdrij' data-tijd='" + t.id + "'><summary><b>" + t.es + "</b> \u00b7 " +
-      ct(t.nl, t.en) + "</summary><div class='inner'>" +
+      ct(t.nl, t.en) + merk + "</summary><div class='inner'>" +
     "<p style='margin:2px 0 8px'>" + ct(t.doet, t.doetEn) + "</p>" +
     "<p class='muted' style='margin:0 0 8px; font-size:.85rem'>" +
       ct("Je herkent hem aan: ", "You spot it by: ") + t.herken + "</p>" +
@@ -35258,6 +35365,7 @@ function tijdenKaartHtml(){
          "The examples below are deliberately in English. You can answer \u2018which tense goes here\u2019 in your own language first, and then you only do one thing at a time. The Spanish form comes after.") +
     "</p>" +
     "<h3 style='margin:14px 0 6px'>" + ct("De zes op een rij", "The six of them") + "</h3>" +
+    tijdenLadderHtml() +
     TIJDEN.map(tijdenRijHtml).join("") +
     "<h3 style='margin:18px 0 6px'>" + ct("En dit zijn de drie keuzes", "And these are the three choices") + "</h3>" +
     "<p class='muted' style='margin:0 0 8px; font-size:.88rem'>" +
@@ -35436,8 +35544,8 @@ function gramAntwoord(o, stap, q, i){
      geven. De vraag draagt het feit al (q.o); geen enkele andere plek schrijft het opnieuw. */
   /* v23.228: en het patroon gaat mee. Draagt de vraag er geen (dat kan bij een handgeschreven
      wizardstap), dan landt het antwoord op de kale sleutel, net als voorheen. */
-  gramBij(o.concept, goed, (q && q.o) ? q.o.length : 0, (q && typeof q.pi === "number") ? q.pi : null);
-  gramLog(o.concept, gwKanaal(o), goed);
+  gramBij(o.concept, goed, (q && q.o) ? q.o.length : 0,
+          (q && typeof q.pi === "number") ? q.pi : null, gwKanaal(o));
 }
 function gwVolgende(){
   var o = gwOnderwerp(gwSess.id);
@@ -35510,11 +35618,40 @@ function gwKaartHtml(o){
 
    Nu leest het de DATUM in plaats van de optelsom, op één plek. Een fout van vorige maand is geen
    bericht. */
+/* v23.236: en dat las nog steeds twee feiten uit twee verschillende rijen.
+
+   st.laatst wordt in gramBij() alleen bij een FOUT geschreven, dus als datum klopt hij. Maar
+   gramLees() vat een concept samen door de doos van het ZWAKSTE doosje te nemen en de laatst-datum
+   van het MEEST RECENTE doosje. Die twee hoeven niet uit hetzelfde doosje te komen.
+
+   Gevolg, Stefan op 4 september: "ik heb net el la gedaan weer goed en die blijft zeggen fout
+   gegaan." Een misser van eergisteren zet het rood aan, en daarna kan geen enkel goed antwoord het
+   uitzetten; alleen wachten helpt. De goede en de foute uitkomst krijgen dezelfde waarde, en dan
+   controleert de controle niets.
+
+   Nu beslist de laatste dag dat je dit onderwerp deed, uit het ledger. Alles goed die dag: geen
+   bericht. Een misser die dag: wel. Geen beurten binnen het venster: geen bericht. Dat is dezelfde
+   maat als de doos zelf hanteert, dus het rode woord en het doosje spreken elkaar niet meer tegen,
+   en één dag goed doen is genoeg om het uit te zetten. */
 var GC_VERS_DAGEN = 2;
-function gcStaatFout(st){
-  if(!st || !st.laatst) return false;
+function gcVersFout(cid){
+  var s = String(cid || "").split("#")[0];
+  if(!s) return false;
+  var log = null;
+  try { log = S.gramLog || {}; } catch(e){ return false; }
+  for(var i = 0; i <= GC_VERS_DAGEN; i++){
+    var r = (log[addDays(today(), -i)] || {})[s];
+    if(!r || !(r.n > 0)) continue;   /* die dag geen beurt: die zegt niets */
+    return (r.goed || 0) < r.n;      /* de laatste dag dat je het deed, beslist */
+  }
+  return false;
+}
+/* Het concept moet mee. Zonder concept is er geen ledger om te lezen, en dan geeft deze functie
+   liever geen oordeel dan het oude verkeerde: een verkeerde diagnose is erger dan geen. */
+function gcStaatFout(st, cid){
+  if(!st || !cid) return false;
   if((st.box || 0) !== 0) return false;
-  return st.laatst >= addDays(today(), -GC_VERS_DAGEN);
+  return gcVersFout(cid);
 }
 /* ================= WAT DE DOOS NIET ZEGT (v23.233) =================
 
@@ -35553,7 +35690,7 @@ function gramWeekHtml(cid){
 }
 function gcStatusHtml(cid){
   var st = gramLees(cid);
-  if(gcStaatFout(st)) return "<span style='color:var(--red)'>" + ct("fout gegaan", "got this wrong") + "</span>" + gramWeekHtml(cid);
+  if(gcStaatFout(st, cid)) return "<span style='color:var(--red)'>" + ct("fout gegaan", "got this wrong") + "</span>" + gramWeekHtml(cid);
   if(!st.goed && !st.fout) return ct("nog niet gedaan", "not done yet");
   return ct("doos ", "box ") + (st.box || 0) + "/" + (GRAM_BOX.length - 1) + gramWeekHtml(cid);
 }
@@ -35582,7 +35719,7 @@ function gcKaartHtml(o){
    tabbladen is precies waarom Stefan schreef dat hij niet weet waar hij wat kan vinden. */
 function gcRouteRijHtml(c, nr, vandaagSet){
   var open = gcConceptOpen(c.id), st = gramLees(c.id);
-  var af = (st.goed || 0) > 0 && (st.box || 0) > 0 && !gcStaatFout(st);
+  var af = (st.goed || 0) > 0 && (st.box || 0) > 0 && !gcStaatFout(st, c.id);
   var nu = !!vandaagSet[c.id];
   /* Het cijfer is de plek in de route en blijft dus altijd staan, ook bij een slot: anders telt de
      lijst 1, 3, 5 en is de route juist niet meer te lezen. Het slot hoort rechts, bij de rest van de
@@ -35694,7 +35831,7 @@ function gcVandaagLijst(){
        dezelfde week terug te komen. gcStaatFout() is twee dagen breed, dus dit dooft vanzelf.
        Zonder deze uitzondering zou een fout in een vrije zin pas maanden later aan de beurt zijn,
        en dan is de app niet streng maar doof. */
-    if(open[c.id] && gcStaatFout(st)){ fout.push({c:c, st:st}); return; }
+    if(open[c.id] && gcStaatFout(st, c.id)){ fout.push({c:c, st:st}); return; }
     if(!focus[c.id]) return;
     if(!st.goed && !st.fout){ rest.push({c:c, st:st}); return; }
     if(!st.due || st.due <= t){ due.push({c:c, st:st}); return; }
@@ -35709,7 +35846,7 @@ function gcVandaagReden(){
   gcVandaagLijst().forEach(function(c){
     var st = gramLees(c.id);
     if(!st.goed && !st.fout) nieuw++;
-    else if(gcStaatFout(st)) fout++;
+    else if(gcStaatFout(st, c.id)) fout++;
     else terug++;
   });
   var d = [];

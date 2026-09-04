@@ -59,12 +59,18 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   const oordeel = await page.evaluate(() => {
     const cid = 'genero';
     function zet(laatst, box) {
-      S.gram = {};
+      S.gram = {}; S.gramLog = {};
       S.gram[cid] = { box: box, due: today(), goed: 40, fout: 17, laatst: laatst };
+      /* v23.236: het ledger erbij. De app schrijft die twee altijd samen (gramBij doet het sinds
+         deze versie zelf), en sinds het oordeel uit het ledger komt meet een opstelling die alleen
+         S.gram vult een toestand die nooit bestaat. Vier van de vijf beurten goed op de dag van de
+         misser: precies wat een fout antwoord in een reeks oplevert. */
+      S.gramLog[laatst] = {};
+      S.gramLog[laatst][cid] = { n: 5, goed: 4, k: { toets: [5, 4] } };
       /* Niet meten of het concept vandaag gekozen wordt (dat mag: het is gewoon toe), maar in welk
          BAKJE het valt. gcVandaagReden() zegt dat in woorden, en dat is precies de zin die Stefan
          elke dag opnieuw zag. */
-      return { staat: gcStaatFout(gramLees(cid)),
+      return { staat: gcStaatFout(gramLees(cid), cid),
                html: gcStatusHtml(cid).replace(/<[^>]*>/g, ''),
                reden: gcVandaagReden() };
     }
@@ -72,7 +78,20 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       vandaagFout: zet(today(), 0),
       gisteren: zet(addDays(today(), -1), 0),
       oud: zet(addDays(today(), -30), 0),
-      sterk: zet(today(), 4)
+      sterk: zet(today(), 4),
+      /* v23.236: en dit is wat er vóór deze versie niet kon. Gisteren een misser, vandaag alles
+         goed. Onder de oude regel bleef het rood staan tot de datum vanzelf uit het venster liep,
+         dus geen enkel goed antwoord kon het uitzetten. Dat was Stefans klacht van 4 september. */
+      hersteld: (function () {
+        const g = addDays(today(), -1);
+        S.gram = {}; S.gramLog = {};
+        S.gram[cid] = { box: 0, due: today(), goed: 40, fout: 17, laatst: g };
+        S.gramLog[g] = {}; S.gramLog[g][cid] = { n: 5, goed: 4, k: {} };
+        S.gramLog[today()] = {}; S.gramLog[today()][cid] = { n: 6, goed: 6, k: {} };
+        return { staat: gcStaatFout(gramLees(cid), cid),
+                 html: gcStatusHtml(cid).replace(/<[^>]*>/g, ''),
+                 reden: gcVandaagReden() };
+      })()
     };
   });
   Object.keys(oordeel).forEach(function (k) {
@@ -91,6 +110,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'een verse fout komt terug als "wat fout ging" op je dagscherm');
   ok(!/fout/i.test(oordeel.oud.reden),
     'en dit is waar Stefan het aan merkte: een oude fout doet dat niet meer ("' + oordeel.oud.reden + '")');
+  ok(!oordeel.hersteld.staat && /doos/.test(oordeel.hersteld.html),
+    'v23.236: gisteren fout en vandaag alles goed zet het rood uit ("' + oordeel.hersteld.html + '")');
 
   // ---- 3. de puzzel begint opnieuw ----
   console.log('\n-- 3. een afgemaakte puzzel komt niet terug --');

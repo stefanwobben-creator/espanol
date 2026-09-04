@@ -148,13 +148,21 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 6. de doos zegt er je weekscore bij --');
   const week = await page.evaluate(() => {
     const cid = 'genero';
-    function zet(n, goed) {
+    /* v23.236: de beurten staan op een dag eerder deze week en niet op vandaag. Sinds het oordeel
+       "fout gegaan" uit ditzelfde ledger komt, betekent een misser van vandaag dat de statusregel
+       met dat rode woord begint in plaats van met de doos, en dan meet deze proef iets anders dan
+       hij zegt. Vijf dagen terug telt nog vol mee voor de week (het venster is zeven dagen) en valt
+       buiten het tweedaagse foutvenster. De combinatie "fout gegaan én het percentage" staat
+       hieronder als eigen geval. */
+    const dag = addDays(today(), -5);
+    function zet(n, goed, opDag) {
       S.gramLog = {};
       S.gram = {};
       S.gram[cid] = { box: 0, due: today(), goed: 60, fout: 20, laatst: addDays(today(), -30) };
       if (n > 0) {
-        S.gramLog[today()] = {};
-        S.gramLog[today()][cid] = { n: n, goed: goed, k: { toets: [n, goed] } };
+        const d = opDag || dag;
+        S.gramLog[d] = {};
+        S.gramLog[d][cid] = { n: n, goed: goed, k: { toets: [n, goed] } };
       }
       return { w: gramWeek(cid), html: gcStatusHtml(cid).replace(/<[^>]*>/g, '') };
     }
@@ -162,7 +170,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       driekwart: zet(12, 9),
       eentje: zet(1, 1),
       niets: zet(0, 0),
-      slecht: zet(10, 2)
+      slecht: zet(10, 2),
+      versFout: zet(12, 9, today())
     };
   });
   Object.keys(week).forEach(function (k) {
@@ -178,6 +187,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: en zonder beurten deze week ook niet, want nul is geen bericht');
   ok(/20% goed deze week/.test(week.slecht.html),
     'en een slechte week staat er net zo goed bij (' + week.slecht.html + ')');
+  ok(/fout gegaan/.test(week.versFout.html) && /75% goed deze week/.test(week.versFout.html),
+    'en bij een misser van vandaag staat het percentage naast "fout gegaan" (' + week.versFout.html + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 

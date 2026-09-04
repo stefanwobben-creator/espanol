@@ -425,7 +425,12 @@ const { chromium } = require('playwright');
      Stefan: "kwestie van hoe je de info presenteert, of beide kan of niet." Beide dus. */
   const kort = await page.evaluate(() => {
     gwSess = null; gcLeesId = null; S.gcAlles = false;
-    S.gram = {};
+    /* v23.236: het ledger hoort hier net zo leeg te beginnen als S.gram. Sinds "fout gegaan" uit
+       S.gramLog komt, is dat deel van de toestand die deze proef isoleert: zonder deze regel dragen
+       de eerdere onderdelen van deze suite hun eigen verse fouten mee, staan er drie onderwerpen
+       vooraan in plaats van één, en meet de proef de volgorde van de leerroute in plaats van de
+       fout van net. */
+    S.gram = {}; S.gramLog = {};
     corrSrsBij('muymucho', false);
     show('spiekbrief');
     const zichtbaar = document.querySelectorAll('#cheat [data-gclees]').length;

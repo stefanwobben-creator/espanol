@@ -165,14 +165,24 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: een gewone patroonvraag landt nog steeds in S.gram (' + pot.naPatroon.gram.join() + ')');
   ok(pot.naPatroon.brok.length === 0, 'CONTROLE: en die raakt S.brok niet aan');
 
-  // ---- de ontgrendeling mag niemand terugzetten ----
+  // ---- de omnummering mag niemand verschuiven ----
   // S.conjOpen is een index in CONJ_FASES. Twee fasen ertussen betekent dat index 9 ineens
   // "imperf" aanwijst in plaats van "subjuntivo", en dan raakt een bestaande gebruiker drie fasen
-  // kwijt. conjOpenInit zegt in zijn eigen kop dat dat niet mag gebeuren.
+  // kwijt. Dat is wat hieronder gemeten wordt: de OMNUMMERING, niet de plaatsing.
+  //
+  // v23.236: die twee waren tot nu toe hetzelfde, want er was maar één migratiestap. Nu zijn het er
+  // twee, en ze doen tegengestelde dingen: de omnummering houdt je op je plek, en de nieuwe stap zet
+  // je terug op het hele presente als je die plek nooit verdiend hebt. Gemeten in Stefans logboek:
+  // 42 conj:-fouten waren genoeg om trede 13 cadeau te krijgen, en zijn dagles bouwde daardoor
+  // subjuntivo-rijen terwijl hij het presente aan het verwerven was. Zie pw-tredes.js.
+  //
+  // S.conjKlim hieronder betekent: deze leerling heeft zelf geklommen, dus de nieuwe stap laat hem
+  // met rust en de omnummering blijft het enige wat er gebeurt. Dat is precies wat deze proeven
+  // altijd al bedoelden te meten.
   const mig = await page.evaluate(() => {
     const uit = {};
     // Stefans stand op 15 augustus: oude ladder, ontgrendeld tot en met de subjuntivo
-    delete S.conjLadder; S.conjOpen = 9; S.conjFase = 'subjuntivo';
+    delete S.conjLadder; S.conjOpen = 9; S.conjFase = 'subjuntivo'; S.conjKlim = 1;
     uit.subj = conjFaseNu().id;
     uit.imperfBereikbaar = conjFaseIdx('imperf') <= conjOpenMax();
     // controle: wie pas bij -er was hoort daar te blijven en de ladder niet cadeau te krijgen
@@ -186,18 +196,25 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const naEen = S.conjOpen;
     conjLadderMigratie(); conjLadderMigratie();
     uit.stabiel = S.conjOpen === naEen;
+    // en zonder dat spoor: dezelfde stand, maar nooit verdiend
+    delete S.conjLadder; delete S.conjKlim; S.conjLaatste = {};
+    S.conjOpen = 9; S.conjFase = 'subjuntivo';
+    uit.cadeau = conjFaseNu().id;
     return uit;
   });
 
-  console.log('\n-- een update neemt je niets af --');
+  console.log('\n-- de omnummering verschuift niemand --');
   ok(mig.subj === 'subjuntivo',
-    'wie op de subjuntivo stond staat daar nog steeds (nu: ' + mig.subj + ')');
+    'wie zelf naar de subjuntivo geklommen is staat daar nog steeds (nu: ' + mig.subj + ')');
   ok(mig.imperfBereikbaar === true,
     'en de nieuwe imperfecto-fasen staan meteen open, want ze liggen onder waar hij al stond');
   ok(mig.beginner === 'er' && mig.beginnerIdx === 1,
     'CONTROLE: wie pas bij -er was blijft daar (' + mig.beginner + ', idx ' + mig.beginnerIdx + ')');
   ok(mig.top === 'mix', 'CONTROLE: en de bovenste fase blijft de bovenste');
   ok(mig.stabiel === true, 'CONTROLE: twee keer migreren verschuift niet nog een keer');
+  ok(mig.cadeau === 'presente',
+    'v23.236: maar dezelfde stand zonder dat je hem verdiend hebt, zakt naar het hele presente (nu: ' +
+      mig.cadeau + ')');
 
   // ---- de doorsteek naar de vormdrill ----
   const door = await page.evaluate(() => ({
