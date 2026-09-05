@@ -1586,7 +1586,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.237";
+var APP_VERSIE = "v23.238";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -8079,6 +8079,9 @@ function renderProef(){
     b.onclick = function(){
       box.querySelectorAll("button[data-proef]").forEach(function(x){ x.disabled = true; });
       var goed = (+b.getAttribute("data-proef")) === w.c;
+      /* v23.238: ook hier zie je nu welke knop de jouwe was en welke de goede. Er stond alleen een
+         toast, en die is weg voordat je hem gelezen hebt. */
+      keuzeMarkeer(box.querySelectorAll("button[data-proef]"), w.c, +b.getAttribute("data-proef"));
       proefStand.xp += goed ? 2 : 1;
       proefStand.res[w.id] = goed;
       confetti(goed ? ["🎉","⭐️"] : ["💛"], goed ? 14 : 8);
@@ -8103,12 +8106,14 @@ function helVraagRender(box, d, h){
   var v = proefStand.hel[proefStand.helI];
   var nr = HEL_VAST + proefStand.helI + 1;
   var gekozen = proefStand.helGekozen;
-  var knoppen = v.opties.map(function(o){
+  /* v23.238: dit scherm had een derde stel klassen (good en bad) voor precies hetzelfde. Nu via
+     keuzeMerk(), zodat er één woordenschat is. Op index vergelijken en niet op tekst: twee opties
+     met dezelfde tekst zouden anders allebei oplichten. */
+  var iGoed = v.opties.indexOf(v.goed);
+  var iGekozen = (gekozen === undefined || gekozen === null) ? null : v.opties.indexOf(gekozen);
+  var knoppen = v.opties.map(function(o, oi){
     var cls = "opt";
-    if(gekozen !== undefined && gekozen !== null){
-      if(o === v.goed) cls = "opt good";
-      else if(o === gekozen) cls = "opt bad";
-    }
+    if(iGekozen !== null) cls = ("opt " + keuzeMerk(oi, iGoed, iGekozen)).replace(/\s+$/, "");
     return "<button type='button' class='"+cls+"' data-hel=\"" + o.replace(/"/g, "&quot;") +
       "\" style='margin:4px 0'>"+o+"</button>";
   }).join("");
@@ -10062,6 +10067,33 @@ function keuzeMerk(i, juist, gekozen){
   if(i === juist) return "juist";
   if(gekozen !== null && gekozen !== undefined && i === gekozen) return "jouw";
   return "";
+}
+/* ================= EEN KLASSE ZONDER OPMAAK IS GEEN TERUGKOPPELING (v23.238) =================
+
+   Stefan, 5 september, bij de leesvraag van Los molinos de viento: "als ik het antwoord klik krijg
+   ik geen rode en groene achtergrond (...) dit moet je even globaal oplossen."
+
+   answerBoekVraag() zette classList.add("correct") en classList.add("wrong"), en dat had hij altijd
+   gedaan. Alleen: hierboven zijn die twee klassen in v23.191 hernoemd naar juist en jouw. Het toetsje
+   en de opfrisser zijn toen omgebouwd, de leesvraag en de luistervraag niet. Die zetten sindsdien een
+   klasse waar geen enkele CSS-regel bij hoort. Geen foutmelding, geen kapotte knop, gewoon niets.
+
+   De kop van keuzeMerk() belooft: "een derde scherm krijgt het gedrag mee zodra het deze functie
+   gebruikt, en de poort merkt het als het dat niet doet." Dat tweede deel bestond niet, en een
+   belofte die alleen in het commentaar staat is geen belofte.
+
+   Deze functie is de afdwinging. Hij markeert een hele rij in één keer, zodat een aanroeper geen
+   klassenaam meer hoeft te kennen en er dus ook geen verkeerde kan opschrijven. */
+function keuzeMarkeer(knoppen, juist, gekozen){
+  if(!knoppen) return;
+  var i, m;
+  for(i = 0; i < knoppen.length; i++){
+    if(!knoppen[i] || !knoppen[i].classList) continue;
+    knoppen[i].classList.remove("juist");
+    knoppen[i].classList.remove("jouw");
+    m = keuzeMerk(i, juist, gekozen);
+    if(m) knoppen[i].classList.add(m);
+  }
 }
 
 function logError(id, type, tag, extra, paren){
@@ -16099,9 +16131,12 @@ function answerBoekVraag(idx, btn){
   var v = st.h.vragen[st.i];
   var el = document.getElementById("lezenCard");
   var opts = el.querySelectorAll(".opt");
-  opts[v.c].classList.add("correct");
+  /* v23.238: via keuzeMarkeer(). Hier stonden classList.add("correct") en add("wrong"), en die twee
+     klassen bestaan sinds v23.191 niet meer in de opmaak. Dit is de knop uit Stefans
+     schermafbeelding van 5 september. */
+  keuzeMarkeer(opts, v.c, idx);
   var goed = idx === v.c;
-  if(goed){ st.score++; addXP(2); trackPoging(false); } else { btn.classList.add("wrong"); addXP(1); trackPoging(true); }
+  if(goed){ st.score++; addXP(2); trackPoging(false); } else { addXP(1); trackPoging(true); }
   var fb = document.getElementById("boekFeedback");
   fb.innerHTML = "<div class='row'><button class='primary' id='btnBoekNext'>"+(st.i+1 < st.h.vragen.length ? ct("Volgende →","Next →") : ct("Verder →","Continue →"))+"</button></div>";
   document.getElementById("btnBoekNext").onclick = function(){ st.i++; renderBoekVraag(); };
@@ -27460,6 +27495,10 @@ function showTour(stap){
     wrap.querySelectorAll("button[data-toefen]").forEach(function(b){
       b.onclick = function(){
         var goed = (+b.getAttribute("data-toefen")) === t.oefen.c;
+        /* v23.238: het eerste keuzeknopje dat een nieuwe gebruiker ooit ziet, liet niet zien welke
+           knop de goede was. Nu wel, met dezelfde kleuren als overal. */
+        keuzeMarkeer(wrap.querySelectorAll("button[data-toefen]"), t.oefen.c,
+                     +b.getAttribute("data-toefen"));
         // woordje meteen echt het herhaalsysteem in
         if(!S.srs[t.oefen.id]) S.srs[t.oefen.id] = {box: goed ? 1 : 0, due: goed ? addDays(today(), 1) : today(), n:1, f: goed ? 0 : 1};
         /* v23.97: dit gaf punten, confetti en een toast, elke keer. De rondleiding is opnieuw te
@@ -28236,12 +28275,9 @@ function audAntwoord(i, knop){
   // v22.0: een misser bij het luisteren is net zo goed voer voor de leermachine als een typefout.
   else logError(sc.id, "escucha", sc.tema || "escucha", (profLang() === "nl" ? v.opts : v.optsEn)[i]);
   var el = document.getElementById("funCard");
-  el.querySelectorAll(".audOpt").forEach(function(b){
-    var bi = +b.getAttribute("data-ai");
-    if(bi === v.c) b.classList.add("correct");
-    else if(b === knop) b.classList.add("wrong");
-    b.onclick = null;
-  });
+  /* v23.238: dezelfde reparatie als bij de leesvraag. Ook hier stonden correct en wrong. */
+  keuzeMarkeer(el.querySelectorAll(".audOpt"), v.c, i);
+  el.querySelectorAll(".audOpt").forEach(function(b){ b.onclick = null; });
   var fb = document.getElementById("audFeedback");
   if(fb){
     fb.innerHTML = "<div class='feedback " + (goed ? "ok" : "fout") + "'>" +
