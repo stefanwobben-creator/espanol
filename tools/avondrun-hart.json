@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-04T07:04:40.764Z",
+ "wanneer": "2026-09-05T06:50:21.047Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,14 +10,15 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 9,
+  "zinnen": 8,
   "toetsjes": 1,
-  "kaal": 3,
+  "kaal": 4,
   "nieuweLes": 1
  },
  "versie": "v23.237",
  "klachten": [
-  "s293: afgekeurd — De zin is grammaticaal correct, maar de Nederlandse vertaling klopt niet volledig: 'een moeilijke opdracht' wordt vertaald als 'un ejercicio difícil', wat technisch correct is, maar in de context van een leraar die een opdracht geeft, is 'tarea' (huiswerk/opdracht) gebruikelijker dan 'ejercicio' (oefening)."
+  "s286: afgekeurd — De inhoud is onzin: niemand zegt dat het 'moeite kost om een prijs te betalen' (je betaalt een prijs, dat kost moeite is onlogisch).",
+  "s289: afgekeurd — De zin is grammaticaal correct, maar inhoudelijk onnatuurlijk in het Spaans. In de praktijk zou men eerder zeggen: '¿A vosotros no os gustan madrugar?' of '¿No os gustan las mañanas tempranas?' zonder het expliciete onderwerp 'vosotros' te benadrukken in deze context."
  ],
  "mis": null,
  "kaalVerloop": [
@@ -25,7 +26,7 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 4,
-   "naKeuring": 3
+   "naKeuring": 4
   }
  ],
  "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
@@ -34,5 +35,5 @@
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-09-04T07:13:45.415Z"
+ "afgemaakt": "2026-09-05T06:59:01.736Z"
 }
