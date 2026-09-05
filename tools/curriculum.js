@@ -39,6 +39,10 @@ const PLAN = path.join(__dirname, "curriculum-laatste.json");
    nodig is zodra main onder de run vandaan beweegt: dan wil je niet het BESTAND afleveren maar de
    TOEVOEGING, op verse main. Zie tools/curriculum-toepassen.js. */
 const LADING = path.join(__dirname, "curriculum-lading.json");
+/* v23.241: en de nieuwe les apart, want die gaat een andere kant op. Zie de kop bij het wegschrijven
+   hieronder: een les die via een pull request gaat, hoort niet in de boom te staan die de poort
+   keurt voor wat er direct live moet. */
+const LES_LADING = path.join(__dirname, "curriculum-les-lading.json");
 const HART_PAD = path.join(__dirname, "avondrun-hart.json");   // elke nacht een regel, ook als er niets kwam
 
 /* Wat de run vannacht deed, in een bestand. Zonder dit is de enige manier om te zien of de avondrun
@@ -1287,10 +1291,20 @@ async function main() {
         fs.writeFileSync("/tmp/vamos-nieuwe-les.json", JSON.stringify(nieuweLes, null, 1));
         console.log(`  nieuwe les klaar: "${nieuweLes.nieuweLessen[0].titel}" ` +
           `(${nieuweLes.words.length} woorden, ${nieuweLes.sentences.length} zinnen) → /tmp/vamos-nieuwe-les.json`);
+        /* v23.241: DE LES BLIJFT UIT DE WERKMAP.
+
+           Hier stond `lib.pasToe(nieuweLes, {})`, en dat schreef de les in dezelfde index.html als
+           de reparatie. Daarna keurt de poort die gecombineerde boom. Gemeten in de nacht van 5
+           september: de les b1-12 bracht spiekbriefkaart 30 mee zonder grammaticaconcept dat die
+           kaart uitlegt, pw-lesgat ging daarop af, en de tien oefenzinnen van diezelfde nacht kwamen
+           er niet doorheen. Drie nachten achter elkaar, om drie verschillende lessen.
+
+           Een lading die via een pull request gaat, hoort niet in de boom te staan die geoordeeld
+           wordt over wat er direct live moet. Hij gaat als lading naar de tak, en daar keurt de poort
+           hem op zijn eigen merites. */
         if (!OPT.droog) {
-          const echt = lib.pasToe(nieuweLes, {});
-          if (!echt.ok) { console.error("nieuwe les alsnog afgekeurd bij schrijven:\n - " + echt.fouten.join("\n - ")); nieuweLes = null; }
-          else { versie = echt.versie; console.log(`  nieuwe les weggeschreven → ${echt.versie} (zet dit in een pull request)`); }
+          fs.writeFileSync(LES_LADING, JSON.stringify(nieuweLes, null, 1));
+          console.log(`  nieuwe les klaargezet als lading → ${LES_LADING} (gaat via een pull request)`);
         }
       }
     }

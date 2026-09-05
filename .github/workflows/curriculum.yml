@@ -109,6 +109,10 @@ jobs:
       - name: Zelftest van de lading
         run: node tools/curriculum-toepassen.js --zelftest
 
+      # v23.241: de hartslag hoort te zeggen welke proef dichtging en niet dat er een dichtging.
+      - name: Zelftest van de poortdiagnose
+        run: node tools/hartslag-poort.js --zelftest
+
       # 31 augustus: de levering zelf. Deze proef bouwt een echt kaal repository, laat main eronder
       # vandaan bewegen zoals de logboek-Action elke nacht doet, en levert dan af. Hij staat hier
       # tussen de andere zelftests omdat het afleveren acht nachten lang de stille blokkade was:
@@ -238,6 +242,9 @@ jobs:
             echo '```'
           } >> $GITHUB_STEP_SUMMARY
 
+      # v23.241: deze stap en de pull request hieronder sluiten elkaar niet meer uit. Ze gingen over
+      # twee verschillende ladingen die toevallig in dezelfde nacht ontstaan, en één etiket voor
+      # allebei betekende dat een nacht met een nieuwe les zijn oefenzinnen niet live kreeg.
       - name: Reparatie direct live
         if: steps.run.outputs.wat == 'reparatie'
         run: |
@@ -270,21 +277,33 @@ jobs:
           sh tools/avondrun-leveren.sh "avondrun: $SAMENVATTING" \
             index.html versie.txt tools/curriculum-laatste.json tools/avondrun-hart.json audio
 
+      # v23.241: DE PULL REQUEST BOUWT ZICHZELF, OP VERSE MAIN.
+      #
+      # Hier stond `git checkout -b` op de werkmap van de run, en die bevatte de nieuwe les ómdat
+      # curriculum.js hem daarin schreef. Precies dat maakte dat de poort van de nacht over de les
+      # oordeelde in plaats van over de reparatie, en dat de zinnen van diezelfde nacht bleven liggen.
+      #
+      # De les komt nu als lading binnen en wordt op een verse tak toegepast. poort.yml draait op
+      # pull requests, dus het oordeel over de les komt op de les te staan. Is die rood, dan zie je
+      # dat op de PR en houdt hij niets anders tegen.
       - name: Nieuwe les als pull request
-        if: steps.run.outputs.wat == 'nieuwe-les'
+        if: steps.run.outputs.les == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "curriculum-bot"
           git config user.email "actions@users.noreply.github.com"
+          cp tools/curriculum-les-lading.json "$RUNNER_TEMP/les-lading.json"
+          git fetch origin main --quiet
           TAK="curriculum/les-$(date +%Y%m%d)"
-          git checkout -b "$TAK"
+          git checkout -b "$TAK" FETCH_HEAD
+          node tools/curriculum-toepassen.js "$RUNNER_TEMP/les-lading.json"
           git add index.html versie.txt tools/curriculum-laatste.json audio
           git commit -m "curriculum: nieuwe les \"${{ steps.run.outputs.titel }}\""
           git push -u origin "$TAK"
           # De kop van de PR komt uit het plan (één regel node, geen meerregelige JS: die liep uit het
           # YAML-blok en dan kan GitHub het workflowbestand niet meer lezen).
-          node -e "const l=require('./tools/curriculum-laatste.json').nieuweLes; console.log(['## Nieuwe les: '+l.titel,'','Niveau **'+l.niveau+'**, les '+l.num+' in het pad.','','- '+l.words.length+' woorden','- '+l.sents.length+' oefenzinnen','- '+(l.quizzes||[]).length+' grammatica-toetsje(s)','- eigen spiekbriefkaart',''].join(String.fromCharCode(10)))" > /tmp/pr.md
+          node -e "const l=require('./tools/curriculum-les-lading.json').nieuweLessen[0]; console.log(['## Nieuwe les: '+l.titel,'','Niveau **'+l.niveau+'**, les '+l.num+' in het pad.','','- '+l.words.length+' woorden','- '+l.sents.length+' oefenzinnen','- '+(l.quizzes||[]).length+' grammatica-toetsje(s)','- eigen spiekbriefkaart',''].join(String.fromCharCode(10)))" > /tmp/pr.md
           cat >> /tmp/pr.md <<'MD'
           Gemaakt door de avondrun en nagelezen door een tweede model (Spaans, vertaling, uitleg, en of
           er precies een goed antwoord is). De machinecontroles zitten in tools/content-lib.js: unieke

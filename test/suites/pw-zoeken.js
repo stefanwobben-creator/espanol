@@ -97,7 +97,14 @@ const { chromium } = require('playwright');
 
   // ---- 5. het scherm: woorden eerst en meteen leesbaar, de rest onder een vouw ----
   await page.fill('#dicZoek', 'casa');
-  await page.waitForTimeout(400);
+  /* v23.241: wachten op wat je meet in plaats van op de klok. Hier stond een vaste 400 ms, en het
+     zoeken is ontdenderd: onder belasting (de volle poort draait vier browsers tegelijk) was het
+     scherm nog niet hertekend, stond er geen vouw, en gingen twee proeven af op een meting die nooit
+     is gedaan. Dan is niet de app stuk maar de meting. */
+  await page.waitForFunction(() => {
+    const k = document.getElementById('dicCard');
+    return !!(k && k.querySelector('details'));
+  }, null, { timeout: 8000 }).catch(function () {});
   const scherm = await page.evaluate(() => {
     const kaart = document.getElementById('dicCard');
     const vouw = kaart.querySelector('details');

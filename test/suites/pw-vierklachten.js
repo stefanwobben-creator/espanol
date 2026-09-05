@@ -175,19 +175,39 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     }
     const doel = ltPlat(ltSpel.doelen[0].es);
     const goed = tik(doel);
-    // een woord van dezelfde lengte uit dezelfde letters dat geen doel is
-    let mis = null;
-    const gedraaid = doel.split('').reverse().join('');
-    if (gedraaid !== doel) mis = tik(gedraaid);
+    /* v23.241: het controlegeval wordt GEBOUWD en niet gevonden.
+       Hier stond "draai het doelwoord om en die hoort rood te zijn". Dat is hopen: het omgekeerde
+       woord kan zelf een doel van deze puzzel zijn, en welke puzzel je krijgt is een worp. Deze
+       suite stond daardoor af en toe rood onder belasting, en dan is niet de app stuk maar de
+       meting. Nu: alle verwisselingen van twee posities langslopen en de eerste nemen die
+       aantoonbaar géén doel is. Levert dat niets op (een woord van twee dezelfde letters), dan
+       zegt het antwoord dat er niets te bewijzen viel, in plaats van dat stil te laten. */
+    const doelen = ltSpel.doelen.map(function (d) { return ltPlat(d.es); });
+    let mis = null, gebouwd = null;
+    for (let a = 0; a < doel.length && !gebouwd; a++) {
+      for (let b = a + 1; b < doel.length && !gebouwd; b++) {
+        const l = doel.split('');
+        const t = l[a]; l[a] = l[b]; l[b] = t;
+        const kandidaat = l.join('');
+        if (kandidaat === doel) continue;
+        if (doelen.indexOf(kandidaat) !== -1) continue;
+        gebouwd = kandidaat;
+      }
+    }
+    if (gebouwd) mis = tik(gebouwd);
     const kort = tik(doel.slice(0, 1));
-    return { doel: doel, goed: goed, mis: mis, kort: kort, min: LT_MIN };
+    return { doel: doel, goed: goed, mis: mis, gebouwd: gebouwd,
+             kort: kort, min: LT_MIN, doelen: doelen.length };
   });
   console.log('   doel "' + kleur.doel + '" -> ' + kleur.goed.staat +
-    (kleur.mis ? ' · omgedraaid "' + kleur.mis.woord + '" -> ' + kleur.mis.staat : '') +
+    (kleur.mis ? ' · gebouwd "' + kleur.mis.woord + '" -> ' + kleur.mis.staat : ' · niets te bouwen') +
     ' · te kort "' + kleur.kort.woord + '" -> "' + kleur.kort.staat + '"');
   ok(kleur.goed.staat === 'raak', 'een woord dat in de puzzel zit wordt groen');
+  ok(!!kleur.gebouwd,
+    'CONTROLE: er valt een even lang niet-doel te bouwen uit dezelfde letters (' +
+      (kleur.gebouwd || 'geen') + ')');
   ok(!kleur.mis || kleur.mis.staat === 'mis',
-    'CONTROLE: een even lang woord uit dezelfde letters dat er niet in zit wordt rood');
+    'CONTROLE: en dat woord wordt rood, want het staat niet in de puzzel');
   ok(kleur.kort.staat === '', 'en te kort blijft neutraal, want daar valt nog niets van te vinden');
 
   // ---- 5. de spiekbrief gaat open ----

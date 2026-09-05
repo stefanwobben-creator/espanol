@@ -116,13 +116,21 @@ while [ "$poging" -le "$MAX_POGINGEN" ]; do
     exit 0
   fi
 
-  if [ -f tools/curriculum-laatste.json ] && \
-     node -e "process.exit(require('./tools/curriculum-laatste.json').nieuweLes ? 0 : 1)"; then
-    WAT="nieuwe-les"
-    TITEL=$(node -e "console.log(require('./tools/curriculum-laatste.json').nieuweLes.titel)")
-  else
-    WAT="reparatie"
-    TITEL=""
+  # v23.241: TWEE LADINGEN, TWEE ETIKETTEN.
+  #
+  # Hier stond één woord voor twee dingen: was er een nieuwe les, dan heette de hele nacht
+  # "nieuwe-les" en had de workflow geen stap "Reparatie direct live". De oefenzinnen van diezelfde
+  # nacht gingen dan mee in de pull request, ook als er niets mis mee was. In de nacht van 5
+  # september waren dat er tien.
+  #
+  # De reparatie staat sinds v23.241 als enige in de werkmap (de les gaat als lading naar zijn eigen
+  # tak), dus `wat` gaat over de reparatie en `les` is een tweede vlag ernaast.
+  WAT="reparatie"
+  TITEL=""
+  LES=""
+  if [ -f tools/curriculum-les-lading.json ]; then
+    LES="1"
+    TITEL=$(node -e "console.log(require('./tools/curriculum-les-lading.json').nieuweLessen[0].titel)")
   fi
   zeg "soort: $WAT ${TITEL:+($TITEL)}"
 
@@ -146,6 +154,7 @@ while [ "$poging" -le "$MAX_POGINGEN" ]; do
     zeg "poging $poging is door de poort"
     echo "wat=$WAT" >> "$UIT"
     [ -n "$TITEL" ] && echo "titel=$TITEL" >> "$UIT"
+    [ -n "$LES" ] && echo "les=1" >> "$UIT"
     echo "pogingen=$poging" >> "$UIT"
     exit 0
   fi
@@ -169,6 +178,13 @@ while [ "$poging" -le "$MAX_POGINGEN" ]; do
     grep -E "^  ROOD|^POORT DICHT|GEFAALD" "$POORTLOG" || echo "(geen rode suites in het log; kijk in het artefact)"
     echo '```'
   } >> "$SAMENVATTING"
+
+  # v23.241: en de hartslag zegt vanaf nu WELKE proef dichtging. Drie nachten stond er drie keer
+  # dezelfde zin ("de poort ging dicht op wat de bot schreef"), terwijl de twee regels die het
+  # antwoord waren in dit logboek stonden. Een controle die wel afgaat maar niet vertelt wat hij zag,
+  # is de helft van een meldsysteem.
+  node tools/hartslag-poort.js "$POORTLOG" tools/avondrun-hart.json || true
+  cp tools/avondrun-hart.json "$MAP/avondrun-hart.json" 2>/dev/null || true
 
   zeg "afgekeurd. Bewijs staat in $MAP"
 
