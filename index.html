@@ -1586,7 +1586,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.242";
+var APP_VERSIE = "v23.243";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -3626,7 +3626,13 @@ var K_WORDS = [
  {id:"k277", es:"la guindilla", nl:"het pepertje", tag:"cocina", ej:"Una guindilla pequeña es bastante.", ejnl:"Eén klein pepertje is genoeg."},
  {id:"k278", es:"el perejil", nl:"de peterselie", tag:"cocina", ej:"Echa perejil picado por encima.", ejnl:"Strooi er gehakte peterselie overheen."},
  {id:"k279", es:"la lámina", nl:"het plakje", tag:"cocina", ej:"Corta los champiñones en láminas gruesas.", ejnl:"Snijd de champignons in dikke plakjes."},
- {id:"k280", es:"dorar", nl:"bruin bakken", tag:"cocina", ej:"Dora los ajos treinta segundos.", ejnl:"Bak de knoflook dertig seconden bruin."}
+ {id:"k280", es:"dorar", nl:"bruin bakken", tag:"cocina", ej:"Dora los ajos treinta segundos.", ejnl:"Bak de knoflook dertig seconden bruin."},
+  /* v23.243: rechts en links. Ze bestonden alleen binnen voorbeeldzinnen en in de zoeklijst, dus je
+     kon ze opzoeken maar nooit leren. Naar K_WORDS en niet naar de Cervantes-lijst: die loopt
+     aaneengesloten van cv1 tot cv1376 en derecha en izquierda staan niet in PCIC_KEYNIV_RAW. Een
+     woord in een bronlijst zetten dat er niet in hoort, maakt die lijst waardeloos als bron. */
+  {id:"k281", es:"a la derecha", nl:"rechts", tag:"kern-plaats", ej:"La farmacia está a la derecha.", ejnl:"De apotheek is rechts.", meer:"la derecha = de rechterkant; let op: derecho is rechtdoor"},
+  {id:"k282", es:"a la izquierda", nl:"links", tag:"kern-plaats", ej:"Gira a la izquierda en la esquina.", ejnl:"Sla op de hoek linksaf.", meer:"la izquierda = de linkerkant"}
 ];
 
 /* ================= DE CERVANTES-WOORDEN (v23.15) =================
