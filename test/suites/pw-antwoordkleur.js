@@ -104,13 +104,20 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const qz = QUIZZES.filter(function (q) { return q.vragen && vraagOpts(q.vragen[0]).length >= 3; })[0];
     if (!qz) return { geen: true };
     startQuiz(qz.id);
-    let opts = document.querySelectorAll('.opt');
-    const v = qz.vragen[0];
+    /* Binnen #qCard zoeken en niet in het hele document: de leesvraag van proef 1 staat nog in de
+       DOM en heeft ook knoppen met class "opt". En het juiste antwoord komt uit qState en niet uit
+       qz.vragen[0], want quizVraagVolgorde() schudt de vragen: welke vraag je ziet is niet
+       noodzakelijk de eerste uit de lijst. Allebei zijn het meetfouten die deze proef groen konden
+       laten staan over de verkeerde knoppen. */
+    let opts = document.querySelectorAll('#qCard .opt');
+    const v = qState.volgorde[qState.i].v;
+    if (!opts.length) return { geen: true, reden: 'geen knoppen in #qCard' };
     const voor = kleur(opts[0]);
     const mis = (v.c === 0) ? 1 : 0;
     answerQuestion(mis, opts[mis]);
-    opts = document.querySelectorAll('.opt');
-    return { voor: voor, goedNa: kleur(opts[v.c]), jouwNa: kleur(opts[mis]) };
+    opts = document.querySelectorAll('#qCard .opt');
+    return { voor: voor, goedNa: kleur(opts[v.c]), jouwNa: kleur(opts[mis]),
+             n: opts.length, c: v.c, mis: mis };
   });
   console.log('   ' + JSON.stringify(toets));
   ok(!toets.geen && toets.goedNa !== toets.voor && toets.jouwNa !== toets.voor,

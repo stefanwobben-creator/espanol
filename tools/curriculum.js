@@ -33,6 +33,12 @@ const lib = require("./content-lib");
 
 const LOGS = path.join(__dirname, "logs-latest.json");
 const PLAN = path.join(__dirname, "curriculum-laatste.json");
+/* v23.239: de lading zelf, naast de id-lijst hierboven.
+   PLAN bewaart wát er is toegevoegd (s247, q-relatar-extra6) en dat is genoeg om 's ochtends te
+   lezen wat de nacht deed. Het is niet genoeg om het nóg een keer te doen, en dat is precies wat er
+   nodig is zodra main onder de run vandaan beweegt: dan wil je niet het BESTAND afleveren maar de
+   TOEVOEGING, op verse main. Zie tools/curriculum-toepassen.js. */
+const LADING = path.join(__dirname, "curriculum-lading.json");
 const HART_PAD = path.join(__dirname, "avondrun-hart.json");   // elke nacht een regel, ook als er niets kwam
 
 /* Wat de run vannacht deed, in een bestand. Zonder dit is de enige manier om te zien of de avondrun
@@ -381,12 +387,34 @@ levering afkeuren):
   een tweede betekenis, een vaste uitdrukking, een valkuil. Eén korte zin, Nederlands. Laat het veld
   weg als er niets te melden valt.`;
 
-const STIJL = `Stijl-eisen (belangrijk):
+/* ================= BRUIKBAAR IS GEEN STIJLEIS (v23.240) =================
+
+   Stefan, 5 september: "het belangrijkste bij genereren van zinnen is dat je checkt of zinnen zijn
+   die echte mensen zouden zeggen, dus praktisch toepasbaar."
+
+   Deze eis stond hieronder als bullet 2 van een blok dat "Stijl-eisen" heet. Stijl is of je "coche"
+   of "carro" schrijft. Dit is de vraag of de zin überhaupt de moeite waard is om te leren, en dat is
+   de eerste vraag en niet de tweede. Een model dat een lijstje met een kop leest, weegt die kop mee.
+
+   Hij staat nu vooraan in elke schrijfopdracht en is punt (1) bij de tegenlezer. En met Stefans eigen
+   woord erin: niet "zou een mens dit kunnen zeggen" maar "zou Stefan dit deze maand kunnen
+   gebruiken". Dat is strenger, en het is wat hij vroeg. */
+const BRUIKBAAR = `DE EERSTE EIS, VÓÓR ALLE ANDERE: elke zin moet PRAKTISCH TOEPASBAAR zijn.
+
+Stel je de leerling voor: een Nederlander van rond de veertig die Spaans leert om het te gebruiken.
+In een bar, op reis, bij de buren, op zijn werk, aan tafel met familie, of in een gesprek over het
+leren zelf. Zou hij deze zin deze maand kunnen zeggen of horen? Zo niet, schrijf hem niet op.
+
+Grammaticaal kloppen is niet genoeg. "Las mesas son tímidas" (de tafels zijn verlegen) en "Busco las
+casas" (ik zoek de huizen) zijn correct Spaans en toch waardeloos, want niemand zegt dat. Ook niet
+genoeg is "het zou kunnen": een zin over een situatie die je met moeite kunt bedenken, is geen zin om
+te leren.
+
+Kies liever een saaie ware zin dan een grammaticaal keurige onzinzin. En liever een zin uit een
+gesprek dan uit een oefenboek.`;
+
+const STIJL = `Stijl-eisen:
 - Alledaags, natuurlijk Spaans zoals in Spanje gesproken wordt. Geen letterlijk vertaald Nederlands.
-- De zin moet ergens over gaan. Iets wat een mens op een gewone dag tegen een ander zegt. Grammaticaal
-  kloppen is niet genoeg: "Las mesas son tímidas" (de tafels zijn verlegen) en "Busco las casas" (ik
-  zoek de huizen) zijn correct Spaans en toch onbruikbaar, want niemand zegt dat. Kies liever een
-  saaie ware zin dan een grammaticaal keurige onzinzin.
 - A2-woordenschat, korte zinnen, geen literaire constructies.
 - "uitleg" legt in het Nederlands uit WAAROM het antwoord zo is: twee zinnen, concreet, met de vorm erin.
   Geen verwijzingen naar regelnummers of naar "de spiekbrief".
@@ -472,6 +500,8 @@ function promptZinnenKaal(gat, ids, inv) {
   const paar = (gat.tijd === "indefinido" || gat.tijd === "imperfecto");
   return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
 
+${BRUIKBAAR}
+
 Maak ${ids.length} NIEUWE oefenzinnen in de ${gat.tijd} (${KAAL_UITLEG[gat.tijd]}).
 
 DE EIS DIE ALLES BEPAALT: in de Spaanse zin staat GEEN ENKELE tijdsaanduiding. De
@@ -510,6 +540,8 @@ function promptZinnenVerschijnsel(gat, ids, inv) {
   const bestaand = inv.sentences.filter(s => s.tag === gat.tag).slice(0, 8).map(s => `- ${s.es} — ${s.nl}`).join("\n");
   return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
 
+${BRUIKBAAR}
+
 Onderwerp (tag): "${gat.tag}". Hier gaat het structureel mis: ${gat.fouten} fouten, en er zijn maar
 ${gat.zinnen} oefenzinnen voor. Maak ${ids.length} NIEUWE oefenzinnen die precies dit onderwerp toetsen.
 
@@ -527,6 +559,8 @@ Antwoord met UITSLUITEND JSON: een object met precies een sleutel "zinnen", met 
 function promptZinnenWoorden(gat, ids) {
   const lijst = gat.woorden.slice(0, ids.length * 2).map(w => `- ${w.es} (${w.nl})`).join("\n");
   return `Je maakt oefenmateriaal voor een Nederlandstalige die Spaans leert (A2, AULA 2).
+
+${BRUIKBAAR}
 
 Deze woorden blijven niet plakken; de leerling maakt er steeds fouten mee:
 ${lijst}
@@ -581,12 +615,16 @@ Antwoord met UITSLUITEND JSON:
    tijd uit de context blijkt in plaats van uit de uitgang ("nací en Sevilla" heeft geen
    tijdswoord maar iedereen weet dat geboren worden af is). */
 function promptTegenlezerZinnen(items) {
-  return `Je bent corrector Spaans (Spanje, niveau A2/B1) voor een leerapp. Controleer per item:
-(1) is het Spaans correct en natuurlijk, (2) klopt de Nederlandse vertaling, (3) klopt de uitleg,
-(4) SLAAT DE ZIN ERGENS OP? Zou een mens dit op een gewone dag tegen een ander zeggen? Keur af als de
-    zin grammaticaal klopt maar inhoudelijk onzin is. Voorbeelden die zijn doorgeglipt en dus af
-    hadden gemoeten: "Las mesas son tímidas" (de tafels zijn verlegen), "Busco las casas" (ik zoek de
-    huizen). Correct Spaans, maar niemand zegt dat.
+  return `Je bent corrector Spaans (Spanje, niveau A2/B1) voor een leerapp. Controleer per item, in
+deze volgorde:
+(1) IS DEZE ZIN PRAKTISCH TOEPASBAAR? De leerling is een Nederlander van rond de veertig die Spaans
+    leert om het te gebruiken: in een bar, op reis, bij de buren, op zijn werk, aan tafel, of in een
+    gesprek over het leren zelf. Zou hij deze zin deze maand kunnen zeggen of horen? Zo niet: afkeuren,
+    ook als er verder niets mis mee is. Voorbeelden die zijn doorgeglipt en dus af hadden gemoeten:
+    "Las mesas son tímidas" (de tafels zijn verlegen), "Busco las casas" (ik zoek de huizen). Correct
+    Spaans, maar niemand zegt dat. Deze vraag komt eerst: een zin die niemand zegt hoef je niet meer
+    op zijn uitleg na te kijken.
+(2) is het Spaans correct en natuurlijk, (3) klopt de Nederlandse vertaling, (4) klopt de uitleg.
 Wees streng op fouten en op onzin, maar keur niets af om stijlvoorkeur.
 Het veld "alt" hoef je niet te controleren: dat vullen wij machinaal aan.
 
@@ -1270,6 +1308,9 @@ async function main() {
       reparatie: { zinnen: reparatie.sentences.map(s => s.id), toetsjes: reparatie.quizzes.map(q => q.id) },
       nieuweLes: nieuweLes ? nieuweLes.nieuweLessen[0] : null
     }, null, 1));
+    /* v23.239: en de lading zelf, in de vorm die pasToe() eet. Alleen de reparatie: de nieuwe les
+       gaat via een pull request en hoort niet ongezien op main te belanden. */
+    fs.writeFileSync(LADING, JSON.stringify(reparatie, null, 1));
   }
 
   /* De afsluitregel. Hierboven kan van alles stilletjes op niets uitlopen: een model dat geen

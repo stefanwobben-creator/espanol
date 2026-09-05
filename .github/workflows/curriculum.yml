@@ -103,6 +103,12 @@ jobs:
       - name: Zelftest van de herkansing
         run: node tools/avondrun-herkansing.js --zelftest
 
+      # v23.239: de stap die de lading op verse main legt. Hij staat hier tussen de zelftests omdat
+      # hij vanaf nu het enige pad naar main is voor de inhoud van de nacht, en omdat zijn proeven
+      # vooral bewijzen dat hij KAN stranden: een publicatiestap die alles doorlaat is geen stap.
+      - name: Zelftest van de lading
+        run: node tools/curriculum-toepassen.js --zelftest
+
       # 31 augustus: de levering zelf. Deze proef bouwt een echt kaal repository, laat main eronder
       # vandaan bewegen zoals de logboek-Action elke nacht doet, en levert dan af. Hij staat hier
       # tussen de andere zelftests omdat het afleveren acht nachten lang de stille blokkade was:
@@ -252,9 +258,17 @@ jobs:
           if [ -n "$OPNAMES" ] && [ "$OPNAMES" != "0" ]; then
             SAMENVATTING="$SAMENVATTING (+$OPNAMES opnames)"
           fi
-          git add index.html versie.txt tools/curriculum-laatste.json tools/avondrun-hart.json audio
-          git commit -m "avondrun: $SAMENVATTING"
-          git push
+          # v23.239: via avondrun-leveren.sh, net als de hartslag sinds 31 augustus. Hier stond een
+          # kale commit-en-push op de main van drie uur geleden, en die wordt geweigerd zodra de
+          # logboek-Action of Stefan er ondertussen overheen is gegaan. Gevolg: de hele nacht viel
+          # weg, en dat is de veilige helft van fout.
+          #
+          # index.html gaat niet als bestand mee maar als lading (zie het uitzonderingsgeval in dat
+          # script): verse main pakken, de zinnen erop leggen, en het versienummer pas dan kiezen.
+          # versie.txt staat er wel bij, want hij moet mee de commit in, maar hij wordt niet
+          # gekopieerd: het toepassen schrijft hem, van wat er op verse main stond.
+          sh tools/avondrun-leveren.sh "avondrun: $SAMENVATTING" \
+            index.html versie.txt tools/curriculum-laatste.json tools/avondrun-hart.json audio
 
       - name: Nieuwe les als pull request
         if: steps.run.outputs.wat == 'nieuwe-les'

@@ -93,6 +93,23 @@ leveren() {
         # het manifest is geen bestand maar een administratie: main wint, wij vullen aan (v23.179)
         if [ "$PAD" = "audio/stemmen.json" ]; then
           node tools/stemmen-samenvoegen.js "$BEWAAR/$PAD" >/dev/null 2>&1 || true
+        elif [ "$PAD" = "index.html" ]; then
+          # v23.239: dezelfde regel als hierboven, om dezelfde reden. index.html is niet van de
+          # avondrun alleen; op deze main publiceren drie schrijvers. Het bestand kopiëren zou alles
+          # wegvagen wat er tussendoor op main is gezet, en dat verlies zou niemand zien.
+          #
+          # Wat van deze run is, is niet het bestand maar de LADING. Die leggen we op verse main:
+          # pasToe() keurt hem daar opnieuw (een id dat vanochtend vrij was kan inmiddels vergeven
+          # zijn) en hoogt de versie op vanaf wat er op dat moment echt staat. Daarmee is de
+          # versieteller niet langer iets dat twee schrijvers los van elkaar bijhouden.
+          #
+          # versie.txt hoort hier niet bij: die wordt door dezelfde stap geschreven.
+          node tools/curriculum-toepassen.js "$BEWAAR/tools/curriculum-lading.json"
+          TCODE=$?
+          # 2 betekent "niets toe te passen", en dat is geen mislukking.
+          [ "$TCODE" = "0" ] || [ "$TCODE" = "2" ] || exit 1
+        elif [ "$PAD" = "versie.txt" ]; then
+          :
         else
           mkdir -p "$(dirname "$PAD")"
           cp -R "$BEWAAR/$PAD" "$(dirname "$PAD")/"
@@ -149,6 +166,11 @@ zelftest() {
     echo '{"wanneer":"oud"}' > tools/avondrun-hart.json
     echo '{"bestanden":{}}' > audio/stemmen.json
     echo "start" > index.html
+    # versie.txt hoort in de proefrepo net zo goed onder versiebeheer te staan als in de echte, want
+    # dat is precies waar de proef van afhangt: `git reset --hard` zet een GEVOLGD bestand terug op
+    # main, en laat een ongevolgd bestand van de run gewoon staan. Zonder deze regel meet de proef
+    # een repository die niet bestaat.
+    echo "v0.1" > versie.txt
     git add -A; git commit -qm start; git push -q origin HEAD:main
   ) || { echo "  FOUT kon de proefrepo niet bouwen"; return 1; }
 
@@ -179,6 +201,38 @@ zelftest() {
   ok "$?" "de opname staat op main"
   [ -f "$W/main-kant/logboek.txt" ]
   ok "$?" "CONTROLE: en het werk van de andere schrijver is niet weggegooid"
+
+  # v23.239: EN INDEX.HTML WORDT NIET GEKOPIEERD.
+  #
+  # Dit is het geval waarvoor deze ronde bestaat. Tot nu toe stond index.html niet in de levering,
+  # want kopiëren zou alles wegvagen wat er tussendoor op main is gezet. Nu staat hij er wel in,
+  # maar als LADING: de toevoeging van deze nacht wordt op verse main gelegd door
+  # tools/curriculum-toepassen.js, en het bestand van de run raakt main niet aan.
+  #
+  # Deze proef bewijst de ROUTERING, niet de toepasser: die heeft zijn eigen zelftest en heeft de
+  # echte index.html nodig, die hier niet staat. Vandaar een stukje dat opschrijft dát het is
+  # aangeroepen en met 2 eindigt ("niets toe te passen"). Wat hier telt: main houdt de index.html
+  # van de andere schrijver.
+  mkdir -p "$W/run/tools"
+  printf '%s\n' '#!/usr/bin/env node' \
+    'require("fs").writeFileSync(process.env.PROEF_SPOOR, "aangeroepen");' \
+    'process.exit(2);' > "$W/run/tools/curriculum-toepassen.js"
+  SPOOR="$W/toepassen-aangeroepen"
+  rm -f "$SPOOR"
+  (cd "$W/main-kant" && echo "van de andere schrijver" > index.html && git add -A && \
+     git commit -qm "andere schrijver raakt index.html aan" && git push -q origin HEAD:main)
+  echo "wat de bot vannacht schreef" > "$W/run/index.html"
+  echo "v99.99" > "$W/run/versie.txt"
+  (cd "$W/run" && WORTEL="$W/run" PROEF_SPOOR="$SPOOR" POGINGEN=3 \
+     sh "$WORTEL_SCRIPT" "proef: index als lading" index.html versie.txt tools/avondrun-hart.json >/dev/null 2>&1)
+  ok "$?" "de levering slaagt met index.html erbij"
+  [ -f "$SPOOR" ]
+  ok "$?" "de lading wordt toegepast in plaats van het bestand gekopieerd"
+  (cd "$W/main-kant" && git fetch -q origin main && git reset --hard -q FETCH_HEAD)
+  [ "$(cat "$W/main-kant/index.html" 2>/dev/null)" = "van de andere schrijver" ]
+  ok "$?" "CONTROLE: main houdt de index.html van de andere schrijver, niet die van de run"
+  [ "$(cat "$W/main-kant/versie.txt" 2>/dev/null)" != "v99.99" ]
+  ok "$?" "CONTROLE: en versie.txt van de run ook niet, want dat nummer hoort bij het toepassen"
 
   # tweede levering zonder dat er iets veranderd is: dat hoort geen lege commit op te leveren
   VOOR=$(cd "$W/main-kant" && git rev-parse HEAD)
