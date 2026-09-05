@@ -94,17 +94,29 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   ok(!open.profiel, 'en het is niet je profiel');
   ok(open.inBalk, 'en het staat als eigen scherm in TABS, dus het is te bereiken');
 
-  console.log('\n-- de zes blokken staan in Stefans volgorde --');
+  /* v23.244: DE VOLGORDE IS VERANDERD, OP VERZOEK VAN DEGENE DIE HEM KOOS.
+     Hier stond ['Je week', 'Je doel', 'Waar je staat', 'Onderweg', 'Sterke punten', 'Zwakke
+     plekken'], met de kop "de zes blokken staan in Stefans volgorde". Dat klopte: die volgorde was
+     zijn keuze uit v23.32.
+     Op 7 november vroeg hij om een scherm dat rangschikt. Dan hoort het antwoord op de vraag
+     waarvóór je dit scherm opent bovenaan: waar je staat. Je week is een tussenstand, je doel is een
+     instelling. En sterk en zwak zijn één lijst geworden, oplopend gesorteerd, zodat je ze naast
+     elkaar ziet in plaats van in twee kaarten met dezelfde eenheid.
+     Een proef die een keuze vastlegt, hoort mee te veranderen als degene die de keuze maakte hem
+     herziet, en hoort dan te zeggen wanneer en waarom. */
+  console.log('\n-- de blokken staan in de volgorde van v23.244 --');
   const volgorde = await page.evaluate(() => {
     const kop = [...document.querySelectorAll('#voortgangCard .kicker')].map((k) => k.innerText.trim());
     return kop;
   });
-  const wil = ['Je week', 'Je doel', 'Waar je staat', 'Onderweg', 'Sterke punten', 'Zwakke plekken'];
+  const wil = ['Waar je staat', 'Je week', 'Waar het werk ligt', 'Je doel', 'Onderweg'];
   // de kickers staan in kapitalen op het scherm (text-transform), dus vergelijken zonder hoofdletters
   wil.forEach((w, i) => {
     ok((volgorde[i] || '').toLowerCase().indexOf(w.toLowerCase()) === 0,
       'blok ' + (i + 1) + ' is "' + w + '" (' + (volgorde[i] || 'niets') + ')');
   });
+  ok(volgorde.indexOf('Sterke punten') === -1 && volgorde.indexOf('Zwakke plekken') === -1,
+    'CONTROLE: de twee losse kaarten staan er niet meer naast, anders is het er drie in plaats van een');
 
   console.log('\n-- de getallen komen uit voortgangCijfers --');
   const cijf = await page.evaluate(() => {
@@ -120,7 +132,15 @@ const U = 'http://localhost:8321/espanol-stefan.html';
 
   console.log('\n-- je week telt wat je gedaan hebt, niet wat er in S.srs staat --');
   const week = await page.evaluate(() => {
-    const k = [...document.querySelectorAll('#voortgangCard .card')][0];
+    /* v23.244: de kaart bij zijn kop zoeken en niet op plek [0]. Hier stond de eerste kaart van het
+       scherm, en dat wás de weekkaart tot de volgorde veranderde. Een proef die zijn onderwerp op
+       positie vindt, gaat af zodra iets ernaast verschuift terwijl er niets mis is met wat hij
+       meet. */
+    const kaarten = [...document.querySelectorAll('#voortgangCard .card')];
+    const k = kaarten.filter((el) => {
+      const kop = el.querySelector('.kicker');
+      return kop && /je week/i.test(kop.innerText || '');
+    })[0];
     return (k ? k.innerText : '').replace(/\s+/g, ' ');
   });
   /* v23.38. Hier stond de aanwas van `geoefend` tussen twee weekmetingen (+50 in deze fixture). Dat
@@ -207,6 +227,24 @@ const U = 'http://localhost:8321/espanol-stefan.html';
   });
   ok(dubbel.sterk <= 1 && dubbel.zwak <= 1, 'niet twee keer hetzelfde blok op één scherm');
   ok(dubbel.oud === 0, 'en het oude gecombineerde blok is weg, niet blijven staan');
+
+  /* v23.244: de cijferlijst staat achter een vouw, en die vouw is dicht bij binnenkomst. Weggelaten
+     is niet verstopt, dus de proef eist allebei: hij bestaat, en hij staat dicht. Zonder het tweede
+     zou "altijd open" deze proef ook halen, en dan is er niets veranderd. */
+  const vouw = await page.evaluate(() => {
+    const d = document.getElementById('cijferVouw');
+    if (!d) return { erIs: false };
+    const kop = (d.querySelector('summary') || {}).innerText || '';
+    /* textContent en niet innerText: een dichte vouw is niet zichtbaar, en innerText geeft van
+       onzichtbare inhoud een lege string terug. Dan meet je of hij open staat, terwijl je wilt
+       weten of er iets in zit. */
+    const inhoud = (d.querySelector('.inner') || {}).textContent || '';
+    return { erIs: true, dicht: !d.open, kop: kop.trim(), tekens: inhoud.length };
+  });
+  console.log('   "' + (vouw.kop || 'geen vouw') + '", ' + (vouw.tekens || 0) + ' tekens erin');
+  ok(vouw.erIs, 'de cijferlijst zit achter een vouw');
+  ok(vouw.dicht, 'en die staat dicht bij binnenkomst, want dit is een ander moment dan de rest');
+  ok(vouw.tekens > 200, 'CONTROLE: er zit ook echt iets in die vouw (' + (vouw.tekens || 0) + ' tekens)');
 
   console.log('\n-- weggelaten is niet verstopt --');
   await page.evaluate(() => show('perfil'));

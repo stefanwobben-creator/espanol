@@ -169,6 +169,18 @@
   .statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .stat{background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center;}
   .stat b{display:block; font-size:1.5rem;}
+  /* v23.244: het merkje voor de thema-lijst. Sterk en zwak staan in één lijst, dus het onderscheid
+     moet in de regel zelf zitten en niet in de kop van de kaart erboven. */
+  .vgMerk{font-size:.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+          padding:2px 5px; border-radius:5px; margin-right:5px; white-space:nowrap;}
+  .vgMerk.vgzwak{background:var(--red-soft); color:var(--red);}
+  .vgMerk.vgsterk{background:var(--green-soft); color:var(--green);}
+  .kolommen{display:flex; align-items:flex-end; gap:5px; height:104px; margin:10px 0 2px;}
+  .kolommen > div{flex:1; display:flex; flex-direction:column; justify-content:flex-end;
+                  align-items:center; gap:4px; min-width:0;}
+  .kolommen .kbar{width:100%; background:var(--accent); border-radius:4px 4px 0 0; min-height:2px;}
+  .kolommen .klab{font-size:.64rem; color:var(--muted); white-space:nowrap;}
+  .kolommen .kval{font-size:.68rem; font-weight:700; font-variant-numeric:tabular-nums;}
   .boxrow{display:flex; align-items:center; gap:8px; margin:4px 0; font-size:.88rem;}
   .boxrow .bar{flex:1; height:10px; background:var(--border); border-radius:99px; overflow:hidden; position:relative;}
   .boxrow .bar > div{height:100%; background:var(--accent);}
@@ -1586,7 +1598,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.243";
+var APP_VERSIE = "v23.244";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -29098,6 +29110,64 @@ function vgOnderwegHtml(c){
    de kwaal. Nu staat er altijd waar je het verst bent, en de regel eronder zegt of dat al iets
    voorstelt. */
 var VG_STERK = 50;
+/* ================= ÉÉN LIJST IN PLAATS VAN TWEE KAARTEN (v23.244) =================
+
+   Sterk en zwak stonden sinds v23.37 in twee losse kaarten, met een reden: "je gaat een zwakke plek
+   pas oefenen als hij niet tussen goed nieuws staat." Die reden klopt, maar het middel leverde zes
+   thema's op één scherm op die je niet kunt vergelijken: drie oplopend in de ene kaart, drie
+   aflopend in de andere, in dezelfde eenheid.
+
+   Nu één lijst, oplopend gesorteerd, met een merkje per regel. De zwakke staan daarmee nog steeds
+   bovenaan en de reden van v23.37 blijft dus overeind; wat erbij komt is dat je ze naast elkaar
+   ziet. De telling is niet veranderd: zwakkePunten() doet hem nog steeds, en de drempels
+   (minstens drie woorden gehad, VG_STERK) staan waar ze stonden. */
+function vgThemasHtml(){
+  var z = zwakkePunten();
+  /* Alleen thema's waar je aan begonnen bent. Een thema dat je nooit zag staat op nul procent en
+     kwam daardoor bovenaan te staan terwijl er niets zwaks aan is: je bent er gewoon nog niet
+     geweest. Dat is een aanbod en geen tekort. Drie gehad is de ondergrens; daaronder meet je ruis. */
+  var aangeraakt = z.themas.filter(function(x){ return x.gehad >= 3; });
+  if(aangeraakt.length < 2) return "";
+  var zwak = aangeraakt.slice(0, 3);
+  var sterk = aangeraakt.slice(-3).filter(function(x){
+    return zwak.indexOf(x) === -1;
+  });
+  var rijen = zwak.concat(sterk).sort(function(a, b){ return a.kracht - b.kracht; });
+  var h = rijen.map(function(x){
+    var soort = x.kracht >= VG_STERK ? "sterk" : "zwak";
+    return vgRij("<span class='vgMerk vg" + soort + "'>" +
+                   (soort === "sterk" ? ct("sterk","strong") : ct("zwak","weak")) + "</span> " + x.naam,
+                 ct(x.gehad+" van de "+x.n+" woorden gehad", x.gehad+" of "+x.n+" words seen"),
+                 x.kracht, x.kracht+"%", soort);
+  }).join("");
+  /* De wankele grammaticaregels horen hier ook: het is dezelfde vraag ("waar moet ik heen") in een
+     andere eenheid. Ze stonden in de zwakke kaart en blijven staan waar ze stonden, onder de
+     thema's. */
+  var wankel = z.regels.filter(function(x){ return x.kracht < 60; });
+  if(wankel.length >= 2){
+    /* v23.37: bij een regel stond een percentage, en dat leest als een score. "Ser of estar, 1 fout
+       van 7 beurten, 0%" terwijl je er zes goed had: die nul is het doosje, niet je uitslag. */
+    var dozen = GRAM_INTERVALS.length - 1;
+    h += wankel.slice(0, 3).map(function(x){
+      var doos = Math.round(x.kracht / 100 * dozen);
+      return vgRij(x.naam,
+                   ct(x.fout+" fout van "+x.beurten+" beurten", x.fout+" wrong of "+x.beurten+" turns"),
+                   x.kracht, ct("doosje "+doos+"/"+dozen, "box "+doos+"/"+dozen), "zwak");
+    }).join("");
+  }
+  return "<div class='card'><span class='kicker'>"+ct("Waar het werk ligt","Where the work is")+"</span>"+h+
+    "<p class='muted' style='margin:8px 0 0; font-size:.8rem'>"+
+    ct("Het percentage is geen score. Het is hoe ver de woorden van dit thema in je doosjes staan, "+
+       "van alle woorden die het thema op jouw niveau heeft; woorden die je nooit zag tellen voor "+
+       "nul. Niet op fouten geteld, want een thema dat je vaak oefent verzamelt vanzelf de meeste "+
+       "fouten.",
+       "The percentage is not a score. It is how far this topic's words sit in your boxes, out of "+
+       "all the words the topic has at your level; words you never saw count as zero. Not counted "+
+       "on mistakes: a topic you practise a lot collects the most.")+
+    "</p></div>";
+}
+/* v23.244: hieronder staan vgSterkHtml en vgZwakHtml nog, want de rest van het bestand mag ze
+   aanroepen. renderVoortgang doet dat niet meer. */
 function vgSterkHtml(){
   var z = zwakkePunten();
   var sterk = z.themas.slice(-3).reverse();
@@ -29371,13 +29441,18 @@ function vgMetingHtml(){
 function renderVoortgang(){
   var c = voortgangCijfers();
   var el = document.getElementById("voortgangCard");
+  /* v23.244: WAAR JE STAAT GAAT VOOROP.
+     De volgorde hieronder was die van Stefan uit v23.32: je week, je doel, wat je vasthoudt. Hij
+     vroeg op 7 november om een scherm dat rangschikt, en dan hoort het antwoord op de vraag waarvoor
+     je dit scherm opent bovenaan te staan. Je week is een tussenstand en je doel is een instelling;
+     allebei nuttig, geen van beide de kop van de pagina.
+     Sterk en zwak zijn één lijst geworden, zie vgThemasHtml(). */
   el.innerHTML =
-    vgWeekHtml(c) +
-    vgDoelHtml() +
     "<div class='card' id='vgVastKaart'>"+dagBasisRegelHtml({legenda:true})+vgLijnHtml(c)+"</div>" +
+    vgWeekHtml(c) +
+    vgThemasHtml() +
+    vgDoelHtml() +
     vgOnderwegHtml(c) +
-    vgSterkHtml() +
-    vgZwakHtml() +
     vgMetingHtml();
   var bd = document.getElementById("btnVgWeekDeel");
   if(bd) bd.onclick = function(){ maatjeDeel("voortgang"); };
@@ -36706,6 +36781,15 @@ function cijferRij(waarde, label, uitleg){
   return "<div class='cijfRij'><div class='cijfW'>"+waarde+"</div>"+
     "<div class='cijfT'>"+label+"<span>"+uitleg+"</span></div></div>";
 }
+/* v23.244: deze lijst stond open. Twintig regels met hetzelfde gewicht als alles erboven, terwijl
+   het een ander publiek en een ander moment is: dit lees je als je iets wilt controleren, niet als
+   je even wilt zien hoe je ervoor staat. Hij zit nu achter één klik en de inhoud is niet veranderd.
+   Weggelaten is niet verstopt; dicht is niet weg. */
+function cijferLijstOmhulsel(binnen){
+  if(!binnen) return "";
+  return "<details id='cijferVouw'><summary>"+ct("Alles in cijfers","Every number")+"</summary>"+
+    "<div class='inner'>"+binnen+"</div></details>";
+}
 function cijferLijstHtml(){
   var c = voortgangCijfers(), r = "";
   /* v23.38: dezelfde samentelling als de balk. Stond hier c.actief (alleen je huidige niveau), dan
@@ -36932,7 +37016,21 @@ function krachtTabelHtml(){
                   "each word here counts for "+Math.round(100 * krachtGewicht(i))+" percent")+"</span></div></div>";
   }
   if(!r) return "";
-  return "<p class='muted' style='margin-top:8px'>"+
+  /* v23.244: er komt een grafiek boven de regels. Acht regels tekst waren het langste blok van dit
+     scherm en ze zeggen samen één ding: waar je stapel zit. Dat is een vorm voor een beeld. De
+     regels blijven eronder staan, want daar staat het gewicht per doosje, en dat is de onderbouwing
+     van het getal op Vandaag. */
+  var hoog = 0, gi;
+  for(gi = 1; gi < c.dozen.length; gi++) if(c.dozen[gi] > hoog) hoog = c.dozen[gi];
+  var kol = "";
+  for(gi = 1; gi < c.dozen.length; gi++){
+    if(!c.dozen[gi]) continue;
+    kol += "<div><span class='kval'>"+c.dozen[gi]+"</span>"+
+      "<span class='kbar' style='height:"+(hoog ? Math.round(100 * c.dozen[gi] / hoog) : 0)+"%'></span>"+
+      "<span class='klab'>"+lab[gi]+"</span></div>";
+  }
+  return (kol ? "<div class='kolommen' id='krachtKolommen'>"+kol+"</div>" : "")+
+    "<p class='muted' style='margin-top:8px'>"+
       ct("Hoe verder naar onder, hoe beter een woord in je geheugen zit. Zo komt het getal op Vandaag "+
          "tot stand: elk doosje telt mee naar zijn eigen herhaalinterval.",
          "The further down, the better a word sits in your memory. This is how the number on Today is "+
@@ -37034,7 +37132,7 @@ function renderStats(){
      verhuisd, in de volgorde die Stefan gaf. Verhuisd en niet gekopieerd: de telling zit nog steeds
      in zwakkePunten() en die is niet aangeraakt. */
   el.innerHTML = koersHtml + voorspelHtml() +
-    cijferLijstHtml()+
+    cijferLijstOmhulsel(cijferLijstHtml())+
     "<h2 style='margin-top:16px'>"+ct("Woorden per herhaalinterval","Words per review interval")+"</h2>"+boxHtml+
     krachtTabelHtml()+
     "<details style='margin-top:18px'><summary>"+ct("Wat de app bijhoudt","What the app keeps score of")+"</summary>"+

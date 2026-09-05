@@ -253,11 +253,23 @@ async function verseBezoeker(page, niveau) {
   await page.evaluate(() => show('voortgang'));
   await page.waitForTimeout(700);
   const vgTekst = await page.evaluate(() => {
+    /* v23.244: textContent en niet innerText. De uitleg staat sinds die versie in de vouw "Alles in
+       cijfers", en die is dicht bij binnenkomst; innerText geeft van onzichtbare inhoud niets terug.
+       Wat deze proef bewaakt is onveranderd: dit getal hoort niet op Vandaag maar op Voortgang, met
+       uitleg erbij. Achter een klik is nog steeds op Voortgang. */
     const tab = document.getElementById('tab-voortgang') || document.body;
-    return tab.innerText;
+    return tab.textContent;
   });
   ok(/gewogen naar hoe lang je ze onthoudt/.test(vgTekst),
     'maar wel op Voortgang, met een alinea uitleg erbij');
+  const bereikbaar = await page.evaluate(() => {
+    const d = document.getElementById('cijferVouw');
+    if (!d) return null;
+    d.open = true;
+    return /gewogen naar hoe lang je ze onthoudt/.test(d.innerText || '');
+  });
+  ok(bereikbaar !== false,
+    'CONTROLE: en je komt erbij door de vouw open te doen, dus dicht is niet weg');
   await page.evaluate(() => { show('lessen'); renderLessons(); });
   await page.waitForTimeout(300);
 
