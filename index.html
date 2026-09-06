@@ -759,6 +759,7 @@
   /* v23.144: het gesprek met Chispa. Haar beurten links met haar kop ernaast, die van jou rechts.
      De notitie over jouw zin staat er los onder (klasse naast): het gesprek en de correctie zijn
      twee verschillende dingen en horen er ook verschillend uit te zien. */
+  .chmini{width:28px; height:30px; flex:0 0 28px;}
   .chatrij{display:flex; gap:9px; align-items:flex-start; margin:9px 0;}
   .chatrij.ik{justify-content:flex-end;}
   .bel{border-radius:14px; padding:8px 12px; max-width:82%; font-size:.94rem;}
@@ -1598,7 +1599,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.248";
+var APP_VERSIE = "v23.249";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16764,8 +16765,18 @@ var CHISPA_GROET = [
   {es:"Sin prisa, pero sin pausa.",   nl:"Geen haast, maar wel doorgaan.",     en:"No rush, but no stopping."}
 ];
 function chispaGroet(){ return CHISPA_GROET[dayHash("groet") % CHISPA_GROET.length]; }
+/* v23.249: mét een klasse die een maat draagt.
+
+   Deze svg heeft geen width en geen height. Op de dagbalk gaf .lfchispa svg hem er een; in het
+   gesprek stond geen enkele regel, en een <svg> zonder maat wordt zo breed als zijn ouder. Vandaar
+   de Chispa van een halve pagina per beurt op Stefans scherm.
+
+       Een maat die bij de aanroepplek staat in plaats van bij het ding zelf,
+       ontbreekt op de volgende aanroepplek.
+
+   .lfchispa svg is specifieker en wint, dus de dagbalk blijft 48 bij 50. */
 function chispaMiniSvg(){
-  return "<svg viewBox='-16 -16 32 34'>"+escChispaMini()+"</svg>";
+  return "<svg class='chmini' viewBox='-16 -16 32 34'>"+escChispaMini()+"</svg>";
 }
 /* ================= VERDER WAAR JE WAS (v20.2) =================
    Stefan, 5 augustus: "Waar in een oefening is men nu." De les liep in vier stappen, maar bestond
@@ -24311,7 +24322,7 @@ function praatBlokWat(){
 function renderChat(){
   var el = document.getElementById("chatWrap");
   if(!el) return;
-  var st = chatStand(), klaar = chatKlaar();
+  var st = chatStand(), klaar = chatKlaar(), praatDoor = !!st.door;
   var inFlow = !!(lesFlow && lesFlow.stap === "produceren");
   var h = (inFlow ? lesFlowBannerHtml() : "")+"<div class='card'>"+
     "<span class='kicker'>"+ct("Praten met Chispa","Talking with Chispa")+" \u00b7 "+
@@ -24325,7 +24336,9 @@ function renderChat(){
         (t.nl ? "<span class='nl'>"+veiligHtml(t.nl)+"</span>" : "")+"</div></div>";
     } else {
       h += "<div class='chatrij ik'><div class='bel ik'>"+veiligHtml(t.es)+"</div></div>";
-      if(b.naast) h += "<div class='naast'>"+veiligHtml(b.naast)+"</div>";
+      /* v23.249: naast staat er alleen nog als er iets MIS ging (geen model). Het oordeel over je
+         zinnen komt na afloop in één blok; zie chatNabespreking. */
+      if(b.naast) h += "<div class='naast amber'>"+veiligHtml(markdownWeg(b.naast))+"</div>";
     }
   });
   if(chatBezig){
@@ -24333,14 +24346,20 @@ function renderChat(){
   }
   h += "<div id='chatHulpVak'></div>";
   if(klaar){
-    h += "<div class='feedback ok' style='margin-top:10px'>"+
+    h += chatReviewHtml()+
+      "<div class='feedback ok' style='margin-top:10px'>"+
       ct("Drie beurten, en je hebt ze zelf bedacht. Dat is iets anders dan een zin vertalen.",
          "Three turns, and you came up with them yourself. That's not the same as translating a sentence.")+"</div>"+
       "<div class='row' style='margin-top:10px'>"+
         (inFlow ? "<button class='primary' id='chatFlow'>"+ct("Verder met je les \u2192","On with your session \u2192")+"</button>"
                 : "<button class='primary' id='chatTerug'>"+ct("Klaar","Done")+"</button>")+
+        (praatDoor ? "" : "<button class='ghost' id='chatNogEen'>"+ct("Nog een beurt","One more turn")+"</button>")+
       "</div>";
-  } else {
+  }
+  /* v23.249: geen else meer. Het blok is af bij drie beurten (daar hangt chatGedaanVandaag aan),
+     maar het gesprek hoeft dat niet te zijn. Tik je "Nog een beurt", dan staan de bespreking en het
+     invoerveld tegelijk op het scherm. */
+  if(!klaar || praatDoor){
     h += "<input type='text' id='chatInvoer' style='margin-top:10px' placeholder='"+
       ct("Schrijf je antwoord in het Spaans...","Write your answer in Spanish...")+"' autocomplete='off'>"+
       "<div class='row' style='margin-top:8px'>"+
@@ -24362,6 +24381,7 @@ function renderChat(){
 function chatWire(){
   var b;
   b = document.getElementById("chatStuur"); if(b) b.onclick = chatStuur;
+  b = document.getElementById("chatNogEen"); if(b) b.onclick = chatNogEen;
   b = document.getElementById("chatHulp"); if(b) b.onclick = chatHulpVak;
   b = document.getElementById("chatFlow"); if(b) b.onclick = function(){ chatStand().klaar = true; persist(); lesFlowVolgende(); };
   /* v23.150: hetzelfde blok, andere vorm. Niet lesFlowVolgende(): dan sla je het schrijfblok over in
@@ -24392,26 +24412,99 @@ function chatStuur(){
   var tekst = inv ? (inv.value || "").trim() : "";
   if(!tekst || chatBezig) return;
   var st = chatStand();
-  st.beurten.push({van:"jij", es:tekst.slice(0, 300)});
+  var mijnZin = tekst.slice(0, 300);
+  st.beurten.push({van:"jij", es:mijnZin});
+  /* v23.249: de plek van MIJN beurt, vastgelegd vóór de aanroep.
+
+     Hier stond s.beurten[s.beurten.length - 1] ná het antwoord, oftewel "de laatste beurt op het
+     moment dat het antwoord binnenkwam". Dat is een positie en geen verwijzing, en het is dezelfde
+     fout als aan de serverkant. Nu weet de afhandeling welke beurt van haar is. */
+  var idx = st.beurten.length - 1;
   addXP(3); chatBezig = true; persist(); renderChat();
-  api("/api/ai/chat", "POST", {modus:"gesprek", niveau:chatNiveau(),
+  api("/api/ai/chat", "POST", {modus:"gesprek", niveau:chatNiveau(), zin:mijnZin, alleenAntwoord:true,
       beurten:st.beurten.map(function(b){ var t = chatTekst(b); return {van:b.van, es:t.es}; })})
     .then(function(res){
       chatBezig = false;
       var s = chatStand();
-      var laatste = s.beurten[s.beurten.length - 1];
+      var mijn = s.beurten[idx];
       if(!res || !res.ok){
         /* Geen model, geen gesprek: dan zegt Chispa dat zelf en telt de beurt gewoon mee. Wat je
            schreef blijft staan; dat is het enige wat je zelf gemaakt hebt. */
-        if(laatste && laatste.van === "jij") laatste.naast = aiFoutTekst(res);
-      } else {
-        if(laatste && laatste.van === "jij" && res.naast) laatste.naast = res.naast;
-        if(res.es) s.beurten.push({van:"chispa", es:res.es, nl:res.nl || ""});
+        if(mijn && mijn.van === "jij") mijn.naast = aiFoutTekst(res);
+      } else if(res.es){
+        s.beurten.push({van:"chispa", es:markdownWeg(res.es), nl:markdownWeg(res.nl || "")});
       }
       if(chatKlaar()) s.klaar = true;
       persist();
       renderChat();
+      if(chatKlaar()) chatNabespreking();
     });
+}
+
+/* De bespreking van je zinnen, in één keer, na afloop.
+
+   Sinds v23.144 staat in de kop van dit blok: "Een gesprekspartner die elke zin verbetert is er
+   geen." En daarna verbeterde hij elke zin, in de beurt zelf. Nu antwoordt Chispa tijdens het
+   gesprek alleen, en komt dit erachteraan. Dat is een gesprek in plaats van een overhoring, en het
+   is sneller: de beurt hoeft geen oordeel meer te vormen.
+
+   Elke regel draagt de zin waar hij over gaat, en die wordt hier nagekeken. Komt hij niet voor in
+   wat je gezegd hebt, dan valt de regel af: liever geen oordeel dan een oordeel over de verkeerde
+   zin. */
+var chatNaBezig = false;
+function chatMijnZinnen(){
+  return chatStand().beurten.filter(function(b){ return b.van === "jij"; })
+    .map(function(b){ return b.es || ""; }).filter(Boolean);
+}
+function chatNabespreking(){
+  var s = chatStand();
+  if(s.review || chatNaBezig) return;
+  var zinnen = chatMijnZinnen();
+  if(!zinnen.length) return;
+  chatNaBezig = true; renderChat();
+  api("/api/ai/chat", "POST", {modus:"nabespreking", niveau:chatNiveau(), zinnen:zinnen})
+    .then(function(res){
+      chatNaBezig = false;
+      var st2 = chatStand();
+      if(!res || !res.ok || !res.regels || !res.regels.length){
+        st2.review = {fout:aiFoutTekst(res), regels:[]};
+      } else {
+        var regels = res.regels.filter(function(r){ return r && r.zin && zinnen.indexOf(r.zin) !== -1; })
+          .map(function(r){ return {zin:r.zin, oordeel:markdownWeg(r.oordeel), goed:!!r.goed}; });
+        st2.review = regels.length ? {regels:regels}
+                                   : {fout:ct("De bespreking ging over andere zinnen dan die van jou, dus die laat ik weg.",
+                                              "The review was about other sentences than yours, so I am leaving it out."),
+                                      regels:[]};
+      }
+      persist();
+      renderChat();
+    });
+}
+/* Doorpraten mag. Drie beurten blijft de maat van het blok (een gesprek zonder eind is waar je op
+   afhaakt, v23.144), maar het blok is dan af en niet het gesprek. Extra beurten krijgen geen
+   bespreking, en dat is geen gat: praten zonder dat er iemand meekijkt is waar dit blok voor is. */
+function chatNogEen(){
+  var s = chatStand();
+  /* NIET s.klaar op false: chatKlaar() telt je beurten en die blijven op drie staan, dus dat had
+     geen effect (de proef zag het meteen). En het zou het verkeerde zeggen ook: het blok van
+     vandaag ís af, en chatGedaanVandaag() hangt daaraan. Wat hier opengaat is het gesprek. */
+  s.door = true;
+  persist();
+  renderChat();
+}
+function chatReviewHtml(){
+  var s = chatStand();
+  if(chatNaBezig) return "<p class='muted' style='margin:10px 0 0'>\ud83e\udd16 "+
+    ct("Chispa kijkt je zinnen na...","Chispa is reviewing your sentences...")+"</p>";
+  if(!s.review) return "";
+  if(s.review.fout) return "<div class='naast amber' style='margin-top:10px'>"+veiligHtml(s.review.fout)+"</div>";
+  var n = s.review.regels.filter(function(r){ return r.goed; }).length;
+  return "<div style='margin-top:12px'><span class='kicker'>"+
+    ct("Je zinnen","Your sentences")+" \u00b7 "+n+"/"+s.review.regels.length+" "+ct("goed","right")+"</span>"+
+    s.review.regels.map(function(r){
+      return "<div class='naast"+(r.goed ? "" : " amber")+"'>"+
+        "<b class='es'>"+veiligHtml(r.zin)+"</b><br>"+veiligHtml(r.oordeel)+"</div>";
+    }).join("")+"</div>";
 }
 
 /* Vastlopen mag in het Nederlands. Wat eruit komt gaat rechtstreeks in je invoerveld: dan is de
@@ -24439,8 +24532,8 @@ function chatHulpVak(){
         var u = document.getElementById("chatHulpUit");
         if(!u) return;
         if(!res || !res.ok || !res.es){ u.innerHTML = "<p class='muted' style='margin:6px 0 0'>"+aiFoutTekst(res)+"</p>"; return; }
-        u.innerHTML = "<p style='margin:6px 0 0'><b class='es'>"+veiligHtml(res.es)+"</b></p>"+
-          (res.uitleg ? "<p class='muted' style='margin:2px 0 0'>"+veiligHtml(res.uitleg)+"</p>" : "");
+        u.innerHTML = "<p style='margin:6px 0 0'><b class='es'>"+veiligHtml(markdownWeg(res.es))+"</b></p>"+
+          (res.uitleg ? "<p class='muted' style='margin:2px 0 0'>"+veiligHtml(markdownWeg(res.uitleg))+"</p>" : "");
         var inv = document.getElementById("chatInvoer");
         if(inv){ inv.value = res.es; inv.focus(); }
       });
@@ -24831,6 +24924,19 @@ var AI_REDEN_EN = {
 /* v23.92: wat een taalmodel terugstuurt is tekst, geen opmaak. Het ging hier rechtstreeks als
    innerHTML het scherm op, dus stond er per ongeluk opmaakcode in, dan werd die uitgevoerd in
    plaats van getoond. */
+/* v23.249: sterretjes van het model eruit.
+
+   Er stond letterlijk **voy a** op Stefans scherm. Het model schrijft markdown en veiligHtml() zet
+   dat als platte tekst neer, wat precies goed is: HTML uit een model doorlaten wil je niet. De
+   prompts vragen nu om platte tekst, maar dat is een belofte en geen afdwinging, dus wordt het hier
+   ook weggehaald. Alleen paren, zodat een losse asterisk in een echte zin blijft staan. */
+function markdownWeg(s){
+  return String(s == null ? "" : s)
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,!?)]|$)/g, "$1$2")
+    .replace(/`([^`]+)`/g, "$1");
+}
 function veiligHtml(s){
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

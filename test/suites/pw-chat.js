@@ -14,9 +14,13 @@
 //   1. CHISPA BEGINT, ZONDER MODELAANROEP. De openingszin komt uit een lijst en staat er dus ook als
 //      de server plat ligt. Dat is de reden dat hij als index bewaard wordt en niet als tekst: in
 //      een Engels profiel hoort er morgen geen Nederlands te staan.
-//   2. JE KUNT ANTWOORDEN, EN DE CORRECTIE STAAT ERNAAST. Wat jij schreef staat in het gesprek; of
-//      het klopt staat eronder in een aparte regel. Zet je de correctie in Chispa's beurt, dan is ze
-//      geen gesprekspartner meer.
+//   2. JE KUNT ANTWOORDEN, EN TIJDENS HET GESPREK CORRIGEERT NIEMAND.
+//      v23.249: dit punt is herzien, en met reden. De kop van dit blok in index.html zei sinds
+//      v23.144 "een gesprekspartner die elke zin verbetert is er geen", en verbeterde toen elke zin
+//      in de beurt zelf. Stefan kreeg daardoor drie beurten lang een correctie op zijn eerste zin.
+//      Nu antwoordt Chispa tijdens het gesprek alleen, en komt de bespreking van je zinnen in één
+//      keer na afloop. Wat blijft staan: die bespreking hoort náást het gesprek, nooit in een
+//      tekstballon.
 //   3. DRIE BEURTEN, DAN KLAAR. Een gesprek zonder eind is waar je op afhaakt. Na drie beurten geen
 //      invoerveld meer.
 //   4. HET GESPREK OVERLEEFT EEN PLATTE SERVER. Geen antwoord betekent: jouw zin blijft staan, de
@@ -50,8 +54,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       return route.fulfill({ status: 200, contentType: 'application/json',
         body: JSON.stringify({ ok: true, es: 'Me la ha regalado mi vecina.', uitleg: 'Letterlijk: mijn buurvrouw heeft hem aan mij cadeau gedaan.' }) });
     }
+    if (body.modus === 'nabespreking') {
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, regels: (body.zinnen || []).map(function (z) {
+          return { zin: z, oordeel: 'Klopt, maar natuurlijker zonder una.', goed: true };
+        }) }) });
+    }
     return route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ ok: true, naast: 'Klopt, maar natuurlijker zonder una.', es: 'Que rico. Y tu?', nl: 'Lekker. En jij?' }) });
+      body: JSON.stringify({ ok: true, es: 'Que rico. Y tu?', nl: 'Lekker. En jij?' }) });
   });
 
   await page.goto(U);
@@ -99,11 +109,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     naastLos: document.querySelectorAll('.naast').length,
     tekst: document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ')
   }));
-  console.log('\n-- 2. je kunt antwoorden, en de correctie staat ernaast --');
+  console.log('\n-- 2. je kunt antwoorden, en tijdens het gesprek corrigeert niemand --');
   ok(na1.beurten.length === 3, 'jouw zin en haar antwoord staan erin (' + na1.beurten.length + ' beurten)');
   ok(na1.beurten[1].van === 'jij' && /tortilla/.test(na1.beurten[1].es), 'jouw zin staat er letterlijk');
-  ok(na1.beurten[1].naast === 'Klopt, maar natuurlijker zonder una.', 'met de notitie erover aan jouw beurt gehangen');
-  ok(na1.naastLos >= 1 && na1.naastInBel === 0, 'en die staat náást het gesprek, niet in een tekstballon');
+  ok(!na1.beurten[1].naast, 'en er hangt géén oordeel aan je beurt (' + (na1.beurten[1].naast || 'niets') + ')');
+  ok(na1.naastInBel === 0, 'het controlegeval: er staat sowieso niets in een tekstballon');
   ok(/Que rico/.test(na1.tekst), 'haar antwoord staat er ook');
 
   // ---- 3. drie beurten, dan klaar ----
@@ -112,10 +122,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     await page.click('#chatStuur');
     await page.waitForTimeout(700);
   }
+  /* v23.249: de bespreking is een tweede aanroep die pas ná de derde beurt uitgaat. Wachten op wat
+     je meet, niet op de klok. */
+  await page.waitForFunction(() => !!(S.chat && S.chat.review), null, { timeout: 8000, polling: 50 })
+    .catch(function () {});
   const na3 = await page.evaluate(() => ({
     mijn: chatMijn(), klaar: chatKlaar(), vlag: !!S.chat.klaar,
     invoer: !!document.getElementById('chatInvoer'),
     gedaan: chatGedaanVandaag(),
+    review: ((S.chat.review || {}).regels || []).length,
     tekst: document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ')
   }));
   console.log('\n-- 3. drie beurten, dan klaar --');
@@ -123,6 +138,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(na3.klaar && na3.vlag, 'en het gesprek staat op klaar');
   ok(na3.invoer === false, 'het controlegeval: er is geen invoerveld meer');
   ok(/klaar/.test(na3.tekst), 'en dat staat er ook');
+  ok(na3.review >= 1, 'en NU pas staat de bespreking van je zinnen er (' + na3.review + ' regels)');
 
   // ---- 5. een gesprek per dag ----
   const voorstel = await page.evaluate(() => {

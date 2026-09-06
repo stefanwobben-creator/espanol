@@ -1062,13 +1062,18 @@ app.post("/api/ai/zin", async (req, res) => {
      naast = wat er van de laatste zin van de leerling te zeggen valt, in het Nederlands, náást het
      gesprek. Een gesprekspartner die elke zin verbetert is geen gesprekspartner, dus het staat
      apart en het gesprek loopt gewoon door.
+   modus "gesprek" + alleenAntwoord: hetzelfde, maar zonder naast. Sneller en korter, en het is
+     wat het praatblok sinds v23.249 vraagt: tijdens het gesprek antwoordt Chispa alleen.
+   modus "nabespreking": {zinnen:[...], niveau} -> {regels:[{zin, oordeel, goed}]}
+     De bespreking van alles wat de leerling zei, in één keer, na afloop. Elke regel draagt de zin
+     waar hij over gaat, zodat de app hem niet op positie hoeft te raden.
    modus "hulp": {vraag} -> {es, uitleg}
      De leerling loopt vast en vraagt in het Nederlands hoe je iets zegt. Vastlopen mag; wegklikken
      niet. */
 app.post("/api/ai/chat", async (req, res) => {
   const slot = aiSlot(req);
   if (slot) return badReden(res, slot.code, slot.tekst, slot.reden);
-  const { beurten, niveau, modus, vraag } = req.body || {};
+  const { beurten, niveau, modus, vraag, zin, zinnen, alleenAntwoord } = req.body || {};
   const niv = /^(a0|a1|a2|b1)$/i.test(String(niveau || "")) ? String(niveau).toUpperCase() : "A2";
   try {
     if (modus === "hulp") {
@@ -1086,30 +1091,75 @@ app.post("/api/ai/chat", async (req, res) => {
       const p = JSON.parse(m[0]);
       return ok(res, { es: String(p.es || "").slice(0, 200), uitleg: String(p.uitleg || "").slice(0, 400) });
     }
+    if (modus === "nabespreking") {
+      /* v23.249: elke regel draagt de zin waar hij over gaat. Zonder dat veld zou de app de
+         oordelen op volgorde aan de zinnen moeten koppelen, en dat is precies de fout die deze
+         ronde repareert: iets aanwijzen op positie in plaats van het mee te geven. */
+      const zl = (Array.isArray(zinnen) ? zinnen : []).map((z) => String(z || "").slice(0, 300)).filter(Boolean);
+      if (!zl.length) return bad(res, 400, "zinnen verplicht");
+      const txt = await vraagLadder(
+        "Een Nederlandstalige leerling Spaans (niveau " + niv + ") heeft net een kort gesprek gevoerd. " +
+        "Bespreek zijn zinnen, één regel per zin, in het Nederlands.\n" +
+        "VERBETER ALLEEN WAT ECHT FOUT IS. Klopt een zin, dan is het oordeel een korte bevestiging en " +
+        "is goed=true. Twijfel je, of is het een kwestie van stijl, dan geldt de zin als goed. Een " +
+        "leerling verbeteren op iets dat al klopte is erger dan een fout laten staan.\n" +
+        "Geen markdown, geen sterretjes, geen opmaak: platte tekst. Hoogstens twee zinnen per regel.\n" +
+        "Antwoord UITSLUITEND met geldige JSON: {\"regels\": [{\"zin\": \"de zin van de leerling, " +
+        "letterlijk overgenomen\", \"oordeel\": \"...\", \"goed\": true|false}]}. " +
+        "Evenveel regels als zinnen, in dezelfde volgorde.",
+        "De zinnen van de leerling:\n" + zl.map((z, i) => (i + 1) + ". " + z).join("\n"),
+        400, true, "ai-chat-na"
+      );
+      const mn = txt.match(/\{[\s\S]*\}/);
+      if (!mn) return badReden(res, 502, "onleesbaar AI-antwoord", "stuk");
+      const pn = JSON.parse(mn[0]);
+      const regels = (Array.isArray(pn.regels) ? pn.regels : []).slice(0, 12).map((r) => ({
+        zin: String((r && r.zin) || "").slice(0, 300),
+        oordeel: String((r && r.oordeel) || "").slice(0, 400),
+        goed: !!(r && r.goed)
+      })).filter((r) => r.zin && r.oordeel);
+      if (!regels.length) return badReden(res, 502, "leeg AI-antwoord", "stuk");
+      return ok(res, { regels });
+    }
     const rij = Array.isArray(beurten) ? beurten.slice(-8) : [];
     if (!rij.length) return bad(res, 400, "beurten verplicht");
     const gesprek = rij.map((b) =>
       (b && b.van === "jij" ? "LEERLING: " : "CHISPA: ") + String((b && b.es) || "").slice(0, 300)
     ).join("\n");
+    /* v23.249: de zin die beoordeeld wordt, komt als eigen veld mee.
+
+       Wat hier stond was "naast = wat er van de laatste zin van de LEERLING te zeggen valt", met het
+       hele gesprek als één blok tekst eronder. Welke zin dat was, moest het model zelf opdiepen.
+       Stefan kreeg daardoor drie beurten lang dezelfde correctie op zijn eerste zin, geplakt aan
+       zinnen die er niets mee te maken hadden.
+
+           De zin die beoordeeld moet worden, hoort meegegeven te worden en niet gevonden. */
+    const doelZin = String(zin || "").slice(0, 300) ||
+      (rij.filter((b) => b && b.van === "jij").slice(-1)[0] || {}).es || "";
+    const kort = !!alleenAntwoord;
     const txt = await vraagLadder(
       "Je bent Chispa, een vrolijk pratend diertje in een Spaanse leerapp voor Nederlandstaligen op niveau " +
       niv + ". Je voert een kort gesprek in eenvoudig Spaans.\n" +
       "Regels voor jouw beurt: hoogstens twaalf woorden, woordenschat die bij " + niv + " past, altijd één " +
-      "vraag terug zodat de leerling verder kan, nooit Nederlands in het veld es, geen emoji.\n" +
+      "vraag terug zodat de leerling verder kan, nooit Nederlands in het veld es, geen emoji, geen markdown.\n" +
       "Antwoord UITSLUITEND met geldige JSON: " +
-      "{\"naast\": \"...\", \"es\": \"...\", \"nl\": \"...\"}.\n" +
-      "naast = wat er van de laatste zin van de LEERLING te zeggen valt, in het Nederlands, hoogstens twee " +
-      "zinnen: klopt hij, en zo niet, wat is de natuurlijke versie. Klopt hij helemaal, dan een korte " +
-      "bevestiging. Reageer hier op de vorm; op de inhoud reageer je in es.\n" +
+      (kort ? "{\"es\": \"...\", \"nl\": \"...\"}.\n"
+            : "{\"naast\": \"...\", \"es\": \"...\", \"nl\": \"...\"}.\n" +
+              "naast = wat er te zeggen valt over DEZE ENE ZIN van de leerling, in het Nederlands, hoogstens " +
+              "twee zinnen, platte tekst zonder sterretjes: \"" + doelZin + "\". Ga niet over een andere zin " +
+              "uit het gesprek. VERBETER ALLEEN WAT ECHT FOUT IS; klopt de zin, dan een korte bevestiging. " +
+              "Reageer hier op de vorm; op de inhoud reageer je in es.\n") +
       "es = jouw volgende zin in het Spaans. nl = de Nederlandse vertaling van precies die zin.",
       "Het gesprek tot nu toe:\n" + gesprek,
-      350, true, "ai-chat"
+      kort ? 160 : 350, true, "ai-chat"
     );
     const m = txt.match(/\{[\s\S]*\}/);
     if (!m) return badReden(res, 502, "onleesbaar AI-antwoord", "stuk");
     const p = JSON.parse(m[0]);
-    ok(res, { naast: String(p.naast || "").slice(0, 400), es: String(p.es || "").slice(0, 300),
-              nl: String(p.nl || "").slice(0, 300) });
+    /* de zin gaat mee terug. De app kan dan nakijken dat het oordeel over de zin gaat die hij
+       stuurde, in plaats van erop te vertrouwen. */
+    ok(res, { naast: kort ? "" : String(p.naast || "").slice(0, 400), zin: doelZin,
+              es: String(p.es || "").slice(0, 300), nl: String(p.nl || "").slice(0, 300) });
   } catch (e) {
     console.error(e);
     badReden(res, 502, "AI-fout", "stuk");

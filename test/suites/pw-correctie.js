@@ -172,7 +172,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     window.api = function (pad, methode, body) {
       if (pad === '/api/ai/chat') {
         geroepen = body;
-        return Promise.resolve({ ok: true, naast: 'Je schreef "he reíando", en dat moet "me hizo reír" zijn.', es: 'Qué bien.', nl: 'Wat goed.' });
+        /* v23.249: het oordeel komt niet meer per beurt maar in één nabespreking na de derde
+           beurt. Zie de kop hierboven; wat deze suite bewaakt is niet veranderd (je krijgt te zien
+           wat er mis was), alleen het moment waarop. */
+        if (body.modus === 'nabespreking') {
+          return Promise.resolve({ ok: true, regels: (body.zinnen || []).map(function (z) {
+            return { zin: z, oordeel: 'Je schreef "he reíando", en dat moet "me hizo reír" zijn.', goed: false };
+          }) });
+        }
+        return Promise.resolve({ ok: true, es: 'Qué bien.', nl: 'Wat goed.' });
       }
       return Promise.resolve({ ok: true });
     };
@@ -188,12 +196,30 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       document.getElementById('chatStuur').click();
       uit.direct = document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ');
       await new Promise(function (r) { setTimeout(r, 250); });
+      uit.naEen = document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ');
+      // en dan de andere twee beurten, want de bespreking komt na de derde
+      for (let i = 0; i < 2; i++) {
+        const v = document.getElementById('chatInvoer');
+        if (!v) break;
+        v.value = 'me gusta mucho';
+        document.getElementById('chatStuur').click();
+        await new Promise(function (r) { setTimeout(r, 250); });
+      }
+      await new Promise(function (r) {
+        const begin = Date.now();
+        const kijk = setInterval(function () {
+          if ((chatStand().review || {}).regels || Date.now() - begin > 4000) { clearInterval(kijk); r(); }
+        }, 25);
+      });
       uit.na = document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ');
+      renderChat();                                   // en nog een keer tekenen
+      uit.naHertekenen = document.getElementById('chatWrap').textContent.replace(/\s+/g, ' ');
     }
     uit.geroepen = geroepen;
     uit.xpVerschil = (S.txp || 0) - xpVoor;
     uit.foutenErbij = Object.keys(S.errors).length - foutenVoor;
-    uit.bewaard = (chatStand().beurten || []).some(function (b) { return b.van === 'jij' && b.naast; });
+    uit.bewaard = !!((chatStand().review || {}).regels || []).length;
+    uit.inBel = document.querySelectorAll('.bel .naast').length;
     window.api = echt;
     return uit;
   });
@@ -201,14 +227,19 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 4. je zin in het gesprek krijgt een oordeel --');
   ok(!dag.tekenFout, 'het gespreksscherm tekent' + (dag.tekenFout ? ': ' + dag.tekenFout : ''));
   ok(dag.veld, 'het invoerveld staat er');
-  ok(!!dag.geroepen && dag.geroepen.modus === 'gesprek', 'je zin gaat langs de check');
+  ok(!!dag.geroepen && dag.geroepen.modus === 'nabespreking', 'je zinnen gaan langs de check');
   ok(/Chispa denkt na/.test(dag.direct || ''), 'meteen na het versturen staat er dat ze ernaar kijkt');
-  ok(/moet "me hizo reír" zijn/.test(dag.na || ''), 'en daarna staat het oordeel onder je eigen zin');
-  ok(dag.bewaard, 'het wordt bewaard, dus een hertekening gooit het niet weg');
+  ok(!/moet "me hizo reír" zijn/.test(dag.naEen || ''),
+    'CONTROLE: na één beurt staat er nog géén oordeel, want dat is een gesprek en geen overhoring');
+  ok(/moet "me hizo reír" zijn/.test(dag.na || ''), 'na de derde beurt staat het oordeel er wel');
+  ok(dag.inBel === 0, 'en het staat náást het gesprek, niet in een tekstballon');
+  ok(/moet "me hizo reír" zijn/.test(dag.naHertekenen || ''),
+    'het wordt bewaard, dus een hertekening gooit het niet weg');
+  ok(dag.bewaard, 'en het staat in de opslag, niet alleen op het scherm');
 
   console.log('\n   het controlegeval: en verder verandert er niets aan je dossier');
   ok(dag.foutenErbij === 0, 'er komt niets in je foutenlogboek (' + dag.foutenErbij + ' erbij)');
-  ok(dag.xpVerschil === 3, 'de XP is die van het versturen en niet meer of minder (' + dag.xpVerschil + ')');
+  ok(dag.xpVerschil === 9, 'de XP is die van drie keer versturen en niet meer of minder (' + dag.xpVerschil + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 
