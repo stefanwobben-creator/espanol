@@ -104,7 +104,12 @@ const { chromium } = require('playwright');
      moeten weer terug") verandert daarmee niet, alleen de vorm: één vraag in plaats van vijf, want
      de les zelf had je gisteren al. Pas bij twee missers komt de hele les terug (punt 2b). */
   const keuze = await page.evaluate(() => {
-    S.gram = {};
+    /* v23.248: het ledger hoort bij het schoonvegen. "Twee keer mis" leest sinds deze ronde
+       S.gramLog over de laatste dagen in plaats van de levenslange teller st.fout (zie
+       gcVersMissers). Punt 1 hierboven maakte al een misser op muymucho, en die bleef in het
+       ledger staan terwijl S.gram wel leeg ging: dan telt deze proef twee missers waar hij er
+       één bedoelt, en krijg je terecht de hele microles in plaats van de opfrisvraag. */
+    S.gram = {}; S.gramLog = {};
     lesFlow = { stap: null, quizzesTeDoen: [] };
     const zonder = lesFlowGramLijst();
     corrSrsBij('muymucho', false);
@@ -120,7 +125,7 @@ const { chromium } = require('playwright');
 
   /* 2b. twee keer mis op hetzelfde is geen geheugenkwestie meer, dan komt de hele les terug */
   const tweeKeer = await page.evaluate(() => {
-    S.gram = {};
+    S.gram = {}; S.gramLog = {};
     corrSrsBij('muymucho', false);
     corrSrsBij('muymucho', false);
     return { lijst: lesFlowGramLijst(), id: lesFlowGramId() };

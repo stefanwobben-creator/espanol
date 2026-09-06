@@ -1598,7 +1598,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.247";
+var APP_VERSIE = "v23.248";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -16932,14 +16932,22 @@ function lesFlowGramLijst(){
        v23.212: tenzij er vandaag al een half bewijs ligt. Het doosje blijft dan op nul staan tot
        het tweede bewijs er is, en zonder deze uitzondering zou de hele microles twee dagen achter
        elkaar komen op een onderwerp dat je gisteren goed had. */
-    if(!((top.st.box || 0) === 0 && (top.st.fout || 0) >= 2 && !top.st.half)){
+    /* v23.248: gcVersMissers in plaats van st.fout. Zie de kop bij die functie: st.fout is de
+       levenslange optelsom en stond bij Stefan op zestien onderwerpen boven nul, dus deze
+       uitzondering gold bijna altijd. */
+    if(!((top.st.box || 0) === 0 && gcVersMissers(top.c.id) >= 2 && !top.st.half)){
       var o = null;
       try { o = gcGebouwd(gcOpfrisId(top.c.id, top.pi)); } catch(e){ o = null; }
       if(o) uit.push(o.id);
     }
   }
+  var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, "").split("#")[0]; };
+  var alHier = uit.map(kaal);
   var gid = null;
-  try { gid = lesFlowGramId(); } catch(e){ gid = null; }
+  /* v23.248: mét de lijst van wat er al ligt. De ontdubbeling hieronder blijft staan als vangnet,
+     maar hij kwam te laat: hij gooide het onderwerp weg dat de dagles net had gekozen, en dan stond
+     er alleen nog een opfrisvraag. Opfrissen vervangt het leren niet. */
+  try { gid = lesFlowGramId(alHier); } catch(e){ gid = null; }
   /* v23.170: ontdubbelen op de kále concept-id. Hier stond uit.indexOf(gid), en dat vergelijkt
      "opfris-genero" met "concept-genero": verschillende strings, dus hetzelfde onderwerp kon twee
      keer in dezelfde les staan, één keer als opfrisvraag en één keer als volledige microles. Met
@@ -16947,8 +16955,6 @@ function lesFlowGramLijst(){
   /* v23.228: de patroonindex hoort ook weg bij het ontdubbelen. "opfris-genero#1" en
      "concept-genero" gaan over hetzelfde onderwerp, en twee keer genero in \u00e9\u00e9n les is precies wat
      v23.170 kwam repareren. */
-  var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, "").split("#")[0]; };
-  var alHier = uit.map(kaal);
   if(gid && alHier.indexOf(kaal(gid)) === -1) uit.push(gid);
 
   /* v23.235: de onderhoudsbeurt, achteraan. Het leren staat vooraan omdat dat het werk van de dag
@@ -16966,7 +16972,36 @@ function lesFlowGramLijst(){
   }
   return uit;
 }
-function lesFlowGramId(){
+/* De eerste uit de focuslijst waar ook echt een les van te bouwen is. Zonder die controle zou een
+   onderwerp zonder bouwer de dagles zijn grammatica-stap kosten.
+
+   Binnen die lijst geldt nog steeds: afmaken gaat voor beginnen. Dat is de regel van v23.143 en die
+   verdwijnt hier niet, hij krijgt alleen een kleinere zaal. Zonder deze lus zou de focus een half
+   onderwerp elke dag opnieuw bij stap 1 kunnen laten liggen, en dat is precies wat v23.143 kwam
+   repareren. */
+function gcFocusKandidaat(mijd){
+  var rij = [], bouwbaar = [];
+  mijd = mijd || [];
+  try { rij = gcVandaagLijst(); } catch(e){ rij = []; }
+  for(var i = 0; i < rij.length; i++){
+    var id = rij[i] && rij[i].id;
+    if(!id) continue;
+    /* wat al als opfrisvraag in de les staat, hoeft er niet ook nog als hele microles bij: dan zou
+       de dagles één onderwerp hebben in plaats van opfrissen én leren. */
+    if(mijd.indexOf(id) !== -1) continue;
+    var o = null;
+    try { o = gcGebouwd("concept-" + id); } catch(e){ o = null; }
+    if(o) bouwbaar.push(id);
+  }
+  if(!bouwbaar.length) return null;
+  for(var j = 0; j < bouwbaar.length; j++){
+    var v = {};
+    try { v = gwVoortgangLees("concept-" + bouwbaar[j]) || {}; } catch(e){ v = {}; }
+    if((v.stap || 0) > 0 && !v.klaar) return bouwbaar[j];
+  }
+  return bouwbaar[0];
+}
+function lesFlowGramId(mijd){
   // Welk grammatica-onderwerp hoort bij de les waar je nu bent? Binnen die les het onderwerp dat je
   // het minst hebt gedaan. Zo gaat de uitleg-stap altijd over iets wat je nu echt aan het leren bent.
   var les = huidigeLes();
@@ -16976,7 +17011,22 @@ function lesFlowGramId(){
      lesFlowGramLijst), en deze functie kiest alleen nog wat je erná leert. Wie twee keer op
      hetzelfde struikelt krijgt wel de hele microles: dan is het geen geheugenkwestie meer. */
   var fout = gramFoutTop();
-  if(fout && (fout.st.box || 0) === 0 && (fout.st.fout || 0) >= 2) return "concept-" + fout.c.id;
+  if(fout && (fout.st.box || 0) === 0 && gcVersMissers(fout.c.id) >= 2) return "concept-" + fout.c.id;
+
+  /* v23.248: en dan de focus, uit dezelfde lijst waarmee het routescherm en de regel "Waar je nu
+     aan werkt" gevuld worden.
+
+     Gemeten bij Stefan: gcFocus() gaf ["genero", "concordancia"] en de dagles gaf comparar. De
+     limiet van v23.234 ("hoogstens twee onderhanden", op zijn eigen verzoek om dat af te dwingen)
+     stuurde het scherm en niet het oefenen. Een belofte die nergens wordt afgedwongen is een
+     mededeling.
+
+     De prijs: gramVersKandidaat() hieronder koppelde het onderwerp aan de les van vandaag, en die
+     koppeling vervalt zolang de focus gevuld is. Bewust betaald. Een onderwerp dat bij de woorden
+     van vandaag past maar niet bij waar je aan werkt, is precies hoe er zestien halve onderwerpen
+     open kwamen te staan. Verse fouten gaan niet verloren: gcVandaagLijst() zet die vooraan. */
+  var fk = gcFocusKandidaat(mijd);
+  if(fk) return "concept-" + fk;
 
   /* v23.143: eerst afmaken wat je begon. Zonder deze regel koos de dagles elke dag een onderwerp
      waar je nog nooit een vraag van had gezien, en bleef stap 2 altijd liggen. */
@@ -20872,7 +20922,35 @@ function vormRijVandaag(){
   var w = null;
   try { w = tijdvormTopVerwar(); } catch(e){ w = null; }
   if(w && w.getoond && open.indexOf(w.getoond) !== -1) return w.getoond;
+  /* v23.248: en anders de volgende LESSTAP VAN DE ROUTE, in plaats van simpelweg de eerste open
+     rij. Die volgorde is niet willekeurig: -go staat vooraan omdat drie van die zes werkwoorden
+     daarna ook nog een schoen krijgen, en wie de schoen eerst doet leert tengo twee keer als iets
+     nieuws. Repareren blijft vóór vooruitkomen (de drie regels hierboven); dit is wat er gebeurt
+     als er niets te repareren valt.
+
+     Gemeten bij Stefan: de presente-route heeft acht stappen en nul ervan zijn gedaan, terwijl het
+     vormenblok sinds v23.160 elke tweede dag draait. */
+  var uitRoute = vormRijUitRoute(open);
+  if(uitRoute) return uitRoute;
   return open[0];
+}
+/* De eerste lesstap van de route van nu die nog niet af is en die vandaag te doen is. Geeft null
+   als er geen route is, als de route geen lesstappen heeft, of als de rij die hij aanwijst niet in
+   de open rijen staat: dan beslist de aanroeper, niet deze functie. */
+function vormRijUitRoute(open){
+  var p = null;
+  try { p = gramPadNu(); } catch(e){ p = null; }
+  if(!p) return null;
+  for(var i = 0; i < (p.stappen || []).length; i++){
+    var s = p.stappen[i];
+    if(s.soort !== "les" || !s.arg) continue;
+    if(open.indexOf(s.arg) === -1) continue;
+    var x = null;
+    try { x = gramPadStap(p, i); } catch(e){ x = null; }
+    if(x && x.af) continue;
+    return s.arg;
+  }
+  return null;
 }
 /* De stap waar je vandaag aan toe bent. stapMax is de hoogste stap die je AF hebt, dus de volgende
    is stapMax + 1; is er nog niets, dan stap 0. */
@@ -32792,11 +32870,30 @@ function gcVoorOk(id){
   for(var i = 0; i < v.length; i++){ if(!gcGedaan(v[i])) return false; }
   return true;
 }
+/* v23.248: een onderwerp waarvan de ROUTE nog op slot staat, staat zelf ook op slot.
+
+   Gemeten bij Stefan: indefimperf heeft 57 beurten en staat op 64% en op doos 0, terwijl S.brok
+   leeg is en de vormladder op "het hele presente" staat. Hij oefende dus al maanden de keuze
+   tussen twee verleden tijden waarvan hij de vormen nog niet had gehad. Dat is geen moeilijk
+   onderwerp maar een onderwerp dat te vroeg komt.
+
+   De voorwaarde komt uit de route zelf (gramPadOpen leest lesRijIds), dus er staat hier geen naam
+   van een onderwerp en er komt geen tweede lijst bij. Heeft een onderwerp geen route, dan is er
+   ook geen voorwaarde en verandert er niets. */
+function gcRouteOpen(id){
+  var p = null;
+  try { p = gramPadVan(String(id || "").replace(/^concept-/, "").split("#")[0]); } catch(e){ p = null; }
+  if(!p) return true;
+  try { return gramPadOpen(p); } catch(e){ return true; }
+}
 function gcOpenSet(){
   var open = {}, nieuw = 0;
   GC_ORDE.forEach(function(id){
     var st = {};
     try { st = gramLees(id) || {}; } catch(e){ st = {}; }
+    /* vóór de regel hieronder, en niet erna: die houdt alles open wat je ooit hebt aangeraakt, en
+       juist een onderwerp met veel beurten is er een waarvan de brokken kunnen ontbreken. */
+    if(!gcRouteOpen(id)) return;
     if(((st.goed || 0) + (st.fout || 0)) > 0){ open[id] = 1; return; }
     if(nieuw >= GC_VENSTER) return;
     // een onderwerp dat op zijn voorganger wacht slaat zijn beurt over en verbruikt geen plek:
@@ -32848,6 +32945,9 @@ function gcFocus(){
 }
 function gcConceptOpen(id){
   id = String(id || "").replace(/^concept-/, "");
+  /* v23.248: ook de handgeschreven wizards langs de routecontrole, anders zou een onderwerp dat
+     niet in GC_ORDE staat maar wel een route heeft er langs de achterdeur toch in komen. */
+  if(!gcRouteOpen(id)) return false;
   if(GC_ORDE.indexOf(id) === -1) return gcVoorOk(id);   // handgeschreven wizard zonder concept
   return !!gcOpenSet()[id];
 }
@@ -35401,9 +35501,15 @@ function gramWaaromHtml(id){
   var cid = String(id).replace(/^concept-/, "");
   var st = null;
   try { st = gramLees(cid); } catch(e){ st = null; }
-  if(st && (st.box || 0) === 0 && (st.fout || 0) >= 2){
-    return ct("Hier ging het " + st.fout + " keer mis, dus je krijgt de hele uitleg.",
-              "This went wrong " + st.fout + " times, so you get the full explanation.");
+  /* v23.248: dezelfde teller als de keuze hierboven. De kop van deze functie belooft dat er geen
+     tweede waarheid ontstaat; met de levenslange optelsom hier en het verse venster daar zou het
+     scherm "hier ging het 21 keer mis" zeggen op een dag dat de app dit om een heel andere reden
+     koos. */
+  var vm = 0;
+  try { vm = gcVersMissers(cid); } catch(e){ vm = 0; }
+  if(st && (st.box || 0) === 0 && vm >= 2){
+    return ct("Hier ging het deze week " + vm + " keer mis, dus je krijgt de hele uitleg.",
+              "This went wrong " + vm + " times this week, so you get the full explanation.");
   }
   var v = gwVoortgangLees("concept-" + cid);
   if(v.stap > 0 && !v.klaar){
@@ -36038,6 +36144,29 @@ function gcVersFout(cid){
 }
 /* Het concept moet mee. Zonder concept is er geen ledger om te lezen, en dan geeft deze functie
    liever geen oordeel dan het oude verkeerde: een verkeerde diagnose is erger dan geen. */
+/* v23.248: hoe vaak ging dit onderwerp de afgelopen dagen mis? Zelfde venster en dezelfde bron
+   als gcVersFout hierboven, alleen tellend in plaats van oordelend.
+
+   Waarom dit erbij komt: v23.236 verving "st.fout > 0" door de datum uit het ledger, met de reden
+   "een fout van vorige maand is geen bericht". Die reparatie landde op gcStaatFout() en dus op het
+   routescherm en de daglijst. Maar op twee andere plekken stond dezelfde optelsom nog:
+   lesFlowGramId() en lesFlowGramLijst() lezen (st.fout || 0) >= 2 om te beslissen of je de hele
+   microles terugkrijgt. Dat is de levenslange teller. Bij Stefan staan zestien onderwerpen op doos
+   nul, dus die voorwaarde was praktisch altijd waar, en daardoor kwam de focus nooit aan de beurt.
+
+     Een fout van vorige maand is geen bericht, ook niet als je hem optelt. */
+function gcVersMissers(cid){
+  var s = String(cid || "").split("#")[0];
+  if(!s) return 0;
+  var log = null, n = 0;
+  try { log = S.gramLog || {}; } catch(e){ return 0; }
+  for(var i = 0; i <= GC_VERS_DAGEN; i++){
+    var r = (log[addDays(today(), -i)] || {})[s];
+    if(!r || !(r.n > 0)) continue;
+    n += Math.max(0, r.n - (r.goed || 0));
+  }
+  return n;
+}
 function gcStaatFout(st, cid){
   if(!st || !cid) return false;
   if((st.box || 0) !== 0) return false;

@@ -168,7 +168,16 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     lesFlow = null; lesSpel = null; funView = null; S.lesFlowNu = null;
     S.brok = {}; S.errors = {}; S.conjOpen = CONJ_FASES.length - 1;
     dagPlanVerval();
-    uit.fout = { zonder: vormRijVandaag() };
+    /* v23.248: hier stond alleen vormRijVandaag(), en de eis eronder was "dan begint het bovenaan".
+       Dat legde een keuze vast die deze ronde herzien is: zonder iets te repareren volgt het
+       vormenblok nu de volgorde van de ROUTE in plaats van de eerste rij uit de lijst. Die twee
+       verschillen echt, want de presente-route slaat het regelmatige presente met opzet over (dat
+       staat al vijf fasen in de Conjugador). De rij eronder blijft meten wat dit blok altijd al
+       bewaakte: een openstaande fout wint van allebei. */
+    const openRijen = lesRijIds().filter(function (t) { return !lesKlaar(t); });
+    uit.fout = { zonder: vormRijVandaag(), eersteInLijst: openRijen[0],
+                 viaRoute: vormRijUitRoute(openRijen),
+                 pad: (gramPadNu() || {}).id || null };
     // fouten in het indefinido en het imperfecto, en eentje in het presente
     ['tener', 'hacer', 'ir', 'poder', 'decir'].forEach(function (inf) {
       const v = VERBOS.filter(function (w) { return w.inf === inf; })[0];
@@ -251,7 +260,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
   console.log('\n-- 7. het rijtje volgt je fouten --');
   console.log('   openstaande fouten per tijd: ' + JSON.stringify(r.fout.perTijd));
-  ok(r.fout.zonder === 'presente', 'zonder fouten begint het gewoon bovenaan (' + r.fout.zonder + ')');
+  console.log('   route ' + r.fout.pad + ' wijst ' + r.fout.viaRoute + ' aan, de lijst begint met ' + r.fout.eersteInLijst);
+  ok(r.fout.viaRoute && r.fout.viaRoute !== r.fout.eersteInLijst,
+    'CONTROLE: de route wijst een ándere rij aan dan de kop van de lijst (' +
+      r.fout.viaRoute + ' tegen ' + r.fout.eersteInLijst + ')');
+  ok(r.fout.zonder === r.fout.viaRoute,
+    'zonder fouten volgt het blok de route (' + r.fout.zonder + ')');
   ok(r.fout.met === 'indefinido', 'met fouten in het indefinido gaat het rijtje daarheen (' + r.fout.met + ')');
   ok(/fouten staan open/.test(r.fout.wat || ''), 'en het plan zegt waaróm juist dit rijtje ("' + r.fout.wat + '")');
   ok(r.fout.naAf === 'imperfecto',

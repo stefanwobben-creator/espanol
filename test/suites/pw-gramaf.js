@@ -97,7 +97,14 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     if (cid) {
       const kaal = cid.replace(/^concept-/, '');
       if (anders) S.gramwiz['concept-' + anders.id] = { stap: 1, klaar: false, rondes: 1 };
-      S.gram[kaal] = { box: 0, goed: 0, fout: 3, due: today(), laatst: today() };
+      /* v23.248: drie echte missers in plaats van een handgezette teller. "Twee keer mis" leest
+         sinds deze ronde het ledger over de laatste dagen (gcVersMissers) en niet meer de
+         levenslange optelsom st.fout, precies zodat een fout van vorige maand geen bericht meer
+         is. Een proef die de teller met de hand zet, meet dan een toestand die in de app niet
+         kan ontstaan. gramBij() schrijft het ledger, dus dit bouwt hetzelfde als drie keer
+         misgokken. */
+      S.gramLog = {};
+      gramBij(kaal, false); gramBij(kaal, false); gramBij(kaal, false);
       uit.naFout = lesFlowGramId();
       uit.redenFout = gramWaaromHtml('concept-' + kaal);
       S.gram = {}; S.gramwiz = {};
@@ -142,7 +149,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('   opfris: ' + r.redenOpfris);
   console.log('   rest:   ' + r.redenRest);
   ok(/gebleven/.test(r.redenOnaf), 'half af: "hier was je gebleven"');
-  ok(/3 keer mis/.test(r.redenFout), 'twee keer mis: het aantal staat erbij');
+  ok(/3 keer mis/.test(r.redenFout), 'twee keer mis: het aantal van deze week staat erbij');
   ok(/terug om even op te frissen/.test(r.redenOpfris), 'opfrisser: die zegt dat hij terugkwam');
   ok(r.redenRest.length > 10, 'en anders staat er ook iets ("' + r.redenRest + '")');
 

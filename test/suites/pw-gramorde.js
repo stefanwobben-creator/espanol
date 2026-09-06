@@ -155,15 +155,35 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(na.dicht < d1.dicht, 'er staat minder dicht dan voorheen (' + d1.dicht + ' → ' + na.dicht + ')');
 
   console.log('\n-- een fout onderwerp blijft bereikbaar, ook buiten het venster --');
+  /* v23.248: hier stond simpelweg GC_ORDE[laatste], en dat was indefimperf. Sinds deze ronde staat
+     een onderwerp waarvan de ROUTE nog op slot zit zelf ook op slot (gcRouteOpen), en indefimperf
+     is precies dat geval: de vormladder moet eerst de verleden tijd openen. Deze proef ging daarop
+     rood terwijl wat hij bewaakt niet veranderd is.
+
+     Nu pakt hij het achterste onderwerp ZONDER routevoorwaarde, en het geval dat hem deed omvallen
+     staat er als eigen controle onder. Zo bewaakt dit blok twee regels in plaats van één. */
   const foutTerug = await page.evaluate(() => {
-    const ver = GC_ORDE[GC_ORDE.length - 1];   // het moeilijkste, ver buiten het venster
-    gramBij(ver, false);
+    let ver = null;
+    for (let i = GC_ORDE.length - 1; i >= 0 && !ver; i--) {
+      if (gcRouteOpen(GC_ORDE[i])) ver = GC_ORDE[i];
+    }
+    const opSlot = GC_ORDE.filter(function (id) { return !gcRouteOpen(id); });
+    if (ver) gramBij(ver, false);
+    opSlot.forEach(function (id) { gramBij(id, false); });
     try { persist(); } catch (e) {}
-    return { ver: ver, open: !!gcOpenSet()[ver], vandaag: gcVandaagLijst().map(c => c.id) };
+    const open = gcOpenSet();
+    return { ver: ver, open: !!open[ver], vandaag: gcVandaagLijst().map(c => c.id),
+             opSlot: opSlot, opSlotOpen: opSlot.filter(function (id) { return !!open[id]; }) };
   });
+  ok(!!foutTerug.ver, 'CONTROLE: er is een onderwerp zonder routevoorwaarde om dit op te meten');
   ok(foutTerug.open, 'wat je ooit aanraakte blijft open, ook al staat het achteraan (' + foutTerug.ver + ')');
   ok(foutTerug.vandaag.indexOf(foutTerug.ver) !== -1,
     'en het komt vandaag terug (' + foutTerug.vandaag.join(',') + ')');
+  ok(foutTerug.opSlot.length > 0,
+    'CONTROLE: en er is ook een onderwerp waarvan de route nog op slot staat (' + foutTerug.opSlot.join(',') + ')');
+  ok(foutTerug.opSlotOpen.length === 0,
+    'dat blijft dicht, ook nadat je het fout deed: eerst de route, dan de combinatie (' +
+      (foutTerug.opSlotOpen.join(',') || 'geen') + ')');
 
   console.log('\n-- de tab zegt hoeveel er nog komt --');
   await page.evaluate(() => { show('spiekbrief'); });
