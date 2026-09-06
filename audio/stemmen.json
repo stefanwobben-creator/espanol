@@ -2366,32 +2366,32 @@
     "s284": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "b1aab1a6847d09a1",
-      "tekens": 50
+      "hash": "df47ce3f15f8e9d6",
+      "tekens": 59
     },
     "s285": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "2bacbe02748dbbad",
-      "tekens": 54
+      "hash": "e67a8a4198d8f58c",
+      "tekens": 29
     },
     "s286": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "15a1c4dd6b96f757",
-      "tekens": 33
+      "hash": "0449067eff19f5b6",
+      "tekens": 43
     },
     "s287": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "3903a5781ba94c41",
-      "tekens": 41
+      "hash": "4ab9b04be11a8bed",
+      "tekens": 40
     },
     "s288": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "2048c36293c0d19f",
-      "tekens": 43
+      "hash": "a0e4ce891bdca0ad",
+      "tekens": 36
     },
     "bs83": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
@@ -2404,6 +2404,24 @@
       "model": "eleven_multilingual_v2",
       "hash": "7c7f920eb8b0d52a",
       "tekens": 53
+    },
+    "s289": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "3f2591042781b9bd",
+      "tekens": 52
+    },
+    "s291": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "d216745fe99862a1",
+      "tekens": 67
+    },
+    "s293": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "14ec9db10a5e266b",
+      "tekens": 75
     }
   },
   "dialogo-a": {
