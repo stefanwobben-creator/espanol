@@ -121,18 +121,29 @@ const { chromium } = require('playwright');
   await page.evaluate(() => show('woorden'));
   await page.waitForTimeout(300);
   const sortKey = await page.evaluate(() => {
-    function ruw(w) {
-      const art = { el: 1, la: 1, los: 1, las: 1, un: 1, una: 1 };
-      const d = w.es.toLowerCase().split('/')[0].trim().split(' ');
-      while (d.length > 1 && art[d[0]]) d.shift();
-      return stripAcc(d.join(' '));
-    }
-    const afwijkend = WORDS.filter(function (w) { return dicSortKey(w) !== ruw(w); });
-    const tweede = WORDS.filter(function (w) { return dicSortKey(w) !== ruw(w); }); // nu uit de cache
-    return { cache: typeof dicSortCache === 'object', afw: afwijkend.length, afw2: tweede.length, n: WORDS.length };
+    /* v23.246: deze proef schreef de sorteerregel zelf nog een keer op en vergeleek dicSortKey()
+       daarmee. Dat is precies de regel die dit bestand elders bewaakt: staat een feit in de data,
+       dan schrijft geen enkele codeplek dat feit opnieuw. Toen woordEerste() kwam ("el / la cantante"
+       is niet het woord "el"), veranderde de app en bleef de kopie hier achter: de proef ging af
+       terwijl er niets mis was met wat hij zou moeten bewaken.
+
+       Wat hij zou moeten bewaken staat in zijn eigen kop: gecachet, maar met dezelfde uitkomst. Dus
+       twee keer meten met de cache ertussen leeggegooid, en die twee moeten gelijk zijn. Wat de
+       sleutel inhoudelijk hoort te zijn, staat in pw-woordkern.js. */
+    const vers = {};
+    dicSortCache = {};
+    WORDS.forEach(function (w) { vers[w.id] = dicSortKey(w); });
+    const gevuld = Object.keys(dicSortCache).length;
+    const afwijkend = WORDS.filter(function (w) { return dicSortKey(w) !== vers[w.id]; });
+    return { cache: typeof dicSortCache === 'object', gevuld: gevuld,
+             afw: afwijkend.length, n: WORDS.length,
+             voorbeeld: (afwijkend[0] || {}).es || null };
   });
   ok(sortKey.cache, 'er is een dicSortCache');
-  ok(sortKey.afw === 0 && sortKey.afw2 === 0, 'de gecachte sorteersleutel is voor alle ' + sortKey.n + ' woorden identiek aan de berekening');
+  ok(sortKey.gevuld > 0, 'CONTROLE: en hij wordt ook echt gevuld (' + sortKey.gevuld + ' sleutels)');
+  ok(sortKey.afw === 0,
+    'de gecachte sorteersleutel is voor alle ' + sortKey.n + ' woorden gelijk aan de verse berekening' +
+      (sortKey.voorbeeld ? ' (wijkt af: ' + sortKey.voorbeeld + ')' : ''));
 
   // --- 7. Het woordenboek zoekt nog steeds, en rendert gedebounced ---
   // het woordenboek zit achter de zwevende knop, niet achter een tab (zie ook pw-diclock.js)

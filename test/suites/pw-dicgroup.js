@@ -41,11 +41,23 @@ const { chromium } = require('playwright');
   await page.evaluate(() => dicModal());
   await page.waitForTimeout(200);
   await page.fill('#dicZoek', 'antiguo');
-  await page.waitForTimeout(200);
-
   // Sinds v19.53 is ook elke zoekstaart-treffer een aanklikbare rij met een eigen sleutel (freq:<woord>),
   // dus scopen we hier expliciet op de WORDS-gebaseerde rijen: die hebben geen freq:-prefix.
   const LES = '.dicrow[data-dic]:not([data-dic^="freq:"])';
+  /* v23.246: wachten tot de lijst stilstaat in plaats van op de klok. Hier stond een vaste 200 ms en
+     het zoeken is ontdenderd; onder belasting (de volle poort draait vier browsers tegelijk) was het
+     scherm nog niet hertekend en telde de proef de verkeerde lijst.
+     Wachten op "er is minstens één rij" werkt hier NIET, want vóór het filteren staat de hele
+     woordenlijst er al: die voorwaarde is meteen waar en je meet de ongefilterde stand. Vandaar
+     stilstand: hetzelfde aantal over een paar metingen. Dat zegt niets over wat het antwoord hoort
+     te zijn, en dat is precies de bedoeling: een wachtvoorwaarde die het verwachte antwoord bevat,
+     bewijst zichzelf. */
+  await page.waitForFunction((sel) => {
+    const n = document.querySelectorAll(sel).length;
+    const w = window.__pwStabiel || (window.__pwStabiel = { n: -1, keer: 0 });
+    if (n === w.n) w.keer++; else { w.n = n; w.keer = 0; }
+    return w.keer >= 3;
+  }, LES, { timeout: 8000, polling: 100 }).catch(function () {});
   const rijen = await page.locator(LES).count();
   ok(rijen === 1, 'zoeken op "antiguo" toont nog maar 1 leswoord-rij (was 4 losse rijen voor hetzelfde woord)');
 

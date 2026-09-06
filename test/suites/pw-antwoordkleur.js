@@ -26,9 +26,18 @@
 //      niet stilletjes meesleept.
 //   3. GROEN EN ROOD ZIJN NIET DEZELFDE KLEUR. Zonder dit haalt "kleur alles groen" proef 1 ook.
 //   4. EN EEN NIET-AANGEKLIKTE KNOP BLIJFT ONGEKLEURD. Zonder dit haalt "kleur alles" alles.
-//   5. NIEMAND SCHRIJFT NOG EEN KLASSENAAM OP. De acht schermen die een antwoord markeren doen dat
-//      via keuzeMarkeer(); de dode namen (correct, wrong, opt good, opt bad) staan nergens meer.
-//   6. DE NIVEAUTEST DOET MET OPZET NIET MEE. Die meet en onderwijst niet, en toont dus geen goed
+//   5. HET SCHERM DAT ZIJN OPTIES SCHUDT (v23.246). Dit is de proef die er niet was, en daardoor
+//      liep v23.238 vier weken met een kapotte luistervraag: keuzeMarkeer() markeerde op POSITIE
+//      terwijl het luisterscherm zijn opties schudt en het antwoord in data-ai bijhoudt. Vrijwel
+//      altijd kleurde de bovenste knop groen, ongeacht wat je koos. Stefan, 6 september: "hij maakt
+//      nu standaard altijd de bovenste groen maar het lijkt niet gekoppeld te zijn aan het goede of
+//      foute antwoord."
+//      De twee proeven hierboven zagen het niet, want het toetsje en de leesvraag schudden niet: daar
+//      is de hoeveelste knop toevallig het hoeveelste antwoord. Een proef die alleen het makkelijke
+//      geval bouwt, bewijst het makkelijke geval. Hier wordt de volgorde met opzet omgedraaid.
+//   6. NIEMAND SCHRIJFT NOG EEN KLASSENAAM OP. De schermen die een antwoord markeren doen dat via
+//      keuzeMarkeer(); de dode namen (correct, wrong, opt good, opt bad) staan nergens meer.
+//   7. DE NIVEAUTEST DOET MET OPZET NIET MEE. Die meet en onderwijst niet, en toont dus geen goed
 //      antwoord. Dat staat hier vast zodat niemand hem er per ongeluk bij trekt.
 const { chromium } = require('playwright');
 
@@ -125,8 +134,59 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(!toets.geen && toets.goedNa === lees.goedNa && toets.jouwNa === lees.jouwNa,
     'en met dezelfde kleuren als de leesvraag, want het is dezelfde vraag aan dezelfde lezer');
 
-  // ---- 3 t/m 5. niemand schrijft nog een klassenaam op ----
-  console.log('\n-- 5. één plek die de klassen kent --');
+  /* ---- 5. HET SCHERM DAT ZIJN OPTIES SCHUDT (v23.246) ----
+     Dit is de proef die er niet was, en daardoor liep v23.238 vier weken met een kapotte
+     luistervraag. De twee metingen hierboven gebruiken het toetsje en de leesvraag, en die schudden
+     hun opties niet: daar is de hoeveelste knop toevallig het hoeveelste antwoord. Het luisterscherm
+     schudt wel (v._orde), en toen keuzeMarkeer() op positie markeerde kleurde vrijwel altijd de
+     bovenste knop groen, ongeacht wat je koos.
+     Een proef die alleen het makkelijke geval bouwt, bewijst het makkelijke geval. Dus wordt de
+     volgorde hier met de hand omgedraaid, zodat plek en antwoord gegarandeerd niet samenvallen. */
+  console.log('\n-- 5. het luisterscherm, met de opties met opzet omgedraaid --');
+  const geschud = await page.evaluate(() => {
+    function kleur(el) { return getComputedStyle(el).backgroundColor; }
+    const sc = (typeof AUDIO_SCENES !== 'undefined' ? AUDIO_SCENES : audLijst())
+      .filter(function (s) { return s.vragen && s.vragen.length && s.vragen[0].opts.length >= 3; })[0];
+    if (!sc) return { geen: true };
+    audSc = sc; audStap = 0; audAnt = []; audGoed = 0; audMenu = false;
+    const v = sc.vragen[0];
+    // omgedraaid: de knop op plek 0 is nu het laatste antwoord, dus positie ≠ index
+    v._orde = v.opts.map(function (_, i) { return v.opts.length - 1 - i; });
+    funView = 'audi';
+    renderFunAudicion();
+    let knoppen = [...document.querySelectorAll('#funCard .audOpt')];
+    if (!knoppen.length) return { geen: true, reden: 'geen knoppen' };
+    const idx = knoppen.map(function (b) { return +b.getAttribute('data-ai'); });
+    const voor = kleur(knoppen[0]);
+    // met opzet fout klikken: een ander antwoord dan het juiste
+    const mis = (v.c === 0) ? 1 : 0;
+    const misPlek = idx.indexOf(mis);
+    const goedPlek = idx.indexOf(v.c);
+    audAntwoord(mis, knoppen[misPlek]);
+    knoppen = [...document.querySelectorAll('#funCard .audOpt')];
+    return { c: v.c, idx: idx, goedPlek: goedPlek, misPlek: misPlek, voor: voor,
+             goedNa: kleur(knoppen[goedPlek]), jouwNa: kleur(knoppen[misPlek]),
+             restNa: (function () {
+               const r = idx.map(function (_, p) { return p; })
+                 .filter(function (p) { return p !== goedPlek && p !== misPlek; })[0];
+               return r === undefined ? null : kleur(knoppen[r]);
+             })() };
+  });
+  console.log('   volgorde ' + JSON.stringify(geschud.idx) + ', goed=' + geschud.c +
+    ' staat op plek ' + geschud.goedPlek);
+  ok(!geschud.geen, 'CONTROLE: er is een luisterscène met minstens drie opties');
+  ok(geschud.goedPlek !== geschud.c,
+    'CONTROLE: plek en antwoordindex vallen niet samen, dus er valt iets te bewijzen (antwoord ' +
+      geschud.c + ' staat op plek ' + geschud.goedPlek + ')');
+  ok(geschud.goedNa !== geschud.voor,
+    'het goede antwoord kleurt, ook al staat het niet op zijn eigen plek');
+  ok(geschud.jouwNa !== geschud.voor, 'en jouw foute knop ook');
+  ok(geschud.goedNa === lees.goedNa && geschud.jouwNa === lees.jouwNa,
+    'met dezelfde twee kleuren als de andere schermen');
+  ok(geschud.restNa === null || geschud.restNa === geschud.voor,
+    'CONTROLE: en een knop die je niet aanraakte blijft kleurloos');
+
+  console.log('\n-- 6. één plek die de klassen kent --');
   const bron = await page.evaluate(() => {
     const t = document.documentElement.innerHTML;
     // het commentaar eruit: een controle die zijn eigen toelichting leest, controleert niets
@@ -146,7 +206,7 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'CONTROLE: de twee klassen die overblijven hebben ook echt opmaak, want daar ging dit over');
 
   // ---- 6. de niveautest doet met opzet niet mee ----
-  console.log('\n-- 6. de niveautest toont geen goed antwoord --');
+  console.log("\n-- 7. de niveautest toont geen goed antwoord --");
   const niveau = await page.evaluate(() => {
     const bron = String(renderPlacement);
     return { markeert: bron.indexOf('keuzeMarkeer') !== -1,
