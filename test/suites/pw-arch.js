@@ -160,11 +160,53 @@ const { chromium } = require('playwright');
   ok(teller, 'renderDic is te tellen');
   const veld = page.locator('#dicZoek');
   ok(await veld.count() === 1, 'het zoekveld staat er');
-  await veld.click();
-  await page.keyboard.type('agua', { delay: 15 });
-  await page.waitForTimeout(300);
+  /* v23.247: hier stond `keyboard.type('agua', {delay: 15})` met een vaste 300 ms erachter, en de
+     eis "hoogstens twee renders". Dat is een belofte over de klok van de MACHINE en niet over de
+     app: de ontdendering wacht 80 ms stilte af, en draait de poort vier browsers tegelijk, dan
+     liggen die vier aanslagen in werkelijkheid verder uit elkaar dan 80 ms. De app doet dan precies
+     wat ze belooft en de proef gaat toch rood. Zo viel hij op 6 september om, op 3 renders, terwijl
+     er niets aan de hand was.
+
+     Nu wordt het geval GEBOUWD in plaats van gehoopt: vier input-gebeurtenissen in één synchrone
+     taak. Die kan geen enkele belasting uit elkaar trekken, dus de timer wordt vier keer opnieuw
+     gezet en er hoort er precies één te overleven. Daarna het controlegeval, want "precies één"
+     zou ook waar zijn als de teller helemaal niet meer telt. */
+  await page.evaluate(() => {
+    window.__dicN = 0;
+    const el = document.getElementById('dicZoek');
+    ['a', 'ag', 'agu', 'agua'].forEach(function (v) {
+      el.value = v;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+  await page.waitForFunction(() => window.__dicN >= 1, null, { timeout: 8000, polling: 20 }).catch(function () {});
   const n = await page.evaluate(() => window.__dicN);
-  ok(n <= 2, 'vier snelle aanslagen kosten hoogstens twee renders i.p.v. vier (' + n + ')');
+  ok(n === 1, 'vier aanslagen zonder stilte ertussen kosten één render, niet vier (' + n + ')');
+
+  const n2 = await page.evaluate(() => new Promise((klaar) => {
+    /* een vijfde aanslag, deze keer met stilte eromheen. De render heeft het veld vervangen, dus
+       hem opnieuw opzoeken. */
+    const el = document.getElementById('dicZoek');
+    el.value = 'aguac';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    const begin = Date.now();
+    const kijk = setInterval(() => {
+      if (window.__dicN >= 2 || Date.now() - begin > 5000) { clearInterval(kijk); klaar(window.__dicN); }
+    }, 20);
+  }));
+  ok(n2 === 2, 'CONTROLE: mét stilte ertussen komt er wél een render bij, dus de teller telt (' + n2 + ')');
+
+  /* terug naar "agua", want de twee controles hieronder gaan daarover */
+  await page.evaluate(() => new Promise((klaar) => {
+    const el = document.getElementById('dicZoek');
+    el.value = 'agua';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    const n0 = window.__dicN;
+    const begin = Date.now();
+    const kijk = setInterval(() => {
+      if (window.__dicN > n0 || Date.now() - begin > 5000) { clearInterval(kijk); klaar(); }
+    }, 20);
+  }));
   const treffers = await page.evaluate(() => {
     const el = document.getElementById('dicCard');
     return { tekst: el.innerText.toLowerCase().indexOf('agua') !== -1, waarde: (document.getElementById('dicZoek') || {}).value };
@@ -177,8 +219,14 @@ const { chromium } = require('playwright');
   await page.fill('#dicZoek', '');
   await page.waitForTimeout(200);
   await page.fill('#dicZoek', 'hola');
-  await page.waitForTimeout(250);
-  ok((await page.locator('#dicCard').innerText()).toLowerCase().indexOf('hola') !== -1, 'na een gewone fill staat het resultaat er binnen 250 ms');
+  /* v23.247: hier stond ook een vaste 250 ms. Wat deze proef wil weten is of de ontdendering
+     ooit LOSLAAT, niet of de machine binnen een kwart seconde klaar is; wachten tot het er staat
+     meet het eerste en niet het tweede. */
+  const kwam = await page.waitForFunction(
+    () => (document.getElementById('dicCard') || {}).innerText &&
+          document.getElementById('dicCard').innerText.toLowerCase().indexOf('hola') !== -1,
+    null, { timeout: 8000, polling: 50 }).then(() => true).catch(() => false);
+  ok(kwam, 'na een gewone fill komt het resultaat er, zonder dat er nog een tik nodig is');
 
   const relevanteErrors = errors.filter((e) => !/Failed to load resource|ERR_TUNNEL_CONNECTION_FAILED/.test(e));
   ok(relevanteErrors.length === 0, 'geen JS-fouten in eigen app-code tijdens hele test (' + relevanteErrors.length + ' gevonden, ' + (errors.length - relevanteErrors.length) + ' netwerkruis genegeerd)');
