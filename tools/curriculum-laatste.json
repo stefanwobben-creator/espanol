@@ -1,31 +1,71 @@
 {
- "wanneer": "2026-08-22T08:38:01.494Z",
- "versie": "v23.166",
+ "wanneer": "2026-09-07T06:58:07.154Z",
+ "versie": "v23.250",
  "gaten": [
-  {
-   "tag": "basis",
-   "soort": "verschijnsel",
-   "fouten": 26
-  },
   {
    "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 16
+   "fouten": 27
+  },
+  {
+   "tag": "gustar",
+   "soort": "verschijnsel",
+   "fouten": 6
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s247",
-   "s248",
-   "s249",
-   "s250",
-   "s251",
-   "s252",
-   "s253"
+   "s313",
+   "s314",
+   "s315",
+   "s316",
+   "s317",
+   "s319",
+   "s320",
+   "s321"
   ],
   "toetsjes": [
-   "q-relatar-extra6"
+   "q-imperativo-extra7"
   ]
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-12",
+  "num": 12,
+  "niveau": "B1",
+  "titel": "El trabajo y el tiempo libre",
+  "doel": "Leren praten over werk en vrije tijd, inclusief voordelen en nadelen, en het gebruik van 'costar' met activiteiten",
+  "doelEn": "Learning to talk about work and free time, including advantages and disadvantages, and using 'costar' with activities",
+  "spiek": [
+   30
+  ],
+  "words": [
+   "w314",
+   "w315",
+   "w316",
+   "w317",
+   "w318",
+   "w319",
+   "w320",
+   "w321",
+   "w322",
+   "w323",
+   "w324",
+   "w325",
+   "w326",
+   "w327"
+  ],
+  "sents": [
+   "s322",
+   "s323",
+   "s324",
+   "s325",
+   "s326",
+   "s327",
+   "s328",
+   "s329"
+  ],
+  "quizzes": [
+   "q-b1-12"
+  ]
+ }
 }

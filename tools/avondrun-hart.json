@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-09-06T06:51:32.836Z",
- "gelukt": false,
+ "wanneer": "2026-09-07T06:58:07.154Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -12,36 +12,28 @@
  "geleverd": {
   "zinnen": 8,
   "toetsjes": 1,
-  "kaal": 2,
-  "nieuweLes": 0
+  "kaal": 3,
+  "nieuweLes": 1
  },
- "versie": "v23.245",
+ "versie": "v23.250",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s290 (anoche)",
-  "s292: afgekeurd — De zin is praktisch toepasbaar, maar de uitleg is onjuist: 'viví' is indefinido (afgerond verleden), maar 'encontré' en 'hablamos' zijn ook indefinido, niet imperfecto. De uitleg suggereert ten onrechte dat 'hablamos' imperfecto is.",
-  "1 vraag/vragen afgekeurd (poging 1): vraag 5: Optie 'c' (derrite) is correct, maar de uitleg verwijst naar 'derrites' als correct antwoord (optie 1).",
-  "toetsje q-imperativo-extra7: 6 van de 7 vragen blijven staan, het toetsje gaat door zonder vraag 5",
-  "toetsje van de nieuwe les: 5 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet met de regel over werkwoorden als gustar: 'parecer' wordt hier niet als gustar gebruikt, maar als normaal werkwoord met onderwerp 'el horario flexible' (enkelvoud). De uitleg verwijst ten onrechte naar subjuntivo.; vraag 4: De uitleg is incorrect: 'práctico' is een adjectief dat bij 'el horario flexible' hoort (enkelvoud), maar de uitleg suggereert dat het een werkwoord als gustar betreft, wat niet het geval is.; vraag 6: De uitleg is onjuist: 'necesitar' wordt hier gevolgd door een onbepaald lidwoord omdat het gaat om een niet-specifieke ruimte, maar de uitleg noemt 'een specifieke maar niet genoemde ruimte', wat verwarrend is.; vraag 7: De uitleg is incorrect: 'difícil' is een adjectief dat bij 'el teletrabajo' hoort (enkelvoud), maar de uitleg suggereert ten onrechte dat het een werkwoord als gustar betreft.; vraag 8: De uitleg is onjuist: 'hacer' is hier geen reflexief werkwoord, maar een normaal werkwoord in de tweede persoon enkelvoud ('wat doe je').)",
-  "te weinig vragen over, de les gaat door zonder toetsje",
-  "nieuwe les AFGEKEURD:\n - woord 3 (w316): de vertaling verklapt het Spaanse woord (\"de flexibele werktijden\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
-  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+  "s318: afgekeurd — De zin is niet praktisch toepasbaar: 'cantina' wordt in Spanje zelden gebruikt voor een bedrijfskantine (meestal 'cafetería' of 'comedor').",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s318 (anoche)"
  ],
- "mis": [
-  "de nieuwe les"
- ],
+ "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 2
+   "naKeuring": 3
   }
  ],
- "reden": "de run is niet afgemaakt",
+ "reden": null,
  "geweigerd": 0,
- "gegenereerd": false,
- "gepubliceerd": false,
- "status": "geklapt",
- "pogingen": 2,
- "afgemaakt": "2026-09-06T06:51:53.887Z"
+ "gegenereerd": true,
+ "gepubliceerd": true,
+ "status": "gepubliceerd",
+ "pogingen": 1,
+ "afgemaakt": "2026-09-07T07:07:28.093Z"
 }
