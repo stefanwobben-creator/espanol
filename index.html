@@ -152,8 +152,34 @@
      Hier stonden .opt.correct/.opt.wrong (het toetsje) naast .gw-optie.juist/.gw-optie.jouw
      (de opfrisser, v23.189), en die twee paren zijn ontstaan doordat twee schermen dezelfde
      vraag stellen en het los oplosten. Wie welke klasse krijgt zegt keuzeMerk(). */
-  .juist{border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:700;}
-  .jouw{border-color:var(--red); background:var(--red-soft); color:var(--red);}
+  /* v23.251: en deze twee winnen van elke knopklasse.
+
+     Gemeten op 8 september, per knopklasse, met en zonder "juist":
+
+       .opt                          wit -> groen   zichtbaar
+       .ghost .gw-optie              wit -> WIT     niet zichtbaar
+       .ghost .gw-optie [disabled]   opacity 0.5    niet zichtbaar en half doorzichtig
+
+     De oorzaak is de cascade en hij is exact: button.ghost is een element PLUS een klasse (0,1,1)
+     en .juist is alleen een klasse (0,1,0), dus button.ghost wint altijd, ongeacht de volgorde in
+     dit bestand. Op .opt werkt het toevallig wel, want dat is ook maar een klasse en hij staat zes
+     regels hoger.
+
+         Een klasse die een TOESTAND aanzet en even zwak is als de klasse die de VORM bepaalt,
+         is zichtbaar op de ene knop en onzichtbaar op de andere.
+
+     Vandaar !important: dit is waar toestandsklassen voor bestaan. En de opacity terug naar 1,
+     want een beantwoorde knop is uitgeschakeld en button.ghost:disabled maakte hem halfdoorzichtig;
+     dat is het bleke grijs op Stefans schermafbeelding.
+
+     Dit is de reparatie. De oorzaak is dat niets dit mat, en dat staat in pw-markering.js: die
+     leest de bron, haalt er elke knopklasse uit waar een antwoord op gemarkeerd wordt, en
+     vergelijkt de ECHTE berekende kleur. Een zesde antwoordscherm valt daar vanzelf onder. */
+  .juist{border-color:var(--green) !important; background:var(--green-soft) !important;
+         color:var(--green) !important; font-weight:700;}
+  .jouw{border-color:var(--red) !important; background:var(--red-soft) !important;
+        color:var(--red) !important;}
+  .juist:disabled, .jouw:disabled{opacity:1 !important;}
   /* v23.192: de tijd naast de vorm. Kleiner en grijzer dan het antwoord zelf, want het is
      geen deel van je keuze maar de vertaling ervan. */
   .tijdlab{color:var(--muted); font-weight:400; font-size:.82em;}
@@ -1599,7 +1625,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.250";
+var APP_VERSIE = "v23.251";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -28974,6 +29000,10 @@ function speelVers(v){
   var g = null;
   try { g = spelInfoVan(v); } catch(e){ g = null; }
   if(g && g.verse){ try { g.verse(); } catch(e){} }
+  /* v23.251: en de bewaarde ronde erbij. Zonder deze regel zou verse() het geheugen leegmaken en
+     spelRondeSync() hem meteen daarna uit de opslag terugzetten: dan doet "Nog een" niets. Dat is
+     letterlijk de val die in v23.232 bij Letras is beschreven, dus die maken we hier niet opnieuw. */
+  try { spelRondeVergeet(v); } catch(e){}
 }
 function speelStart(g){
   if(!g) return;
@@ -29006,9 +29036,157 @@ function funTerug(){
   renderFun();
 }
 
+/* ================= EEN RONDE OVERLEEFT WEGLOPEN (v23.251) =================
+
+   Stefan, 8 september: "dat een spel altijd opnieuw moet beginnen." Gemeten: negen spellen
+   gestart, een stap gezet, pagina herladen, en gekeken of DEZELFDE ronde terugkwam. Eén van de
+   acht deed dat. De oorzaak staat in vijf regels die naast elkaar te zetten zijn:
+
+       if(!brokSpel)     brokStart();
+       if(!omkeerSpel)   omkeerStart();
+       if(!tijdvormSpel) tijdvormStart();
+       if(!zinSpel)      zinStart(null, null);
+       if(!adivSpel && !adivHerstel()) adivNieuw();     <- de enige die het goed doet
+
+       Een tak die "nog niet begonnen" en "je was al bezig" hetzelfde behandelt,
+       kan je voortgang niet bewaren.
+
+   Hieronder staat per spel alleen wat geen enkele andere plek kan weten: hoe je een opgave herkent
+   en waar de opgaven vandaan komen. Al het overige (wanneer bewaren, wanneer herstellen, wanneer
+   vergeten, welke velden mee moeten) staat één keer, hieronder.
+
+   De ronde wordt als SLEUTELS bewaard en niet als objecten: de opgaven van omkeer en tijdvorm
+   dragen hele werkwoordobjecten mee en die van zin hele zinnen. Ontbreekt bij het herstellen ook
+   maar één sleutel in de pool, dan herstellen we niets: een halve ronde is korter dan hij zegt te
+   zijn. */
+var SPEL_RONDE = {
+  brok: {
+    lees:function(){ return brokSpel; }, zet:function(x){ brokSpel = x; },
+    sleutel:function(x){ return String(x); },
+    pool:function(){ var r = [], i; for(i = 0; i < BROK_TIJD.length; i++) r.push(i); return r; }
+  },
+  omkeer: {
+    lees:function(){ return omkeerSpel; }, zet:function(x){ omkeerSpel = x; },
+    sleutel:function(x){ return x.v.inf + "|" + x.p + "|" + x.t; },
+    pool:function(){ return omkeerPool().items; }
+  },
+  tijdvorm: {
+    lees:function(){ return tijdvormSpel; }, zet:function(x){ tijdvormSpel = x; },
+    sleutel:function(x){ return x.v.inf + "|" + x.p + "|" + x.t; },
+    pool:function(){ return tijdvormPool().items; }
+  },
+  zin: {
+    lees:function(){ return zinSpel; }, zet:function(x){ zinSpel = x; },
+    sleutel:function(x){ return x.z.id; },
+    pool:function(st){ return zinPool((st && st.tijden) || null); }
+  },
+  /* de les heeft geen rij maar een rijtje-naam en een stap, dus die krimpt en groeit zelf */
+  les: {
+    lees:function(){ return lesSpel; }, zet:function(x){ lesSpel = x; },
+    krimp:function(st){ return {rij:st.rij, stap:st.stap}; },
+    groei:function(k){
+      if(!k || !k.rij) return null;
+      if(!lesStart(k.rij)) return null;
+      if(typeof k.stap === "number") lesSpel.stap = k.stap;
+      return lesSpel;
+    }
+  }
+};
+/* Alle waarden die geen object zijn gaan mee, en de rij wordt een lijst sleutels. Zo hoeft er per
+   spel geen veldenlijst te staan die kan verouderen zodra een spel een teller bijkrijgt. */
+function spelRondeKrimp(v, st){
+  var e = SPEL_RONDE[v], uit = {}, k, w;
+  if(e.krimp) return e.krimp(st);
+  for(k in st){
+    if(!Object.prototype.hasOwnProperty.call(st, k)) continue;
+    if(k === "rij") continue;
+    w = st[k];
+    if(w === null || typeof w !== "object") uit[k] = w;
+    else if(Object.prototype.toString.call(w) === "[object Array]" &&
+            w.length && w.join && typeof w[0] !== "object") uit[k] = w.slice();
+  }
+  uit.rij = [];
+  (st.rij || []).forEach(function(x){ uit.rij.push(e.sleutel(x)); });
+  return uit;
+}
+function spelRondeGroei(v, k){
+  var e = SPEL_RONDE[v];
+  if(e.groei) return e.groei(k);
+  if(!k || !k.rij || !k.rij.length) return null;
+  var pool = [], op = {}, rij = [], i, s;
+  try { pool = e.pool(k) || []; } catch(err){ return null; }
+  pool.forEach(function(x){ op[e.sleutel(x)] = x; });
+  for(i = 0; i < k.rij.length; i++){
+    s = k.rij[i];
+    if(!(s in op)) return null;      // de pool is veranderd: liever een nieuwe ronde dan een halve
+    rij.push(op[s]);
+  }
+  var st = {rij:rij};
+  for(var f in k){
+    if(!Object.prototype.hasOwnProperty.call(k, f) || f === "rij") continue;
+    st[f] = k[f];
+  }
+  return st;
+}
+function spelRondeBewaar(v){
+  var e = SPEL_RONDE[v];
+  if(!e) return;
+  var st = e.lees();
+  if(!st) return;
+  S.spelRonde = S.spelRonde || {};
+  try { S.spelRonde[v] = {d:today(), k:spelRondeKrimp(v, st)}; persist(); } catch(err){}
+}
+function spelRondeHerstel(v){
+  var e = SPEL_RONDE[v];
+  if(!e) return false;
+  var bak = null;
+  try { bak = (S.spelRonde || {})[v]; } catch(err){ return false; }
+  if(!bak || bak.d !== today()) return false;   // een ronde van gisteren is geen ronde van vandaag
+  var st = null;
+  try { st = spelRondeGroei(v, bak.k); } catch(err){ st = null; }
+  if(!st) return false;
+  e.zet(st);
+  return true;
+}
+function spelRondeVergeet(v){
+  if(!SPEL_RONDE[v]) return;
+  try {
+    if(S.spelRonde && S.spelRonde[v]){ delete S.spelRonde[v]; persist(); }
+  } catch(err){}
+}
+/* De ene plek. Staat het geheugen leeg, dan herstellen; draait er een ronde, dan bewaren. Elke
+   render van een spel komt hierlangs, en elk antwoord tekent opnieuw, dus dit dekt beide kanten
+   zonder dat er in een spel iets bij hoeft.
+
+   HERSTELLEN MAG MAAR EEN KEER PER PAGINA, EN DAT IS DE HELE TRUC.
+
+   De eerste versie herstelde bij elke lege stand, en toen kon je in De les niet meer terug naar het
+   keuzemenu: dat menu ZET lesSpel op null, en de volgende render zette hem meteen terug. De proef
+   pw-schoen viel er als eerste over ("een knop per rij: 0 van de 18"). Dat is dezelfde val die in
+   v23.232 bij Letras staat beschreven, dus die maken we hier niet nog een keer.
+
+   Het onderscheid dat we nodig hebben is niet "is de stand leeg" maar "wie heeft hem leeggemaakt".
+   Een herlaad wist het geheugen vóórdat wij ook maar één keer gekeken hebben; een knop wist hem
+   daarna. Vandaar deze vlag: hij staat leeg zolang de pagina vers is. Leeg gemaakt nadat we al eens
+   gekeken hebben, is een keuze van de speler, en dan gooien we de bewaarde ronde ook weg. */
+var _spelGezien = {};
+function spelRondeSync(v){
+  var e = SPEL_RONDE[v];
+  if(!e) return;
+  if(!e.lees()){
+    if(_spelGezien[v]){ spelRondeVergeet(v); return; }   // je hebt hem zelf weggelegd
+    _spelGezien[v] = 1;
+    spelRondeHerstel(v);
+    return;
+  }
+  _spelGezien[v] = 1;
+  spelRondeBewaar(v);
+}
+
 function renderFun(){
   var el = document.getElementById("funCard");
   if(!el) return;
+  spelRondeSync(funView);
   /* v23.229: hier wisselt het speeltuinmenu met een lopend spel, zonder dat show() eraan te pas
      komt. Zonder deze regel houdt de speeltuin de schil van het vorige scherm. */
   schilSync();
@@ -32216,7 +32394,11 @@ var GC_CONCEPTEN = [
     precies als gustar", dus het is één regel en niet twee. Twee lessen schrijven voor één regel is
     dezelfde fout als twee codeplekken die hetzelfde doen. */
  {id:"gustarfamilie", icon:"🫀", naam:"Werkt net als gustar", naamEn:"Works just like gustar",
-  corr:[], spiek:{a2:[18,23]}, wizard:null,
+
+  /* v23.251: kaart 30 erbij ("costar en gustar met activiteiten", vannacht gegenereerd). Die kaart
+     had een toetsje van acht vragen en geen enkel concept dat hem claimde, en daar viel pw-lesgat
+     op om. Inhoudelijk hoort hij hier: costar werkt precies zoals gustar. */
+  corr:[], spiek:{a2:[18,23,30]}, wizard:null,
   uitleg:"<p>Je kent <i>me gusta</i> al. Er is een hele familie werkwoorden die precies zo werkt, en dat scheelt je vier regels: <b>doler</b> (pijn doen), <b>encantar</b> (geweldig vinden), <b>apetecer</b> (zin hebben in) en <b>parecer</b> (vinden van).</p>"+
     "<p>Bij die werkwoorden is <b>niet de persoon het onderwerp</b> maar het ding. Je zegt dus letterlijk “mij doet het hoofd pijn”:</p>"+
     "<p><i>Me duele <b>la cabeza</b>.</i> — één ding, dus <b>duele</b>.<br>"+
