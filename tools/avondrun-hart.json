@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-09-07T06:58:07.154Z",
- "gelukt": true,
+ "wanneer": "2026-09-08T07:04:58.633Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -10,30 +10,35 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 8,
+  "zinnen": 12,
   "toetsjes": 1,
-  "kaal": 3,
-  "nieuweLes": 1
+  "kaal": 4,
+  "nieuweLes": 0
  },
- "versie": "v23.250",
+ "versie": "v23.251",
  "klachten": [
-  "s318: afgekeurd — De zin is niet praktisch toepasbaar: 'cantina' wordt in Spanje zelden gebruikt voor een bedrijfskantine (meestal 'cafetería' of 'comedor').",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s318 (anoche)"
+  "s344: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'cultuurschok' ('choque cultural') in een alledaags gesprek; een Nederlander zou eerder zeggen 'het is moeilijk om te wennen' of 'ik vind het wennen aan de cultuur lastig'.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 3: De uitleg verwijst naar de derde persoon enkelvoud ('entienda'), maar de zin gebruikt de eerste persoon ('entiendas').; vraag 4: De uitleg verwijst naar de eerste persoon enkelvoud ('hable'), maar de zin gebruikt de eerste persoon enkelvoud ('hable') en de uitleg klopt niet met de regel (subjuntivo is hier correct).)",
+  "nieuwe les AFGEKEURD:\n - woord 9 (w336): de vertaling verklapt het Spaanse woord (\"de lokale taal\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - toetsje 1 (q-b1-13) vraag 5: uitleg (u) ontbreekt",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
- "mis": null,
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 3
+   "naZeef": 4,
+   "naKeuring": 4
   }
  ],
- "reden": null,
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-09-07T07:07:28.093Z"
+ "gegenereerd": false,
+ "gepubliceerd": false,
+ "status": "geklapt",
+ "pogingen": 2,
+ "afgemaakt": "2026-09-08T07:05:37.963Z"
 }
