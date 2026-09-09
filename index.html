@@ -1625,7 +1625,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.251";
+var APP_VERSIE = "v23.252";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -15668,7 +15668,11 @@ var LEES_CONSTRUCTIES = [
  {stam:["sigu","sig","segu"], deel:"", eind:"ger", nl:"blijven (doorgaan met)", en:"to keep on doing"},
  {stam:["est"], deel:"", eind:"ger", nl:"aan het ... zijn", en:"to be doing"}
 ];
+/* v23.252: "de" staat hier nu bij, en de controle hieronder kijkt naar het GESCHREVEN woord.
+   Gemeten: 235 keer in de leesteksten, en elke keer uitgelegd als "geeft u (van dar, subjuntivo)",
+   want dat is de uitleg van "dé" en de accentloze sleutel maakt die twee gelijk. */
 var LEES_LETTERS = {y:["en","and"], o:["of","or"], a:["naar, aan, tot","to, at"],
+                    de:["van, uit","of, from"],
                     e:["en (voor i- of hi-)","and (before i- or hi-)"],
                     u:["of (voor o- of ho-)","or (before o- or ho-)"]};
 var leesFreqIdx = null;
@@ -15826,7 +15830,91 @@ function leesNaarInfinitief(plat){
   }
   return null;
 }
-function leesBetekenis(ruw){
+/* ================= WELKE VORM STAAT ER? (v23.252) =================
+
+   Stefan, 9 september: "dat ik de tegenwoordige tijd van een werkwoord ken zegt niet dat ik alle
+   vormen ken."
+
+   Gemeten in de tien Don Quijote-teksten: 161 herkenbare werkwoordsvormen, waarvan er ACHT een
+   tijdsaanduiding meekregen. De rest kreeg alleen een betekenis, en bij een handvol stond de tijd
+   wél in die betekenis:
+
+       eran   -> "eran = they were (from ser, imperfect)"
+       tenían -> "tenían = they had (from tener, imperfect)"
+
+   In het Engels, in een handgeschreven zin, in een profiel dat op Nederlands staat. Niet in een
+   veld, dus de app kan er niets mee.
+
+       Staat een feit in een tekst in plaats van in een veld, dan kan alleen de lezer het
+       gebruiken, en alleen als hij die taal spreekt.
+
+   Deze tabel leidt het af uit VERBOS en CONJ_TIEMPOS, dezelfde bron waar de Conjugador uit put.
+   Daarmee geldt het voor élke vorm van alle werkwoorden die de app kent, en niet alleen voor de
+   vormen waar ooit iemand een zin bij heeft getypt.
+
+   ACCENTGEVOELIG, en dat is niet vrijblijvend: "de" is een voorzetsel en "dé" is een vorm van dar.
+   Sla je de accenten plat, dan krijgt elk voorzetsel "de" in elke tekst het etiket subjuntivo. Dat
+   gebeurde in de eerste meting van deze ronde, en het maakte een telling van 254 vormen waarvan er
+   in werkelijkheid 161 waren. */
+var _leesVormKaart = null;
+function leesVormKaart(){
+  if(_leesVormKaart) return _leesVormKaart;
+  var k = {};
+  try {
+    CONJ_TIEMPOS.forEach(function(x){
+      VERBOS.forEach(function(v){
+        for(var i = 0; i < 6; i++){
+          var f = conjVorm(v, i, x.id);
+          if(!f) continue;
+          var s = String(f).toLowerCase();
+          if(!k[s]) k[s] = [];
+          k[s].push({inf:v.inf, tijd:x.id, persoon:i});
+        }
+      });
+    });
+  } catch(e){ k = {}; }
+  _leesVormKaart = k;
+  return k;
+}
+/* Geeft null als het geen bekende vorm is. Staat de vorm in twee tijden (hablamos is presente én
+   indefinido), dan zegt hij dat het er twee zijn en niet welke: een verkeerde diagnose is erger
+   dan geen. */
+function leesVormInfo(ruw){
+  var s = String(ruw || "").toLowerCase().replace(/[^a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00fc\u00f1]/g, "");
+  if(!s) return null;
+  var lijst = leesVormKaart()[s];
+  if(!lijst || !lijst.length) return null;
+  var tijden = [], i;
+  for(i = 0; i < lijst.length; i++) if(tijden.indexOf(lijst[i].tijd) === -1) tijden.push(lijst[i].tijd);
+  return {inf:lijst[0].inf, tijd:lijst[0].tijd, persoon:lijst[0].persoon,
+          tijden:tijden, dubbel:tijden.length > 1};
+}
+/* Staat deze tijd al open in de Conjugador? Leest conjOpenTijden(), dus er komt geen tweede lijst
+   bij en het antwoord verandert vanzelf mee als je een fase haalt. */
+function leesTijdOpen(t){
+  try { return conjOpenTijden().indexOf(t) !== -1; } catch(e){ return true; }
+}
+/* Wat een tekst aan werkwoordsvormen bevat die buiten je open tijden vallen. Uit de tekst zelf, dus
+   een nieuwe tekst hoeft niets bij te houden en kan er ook niet naast zitten. */
+function leesTekstTijden(tekst){
+  var kaart = leesVormKaart();
+  var woorden = String(tekst || "").toLowerCase().replace(/[^a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00fc\u00f1\s]/g, " ").split(/\s+/);
+  var perTijd = {}, buiten = 0, i, lijst, tijden, j;
+  for(i = 0; i < woorden.length; i++){
+    lijst = kaart[woorden[i]];
+    if(!lijst || !lijst.length) continue;
+    tijden = [];
+    for(j = 0; j < lijst.length; j++) if(tijden.indexOf(lijst[j].tijd) === -1) tijden.push(lijst[j].tijd);
+    if(tijden.length !== 1) continue;          // dubbelzinnig: dat telt niet als "een andere tijd"
+    if(leesTijdOpen(tijden[0])) continue;
+    perTijd[tijden[0]] = (perTijd[tijden[0]] || 0) + 1;
+    buiten++;
+  }
+  return {buiten:buiten, perTijd:perTijd};
+}
+/* v23.252: de kale opzoeker heet nu zo, en leesBetekenis() eromheen hangt de vorm eraan. Op die
+   manier hoeft geen van de acht uitgangen hierin te weten dat er ook nog een vorm bij hoort. */
+function leesBetekenisKaal(ruw){
   var plat = stripAcc(String(ruw || "").toLowerCase()).replace(/[^a-z]/g, "");
   /* v23.23: hier stond een ondergrens van twee letters, overgenomen van de zoekfunctie. Daar is die
      terecht (op een letter zoeken geeft duizend treffers), hier niet: y, o en a zijn juist woorden
@@ -15834,7 +15922,11 @@ function leesBetekenis(ruw){
      enkele lijst die de app heeft, want een frequentielijst begint pas bij twee letters. Vijf regels
      data dus, en dan is de bladzijde compleet. */
   if(!plat) return null;
-  if(LEES_LETTERS[plat]) return {es:plat, nl:ct(LEES_LETTERS[plat][0], LEES_LETTERS[plat][1]), soort:"woordenboek"};
+  /* v23.252: op het geschreven woord, met accent en al. Op de accentloze sleutel zou "dé" hier
+     ook binnenkomen en het voorzetsel-antwoord krijgen, en dan hebben we de fout omgedraaid in
+     plaats van opgelost. */
+  var geschreven = String(ruw || "").toLowerCase().replace(/[^a-záéíóúüñ]/g, "");
+  if(LEES_LETTERS[geschreven]) return {es:geschreven, nl:ct(LEES_LETTERS[geschreven][0], LEES_LETTERS[geschreven][1]), soort:"woordenboek"};
   if(LEES_EXTRA[plat]) return {es:ruw, nl:ct(LEES_EXTRA[plat][0], LEES_EXTRA[plat][1]), soort:"woordenboek"};
   var hit = leesLesWoord(plat);
   if(hit) return {es:hit.es, nl:hit.nl, id:hit.id, soort:"les"};
@@ -15877,6 +15969,22 @@ function leesBetekenis(ruw){
   for(ki = 0; !inf && ki < kaal.length; ki++) inf = leesNaarInfinitief(kaal[ki]);
   if(inf) return {es:inf.inf, nl:inf.nl, id:inf.id, soort:"vorm"};
   return null;
+}
+function leesBetekenis(ruw){
+  var b = null, v = null;
+  try { b = leesBetekenisKaal(ruw); } catch(e){ b = null; }
+  try { v = leesVormInfo(ruw); } catch(e){ v = null; }
+  if(!v) return b;
+  /* Geen betekenis maar wel een bekende vorm: dan is de infinitief het antwoord. Beter "een vorm
+     van salir" dan "staat niet in het woordenboek" bij een woord dat er wel degelijk in staat. */
+  if(!b){
+    var bi = null;
+    try { bi = leesBetekenisKaal(v.inf); } catch(e){ bi = null; }
+    if(!bi) return null;
+    b = {es:v.inf, nl:bi.nl, id:bi.id, soort:"vorm"};
+  }
+  b.vorm = v;
+  return b;
 }
 /* Wat je opzoekt, wordt geteld. Nog niet getoond: eerst een paar hoofdstukken meten, dan pas iets
    beweren. Zie de weekmetingen en de tijdmeting; dezelfde volgorde. */
@@ -16193,6 +16301,29 @@ function leesToon(woord, span){
   if(b.soort === "vorm" && b.tijd){
     extra = " <span class='muted'>("+b.tijd+(b.persoon ? ", "+b.persoon : "")+")</span>";
   }
+  /* v23.252: welke vorm dit is, in het Nederlands, en of je die tijd al gehad hebt.
+
+     Stefan: "dat ik de tegenwoordige tijd van een werkwoord ken zegt niet dat ik alle vormen ken."
+     Dit is die regel. Hij komt uit de vervoegingstabel en niet uit een handgeschreven zin, dus hij
+     staat er bij élke vorm van elk werkwoord dat de app kent.
+
+     Bij een vorm die in twee tijden voorkomt noemen we ze allebei. Kiezen zou raden zijn. */
+  var vormRegel = "";
+  if(b.vorm){
+    var vp = RV_PERSOON[b.vorm.persoon] || "";
+    var vt = b.vorm.dubbel
+      ? b.vorm.tijden.map(function(t){ return conjTiempoLabel(t); }).join(ct(" of ", " or "))
+      : conjTiempoNaam(b.vorm.tijd);
+    vormRegel = "<p class='muted' style='font-size:.85rem; margin:2px 0 0'>" +
+      (vp ? "<span class='es'>"+vp+"</span>, " : "") + vt +
+      (b.vorm.dubbel ? " <span class='muted'>("+ct("die vorm hoort bij allebei","that form fits both")+")</span>" : "") +
+      "</p>";
+    if(!b.vorm.dubbel && !leesTijdOpen(b.vorm.tijd)){
+      vormRegel += "<p class='muted' style='font-size:.85rem; margin:2px 0 0'>" +
+        ct("Deze tijd heb je in de Conjugador nog niet gehad.",
+           "You have not reached this tense in the Conjugador yet.") + "</p>";
+    }
+  }
   /* Een woord uit een uitdrukking krijgt een ander voorzetsel: "in de uitdrukking" in plaats van
      "van". Anders leest de tooltip als de betekenis van dat ene woord, en dat is het niet. */
   var brug = b.uitdrukking ? ct("in de uitdrukking","in the expression") : ct("van","from");
@@ -16205,7 +16336,7 @@ function leesToon(woord, span){
       (stripAcc(String(b.es).toLowerCase()) !== stripAcc(String(woord).toLowerCase())
         ? " <span class='muted'>"+brug+" <span class='es'>"+b.es+"</span></span>" : "")+
       extra+"</p>"+
-    "<p>"+b.nl+"</p>"+
+    "<p>"+b.nl+"</p>"+ vormRegel +
     leesMijnKnopHtml(leesNu.doel);
   if(span) leesTooltipPlaats(el, span);
 }
