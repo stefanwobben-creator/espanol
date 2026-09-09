@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-09-07T06:58:07.154Z",
- "versie": "v23.250",
+ "wanneer": "2026-09-09T07:03:43.575Z",
+ "versie": "v23.252",
  "gaten": [
   {
    "tag": "costar",
@@ -8,64 +8,67 @@
    "fouten": 27
   },
   {
-   "tag": "gustar",
+   "tag": "les2",
    "soort": "verschijnsel",
-   "fouten": 6
+   "fouten": 23
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s313",
-   "s314",
-   "s315",
-   "s316",
-   "s317",
-   "s319",
-   "s320",
-   "s321"
+   "s330",
+   "s331",
+   "s332",
+   "s333",
+   "s334",
+   "s335",
+   "s336",
+   "s337",
+   "s338",
+   "s339",
+   "s340"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-12",
-  "num": 12,
+  "id": "b1-13",
+  "num": 13,
   "niveau": "B1",
-  "titel": "El trabajo y el tiempo libre",
-  "doel": "Leren praten over werk en vrije tijd, inclusief voordelen en nadelen, en het gebruik van 'costar' met activiteiten",
-  "doelEn": "Learning to talk about work and free time, including advantages and disadvantages, and using 'costar' with activities",
+  "titel": "El turismo en España",
+  "doel": "Leren praten over toerisme in Spanje, voor- en nadelen bespreken, en de constructie 'me cuesta' oefenen.",
+  "doelEn": "To learn how to talk about tourism in Spain, discuss pros and cons, and practice the 'me cuesta' construction.",
   "spiek": [
-   30
+   31
   ],
   "words": [
-   "w314",
-   "w315",
-   "w316",
-   "w317",
-   "w318",
-   "w319",
-   "w320",
-   "w321",
-   "w322",
-   "w323",
-   "w324",
-   "w325",
-   "w326",
-   "w327"
+   "w328",
+   "w329",
+   "w330",
+   "w331",
+   "w332",
+   "w333",
+   "w334",
+   "w335",
+   "w336",
+   "w337",
+   "w338",
+   "w339",
+   "w340",
+   "w341"
   ],
   "sents": [
-   "s322",
-   "s323",
-   "s324",
-   "s325",
-   "s326",
-   "s327",
-   "s328",
-   "s329"
+   "s341",
+   "s342",
+   "s343",
+   "s344",
+   "s345",
+   "s346",
+   "s347",
+   "s348"
   ],
   "quizzes": [
-   "q-b1-12"
+   "q-b1-13"
   ]
  }
 }
