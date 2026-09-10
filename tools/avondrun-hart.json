@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-09-09T07:03:43.576Z",
- "gelukt": true,
+ "wanneer": "2026-09-10T07:02:09.120Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -13,26 +13,31 @@
   "zinnen": 11,
   "toetsjes": 1,
   "kaal": 3,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
- "versie": "v23.252",
+ "versie": "v23.254",
  "klachten": [
-  "s341: afgekeurd — De vertaling is onnatuurlijk Spaans: 'un vaso sin platillo' betekent 'een glas zonder schotel', maar in het Nederlands wordt 'kopje' gebruikt, wat in het Spaans 'taza' is."
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s357 (anoche)",
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 1: De uitleg klopt niet met de regel: 'funcionar' is hier geen onpersoonlijk werkwoord, maar een normaal werkwoord met onderwerp 'mi móvil' (enkelvoud). De uitleg suggereert ten onrechte dat het onderwerp de activiteit is.; vraag 8: De uitleg klopt niet met de regel: 'funcionar' is hier geen onpersoonlijk werkwoord, maar een normaal werkwoord met onderwerp 'mi ordenador' (enkelvoud). De uitleg suggereert ten onrechte dat het onderwerp de activiteit is.)",
+  "nieuwe les AFGEKEURD:\n - woord 7 (w348): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s361): veld \"tag\" ontbreekt\n - zin 2 (s362): veld \"tag\" ontbreekt\n - zin 3 (s363): veld \"tag\" ontbreekt\n - zin 4 (s364): veld \"tag\" ontbreekt\n - zin 5 (s365): veld \"tag\" ontbreekt\n - zin 6 (s366): veld \"tag\" ontbreekt\n - zin 7 (s367): veld \"tag\" ontbreekt\n - zin 8 (s368): veld \"tag\" ontbreekt",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
- "mis": null,
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
+   "naZeef": 3,
    "naKeuring": 3
   }
  ],
- "reden": null,
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-09-09T07:13:17.473Z"
+ "gegenereerd": false,
+ "gepubliceerd": false,
+ "status": "geklapt",
+ "pogingen": 2,
+ "afgemaakt": "2026-09-10T07:02:46.882Z"
 }
