@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-11T07:02:00.137Z",
+ "wanneer": "2026-09-12T06:53:22.693Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,18 +10,20 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 3,
+  "kaal": 2,
   "nieuweLes": 0
  },
  "versie": "v23.254",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s357 (ayer)",
-  "s368: afgekeurd — De zin is correct Spaans, maar 'me gusta' is in de praktijk veel gebruikelijker dan 'me alegra' in deze context.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: Het onderwerp is *leer los mensajes en el móvil*, maar dit is geen correct Spaans (moet *leer* zijn). De zin is dus niet natuurlijk en de uitleg klopt niet bij de gegeven zin.)",
-  "nieuwe les AFGEKEURD:\n - woord 7 (w348): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s357 (anoche), s360 (después)",
+  "s361: afgekeurd — De uitleg is onjuist: 'creer que + subjuntivo' is niet de juiste constructie; het moet 'creer que + indicativo' zijn.",
+  "s363: afgekeurd — De uitleg is onjuist: 'adónde' is correct, maar de uitleg over de tegenwoordige tijd is misleidend; de beslissing is nog niet genomen, dus 'hemos decidido' is fout.",
+  "s364: afgekeurd — De uitleg is onjuist: 'pensar que + futuro' is geen standaardconstructie; het moet 'pensar que + presente' of 'va a + infinitivo' zijn.",
+  "s367: afgekeurd — De uitleg is onjuist: 'dudar si + tegenwoordige tijd' is niet de juiste constructie; het moet 'dudar si + subjuntivo' zijn.",
+  "4 van de 8 zinnen afgekeurd, de rest gaat door",
+  "te weinig zinnen over → les niet aangeboden",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -31,8 +33,8 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 3
+   "naZeef": 2,
+   "naKeuring": 2
   }
  ],
  "reden": "de run is niet afgemaakt",
@@ -41,5 +43,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-11T07:02:27.279Z"
+ "afgemaakt": "2026-09-12T06:53:49.768Z"
 }
