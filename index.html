@@ -1625,7 +1625,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.253";
+var APP_VERSIE = "v23.254";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -7512,7 +7512,7 @@ var store = {
   }
 };
 
-function defaultState(){ return { schema:SCHEMA, srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"es-nl", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, gram:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
+function defaultState(){ return { schema:SCHEMA, srs:{}, errors:{}, done:{}, quiz:{}, quizSrs:{}, boek:{}, comp:{luisteren:{}, schrijven:{}}, dagStats:{}, dir:"nl-es", newIntro:{}, lesFlow:{}, lesFlowNu:null, lesFlowSpel:{}, modusKeuze:{}, gramwiz:{}, gram:{}, ritme:{}, maatje:{}, dag:{}, meting:{}, corr:{}, peil:{items:{}, log:[], laatst:""} }; }
 // v19.56: één plek die een binnengekomen state compleet maakt. Er waren er drie (boot(),
 // serverPull() en het sync-code-inlogscherm) en ze liepen uit elkaar: boot() vulde 24 sleutels aan,
 // serverPull() maar 7. Een state die van een ander apparaat kwam had daardoor geen S.comp, S.srs of
@@ -7537,7 +7537,7 @@ function defaultState(){ return { schema:SCHEMA, srs:{}, errors:{}, done:{}, qui
    Een nieuwe migratie toevoegen: SCHEMA een hoger, één blok onderaan de lijst erbij. Niets anders. */
 /* v23.191: 4. Zelfde reden als bij 3: blijft dit getal staan, dan denkt elke bestaande state
    dat hij bij is en draait de opruiming van de opfrisser nooit. */
-var SCHEMA = 4;
+var SCHEMA = 5;
 
 var MIGRATIES = [
   {naar: 2, wat: "oude luister-sleutels van voor v21.2 opruimen", doe: function(s){
@@ -7647,6 +7647,23 @@ var MIGRATIES = [
       });
     }
     return weg;
+  }},
+  {naar: 5, wat: "de standaardrichting van de woordkaartjes op produceren zetten", doe: function(s){
+    /* v23.254. Stefan: "ik denk dat het beter is om van nederlands naar spaans te gaan
+       (produceren) in plaats van andersom (herkennen), dus dit zou de default moeten zijn."
+
+       De app was het zelf al met hem eens en zei het nergens: renderWordCheck(), de Laatste stap,
+       toetst ALTIJD productief, ongeacht S.dir. Alle kaartjes ervoor oefenden standaard het
+       omgekeerde.
+
+       Deze migratie kan niet zien of je es-nl ooit zelf hebt gekozen, want dat werd nergens
+       opgeschreven: S.dir droeg de stand en niet de herkomst. Dus gaat iedereen zonder vlag één keer
+       om, en legt btnDir de keuze vanaf nu vast zodat dit niet nog een keer gebeurt. De schakelaar
+       staat onder elk kaartje, dus terug is één tik. */
+    if(s.dirGekozen) return 0;
+    if(s.dir !== "es-nl") return 0;
+    s.dir = "nl-es";
+    return 1;
   }}
 ];
 
@@ -11573,8 +11590,12 @@ function renderWordCheck(){
   var html = (inFlow ? lesFlowBannerHtml() : "")+
     "<span class='kicker'>"+ct("Laatste stap","Last step")+"</span>"+
     wBalkHtml()+
-    "<p class='big'>"+wTrans(w)+"</p>"+
+    /* v23.254: hier stond wTrans(w) onbewerkt, en dit is de enige stap in de app die je niet kunt
+       bluffen: je typt het woord en het staat nergens op het scherm. Juist daar stond de stam van
+       het antwoord in de vraag ("gevonden (van encontrar)"). Zie kaartSplits(). */
+    "<p class='big'>"+kaartVraag(w)+"</p>"+
     "<p class='muted'>"+ct("Hoe zeg je dat in het Spaans?","How do you say that in Spanish?")+"</p>"+
+    kaartZinHtml(w, "voor")+
     /* v23.95: hier stonden vier knoppen. Zie de kop van de patch: een op vier gokt zich erdoor en
        st.k is definitief, dus een gokje kostte je die check voorgoed. Typen kan sinds v23.x prima op
        een telefoon, want accentToetsenHtml() staat eronder. */
@@ -11584,7 +11605,9 @@ function renderWordCheck(){
         accentToetsenHtml("wCheckAccent")+
         "<div class='row'><button class='primary' id='btnWCheckOk'>"+ct("Controleer","Check")+"</button></div>"+
         "<button class='mini' id='btnWCheckWeetNiet'>"+ct("Ik weet het niet","I don't know")+"</button>"
-      : "<p class='big es' style='margin:2px 0 0'>"+w.es+"</p>");
+      : "<p class='big es' style='margin:2px 0 0'>"+w.es+"</p>"+
+        (kaartRest(w) ? "<p class='muted' style='margin:2px 2px 0; font-size:.9rem'>"+kaartRest(w)+"</p>" : "")+
+        kaartZinHtml(w, "achter"));
   if(wCheck.gekozen !== null){
     html += "<p class='waarom'>"+(wCheck.goed
       ? (wCheck.accentMis
@@ -11748,7 +11771,7 @@ function renderWord(){
   if(wCheck && wCheck.id !== wCur.id) wCheck = null;
   var isNew = !S.srs[wCur.id];
   var kort = UI_LANGS[profLang()].kort;
-  var front = S.dir==="es-nl" ? wCur.es : wTrans(wCur);
+  var front = S.dir==="es-nl" ? wCur.es : kaartVraag(wCur);
   var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
   // v19.91: het aantal "te gaan" stond hier in kleine grijze hoofdletters, tussen twee
   // andere dingen in. Dat is de plek waar je iets zet wat niemand hoeft te zien. Nu
@@ -11766,6 +11789,7 @@ function renderWord(){
     wBalkHtml()+
     "<p class='big'>"+front+"</p>"+
     "<p class='muted'>"+(S.dir==="es-nl"?tt("watBetekent"):tt("hoeZegJe"))+"</p>"+
+    (S.dir==="es-nl" ? "" : kaartZinHtml(wCur, "voor"))+
     kaartUitlegHtml("voor")+
     "<div class='row'><button class='primary' id='btnShow'>"+tt("toonAntwoord")+"</button></div>"+
     wWaaromHtml()+
@@ -11779,7 +11803,12 @@ function renderWord(){
   // zegt dat nu één keer bij het instellen (zie niveauClaim), niet 390 keer per kaartje.
   wStopWire();
   document.getElementById("btnShow").onclick = showWord;
-  document.getElementById("btnDir").onclick = function(){ S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; persist(); renderWord(); };
+  /* v23.254: de KEUZE wordt vastgelegd, niet alleen de stand. Tot nu toe droeg S.dir alleen waar
+     de schakelaar stond, en niet of jij hem daar had gezet. Daardoor kon migratie 5 niet zien wie
+     es-nl bewust wilde. Vanaf nu wel, en gaat er nooit meer een standaard over iemand heen. */
+  document.getElementById("btnDir").onclick = function(){
+    S.dir = S.dir==="es-nl"?"nl-es":"es-nl"; S.dirGekozen = 1; persist(); renderWord();
+  };
 }
 
 /* ================= HET KAARTJE LEGT ZICHZELF UIT (v23.69) =================
@@ -11809,8 +11838,11 @@ function kaartUitlegHtml(kant){
 function showWord(){
   wShown = true;
   var el = document.getElementById("wCard");
-  var front = S.dir==="es-nl" ? wCur.es : wTrans(wCur);
+  var front = S.dir==="es-nl" ? wCur.es : kaartVraag(wCur);
   var back  = S.dir==="es-nl" ? wTrans(wCur) : wCur.es;
+  /* v23.254: wat van de vraagkant af moest omdat het het antwoord verried, hoort hier. Precies
+     dezelfde afspraak als w.meer sinds v23.100: naslag voor wie het antwoord al heeft. */
+  var afgehaald = S.dir==="es-nl" ? "" : kaartRest(wCur);
   var inFlow = !!(lesFlow && lesFlow.stap === "woorden");
   el.innerHTML = (inFlow ? lesFlowBannerHtml() : "")+
     (inFlow ? "" : "<span class='kicker'>"+tt("woorden")+"</span>")+
@@ -11820,6 +11852,7 @@ function showWord(){
     /* v23.100: de rest van de betekenissen staat hier, ná het antwoord. Op de vraagkant maakte die
        stapel van een taalvraag een gokspel ("welke van de drie bedoelen ze?"); hier is het precies
        wat een woordenboekregel hoort te zijn: naslag voor wie het antwoord al heeft. */
+    (afgehaald ? "<p class='muted' style='margin:2px 2px 0; font-size:.9rem'>"+afgehaald+"</p>" : "")+
     (wCur.meer ? "<p class='muted' style='margin:2px 2px 0; font-size:.9rem'>"+wCur.meer+"</p>" : "")+
     "<span class='tag'>"+wCur.tag+"</span>"+
     // v19.84: bij de kernwoorden hoort een zin waarin het woord niet vooraan staat.
@@ -16112,7 +16145,8 @@ function mijnWoordLijst(){
   var uit = [], k, m = (typeof S !== "undefined" && S && S.mijn) || {};
   for(k in m){
     if(!m[k] || !m[k].es) continue;
-    uit.push({id:mijnWoordId(k), es:m[k].es, nl:m[k].nl, en:m[k].en || m[k].nl, tag:"mijn"});
+    uit.push({id:mijnWoordId(k), es:m[k].es, nl:m[k].nl, en:m[k].en || m[k].nl, tag:"mijn",
+              ej:m[k].z || undefined});
   }
   return uit;
 }
@@ -16141,12 +16175,15 @@ function mijnDoel(b){
 function mijnHeeft(d){ return !!(d && S.srs && S.srs[d.id]); }
 /* Zet het woord in je stapel. Geeft terug of er iets veranderd is, zodat de knop kan zeggen wat er
    gebeurd is in plaats van elke keer hetzelfde. */
-function mijnBij(d){
+function mijnBij(d, zin){
   if(!d || !d.id) return false;
   if(mijnHeeft(d)) return false;
   if(d.eigen){
     S.mijn = S.mijn || {};
-    S.mijn[d.plat] = {es:d.es, nl:d.nl, d:today()};
+    /* v23.254: z is de zin waarin je het woord tegenkwam. Hij gaat verderop als w.ej de pool in,
+       hetzelfde veld dat de kernwoorden al hebben, zodat geen enkele andere plek in de app hoeft te
+       weten dat dit woord anders is ontstaan. */
+    S.mijn[d.plat] = {es:d.es, nl:d.nl, d:today(), z:String(zin || "") || undefined};
     mijnWoordenInPool();
   }
   S.srs = S.srs || {};
@@ -16257,13 +16294,40 @@ function leesVertStand(h){
     return {n:n, totaal:totaal};
   } catch(e){ return {n:0, totaal:0}; }
 }
+/* ================= DE ZIN WAARIN JE HET WOORD VOND (v23.254) =================
+
+   Stefan: "het helpt om ook een simpele zin (context) te zien, die kan dan ook weer terugkomen bij
+   de woordjes."
+
+   Geteld: 282 van de 2250 woorden hebben een voorbeeldzin, en de woorden die je zelf opzoekt nul.
+   Terwijl elk van die woorden uit een zin komt die op dat moment op je scherm staat. De zin is er,
+   de tik gaat eroverheen, en wat er wordt opgeslagen is {es, nl, d}.
+
+   leesZinnen loopt precies gelijk op met leesWoorden: één rij per aantikbaar woord, met de zin
+   waarin dat woord stond. Geen tweede bron en geen tweede index.
+
+   De splitsing moet SLUITEND zijn, anders verandert de tekst op het scherm. Daarom wordt hij
+   nagemeten in plaats van aangenomen: past hij niet precies op de alinea, dan valt deze functie
+   terug op het oude gedrag en is er alleen geen zin bekend. */
+var leesZinnen = [];
+function leesZinDelen(p){
+  var d = String(p).match(/[^.!?\u2026]*[.!?\u2026]+[\s]*|[^.!?\u2026]+$/g);
+  if(!d || !d.length) return null;
+  if(d.join("") !== String(p)) return null;   // niet sluitend: dan liever geen zinnen dan een gat
+  return d;
+}
 function leesTekstHtml(p){
-  var veilig = String(p).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return veilig.replace(/([A-Za-z\u00c0-\u024f]+)/g, function(m){
-    var i = leesWoorden.length;
-    leesWoorden.push(m);
-    return "<span class='lw' data-lw=\""+m+"\" data-li='"+i+"'>"+m+"</span>";
-  });
+  var delen = leesZinDelen(p) || [String(p)];
+  return delen.map(function(zin){
+    var kort = zin.replace(/\s+/g, " ").trim();
+    var veilig = String(zin).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return veilig.replace(/([A-Za-z\u00c0-\u024f]+)/g, function(m){
+      var i = leesWoorden.length;
+      leesWoorden.push(m);
+      leesZinnen[i] = kort;
+      return "<span class='lw' data-lw=\""+m+"\" data-li='"+i+"'>"+m+"</span>";
+    });
+  }).join("");
 }
 /* Onder het woord als het past, anders erboven, en altijd binnen de kaart. Gerekend met
    getBoundingClientRect en niet met offsetTop, want de alinea's zitten in elementen met hun eigen
@@ -16310,7 +16374,7 @@ function leesMijnKnopHtml(d){
 function leesMijnKlik(){
   var d = leesNu && leesNu.doel;
   if(!d) return;
-  var nieuw = mijnBij(d);
+  var nieuw = mijnBij(d, leesNu && leesNu.zin);
   var el = document.getElementById("leesUitleg");
   var knop = document.getElementById("btnLeesMijn");
   if(knop && knop.parentNode){
@@ -16395,7 +16459,17 @@ function leesToon(woord, span){
      morgen kwijt en struikel je over hetzelfde woord. Een woord uit een uitdrukking krijgt hem niet:
      dan zou je "dejan" als los kaartje leren terwijl de uitleg juist zegt dat dat de verkeerde
      eenheid is. */
-  leesNu = {woord:woord, doel:(b.uitdrukking ? null : mijnDoel(b))};
+  /* v23.254: en de zin waarin het stond. Hij komt uit leesZinnen en niet uit de DOM, om dezelfde
+     reden als leesWoorden: uit de opmaak teruglezen zou betekenen dat de opmaak bepaalt wat je
+     leert. Een zin van boven de 160 tekens is geen context meer maar een alinea. */
+  var nuZin = "";
+  try {
+    if(span && span.getAttribute("data-li") !== null){
+      nuZin = String(leesZinnen[+span.getAttribute("data-li")] || "");
+      if(nuZin.length > 160) nuZin = "";
+    }
+  } catch(e){ nuZin = ""; }
+  leesNu = {woord:woord, zin:nuZin, doel:(b.uitdrukking ? null : mijnDoel(b))};
   el.innerHTML = kop + "<p><span class='es'>"+woord+"</span>"+
       (stripAcc(String(b.es).toLowerCase()) !== stripAcc(String(woord).toLowerCase())
         ? " <span class='muted'>"+brug+" <span class='es'>"+b.es+"</span></span>" : "")+
@@ -16435,7 +16509,7 @@ function renderBoekLectura(){
   var h = bState.h;
   var el = document.getElementById("lezenCard");
   // v23.21: elk woord is aan te tikken. De alinea's blijven verder precies zoals ze waren.
-  leesWoorden = [];
+  leesWoorden = []; leesZinnen = [];
   /* v23.81: enkele regelovergangen worden <br>. Een recept heeft een ingrediëntenlijst, en zonder
      dit wordt "1 kg de tomates 1 pepino 1 pimiento verde" één doorlopende zin. Voor de bestaande
      hoofdstukken verandert er niets: geteld over alle drieëntwintig, nul enkele regelovergangen. */
@@ -25551,6 +25625,176 @@ function quizTitel(qz){ return profLang() === "nl" ? qz.titel : (qz.titelEn || q
 function spiekTitel(c){ return profLang() === "nl" ? c.titel : (c.titelEn || c.titel); }
 function spiekHtml(c){ return profLang() === "nl" ? c.html : (c.htmlEn || c.html); }
 function lesDoel(l){ return profLang() === "nl" ? l.doel : (l.doelEn || l.doel); }
+/* ================= DE VRAAGKANT MAG HET ANTWOORD NIET DRAGEN (v23.254) =================
+
+   Stefan, 13 september: "nog te vaak bij woordjes zie ik al een hint."
+
+   Gemeten in FREQ, het woordenboek achter de leesplank, 4219 rijen:
+
+       856 noemen de infinitief tussen haakjes   "sale = hij/zij gaat weg/uit (van salir)"
+       239 zetten een Spaanse uitdrukking achter een isgelijkteken
+                                                 "encima = bovenop; encima de = boven op"
+       330 herhalen het Spaanse woord zelf       "mamá = mama"
+
+   Plus 26 rijen met "(van X)" in de ingebouwde woordenlijsten, waarvan 12 de stam van het antwoord
+   weggeven ("encontrado = gevonden (van encontrar)").
+
+   Geen van die rijen is fout. Ze zijn geschreven om NÁÁST het Spaanse woord te staan, als tooltip
+   terwijl je leest, en daar is "(van salir)" precies de goede toevoeging. Maar wie zo'n woord
+   aantikt zet hem in zijn stapel (v23.133), en dan is de tooltip de VRAAG geworden.
+
+       Een tekst die geschreven is om naast het antwoord te staan, is geen vraag.
+
+   De betekenis wordt hier in tweeën geknipt. Wat het antwoord verraadt gaat naar de ACHTERKANT,
+   waar het hoort (net als w.meer sinds v23.100); de rest is de vraag. En "verraadt" wordt gemeten
+   tegen het echte antwoord, niet geraden aan de vorm: "lang (van lengte)" blijft staan, want
+   "lengte" deelt geen stam met "alto".
+
+       Kijk eerst naar wat er STAAT, en pas daarna naar waar het op lijkt.
+
+   Blijft er niets over, dan blijft de hele betekenis staan. Een lege vraag is erger dan een hint. */
+function kaartPlat(s){
+  return stripAcc(String(s || "").toLowerCase()).replace(/[^a-z]+/g, " ").trim();
+}
+/* De woorden van het antwoord, accentloos. Alles van twee letters of langer telt mee: op een kaartje
+   is "ir" net zo goed het antwoord als "encontrado". */
+function kaartAntwoordDelen(es){
+  var uit = [], i, d = kaartPlat(es).split(" ");
+  for(i = 0; i < d.length; i++) if(d[i].length >= 2) uit.push(d[i]);
+  return uit;
+}
+/* Dezelfde stam? Twee gelijke beginletters is genoeg en is met opzet grof: een kaartje is vaak een
+   VORM terwijl de betekenis de INFINITIEF noemt (encontrado tegen "van encontrar", sale tegen "van
+   salir", dado tegen "van dar"). Deze toets wordt alleen losgelaten op het woord binnen "(van X)",
+   waar al vaststaat dat X het werkwoord is. In een gewone zin geldt de strengere toets hieronder. */
+function kaartDeeltStam(a, b){
+  if(!a || !b || a.length < 2 || b.length < 2) return false;
+  return a.charAt(0) === b.charAt(0) && a.charAt(1) === b.charAt(1);
+}
+/* En soms deelt de infinitief geen letter met de vorm: "voy :: ik ga (van ir)", "es :: is (van
+   ser)". Dan zegt de stam niets en de UITGANG alles: een woord op -ar, -er of -ir (met eventueel
+   -se erachter) is een Spaanse infinitief.
+
+   De korte werkwoorden (ir, ver, dar) halen die drempel niet, en daarvoor is VERBOS er: de
+   werkwoordentabel van de app zelf. Liever de eigen gegevens bevragen dan een lijstje namen in een
+   functie zetten, want zo'n lijstje is bij het volgende werkwoord alweer verouderd.
+
+   Gemeten voordat deze regel erin ging, over alle 6469 betekenissen met een "(van X)" erin: hij
+   raakt geen enkele Nederlandse toelichting. "lengte", "vloeistof", "iemand", "een straat", "mist",
+   "een gerecht", "een wolf", "afstand/duur" en "een deur" blijven allemaal staan. */
+var _kaartInf = null;
+function kaartInfSet(){
+  if(_kaartInf) return _kaartInf;
+  _kaartInf = {};
+  try {
+    VERBOS.forEach(function(v){
+      var i = kaartPlat(v.inf);
+      if(i) _kaartInf[i] = 1;
+    });
+  } catch(e){}
+  return _kaartInf;
+}
+function kaartIsInfinitief(w){
+  var s = String(w || "");
+  if(!s) return false;
+  if(/^[a-z]{1,}(?:ar|er|ir)(?:se)?$/.test(s)) return true;
+  return !!kaartInfSet()[s] || !!kaartInfSet()[s.replace(/se$/, "")];
+}
+/* Staat er een woord van het antwoord letterlijk in dit stuk tekst? Heel woord, geen stam: anders
+   zou "de" uit "de acuerdo" op elk Nederlands lidwoord vallen. */
+function kaartVerraadt(stuk, delen){
+  var w = kaartPlat(stuk).split(" "), i, j;
+  for(i = 0; i < w.length; i++){
+    if(w[i].length < 2) continue;
+    for(j = 0; j < delen.length; j++) if(w[i] === delen[j]) return true;
+  }
+  return false;
+}
+function kaartSplits(nl, es){
+  var heel = String(nl || "");
+  var delen = kaartAntwoordDelen(es);
+  if(!heel || !delen.length) return {vraag:heel, rest:""};
+  var weg = [], wegStuk = [];
+  /* Eerst de haakjes. Twee soorten gaan eruit: "(van X)" waarin X het werkwoord van het antwoord is,
+     en elk haakje waarin het antwoord letterlijk staat ("probleem (el problema!)"). Een haakje dat
+     geen van beide doet is uitleg en blijft staan: "lang (van lengte)" bij alto. */
+  var kaal = heel.replace(/\s*\(([^)]*)\)/g, function(m, x){
+    var binnen = String(x), inf = /^\s*(?:van|from)\s+/i.test(binnen);
+    var w = kaartPlat(binnen).split(" "), i, j;
+    if(inf){
+      for(i = 0; i < w.length; i++){
+        if(kaartIsInfinitief(w[i])){ weg.push(m.replace(/^\s+/, "")); return ""; }
+        for(j = 0; j < delen.length; j++){
+          if(kaartDeeltStam(w[i], delen[j])){ weg.push(m.replace(/^\s+/, "")); return ""; }
+        }
+      }
+      return m;
+    }
+    if(kaartVerraadt(binnen, delen)){ weg.push(m.replace(/^\s+/, "")); return ""; }
+    return m;
+  });
+  /* Dan de losse stukken achter een puntkomma die het Spaanse woord zelf herhalen. */
+  var houd = [];
+  kaal.split(/\s*;\s*/).forEach(function(stuk){
+    var s = stuk.replace(/\s+/g, " ").trim();
+    if(!s) return;
+    if(kaartVerraadt(s, delen)){ weg.push(s); wegStuk.push(s); } else houd.push(s);
+  });
+  /* Blijft er niets over, dan is er nog één plek om te kijken: "digas = no digas = zeg niet (van
+     decir)". Daar staat de Spaanse uitdrukking links van het isgelijkteken en de Nederlandse
+     betekenis rechts, en die rechterkant is een prima vraag.
+
+     Alleen de STUKKEN mogen hier terugkomen, niet de haakjes: die zijn er net uit gehaald omdat ze
+     het werkwoord noemen, en via deze achterdeur weer binnenlaten zou dat ongedaan maken. Vandaar
+     twee emmers in plaats van één. Gemeten toen ze nog één emmer waren: 27 rijen kregen hun
+     "(van decir)" langs deze weg terug op de vraagkant. */
+  if(!houd.length){
+    wegStuk.forEach(function(stuk){
+      stuk.split(/\s*=\s*/).forEach(function(kant){
+        var k = kant.replace(/\s+/g, " ").trim();
+        if(k && !kaartVerraadt(k, delen) && houd.indexOf(k) === -1) houd.push(k);
+      });
+    });
+  }
+  var vraag = houd.join("; ").replace(/\s+([,;])/g, "$1").replace(/[,;]+\s*$/, "").trim();
+  if(!vraag) return {vraag:heel, rest:""};
+  return {vraag:vraag, rest:weg.join("; ")};
+}
+function kaartVraag(w){ return kaartSplits(wTrans(w), w && w.es).vraag; }
+function kaartRest(w){ return kaartSplits(wTrans(w), w && w.es).rest; }
+/* ================= EN EEN ZIN OM HET IN TE ZIEN (v23.254) =================
+
+   Stefan: "de focus moet wel het woordje zijn maar het helpt om ook een simpele zin (context) te
+   zien." Geteld: 282 van de 2250 woorden hebben een voorbeeldzin, en de woorden die je zelf opzoekt
+   nul, terwijl elk van die woorden uit een zin kwam die op dat moment op je scherm stond.
+
+   Op de vraagkant staat die zin met het antwoord eruit. En niet op goed vertrouwen: het gat wordt
+   nagemeten, en lukt het niet (het woord staat er in een andere vorm), dan komt de zin daar niet.
+   Op de achterkant staat hij heel. */
+function kaartZinGat(zin, es){
+  var z = String(zin || "");
+  if(!z || !es) return "";
+  var doelen = String(es).split("/"), raak = false, i, kaal, re;
+  for(i = 0; i < doelen.length; i++){
+    kaal = doelen[i].replace(/[^A-Za-z\u00c0-\u024f ]/g, " ").replace(/\s+/g, " ").trim();
+    if(kaal.length < 2) continue;
+    re = new RegExp("(^|[^A-Za-z\\u00c0-\\u024f])(" + kaal.replace(/ /g, "\\s+") +
+                    ")(?![A-Za-z\\u00c0-\\u024f])", "gi");
+    if(re.test(z)){ z = z.replace(re, "$1___"); raak = true; }
+  }
+  if(!raak) return "";
+  // de controle die telt: staat er echt niets van het antwoord meer in?
+  if(kaartVerraadt(z, kaartAntwoordDelen(es))) return "";
+  return z;
+}
+function kaartZinHtml(w, kant){
+  if(!w || !w.ej) return "";
+  var t = kant === "voor" ? kaartZinGat(w.ej, w.es) : String(w.ej);
+  if(!t) return "";
+  return "<p class='muted' style='margin:8px 2px 0; line-height:1.5'>" + t +
+    (kant !== "voor" && profLang() === "nl" && w.ejnl
+      ? "<br><span style='opacity:.65'>" + w.ejnl + "</span>" : "") + "</p>";
+}
 function wTrans(w){
   var l = profLang();
   if(l !== "nl" && TRANS[l] && TRANS[l][w.id]) return TRANS[l][w.id];
@@ -32593,7 +32837,20 @@ var GC_CONCEPTEN = [
   /* v23.251: kaart 30 erbij ("costar en gustar met activiteiten", vannacht gegenereerd). Die kaart
      had een toetsje van acht vragen en geen enkel concept dat hem claimde, en daar viel pw-lesgat
      op om. Inhoudelijk hoort hij hier: costar werkt precies zoals gustar. */
-  corr:[], spiek:{a2:[18,23,30]}, wizard:null,
+  /* v23.254: en kaart 31 erbij, "De constructie 'me cuesta' en lidwoorden". Die is in de nacht
+     van 12 september met een nieuwe les meegekomen, met een toetsje van acht vragen en zonder
+     grammaticaconcept dat hem uitlegt, en daar ging pw-lesgat op af. De poort stond dus al rood op
+     main voordat deze ronde begon.
+
+     Hij hoort hier: de kaart gaat letterlijk over me cuesta tegenover me gustan, en dat IS de
+     gustar-familie. Maar dit is de DERDE keer in twee weken dat ik een weeskaart met de hand
+     aanhecht (kaart 30 in v23.251, kaart 30 nog eens, nu 31), en drie keer dezelfde pleister is
+     geen oplossing maar een gewoonte.
+
+     De echte fout zit niet hier: een nieuwe les gaat via een pull request en brengt zijn
+     spiekbriefkaart mee, en die kaart komt op main terecht zonder dat er ooit een concept bij
+     gemaakt is. Zolang die weg niet keurt, komt kaart 32 er ook aan. */
+  corr:[], spiek:{a2:[18,23,30,31]}, wizard:null,
   uitleg:"<p>Je kent <i>me gusta</i> al. Er is een hele familie werkwoorden die precies zo werkt, en dat scheelt je vier regels: <b>doler</b> (pijn doen), <b>encantar</b> (geweldig vinden), <b>apetecer</b> (zin hebben in) en <b>parecer</b> (vinden van).</p>"+
     "<p>Bij die werkwoorden is <b>niet de persoon het onderwerp</b> maar het ding. Je zegt dus letterlijk “mij doet het hoofd pijn”:</p>"+
     "<p><i>Me duele <b>la cabeza</b>.</i> — één ding, dus <b>duele</b>.<br>"+
@@ -33717,6 +33974,64 @@ function gramHalfBewijs(keuzes){ return keuzes === 2; }
    Een regel die voor zeven plekken geldt hoort door één plek afgedwongen te worden. Het kanaal komt
    mee als vijfde argument; wie het weglaat schrijft "overig", want dát er een beurt was is het
    feit dat telt, en welk scherm hem gaf is de verfijning. */
+/* ================= EEN MISSER TUSSEN BEWIJS DOOR IS EEN SLORDIGHEID (v23.254) =================
+
+   Stefan, 13 september: "ik blijf te lang hangen bij een doosje. Een fout en ik kom niet verder
+   (zie bijv el en la). Soms maak ik een slordigheidsfoutje of weet ik iets niet, maar als je niet
+   alleen de fouten maar ook wanneer het goed gaat telt zul je zien dat ik dit allang gehad heb."
+
+   300 lopen van 30 dagen gesimuleerd met de echte gramBij(), op genero (vijf patronen, zes
+   antwoorden per dag):
+
+       goed        eindigt op doos 0      haalt doos 5
+       100%               0%                  100%
+        97%              22%                   29%
+        93%              45%                    6%
+        85%              68%                    0%
+
+   Alleen een FOUTLOZE loop komt betrouwbaar boven. Twee dingen samen doen dat: één misser vandaag
+   zet de doos op 0, en een concept is zo sterk als zijn zwakste van vijf patroondoosjes. De doos
+   meet dus je slechtste laatste beurt en niet je kennis. Op Stefans scherm stond het naast elkaar:
+   "doos 0/5 · 93% goed deze week".
+
+       Een cijfer dat naast het oordeel staat en er niet in meetelt, is een verwijt.
+
+   st.goed en st.fout werden al bijgehouden sinds het begin. Ze werden alleen nooit gelezen door de
+   regel die de doos zet, en als totaal zijn ze ook niet bruikbaar: twintig goede antwoorden van
+   drie maanden geleden zeggen niets over vandaag. st.rij wel: de laatste twaalf antwoorden op DIT
+   doosje, nieuwste rechts.
+
+   Wat NIET verandert: een misser blijft een misser. De promotie gaat niet door en je ziet het
+   morgen terug. De variant "altijd één stap omlaag" is in v23.208 voorgesteld en door Stefan
+   afgewezen, en terecht: wie het onderwerp niet kent hoort naar nul. Het verschil is dat de app nu
+   kijkt of je het kent in plaats van het aan te nemen. */
+var GRAM_RIJ = 12;         // zoveel antwoorden per doosje worden onthouden
+var GRAM_RIJ_MIN = 6;      // minder dan dit is geen staat van dienst, en dan geldt de oude regel
+var GRAM_RIJ_EIS = 0.8;    // en dit aandeel goed maakt van een misser een slordigheid
+function gramRijBij(st, goed){
+  st.rij = (String(st.rij || "") + (goed ? "1" : "0")).slice(-GRAM_RIJ);
+  return st.rij;
+}
+/* Geeft null als er te weinig ligt om iets te vinden. Nul is geen bericht, en te weinig ook niet.
+
+   LEEST st.rijVoor EN NIET st.rij, en dat verschil is de hele functie. rijVoor is de rij zoals hij
+   er vanochtend uitzag; rij loopt vandaag door. Zou het oordeel op rij staan, dan telde een misser
+   minder zwaar zodra je er die dag een paar makkelijke goede antwoorden omheen zette. Dat is
+   precies wat de kop van v23.170 hierboven al een keer heeft rechtgezet: wat je op dezelfde dag nog
+   oefent is besmet door wat je net gezien hebt.
+
+   De poort vond dit, niet ik. pw-doos.js speelt een dag na met acht antwoorden waarvan één fout, en
+   die eindigde op doos 1 in plaats van 0. */
+function gramStaat(st){
+  var r = String((st && st.rijVoor) || ""), goed = 0, i;
+  if(r.length < GRAM_RIJ_MIN) return null;
+  for(i = 0; i < r.length; i++) if(r.charAt(i) === "1") goed++;
+  return {n:r.length, goed:goed, deel:goed / r.length};
+}
+function gramSlordig(st){
+  var s = gramStaat(st);
+  return !!(s && s.deel >= GRAM_RIJ_EIS);
+}
 function gramBij(cid, goed, keuzes, pi, kanaal){
   if(!cid) return;
   try { gramLog(cid, kanaal || "overig", !!goed); } catch(e){}
@@ -33741,18 +34056,23 @@ function gramBij(cid, goed, keuzes, pi, kanaal){
   if(st.bd !== today()){
     st.bd = today();
     st.boxVoor = st.box || 0;    // waar stond hij toen vandaag begon
+    st.rijVoor = st.rij || "";   // v23.254: en zo zag je staat van dienst er vanochtend uit
     st.dagMis = 0;
     st.dagGoed = 0;
   }
   if(goed) st.dagGoed = (st.dagGoed || 0) + 1;
   else st.dagMis = (st.dagMis || 0) + 1;
+  gramRijBij(st, !!goed);   // v23.254: de staat van dienst op DIT doosje, voordat er geoordeeld wordt
 
   if(st.dagMis){
     /* Eén misser vandaag en de promotie gaat niet door, hoeveel je er daarna ook goed hebt. Dit is
        bewust hetzelfde harde oordeel als voorheen: de zachtere variant is in v23.208 voorgesteld en
        door Stefan afgewezen. Wat je hierna nog oefent is oefening, geen herkansing. */
+    /* v23.254: hoe ver je terugvalt hangt af van je staat van dienst op dit doosje. Minstens zes
+       antwoorden en minstens tachtig procent goed: dan kost een misser één doos. Alles daaronder
+       valt naar nul, precies zoals hiervoor. */
     st.half = 0;
-    st.box = 0;
+    st.box = gramSlordig(st) ? Math.max(0, (st.boxVoor || 0) - 1) : 0;
     st.due = addDays(today(), 1);
   } else if(gramHalfBewijs(keuzes) && st.dagGoed < 2 && !st.half){
     /* Het eerste halve bewijs. De doos blijft staan, maar je ziet het morgen terug: een tweede
@@ -33952,6 +34272,8 @@ function gcOpfrisId(cid, pi){
 /* v23.225: hoeveel vragen een opfrisser en een drill hebben. Als getal en niet als losse cijfers in
    de code, want de proef in pw-opfris.js rekent ermee en die mag niet zijn eigen aanname doen. */
 var GC_OPFRIS_VRAGEN = 2;
+/* v23.254: en zoveel als het doosje op nul staat. Zie gcOpfrisBouw(). */
+var GC_OPFRIS_LES_VRAGEN = 4;
 var GC_DRILL_VRAGEN = 5;
 /* De drill blijft over het hele concept gaan, ook als je op \u00e9\u00e9n patroon omkwam: vijf vragen uit
    dezelfde val is drillen op vijf keer hetzelfde woord, en dan oefen je de vorm en niet de keuze. */
@@ -34020,6 +34342,74 @@ function gcOpfrisBouw(id){
   } catch(e){ vragen = []; }
   if(vragen.length < GC_OPFRIS_VRAGEN) return null;
   var naam = ct(c.naam, c.naamEn || c.naam);
+  /* ================= EN ALS HET DOOSJE OP NUL STAAT, IS TWEE VRAGEN NIET WAT JE NODIG HEBT =======
+
+     Stefan, 13 september: "bij grammatica is het denk ik ook goed om de toetsen wat uitgebreider te
+     doen. Echt even een lesje waarbij je de instructie nog een keer kunt lezen, een of meerdere
+     vragen krijgt om te toetsen of je de regel snapt en daarna wat meerkeuzevragen om de toepassing
+     te toetsen. Nu zijn het maar twee vragen."
+
+     Hij telde goed. Geteld over alle 31 onderwerpen: de volle microles geeft er vijf, met de regel
+     en een begripsvraag erbij. De opfrisser geeft er twee, zonder uitleg en zonder regel. En de
+     opfrisser is precies wat je krijgt als een onderwerp op herhaling staat, dus hoe zwakker het
+     doosje, hoe dunner de hulp. Dat is andersom.
+
+     Vanaf nu hangt de maat aan het doosje en niet aan de naam van het onderdeel:
+
+         doosje 1 of hoger  ->  twee vragen. Dit is een opfrisser en die hoort kort te zijn.
+         doosje 0           ->  de regel opnieuw, een begripsvraag, dan vier toepassingsvragen.
+
+     Er komt geen letter nieuwe tekst bij. GC_HULP heeft de kern en de ezelsbrug, het concept heeft
+     c.uitleg en c.begrip, gcMaakVragen maakt verse voorbeelden. Het bestond allemaal al en kwam
+     alleen nooit langs op het moment dat het helpt. */
+  /* En dan de val die de poort eruit haalde, en het is dezelfde als in v23.251.
+
+     Doos 0 betekent twee dingen: "hier heb ik nog nooit een vraag van gehad" en "hier ben ik op
+     teruggevallen". Een tak die die twee hetzelfde behandelt geeft een beginner een herhalingsles
+     over iets wat hij nog moet leren. Vier suites zeiden dat tegelijk (pw-drill, pw-gramflow,
+     pw-leermachine, pw-patroondoos): die bouwen een opfrisser op een verse staat, en kregen een
+     lesje.
+
+     Dus niet "de doos staat op nul" maar "de doos staat op nul EN er ligt genoeg achter om dat een
+     terugval te noemen". Dezelfde drempel als gramStaat() hierboven, want het is dezelfde vraag:
+     hoeveel antwoorden heb je nodig voordat een cijfer iets zegt. */
+  var doosje = null;
+  try { doosje = gramRuw((pi === null || isNaN(pi)) ? cid : gramSleutel(cid, pi)); }
+  catch(e){ doosje = null; }
+  var vast = !!doosje && (doosje.box || 0) === 0 &&
+             ((doosje.goed || 0) + (doosje.fout || 0)) >= GRAM_RIJ_MIN;
+  if(vast && c.begrip){
+    var meer = [];
+    try {
+      meer = (pi === null || isNaN(pi))
+        ? gcMaakVragen(c, GC_OPFRIS_LES_VRAGEN)
+        : gcVragenUitPatroon(c, pi, GC_OPFRIS_LES_VRAGEN);
+    } catch(e){ meer = []; }
+    if(meer.length){
+      var beg = gcSchud({v:c.begrip.v, vEn:c.begrip.vEn, o:c.begrip.o.slice(),
+                         oEn:c.begrip.oEn ? c.begrip.oEn.slice() : null,
+                         g:c.begrip.g, w:c.begrip.w, wEn:c.begrip.wEn});
+      return {
+        icon: c.icon || "\ud83d\udd01",
+        id: id, concept: cid, opfris: true, lesje: true,
+        titel: ct("Nog een keer door: " + naam, "Once more through: " + naam),
+        titelEn: "Once more through: " + (c.naamEn || c.naam),
+        pitch: ct("Hier ben je op teruggevallen. Eerst de regel, dan " + meer.length + " vragen.",
+                  "You slipped back here. The rule first, then " + meer.length + " questions."),
+        pitchEn: "You slipped back here. The rule first, then " + meer.length + " questions.",
+        stappen: [
+          { kop: ct("De regel nog een keer", "The rule once more"),
+            kopEn: "The rule once more", procedureel: true, kern: true, hulp: gcHulp(c.id),
+            uitleg: "", uitlegEn: "",
+            diep: c.uitleg, diepEn: c.uitlegEn,
+            diepKop: GC_STAP_TXT.nl.d, diepKopEn: GC_STAP_TXT.en.d,
+            vragen: [beg] },
+          { kop: ct("En nu toepassen", "Now apply it"), kopEn: "Now apply it",
+            hulp: gcHulp(c.id), uitleg: "", uitlegEn: "", vragen: meer }
+        ]
+      };
+    }
+  }
   return {
     /* v23.180: het icoon stond hier niet, en renderGramWiz() zet o.icon vóór de stapkop.
        Op het scherm stond dus letterlijk "undefined Even opfrissen". Het concept heeft er

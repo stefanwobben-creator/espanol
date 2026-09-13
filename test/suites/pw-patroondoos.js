@@ -121,10 +121,16 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const id = gcOpfrisId('genero', 1);
     const o = gcVernieuw(id);
     const breed = gcVernieuw(gcOpfrisId('genero'));
-    return { id: id,
-             pis: o ? o.stappen[0].vragen.map(function (q) { return q.pi; }) : null,
-             tekst: o ? o.stappen[0].vragen.map(function (q) { return q.v; }) : null,
-             breedPis: breed ? breed.stappen[0].vragen.map(function (q) { return q.pi; }) : null,
+    /* v23.254: genero#1 staat op doos 0 met zes antwoorden erachter, dus dit is een lesje geworden
+       (zie pw-opfrisles.js): eerst de regel met een begripsvraag, dan de toepassing. Wat hier
+       getoetst wordt is onveranderd en staat in de LAATSTE stap: de toepassingsvragen komen uit het
+       patroon waar je op omkwam, en niet vier keer op vijf uit iets wat je allang kunt. */
+    function toepassing(x) { return x ? x.stappen[x.stappen.length - 1] : null; }
+    const st = toepassing(o), stBreed = toepassing(breed);
+    return { id: id, stappen: o ? o.stappen.length : -1, lesje: !!(o && o.lesje),
+             pis: st ? st.vragen.map(function (q) { return q.pi; }) : null,
+             tekst: st ? st.vragen.map(function (q) { return q.v; }) : null,
+             breedPis: stBreed ? stBreed.vragen.map(function (q) { return q.pi; }) : null,
              breedId: gcOpfrisId('genero') };
   });
   console.log('   ' + opfris.id + ': ' + (opfris.tekst || []).join(' · '));
