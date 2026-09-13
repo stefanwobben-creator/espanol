@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-12T06:53:22.693Z",
+ "wanneer": "2026-09-13T07:10:33.298Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -17,13 +17,11 @@
  },
  "versie": "v23.254",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s357 (anoche), s360 (después)",
-  "s361: afgekeurd — De uitleg is onjuist: 'creer que + subjuntivo' is niet de juiste constructie; het moet 'creer que + indicativo' zijn.",
-  "s363: afgekeurd — De uitleg is onjuist: 'adónde' is correct, maar de uitleg over de tegenwoordige tijd is misleidend; de beslissing is nog niet genomen, dus 'hemos decidido' is fout.",
-  "s364: afgekeurd — De uitleg is onjuist: 'pensar que + futuro' is geen standaardconstructie; het moet 'pensar que + presente' of 'va a + infinitivo' zijn.",
-  "s367: afgekeurd — De uitleg is onjuist: 'dudar si + tegenwoordige tijd' is niet de juiste constructie; het moet 'dudar si + subjuntivo' zijn.",
-  "4 van de 8 zinnen afgekeurd, de rest gaat door",
-  "te weinig zinnen over → les niet aangeboden",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s357 (anoche)",
+  "s360: afgekeurd — De zin is niet praktisch toepasbaar: niemand vraagt in een restaurant om een lening ('préstamo'), dat is onnatuurlijk in deze context.",
+  "1 vraag/vragen afgekeurd (poging 1): vraag 3: Optie 'c' (Cierras) is geen imperativo tú, maar de tegenwoordige tijd. De juiste optie is 'Cierra'.",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet bij de condicional-regel: 'alegro' is hier reflexief en gaat met 'de' (me alegro de), niet met 'por'.)",
+  "nieuwe les AFGEKEURD:\n - woord 4 (w345): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 2 (s361): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 6 (s365): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -33,7 +31,7 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
+   "naZeef": 3,
    "naKeuring": 2
   }
  ],
@@ -43,5 +41,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-12T06:53:49.768Z"
+ "afgemaakt": "2026-09-13T07:10:57.988Z"
 }
