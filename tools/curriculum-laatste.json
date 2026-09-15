@@ -1,74 +1,74 @@
 {
- "wanneer": "2026-09-09T07:03:43.575Z",
- "versie": "v23.252",
+ "wanneer": "2026-09-15T07:07:51.641Z",
+ "versie": "v23.255",
  "gaten": [
   {
    "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 27
+   "fouten": 29
   },
   {
-   "tag": "les2",
+   "tag": "basis",
    "soort": "verschijnsel",
-   "fouten": 23
+   "fouten": 24
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s330",
-   "s331",
-   "s332",
-   "s333",
-   "s334",
-   "s335",
-   "s336",
-   "s337",
-   "s338",
-   "s339",
-   "s340"
+   "s349",
+   "s350",
+   "s351",
+   "s352",
+   "s353",
+   "s354",
+   "s355",
+   "s356",
+   "s358",
+   "s359",
+   "s360"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-13",
-  "num": 13,
+  "id": "b1-14",
+  "num": 14,
   "niveau": "B1",
-  "titel": "El turismo en España",
-  "doel": "Leren praten over toerisme in Spanje, voor- en nadelen bespreken, en de constructie 'me cuesta' oefenen.",
-  "doelEn": "To learn how to talk about tourism in Spain, discuss pros and cons, and practice the 'me cuesta' construction.",
+  "titel": "El transporte público en la ciudad",
+  "doel": "Leren praten over openbaar vervoer in een Spaanse stad en de regel van 'costar' toepassen",
+  "doelEn": "To talk about public transport in a Spanish city and apply the 'costar' rule",
   "spiek": [
-   31
+   32
   ],
   "words": [
-   "w328",
-   "w329",
-   "w330",
-   "w331",
-   "w332",
-   "w333",
-   "w334",
-   "w335",
-   "w336",
-   "w337",
-   "w338",
-   "w339",
-   "w340",
-   "w341"
+   "w342",
+   "w343",
+   "w344",
+   "w345",
+   "w346",
+   "w347",
+   "w348",
+   "w349",
+   "w350",
+   "w351",
+   "w352",
+   "w353",
+   "w354",
+   "w355"
   ],
   "sents": [
-   "s341",
-   "s342",
-   "s343",
-   "s344",
-   "s345",
-   "s346",
-   "s347",
-   "s348"
+   "s361",
+   "s362",
+   "s363",
+   "s364",
+   "s365",
+   "s366",
+   "s367",
+   "s368"
   ],
   "quizzes": [
-   "q-b1-13"
+   "q-b1-14"
   ]
  }
 }
