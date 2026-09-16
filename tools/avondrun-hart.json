@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-09-15T07:07:51.642Z",
- "gelukt": true,
+ "wanneer": "2026-09-16T07:11:18.879Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -10,30 +10,35 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 3,
-  "nieuweLes": 1
+  "kaal": 2,
+  "nieuweLes": 0
  },
- "versie": "v23.255",
+ "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s357 (anoche)",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 4: De uitleg klopt niet: 'esperar' is een infinitief (enkelvoud), dus het antwoord moet 'les cuesta' zijn, niet 'les cuestan'.)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
+  "s380: afgekeurd — De zin is praktisch toepasbaar en correct Spaans, maar de uitleg is onjuist: 'olvidé' (ik vergat) is ook een correcte, natuurlijke vorm in deze context en de uitleg suggereert ten onrechte dat alleen 'se me olvidó' mogelijk is.",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De uitleg klopt inhoudelijk niet met de regel: 'molesto' is hier incorrect omdat het bijvoeglijk naamwoord bij 'es' (onpersoonlijk) vrouwelijk enkelvoud moet zijn ('molesta'), maar de uitleg zegt dat 'molesto' past bij 'es' en vrouwelijk is, wat onjuist is.)",
+  "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
- "mis": null,
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 3
+   "naKeuring": 2
   }
  ],
- "reden": null,
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-09-15T07:17:15.121Z"
+ "gegenereerd": false,
+ "gepubliceerd": false,
+ "status": "geklapt",
+ "pogingen": 2,
+ "afgemaakt": "2026-09-16T07:11:53.723Z"
 }
