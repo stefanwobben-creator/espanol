@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-17T07:07:10.944Z",
+ "wanneer": "2026-09-18T07:04:06.001Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -18,11 +18,9 @@
  "versie": "v23.256",
  "klachten": [
   "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "s380: afgekeurd — De vertaling 'me dieron el ticket al momento' is onnatuurlijk Spaans; beter: 'me dieron el ticket enseguida' of 'recibí el ticket al momento'.",
-  "s383: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'pasé tres horas mirando mi móvil' in het dagelijks taalgebruik.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 5: De uitleg klopt niet: 'cambié' is correct omdat het een voltooide handeling in het verleden is, niet omdat de imperfecto van 'olvidar' de volgorde aangeeft.)",
-  "nieuwe les AFGEKEURD:\n - woord 4 (w359): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "s380: afgekeurd — De zin is praktisch toepasbaar en correct Spaans, maar de uitleg is onjuist: 'comí' staat in de indefinido, maar 'me comí' (met wederkerend voornaamwoord) is hier de natuurlijkere vorm, en 'di' is correct maar 'le di las gracias' is de gebruikelijke uitdrukking.",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet bij de vraag: 'me parece que' vereist een hele zin in de indicativo, niet alleen het onderwerp achter het werkwoord.)",
+  "nieuwe les AFGEKEURD:\n - woord 10 (w365): de vertaling verklapt het Spaanse woord (\"het culturele aanbod\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -42,5 +40,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-17T07:07:36.937Z"
+ "afgemaakt": "2026-09-18T07:04:30.572Z"
 }
