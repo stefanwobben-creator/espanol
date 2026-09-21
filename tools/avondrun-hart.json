@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-20T07:27:46.730Z",
+ "wanneer": "2026-09-21T07:37:31.199Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,20 +10,17 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 9,
+  "zinnen": 11,
   "toetsjes": 1,
   "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "s374: afgekeurd — De uitleg is onjuist: 'vivió' is de regelmatige vervoeging van 'vivir' (niet onregelmatig), en 'años' krijgt hier wél impliciet een lidwoord in de betekenis.",
-  "s376: afgekeurd — De uitleg stelt dat 'perder' een onregelmatige vervoeging krijgt in 'perdió', maar dit is de regelmatige vervoeging voor -ir werkwoorden in de 3e persoon enkelvoud (e→i verandering is regulier voor deze groep).",
-  "s378: afgekeurd — De uitleg is onjuist: de uitgang van 'tuve' is -e (niet -e als regel), maar de beschrijving 'De uitgang -ió en -e tonen het verleden' is verwarrend omdat -e niet karakteristiek is voor indefinido (tuve komt van tener, onregelmatig).",
-  "1 vraag/vragen afgekeurd (poging 1): vraag 7: De uitleg is onjuist: 'Pongas' is niet de negatieve gebiedende wijs, maar de tú-vorm van de subjonctivo (bijv. 'no pongas'); 'Pone' is inderdaad de tegenwoordige tijd en mag niet als negatieve imperatief worden aangemerkt.",
-  "toetsje q-imperativo-extra7: 6 van de 7 vragen blijven staan, het toetsje gaat door zonder vraag 7",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De indexering van de opties klopt niet: 'c': 1 wijst naar option [1] = 'sea', maar er zijn slechts 2 opties [0] en [1], dus dit is correct, echter de uitleg zegt 'altijd subjuntivo' wat niet volledig juist is – na 'puede ser que' is subjuntivo inderdaad standaard, maar dit is geen 'altijd'-situatie zoals bij sommige andere uitdrukkingen.)",
-  "nieuwe les AFGEKEURD:\n - woord 14 (w369): de vertaling verklapt het Spaanse woord (\"in het algemeen\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "s380: afgekeurd — De zin is niet praktisch toepasbaar: 'pasar' (langskomen) is onnatuurlijk in deze context; 'venir' (komen) of 'acercarse' (aankomen) zou natuurlijker zijn.",
+  "1 vraag/vragen afgekeurd (poging 1): vraag 1: De uitleg is onjuist: 'derrite' is de tú-vorm van het bevestigend imperativo, maar de uitleg zegt 'stam + e' (derrite), wat correct is, maar de uitleg zelf is fout omdat het -ir werkwoord 'derretir' de tú-vorm 'derrite' heeft (stam + e), maar de uitleg noemt 'derrite' als voorbeeld terwijl de opties 'derrite' niet bevatten (opties zijn 'derrite', 'derrites', 'derritir'). Optie 'derrite' ontbreekt in de vraag.",
+  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 1",
+  "nieuwe les AFGEKEURD:\n - woord 5 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -43,5 +40,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-20T07:28:11.727Z"
+ "afgemaakt": "2026-09-21T07:37:59.495Z"
 }
