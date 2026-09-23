@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-22T07:15:18.204Z",
+ "wanneer": "2026-09-23T07:11:08.588Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -13,38 +13,30 @@
   "zinnen": 10,
   "toetsjes": 1,
   "kaal": 2,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "s380: afgekeurd — De zin is wel praktisch toepasbaar, maar het Spaans is niet correct: 'Se me olvidó la cartera' is de juiste vorm (met 'se me'), niet 'olvidó' of 'olvide'. De uitleg klopt niet omdat 'olvidó' hier niet de juiste vorm is.",
-  "1 vraag/vragen afgekeurd (poging 1): vraag 2: Optie 'añádela' is een bevestigend imperatief (c=2), maar de zin vraagt om een negatief imperatief. De juiste optie is 'no la añadas' (c=2).",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 3: De uitleg klopt niet met de regel: 'aconsejar' wordt hier gebruikt als werkwoord voor een advies dat de spreker geeft, maar de zin is grammaticaal correct en de uitleg is onjuist.)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s379 (la semana pasada)",
+  "nieuwe les AFGEKEURD:\n - woord 13 (w368): de vertaling verklapt het Spaanse woord (\"het sociale leven\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
- "mis": null,
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
+   "naZeef": 2,
    "naKeuring": 2
   }
  ],
- "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "poortRood": [
-  {
-   "suite": "pw-lesgat.js",
-   "regels": [
-    "het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)"
-   ]
-  }
- ],
- "poortReden": "pw-lesgat.js: het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)",
- "gegenereerd": true,
+ "gegenereerd": false,
  "gepubliceerd": false,
- "status": "poort-dicht",
+ "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-22T07:24:47.219Z"
+ "afgemaakt": "2026-09-23T07:11:33.417Z"
 }
