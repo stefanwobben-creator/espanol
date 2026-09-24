@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-23T07:11:08.588Z",
+ "wanneer": "2026-09-24T07:08:24.252Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,15 +10,15 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 11,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s379 (la semana pasada)",
-  "nieuwe les AFGEKEURD:\n - woord 13 (w368): de vertaling verklapt het Spaanse woord (\"het sociale leven\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
+  "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -28,8 +28,8 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
-   "naKeuring": 2
+   "naZeef": 3,
+   "naKeuring": 3
   }
  ],
  "reden": "de run is niet afgemaakt",
@@ -38,5 +38,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-23T07:11:33.417Z"
+ "afgemaakt": "2026-09-24T07:08:48.874Z"
 }
