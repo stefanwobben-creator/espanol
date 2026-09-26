@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-25T07:02:52.455Z",
+ "wanneer": "2026-09-26T07:02:48.618Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -12,38 +12,32 @@
  "geleverd": {
   "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 2,
-  "nieuweLes": 1
+  "kaal": 3,
+  "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
-  "s379: afgekeurd — De zin is wel correct Spaans, maar niet natuurlijk of praktisch toepasbaar in het dagelijks leven (niemand zegt 'se les olvidaron las llaves en la mesa').",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 4: De uitleg is incorrect: 'les resulta' drukt geen positieve ervaring uit, maar een moeilijkheid of neutraliteit; 'les parece' zou passen bij een mening, maar de zin vraagt om een gevoel of moeilijkheid.)"
+  "s376: afgekeurd — De zin is wel correct Spaans, maar 'viví' (indefinido) is hier minder natuurlijk dan 'vivía' (imperfecto) voor een situatie die jaren duurde.",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s376 (anoche)",
+  "nieuwe les AFGEKEURD:\n - woord 6 (w361): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 6 (s385): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 8 (s387): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
- "mis": null,
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 2
+   "naKeuring": 3
   }
  ],
- "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "poortRood": [
-  {
-   "suite": "pw-lesgat.js",
-   "regels": [
-    "het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)"
-   ]
-  }
- ],
- "poortReden": "pw-lesgat.js: het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)",
- "gegenereerd": true,
+ "gegenereerd": false,
  "gepubliceerd": false,
- "status": "poort-dicht",
+ "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-25T07:12:16.780Z"
+ "afgemaakt": "2026-09-26T07:03:13.742Z"
 }
