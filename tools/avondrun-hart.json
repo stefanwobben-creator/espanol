@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-26T07:02:48.618Z",
+ "wanneer": "2026-09-27T07:32:24.652Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,16 +10,17 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 11,
   "toetsjes": 1,
   "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "s376: afgekeurd — De zin is wel correct Spaans, maar 'viví' (indefinido) is hier minder natuurlijk dan 'vivía' (imperfecto) voor een situatie die jaren duurde.",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s376 (anoche)",
-  "nieuwe les AFGEKEURD:\n - woord 6 (w361): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 6 (s385): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 8 (s387): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
+  "s387: afgekeurd — De zin is wel correct Spaans, maar 'Ojalá' wordt in het dagelijks taalgebruik in Spanje zelden gebruikt voor een wens als deze; een meer natuurlijke formulering zou zijn: 'Sería bueno que pasaras menos tiempo en las redes sociales'.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "nieuwe les AFGEKEURD:\n - woord 2 (w357): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -39,5 +40,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-26T07:03:13.742Z"
+ "afgemaakt": "2026-09-27T07:32:51.033Z"
 }
