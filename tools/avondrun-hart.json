@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-27T07:32:24.652Z",
+ "wanneer": "2026-09-28T08:18:41.428Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,17 +10,17 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 10,
   "toetsjes": 1,
   "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
+  "s370: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'el camino' in een gesprek over het vragen van de weg.",
   "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
-  "s387: afgekeurd — De zin is wel correct Spaans, maar 'Ojalá' wordt in het dagelijks taalgebruik in Spanje zelden gebruikt voor een wens als deze; een meer natuurlijke formulering zou zijn: 'Sería bueno que pasaras menos tiempo en las redes sociales'.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "nieuwe les AFGEKEURD:\n - woord 2 (w357): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 7: De uitleg is onjuist: 'pida' is subjuntivo omdat het gaat om een subjectieve mening (no me gusta que...), niet om een herhaalde actie. De zin zelf is correct.)",
+  "nieuwe les AFGEKEURD:\n - woord 5 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s381): veld \"tag\" ontbreekt\n - zin 2 (s382): veld \"tag\" ontbreekt\n - zin 3 (s383): veld \"tag\" ontbreekt\n - zin 4 (s384): veld \"tag\" ontbreekt\n - zin 5 (s385): veld \"tag\" ontbreekt\n - zin 6 (s386): veld \"tag\" ontbreekt\n - zin 7 (s387): veld \"tag\" ontbreekt\n - zin 8 (s388): veld \"tag\" ontbreekt",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -40,5 +40,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-27T07:32:51.033Z"
+ "afgemaakt": "2026-09-28T08:19:08.724Z"
 }
