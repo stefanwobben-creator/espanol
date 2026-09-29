@@ -1,31 +1,25 @@
 {
- "wanneer": "2026-09-28T08:18:41.428Z",
+ "wanneer": "2026-09-29T07:59:15.600Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": 0,
+ "voorraadDagen": null,
  "beloofd": {
-  "gaten": 2,
-  "toetsje": 1,
+  "gaten": 0,
+  "toetsje": 0,
   "kaal": 1,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 10,
-  "toetsjes": 1,
+  "zinnen": 3,
+  "toetsjes": 0,
   "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "s370: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'el camino' in een gesprek over het vragen van de weg.",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 7: De uitleg is onjuist: 'pida' is subjuntivo omdat het gaat om een subjectieve mening (no me gusta que...), niet om een herhaalde actie. De zin zelf is correct.)",
-  "nieuwe les AFGEKEURD:\n - woord 5 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s381): veld \"tag\" ontbreekt\n - zin 2 (s382): veld \"tag\" ontbreekt\n - zin 3 (s383): veld \"tag\" ontbreekt\n - zin 4 (s384): veld \"tag\" ontbreekt\n - zin 5 (s385): veld \"tag\" ontbreekt\n - zin 6 (s386): veld \"tag\" ontbreekt\n - zin 7 (s387): veld \"tag\" ontbreekt\n - zin 8 (s388): veld \"tag\" ontbreekt",
-  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s369 (ayer)"
  ],
- "mis": [
-  "de nieuwe les"
- ],
+ "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
@@ -34,11 +28,20 @@
    "naKeuring": 3
   }
  ],
- "reden": "de run is niet afgemaakt",
+ "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
  "geweigerd": 0,
- "gegenereerd": false,
+ "poortRood": [
+  {
+   "suite": "pw-lesgat.js",
+   "regels": [
+    "het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)"
+   ]
+  }
+ ],
+ "poortReden": "pw-lesgat.js: het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)",
+ "gegenereerd": true,
  "gepubliceerd": false,
- "status": "geklapt",
+ "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-09-28T08:19:08.724Z"
+ "afgemaakt": "2026-09-29T08:08:39.994Z"
 }
