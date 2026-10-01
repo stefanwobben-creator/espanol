@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-09-30T07:54:25.937Z",
+ "wanneer": "2026-10-01T08:13:15.333Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -17,10 +17,9 @@
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "s380: afgekeurd — De zin is wel praktisch toepasbaar en het Spaans is correct, maar de uitleg is onnauwkeurig: 'dijo' (ik zei) is geen indefinido maar een indefinido met -e uitgang, en 'dejaría' (ik zou geven) is geen indefinido maar een condicional.",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 7: De uitleg klopt niet: bij 'hablar' is het voorwerp 'con tu familia' (met wie je praat), dus het voorzetsel 'con' is nodig en de uitleg is incorrect.)",
-  "nieuwe les AFGEKEURD:\n - woord 2 (w357): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s380): veld \"tag\" ontbreekt\n - zin 2 (s381): veld \"tag\" ontbreekt\n - zin 3 (s382): veld \"tag\" ontbreekt\n - zin 4 (s383): veld \"tag\" ontbreekt\n - zin 4 (s383): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 5 (s384): veld \"tag\" ontbreekt\n - zin 6 (s385): veld \"tag\" ontbreekt\n - zin 7 (s386): veld \"tag\" ontbreekt\n - zin 8 (s387): veld \"tag\" ontbreekt",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s378 (mañana)",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 6: Optie 'c' wijst naar het verkeerde antwoord: 'haces' is indicativo, maar 'hagas' (subjuntivo) is correct.)",
+  "nieuwe les AFGEKEURD:\n - woord 2 (w357): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -30,7 +29,7 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
+   "naZeef": 2,
    "naKeuring": 2
   }
  ],
@@ -40,5 +39,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-09-30T07:54:50.009Z"
+ "afgemaakt": "2026-10-01T08:13:43.788Z"
 }
