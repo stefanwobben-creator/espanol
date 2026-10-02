@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-01T08:13:15.333Z",
+ "wanneer": "2026-10-02T07:56:26.812Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,16 +10,14 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 12,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 4,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s378 (mañana)",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 6: Optie 'c' wijst naar het verkeerde antwoord: 'haces' is indicativo, maar 'hagas' (subjuntivo) is correct.)",
-  "nieuwe les AFGEKEURD:\n - woord 2 (w357): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -29,8 +27,8 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 4
   }
  ],
  "reden": "de run is niet afgemaakt",
@@ -39,5 +37,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-01T08:13:43.788Z"
+ "afgemaakt": "2026-10-02T07:56:54.916Z"
 }
