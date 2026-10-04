@@ -1,23 +1,30 @@
 {
- "wanneer": "2026-10-03T07:36:16.911Z",
+ "wanneer": "2026-10-04T07:46:18.668Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": null,
+ "voorraadDagen": 0,
  "beloofd": {
-  "gaten": 0,
-  "toetsje": 0,
+  "gaten": 2,
+  "toetsje": 1,
   "kaal": 1,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 3,
-  "toetsjes": 0,
-  "kaal": 3,
-  "nieuweLes": 0
+  "zinnen": 10,
+  "toetsjes": 1,
+  "kaal": 2,
+  "nieuweLes": 1
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s369 (ayer)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
+  "s380: afgekeurd — De zin is wel praktisch toepasbaar en het Spaans is correct, maar de uitleg is onnauwkeurig: 'olvidar' staat niet in de indefinido, maar in de indefinido van 'olvidarse' (se me olvidó) omdat het een reflexieve constructie betreft.",
+  "3 vraag/vragen afgekeurd (poging 1): vraag 2: De uitleg klopt niet: 'haces' is geen negatief imperativo, maar een tegenwoordige tijd. Het juiste antwoord is 'hagas' (no hagas eso).; vraag 4: De uitleg klopt niet: 'eches' is geen correcte vorm. Het juiste antwoord is 'echa' (negatief imperativo voor -ar is 'no + stam + es', maar 'echar' is een -ar werkwoord, dus 'no eches').; vraag 7: De uitleg klopt niet: 'eches' is geen correcte vorm. Het juiste antwoord is 'echa' (positief imperativo), maar de zin is negatief, dus het antwoord moet 'no eches' zijn (optie ontbreekt).",
+  "toetsje q-imperativo-extra7: 4 van de 7 vragen blijven staan, het toetsje gaat door zonder vraag 2, vraag 4, vraag 7",
+  "s383: afgekeurd — De zin is wel correct Spaans, maar in de praktijk zegt een Spanjaard eerder 'Es útil poder hacer fotos con el móvil' of 'Es útil que el móvil tenga cámara'.",
+  "s386: afgekeurd — De zin is wel correct Spaans, maar 'ojalá' met subjuntivo imperfecto klinkt onnatuurlijk in dit geval; een Spanjaard zou eerder zeggen 'Ojalá mi ordenador no se bloquee tanto' (subjuntivo presente).",
+  "2 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 4: De uitleg is onjuist: na 'es normal que' volgt subjuntivo omdat het om een subjectieve mening gaat, niet omdat het een algemene waarheid is.)"
  ],
  "mis": null,
  "kaalVerloop": [
@@ -25,7 +32,7 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 3
+   "naKeuring": 2
   }
  ],
  "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
@@ -43,5 +50,5 @@
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-10-03T07:45:21.637Z"
+ "afgemaakt": "2026-10-04T07:55:19.690Z"
 }
