@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-07T08:06:57.748Z",
+ "wanneer": "2026-10-08T08:22:41.626Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,26 +10,20 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 8,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 0,
+  "kaal": 2,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "— 3 zin(nen) uit de levering gehaald, de rest gaat gewoon door —",
-  "s378: zin 1 (s378): veld \"lvl\" ontbreekt | zin 1 (s378): lvl moet 1-5 zijn",
-  "s379: zin 1 (s379): veld \"lvl\" ontbreekt | zin 1 (s379): lvl moet 1-5 zijn",
-  "s380: zin 1 (s380): veld \"lvl\" ontbreekt | zin 1 (s380): lvl moet 1-5 zijn",
-  "s379: afgekeurd — De zin is niet praktisch toepasbaar in een alledaagse context.",
-  "s383: afgekeurd — De zin is niet praktisch toepasbaar in een alledaagse context.",
-  "2 van de 8 zinnen afgekeurd, de rest gaat door",
-  "nieuwe les AFGEKEURD:\n - zin 1 (s377): veld \"tag\" ontbreekt\n - zin 2 (s378): veld \"tag\" ontbreekt\n - zin 3 (s380): veld \"tag\" ontbreekt\n - zin 4 (s381): veld \"tag\" ontbreekt\n - zin 5 (s382): veld \"tag\" ontbreekt\n - zin 6 (s384): veld \"tag\" ontbreekt",
-  "MISLUKT: beloofd en niet geleverd: de kale zinnen, de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
+  "s380: afgekeurd — De zin is wel correct Spaans, maar 'Se me olvidaron las llaves en la mesa' is onnatuurlijk in een gesprek tussen Nederlanders. Een betere formulering zou zijn: 'Olvidé mis llaves en la mesa' of 'Se me olvidaron las llaves sobre la mesa' (met 'sobre' in plaats van 'en').",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 8: De uitleg klopt niet met de regel: 'mientras' kan zowel subjuntivo als indicativo gebruiken, maar in deze zin is de indicativo correct omdat het om een gewoonte gaat, niet omdat 'mientras' altijd indicativo vereist.)",
+  "nieuwe les AFGEKEURD:\n - woord 4 (w359): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
-  "de kale zinnen",
   "de nieuwe les"
  ],
  "kaalVerloop": [
@@ -37,14 +31,14 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 3
+   "naKeuring": 2
   }
  ],
  "reden": "de run is niet afgemaakt",
- "geweigerd": 3,
+ "geweigerd": 0,
  "gegenereerd": false,
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-07T08:07:20.137Z"
+ "afgemaakt": "2026-10-08T08:23:07.913Z"
 }
