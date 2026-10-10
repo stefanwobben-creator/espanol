@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-09T08:29:21.984Z",
+ "wanneer": "2026-10-10T08:13:38.961Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": null,
@@ -10,22 +10,23 @@
   "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 3,
+  "zinnen": 2,
   "toetsjes": 0,
-  "kaal": 3,
+  "kaal": 2,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "s372: afgekeurd — De zin is correct Spaans, maar de uitleg is onjuist: 'fue' is de indefinido van 'ir', niet van 'salir' (de uitgang is '-e', niet '-ó')."
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s372 (una vez)",
+  "s371: afgekeurd — De Spaanse zin bevat een fout: 'llamó' moet met een accent zijn ('llamó'), niet 'llamó'."
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
-   "naKeuring": 3
+   "naZeef": 3,
+   "naKeuring": 2
   }
  ],
  "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
@@ -43,5 +44,5 @@
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-10-09T08:38:49.997Z"
+ "afgemaakt": "2026-10-10T08:23:06.959Z"
 }
