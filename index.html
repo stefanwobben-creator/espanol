@@ -17357,23 +17357,37 @@ function lesFlowInputKeuze(){
 
 function lesFlowGramLijst(){
   var uit = [];
-  var rij = [];
-  try { rij = gramWachtrij(); } catch(e){ rij = []; }
-  if(rij.length){
-    var top = rij[0];
+  /* v23.255: hier stond een leerbeurt, rij[0], en dat was het knelpunt. Zie de kop van
+     patch-v23.255 voor de meting: met een beurt haalt 24 van de 190 doosjes doos 5 in een jaar, met
+     vier beurten 185. Boven de vier levert het niets meer op, want een doosje klimt hoogstens een
+     stap per dag (v23.225).
+
+     Drie opfrissers plus de microles hieronder maakt vier, plus de onderhoudsbeurt op dagen dat er
+     iets vervalt. Dat is zes vragen extra, ongeveer een minuut.
+
+     Hoogstens een patroon per onderwerp per les. Dat is de regel van v23.170 en die blijft staan:
+     "heel veel el of la" was een klacht, en vijf patronen van hetzelfde onderwerp op een dag is die
+     klacht in een nieuwe jas. Verschillende onderwerpen is precies wat deze ronde wil. */
+  var rij = gramLeerRij();
+  var gezien = {};
+  for(var ri = 0; ri < rij.length && uit.length < GRAM_LEERBEURTEN; ri++){
+    var top = rij[ri];
+    if(gezien[top.c.id]) continue;
     /* Twee keer mis op hetzelfde is geen geheugenkwestie: dan geen opfrisvraag maar de hele
        microles, en die komt uit lesFlowGramId() hieronder.
-       v23.212: tenzij er vandaag al een half bewijs ligt. Het doosje blijft dan op nul staan tot
-       het tweede bewijs er is, en zonder deze uitzondering zou de hele microles twee dagen achter
-       elkaar komen op een onderwerp dat je gisteren goed had. */
-    /* v23.248: gcVersMissers in plaats van st.fout. Zie de kop bij die functie: st.fout is de
-       levenslange optelsom en stond bij Stefan op zestien onderwerpen boven nul, dus deze
-       uitzondering gold bijna altijd. */
-    if(!((top.st.box || 0) === 0 && gcVersMissers(top.c.id) >= 2 && !top.st.half)){
-      var o = null;
-      try { o = gcGebouwd(gcOpfrisId(top.c.id, top.pi)); } catch(e){ o = null; }
-      if(o) uit.push(o.id);
-    }
+       v23.212: tenzij er vandaag al een half bewijs ligt. Het doosje blijft dan op nul staan tot het
+       tweede bewijs er is, en zonder deze uitzondering zou de hele microles twee dagen achter elkaar
+       komen op een onderwerp dat je gisteren goed had.
+       v23.248: gcVersMissers in plaats van st.fout, want st.fout is de levenslange optelsom en stond
+       bij Stefan op zestien onderwerpen boven nul, dus deze uitzondering gold bijna altijd.
+       v23.255: dit sloeg vroeger de hele leerbeurt over. Nu slaat het dit doosje over en kijkt de
+       lus verder, want er is geen reden om de les een beurt te laten missen. */
+    if((top.st.box || 0) === 0 && gcVersMissers(top.c.id) >= 2 && !top.st.half) continue;
+    var o = null;
+    try { o = gcGebouwd(gcOpfrisId(top.c.id, top.pi)); } catch(e){ o = null; }
+    if(!o) continue;
+    gezien[top.c.id] = 1;
+    uit.push(o.id);
   }
   var kaal = function(x){ return String(x || "").replace(/^(opfris|concept)-/, "").split("#")[0]; };
   var alHier = uit.map(kaal);
@@ -34200,6 +34214,33 @@ function gramOnderhoudTop(){
      doos 5 en komt doos 5 nooit meer aan bod. */
   kand.sort(function(a, b){ return (a.st.due || "") < (b.st.due || "") ? -1 : 1; });
   return kand[0];
+}
+/* ================= DE LEERRIJ: ROTEREN IN PLAATS VAN ALTIJD HET ZWAKSTE (v23.255) =================
+
+   gramWachtrij() hieronder sorteert oplopend op doos, want het zwakste hoort vooraan. Voor de
+   planning klopt dat. Als keuze voor de dagles maakt het een lus: een misser zet due op morgen, dus
+   het doosje waar je vandaag op struikelde staat morgen weer vooraan, en overmorgen weer. Met een
+   plek per dag raakt de onderkant van de stapel nooit leeg en komt de bovenkant nooit aan de beurt.
+
+   Hier wint wie het langst niet aan de beurt is geweest. st.bd is de dag waarop dit doosje voor het
+   laatst een antwoord kreeg (v23.225 schrijft hem). Leeg betekent langer geleden dan de boekhouding
+   reikt, en staat dus vooraan. Binnen dezelfde dag telt alsnog het zwakste doosje eerst, want dan is
+   de rotatie uitgewerkt en is de oude regel weer de beste.
+
+   Gevolg dat je meteen merkt: wat je vandaag al deed zakt naar achteren. Een tweede les op dezelfde
+   dag geeft daardoor andere patronen in plaats van dezelfde nog een keer.
+
+   gramWachtrij() zelf blijft ongemoeid. Die wordt ook gelezen door het voortgangsscherm en door
+   gramOnderhoudTop(), en die willen wel degelijk op doos sorteren. */
+var GRAM_LEERBEURTEN = 3;   // zoveel verschillende patronen biedt de dagles aan
+function gramLeerRij(){
+  var rij = [];
+  try { rij = gramWachtrij(); } catch(e){ return []; }
+  return rij.slice().sort(function(a, b){
+    var ad = (a.st && a.st.bd) || "", bd = (b.st && b.st.bd) || "";
+    if(ad !== bd) return ad < bd ? -1 : 1;
+    return ((a.st.box || 0) - (b.st.box || 0));
+  });
 }
 function gramWachtrij(){
   var t = today(), uit = [];
