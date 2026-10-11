@@ -3038,62 +3038,62 @@
     "s369": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "b53855ef02656bb3",
-      "tekens": 55
+      "hash": "b70ce97dfc7b7839",
+      "tekens": 28
     },
     "s370": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "34842097dd0fd037",
-      "tekens": 35
+      "hash": "eb492966b7616f3e",
+      "tekens": 27
     },
     "s371": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "a000f8cbf10be7a3",
-      "tekens": 41
+      "hash": "a63c4cb628302049",
+      "tekens": 29
     },
     "s372": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "dc6cd8a8f35ec3cb",
-      "tekens": 34
+      "hash": "f0dcf5cfd874f091",
+      "tekens": 24
     },
     "s373": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "feeee03a7a39dcaf",
+      "hash": "17e1c239b4af7191",
       "tekens": 40
     },
     "s374": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "70fa865da6db5244",
-      "tekens": 46
+      "hash": "4f88cbe9319c1883",
+      "tekens": 39
     },
     "s375": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "d7040a86b67333f4",
-      "tekens": 26
+      "hash": "7aeb1d4281c8186e",
+      "tekens": 44
     },
     "s376": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "e335fc78d82812bb",
-      "tekens": 35
+      "hash": "008a416991b60e93",
+      "tekens": 29
     },
     "s378": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "2f8719fc1503d71c",
-      "tekens": 41
+      "hash": "3e8d6345c53e3285",
+      "tekens": 57
     },
     "s379": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "5e1b83570c71eb97",
-      "tekens": 41
+      "hash": "7504eca4ff637d46",
+      "tekens": 59
     },
     "s377": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
@@ -3104,8 +3104,8 @@
     "s380": {
       "voice": "nTkjq09AuYgsNR8E4sDe",
       "model": "eleven_multilingual_v2",
-      "hash": "a768aed16fa73471",
-      "tekens": 50
+      "hash": "8d6addf261924030",
+      "tekens": 54
     }
   },
   "dialogo-a": {
