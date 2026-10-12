@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-11T08:12:59.788Z",
+ "wanneer": "2026-10-12T08:29:14.936Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,17 +10,16 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 10,
   "toetsjes": 1,
   "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "s382: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'de batterij is bijna leeg' in het Spaans, maar 'la batería está casi agotada' of 'la batería se está agotando'.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "nieuwe les AFGEKEURD:\n - woord 5 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s381): veld \"tag\" ontbreekt\n - zin 1 (s381): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 2 (s383): veld \"tag\" ontbreekt\n - zin 3 (s384): veld \"tag\" ontbreekt\n - zin 3 (s384): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam\n - zin 4 (s385): veld \"tag\" ontbreekt\n - zin 5 (s386): veld \"tag\" ontbreekt\n - zin 6 (s387): veld \"tag\" ontbreekt\n - zin 7 (s388): veld \"tag\" ontbreekt",
+  "s376: afgekeurd — De zin is wel correct Spaans, maar niet natuurlijk of praktisch toepasbaar in een gesprek. Een Nederlander zou eerder zeggen: 'No has cerrado la puerta' (in plaats van 'No cerraste la puerta').",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s376 (ayer)",
+  "nieuwe les AFGEKEURD:\n - woord 8 (w363): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s380): veld \"tag\" ontbreekt\n - zin 2 (s381): veld \"tag\" ontbreekt\n - zin 3 (s382): veld \"tag\" ontbreekt\n - zin 4 (s383): veld \"tag\" ontbreekt\n - zin 5 (s384): veld \"tag\" ontbreekt\n - zin 6 (s385): veld \"tag\" ontbreekt\n - zin 7 (s386): veld \"tag\" ontbreekt\n - zin 8 (s387): veld \"tag\" ontbreekt",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -40,5 +39,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-11T08:13:31.258Z"
+ "afgemaakt": "2026-10-12T08:29:42.393Z"
 }
