@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-16T06:46:04.096Z",
+ "wanneer": "2026-10-17T06:35:34.963Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,16 +10,16 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 11,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s380 (primero)",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 3: Het werkwoord 'vivir' past niet bij de context; 'trabajar' of 'estudiar' is logischer.)",
-  "nieuwe les AFGEKEURD:\n - woord 6 (w361): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
+  "2 vraag/vragen afgekeurd (poging 1): vraag 2: De uitleg is incorrect: 'cuando' + imperativo is niet standaard; hier hoort de tú-vorm van het imperativo (hierve) te staan.; vraag 4: Optie 'c' wijst naar 'no los guardes', maar de zin mist een werkwoord (opties zijn onvolledig).",
+  "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -29,8 +29,8 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
-   "naKeuring": 2
+   "naZeef": 3,
+   "naKeuring": 3
   }
  ],
  "reden": "de run is niet afgemaakt",
@@ -39,5 +39,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-16T06:46:29.749Z"
+ "afgemaakt": "2026-10-17T06:36:00.634Z"
 }
