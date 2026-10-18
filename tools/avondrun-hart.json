@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-17T06:35:34.963Z",
+ "wanneer": "2026-10-18T06:59:56.032Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,15 +10,18 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 9,
   "toetsjes": 1,
-  "kaal": 3,
+  "kaal": 2,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "2 vraag/vragen afgekeurd (poging 1): vraag 2: De uitleg is incorrect: 'cuando' + imperativo is niet standaard; hier hoort de tú-vorm van het imperativo (hierve) te staan.; vraag 4: Optie 'c' wijst naar 'no los guardes', maar de zin mist een werkwoord (opties zijn onvolledig).",
+  "s376: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'Hij vond zijn sleutels niet gisteren' in het Nederlands of Spaans. Een natuurlijke formulering zou zijn: 'Hij heeft zijn sleutels gisteren niet gevonden' of 'Gisteren vond hij zijn sleutels niet'.",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s376 (ayer)",
+  "s378: afgekeurd — De zin is wel correct Spaans, maar niet praktisch toepasbaar: niemand zegt 'Se le olvidaron las llaves en la mesa de la cocina' in een natuurlijk gesprek. Alternatief: 'Olvidó las llaves en la mesa de la cocina' is wel natuurlijk, maar de uitleg klopt niet (het werkwoord is 'olvidar', niet 'olvidaron').",
+  "1 vraag/vragen afgekeurd (poging 1): vraag 3: Optie 'Fríe la' is grammaticaal correct maar onnatuurlijk in deze context; de app accepteert alleen 'Fríala' als correct antwoord.",
+  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 3",
   "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
@@ -30,7 +33,7 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 3
+   "naKeuring": 2
   }
  ],
  "reden": "de run is niet afgemaakt",
@@ -39,5 +42,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-17T06:36:00.634Z"
+ "afgemaakt": "2026-10-18T07:00:20.385Z"
 }
