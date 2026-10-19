@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-18T06:59:56.032Z",
+ "wanneer": "2026-10-19T07:19:04.480Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,19 +10,16 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 9,
+  "zinnen": 10,
   "toetsjes": 1,
   "kaal": 2,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "s376: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'Hij vond zijn sleutels niet gisteren' in het Nederlands of Spaans. Een natuurlijke formulering zou zijn: 'Hij heeft zijn sleutels gisteren niet gevonden' of 'Gisteren vond hij zijn sleutels niet'.",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s376 (ayer)",
-  "s378: afgekeurd — De zin is wel correct Spaans, maar niet praktisch toepasbaar: niemand zegt 'Se le olvidaron las llaves en la mesa de la cocina' in een natuurlijk gesprek. Alternatief: 'Olvidó las llaves en la mesa de la cocina' is wel natuurlijk, maar de uitleg klopt niet (het werkwoord is 'olvidar', niet 'olvidaron').",
-  "1 vraag/vragen afgekeurd (poging 1): vraag 3: Optie 'Fríe la' is grammaticaal correct maar onnatuurlijk in deze context; de app accepteert alleen 'Fríala' als correct antwoord.",
-  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 3",
-  "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
+  "s380: afgekeurd — De zin is wel praktisch toepasbaar, maar de Spaanse vertaling 'Se me olvidó el móvil en la mesa' is onnatuurlijk voor een Nederlander die Spaans leert. Een betere, natuurlijke formulering zou zijn: 'Olvidé el móvil en la mesa' (ik vergat mijn telefoon op tafel).",
+  "nieuwe les AFGEKEURD:\n - woord 13 (w368): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -42,5 +39,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-18T07:00:20.385Z"
+ "afgemaakt": "2026-10-19T07:19:29.852Z"
 }
