@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-19T07:19:04.480Z",
+ "wanneer": "2026-10-20T07:03:23.948Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -17,9 +17,10 @@
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche)",
-  "s380: afgekeurd — De zin is wel praktisch toepasbaar, maar de Spaanse vertaling 'Se me olvidó el móvil en la mesa' is onnatuurlijk voor een Nederlander die Spaans leert. Een betere, natuurlijke formulering zou zijn: 'Olvidé el móvil en la mesa' (ik vergat mijn telefoon op tafel).",
-  "nieuwe les AFGEKEURD:\n - woord 13 (w368): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s380 (una vez)",
+  "2 vraag/vragen afgekeurd (poging 1): vraag 6: Optie 'no eches' is geen geldige keuze voor een negatief imperativo; de opties moeten alleen de werkwoordsvormen bevatten.; vraag 8: Optie 'no añadas' is geen geldige keuze voor een negatief imperativo; de opties moeten alleen de werkwoordsvormen bevatten.",
+  "toetsje q-imperativo-extra7: 6 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 6, vraag 8",
+  "nieuwe les AFGEKEURD:\n - woord 5 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - woord 14 (w369): de vertaling verklapt het Spaanse woord (\"het virtuele toetsenbord\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -29,7 +30,7 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
+   "naZeef": 2,
    "naKeuring": 2
   }
  ],
@@ -39,5 +40,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-19T07:19:29.852Z"
+ "afgemaakt": "2026-10-20T07:03:49.366Z"
 }
