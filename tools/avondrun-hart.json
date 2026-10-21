@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-20T07:03:23.948Z",
+ "wanneer": "2026-10-21T06:58:46.510Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,17 +10,18 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 11,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 4,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s380 (una vez)",
-  "2 vraag/vragen afgekeurd (poging 1): vraag 6: Optie 'no eches' is geen geldige keuze voor een negatief imperativo; de opties moeten alleen de werkwoordsvormen bevatten.; vraag 8: Optie 'no añadas' is geen geldige keuze voor een negatief imperativo; de opties moeten alleen de werkwoordsvormen bevatten.",
-  "toetsje q-imperativo-extra7: 6 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 6, vraag 8",
-  "nieuwe les AFGEKEURD:\n - woord 5 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - woord 14 (w369): de vertaling verklapt het Spaanse woord (\"het virtuele toetsenbord\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "s375: afgekeurd — De zin is niet natuurlijk Spaans: 'vivimos' (perfectum) in plaats van 'vivíamos' (imperfectum) voor een duur in het verleden.",
+  "s382: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'se quede sin batería' in deze context.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 8: De uitleg klopt niet met de regelkaart: na 'es malo' kan zowel de infinitief (estar) als de subjuntivo (estés) gebruikt worden, afhankelijk van de context. De uitleg suggereert ten onrechte dat alleen de infinitief correct is.)",
+  "nieuwe les AFGEKEURD:\n - woord 4 (w359): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s381): veld \"tag\" ontbreekt\n - zin 2 (s383): veld \"tag\" ontbreekt\n - zin 3 (s384): veld \"tag\" ontbreekt\n - zin 4 (s385): veld \"tag\" ontbreekt\n - zin 5 (s386): veld \"tag\" ontbreekt\n - zin 6 (s387): veld \"tag\" ontbreekt\n - zin 7 (s388): veld \"tag\" ontbreekt",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -30,8 +31,8 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 4
   }
  ],
  "reden": "de run is niet afgemaakt",
@@ -40,5 +41,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-20T07:03:49.366Z"
+ "afgemaakt": "2026-10-21T06:59:09.959Z"
 }
