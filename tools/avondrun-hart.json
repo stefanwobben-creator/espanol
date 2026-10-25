@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-24T07:01:51.666Z",
+ "wanneer": "2026-10-25T07:18:00.011Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,18 +10,16 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 11,
   "toetsjes": 1,
   "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.256",
  "klachten": [
-  "s376: afgekeurd — De zin is wel correct Spaans en de vertaling klopt, maar 'viajamos' in de indefinido suggereert eenmalige of afgeronde reizen, terwijl 'elke zomer' herhaling in het verleden impliceert. De alternatieve 'íbamos' (imperfecto) past beter bij deze context.",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s376 (ayer)",
-  "s381: afgekeurd — De zin is correct, maar 'los estudios' klinkt onnatuurlijk in deze context; 'para trabajar y estudiar' is gebruikelijker.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "nieuwe les AFGEKEURD:\n - woord 3 (w358): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s380): veld \"tag\" ontbreekt\n - zin 2 (s382): veld \"tag\" ontbreekt\n - zin 3 (s383): veld \"tag\" ontbreekt\n - zin 4 (s384): veld \"tag\" ontbreekt\n - zin 5 (s385): veld \"tag\" ontbreekt\n - zin 6 (s386): veld \"tag\" ontbreekt\n - zin 7 (s387): veld \"tag\" ontbreekt",
+  "s378: afgekeurd — De zin is correct Spaans en praktisch toepasbaar, maar de uitleg is onnauwkeurig: 'se olvidó de los cubiertos' is geen indefinido, maar een indefinido met reflexieve constructie (onpersoonlijk gebruik).",
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 2: De uitleg is incorrect: na 'es importante que' moet de subjuntivo staan, dus 'uses' is fout en 'usas' is juist.; vraag 7: De uitleg klopt niet: 'exponer' is correct omdat het onderwerp 'la pantalla' is en het werkwoord niet reflexief hoeft te zijn in deze context.)",
+  "nieuwe les AFGEKEURD:\n - woord 9 (w364): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
  "mis": [
@@ -31,7 +29,7 @@
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
+   "naZeef": 4,
    "naKeuring": 3
   }
  ],
@@ -41,5 +39,5 @@
  "gepubliceerd": false,
  "status": "geklapt",
  "pogingen": 2,
- "afgemaakt": "2026-10-24T07:02:17.446Z"
+ "afgemaakt": "2026-10-25T07:18:25.894Z"
 }
