@@ -1,29 +1,23 @@
 {
- "wanneer": "2026-10-26T07:33:01.122Z",
+ "wanneer": "2026-10-27T07:21:17.403Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": 0,
+ "voorraadDagen": null,
  "beloofd": {
-  "gaten": 2,
-  "toetsje": 1,
+  "gaten": 0,
+  "toetsje": 0,
   "kaal": 1,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 12,
-  "toetsjes": 1,
+  "zinnen": 4,
+  "toetsjes": 0,
   "kaal": 4,
   "nieuweLes": 0
  },
  "versie": "v23.256",
- "klachten": [
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De vraag slaat niet op de subjuntivo-regel uit de uitlegkaart (het gaat om een oorzaak, niet om een uitdrukking met subjuntivo).)",
-  "nieuwe les AFGEKEURD:\n - zin 1 (s381): veld \"tag\" ontbreekt\n - zin 2 (s382): veld \"tag\" ontbreekt\n - zin 3 (s383): veld \"tag\" ontbreekt\n - zin 4 (s384): veld \"tag\" ontbreekt\n - zin 5 (s385): veld \"tag\" ontbreekt\n - zin 6 (s386): veld \"tag\" ontbreekt\n - zin 7 (s387): veld \"tag\" ontbreekt\n - zin 8 (s388): veld \"tag\" ontbreekt",
-  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
- ],
- "mis": [
-  "de nieuwe les"
- ],
+ "klachten": [],
+ "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
@@ -32,11 +26,20 @@
    "naKeuring": 4
   }
  ],
- "reden": "de run is niet afgemaakt",
+ "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
  "geweigerd": 0,
- "gegenereerd": false,
+ "poortRood": [
+  {
+   "suite": "pw-lesgat.js",
+   "regels": [
+    "het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)"
+   ]
+  }
+ ],
+ "poortReden": "pw-lesgat.js: het aantal onverklaarde kaarten loopt niet op (1 van maximaal 0)",
+ "gegenereerd": true,
  "gepubliceerd": false,
- "status": "geklapt",
+ "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-10-26T07:33:08.163Z"
+ "afgemaakt": "2026-10-27T07:30:48.995Z"
 }
