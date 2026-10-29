@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-28T08:03:15.831Z",
+ "wanneer": "2026-10-29T08:07:38.282Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": null,
@@ -17,12 +17,19 @@
  },
  "versie": "v23.256",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s369 (anoche)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s369 (esta mañana, mañana), s370 (ayer), s371 (la semana pasada), s372 (siempre)",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s369 (ayer)"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
+   "gemaakt": 4,
+   "naZeef": 0,
+   "naKeuring": 0
+  },
+  {
+   "poging": 2,
    "gemaakt": 4,
    "naZeef": 3,
    "naKeuring": 3
@@ -43,5 +50,5 @@
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-10-28T08:12:58.382Z"
+ "afgemaakt": "2026-10-29T08:17:14.105Z"
 }
