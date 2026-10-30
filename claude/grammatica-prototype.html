@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammatica, anders opgezet</title>
+<style>
+  :root{
+    --papier:#faf6ef; --kaart:#fffdf8; --inkt:#2b2520; --zacht:#7a6f63;
+    --lijn:#e6ded0; --accent:#b4532a; --accent-licht:#f3e3da;
+    --groen:#2f6b4f; --groen-licht:#e3efe7; --geel:#c08a1e; --geel-licht:#f8eed6;
+    --grijs:#d9d2c6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--papier); color:var(--inkt);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:460px; margin:0 auto; padding:0 16px 80px}
+  .top{position:sticky; top:0; background:var(--papier); padding:14px 0 10px; z-index:5;
+    border-bottom:1px solid var(--lijn)}
+  .tabs{display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px}
+  .tabs button{flex:0 0 auto; border:1px solid var(--lijn); background:var(--kaart); color:var(--zacht);
+    border-radius:99px; padding:7px 13px; font-size:.82rem; font-weight:600; cursor:pointer}
+  .tabs button.aan{background:var(--accent); border-color:var(--accent); color:#fff}
+  h1{font-size:1.45rem; margin:18px 0 2px; letter-spacing:-.02em}
+  h2{font-size:1.05rem; margin:26px 0 8px; letter-spacing:-.01em}
+  h3{font-size:.95rem; margin:18px 0 6px}
+  p{margin:8px 0}
+  .lead{color:var(--zacht); margin:2px 0 14px; font-size:.95rem}
+  .kicker{display:block; font-size:.7rem; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--zacht); font-weight:700; margin-bottom:6px}
+  .kaart{background:var(--kaart); border:1px solid var(--lijn); border-radius:14px; padding:14px; margin:10px 0}
+  .kaart.advies{border-color:var(--accent); border-width:1.5px; background:var(--accent-licht)}
+  .muted{color:var(--zacht); font-size:.86rem}
+  .rij{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--lijn)}
+  .rij:last-child{border-bottom:0}
+  .rij b{font-weight:600; font-size:.94rem}
+  .rij .op{margin-left:auto; font-size:.74rem; color:var(--zacht); white-space:nowrap}
+  .stip{width:10px; height:10px; border-radius:50%; flex:0 0 auto; background:var(--grijs)}
+  .stip.bezig{background:var(--geel)} .stip.vast{background:var(--groen)} .stip.onderhoud{background:#8fb6a3}
+  .legenda{display:flex; gap:14px; flex-wrap:wrap; font-size:.76rem; color:var(--zacht); margin:10px 0 0}
+  .legenda span{display:flex; align-items:center; gap:5px}
+  .balk{height:9px; border-radius:99px; background:var(--grijs); overflow:hidden; display:flex; margin:10px 0 6px}
+  .balk i{display:block; height:100%}
+  .balk .v{background:var(--groen)} .balk .o{background:#8fb6a3} .balk .b{background:var(--geel)}
+  .knop{display:inline-block; background:var(--accent); color:#fff; border:0; border-radius:11px;
+    padding:11px 16px; font-weight:700; font-size:.92rem; cursor:pointer; margin-top:10px}
+  .knop.ghost{background:transparent; color:var(--accent); border:1.5px solid var(--accent)}
+  .fase{display:flex; gap:12px; margin:0 0 2px}
+  .fase .nr{flex:0 0 28px; height:28px; border-radius:50%; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.82rem}
+  .fase.af .nr{background:var(--groen)}
+  .fase.toe .nr{background:var(--grijs); color:var(--zacht)}
+  .fase .lijn{width:2px; background:var(--lijn); margin:4px auto; flex:1}
+  .faseKop{display:flex; flex-direction:column; align-items:center; flex:0 0 28px}
+  .faseBody{padding-bottom:16px; flex:1}
+  .vb{background:var(--papier); border:1px solid var(--lijn); border-radius:10px; padding:10px 12px; margin:8px 0; font-size:.9rem}
+  .es{color:var(--accent); font-weight:600}
+  .keuzes{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap}
+  .keuzes span{border:1px solid var(--lijn); background:var(--kaart); border-radius:9px; padding:6px 11px; font-size:.86rem}
+  .keuzes span.goed{border-color:var(--groen); background:var(--groen-licht); color:var(--groen); font-weight:600}
+  .week{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:12px 0}
+  .dag{border:1px solid var(--lijn); border-radius:9px; padding:7px 3px; text-align:center; background:var(--kaart)}
+  .dag b{display:block; font-size:.68rem; color:var(--zacht); font-weight:700}
+  .dag .p{display:block; height:5px; border-radius:99px; margin:5px 2px 2px; background:var(--grijs)}
+  .dag.g .p{background:var(--accent)} .dag.c .p{background:var(--groen)}
+  table{width:100%; border-collapse:collapse; font-size:.86rem; margin:10px 0}
+  th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--lijn); vertical-align:top}
+  th{font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:var(--zacht)}
+  td.nu{color:var(--zacht)}
+  .bron{font-size:.78rem; color:var(--zacht); font-style:italic}
+  .waarschuw{border-left:3px solid var(--geel); background:var(--geel-licht); padding:10px 12px;
+    border-radius:0 10px 10px 0; font-size:.88rem; margin:12px 0}
+  .scherm{display:none} .scherm.aan{display:block}
+  .tel{font-size:2rem; font-weight:800; letter-spacing:-.03em; line-height:1}
+  .groepkop{display:flex; align-items:baseline; gap:8px; margin:22px 0 2px}
+  .groepkop h2{margin:0} .groepkop .op{margin-left:auto; font-size:.76rem; color:var(--zacht)}
+  footer{color:var(--zacht); font-size:.78rem; text-align:center; padding:26px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="top">
+  <div class="tabs">
+    <button class="aan" data-s="kaart">1 · De kaart</button>
+    <button data-s="module">2 · Een module</button>
+    <button data-s="week">3 · De week</button>
+    <button data-s="waarom">4 · Waarom zo</button>
+    <button data-s="diff">5 · Wat verandert</button>
+  </div>
+</div>
+
+<!-- ============ 1. DE KAART ============ -->
+<section class="scherm aan" id="s-kaart">
+  <h1>Grammatica</h1>
+  <p class="lead">Jij kiest wat je doet. De app adviseert en houdt bij wat af is.</p>
+
+  <div class="kaart advies">
+    <span class="kicker">Advies voor nu</span>
+    <b style="font-size:1.05rem">Indefinido of imperfecto</b>
+    <p class="muted" style="margin:6px 0 0">Je A1-basis staat. In je eigen zinnen ging de verleden tijd de
+      afgelopen twee weken 11 keer mis, vaker dan welk ander onderwerp ook. Dit is drie sessies werk.</p>
+    <button class="knop">Begin deze module</button>
+    <button class="knop ghost">Liever iets anders</button>
+  </div>
+
+  <div class="balk" title="7 beheerst, 3 in onderhoud, 2 bezig">
+    <i class="v" style="width:23%"></i><i class="o" style="width:10%"></i><i class="b" style="width:6%"></i>
+  </div>
+  <div class="legenda">
+    <span><i class="stip vast"></i> 7 beheerst</span>
+    <span><i class="stip onderhoud"></i> 3 in onderhoud</span>
+    <span><i class="stip bezig"></i> 2 bezig</span>
+    <span><i class="stip"></i> 19 nog te gaan</span>
+  </div>
+
+  <div class="groepkop"><h2>Werkwoorden en tijden</h2><span class="op">1 van 7</span></div>
+  <div class="kaart">
+    <div class="rij"><i class="stip vast"></i><b>Presente: de vormen</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip bezig"></i><b>Indefinido: de vormen</b><span class="op">fase 2 van 4</span></div>
+    <div class="rij"><i class="stip"></i><b>Indefinido of imperfecto</b><span class="op">aanbevolen</span></div>
+    <div class="rij"><i class="stip"></i><b>Imperfecto: de vormen</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Perfecto of indefinido</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Zapato: wisselt de klinker mee</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Gerundio: estar + ando</b><span class="op">nog niet</span></div>
+  </div>
+
+  <div class="groepkop"><h2>Keuzes tussen twee woorden</h2><span class="op">3 van 9</span></div>
+  <div class="kaart">
+    <div class="rij"><i class="stip onderhoud"></i><b>Ser of estar</b><span class="op">onderhoud · over 21 dagen</span></div>
+    <div class="rij"><i class="stip onderhoud"></i><b>Hay of está</b><span class="op">onderhoud · over 8 dagen</span></div>
+    <div class="rij"><i class="stip onderhoud"></i><b>Muy of mucho</b><span class="op">onderhoud · over 55 dagen</span></div>
+    <div class="rij"><i class="stip bezig"></i><b>Por of para</b><span class="op">fase 3 van 4</span></div>
+    <div class="rij"><i class="stip"></i><b>Saber of conocer</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Pedir of preguntar</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Qué of cuál</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Saber of poder</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>Lo, la of le</b><span class="op">nog niet</span></div>
+  </div>
+
+  <div class="groepkop"><h2>A1-basis</h2><span class="op">6 van 8 · af</span></div>
+  <div class="kaart">
+    <div class="rij"><i class="stip vast"></i><b>Woorden die meetellen</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip vast"></i><b>De dubbele nee</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip vast"></i><b>Tú of usted</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip vast"></i><b>Plannen met ir a</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip vast"></i><b>Gusta of gustan</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip vast"></i><b>Este, ese of aquel</b><span class="op">beheerst</span></div>
+    <div class="rij"><i class="stip"></i><b>Me, te of se</b><span class="op">nog niet</span></div>
+    <div class="rij"><i class="stip"></i><b>De persoonlijke a</b><span class="op">nog niet</span></div>
+  </div>
+
+  <div class="waarschuw">
+    <b>El of la staat hier niet meer.</b> Het geslacht van een woord is geen regel die je toepast, het is een
+    eigenschap van dat ene woord. Het staat nu bij het woord zelf in je woordenlijst, met het lidwoord eraan
+    vast, en komt daar terug via het herhaalsysteem dat je woordjes al gebruikt. Dat is ook waarom je hem nu
+    nog elke week zag: in de grammatica is hij één doosje met vijf losse patronen eronder, en op de val
+    (el problema, el tema) kan hij nooit af raken.
+  </div>
+</section>
+
+<!-- ============ 2. EEN MODULE ============ -->
+<section class="scherm" id="s-module">
+  <h1>Indefinido of imperfecto</h1>
+  <p class="lead">Eén onderwerp, vier fases, ongeveer drie sessies van twaalf minuten. Stoppen mag altijd:
+    hij onthoudt waar je was.</p>
+
+  <div class="kaart">
+    <div class="fase af">
+      <div class="faseKop"><div class="nr">✓</div><div class="lijn"></div></div>
+      <div class="faseBody">
+        <b>1 · Zien waar het verschil zit</b>
+        <p class="muted" style="margin:4px 0 0">Twaalf zinnen, jij zegt alleen: gebeurtenis of achtergrond.
+          Je hoeft nog niets te vervoegen.</p>
+        <div class="vb">
+          <span class="es">Cuando llegué, ella leía un libro.</span><br>
+          <span class="muted">Welk deel duwt het verhaal vooruit?</span>
+          <div class="keuzes"><span class="goed">llegué</span><span>leía</span></div>
+        </div>
+        <p class="muted" style="margin:6px 0 0"><b>En let op wat hier niet staat:</b> geen <i>ayer</i>, geen
+          <i>siempre</i>. Die signaalwoorden doen anders het werk van de uitgang, en dan leer je de uitgang nooit.</p>
+      </div>
+    </div>
+
+    <div class="fase">
+      <div class="faseKop"><div class="nr">2</div><div class="lijn"></div></div>
+      <div class="faseBody">
+        <b>2 · Kiezen, door elkaar</b>
+        <p class="muted" style="margin:4px 0 0">De twee tijden staan door elkaar, nooit tien van dezelfde achter
+          elkaar. Door elkaar is zwaarder en voelt slechter, en precies daarom werkt het: je moet elke keer
+          opnieuw kiezen in plaats van de vorige vraag te kopiëren.</p>
+        <div class="vb">
+          <span class="muted">Mientras ___ (cocinar, yo), sonó el teléfono.</span>
+          <div class="keuzes"><span class="goed">cocinaba</span><span>cociné</span></div>
+        </div>
+        <div class="muted" style="margin-top:8px">nu 4 van de 10 goed op rij</div>
+      </div>
+    </div>
+
+    <div class="fase toe">
+      <div class="faseKop"><div class="nr">3</div><div class="lijn"></div></div>
+      <div class="faseBody">
+        <b>3 · Zelf maken</b>
+        <p class="muted" style="margin:4px 0 0">Geen knoppen meer, jij typt de vorm. Hier telt het pas echt mee
+          voor je balk, want dit is het enige bewijs dat je hem kunt produceren en niet alleen herkennen.</p>
+        <div class="vb"><span class="muted">Vroeger woonden we in Utrecht.</span><br>
+          <span class="es">Antes ________ en Utrecht.</span></div>
+      </div>
+    </div>
+
+    <div class="fase toe">
+      <div class="faseKop"><div class="nr">4</div></div>
+      <div class="faseBody">
+        <b>4 · In het wild</b>
+        <p class="muted" style="margin:4px 0 0">Drie losse zinnen in je gewone dagles, verspreid over de week,
+          tussen andere onderwerpen door. Pas als die op drie verschillende dagen goed gaan, is de module af.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">Wanneer is dit af</span>
+    <p style="margin:2px 0 0"><b>Drie goede beurten op drie verschillende dagen, in fase 3 of 4.</b></p>
+    <p class="muted" style="margin:6px 0 0">Niet: vijf keer schoon omhoog door een doosje dat bij één misser naar
+      nul valt. Een slordigheidsfout op dag twee kost je hier dag twee, niet de hele module. Daarna gaat het
+      onderwerp uit je dagelijkse rotatie en komt het alleen nog terug in de wekelijkse mix.</p>
+  </div>
+</section>
+
+<!-- ============ 3. DE WEEK ============ -->
+<section class="scherm" id="s-week">
+  <h1>Waar het in je week zit</h1>
+  <p class="lead">Grammatica is geen snipper per dag meer, maar twee blokken en een check.</p>
+
+  <div class="week">
+    <div class="dag"><b>ma</b><i class="p"></i></div>
+    <div class="dag g"><b>di</b><i class="p"></i></div>
+    <div class="dag"><b>wo</b><i class="p"></i></div>
+    <div class="dag"><b>do</b><i class="p"></i></div>
+    <div class="dag g"><b>vr</b><i class="p"></i></div>
+    <div class="dag"><b>za</b><i class="p"></i></div>
+    <div class="dag c"><b>zo</b><i class="p"></i></div>
+  </div>
+  <div class="legenda" style="margin-bottom:16px">
+    <span><i class="stip" style="background:var(--accent)"></i> moduleblok, 12 min</span>
+    <span><i class="stip" style="background:var(--groen)"></i> mix-check, 6 vragen</span>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">Elke dag</span>
+    <b>Woordjes</b>
+    <p class="muted" style="margin:4px 0 0">Blijft precies zoals het is. Dat deel werkt, en dat zei je zelf.
+      El of la zit hier nu bij in, aan het woord vast.</p>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">Twee keer per week</span>
+    <b>Een moduleblok</b>
+    <p class="muted" style="margin:4px 0 0">Twaalf minuten aan één onderwerp, de fase waar je was. Eén onderwerp
+      per blok, niet vier onderwerpen van twee vragen. Je mag altijd een ander onderwerp kiezen van de kaart.</p>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">Zondag</span>
+    <b>De mix-check</b>
+    <p class="muted" style="margin:4px 0 0">Zes vragen, uit alles wat op onderhoud staat, door elkaar. Dit is de
+      enige plek waar afgeronde onderwerpen nog terugkomen. Gaat er een mis, dan komt dat ene onderwerp de week
+      erna één keer terug als losse vraag. Niet de hele module opnieuw.</p>
+  </div>
+
+  <div class="waarschuw">
+    <b>Waarom niet elke dag een beetje.</b> Dat is wat er nu gebeurt, en het is uitgerekend: 190 doosjes en
+    ongeveer vier beurten per doosje per jaar. Je hebt er vijf schone nodig om één onderwerp af te krijgen.
+    Dezelfde tijd in twee blokken geeft je drie afgeronde onderwerpen per maand in plaats van overal een beetje.
+  </div>
+</section>
+
+<!-- ============ 4. WAAROM ============ -->
+<section class="scherm" id="s-waarom">
+  <h1>Waarom het zo staat</h1>
+  <p class="lead">Vijf keuzes, en bij elke keuze wat hij oplost en hoe hard het bewijs is.</p>
+
+  <div class="kaart">
+    <span class="kicker">1</span>
+    <b>Grammatica is niet één soort ding</b>
+    <p style="margin:6px 0 0">Er zitten drie soorten door elkaar in de huidige lijst: <b>keuzes</b> tussen twee
+      vormen (ser of estar), <b>paradigma's</b> die je vlot moet kunnen opzeggen (de uitgangen van het
+      indefinido), en <b>woordeigenschappen</b> (el of la). Die drie leren niet hetzelfde en horen dus niet in
+      één rotatie met één doosjessysteem.</p>
+    <p class="muted" style="margin:6px 0 0">Lost op: dat el of la elke week terugkwam, en dat de verleden tijd
+      achteraan de rij stond.</p>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">2</span>
+    <b>Keuzes oefen je door elkaar, vormen eerst in blok</b>
+    <p style="margin:6px 0 0">Bij twee dingen die op elkaar lijken is door elkaar oefenen beter dan tien van
+      dezelfde achter elkaar, omdat je dan echt moet kiezen in plaats van de vorige vraag te herhalen. Het voelt
+      zwaarder en de score tijdens het oefenen is lager, en toch onthoud je er meer van.</p>
+    <p class="bron" style="margin:6px 0 0">[bron: Rohrer &amp; Taylor 2007; Rohrer, Dedrick &amp; Stershic 2015,
+      over wiskundeopgaven. Sterk effect, maar het onderzoek gaat niet over Spaanse werkwoordstijden: lees het
+      als een goede gok, niet als bewijs voor dit geval.]</p>
+    <p class="muted" style="margin:6px 0 0">Daarom fase 2, en daarom de mix-check op zondag. En daarom pas ná
+      fase 1: tijdens het kennismaken helpt door elkaar juist niet.</p>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">3</span>
+    <b>Eerst herkennen zonder signaalwoord, dan pas maken</b>
+    <p style="margin:6px 0 0">Bij een zin als <i>ayer comí</i> doet <i>ayer</i> al het werk, dus kun je hem goed
+      begrijpen zonder ooit naar de uitgang te kijken. Precies dat is waarom de verleden tijd bij veel leerders
+      blijft hangen. Haal het signaalwoord weg en de uitgang moet het zelf doen.</p>
+    <p class="bron" style="margin:6px 0 0">[bron: VanPatten, input processing, met de Lexical Preference
+      Principle; experimenteel werk VanPatten &amp; Cadierno 1993 en latere meta-analyses. Goed onderbouwd voor
+      begrip, zwakker voor productie.]</p>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">4</span>
+    <b>Afmaken in plaats van overal een beetje</b>
+    <p style="margin:6px 0 0">Een onderwerp loopt in modules en is daarna af: het verlaat de dagelijkse
+      rotatie en komt alleen nog in de wekelijkse mix. Dat is wat ruimte maakt voor het volgende onderwerp.
+      Spreiding blijft, maar over een onderwerp dat je al kunt, niet over 190 half begonnen doosjes.</p>
+    <p class="bron" style="margin:6px 0 0">[bron: spreiding zelf is zo goed vastgesteld als het in deze hoek
+      wordt: Cepeda e.a. 2006, meta-analyse over 254 studies. Het ophalen boven het herlezen idem,
+      Roediger &amp; Karpicke 2006.]</p>
+  </div>
+
+  <div class="kaart">
+    <span class="kicker">5</span>
+    <b>Jij kiest het onderwerp</b>
+    <p style="margin:6px 0 0">De app adviseert op basis van je fouten, maar je mag altijd van de kaart kiezen.
+      Dat is niet alleen prettiger, het is ook de enige manier waarop jij kunt zeggen: ik zit bijna op A2, ik wil
+      nu de verleden tijd. Een vaste volgorde kan dat nooit weten.</p>
+    <p class="bron" style="margin:6px 0 0">[bron: zelfbeschikkingstheorie, Ryan &amp; Deci, over autonomie en
+      volhouden. Dit is motivatieonderzoek, geen taalverwervingsonderzoek.]</p>
+  </div>
+
+  <div class="waarschuw">
+    <b>Wat hier níét staat.</b> Er is geen onderzoek dat zegt dat twee blokken van twaalf minuten beter zijn dan
+    zes keer vier. Die keuze komt uit jouw klacht en uit de rekensom, niet uit een paper. Datzelfde geldt voor
+    drie goede dagen als afrondingsregel: dat is een werkbare drempel, geen gemeten optimum.
+  </div>
+</section>
+
+<!-- ============ 5. DIFF ============ -->
+<section class="scherm" id="s-diff">
+  <h1>Wat er verandert</h1>
+  <p class="lead">Tegenover hoe het nu in v23.255 staat.</p>
+
+  <table>
+    <tr><th>Nu</th><th>Voorstel</th></tr>
+    <tr><td class="nu">Vaste volgorde van 31 onderwerpen, 3 tegelijk open. Verleden tijd staat op plek 30.</td>
+        <td>Een kaart waarvan jij kiest. De app adviseert op je fouten.</td></tr>
+    <tr><td class="nu">190 doosjes die elk 5 schone beurten nodig hebben, bij ongeveer 4 beurten per jaar.</td>
+        <td>31 modules die je afmaakt. Af is af: daarna alleen de wekelijkse mix.</td></tr>
+    <tr><td class="nu">Elke dag een paar grammaticavragen, verspreid over alles.</td>
+        <td>Twee blokken per week aan één onderwerp, plus een check op zondag.</td></tr>
+    <tr><td class="nu">El of la is een grammaticaonderwerp met vijf patronen en kan nooit af.</td>
+        <td>El of la hoort bij het woord en gaat mee in je woordenlijst.</td></tr>
+    <tr><td class="nu">Eén misser zet het doosje naar nul (of één omlaag sinds v23.254).</td>
+        <td>Drie goede beurten op drie verschillende dagen. Een misser kost die dag.</td></tr>
+    <tr><td class="nu">De oefening is per onderwerp hetzelfde: twee meerkeuzevragen.</td>
+        <td>Vier fases: herkennen, kiezen door elkaar, zelf maken, in het wild.</td></tr>
+    <tr><td class="nu">Je ziet een doosnummer en een vervaldatum.</td>
+        <td>Je ziet wat af is, wat loopt en wat er nog ligt.</td></tr>
+  </table>
+
+  <h3>Wat blijft</h3>
+  <p class="muted" style="margin:4px 0 0">De woordjes en hun herhaalsysteem, de inhoud van de 31 onderwerpen
+    (uitleg, patronen, zinnen), de nachtrun die op je fouten nieuwe oefenstof maakt, en de regel dat alleen
+    zelf produceren meetelt voor je balk.</p>
+
+  <h3>Wat dit niet oplost</h3>
+  <p class="muted" style="margin:4px 0 0">Je tweede klacht: dat de uitleg of de oefening soms niet deugt. Dat is
+    inhoud, geen opzet. Daar is een aparte ronde voor nodig waarin we per onderwerp nakijken of de uitleg klopt en
+    of de patronen echt vijf verschillende dingen toetsen. Bij de onderwerpen met drie patronen is dat vrijwel
+    zeker niet zo.</p>
+
+  <h3>Wat ik hiervoor zou bouwen, in volgorde</h3>
+  <p class="muted" style="margin:4px 0 0">1. De kaart, met de echte stand uit je profiel. Dat is alleen tonen, en
+    het maakt meteen zichtbaar waar je staat.<br>
+    2. Zelf kiezen, zodat je morgen aan de verleden tijd kunt beginnen.<br>
+    3. De module met vier fases, eerst voor één onderwerp.<br>
+    4. El of la naar de woordenlijst.<br>
+    5. De weekindeling en de mix-check.</p>
+
+  <footer>Prototype, 30 oktober. Niets hiervan zit in de app.</footer>
+</section>
+
+</div>
+<script>
+  var knoppen = document.querySelectorAll('.tabs button');
+  knoppen.forEach(function(b){
+    b.onclick = function(){
+      knoppen.forEach(function(x){ x.classList.remove('aan'); });
+      b.classList.add('aan');
+      document.querySelectorAll('.scherm').forEach(function(s){ s.classList.remove('aan'); });
+      document.getElementById('s-' + b.getAttribute('data-s')).classList.add('aan');
+      window.scrollTo(0, 0);
+    };
+  });
+</script>
+</body>
+</html>
