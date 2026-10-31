@@ -1625,7 +1625,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.257";
+var APP_VERSIE = "v23.258";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -33051,7 +33051,10 @@ var GC_CONCEPTEN = [
      De echte fout zit niet hier: een nieuwe les gaat via een pull request en brengt zijn
      spiekbriefkaart mee, en die kaart komt op main terecht zonder dat er ooit een concept bij
      gemaakt is. Zolang die weg niet keurt, komt kaart 32 er ook aan. */
-  corr:[], spiek:{a2:[18,23,30,31]}, wizard:null,
+  /* v23.258: en kaart 32, "De regel van 'costar' en vervoegingen van 'soler'". Voorspeld in de
+     regel hierboven en inderdaad gekomen: zeven toetsvragen, geen concept. Alleen de costar-helft
+     hoort hier; de vervoeging van soler is een schoenwerkwoord en staat bij zapato. */
+  corr:[], spiek:{a2:[18,23,30,31,32]}, wizard:null,
   uitleg:"<p>Je kent <i>me gusta</i> al. Er is een hele familie werkwoorden die precies zo werkt, en dat scheelt je vier regels: <b>doler</b> (pijn doen), <b>encantar</b> (geweldig vinden), <b>apetecer</b> (zin hebben in) en <b>parecer</b> (vinden van).</p>"+
     "<p>Bij die werkwoorden is <b>niet de persoon het onderwerp</b> maar het ding. Je zegt dus letterlijk “mij doet het hoofd pijn”:</p>"+
     "<p><i>Me duele <b>la cabeza</b>.</i> — één ding, dus <b>duele</b>.<br>"+
@@ -33371,7 +33374,11 @@ var GC_CONCEPTEN = [
   ]},
 
  {id:"zapato", icon:"👟", naam:"Wisselt de klinker mee?", naamEn:"Does the vowel change?",
-  corr:[], spiek:{a2:[3]}, wizard:null,
+  /* v23.258: kaart 32 erbij voor de helft die hier hoort. Die kaart heet "De regel van 'costar'
+     en vervoegingen van 'soler'", en soler is een o-wordt-ue werkwoord: suelo, sueles, suele,
+     solemos, soleis, suelen. Dat is dit concept en niet de gustar-familie, die de andere helft
+     van dezelfde kaart claimt. */
+  corr:[], spiek:{a2:[3,32]}, wizard:null,
   uitleg:"<p>Een grote groep werkwoorden wisselt een klinker in de stam: e wordt ie, o wordt ue, e wordt i. Maar niet overal.</p>"+
     "<p>De wissel gebeurt in de vormen waar de klemtoon op de stam valt: yo, tú, él en ellos. Bij nosotros en vosotros ligt de klemtoon op de uitgang, en dan blijft de stam gewoon staan.</p>"+
     "<p><i>quiero, quieres, quiere, <b>queremos</b>, <b>queréis</b>, quieren</i></p>"+
