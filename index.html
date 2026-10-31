@@ -1625,7 +1625,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.256";
+var APP_VERSIE = "v23.257";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -24756,6 +24756,11 @@ function praatBlokWat(){
   return ct(CHAT_BEURTEN + " beurten in het Spaans", CHAT_BEURTEN + " turns in Spanish");
 }
 
+/* De plek van een beurt in de rij. De knoppen onder je zin moeten weten over welke beurt ze gaan,
+   en dat is een nummer en geen verwijzing zodra het door veiligHtml heen moet. */
+function chatIdxVan(st, b){
+  try { return st.beurten.indexOf(b); } catch(e){ return -1; }
+}
 function renderChat(){
   var el = document.getElementById("chatWrap");
   if(!el) return;
@@ -24773,9 +24778,10 @@ function renderChat(){
         (t.nl ? "<span class='nl'>"+veiligHtml(t.nl)+"</span>" : "")+"</div></div>";
     } else {
       h += "<div class='chatrij ik'><div class='bel ik'>"+veiligHtml(t.es)+"</div></div>";
-      /* v23.249: naast staat er alleen nog als er iets MIS ging (geen model). Het oordeel over je
-         zinnen komt na afloop in één blok; zie chatNabespreking. */
-      if(b.naast) h += "<div class='naast amber'>"+veiligHtml(markdownWeg(b.naast))+"</div>";
+      /* v23.257: hier stond alleen b.naast, en dat is de melding als er geen model is. Het oordeel
+         over je zin stond er sinds v23.249 niet meer bij, en dat is precies wat eraan ontbrak.
+         Nu staat het er wel, en eerst als wenk: zie chatOordeelHtml. */
+      h += chatOordeelHtml(b, chatIdxVan(st, b));
     }
   });
   if(chatBezig){
@@ -24796,9 +24802,15 @@ function renderChat(){
   /* v23.249: geen else meer. Het blok is af bij drie beurten (daar hangt chatGedaanVandaag aan),
      maar het gesprek hoeft dat niet te zijn. Tik je "Nog een beurt", dan staan de bespreking en het
      invoerveld tegelijk op het scherm. */
-  if(!klaar || praatDoor){
-    h += "<input type='text' id='chatInvoer' style='margin-top:10px' placeholder='"+
-      ct("Schrijf je antwoord in het Spaans...","Write your answer in Spanish...")+"' autocomplete='off'>"+
+  if(!klaar || praatDoor || chatHerkansIdx >= 0){
+    h += (chatHerkansIdx >= 0
+        ? "<p class='muted' style='margin:10px 0 0; font-size:.82rem'>" +
+          ct("Je herschrijft je eigen zin. Dit kost je geen beurt.",
+             "You are rewriting your own sentence. This does not cost you a turn.") + "</p>"
+        : "")+
+      "<input type='text' id='chatInvoer' style='margin-top:10px' placeholder='"+
+      (chatHerkansIdx >= 0 ? ct("Pas je zin aan...","Adjust your sentence...")
+                           : ct("Schrijf je antwoord in het Spaans...","Write your answer in Spanish..."))+"' autocomplete='off'>"+
       "<div class='row' style='margin-top:8px'>"+
         "<button class='primary' id='chatStuur'"+(chatBezig ? " disabled" : "")+">"+ct("Versturen","Send")+"</button>"+
         "<button class='ghost' id='chatHulp'>"+ct("Hoe zeg ik...?","How do I say...?")+"</button>"+
@@ -24837,11 +24849,104 @@ function chatWire(){
     lesFlowVolgende();
   };
   b = document.getElementById("chatTerug"); if(b) b.onclick = function(){ chatStand().klaar = true; persist(); show("chispa"); };
+  /* v23.257: de twee knoppen onder een zin die nog niet klopt. */
+  var wrap = document.getElementById("chatWrap");
+  if(wrap){
+    wrap.querySelectorAll("[data-chatherkans]").forEach(function(d){
+      d.onclick = function(){ chatHerkans(+d.getAttribute("data-chatherkans")); };
+    });
+    wrap.querySelectorAll("[data-chattoon]").forEach(function(d){
+      d.onclick = function(){ chatToon(+d.getAttribute("data-chattoon")); };
+    });
+  }
   var inv = document.getElementById("chatInvoer");
   if(inv){
     inv.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); chatStuur(); } };
     inv.focus();
   }
+}
+
+/* ================= CHISPA KIJKT MEE (v23.257) =================
+
+   Stefan: "hij zou direct op de eerste zin al feedback moeten geven met corrigeren, me echt helpen
+   een goede zin te schrijven. nu doet ie dat helemaal niet."
+
+   Wat hier NIET gebeurt: de correctie terugzetten in de beurt van Chispa. Een gesprekspartner die
+   elke zin verbetert is er geen (v23.144), en dat blijft waar. Wat er wel gebeurt staat ernaast,
+   en het is eerst een wenk en pas daarna een verbetering.
+
+   Lyster en Saito (2010) vergeleken correctie in echte klassen: een prompt (wijzen dat er iets mis
+   is, de leerling het zelf laten herstellen) doet meer dan een recast (het goed voorzeggen). Dus
+   krijg je eerst te horen DAT er iets mis is, met een knop om het zelf opnieuw te doen. Pas bij de
+   tweede poging komt de uitleg er vanzelf bij.
+
+   Het oordeel komt van modus "nabespreking" met één zin erin. Dat eindpunt bestaat al en geeft
+   {zin, oordeel, goed} terug; goed is de boolean die hier nodig is. Zo hoeft de server niet mee te
+   veranderen, en kunnen er geen twee verschillende oordelen over dezelfde zin bestaan. */
+var CHAT_POGINGEN = 2;   // zo vaak mag je het zelf proberen voordat de uitleg er vanzelf bij komt
+function chatKeur(idx, zin){
+  var s0 = chatStand(), b0 = s0.beurten[idx];
+  if(!b0 || b0.van !== "jij") return;
+  b0.keurBezig = true;
+  persist(); renderChat();
+  api("/api/ai/chat", "POST", {modus:"nabespreking", niveau:chatNiveau(), zinnen:[zin]})
+    .then(function(res){
+      var s1 = chatStand(), b = s1.beurten[idx];
+      /* De beurt kan ondertussen herschreven zijn. Dan gaat dit oordeel over een zin die er niet
+         meer staat, en liever geen oordeel dan een oordeel over de verkeerde zin (v23.249). */
+      if(!b || b.van !== "jij" || b.es !== zin) return;
+      b.keurBezig = false;
+      var r = res && res.ok && res.regels && res.regels[0];
+      if(!r || r.zin !== zin){
+        /* Geen bruikbaar oordeel: dan zegt het blok daar niets over. De nabespreking na afloop
+           komt er toch nog, en twee keer stilte is beter dan één keer raden. */
+        b.goed = null; b.oordeel = ""; persist(); renderChat(); return;
+      }
+      b.goed = !!r.goed;
+      b.oordeel = markdownWeg(r.oordeel || "");
+      b.pogingen = (b.pogingen || 0) + 1;
+      // bij de laatste poging komt de uitleg er vanzelf bij: twee keer zelf proberen is genoeg,
+      // daarna is wachten op een ingeving geen oefening meer maar vastzitten.
+      b.toon = b.goed || (b.pogingen >= CHAT_POGINGEN);
+      persist(); renderChat();
+    });
+}
+/* Je zin herschrijven. Dit maakt GEEN nieuwe beurt: het gesprek telt drie beurten (CHAT_BEURTEN) en
+   een tweede poging op dezelfde zin is dezelfde beurt. Chispa heeft ook al geantwoord; ze gaat dat
+   niet nog eens doen op een zin die hetzelfde bedoelt. */
+var chatHerkansIdx = -1;
+function chatHerkans(idx){
+  var s0 = chatStand(), b = s0.beurten[idx];
+  if(!b || b.van !== "jij") return;
+  chatHerkansIdx = idx;
+  renderChat();
+  var inv = document.getElementById("chatInvoer");
+  if(inv){ inv.value = b.es || ""; inv.focus(); try { inv.select(); } catch(e){} }
+}
+function chatToon(idx){
+  var s0 = chatStand(), b = s0.beurten[idx];
+  if(!b) return;
+  b.toon = true; persist(); renderChat();
+}
+/* Wat er onder jouw zin staat. Vier toestanden, en ze zeggen alle vier iets anders:
+   nog bezig, het klopt, er is iets mis (en jij bent aan zet), er is iets mis (en hier is het). */
+function chatOordeelHtml(b, idx){
+  if(b.naast) return "<div class='naast amber'>" + veiligHtml(markdownWeg(b.naast)) + "</div>";
+  if(b.keurBezig) return "<div class='naast'><span class='muted'>" +
+    ct("Chispa kijkt je zin na...", "Chispa is checking your sentence...") + "</span></div>";
+  if(b.goed === true) return "<div class='naast' style='border-left-color:var(--green)'><span class='muted'>✓ " +
+    veiligHtml(b.oordeel || ct("Die klopt.", "That one holds up.")) + "</span></div>";
+  if(b.goed !== false) return "";
+  if(b.toon) return "<div class='naast amber'>" + veiligHtml(b.oordeel) + "</div>";
+  return "<div class='naast amber'>" +
+    ct("Hier zit iets niet goed. Wil je het zelf nog een keer proberen?",
+       "Something is off here. Want to try it yourself once more?") +
+    "<div class='row' style='margin-top:6px'>" +
+      "<button type='button' class='ghost' data-chatherkans='" + idx + "' style='font-size:.8rem; padding:5px 10px'>" +
+        ct("Ik probeer het zelf", "Let me try") + "</button>" +
+      "<button type='button' class='ghost' data-chattoon='" + idx + "' style='font-size:.8rem; padding:5px 10px'>" +
+        ct("Laat maar zien", "Just show me") + "</button>" +
+    "</div></div>";
 }
 
 function chatStuur(){
@@ -24850,6 +24955,22 @@ function chatStuur(){
   if(!tekst || chatBezig) return;
   var st = chatStand();
   var mijnZin = tekst.slice(0, 300);
+  /* v23.257: een herkansing is dezelfde beurt. De zin wordt vervangen, het oordeel opnieuw
+     opgehaald, en Chispa antwoordt niet nog een keer: ze heeft al gereageerd op wat je bedoelde,
+     en dat bedoel je nog steeds. */
+  if(chatHerkansIdx >= 0){
+    var hb = st.beurten[chatHerkansIdx];
+    if(hb && hb.van === "jij"){
+      var hi = chatHerkansIdx;
+      chatHerkansIdx = -1;
+      hb.es = mijnZin; hb.goed = null; hb.oordeel = ""; hb.toon = false;
+      if(inv) inv.value = "";
+      persist(); renderChat();
+      chatKeur(hi, mijnZin);
+      return;
+    }
+    chatHerkansIdx = -1;
+  }
   st.beurten.push({van:"jij", es:mijnZin});
   /* v23.249: de plek van MIJN beurt, vastgelegd vóór de aanroep.
 
@@ -24858,6 +24979,8 @@ function chatStuur(){
      fout als aan de serverkant. Nu weet de afhandeling welke beurt van haar is. */
   var idx = st.beurten.length - 1;
   addXP(3); chatBezig = true; persist(); renderChat();
+  // het oordeel loopt naast het gesprek en houdt het niet op: twee aanroepen, geen wachtrij
+  chatKeur(idx, mijnZin);
   api("/api/ai/chat", "POST", {modus:"gesprek", niveau:chatNiveau(), zin:mijnZin, alleenAntwoord:true,
       beurten:st.beurten.map(function(b){ var t = chatTekst(b); return {van:b.van, es:t.es}; })})
     .then(function(res){
