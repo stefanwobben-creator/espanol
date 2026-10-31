@@ -113,10 +113,22 @@ function kies() {
       const raak = regels.filter((l) => /✗|FAIL|GEFAALD|Error|error:/.test(l));
       console.log((raak.length ? raak : regels.slice(-25)).slice(-25).join('\n'));
       if (r.se) console.log((r.se || '').split('\n').slice(-8).join('\n'));
+      // In GitHub Actions is het log alleen te lezen als je bent ingelogd; annotaties zijn dat
+      // altijd. Dus zet elke rode suite daar ook neer, met de regels die ertoe doen.
+      if (process.env.GITHUB_ACTIONS) {
+        const kern = (raak.length ? raak : regels.slice(-25)).slice(-12)
+          .concat((r.se || '').split('\n').filter(Boolean).slice(-5));
+        const plat = kern.join('\n')
+          .replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').slice(0, 3000);
+        console.log('::error title=' + r.f + (r.timeout ? ' (liep vast)' : '') + '::' + plat);
+      }
     });
   }
   const sec = uit.reduce((a, b) => a + b.sec, 0);
   console.log('\n' + (uit.length - rood.length) + '/' + uit.length + ' groen, ' + sec + 's rekentijd');
   console.log(rood.length ? 'POORT DICHT: ' + rood.map((r) => r.f).join(', ') : 'POORT OPEN');
+  if (process.env.GITHUB_ACTIONS && rood.length) {
+    console.log('::error title=poort dicht::' + rood.map((r) => r.f).join(', '));
+  }
   process.exit(rood.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
