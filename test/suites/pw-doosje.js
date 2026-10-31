@@ -106,6 +106,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     [true, true, true, false, true, true, true, true].forEach((g) => gramBij('eendag', g, 3, 0, 'microles'));
     uit.eenDag = { box: S.gram['eendag#0'].box, rij: S.gram['eendag#0'].rij,
                    rijVoor: S.gram['eendag#0'].rijVoor };
+    /* v23.259: en dezelfde misser met maar TWEE antwoorden eronder. Dat is de grens: acht
+       antwoorden zijn een oordeel, twee zijn dat niet, en onder de grens geldt de oude regel. */
+    S.gram = {};
+    [true, false].forEach((g) => gramBij('tweedag', g, 3, 0, 'microles'));
+    uit.tweeOpEenDag = { box: S.gram['tweedag#0'].box, rijVoor: S.gram['tweedag#0'].rijVoor };
     window.today = echteToday;
     return uit;
   });
@@ -125,9 +130,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(gevallen.eenDag.rijVoor === '',
      'zeven goede antwoorden en één misser op DEZELFDE dag zijn geen staat van dienst (rijVoor "' +
      gevallen.eenDag.rijVoor + '", rij "' + gevallen.eenDag.rij + '")');
-  ok(gevallen.eenDag.box === 0,
-     'CONTROLE: dus die dag eindigt gewoon op nul (doos ' + gevallen.eenDag.box + '). ' +
-     'Anders kun je je eigen misser wegpoetsen in dezelfde sessie');
+  /* v23.259: hier stond dat die dag op nul eindigt, "anders kun je je eigen misser wegpoetsen in
+     dezelfde sessie". Dat is nu precies wat er wel mag, en dat is geen versoepeling maar een
+     ander meetinstrument: zeven van de acht is 87,5 procent, en een oordeel over acht antwoorden
+     is iets anders dan een oordeel over twee. De grens staat eronder. */
+  ok(gevallen.eenDag.box === 1,
+     'acht antwoorden met zeven goed is 87,5 procent en dus een doos omhoog (doos ' + gevallen.eenDag.box + ')');
+  ok(gevallen.tweeOpEenDag.box === 0,
+     'CONTROLE: met maar twee antwoorden wordt er niets geoordeeld en kost diezelfde misser nog ' +
+     'steeds alles (doos ' + gevallen.tweeOpEenDag.box + ')');
   ok(gevallen.tekort.rij.length < 6, 'vier antwoorden is minder dan de drempel (rij "' + gevallen.tekort.rij + '")');
   ok(gevallen.tekort.box === 0, 'CONTROLE: dan geldt de oude regel (doos ' + gevallen.tekort.box + ')');
 

@@ -106,6 +106,8 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
 
     // ---- 4. een misser later op de dag haalt de promotie weg ----
     uit.morgen = addDays(today(), 1);
+    uit.vandaag = today();
+    uit.gramBox = GRAM_BOX.slice();   // v23.259: de suite rekent nu ook met de intervallen
     uit.laatFout = dag(3, [true, false]);
     uit.zonderFout = dag(3, [true]);
 
@@ -127,6 +129,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     return uit;
   });
 
+  const GRAM_BOX_TEST = r.gramBox;
+  const addDays = (d, n) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+
   console.log('\n-- 1. de volgorde van je antwoorden doet er niet toe --');
   console.log('   [goed]=' + r.alleenGoed.box + ' [goed,fout]=' + r.goedDanFout.box +
     ' [goed,fout,fout]=' + r.goedDanTweeFout.box + ' · [fout]=' + r.alleenFout.box +
@@ -142,12 +147,16 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'terwijl een schone dag en een dag met een misser wél uit elkaar lopen ('
       + r.alleenGoed.box + ' tegen ' + r.alleenFout.box + ')');
   console.log('   een dag met één misser tussen zeven goede: doos ' + r.echteDag.box);
-  /* v23.225: hier stond `=== 3`, oftewel: die dag klimt gewoon. Dat was de andere kant van
-     hetzelfde gat. Een dag waarin je het onderwerp een keer mist is geen dag waarop je bewezen
-     hebt dat je het kunt, en de datum alleen terugtrekken deed net alsof dat wel zo was. */
-  ok(r.echteDag.box === 0,
-    'zeven goede antwoorden met één misser ertussen leveren geen promotie op (doos ' + r.echteDag.box + ')');
-  ok(r.echteDag.due === r.morgen, 'en het onderwerp komt morgen terug');
+  /* v23.225 zette dit op 0: "een dag waarin je het onderwerp een keer mist is geen dag waarop je
+     bewezen hebt dat je het kunt". v23.259 draait dat om, en niet uit mildheid. Zeven van de acht
+     is 87,5 procent, en de kans dat iemand die het onderwerp maar voor 60 procent beheerst zo'n
+     reeks haalt is 32 procent tegen 36 procent onder de oude tweevragenregel. Het oordeel is dus
+     niet zachter geworden maar scherper, en een scherp oordeel hoort ook omhoog te kunnen wijzen.
+     De dag met twee antwoorden eronder blijft wel op nul uitkomen; zie punt 1 hierboven. */
+  ok(r.echteDag.box === 3,
+    'zeven goede antwoorden met één misser ertussen is 87,5 procent en dus een doos omhoog (doos ' + r.echteDag.box + ')');
+  ok(r.echteDag.due === addDays(r.vandaag, GRAM_BOX_TEST[3]),
+    'en het onderwerp komt pas over ' + GRAM_BOX_TEST[3] + ' dagen terug (' + r.echteDag.due + ')');
 
   console.log('\n-- 2. de dagrem: vijf goede antwoorden klimmen één doos --');
   ok(r.vijfGoed.box === 2, 'vijf goede antwoorden klimmen één doos, niet vijf (' + r.vijfGoed.box + ')');

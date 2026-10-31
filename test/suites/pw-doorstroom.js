@@ -86,7 +86,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   });
   ok(breed.opfris >= 2, 'er staan meerdere opfrissers in de dagles: ' + breed.opfris + ' (vóór v23.255 was het er één)');
   ok(breed.opfris <= breed.max, 'en niet meer dan GRAM_LEERBEURTEN: ' + breed.opfris + ' van ' + breed.max);
-  ok(breed.beurten >= 4, 'met de microles erbij telt het grammaticablok ' + breed.beurten + ' beurten');
+  /* v23.259: GRAM_LEERBEURTEN ging van drie naar twee omdat de opfrisser van twee naar vijf
+     vragen ging. Het aantal beurten is dus niet meer vast, maar de eis blijft dezelfde als in
+     v23.255: meer dan één, en nooit meer dan de constante plus de microles. */
+  ok(breed.beurten >= 2 && breed.beurten <= breed.max + 1,
+    'met de microles erbij telt het grammaticablok ' + breed.beurten + ' beurten (hoogstens ' +
+    (breed.max + 1) + ')');
   ok(breed.eersteVaak <= 1, 'hoogstens één patroon per onderwerp: het onderwerp met vijf open patronen staat er ' + breed.eersteVaak + 'x in');
   ok(breed.uniek === breed.namen.length, 'elke beurt gaat over een ander onderwerp (' + breed.namen.join(', ') + ')');
 

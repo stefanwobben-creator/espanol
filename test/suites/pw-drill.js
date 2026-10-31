@@ -132,21 +132,33 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   // ---- 4. een drill promoveert niet ----
   console.log('\n-- 4. wat een drill met je doosje doet --');
   const doos = await page.evaluate(() => {
-    function dag(vanaf, rij) {
+    /* v23.261: het kanaal gaat mee. Tot nu toe reed deze proef op "overig", en dan toetste hij
+       niet de drill maar de algemene regel. Dat die twee toevallig hetzelfde deden kwam doordat
+       elke misser onherroepelijk alles kostte; sinds v23.259 is dat niet meer zo en moet de proef
+       zeggen welk kanaal hij bedoelt. */
+    function dag(vanaf, rij, kanaal) {
       S.gram = S.gram || {};
       S.gram.proef = { box: vanaf, due: '', goed: 0, fout: 0, laatst: '', bd: '' };
-      rij.forEach(function (g) { gramBij('proef', g, 3); });
-      return { box: S.gram.proef.box, due: S.gram.proef.due };
+      rij.forEach(function (g) { gramBij('proef', g, 3, null, kanaal || 'microles'); });
+      return { box: S.gram.proef.box, due: S.gram.proef.due, goed: S.gram.proef.goed };
     }
-    const drillNaMisser = dag(3, [false, true, true, true, true, true]);
+    const drillNaMisser = dag(3, [false, true, true, true, true, true], 'drill');
+    const drillSchoon = dag(3, [true, true, true, true, true, true, true, true], 'drill');
     const schoon = dag(3, [true, true, true, true, true]);
-    return { drillNaMisser: drillNaMisser, schoon: schoon, morgen: addDays(today(), 1) };
+    return { drillNaMisser: drillNaMisser, drillSchoon: drillSchoon, schoon: schoon,
+             morgen: addDays(today(), 1), vandaag: today() };
   });
   console.log('   na een misser + vijf goed: doos ' + doos.drillNaMisser.box +
     ' · een schone dag: doos ' + doos.schoon.box);
-  ok(doos.drillNaMisser.box === 0, 'vijf goede antwoorden in een drill duwen het doosje niet omhoog');
-  ok(doos.drillNaMisser.due === doos.morgen, 'het onderwerp komt gewoon morgen terug');
-  ok(doos.schoon.box === 4, 'CONTROLE: zonder die misser klimt dezelfde reeks wél (' + doos.schoon.box + ')');
+  /* v23.261: op het scherm van de drill staat "ze tellen niet mee voor je doosje", en vanaf nu
+     dwingt de code dat af in plaats van dat het toevallig uitkwam. Een drillantwoord werkt de
+     tellers bij (dat is geschiedenis) maar raakt doos en vervaldatum niet aan. */
+  ok(doos.drillNaMisser.box === 3, 'een drill laat je doosje staan waar het stond (' + doos.drillNaMisser.box + ')');
+  ok(doos.drillNaMisser.due === '', 'en verzet de vervaldatum niet ("' + doos.drillNaMisser.due + '")');
+  ok(doos.drillNaMisser.goed === 5, 'de tellers lopen wel door: ' + doos.drillNaMisser.goed + ' goed');
+  ok(doos.drillSchoon.box === 3,
+    'ook acht keer goed in een drill promoveert niet (' + doos.drillSchoon.box + '), want dit meet of je de uitleg net gelezen hebt');
+  ok(doos.schoon.box === 4, 'CONTROLE: dezelfde reeks via een echt kanaal klimt wél (' + doos.schoon.box + ')');
 
   // ---- 5. verse vragen ----
   console.log('\n-- 5. twee keer drillen is niet twee keer dezelfde vragen --');

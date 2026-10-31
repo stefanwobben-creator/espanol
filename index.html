@@ -1625,7 +1625,7 @@ function vroegVraag(){
 
 <script>
 "use strict";
-var APP_VERSIE = "v23.258";
+var APP_VERSIE = "v23.261";
 /* ================= CONTENT · BATCH 1 (hoofdstuk: El español y tú + Frida Kahlo) ================= */
 var BATCH = "batch-1";
 
@@ -34265,6 +34265,30 @@ function gramHalfBewijs(keuzes){ return keuzes === 2; }
    morgen terug. De variant "altijd één stap omlaag" is in v23.208 voorgesteld en door Stefan
    afgewezen, en terecht: wie het onderwerp niet kent hoort naar nul. Het verschil is dat de app nu
    kijkt of je het kent in plaats van het aan te nemen. */
+/* ================= EEN OORDEEL GAAT OVER MINSTENS VIJF ANTWOORDEN (v23.259) =================
+
+   Stefan: "als er 2 vragen zijn en ik heb een fout is al 50% fout, maar fouten gebeuren, dus ook
+   hier minimaal 5 ofzo, maar dat ik vanaf niveau 4 terug kan naar 3 of naar 5 kan."
+
+   Uitgerekend, kans op promotie bij een werkelijk kennisniveau p:
+
+       regel            p=0,95  p=0,90  p=0,80  p=0,70  p=0,60  gokker
+       2 van 2 (nu)       90%     81%     64%     49%     36%     25%
+       4 van 5            98%     92%     74%     53%     34%     19%
+       6 van 8            99%     96%     80%     55%     32%     14%
+       8 van 10           99%     93%     68%     38%     17%      6%
+
+   Wie een onderwerp voor negentig procent beheerst zakt nu in bijna een op de vijf beurten, en wie
+   puur gokt haalt een op de vier keer een promotie (101 van de 153 patronen hebben twee keuzes).
+   Meer vragen helpt die twee tegelijk, en dat is zeldzaam.
+
+   De drempel is 75 procent, dus het aantal toegestane missers is het aantal antwoorden gedeeld
+   door vier: bij vijf een, bij acht twee, bij twaalf drie. */
+/* Kanalen waarvan een antwoord de doos niet mag raken. Zie de kop in gramBij. */
+var GRAM_KANAAL_TELT_NIET = {drill: 1};
+var GRAM_OORDEEL_MIN = 5;     // minder antwoorden vandaag op dit doosje is geen oordeel
+var GRAM_OORDEEL_OP = 0.75;   // dit aandeel goed of meer: een doos omhoog
+var GRAM_OORDEEL_NEER = 0.5;  // hieronder: een doos omlaag. Ertussenin: blijven staan.
 var GRAM_RIJ = 12;         // zoveel antwoorden per doosje worden onthouden
 var GRAM_RIJ_MIN = 6;      // minder dan dit is geen staat van dienst, en dan geldt de oude regel
 var GRAM_RIJ_EIS = 0.8;    // en dit aandeel goed maakt van een misser een slordigheid
@@ -34302,6 +34326,17 @@ function gramBij(cid, goed, keuzes, pi, kanaal){
   if(goed) st.goed++;
   else { st.fout++; st.laatst = today(); }
 
+  /* v23.261: er zijn kanalen die niets over je geheugen zeggen, en de drill is er een. Hij komt
+     direct na de uitleg en direct na een misser, dus wat je daar goed doet meet of je het net
+     gelezen hebt (Kornell en Bjork, illusions of competence). Op het scherm van de drill staat al
+     dat hij niet meetelt voor je doosje; tot v23.259 was dat waar omdat elke misser toch alles
+     kostte, en vanaf nu is het waar omdat het hier staat.
+
+     De tellers en het ledger hierboven lopen wel door: dat is geschiedenis, geen oordeel. Wat er
+     NIET gebeurt is de doos, de vervaldatum en de staat van dienst (st.rij), want die drie zijn
+     samen het oordeel. */
+  if(GRAM_KANAAL_TELT_NIET[kanaal || ""]){ S.gram[sleutel] = st; return; }
+
   /* v23.225: de dag wordt als geheel afgerekend in plaats van op het eerste antwoord.
 
      Hier stond een tak voor "eerste antwoord van vandaag" en een tak voor "later op de dag". Het
@@ -34324,7 +34359,31 @@ function gramBij(cid, goed, keuzes, pi, kanaal){
   else st.dagMis = (st.dagMis || 0) + 1;
   gramRijBij(st, !!goed);   // v23.254: de staat van dienst op DIT doosje, voordat er geoordeeld wordt
 
-  if(st.dagMis){
+  var dagN = (st.dagGoed || 0) + (st.dagMis || 0);
+  if(dagN >= GRAM_OORDEEL_MIN){
+    /* v23.259: genoeg antwoorden vandaag, dus het oordeel is een aandeel en geen gebeurtenis.
+
+       Dit keert v23.170 en v23.254 om, en met reden. Die schreven op dat een misser altijd de
+       promotie kost en dat de reset naar nul blijft staan, omdat Stefan daar zelf om vroeg en
+       omdat SuperMemo de een-stap-variant een onjuiste mutatie van Leitner noemt. Dat klopte bij
+       een oordeel over een of twee vragen: dan weet je niets en is nul het enige veilige antwoord.
+       Bij vijf of meer weet je wel iets, en dan is naar nul gooien informatie weggooien.
+
+       Onder de vijf antwoorden verandert er niets: dan geldt de oude regel hieronder. */
+    var deel = (st.dagGoed || 0) / dagN;
+    st.half = 0;
+    if(deel >= GRAM_OORDEEL_OP){
+      st.box = Math.min((st.boxVoor || 0) + 1, GRAM_BOX.length - 1);
+      st.due = addDays(today(), GRAM_BOX[st.box]);
+    } else if(deel >= GRAM_OORDEEL_NEER){
+      // blijven staan is een uitkomst en geen niets: je ziet het morgen terug op dezelfde doos
+      st.box = st.boxVoor || 0;
+      st.due = addDays(today(), 1);
+    } else {
+      st.box = Math.max(0, (st.boxVoor || 0) - 1);
+      st.due = addDays(today(), 1);
+    }
+  } else if(st.dagMis){
     /* Eén misser vandaag en de promotie gaat niet door, hoeveel je er daarna ook goed hebt. Dit is
        bewust hetzelfde harde oordeel als voorheen: de zachtere variant is in v23.208 voorgesteld en
        door Stefan afgewezen. Wat je hierna nog oefent is oefening, geen herkansing. */
@@ -34414,7 +34473,11 @@ function gramOnderhoudTop(){
 
    gramWachtrij() zelf blijft ongemoeid. Die wordt ook gelezen door het voortgangsscherm en door
    gramOnderhoudTop(), en die willen wel degelijk op doos sorteren. */
-var GRAM_LEERBEURTEN = 3;   // zoveel verschillende patronen biedt de dagles aan
+/* v23.259: van drie naar twee. De opfrisser ging van twee naar vijf vragen, en drie leerbeurten
+   zouden het grammaticablok op vijftien vragen zetten. Tien is al bijna een verdubbeling van de
+   zes van gisteren. De doorstroom die v23.255 kocht komt terug uit de oefensessie, en als Stefan
+   die niet doet hoort dit getal terug naar drie. */
+var GRAM_LEERBEURTEN = 2;   // zoveel verschillende patronen biedt de dagles aan
 function gramLeerRij(){
   var rij = [];
   try { rij = gramWachtrij(); } catch(e){ return []; }
@@ -34558,10 +34621,16 @@ function gcOpfrisId(cid, pi){
 }
 /* v23.225: hoeveel vragen een opfrisser en een drill hebben. Als getal en niet als losse cijfers in
    de code, want de proef in pw-opfris.js rekent ermee en die mag niet zijn eigen aanname doen. */
-var GC_OPFRIS_VRAGEN = 2;
+/* v23.259: van twee naar vijf. Met twee vragen kan het oordeel van gramBij nooit vallen in de
+   dagles, en dan zou de nieuwe regel alleen in een oefensessie gelden. Zie de kop bij
+   GRAM_OORDEEL_MIN voor waarom vijf en niet twee of tien. */
+var GC_OPFRIS_VRAGEN = 5;
 /* v23.254: en zoveel als het doosje op nul staat. Zie gcOpfrisBouw(). */
 var GC_OPFRIS_LES_VRAGEN = 4;
-var GC_DRILL_VRAGEN = 5;
+/* v23.259: van vijf naar acht. De drill hoort meer te zijn dan de opfrisser, dat is zijn hele
+   bestaansreden, en de opfrisser staat nu op vijf. Acht is ook het punt waar een gokker nog maar
+   14 procent van de promoties haalt in plaats van 19. */
+var GC_DRILL_VRAGEN = 8;
 /* De drill blijft over het hele concept gaan, ook als je op \u00e9\u00e9n patroon omkwam: vijf vragen uit
    dezelfde val is drillen op vijf keer hetzelfde woord, en dan oefen je de vorm en niet de keuze. */
 function gcDrillId(cid){
@@ -34586,7 +34655,9 @@ function gcDrillBouw(id){
   var naam = ct(c.naam, c.naamEn || c.naam);
   return {
     icon: c.icon || "\ud83c\udfaf",
-    id: id, concept: cid, drill: true,
+    // v23.261: drillSess en niet drill, want `drill` betekent bij een concept iets anders (de
+    // doorsteek naar de Conjugador). gwKanaal() leest dit veld.
+    id: id, concept: cid, drill: true, drillSess: true,
     titel: ct("Nog even oefenen: " + naam, "A bit more practice: " + naam),
     titelEn: "A bit more practice: " + (c.naamEn || c.naam),
     pitch: ct(vragen.length + " nieuwe vragen. Ze tellen niet mee voor je doosje.",
@@ -34606,6 +34677,147 @@ function gcDrillBouw(id){
    v23.190 gaf deze functie zijn eigen cache. v23.191 haalt hem weg: er is nu één fabriek
    (gcGebouwd) met een register van bouwers, en dit is nog alleen de bouwer. Een tweede
    opvrager die de cache oversla­at kan niet meer bestaan, want er is niets om over te slaan. */
+/* ================= DE OEFENSESSIE (v23.260) =================
+
+   Stefan: "wil ik echt oefenen dan wil ik er veel meer achter elkaar oefenen, 10 of 20 of 50."
+
+   Hij krijgt zijn aantal, maar niet allemaal over hetzelfde onderwerp. Rohrer, Dedrick en Stershic
+   (2015): dezelfde oefenstof gebundeld per soort tegenover door elkaar, getoetst een maand later,
+   38 procent tegen 72. Door elkaar dwingt je per vraag opnieuw te kiezen welke regel geldt, en dat
+   is precies wat er bij indefinido tegenover imperfecto misgaat.
+
+   Hoogstens GC_SESSIE_PER_ONDERWERP vragen per onderwerp, want daarboven koop je overlearning:
+   Rohrer en Taylor (2006) zagen dat voordeel binnen vier weken verdampen.
+
+   De volgorde van de onderwerpen is die van de wachtrij (zwakste en langst vervallen eerst), met
+   de rest van de open onderwerpen erachter zodat een lange sessie ook aan nieuwe stof toekomt. */
+var GC_SESSIE_LENGTES = [10, 20, 40];
+var GC_SESSIE_PER_ONDERWERP = 8;
+function gcSessieId(n){ return "sessie-" + n; }
+/* De onderwerpen van een sessie: eerst wat toe is, dan de rest van wat open staat. Alleen
+   onderwerpen die ook echt vragen kunnen maken; een concept zonder patronen levert niets en hoort
+   dan ook geen plek in de rij te krijgen. */
+function gcSessieOnderwerpen(){
+  var gehad = {}, uit = [];
+  try {
+    gramWachtrij().forEach(function(x){
+      var id = x && x.c && x.c.id;
+      if(!id || gehad[id]) return;
+      gehad[id] = 1; uit.push(id);
+    });
+  } catch(e){}
+  try {
+    gcGeordend().forEach(function(c){
+      if(gehad[c.id] || !gcConceptOpen(c.id)) return;
+      gehad[c.id] = 1; uit.push(c.id);
+    });
+  } catch(e){}
+  return uit;
+}
+function gcSessieBouw(id){
+  var n = parseInt(String(id || "").replace(/^sessie-/, ""), 10);
+  if(!n || isNaN(n)) return null;
+  var ids = gcSessieOnderwerpen();
+  if(!ids.length) return null;
+  /* Per onderwerp een voorraadje vragen klaarzetten, en daarna om en om uitdelen. Andersom (per
+     beurt een vraag maken) zou elk patroon opnieuw kunnen trekken en dus dubbelen opleveren;
+     gcMaakVragen() houdt binnen een aanroep zelf bij wat er al gevraagd is. */
+  var perOnderwerp = Math.min(GC_SESSIE_PER_ONDERWERP, Math.max(1, Math.ceil(n / ids.length) + 1));
+  var potten = [];
+  ids.forEach(function(cid){
+    var c = gcConcept(cid);
+    if(!c) return;
+    var vr = [];
+    try { vr = gcMaakVragen(c, perOnderwerp) || []; } catch(e){ vr = []; }
+    // de vraag draagt zijn eigen onderwerp mee: in een sessie is dat niet af te leiden uit o
+    vr.forEach(function(q){ q.cid = cid; });
+    if(vr.length) potten.push(vr);
+  });
+  if(!potten.length) return null;
+  var vragen = [], ronde = 0;
+  while(vragen.length < n){
+    var gaf = false;
+    for(var i = 0; i < potten.length && vragen.length < n; i++){
+      if(potten[i].length > ronde){ vragen.push(potten[i][ronde]); gaf = true; }
+    }
+    if(!gaf) break;   // alles uitgedeeld, ook al waren het er minder dan gevraagd
+    ronde++;
+  }
+  if(vragen.length < 2) return null;
+  var namen = {};
+  vragen.forEach(function(q){ namen[q.cid] = 1; });
+  var aantalOnderwerpen = Object.keys(namen).length;
+  return {
+    id: id, concept: null, sessie: true, icon: "\ud83c\udfaf", drill: null,
+    titel: "Oefensessie", titelEn: "Practice run",
+    pitch: vragen.length + " vragen over " + aantalOnderwerpen + " onderwerpen, door elkaar",
+    pitchEn: vragen.length + " questions across " + aantalOnderwerpen + " topics, mixed",
+    stappen: [{
+      kop: vragen.length + " vragen, door elkaar",
+      kopEn: vragen.length + " questions, mixed",
+      uitleg: "", uitlegEn: "",
+      vragen: vragen
+    }]
+  };
+}
+/* Waar stonden de doosjes toen deze sessie begon? Zonder deze foto kan het slotscherm niet zeggen
+   wat er met je kaart gebeurd is, en dat is het enige wat van een sessie overblijft. */
+function gcSessieFoto(){
+  var uit = {};
+  gcSessieOnderwerpen().forEach(function(cid){
+    try { uit[cid] = gramLees(cid).box || 0; } catch(e){ uit[cid] = 0; }
+  });
+  return uit;
+}
+function gcSessieStart(n){
+  gwStart(gcSessieId(n), 0);
+  if(gwSess){ gwSess.voorBox = gcSessieFoto(); renderCheat(); }
+}
+/* Het slotscherm: niet je score maar wat er met je kaart gebeurde. Een doos omlaag is geen straf
+   maar een afspraak om het vaker terug te zien, en zo hoort het er ook te staan. */
+function gcSessieSlotHtml(){
+  var voor = (gwSess && gwSess.voorBox) || null;
+  if(!voor) return "";
+  var op = [], blijft = [], neer = [];
+  Object.keys(voor).forEach(function(cid){
+    var nu = 0;
+    try { nu = gramLees(cid).box || 0; } catch(e){ nu = 0; }
+    var c = gcConcept(cid);
+    if(!c) return;
+    var naam = ct(c.naam, c.naamEn);
+    if(nu > voor[cid]) op.push(naam + " \u2192 " + nu);
+    else if(nu < voor[cid]) neer.push(naam + " \u2192 " + nu);
+  });
+  /* "blijft staan" telt alleen de onderwerpen die je deze sessie ook echt gehad hebt, en dat weet
+     de vragenlijst en niet de foto: de foto staat over alle openstaande onderwerpen, ook die waar
+     deze sessie niet aan toekwam. */
+  var gehad = {};
+  try {
+    var o = gwOnderwerp(gwSess.id);
+    (o.stappen[0].vragen || []).forEach(function(q){ if(q && q.cid) gehad[q.cid] = 1; });
+  } catch(e){}
+  blijft = Object.keys(gehad).filter(function(cid){
+    var nu = 0;
+    try { nu = gramLees(cid).box || 0; } catch(e){ nu = 0; }
+    return nu === voor[cid] && gcConcept(cid);
+  }).map(function(cid){ var c = gcConcept(cid); return ct(c.naam, c.naamEn); });
+  var regel = function(kleur, kop, rij){
+    if(!rij.length) return "";
+    return "<p style='margin:6px 0 0; font-size:.88rem'><b style='color:" + kleur + "'>" + kop +
+      "</b> <span class='muted'>" + rij.join(" \u00b7 ") + "</span></p>";
+  };
+  return "<div style='margin-top:10px'>" +
+    "<p style='margin:0'><b>" + ct("Wat er met je kaart gebeurde", "What happened to your map") + "</b></p>" +
+    regel("var(--green)", ct("Een doos omhoog:", "A box up:"), op) +
+    regel("var(--muted)", ct("Blijft staan:", "Unchanged:"), blijft) +
+    regel("var(--accent)", ct("Een doos omlaag, komt vaker terug:", "A box down, comes back sooner:"), neer) +
+    (op.length || neer.length ? "" :
+      "<p class='muted' style='margin:6px 0 0; font-size:.85rem'>" +
+      ct("Nog niets verschoven: een doosje beweegt pas na vijf antwoorden op hetzelfde onderwerp.",
+         "Nothing moved yet: a box only shifts after five answers on the same topic.") + "</p>") +
+    "</div>";
+}
+
 function gcOpfrisBouw(id){
   var sleutel = String(id || "").replace(/^opfris-/, "");
   var cid = sleutel.split("#")[0];
@@ -35107,7 +35319,9 @@ var gcCache = {};
 var GC_BOUWERS = [
   {pre: "concept-", bouw: function(id){ return gcBouw(id.replace(/^concept-/, "")); }},
   {pre: "opfris-",  bouw: function(id){ return gcOpfrisBouw(id); }},
-  {pre: "drill-",   bouw: function(id){ return gcDrillBouw(id); }}
+  {pre: "drill-",   bouw: function(id){ return gcDrillBouw(id); }},
+  // v23.260: de oefensessie. Eén stap met vragen van verschillende onderwerpen door elkaar.
+  {pre: "sessie-",  bouw: function(id){ return gcSessieBouw(id); }}
 ];
 function gcBouwerVoor(id){
   var s = String(id || "");
@@ -37251,20 +37465,29 @@ function gwKies(i){
    gissen. Dezelfde afspraak als S.errors[...].bron = "les" bij de vormdrill (v23.130).
 
    De naam van het kanaal staat één keer, in gwKanaal(), want hij gaat naar twee stores. */
-function gwKanaal(o){ return o && o.opfris ? "opfris" : "microles"; }
+function gwKanaal(o){
+  if(o && o.drillSess) return "drill";
+  if(o && o.sessie) return "sessie";
+  return (o && o.opfris) ? "opfris" : "microles";
+}
 function gramAntwoord(o, stap, q, i){
   var goed = i === q.g;
   /* v23.107, en dit is de kern. Hier stond onvoorwaardelijk gramBij(o.concept), dus elke vraag
      van elke stap van elk onderwerp ging naar één doos per onderwerp: 23 dozen voor 122
      patronen. Draagt een stap een brok-id, dan gaat het antwoord daarheen. */
   if(stap && stap.brok){ brokBij(stap.brok, goed); return; }
-  if(!o || !o.concept) return;
+  /* v23.260: in een oefensessie staan vragen van verschillende onderwerpen door elkaar, dus het
+     onderwerp kan niet meer uit o komen. Draagt de vraag er een, dan telt die; dat is dezelfde
+     afspraak als bij q.pi hieronder (v23.228). Buiten een sessie draagt geen enkele vraag een cid
+     en verandert er dus niets. */
+  var cidQ = (q && q.cid) || (o && o.concept);
+  if(!cidQ) return;
   /* v23.212: het aantal knoppen gaat mee. Dit is de enige plek in de app waar een doosje omhoog
      kan op een antwoord dat je ook had kunnen raden, en dus de enige plek die het hoeft door te
      geven. De vraag draagt het feit al (q.o); geen enkele andere plek schrijft het opnieuw. */
   /* v23.228: en het patroon gaat mee. Draagt de vraag er geen (dat kan bij een handgeschreven
      wizardstap), dan landt het antwoord op de kale sleutel, net als voorheen. */
-  gramBij(o.concept, goed, (q && q.o) ? q.o.length : 0,
+  gramBij(cidQ, goed, (q && q.o) ? q.o.length : 0,
           (q && typeof q.pi === "number") ? q.pi : null, gwKanaal(o));
 }
 function gwVolgende(){
@@ -37558,6 +37781,14 @@ function gwLijstHtml(){
        waarom. Nu is het de route: genummerd, in de volgorde waarin ze op elkaar bouwen, met de
        gesloten onderwerpen erbij en de voorwaarde erop. De korte opening blijft (v20.7). */
     gcStandHtml() +
+    /* v23.260: de oefensessie. Hij staat boven de route, want dit is wat je doet als je echt wilt
+       oefenen; de route eronder is waar je kijkt hoe het ervoor staat. */
+    "<p style='margin:14px 0 4px'><b>" + ct("Even echt oefenen", "A real practice run") + "</b> <span class='muted'>\u00b7 " +
+      ct("vragen door elkaar uit je openstaande onderwerpen, en ze tellen mee",
+         "questions mixed across your open topics, and they count") + "</span></p>" +
+    "<div class='row'>" + GC_SESSIE_LENGTES.map(function(n){
+      return "<button type='button' class='ghost' data-gcsessie='" + n + "'>" + n + " " + ct("vragen", "questions") + "</button>";
+    }).join("") + "</div>" +
     (con.length
       ? "<p style='margin:14px 0 4px'><b>" + ct("De route", "The route") + "</b> <span class='muted'>\u00b7 " +
           ct(GC_ORDE.length + " onderwerpen, in de volgorde waarin ze op elkaar bouwen",
@@ -37813,6 +38044,7 @@ function renderGramWiz(){
          Dat is een uitnodiging zonder knop, en op het moment dat je net iets fout had is dat precies
          het moment waarop je hem nodig hebt. Nu een echte knop, en alleen als er iets misging en het
          onderwerp een concept heeft om vragen uit te maken. */
+      (o.sessie ? gcSessieSlotHtml() : "")+
       (perfect ? "" : (o.concept && !o.drill
         ? "<div class='row' style='margin-top:10px'><button class='ghost' id='gwDrill'>\u2795 "+
             ct("Nog "+GC_DRILL_VRAGEN+" van dit onderwerp","Another "+GC_DRILL_VRAGEN+" of this topic")+"</button></div>"+
@@ -37864,6 +38096,9 @@ function wireGramWiz(el){
   });
   /* v23.256: zelf een onderwerp kiezen. De knop zit in een rij die GEEN data-gclees heeft (die rij
      staat immers op slot), dus er is niets om te stoppen; alleen openen en opnieuw tekenen. */
+  el.querySelectorAll("[data-gcsessie]").forEach(function(d){
+    d.onclick = function(){ gcSessieStart(+d.getAttribute("data-gcsessie")); };
+  });
   el.querySelectorAll("[data-gckies]").forEach(function(d){
     d.onclick = function(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();

@@ -422,7 +422,10 @@ const { chromium } = require('playwright');
      en zette het doosje toch een hele stap verder. Wat hier bewaakt blijft is de grens: één stap, en
      hoogstens een handvol vragen. Het exacte getal staat in GC_OPFRIS_VRAGEN en wordt in
      pw-gramflow.js tegen de app zelf gelegd. */
-  ok(inFlow.stappen === 1 && inFlow.vragen >= 1 && inFlow.vragen <= 3,
+  /* v23.259: het aantal ging van twee naar vijf, want onder de vijf antwoorden velt gramBij geen
+     oordeel en zou de nieuwe doosregel nooit gelden in de dagles. De grens die hier bewaakt wordt
+     is niet het getal maar de vorm: ÉÉN stap, dus geen tweede microles, en niet eindeloos lang. */
+  ok(inFlow.stappen === 1 && inFlow.vragen >= 1 && inFlow.vragen <= 8,
     'en het is één korte stap, geen tweede les (' + inFlow.stappen + ' stappen, ' + inFlow.vragen + ' vragen)');
   await page.evaluate(() => { gwSluit(); });
 
