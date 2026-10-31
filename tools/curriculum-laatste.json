@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-09-15T07:07:51.641Z",
- "versie": "v23.255",
+ "wanneer": "2026-10-31T07:55:28.356Z",
+ "versie": "v23.262",
  "gaten": [
   {
    "tag": "costar",
@@ -8,67 +8,63 @@
    "fouten": 29
   },
   {
-   "tag": "basis",
+   "tag": "les2",
    "soort": "verschijnsel",
-   "fouten": 24
+   "fouten": 23
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s349",
-   "s350",
-   "s351",
-   "s352",
-   "s353",
-   "s354",
-   "s355",
-   "s356",
-   "s358",
-   "s359",
-   "s360"
+   "s369",
+   "s370",
+   "s371",
+   "s372",
+   "s373",
+   "s374",
+   "s375",
+   "s376",
+   "s379"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-14",
-  "num": 14,
+  "id": "b1-15",
+  "num": 15,
   "niveau": "B1",
-  "titel": "El transporte público en la ciudad",
-  "doel": "Leren praten over openbaar vervoer in een Spaanse stad en de regel van 'costar' toepassen",
-  "doelEn": "To talk about public transport in a Spanish city and apply the 'costar' rule",
+  "titel": "La tecnología en nuestra vida",
+  "doel": "Leren over technologie en digitale gewoontes in het Spaans",
+  "doelEn": "Learning about technology and digital habits in Spanish",
   "spiek": [
-   32
+   33
   ],
   "words": [
-   "w342",
-   "w343",
-   "w344",
-   "w345",
-   "w346",
-   "w347",
-   "w348",
-   "w349",
-   "w350",
-   "w351",
-   "w352",
-   "w353",
-   "w354",
-   "w355"
+   "w356",
+   "w357",
+   "w358",
+   "w359",
+   "w361",
+   "w362",
+   "w363",
+   "w364",
+   "w365",
+   "w366",
+   "w367",
+   "w368",
+   "w369"
   ],
   "sents": [
-   "s361",
-   "s362",
-   "s363",
-   "s364",
-   "s365",
-   "s366",
-   "s367",
-   "s368"
+   "s380",
+   "s381",
+   "s382",
+   "s383",
+   "s385",
+   "s386",
+   "s387"
   ],
   "quizzes": [
-   "q-b1-14"
+   "q-b1-15"
   ]
  }
 }

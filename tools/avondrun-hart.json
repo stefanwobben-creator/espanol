@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-10-30T08:05:38.521Z",
- "gelukt": false,
+ "wanneer": "2026-10-31T07:55:28.360Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -10,35 +10,35 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 9,
   "toetsjes": 1,
-  "kaal": 2,
-  "nieuweLes": 0
+  "kaal": 1,
+  "nieuweLes": 1
  },
- "versie": "v23.256",
+ "versie": "v23.262",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (ayer)",
-  "s380: afgekeurd — De zin is praktisch toepasbaar en het Spaans is correct, maar de uitleg is onnauwkeurig: 'cumplido' betekent 'compliment' in de zin van een beleefdheidsuiting, niet per se een compliment in de betekenis van 'lofprijzing'. De alternatieven zijn wel correct.",
-  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 1: Het correcte antwoord is 'recomiende' (optie 2), maar de uitleg klopt niet: na 'recomendar que' gebruik je het subjuntivo omdat het gaat om een advies over een actie die nog moet gebeuren, niet omdat het om een algemene noodzaak gaat.; vraag 3: Het correcte antwoord is 'que estés' (optie 1), maar de uitleg is onnauwkeurig: na 'no me gusta que' gebruik je het subjuntivo omdat het gaat om een gevoel, niet omdat de situatie 'niet zeker' is.)",
-  "nieuwe les AFGEKEURD:\n - woord 7 (w362): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".\n - zin 1 (s380): veld \"tag\" ontbreekt\n - zin 2 (s381): veld \"tag\" ontbreekt\n - zin 3 (s382): veld \"tag\" ontbreekt\n - zin 4 (s383): veld \"tag\" ontbreekt\n - zin 5 (s384): veld \"tag\" ontbreekt\n - zin 6 (s385): veld \"tag\" ontbreekt\n - zin 7 (s386): veld \"tag\" ontbreekt\n - zin 8 (s387): veld \"tag\" ontbreekt",
-  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s378 (todos los días)",
+  "s380: afgekeurd — De uitleg is onjuist: 'olvidó' is correct in de indefinido, maar 'tuve' is ook correct (indefinido), niet '-e'. Daarnaast is 'dividir la cuenta' natuurlijker dan 'partir la cuenta' in deze context.",
+  "woord w360 eruit: woord 1 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "1 van de 14 woorden afgekeurd, de rest gaat door",
+  "s384: afgekeurd — Niemand zegt 'hacer videollamadas'; natuurlijker is 'hacer videollamadas' vervangen door 'hacer videollamadas' of 'videollamar'.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 3 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet met de regel: na 'molestar' moet de subjuntivo volgen als het gaat om een gevoel, dus 'me molesta que' is correct.; vraag 3: De uitleg is onjuist: 'soler' wordt gevolgd door een infinitief, maar 'descargo' is geen infinitief. De correcte infinitief is 'descargar'.; vraag 4: De uitleg klopt niet met de regel: na 'gustar' moet de subjuntivo volgen als het gaat om een gevoel, dus 'gusta que' is correct.)"
  ],
- "mis": [
-  "de nieuwe les"
- ],
+ "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 2
+   "naZeef": 2,
+   "naKeuring": 1
   }
  ],
- "reden": "de run is niet afgemaakt",
+ "reden": null,
  "geweigerd": 0,
- "gegenereerd": false,
- "gepubliceerd": false,
- "status": "geklapt",
- "pogingen": 2,
- "afgemaakt": "2026-10-30T08:05:49.384Z"
+ "gegenereerd": true,
+ "gepubliceerd": true,
+ "status": "gepubliceerd",
+ "pogingen": 1,
+ "afgemaakt": "2026-10-31T08:05:19.413Z"
 }
