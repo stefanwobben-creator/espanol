@@ -914,6 +914,24 @@ Antwoord met UITSLUITEND JSON in deze vorm:
  "cheat":{"titel":"...","titelEn":"...","html":"<p>…</p>","htmlEn":"<p>…</p>"}}`;
 }
 
+/* Het themaslug van een nieuwe les. De woorden krijgen van het model een tag mee ("<thema-slug>"
+   staat zo in de prompt), de zinnen in de praktijk niet. Dus nemen we de tag die het vaakst op de
+   woorden staat, en pas als die er ook niet is maken we er zelf een van de titel. Een lege tag is
+   geen optie: de keuring eist het veld, en dan valt een hele les om op iets dat de machine weet. */
+function themaSlug(les) {
+  const tel = {};
+  (les.words || []).forEach(w => {
+    const t = String((w && w.tag) || "").trim();
+    if (t) tel[t] = (tel[t] || 0) + 1;
+  });
+  const top = Object.keys(tel).sort((a, b) => tel[b] - tel[a])[0];
+  if (top) return top;
+  const uit = String(les.titel || "les").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24);
+  return uit || "les";
+}
+
 async function maakNieuweLes(inv, motor) {
   const niveau = volgendNiveau(inv);
   const vW = lib.volgendeId(inv.words, "w"), vS = lib.volgendeId(inv.sentences, "s");
@@ -938,9 +956,26 @@ async function maakNieuweLes(inv, motor) {
       console.error("    geen bruikbare les van het model"); return null;
     }
     les.words = les.words.slice(0, 14).map((w, i) => Object.assign({}, w, { id: ids.words[i] }));
+    /* ids, tag en alt dwingen we zelf af, net als in maakZinnen. Acht nachten op rij strandde de
+       nieuwe les op "veld tag ontbreekt" bij alle acht de zinnen. Het model krijgt een voorbeeld
+       met een tag erin en zet hem er toch niet op; dat is dan ook niets om op te wachten. */
+    const thema = themaSlug(les);
+    les.words = les.words.map(w => Object.assign({}, w, { tag: String(w.tag || "").trim() || thema }));
     les.sentences = les.sentences.slice(0, 8)
-      .map((s, i) => Object.assign({}, s, { id: ids.sents[i] }))
+      .map((s, i) => Object.assign({}, s, { id: ids.sents[i], tag: String(s.tag || "").trim() || thema }))
       .map(lib.herstelAlt);   // zelfde reden als in maakZinnen: alt is machinewerk
+    /* Woorden per stuk keuren, net als de zinnen hieronder en de toetsvragen verderop. In de nacht
+       van 30 oktober ging een hele les eraan omdat een van de veertien woorden zijn eigen antwoord
+       verklapte ("het sociale netwerk"). Dertien goede kaartjes, acht zinnen, een toetsje en een
+       spiekkaart kwijt om er een. Blijven er te weinig over, dan is de les alsnog niets. */
+    const goedeWoorden = les.words.filter(w => lib.valideer({ words: [w] }, inv).length === 0);
+    if (goedeWoorden.length < les.words.length) {
+      les.words.filter(w => goedeWoorden.indexOf(w) === -1).forEach(w =>
+        console.error(`    woord ${w.id} eruit: ${lib.valideer({ words: [w] }, inv).join(" | ")}`));
+      console.error(`    ${les.words.length - goedeWoorden.length} van de ${les.words.length} woorden afgekeurd, de rest gaat door`);
+    }
+    if (goedeWoorden.length < 10) { console.error("    te weinig woorden over, les niet aangeboden"); return null; }
+    les.words = goedeWoorden;
     if (les.quiz) les.quiz.id = ids.quiz;
     /* Alles of niets was hier te streng: een hele B1-les met acht zinnen ging de prullenbak in omdat
        de corrector bij een ervan een verkeerde tag zag. Nu vallen de afgekeurde zinnen eruit en gaat de
