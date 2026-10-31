@@ -18,7 +18,27 @@
 //
 // WAT DEZE SUITE BEWAAKT
 //
-//   1. HET AANTAL ONVERKLAARDE KAARTEN LOOPT NIET OP. Dit is de eigenlijke regel.
+//   1. HET AANTAL ONVERKLAARDE KAARTEN LOOPT NIET OP. Dit is de eigenlijke regel. Een kaart geldt
+//      als uitgelegd zodra IETS hem claimt: een concept, een handgeschreven wizard, of de les die
+//      hem meebracht.
+//
+//      v23.262: dat laatste stond er niet bij, en dat was een meetfout met gevolgen. Gemeten:
+//
+//          kaart 29  <-  En la ciudad o en el campo
+//          kaart 30  <-  El trabajo y el tiempo libre        (met de hand aangehecht, v23.251)
+//          kaart 31  <-  El turismo en España                (met de hand aangehecht, v23.254)
+//          kaart 32  <-  El transporte público en la ciudad  (met de hand aangehecht, v23.258)
+//          kaart 33  <-  La tecnología en nuestra vida       (hierop stond main vanochtend rood)
+//
+//      Vijf lessen op rij, elke kaart geclaimd door de les die hem meebracht. Die kaart IS de
+//      uitleg: hij staat in CHEATSHEET, de les wijst hem aan, en de app toont hem onder "Uit je
+//      lessen". Drie keer is er met de hand een kaart aan een concept gehangen om deze suite
+//      groen te krijgen, en drie keer stond main daarvoor dagen tot weken dicht. Dat is een
+//      pleister op een meetfout, en de meetfout hoort gerepareerd.
+//
+//      Wat NIET verandert: een kaart die door niets geclaimd wordt, is en blijft rood. Dat is het
+//      geval waarvoor deze suite op 24 augustus geschreven is (98 van de 281 toetsvragen over stof
+//      die werkelijk nergens stond) en dat geval komt er niet meer in.
 //   2. DE TWEE NIEUWE LESSEN STAAN ER, hangen aan de kaarten waar ze bij horen, en staan in de
 //      leervolgorde. Een concept buiten GC_ORDE krijgt rang 999 en komt nooit aan de beurt.
 //   3. ELKE LES KAN GENOEG VRAGEN MAKEN. Het controlegeval bij 2: een les toevoegen is triviaal, een
@@ -62,9 +82,16 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 1. kaarten met een toets en zonder les --');
   const gat = await page.evaluate(() => {
     const tk = gwTrackKey();
-    const metLes = {};
-    gcGeordend().forEach(function (c) { ((c.spiek || {})[tk] || []).forEach(function (i) { metLes[i] = 1; }); });
-    GRAMWIZ.forEach(function (o) { ((o.spiek || {})[tk] || []).forEach(function (i) { metLes[i] = 1; }); });
+    const metLes = {}, metConcept = {};
+    gcGeordend().forEach(function (c) { ((c.spiek || {})[tk] || []).forEach(function (i) { metLes[i] = 1; metConcept[i] = 1; }); });
+    GRAMWIZ.forEach(function (o) { ((o.spiek || {})[tk] || []).forEach(function (i) { metLes[i] = 1; metConcept[i] = 1; }); });
+    /* v23.262: en de lessen zelf. Een les brengt haar eigen spiekbriefkaart mee en claimt hem hier;
+       die kaart is de uitleg en staat in de app onder "Uit je lessen". metConcept houdt apart bij
+       wat een echt concept dekt, zodat de groep "alleen door de eigen les" zichtbaar blijft. */
+    const uitLes = {};
+    (((window.TRACKS || {})[tk] || {}).lessons || []).forEach(function (l) {
+      (l.spiek || []).forEach(function (i) { metLes[i] = 1; if (!metConcept[i]) uitLes[i] = l.titel || l.id; });
+    });
     const zonder = {}, vragen = {};
     QUIZZES.forEach(function (q) {
       (q.spiek || []).forEach(function (i) {
@@ -79,7 +106,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       kaarten: lijst.map(function (i) { return i + ' "' + String(CHEATSHEET[i].titel).slice(0, 34) + '" (' + vragen[i] + ' vragen)'; }),
       n: lijst.length,
       vragenTotaal: lijst.reduce(function (a, i) { return a + vragen[i]; }, 0),
-      alleVragen: QUIZZES.reduce(function (a, q) { return a + (q.vragen || []).length; }, 0)
+      alleVragen: QUIZZES.reduce(function (a, q) { return a + (q.vragen || []).length; }, 0),
+      // welke kaarten alleen door hun eigen les gedekt worden, en door geen enkel concept
+      alleenLes: Object.keys(uitLes).map(Number).sort(function (a, b) { return a - b; })
+        .map(function (i) { return i + ' "' + uitLes[i] + '"'; })
     };
   });
   gat.kaarten.forEach(function (k) { console.log('   ' + k); });
@@ -87,6 +117,12 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     Math.round(100 * gat.vragenTotaal / gat.alleVragen) + '%)');
   ok(gat.n <= GATEN_MAX,
     'het aantal onverklaarde kaarten loopt niet op (' + gat.n + ' van maximaal ' + GATEN_MAX + ')');
+  /* Geen eis maar een getal. Een kaart die alleen door zijn eigen les wordt gedekt is uitgelegd,
+     maar hij heeft geen opgeknipte microles en staat niet op de route. Zolang dat er een handvol
+     zijn is dat de normale gang van zaken; loopt het op naar tientallen, dan is het leerpad in
+     tweeën gegroeid en hoort daar een ronde aan besteed te worden. */
+  console.log('   alleen door hun eigen les gedekt: ' +
+    (gat.alleenLes.length ? gat.alleenLes.join(' | ') : 'geen'));
   if (gat.n < GATEN_MAX) {
     console.log('   ↓ er is een gat gedicht: zet GATEN_MAX in deze suite op ' + gat.n);
   }
