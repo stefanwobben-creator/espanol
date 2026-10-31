@@ -105,7 +105,15 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     uit.dichtN = dicht.length;
     uit.dichtGeteld = gcDichtAantal();
     uit.dichtZonderReden = dicht.filter(function (d) { return !d.querySelector('.lbody span').textContent.trim(); }).length;
+    /* v23.256: een gesloten onderwerp heeft niet meer altijd een hangslot. Wacht het alleen op een
+       plek in het venster, dan staat er een knop "Nu doen": dat is geen slot maar een keuze, en zo
+       hoort het er ook uit te zien. Een echte poort (een voorwaarde uit GC_VOOR, of de vormladder
+       van v23.248) houdt zijn hangslot. Samen dekken ze nog steeds alle gesloten onderwerpen af, en
+       dat is wat deze suite blijft bewaken: geen gesloten rij zonder uitleg ernaast. */
     uit.dichtMetSlot = dicht.filter(function (d) { return d.querySelector('.lstatus').textContent.indexOf('🔒') !== -1; }).length;
+    uit.dichtMetKnop = dicht.filter(function (d) { return !!d.querySelector('[data-gckies]'); }).length;
+    uit.dichtKnopSoort = dicht.filter(function (d) { return !!d.querySelector('[data-gckies]'); })
+      .map(function (d) { return gcSlotSoort(d.getAttribute('data-gcid') || (d.querySelector('[data-gckies]') || {}).getAttribute && d.querySelector('[data-gckies]').getAttribute('data-gckies')); });
     uit.slotRedenen = dicht.slice(0, 3).map(function (d) { return d.querySelector('.lbody span').textContent.trim(); });
     // en het cijfer blijft ook bij een slot staan, anders is de route niet te lezen
     uit.nummersOplopend = uit.nummers.every(function (n, i) { return n === '✓' || n === String(i + 1); });
@@ -169,7 +177,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('   ' + r.slotRedenen.join(' | '));
   ok(r.dichtN === r.dichtGeteld, 'de gesloten onderwerpen staan er allemaal (' + r.dichtN + ')');
   ok(r.dichtZonderReden === 0, 'en bij elk staat waarom (' + r.dichtZonderReden + ' zonder)');
-  ok(r.dichtMetSlot === r.dichtN, 'met een slot ernaast');
+  ok(r.dichtMetSlot + r.dichtMetKnop === r.dichtN,
+    'en ernaast staat een slot of een knop om hem nu te pakken (' + r.dichtMetSlot + ' slot, ' +
+    r.dichtMetKnop + ' knop, samen ' + r.dichtN + ')');
+  ok(r.dichtKnopSoort.every(function (x) { return x === 'venster'; }),
+    'de knop staat alleen bij onderwerpen die op een plek wachten (' + (r.dichtKnopSoort.join(',') || 'geen') + ')');
 
   console.log('\n-- 4. het controlegeval: zichtbaar is niet open --');
   ok(r.open + r.dichtN === r.routeN, 'elke rij is óf klikbaar óf op slot, nooit allebei of geen van beide');
