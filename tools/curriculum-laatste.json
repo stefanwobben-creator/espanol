@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-10-31T07:55:28.356Z",
- "versie": "v23.262",
+ "wanneer": "2026-11-01T08:36:00.956Z",
+ "versie": "v23.263",
  "gaten": [
   {
    "tag": "costar",
@@ -15,56 +15,58 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s369",
-   "s370",
-   "s371",
-   "s372",
-   "s373",
-   "s374",
-   "s375",
-   "s376",
-   "s379"
+   "s388",
+   "s389",
+   "s390",
+   "s391",
+   "s392",
+   "s393",
+   "s394",
+   "s396",
+   "s397",
+   "s398"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-15",
-  "num": 15,
+  "id": "b1-16",
+  "num": 16,
   "niveau": "B1",
-  "titel": "La tecnología en nuestra vida",
-  "doel": "Leren over technologie en digitale gewoontes in het Spaans",
-  "doelEn": "Learning about technology and digital habits in Spanish",
+  "titel": "La vida en la ciudad vs. el campo",
+  "doel": "De leerling kan voor- en nadelen van het leven in de stad en op het platteland vergelijken en beschrijven, met focus op woordenschat rondom wonen, vervoer, milieu en levenskwaliteit.",
+  "doelEn": "The student can compare and describe advantages and disadvantages of city life versus countryside life, focusing on vocabulary related to housing, transport, environment, and quality of life.",
   "spiek": [
-   33
+   34
   ],
   "words": [
-   "w356",
-   "w357",
-   "w358",
-   "w359",
-   "w361",
-   "w362",
-   "w363",
-   "w364",
-   "w365",
-   "w366",
-   "w367",
-   "w368",
-   "w369"
+   "w370",
+   "w371",
+   "w372",
+   "w373",
+   "w374",
+   "w375",
+   "w376",
+   "w377",
+   "w378",
+   "w379",
+   "w380",
+   "w381",
+   "w383"
   ],
   "sents": [
-   "s380",
-   "s381",
-   "s382",
-   "s383",
-   "s385",
-   "s386",
-   "s387"
+   "s399",
+   "s400",
+   "s401",
+   "s402",
+   "s403",
+   "s404",
+   "s405",
+   "s406"
   ],
   "quizzes": [
-   "q-b1-15"
+   "q-b1-16"
   ]
  }
 }

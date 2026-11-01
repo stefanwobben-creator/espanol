@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-10-31T07:55:28.360Z",
+ "wanneer": "2026-11-01T08:36:00.957Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,28 +10,27 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 9,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 1,
+  "kaal": 3,
   "nieuweLes": 1
  },
- "versie": "v23.262",
+ "versie": "v23.263",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s377 (anoche), s378 (todos los días)",
-  "s380: afgekeurd — De uitleg is onjuist: 'olvidó' is correct in de indefinido, maar 'tuve' is ook correct (indefinido), niet '-e'. Daarnaast is 'dividir la cuenta' natuurlijker dan 'partir la cuenta' in deze context.",
-  "woord w360 eruit: woord 1 (w360): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
-  "1 van de 14 woorden afgekeurd, de rest gaat door",
-  "s384: afgekeurd — Niemand zegt 'hacer videollamadas'; natuurlijker is 'hacer videollamadas' vervangen door 'hacer videollamadas' of 'videollamar'.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 3 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet met de regel: na 'molestar' moet de subjuntivo volgen als het gaat om een gevoel, dus 'me molesta que' is correct.; vraag 3: De uitleg is onjuist: 'soler' wordt gevolgd door een infinitief, maar 'descargo' is geen infinitief. De correcte infinitief is 'descargar'.; vraag 4: De uitleg klopt niet met de regel: na 'gustar' moet de subjuntivo volgen als het gaat om een gevoel, dus 'gusta que' is correct.)"
+  "s395: afgekeurd — De zin is niet praktisch toepasbaar: 'vosotros' wordt in Spanje zelden gebruikt in gesproken taal; 'ustedes' of 'jullie' (in Nederland) is natuurlijker.",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s395 (anoche)",
+  "1 vraag/vragen afgekeurd (poging 1): vraag 5: De uitleg klopt niet: hervir is een -ir werkwoord, dus de negatieve tú-vorm is hiervas (niet hiervas).",
+  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 5",
+  "woord w382 eruit: woord 1 (w382): de vertaling verklapt het Spaanse woord (\"het aanbod aan cultuur\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "1 van de 14 woorden afgekeurd, de rest gaat door"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
-   "naKeuring": 1
+   "naZeef": 3,
+   "naKeuring": 3
   }
  ],
  "reden": null,
@@ -39,6 +38,6 @@
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-10-31T08:05:19.413Z"
+ "pogingen": 2,
+ "afgemaakt": "2026-11-01T08:45:26.123Z"
 }
