@@ -1,11 +1,11 @@
 {
- "wanneer": "2026-11-01T08:36:00.956Z",
- "versie": "v23.263",
+ "wanneer": "2026-11-02T08:47:50.816Z",
+ "versie": "v23.267",
  "gaten": [
   {
    "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 29
+   "fouten": 30
   },
   {
    "tag": "les2",
@@ -15,58 +15,59 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s388",
-   "s389",
-   "s390",
-   "s391",
-   "s392",
-   "s393",
-   "s394",
-   "s396",
-   "s397",
-   "s398"
+   "s407",
+   "s408",
+   "s409",
+   "s410",
+   "s411",
+   "s412",
+   "s413",
+   "s414",
+   "s415",
+   "s416",
+   "s417",
+   "s418"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-16",
-  "num": 16,
+  "id": "b1-17",
+  "num": 17,
   "niveau": "B1",
-  "titel": "La vida en la ciudad vs. el campo",
-  "doel": "De leerling kan voor- en nadelen van het leven in de stad en op het platteland vergelijken en beschrijven, met focus op woordenschat rondom wonen, vervoer, milieu en levenskwaliteit.",
-  "doelEn": "The student can compare and describe advantages and disadvantages of city life versus countryside life, focusing on vocabulary related to housing, transport, environment, and quality of life.",
+  "titel": "La vida sostenible",
+  "doel": "Leren praten over duurzaamheid, milieu en kleine dagelijkse gewoontes die het verschil maken.",
+  "doelEn": "To talk about sustainability, the environment and small daily habits that make a difference.",
   "spiek": [
-   34
+   35
   ],
   "words": [
-   "w370",
-   "w371",
-   "w372",
-   "w373",
-   "w374",
-   "w375",
-   "w376",
-   "w377",
-   "w378",
-   "w379",
-   "w380",
-   "w381",
-   "w383"
+   "w384",
+   "w385",
+   "w386",
+   "w387",
+   "w388",
+   "w389",
+   "w390",
+   "w391",
+   "w392",
+   "w393",
+   "w394",
+   "w395",
+   "w396",
+   "w397"
   ],
   "sents": [
-   "s399",
-   "s400",
-   "s401",
-   "s402",
-   "s403",
-   "s404",
-   "s405",
-   "s406"
+   "s419",
+   "s421",
+   "s422",
+   "s423",
+   "s425",
+   "s426"
   ],
   "quizzes": [
-   "q-b1-16"
+   "q-b1-17"
   ]
  }
 }
