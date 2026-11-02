@@ -604,6 +604,13 @@ Eisen:
 - Opties mogen ook niet alleen in een ACCENT verschillen (ibamos tegenover íbamos). Die vraag wordt
   weggegooid: de app rekent een antwoord zonder accent overal goed, dus zo'n vraag toetst een regel
   die de app zelf niet hanteert. Laat de opties in verschillende woorden of vormen verschillen.
+- Elke vraag heeft precies EEN gat (___). De app vult de gekozen optie in dat ene gat; staat er een
+  tweede ___ in de zin, dan blijft die gewoon staan en is de vraag onleesbaar. Een optie met een
+  schuine streep erin ("hay / hay") is dus altijd fout: splits zo'n vraag of laat de tweede helft weg.
+- ELKE AFLEIDER MOET ECHT FOUT ZIJN op de plek van het gat. Niet ongebruikelijker, niet minder mooi:
+  fout. "Me cuesta" tegenover "Me cuesta mucho" is geen vraag, want allebei kan. Toets een vorm die
+  mis kan gaan (persoon, getal, tijd, geslacht, ser tegenover estar), niet een woordkeuze waar de
+  leerling net zo goed gelijk kan hebben als jij.
 - Bij elke vraag een Nederlandse vertaling ("nl") en Engelse ("ne") van de bedoelde zin, zodat de vraag
   te maken is zonder gokken.
 - "u" legt in het Nederlands uit waarom het goede antwoord goed is; "ue" is dezelfde uitleg in het Engels.

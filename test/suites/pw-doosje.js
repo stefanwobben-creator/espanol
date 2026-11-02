@@ -175,10 +175,23 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   ok(sim.f03.opNul <= 5, '97% goed staat vrijwel nooit meer op nul (' + sim.f03.opNul + '%, was 22%)');
   ok(sim.f07.opNul <= 20, '93% goed staat nog zelden op nul (' + sim.f07.opNul + '%, was 45%)');
   ok(sim.f07.hoog >= 50, 'en komt nu meestal in doos 4 of 5 (' + sim.f07.hoog + '%, was 12%)');
-  ok(sim.f15.opNul >= 25,
-     'CONTROLE: 85% goed staat nog vaak op nul (' + sim.f15.opNul + '%) — de regel is geen cadeau');
+  /* v23.264: hier stond dat 85 procent nog in een kwart van de lopen op nul moet eindigen, "de
+     regel is geen cadeau". Dat was de eis onder de oude regel, die elke misser onherroepelijk
+     afstrafte, en onder die regel stond 97 procent ook in 22 procent van de lopen op nul. Dat was
+     geen strengheid maar ruis.
+
+     Wat een doosjessysteem werkelijk moet doen is onderscheiden. Daar gaat het nu over: de reeks
+     hoort netjes op te lopen met je kennisniveau, en de klif hoort te liggen waar "ken je dit"
+     ligt. Gemeten na v23.264: 100, 100, 98, 71, 1 procent in doos 4 of 5. */
+  ok(sim.f03.hoog >= sim.f07.hoog && sim.f07.hoog >= sim.f15.hoog && sim.f15.hoog >= sim.f30.hoog,
+     'de uitkomst loopt netjes op met je kennisniveau (' +
+     [sim.f03.hoog, sim.f07.hoog, sim.f15.hoog, sim.f30.hoog].join(' > ') + ')');
+  ok(sim.f15.hoog - sim.f30.hoog >= 40,
+     'en de klif zit tussen 85 en 70 procent (' + sim.f15.hoog + '% tegen ' + sim.f30.hoog + '%)');
   ok(sim.f30.hoog <= 10,
      'CONTROLE: 70% goed komt vrijwel nooit hoog (' + sim.f30.hoog + '%) — wie het niet kent, komt niet door');
+  ok(sim.f30.opNul >= 50,
+     'CONTROLE: en blijft meestal op nul staan (' + sim.f30.opNul + '%)');
 
   ok(errs.length === 0, 'geen javascriptfouten' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
 
