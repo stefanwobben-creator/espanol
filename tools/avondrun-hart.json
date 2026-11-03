@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-02T08:47:50.817Z",
+ "wanneer": "2026-11-03T09:00:35.366Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,25 +10,25 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 12,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 4,
+  "kaal": 2,
   "nieuweLes": 1
  },
- "versie": "v23.267",
+ "versie": "v23.268",
  "klachten": [
-  "s420: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'malgastar menos agua' in het dagelijks leven.",
-  "s424: afgekeurd — De zin is niet praktisch toepasbaar: 'huella de carbono' is te formeel voor een A2/B1-leerling in alledaagse situaties.",
-  "2 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet met de regel: 'de tela' is geen infinitief na 'para', maar een bijvoeglijke bepaling bij 'bolsa'. De vraag gaat niet over het gebruik van infinitief na 'para'.)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s437 (ayer)",
+  "s438: afgekeurd — De zin is correct Spaans, maar de vertaling 'klopte op de deur' is onnatuurlijk in het Nederlands; 'aanklopte' of 'klopte aan' zou beter zijn.",
+  "1 vraag/vragen afgekeurd (poging 1): vraag 8: Optie 'añades' is geen imperativo, maar presente de indicativo.",
+  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 8"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
-   "naKeuring": 4
+   "naZeef": 3,
+   "naKeuring": 2
   }
  ],
  "reden": null,
@@ -37,5 +37,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-02T08:57:22.132Z"
+ "afgemaakt": "2026-11-03T09:10:05.719Z"
 }

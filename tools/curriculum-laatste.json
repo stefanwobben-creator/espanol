@@ -1,11 +1,11 @@
 {
- "wanneer": "2026-11-02T08:47:50.816Z",
- "versie": "v23.267",
+ "wanneer": "2026-11-03T09:00:35.365Z",
+ "versie": "v23.268",
  "gaten": [
   {
    "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 30
+   "fouten": 31
   },
   {
    "tag": "les2",
@@ -15,59 +15,59 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s407",
-   "s408",
-   "s409",
-   "s410",
-   "s411",
-   "s412",
-   "s413",
-   "s414",
-   "s415",
-   "s416",
-   "s417",
-   "s418"
+   "s427",
+   "s428",
+   "s429",
+   "s430",
+   "s431",
+   "s432",
+   "s433",
+   "s434",
+   "s435",
+   "s436"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-17",
-  "num": 17,
+  "id": "b1-18",
+  "num": 18,
   "niveau": "B1",
-  "titel": "La vida sostenible",
-  "doel": "Leren praten over duurzaamheid, milieu en kleine dagelijkse gewoontes die het verschil maken.",
-  "doelEn": "To talk about sustainability, the environment and small daily habits that make a difference.",
+  "titel": "El ocio y los hobbies",
+  "doel": "Leren praten over vrije tijd, hobby’s en ontspanning met B1-grammatica (subjuntivo in hoofdzinnen na uitdrukkingen van mening/gevoel).",
+  "doelEn": "Learn to talk about leisure time, hobbies and relaxation using B1 grammar (subjunctive in main clauses after expressions of opinion/feeling).",
   "spiek": [
-   35
+   36
   ],
   "words": [
-   "w384",
-   "w385",
-   "w386",
-   "w387",
-   "w388",
-   "w389",
-   "w390",
-   "w391",
-   "w392",
-   "w393",
-   "w394",
-   "w395",
-   "w396",
-   "w397"
+   "w398",
+   "w399",
+   "w400",
+   "w401",
+   "w402",
+   "w403",
+   "w404",
+   "w405",
+   "w406",
+   "w407",
+   "w408",
+   "w409",
+   "w410",
+   "w411"
   ],
   "sents": [
-   "s419",
-   "s421",
-   "s422",
-   "s423",
-   "s425",
-   "s426"
+   "s437",
+   "s438",
+   "s439",
+   "s440",
+   "s441",
+   "s442",
+   "s443",
+   "s444"
   ],
   "quizzes": [
-   "q-b1-17"
+   "q-b1-18"
   ]
  }
 }
