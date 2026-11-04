@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-03T09:00:35.366Z",
+ "wanneer": "2026-11-04T08:29:36.625Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,17 +10,15 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 10,
+  "zinnen": 11,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 3,
   "nieuweLes": 1
  },
- "versie": "v23.268",
+ "versie": "v23.269",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s437 (ayer)",
-  "s438: afgekeurd — De zin is correct Spaans, maar de vertaling 'klopte op de deur' is onnatuurlijk in het Nederlands; 'aanklopte' of 'klopte aan' zou beter zijn.",
-  "1 vraag/vragen afgekeurd (poging 1): vraag 8: Optie 'añades' is geen imperativo, maar presente de indicativo.",
-  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 8"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s454 (después)",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De zin slaat nergens op: 'quieren' is correct, maar de zin 'Ellos quieren vivir juntos el próximo mes' is grammaticaal wel juist, maar de Nederlandse vertaling ('Zij willen volgende maand samenwonen') past niet bij de context van de toetsregel (relaties, vertrouwen, tijdsduur). De zin hoort niet in dit toetsje.)"
  ],
  "mis": null,
  "kaalVerloop": [
@@ -28,7 +26,7 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 2
+   "naKeuring": 3
   }
  ],
  "reden": null,
@@ -37,5 +35,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-03T09:10:05.719Z"
+ "afgemaakt": "2026-11-04T08:39:36.266Z"
 }

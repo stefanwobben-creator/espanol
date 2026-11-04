@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-03T09:00:35.365Z",
- "versie": "v23.268",
+ "wanneer": "2026-11-04T08:29:36.625Z",
+ "versie": "v23.269",
  "gaten": [
   {
    "tag": "costar",
@@ -15,59 +15,60 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s427",
-   "s428",
-   "s429",
-   "s430",
-   "s431",
-   "s432",
-   "s433",
-   "s434",
-   "s435",
-   "s436"
+   "s445",
+   "s446",
+   "s447",
+   "s448",
+   "s449",
+   "s450",
+   "s451",
+   "s452",
+   "s453",
+   "s455",
+   "s456"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-18",
-  "num": 18,
+  "id": "b1-19",
+  "num": 19,
   "niveau": "B1",
-  "titel": "El ocio y los hobbies",
-  "doel": "Leren praten over vrije tijd, hobby’s en ontspanning met B1-grammatica (subjuntivo in hoofdzinnen na uitdrukkingen van mening/gevoel).",
-  "doelEn": "Learn to talk about leisure time, hobbies and relaxation using B1 grammar (subjunctive in main clauses after expressions of opinion/feeling).",
+  "titel": "La vida en pareja",
+  "doel": "Leren praten over relaties, huwelijk en samenwonen in het Spaans.",
+  "doelEn": "Learning to talk about relationships, marriage and living together in Spanish.",
   "spiek": [
-   36
+   37
   ],
   "words": [
-   "w398",
-   "w399",
-   "w400",
-   "w401",
-   "w402",
-   "w403",
-   "w404",
-   "w405",
-   "w406",
-   "w407",
-   "w408",
-   "w409",
-   "w410",
-   "w411"
+   "w412",
+   "w413",
+   "w414",
+   "w415",
+   "w416",
+   "w417",
+   "w418",
+   "w419",
+   "w420",
+   "w421",
+   "w422",
+   "w423",
+   "w424",
+   "w425"
   ],
   "sents": [
-   "s437",
-   "s438",
-   "s439",
-   "s440",
-   "s441",
-   "s442",
-   "s443",
-   "s444"
+   "s457",
+   "s458",
+   "s459",
+   "s460",
+   "s461",
+   "s462",
+   "s463",
+   "s464"
   ],
   "quizzes": [
-   "q-b1-18"
+   "q-b1-19"
   ]
  }
 }
