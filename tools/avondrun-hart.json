@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-04T08:29:36.625Z",
+ "wanneer": "2026-11-05T08:54:24.402Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,15 +10,18 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 11,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 3,
+  "kaal": 2,
   "nieuweLes": 1
  },
- "versie": "v23.269",
+ "versie": "v23.270",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s454 (después)",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De zin slaat nergens op: 'quieren' is correct, maar de zin 'Ellos quieren vivir juntos el próximo mes' is grammaticaal wel juist, maar de Nederlandse vertaling ('Zij willen volgende maand samenwonen') past niet bij de context van de toetsregel (relaties, vertrouwen, tijdsduur). De zin hoort niet in dit toetsje.)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s473 (anoche)",
+  "s476: afgekeurd — De zin is wel correct Spaans, maar niet praktisch toepasbaar in een alledaagse situatie (een collega vraagt zelden schriftelijk om hulp met een rapport in het Spaans).",
+  "s482: afgekeurd — De uitleg klopt niet: de werkwoordsvorm 'tienen' is incorrect voor dit zinnetje; het onderwerp is 'el descuento' (derde persoon enkelvoud), dus 'tiene' is nodig.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet: 'los estudios' is hier het onderwerp dat moeite kost, maar het gaat om de activiteit 'pagar los estudios', die enkelvoudig is. De zin moet dus 'le cuesta' zijn.; vraag 4: De uitleg klopt niet: 'el alquiler' is een enkelvoudig onderwerp (de huurprijs), dus het moet 'les cuesta' zijn.)"
  ],
  "mis": null,
  "kaalVerloop": [
@@ -26,7 +29,7 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 3,
-   "naKeuring": 3
+   "naKeuring": 2
   }
  ],
  "reden": null,
@@ -35,5 +38,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-04T08:39:36.266Z"
+ "afgemaakt": "2026-11-05T09:03:49.902Z"
 }

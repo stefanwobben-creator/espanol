@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-04T08:29:36.625Z",
- "versie": "v23.269",
+ "wanneer": "2026-11-05T08:54:24.401Z",
+ "versie": "v23.270",
  "gaten": [
   {
    "tag": "costar",
@@ -15,60 +15,58 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s445",
-   "s446",
-   "s447",
-   "s448",
-   "s449",
-   "s450",
-   "s451",
-   "s452",
-   "s453",
-   "s455",
-   "s456"
+   "s465",
+   "s466",
+   "s467",
+   "s468",
+   "s469",
+   "s470",
+   "s471",
+   "s472",
+   "s474",
+   "s475"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-19",
-  "num": 19,
+  "id": "b1-20",
+  "num": 20,
   "niveau": "B1",
-  "titel": "La vida en pareja",
-  "doel": "Leren praten over relaties, huwelijk en samenwonen in het Spaans.",
-  "doelEn": "Learning to talk about relationships, marriage and living together in Spanish.",
+  "titel": "El dinero y los gastos",
+  "doel": "Leren praten over geld, uitgaven en besparingen in alledaagse situaties.",
+  "doelEn": "To talk about money, expenses and savings in everyday situations.",
   "spiek": [
-   37
+   38
   ],
   "words": [
-   "w412",
-   "w413",
-   "w414",
-   "w415",
-   "w416",
-   "w417",
-   "w418",
-   "w419",
-   "w420",
-   "w421",
-   "w422",
-   "w423",
-   "w424",
-   "w425"
+   "w426",
+   "w427",
+   "w428",
+   "w429",
+   "w430",
+   "w431",
+   "w432",
+   "w433",
+   "w434",
+   "w435",
+   "w436",
+   "w437",
+   "w438",
+   "w439"
   ],
   "sents": [
-   "s457",
-   "s458",
-   "s459",
-   "s460",
-   "s461",
-   "s462",
-   "s463",
-   "s464"
+   "s476",
+   "s477",
+   "s478",
+   "s479",
+   "s480",
+   "s481",
+   "s483"
   ],
   "quizzes": [
-   "q-b1-19"
+   "q-b1-20"
   ]
  }
 }
