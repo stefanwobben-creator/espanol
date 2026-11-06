@@ -1,35 +1,31 @@
 {
- "wanneer": "2026-11-05T08:54:24.402Z",
+ "wanneer": "2026-11-06T08:55:36.106Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": 0,
+ "voorraadDagen": null,
  "beloofd": {
-  "gaten": 2,
-  "toetsje": 1,
+  "gaten": 0,
+  "toetsje": 0,
   "kaal": 1,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 10,
-  "toetsjes": 1,
-  "kaal": 2,
-  "nieuweLes": 1
+  "zinnen": 3,
+  "toetsjes": 0,
+  "kaal": 3,
+  "nieuweLes": 0
  },
- "versie": "v23.270",
+ "versie": "v23.271",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s473 (anoche)",
-  "s476: afgekeurd — De zin is wel correct Spaans, maar niet praktisch toepasbaar in een alledaagse situatie (een collega vraagt zelden schriftelijk om hulp met een rapport in het Spaans).",
-  "s482: afgekeurd — De uitleg klopt niet: de werkwoordsvorm 'tienen' is incorrect voor dit zinnetje; het onderwerp is 'el descuento' (derde persoon enkelvoud), dus 'tiene' is nodig.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 2: De uitleg klopt niet: 'los estudios' is hier het onderwerp dat moeite kost, maar het gaat om de activiteit 'pagar los estudios', die enkelvoudig is. De zin moet dus 'le cuesta' zijn.; vraag 4: De uitleg klopt niet: 'el alquiler' is een enkelvoudig onderwerp (de huurprijs), dus het moet 'les cuesta' zijn.)"
+  "s486: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'Se me olvidaron las llaves' in een gesprek over een vervelende gebeurtenis. Een natuurlijkere formulering zou zijn: 'Olvidé las llaves y tuve que forzar la puerta'."
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 3
   }
  ],
  "reden": null,
@@ -38,5 +34,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-05T09:03:49.902Z"
+ "afgemaakt": "2026-11-06T09:05:32.607Z"
 }

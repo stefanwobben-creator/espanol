@@ -1,72 +1,14 @@
 {
- "wanneer": "2026-11-05T08:54:24.401Z",
- "versie": "v23.270",
- "gaten": [
-  {
-   "tag": "costar",
-   "soort": "verschijnsel",
-   "fouten": 31
-  },
-  {
-   "tag": "les2",
-   "soort": "verschijnsel",
-   "fouten": 23
-  }
- ],
+ "wanneer": "2026-11-06T08:55:36.105Z",
+ "versie": "v23.271",
+ "gaten": [],
  "reparatie": {
   "zinnen": [
-   "s465",
-   "s466",
-   "s467",
-   "s468",
-   "s469",
-   "s470",
-   "s471",
-   "s472",
-   "s474",
-   "s475"
+   "s484",
+   "s485",
+   "s487"
   ],
-  "toetsjes": [
-   "q-imperativo-extra7"
-  ]
+  "toetsjes": []
  },
- "nieuweLes": {
-  "id": "b1-20",
-  "num": 20,
-  "niveau": "B1",
-  "titel": "El dinero y los gastos",
-  "doel": "Leren praten over geld, uitgaven en besparingen in alledaagse situaties.",
-  "doelEn": "To talk about money, expenses and savings in everyday situations.",
-  "spiek": [
-   38
-  ],
-  "words": [
-   "w426",
-   "w427",
-   "w428",
-   "w429",
-   "w430",
-   "w431",
-   "w432",
-   "w433",
-   "w434",
-   "w435",
-   "w436",
-   "w437",
-   "w438",
-   "w439"
-  ],
-  "sents": [
-   "s476",
-   "s477",
-   "s478",
-   "s479",
-   "s480",
-   "s481",
-   "s483"
-  ],
-  "quizzes": [
-   "q-b1-20"
-  ]
- }
+ "nieuweLes": null
 }
