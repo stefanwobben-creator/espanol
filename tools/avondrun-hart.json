@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-06T08:55:36.106Z",
+ "wanneer": "2026-11-07T08:09:35.849Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": null,
@@ -17,7 +17,7 @@
  },
  "versie": "v23.271",
  "klachten": [
-  "s486: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'Se me olvidaron las llaves' in een gesprek over een vervelende gebeurtenis. Een natuurlijkere formulering zou zijn: 'Olvidé las llaves y tuve que forzar la puerta'."
+  "s486: afgekeurd — De vertaling 'un vaso de azúcar' is onnatuurlijk Spaans; het moet 'un poco de azúcar' zijn. De uitleg klopt wel."
  ],
  "mis": null,
  "kaalVerloop": [
@@ -34,5 +34,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-06T09:05:32.607Z"
+ "afgemaakt": "2026-11-07T08:19:03.479Z"
 }
