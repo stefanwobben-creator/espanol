@@ -1,0 +1,186 @@
+# patch-v23.273.py - Diez ideas: een leesreeks over denken, en zes nieuwe luisterscenes.
+#
+# WAT STEFAN VROEG
+#
+# "ga je nu ook een nieuwe luister en leesboek toevoegen passende bij mijn niveau". De tweede helft
+# van die vraag (meer uitleg bij Rompecabezas) is v23.271. Dit is de eerste helft.
+#
+# "PASSEND BIJ MIJN NIVEAU" IS EEN MEETBARE EIS, EN DIE IS HIER VOORAF GEMETEN
+#
+# tools/leesdekking.js (v23.272) rekent van een tekst na hoeveel van de lopende woorden de lezer al
+# kent. Hu en Nation (2000), en Laufer: bij 95 procent volg je een tekst met hulp, bij 98 lees je
+# hem vlot, onder de 90 is het ontcijferen. De vier reeksen die er staan zijn geschreven voordat dat
+# gemeten kon worden; deze is de eerste die eraan is geschreven.
+#
+# De tien hoofdstukken zijn drie keer gemeten en twee keer herschreven. De eerste meting:
+#
+#     eerste versie, tegen de bestaande woordenschat       94,6%   (vijf hoofdstukken onder de 95)
+#     na herschrijven van wat incidenteel was              96,0%
+#     met de 71 kaarten die de reeks echt vraagt          100,0%
+#
+# Die laatste 100 procent is geen trofee en hij hoort met een waarschuwing. Een dekking van 100
+# procent is ook te halen door de begroting op te blazen, en dat is precies wat 71 nieuwe kaarten
+# doen. Wat de kaarten rechtvaardigt is niet het getal maar dit: ze hangen in allowedWordIds, dus ze
+# komen in de dagportie langs en worden geoefend. Een woord dat alleen in de begroting staat en
+# nergens geleerd wordt, is boekhouding. Daarom bewaakt pw-leesdekking.js de dekking EN de route.
+#
+# DE REEKS HEEFT EEN TWEEDE VAK (v23.182 maakte daar een regel van)
+#
+# Chispa geeft filosofie in een fabel, Franco geschiedenis, Don Quijote literatuur, España por
+# dentro cultuur. Deze geeft filosofie rechtstreeks: tien mensen, tien ideeen, elk hoofdstuk eerst
+# een tafereel en daarna wat eruit volgt. Vijf van de tien horen bij Spanje of bij het Spaans
+# (Seneca uit Cordoba, Averroes uit Cordoba, Ortega, Zambrano, en Zambrano's vlucht van 1939 sluit
+# aan op hist-8), en Spinoza geeft de Nederlandse haak.
+#
+#   1  Socrates      je weet minder dan je denkt        6  Spinoza    god is de natuur
+#   2  Diogenes      macht werkt alleen als je wil      7  Hume       morgen komt de zon op, zeker?
+#   3  Seneca        we hebben niet weinig tijd         8  Ortega     ik ben ik en mijn omstandigheid
+#   4  Averroes      twee wegen, een waarheid           9  Zambrano   de rede met een hart erin
+#   5  Descartes     ik denk, dus ik ben               10  Arendt     denken is gevaarlijk
+#
+# DE MAAT IS DIE VAN ESPAÑA POR DENTRO (v23.223), WANT DIE IS AAN HEM VOORGELEGD
+#
+# Stefan over vida-1: "dit kan ik zo 90% comfortabel lezen". Dat profiel is hier aangehouden: 150
+# tot 185 woorden, korte zinnen, tafereel eerst en verklaring daarna, en een reflectievraag in het
+# Nederlands die niet over de tekst gaat maar over hem.
+#
+# ZES LUISTERSCENES, EN WAAROM JUIST DEZE ZES
+#
+# AUDICIONES had 21 scenes, waarvan tien op a2. De zes nieuwe zijn allemaal a2 en acht regels, in
+# het spoor van e16 tot e21, en ze gaan over de dingen die je in Spanje aan een loket tegenkomt en
+# die er nog niet stonden: het gemeenteloket (cita previa, empadronarse), de garage, een abonnement
+# opzeggen, de huisbaas met een lek, het postkantoor en de school. Gemeten: 99,3 procent samen.
+#
+# WAT ER NIET IN ZIT
+#
+#   GEEN OPNAMES. audio/ideas/ is leeg, want de generator heeft de sleutel van Stefan nodig. De app
+#   valt dan zonder melding terug op de voorleesstem van de browser (boekSpreek, sinds v23.76), dus
+#   de knop werkt wel. De verteller staat op die van de Franco-reeks: een uitgangswaarde, geen
+#   besluit, net als bij v23.223.
+#
+#   TWEE WOORDEN BLIJVEN BUITEN DE METING: empadronarme en darme. Dat zijn vastgeplakte
+#   voornaamwoorden, en leesdekking.js haalt die er niet af terwijl leesBetekenis() dat wel doet
+#   (regel A, v23.237). Het is dus een gat in de meter en niet in de tekst. Opgeschreven in plaats
+#   van weggeschreven.
+#
+#   DE NAMENTELLER KOMT IN DE BUURT VAN ZIJN PLAFOND. pw-woordendekking eist dat de hele plank
+#   minder dan 80 eigennamen heeft, zodat "alles gedekt" niet te halen is door elk lastig woord een
+#   hoofdletter te geven. De plank stond op 47. Een filosofiereeks is van nature naamrijk, en met de
+#   voornamen eruit (Magno, Baruch, Rene, David, Jose) komt deze reeks op 73. Dat haalt het, maar de
+#   volgende reeks niet meer: dan hoort die grens een aandeel van de lopende woorden te worden in
+#   plaats van een aantal. Dat is hier met opzet NIET gedaan, want een grens verruimen in dezelfde
+#   ronde waarin je hem raakt is hoe een grens verdwijnt.
+import pathlib
+import sys
+
+W = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(W / "claude"))
+import patchhulp  # noqa: E402
+
+# De vier datablokken staan hier als een stuk tekst, en worden hieronder op hun plek gezet. Ze
+# zijn gegenereerd uit de losse databestanden (claude/ideas/), omdat de meting op die bestanden
+# draait en niet op deze patch.
+BLOK_KAARTEN = __KAARTEN__
+BLOK_VERBOS = __VERBOS__
+BLOK_HOOFDSTUKKEN = __HOOFDSTUKKEN__
+BLOK_SCENES = __SCENES__
+
+APP = W / "index.html"
+VER = W / "versie.txt"
+GEPLAND = "v23.273"
+
+src = APP.read_text(encoding="utf-8")
+huidig = VER.read_text(encoding="utf-8").strip()
+DOE_APP = 'id:"idea-1"' not in src
+
+
+def rep(anker, nieuw, n=1):
+    global src
+    c = src.count(anker)
+    assert c == n, "anker %d keer (verwacht %d): %r" % (c, n, anker[:110])
+    src = src.replace(anker, nieuw, n)
+
+
+if DOE_APP:
+    # ---------- EEN: de woorden die de reeks vraagt ----------
+    # Doorgenummerd vanaf l98. Ze gaan in L_WORDS en niet in een nieuwe bak, om dezelfde reden als
+    # v23.272: ze hangen aan geen les, dus er valt niets te ontgrendelen, en L_WORDS is al de plek
+    # voor "wat het leesmateriaal van de lezer vraagt".
+    rep(
+        '{id:"l97",es:"perdone",nl:"neemt u mij niet kwalijk",en:"excuse me",tag:"lees-spanje",meer:"beleefde vorm van perdonar"}\n];',
+        '{id:"l97",es:"perdone",nl:"neemt u mij niet kwalijk",en:"excuse me",tag:"lees-spanje",meer:"beleefde vorm van perdonar"},\n'
+        '/* v23.273: de rekening van Diez ideas en van de zes nieuwe luisterscenes. Elk woord hieronder\n'
+        '   kwam uit de meting als onbekend terug, niet uit een lijstje van wat nuttig lijkt. Drie\n'
+        '   soorten: het gereedschap om over denken te lezen (filosofia, metodo, dudar, razon poetica),\n'
+        '   wat je aan een Spaans loket nodig hebt (cita previa, empadronarse, el fontanero, el carne),\n'
+        '   en vijf getallen die nog niet op een kaart stonden. */\n' +
+        BLOK_KAARTEN + '\n];')
+
+    # Vier werkwoorden, en alleen onregelmatige. Een regelmatig werkwoord hoeft hier niet te staan:
+    # leesdekking leidt zijn vormen al af uit de infinitief op de kaart, en de Conjugador wordt er
+    # niet wijzer van. morir, devolver, obedecer en servir zijn alle vier onregelmatig, en alle vier
+    # komen ze als vorm in de nieuwe teksten voor (muere, devuelve, obedece, sirve).
+    rep(
+        '{inf:"caber",nl:"erin passen",en:"to fit",presente:["quepo", "cabes", "cabe", "cabemos", "cabéis", "caben"]}\n];',
+        '{inf:"caber",nl:"erin passen",en:"to fit",presente:["quepo", "cabes", "cabe", "cabemos", "cabéis", "caben"]},\n' +
+        BLOK_VERBOS + '\n];')
+
+    # ---------- TWEE: de tien hoofdstukken ----------
+    rep(
+        '   "En de tafel blijft nog twee uur zitten."\n  ]}\n];',
+        '   "En de tafel blijft nog twee uur zitten."\n  ]},\n'
+        '/* ================= DIEZ IDEAS (v23.273) =================\n'
+        '\n'
+        '   Tien mensen en tien ideeen, elk hoofdstuk eerst een tafereel en daarna wat eruit volgt.\n'
+        '   De maat is die van España por dentro, want die is aan Stefan voorgelegd: 150 tot 185\n'
+        '   woorden, korte zinnen, geen opbouw die je eerst moet doorzien.\n'
+        '\n'
+        '   drempel staat op 0 voor alle tien, net als bij de drie andere reeksen die geen ladder\n'
+        '   hebben. Chispa is de enige met drempels, en dat is daar het verhaal zelf.\n'
+        '\n'
+        '   Voor de volgende reeks: de Spaanse tekst van deze tien is gemeten VOORDAT hij hier\n'
+        '   terechtkwam (tools/leesdekking.js, drie rondes, zie claude/patch-v23.273.py). Dat is de\n'
+        '   bedoelde volgorde en niet een extra netheid: een tekst die hier al staat, is lastiger\n'
+        '   leesbaar te maken dan een tekst die nog een bestand is. */\n' +
+        BLOK_HOOFDSTUKKEN + '\n];')
+
+    # ---------- DRIE: de reeks op de boekenplank ----------
+    rep(
+        '  omEn:"Why dinner is at ten, why nobody leaves the table, and who keeps the family running. Ten pieces on how Spain works from the inside."}\n];',
+        '  omEn:"Why dinner is at ten, why nobody leaves the table, and who keeps the family running. Ten pieces on how Spain works from the inside."},\n'
+        ' /* v23.273: de eerste reeks die aan een gemeten dekking is geschreven in plaats van erna\n'
+        '    gemeten. stem:true met map "ideas", en die map is nog leeg: de opnames vragen de sleutel\n'
+        '    van Stefan. Tot die er zijn valt boekSpreek() zonder melding terug op de voorleesstem van\n'
+        '    de browser, dus de knop doet wel iets. De verteller is die van Franco en España por\n'
+        '    dentro, want dat register klopt hier (iemand die iets uitlegt); een voice-id kiest\n'
+        '    Stefan, dit is een uitgangswaarde. */\n'
+        ' {id:"ideas", pre:"idea-", nl:"Diez ideas", en:"Diez ideas", stem:true,\n'
+        '  map:"ideas", verteller:"YKrm0N1EAM9Bw27j8kuD",\n'
+        '  soortNl:"filosofie", soortEn:"philosophy",\n'
+        '  omNl:"Tien mensen die iets dachten dat bleef staan: van een oude man op de markt van Athene tot een vrouw in een rechtszaal in Jeruzalem.",\n'
+        '  omEn:"Ten people who thought something that lasted: from an old man in the market of Athens to a woman in a courtroom in Jerusalem."}\n];')
+
+    # ---------- VIER: zes luisterscenes ----------
+    rep(
+        '    waaromEn:"¿Hay algo el viernes...? is a question, and no answer follows. Thursday was declined and Friday isn\'t confirmed yet."}\n  ]}\n];',
+        '    waaromEn:"¿Hay algo el viernes...? is a question, and no answer follows. Thursday was declined and Friday isn\'t confirmed yet."}\n  ]},\n'
+        '/* v23.273: zes scenes erbij, allemaal a2 en acht regels, in het spoor van e16 tot e21. Wat\n'
+        '   ze gemeen hebben: het zijn de loketten. Een gesprek waarin iemand jou iets vraagt wat je\n'
+        '   niet had voorbereid (heeft u een afspraak, staat het contract op uw naam, heeft u het\n'
+        '   bericht) is precies het gesprek waarin schoolspaans het laat afweten. Gemeten op 99,3\n'
+        '   procent samen, met tools/leesdekking.js. */\n' +
+        BLOK_SCENES + '\n];')
+
+    APP.write_text(src, encoding="utf-8")
+    print("index.html: Diez ideas (10 hoofdstukken), 6 scenes, 71 kaarten, 4 werkwoorden")
+else:
+    print("index.html: stond er al")
+
+nieuw, doe_ver, reden = patchhulp.nummerKiezen(huidig, GEPLAND, DOE_APP)
+if reden:
+    print("LET OP: " + reden)
+if doe_ver:
+    patchhulp.zetVersie(APP, VER, huidig, nieuw)
+    print("versie.txt: %s -> %s" % (huidig, nieuw))
+else:
+    print("versie.txt: stond al op " + huidig)

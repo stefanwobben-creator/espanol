@@ -33,8 +33,22 @@ const L = require(path.join(__dirname, '..', '..', 'tools', 'leesdekking.js'));
 
 const U = 'http://localhost:8321/espanol-stefan.html';
 
-// De grenzen staan net onder de gemeten stand van 7 november (97,9 / 99,2 / 96,0 / 97,8 en 96,8).
-// Ze zijn een ratel en geen streefcijfer: ze mogen omhoog als de stand omhoog gaat.
+// De grenzen staan onder de gemeten stand. Ze zijn een ratel en geen streefcijfer: ze mogen omhoog
+// als de stand omhoog gaat.
+//
+//     stand bij v23.273   boek 97,6   hist 99,2   quij 96,1   vida 97,8   idea 100,0   luisteren 97,7
+//
+// v23.273: in de eerste versie van deze kop stond "de gemeten stand van 7 november (97,9 / 99,2 /
+// 96,0 / 97,8 en 96,8)". Die 97,9 voor Chispa was al niet meer waar toen ik hem opschreef: in
+// dezelfde ronde zijn reír, sonreír, oír en oler uit L_VERBOS gehaald omdat de vervoegingsladder ze
+// nergens kwijt kon, en daarmee verdwenen ríe, sonríe en huele uit de begroting. Chispa staat dus
+// op 97,6 en niet op 97,9. Een getal in een kop is net zo goed een bewering als een getal in een
+// proef, en dit is de tweede keer in een week dat ik dat hier moet opschrijven.
+//
+// Wat de drie zwaarste hoofdstukken nog kost, en dat is geen van de drie woordenschat:
+// canciones (canción plus -es verliest het accent in de vormtoeslag), moverse en enseñarte
+// (vastgeplakte voornaamwoorden, die leesBetekenis wel afpelt en de meter niet) en pum (dat staat
+// in het woordenboek maar niet in de begroting). Drie gaten in de meter, niet in de teksten.
 const VLOER_HOOFDSTUK = 90;
 const VLOER_REEKS = 95;
 const VLOER_BOEK = 97;
