@@ -153,8 +153,26 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     'schoen.i:decir+pedir',
     'yo.los:saber+ver'
   ];
-  ok(pres.join(' | ') === verwacht.join(' | '),
-    'de zes presente-rijen bevatten nog precies dezelfde werkwoorden');
+  /* v23.272: dit was een gelijkheid op de hele lijst, en dat hield stand zolang VERBOS niet
+     groeide. Nu telt VERBOS 64 werkwoorden en komen er vanzelf nieuwe in de rijen terecht
+     (repetir en rendir in schoen.i, asentir in schoen.ie, seguir in twee rijen). Dat is geen
+     regressie maar precies wat conjPatroon hoort te doen: hij leidt de rijen af uit de vormen.
+
+     Wat deze proef moest aantonen was dat de ombouw van soort/sleutel naar een functie per rij
+     niets kwijtraakte. Dat blijft dus staan, maar als insluiting: elk werkwoord dat er toen in
+     zat, zit er nog steeds in, en de rijen heten nog hetzelfde. */
+  const mist = verwacht.filter(function (rij) {
+    const naam = rij.split(':')[0];
+    const leden = rij.split(':')[1].split('+');
+    const nu = pres.filter(function (r) { return r.split(':')[0] === naam; })[0];
+    if (!nu) return true;
+    const heeft = nu.split(':')[1].split('+');
+    return leden.some(function (v) { return heeft.indexOf(v) === -1; });
+  });
+  ok(mist.length === 0,
+    'elk werkwoord uit de oorspronkelijke zes rijen zit er nog in (kwijt: ' + (mist.join(' | ') || 'niets') + ')');
+  ok(pres.length === verwacht.length,
+    'en het zijn nog steeds ' + verwacht.length + ' rijen (' + pres.length + ')');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));
 

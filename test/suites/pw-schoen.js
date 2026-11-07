@@ -81,17 +81,33 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     };
   });
 
+  // v23.272: hoe vaak een werkwoord gedekt is, afgeleid uit dezelfde rijen
+  function gedektTelling(som, inf) {
+    return Object.keys(som.rijen).filter(function (k) { return som.rijen[k].indexOf(inf) !== -1; }).length;
+  }
+
   console.log('\n-- DE REKENSOM --');
   ok(som.reg + som.onreg === som.n,
     'alle ' + som.n + ' werkwoorden zijn ingedeeld (' + som.reg + ' regelmatig, ' + som.onreg + ' niet)');
-  ok(som.onreg === 22, 'tweeëntwintig onregelmatige in het presente (nu: ' + som.onreg + ')');
+  /* v23.272: hier stond `=== 22`, de stand bij 33 werkwoorden. VERBOS is naar 64 gegroeid omdat
+     een woordkaart met "mover" niets doet voor "mueve", en dan is tweeëntwintig geen eigenschap
+     meer maar een momentopname. Wat wél een eigenschap is: ruim de helft van de werkwoorden die
+     een leerling tegenkomt is onregelmatig in het presente, en dat is nu juist de reden dat de
+     ladder bestaat. Dat is wat hier blijft staan. */
+  ok(som.onreg >= 20 && som.onreg >= som.reg,
+    'de onregelmatige zijn in de meerderheid (' + som.onreg + ' tegen ' + som.reg + ' regelmatig)');
   ok(Object.keys(som.rijen).length === 6, 'zes presente-rijen (nu: ' + Object.keys(som.rijen).length + ')');
   ok(som.ongedekt.length === 0,
     'DE REGEL: elke onregelmatige zit in minstens één rij (buiten de boot: ' + (som.ongedekt.join(', ') || 'geen') + ')');
   ok(som.teVeel.length === 0,
     'CONTROLE: en geen enkele regelmatige staat in een rij (' + (som.teVeel.join(', ') || 'geen') + ')');
-  ok(som.dubbel.length === 3,
-    'drie werkwoorden staan in twee rijen, want die hebben allebei (' + som.dubbel.join(', ') + ')');
+  /* v23.272: waren er drie (tener, venir, decir: één schoen én een eigen yo), nu vijf, want
+     seguir en elegir hebben allebei een e-naar-i-schoen én een eigen yo (sigo, elijo). Het getal
+     is dus geen constante; wat blijft gelden is dat zo'n werkwoord in twee rijen hoort en niet in
+     drie, want er zijn maar twee soorten onregelmatigheid om te hebben. */
+  ok(som.dubbel.length >= 3 && som.dubbel.every(function (i) { return gedektTelling(som, i) <= 2; }),
+    'een werkwoord met twee soorten onregelmatigheid staat in twee rijen, nooit in drie (' +
+    som.dubbel.join(', ') + ')');
   Object.keys(som.rijen).forEach((k) => {
     ok(som.rijen[k].length > 0, k + ': ' + som.rijen[k].length + ' (' + som.rijen[k].join(', ') + ')');
   });

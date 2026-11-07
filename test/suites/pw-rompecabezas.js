@@ -40,12 +40,24 @@ const { chromium } = require('playwright');
       stammen: Object.keys(i.stammen).length,
       vormen: Object.keys(i.geldig).length,
       verbs: Object.keys(i.perVerb).length,
-      wissel: Object.keys(i.stammen).filter((k) => i.stammen[k].wissel).length
+      wissel: Object.keys(i.stammen).filter((k) => i.stammen[k].wissel).length,
+      /* v23.272: hier stond een telling (vormen === verbs * 6), en die klopte zolang geen twee
+         werkwoorden dezelfde vorm maakten. Sinds VERBOS 64 werkwoorden telt gebeurt dat wel:
+         sentar en sentir geven allebei "siento", en de scheidsrechter bewaart er daar maar een
+         van. Dat is voor het spel geen probleem (de vorm bestaat) maar wel voor de telling. Wat
+         er werkelijk toe doet is dat van ELK werkwoord alle zes de vormen bekend zijn, en dat
+         wordt nu rechtstreeks nagerekend. */
+      mist: Object.keys(i.perVerb).filter((inf) =>
+        i.perVerb[inf].delen.some((d) => !i.geldig[d.vorm])),
+      deelt: Object.keys(i.perVerb).length * 6 - Object.keys(i.geldig).length
     };
   });
   ok(ix.verbs >= 20, 'er zijn genoeg ontleedbare werkwoorden (' + ix.verbs + ')');
   ok(ix.stammen >= 30, 'en genoeg stamkaarten (' + ix.stammen + ')');
-  ok(ix.vormen === ix.verbs * 6, 'elke ontleedbare werkwoordsvorm zit in de scheidsrechter (' + ix.vormen + ')');
+  ok(ix.mist.length === 0,
+    'van elk werkwoord zitten alle zes de vormen in de scheidsrechter (buiten de boot: ' +
+    (ix.mist.join(', ') || 'geen') + ')');
+  console.log('   ' + ix.deelt + ' vorm(en) deelt zijn vormen met een ander werkwoord (sentar en sentir geven allebei siento)');
   ok(ix.wissel > 0, 'wisselwerkwoorden worden herkend en gemarkeerd (' + ix.wissel + ' stammen)');
 
   // onregelmatige werkwoorden die niet in stam plus uitgang te knippen zijn, doen niet mee
