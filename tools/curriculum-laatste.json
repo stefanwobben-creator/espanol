@@ -1,14 +1,74 @@
 {
- "wanneer": "2026-11-07T08:09:35.848Z",
- "versie": "v23.271",
- "gaten": [],
+ "wanneer": "2026-11-08T08:29:38.403Z",
+ "versie": "v23.274",
+ "gaten": [
+  {
+   "tag": "costar",
+   "soort": "verschijnsel",
+   "fouten": 31
+  },
+  {
+   "tag": "les2",
+   "soort": "verschijnsel",
+   "fouten": 23
+  }
+ ],
  "reparatie": {
   "zinnen": [
    "s484",
    "s485",
-   "s487"
+   "s486",
+   "s487",
+   "s488",
+   "s489",
+   "s490",
+   "s491",
+   "s492",
+   "s493",
+   "s494",
+   "s495"
   ],
-  "toetsjes": []
+  "toetsjes": [
+   "q-imperativo-extra7"
+  ]
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-21",
+  "num": 21,
+  "niveau": "B1",
+  "titel": "La vida en familia",
+  "doel": "Leren praten over familiebanden, generaties en familieverplichtingen in het Spaans.",
+  "doelEn": "To talk about family bonds, generations and family obligations in Spanish.",
+  "spiek": [
+   39
+  ],
+  "words": [
+   "w440",
+   "w441",
+   "w442",
+   "w443",
+   "w444",
+   "w445",
+   "w446",
+   "w447",
+   "w448",
+   "w449",
+   "w450",
+   "w451",
+   "w452",
+   "w453"
+  ],
+  "sents": [
+   "s496",
+   "s498",
+   "s499",
+   "s500",
+   "s501",
+   "s502",
+   "s503"
+  ],
+  "quizzes": [
+   "q-b1-21"
+  ]
+ }
 }

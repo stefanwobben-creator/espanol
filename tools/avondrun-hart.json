@@ -1,23 +1,25 @@
 {
- "wanneer": "2026-11-07T08:09:35.849Z",
+ "wanneer": "2026-11-08T08:29:38.404Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": null,
+ "voorraadDagen": 0,
  "beloofd": {
-  "gaten": 0,
-  "toetsje": 0,
+  "gaten": 2,
+  "toetsje": 1,
   "kaal": 1,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 3,
-  "toetsjes": 0,
-  "kaal": 3,
-  "nieuweLes": 0
+  "zinnen": 12,
+  "toetsjes": 1,
+  "kaal": 4,
+  "nieuweLes": 1
  },
- "versie": "v23.271",
+ "versie": "v23.274",
  "klachten": [
-  "s486: afgekeurd — De vertaling 'un vaso de azúcar' is onnatuurlijk Spaans; het moet 'un poco de azúcar' zijn. De uitleg klopt wel."
+  "s497: afgekeurd — De zin is correct Spaans, maar de uitleg klopt niet: 'importar' wordt hier niet gebruikt, maar 'ser' of 'importante' wel. De zin is wel praktisch toepasbaar.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 7: Het werkwoord 'molestar' staat niet in de regel van de toets en de uitleg past niet bij de gegeven regel (gustar, costar, importar, tener).)"
  ],
  "mis": null,
  "kaalVerloop": [
@@ -25,7 +27,7 @@
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 4,
-   "naKeuring": 3
+   "naKeuring": 4
   }
  ],
  "reden": null,
@@ -34,5 +36,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-07T08:19:03.479Z"
+ "afgemaakt": "2026-11-08T08:39:50.717Z"
 }
