@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-08T08:29:38.404Z",
- "gelukt": true,
+ "wanneer": "2026-11-09T09:04:24.794Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -10,31 +10,44 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 12,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 4,
-  "nieuweLes": 1
+  "kaal": 2,
+  "nieuweLes": 0
  },
- "versie": "v23.274",
+ "versie": "v23.275",
  "klachten": [
-  "s497: afgekeurd — De zin is correct Spaans, maar de uitleg klopt niet: 'importar' wordt hier niet gebruikt, maar 'ser' of 'importante' wel. De zin is wel praktisch toepasbaar.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 7: Het werkwoord 'molestar' staat niet in de regel van de toets en de uitleg past niet bij de gegeven regel (gustar, costar, importar, tener).)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s512 (anoche)",
+  "s514: afgekeurd — De zin is praktisch toepasbaar, maar het Spaans is niet natuurlijk: 'me olvidé la cartera' is incorrect; de juiste vorm is 'se me olvidó la cartera'.",
+  "1 vraag/vragen afgekeurd (poging 1): vraag 5: De opties bevatten geen correct antwoord: 'calienta' is de bevestigende imperativo en 'calientas' is de tegenwoordige tijd, maar de negatieve tú-vorm van calentar is 'no calientes' (optie c is correct, maar de uitleg klopt niet).",
+  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 5",
+  "woord w455 eruit: woord 1 (w455): de vertaling verklapt het Spaanse woord (\"de kunstmatige intelligentie\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "woord w461 eruit: woord 1 (w461): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "2 van de 14 woorden afgekeurd, de rest gaat door",
+  "s516: afgekeurd — De zin is niet praktisch toepasbaar in een alledaagse situatie (bar, reis, buren, werk, etc.). Niemand zegt dit in het echt.",
+  "s519: afgekeurd — De zin is niet praktisch toepasbaar in een alledaagse situatie.",
+  "s521: afgekeurd — De zin is niet praktisch toepasbaar in een alledaagse situatie.",
+  "s522: afgekeurd — De zin is niet praktisch toepasbaar in een alledaagse situatie.",
+  "4 van de 8 zinnen afgekeurd, de rest gaat door",
+  "te weinig zinnen over → les niet aangeboden",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
  ],
- "mis": null,
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
-   "naKeuring": 4
+   "naZeef": 3,
+   "naKeuring": 2
   }
  ],
- "reden": null,
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-11-08T08:39:50.717Z"
+ "gegenereerd": false,
+ "gepubliceerd": false,
+ "status": "geklapt",
+ "pogingen": 2,
+ "afgemaakt": "2026-11-09T09:04:36.536Z"
 }
