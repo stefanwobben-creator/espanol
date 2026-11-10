@@ -1,11 +1,11 @@
 {
- "wanneer": "2026-11-08T08:29:38.403Z",
- "versie": "v23.274",
+ "wanneer": "2026-11-10T09:11:34.329Z",
+ "versie": "v23.275",
  "gaten": [
   {
    "tag": "costar",
    "soort": "verschijnsel",
-   "fouten": 31
+   "fouten": 34
   },
   {
    "tag": "les2",
@@ -15,60 +15,57 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s484",
-   "s485",
-   "s486",
-   "s487",
-   "s488",
-   "s489",
-   "s490",
-   "s491",
-   "s492",
-   "s493",
-   "s494",
-   "s495"
+   "s504",
+   "s505",
+   "s506",
+   "s507",
+   "s508",
+   "s510",
+   "s511",
+   "s512",
+   "s514"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-21",
-  "num": 21,
+  "id": "b1-22",
+  "num": 22,
   "niveau": "B1",
-  "titel": "La vida en familia",
-  "doel": "Leren praten over familiebanden, generaties en familieverplichtingen in het Spaans.",
-  "doelEn": "To talk about family bonds, generations and family obligations in Spanish.",
+  "titel": "La vida en el extranjero",
+  "doel": "Leren praten over ervaringen met wonen in het buitenland, cultuurverschillen en praktische zaken zoals verhuizen en integreren.",
+  "doelEn": "To talk about experiences living abroad, cultural differences and practical matters like moving and integrating.",
   "spiek": [
-   39
+   40
   ],
   "words": [
-   "w440",
-   "w441",
-   "w442",
-   "w443",
-   "w444",
-   "w445",
-   "w446",
-   "w447",
-   "w448",
-   "w449",
-   "w450",
-   "w451",
-   "w452",
-   "w453"
+   "w454",
+   "w455",
+   "w456",
+   "w457",
+   "w458",
+   "w459",
+   "w460",
+   "w461",
+   "w462",
+   "w464",
+   "w465",
+   "w466",
+   "w467"
   ],
   "sents": [
-   "s496",
-   "s498",
-   "s499",
-   "s500",
-   "s501",
-   "s502",
-   "s503"
+   "s515",
+   "s516",
+   "s517",
+   "s518",
+   "s519",
+   "s520",
+   "s521",
+   "s522"
   ],
   "quizzes": [
-   "q-b1-21"
+   "q-b1-22"
   ]
  }
 }
