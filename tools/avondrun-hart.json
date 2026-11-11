@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-10T09:11:34.330Z",
- "gelukt": true,
+ "wanneer": "2026-11-11T08:59:50.808Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -12,31 +12,43 @@
  "geleverd": {
   "zinnen": 9,
   "toetsjes": 1,
-  "kaal": 3,
+  "kaal": 2,
   "nieuweLes": 1
  },
- "versie": "v23.275",
+ "versie": "v23.276",
  "klachten": [
-  "s507: afgekeurd — De zin is niet praktisch toepasbaar: 'el abono de metro' is een onnatuurlijke uitdrukking in gesprekken in Spanje. Men zegt eerder 'la tarjeta de metro' of 'el billete de metro'.",
-  "s509: afgekeurd — De vertaling is incorrect: 'She asked me if I can come tomorrow' moet zijn 'She asked me if I could come tomorrow' (pretérito imperfecto: podía).",
-  "s513: afgekeurd — De zin is wel correct Spaans, maar niet natuurlijk of praktisch toepasbaar. Een Spanjaard zou eerder zeggen: 'Se les olvidaron las llaves y tuvieron que volver a casa' (met 'se les olvidaron' voor de sleutels). De huidige versie klinkt als een vertaling uit het Engels en wordt niet zo gezegd.",
-  "woord w463 eruit: woord 1 (w463): de vertaling verklapt het Spaanse woord (\"de lokale taal\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
-  "1 van de 14 woorden afgekeurd, de rest gaat door"
+  "s530: afgekeurd — De zin is niet natuurlijk Spaans: 'Empezaste a bailar cuando tenías cinco años' is correct, maar 'Jij begon met dansen toen je vijf was' is te formeel voor alledaags gebruik. Een betere vertaling zou zijn: 'Empezaste a bailar cuando tenías cinco años' (met dezelfde Spaanse zin) of 'Empezaste a bailar a los cinco años'.",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s530 (anoche), s533 (ya)",
+  "woord w479 eruit: woord 1 (w479): de vertaling verklapt het Spaanse woord (\"het fotoalbum\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "1 van de 14 woorden afgekeurd, de rest gaat door",
+  "s537: afgekeurd — De zin is grammaticaal correct maar onnatuurlijk in het Spaans: 'donde estaban todas las vacaciones' is geen gebruikelijke uitdrukking. Beter: 'donde guardaba todas las fotos de las vacaciones'.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 7 vraag/vragen afgekeurd (vraag 2: De uitleg en het correcte antwoord (c) zijn omgekeerd: 'hice' is de juiste vorm (indefinido) en 'hacía' is fout.; vraag 3: Het correcte antwoord (c) is 1 (pasaba), maar de uitleg en het antwoord zijn omgekeerd.; vraag 4: Het correcte antwoord (c) is 1 (fui), maar de uitleg en het antwoord zijn omgekeerd.; vraag 5: Het correcte antwoord (c) is 0 (arreglaba), maar de uitleg en het antwoord zijn omgekeerd.; vraag 6: Het correcte antwoord (c) is 0 (hice), maar de uitleg en het antwoord zijn omgekeerd.; vraag 7: Het correcte antwoord (c) is 0 (hablaba), maar de uitleg en het antwoord zijn omgekeerd.; vraag 8: Het correcte antwoord (c) is 0 (planté), maar de uitleg en het antwoord zijn omgekeerd.)",
+  "te weinig vragen over, de les gaat door zonder toetsje"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
-   "naKeuring": 3
+   "naZeef": 2,
+   "naKeuring": 2
   }
  ],
- "reden": null,
+ "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
  "geweigerd": 0,
+ "poortRood": [
+  {
+   "suite": "pw-audiogaten.js",
+   "regels": [
+    "de achterstand is 67, dat is binnen de drempel van 60"
+   ]
+  }
+ ],
+ "poortReden": "pw-audiogaten.js: de achterstand is 67, dat is binnen de drempel van 60",
  "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
+ "gepubliceerd": false,
+ "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-11-10T09:22:10.050Z"
+ "afgemaakt": "2026-11-11T09:09:35.728Z"
 }
