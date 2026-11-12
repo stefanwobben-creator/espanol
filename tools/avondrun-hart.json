@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-11T08:59:50.808Z",
+ "wanneer": "2026-11-12T09:18:49.518Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,29 +10,25 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 9,
+  "zinnen": 11,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 3,
   "nieuweLes": 1
  },
  "versie": "v23.276",
  "klachten": [
-  "s530: afgekeurd — De zin is niet natuurlijk Spaans: 'Empezaste a bailar cuando tenías cinco años' is correct, maar 'Jij begon met dansen toen je vijf was' is te formeel voor alledaags gebruik. Een betere vertaling zou zijn: 'Empezaste a bailar cuando tenías cinco años' (met dezelfde Spaanse zin) of 'Empezaste a bailar a los cinco años'.",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s530 (anoche), s533 (ya)",
-  "woord w479 eruit: woord 1 (w479): de vertaling verklapt het Spaanse woord (\"het fotoalbum\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "s533: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'Se nos perdieron las llaves del coche bajo el sofá' in een gesprek. Een natuurlijkere formulering zou zijn: 'Perdimos las llaves del coche bajo el sofá'.",
+  "woord w468 eruit: woord 1 (w468): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "1 van de 14 woorden afgekeurd, de rest gaat door",
-  "s537: afgekeurd — De zin is grammaticaal correct maar onnatuurlijk in het Spaans: 'donde estaban todas las vacaciones' is geen gebruikelijke uitdrukking. Beter: 'donde guardaba todas las fotos de las vacaciones'.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 7 vraag/vragen afgekeurd (vraag 2: De uitleg en het correcte antwoord (c) zijn omgekeerd: 'hice' is de juiste vorm (indefinido) en 'hacía' is fout.; vraag 3: Het correcte antwoord (c) is 1 (pasaba), maar de uitleg en het antwoord zijn omgekeerd.; vraag 4: Het correcte antwoord (c) is 1 (fui), maar de uitleg en het antwoord zijn omgekeerd.; vraag 5: Het correcte antwoord (c) is 0 (arreglaba), maar de uitleg en het antwoord zijn omgekeerd.; vraag 6: Het correcte antwoord (c) is 0 (hice), maar de uitleg en het antwoord zijn omgekeerd.; vraag 7: Het correcte antwoord (c) is 0 (hablaba), maar de uitleg en het antwoord zijn omgekeerd.; vraag 8: Het correcte antwoord (c) is 0 (planté), maar de uitleg en het antwoord zijn omgekeerd.)",
-  "te weinig vragen over, de les gaat door zonder toetsje"
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 3: De uitleg klopt, maar de zin slaat nergens op: 'Als ik thuis kom' is geen toekomstige actie en hoort niet in de subjuntivo.; vraag 5: De uitleg is incorrect: bij 'creo que + werkwoord' gebruik je de tegenwoordige tijd (es) voor algemene waarheden, niet de infinitief.)"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 2,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 3
   }
  ],
  "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
@@ -41,14 +37,20 @@
   {
    "suite": "pw-audiogaten.js",
    "regels": [
-    "de achterstand is 67, dat is binnen de drempel van 60"
+    "de achterstand is 69, dat is binnen de drempel van 60"
+   ]
+  },
+  {
+   "suite": "pw-foutenlus.js",
+   "regels": [
+    "na een half uur wel weer"
    ]
   }
  ],
- "poortReden": "pw-audiogaten.js: de achterstand is 67, dat is binnen de drempel van 60",
+ "poortReden": "pw-audiogaten.js: de achterstand is 69, dat is binnen de drempel van 60 · pw-foutenlus.js: na een half uur wel weer",
  "gegenereerd": true,
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-11-11T09:09:35.728Z"
+ "afgemaakt": "2026-11-12T09:28:13.577Z"
 }
