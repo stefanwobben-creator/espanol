@@ -1,71 +1,13 @@
 {
- "wanneer": "2026-11-10T09:11:34.329Z",
- "versie": "v23.275",
- "gaten": [
-  {
-   "tag": "costar",
-   "soort": "verschijnsel",
-   "fouten": 34
-  },
-  {
-   "tag": "les2",
-   "soort": "verschijnsel",
-   "fouten": 23
-  }
- ],
+ "wanneer": "2026-11-13T09:15:11.342Z",
+ "versie": "v23.276",
+ "gaten": [],
  "reparatie": {
   "zinnen": [
-   "s504",
-   "s505",
-   "s506",
-   "s507",
-   "s508",
-   "s510",
-   "s511",
-   "s512",
-   "s514"
+   "s523",
+   "s524"
   ],
-  "toetsjes": [
-   "q-imperativo-extra7"
-  ]
+  "toetsjes": []
  },
- "nieuweLes": {
-  "id": "b1-22",
-  "num": 22,
-  "niveau": "B1",
-  "titel": "La vida en el extranjero",
-  "doel": "Leren praten over ervaringen met wonen in het buitenland, cultuurverschillen en praktische zaken zoals verhuizen en integreren.",
-  "doelEn": "To talk about experiences living abroad, cultural differences and practical matters like moving and integrating.",
-  "spiek": [
-   40
-  ],
-  "words": [
-   "w454",
-   "w455",
-   "w456",
-   "w457",
-   "w458",
-   "w459",
-   "w460",
-   "w461",
-   "w462",
-   "w464",
-   "w465",
-   "w466",
-   "w467"
-  ],
-  "sents": [
-   "s515",
-   "s516",
-   "s517",
-   "s518",
-   "s519",
-   "s520",
-   "s521",
-   "s522"
-  ],
-  "quizzes": [
-   "q-b1-22"
-  ]
- }
+ "nieuweLes": null
 }

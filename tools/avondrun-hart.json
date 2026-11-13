@@ -1,56 +1,39 @@
 {
- "wanneer": "2026-11-12T09:18:49.518Z",
- "gelukt": false,
+ "wanneer": "2026-11-13T09:15:11.343Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": 0,
+ "voorraadDagen": null,
  "beloofd": {
-  "gaten": 2,
-  "toetsje": 1,
+  "gaten": 0,
+  "toetsje": 0,
   "kaal": 1,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 11,
-  "toetsjes": 1,
-  "kaal": 3,
-  "nieuweLes": 1
+  "zinnen": 2,
+  "toetsjes": 0,
+  "kaal": 2,
+  "nieuweLes": 0
  },
  "versie": "v23.276",
  "klachten": [
-  "s533: afgekeurd — De zin is niet praktisch toepasbaar: niemand zegt 'Se nos perdieron las llaves del coche bajo el sofá' in een gesprek. Een natuurlijkere formulering zou zijn: 'Perdimos las llaves del coche bajo el sofá'.",
-  "woord w468 eruit: woord 1 (w468): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
-  "1 van de 14 woorden afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 3: De uitleg klopt, maar de zin slaat nergens op: 'Als ik thuis kom' is geen toekomstige actie en hoort niet in de subjuntivo.; vraag 5: De uitleg is incorrect: bij 'creo que + werkwoord' gebruik je de tegenwoordige tijd (es) voor algemene waarheden, niet de infinitief.)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s526 (mañana)",
+  "s525: afgekeurd — De zin is wel correct Spaans, maar niet natuurlijk in een gesprek. Een Nederlander zou eerder zeggen: 'Se les olvidaron las llaves en la mesa' of 'Olvidaron las llaves en la mesa' (zonder 'se les')."
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
-   "naKeuring": 3
+   "naZeef": 3,
+   "naKeuring": 2
   }
  ],
- "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
+ "reden": null,
  "geweigerd": 0,
- "poortRood": [
-  {
-   "suite": "pw-audiogaten.js",
-   "regels": [
-    "de achterstand is 69, dat is binnen de drempel van 60"
-   ]
-  },
-  {
-   "suite": "pw-foutenlus.js",
-   "regels": [
-    "na een half uur wel weer"
-   ]
-  }
- ],
- "poortReden": "pw-audiogaten.js: de achterstand is 69, dat is binnen de drempel van 60 · pw-foutenlus.js: na een half uur wel weer",
  "gegenereerd": true,
- "gepubliceerd": false,
- "status": "poort-dicht",
+ "gepubliceerd": true,
+ "status": "gepubliceerd",
  "pogingen": 2,
- "afgemaakt": "2026-11-12T09:28:13.577Z"
+ "afgemaakt": "2026-11-13T09:25:32.157Z"
 }
