@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-13T09:15:11.343Z",
- "gelukt": true,
+ "wanneer": "2026-11-14T08:38:24.449Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": null,
  "beloofd": {
@@ -10,30 +10,44 @@
   "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 2,
+  "zinnen": 3,
   "toetsjes": 0,
-  "kaal": 2,
+  "kaal": 3,
   "nieuweLes": 0
  },
  "versie": "v23.276",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s526 (mañana)",
-  "s525: afgekeurd — De zin is wel correct Spaans, maar niet natuurlijk in een gesprek. Een Nederlander zou eerder zeggen: 'Se les olvidaron las llaves en la mesa' of 'Olvidaron las llaves en la mesa' (zonder 'se les')."
+  "s526: afgekeurd — De zin is wel praktisch toepasbaar, maar het Spaans is niet natuurlijk: 'devolvía' (imperfecto) is hier fout, het moet 'devolvió' (indefinido) zijn omdat het gaat om een afgeronde handeling."
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 3
   }
  ],
- "reden": null,
+ "reden": "de poort ging dicht op wat de bot schreef, in alle pogingen; niets gepusht",
  "geweigerd": 0,
+ "poortRood": [
+  {
+   "suite": "pw-audiogaten.js",
+   "regels": [
+    "de achterstand is 61, dat is binnen de drempel van 60"
+   ]
+  },
+  {
+   "suite": "pw-foutenlus.js",
+   "regels": [
+    "na een half uur wel weer"
+   ]
+  }
+ ],
+ "poortReden": "pw-audiogaten.js: de achterstand is 61, dat is binnen de drempel van 60 · pw-foutenlus.js: na een half uur wel weer",
  "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
+ "gepubliceerd": false,
+ "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-11-13T09:25:32.157Z"
+ "afgemaakt": "2026-11-14T08:48:10.836Z"
 }
