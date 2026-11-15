@@ -1,23 +1,24 @@
 {
- "wanneer": "2026-11-14T08:38:24.449Z",
+ "wanneer": "2026-11-15T09:00:15.578Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": null,
+ "voorraadDagen": 0,
  "beloofd": {
-  "gaten": 0,
-  "toetsje": 0,
+  "gaten": 2,
+  "toetsje": 1,
   "kaal": 1,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 3,
-  "toetsjes": 0,
+  "zinnen": 11,
+  "toetsjes": 1,
   "kaal": 3,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
  "versie": "v23.276",
  "klachten": [
-  "s526: afgekeurd — De zin is wel praktisch toepasbaar, maar het Spaans is niet natuurlijk: 'devolvía' (imperfecto) is hier fout, het moet 'devolvió' (indefinido) zijn omdat het gaat om een afgeronde handeling."
+  "s532: afgekeurd — De zin is correct Spaans, maar niemand zegt 'sin que la pidiéramos' in een restaurantcontext; natuurlijker is 'sin pedirla'.",
+  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 6: De uitleg klopt niet met de vraag: 'que aprenda' is hier niet het juiste antwoord en de uitleg verwijst naar een andere constructie (que sea útil).; vraag 8: De uitleg klopt niet met de vraag: 'he alcanzado' is geen optie en de uitleg verwijst naar een andere constructie (haya alcanzado).)"
  ],
  "mis": null,
  "kaalVerloop": [
@@ -34,20 +35,14 @@
   {
    "suite": "pw-audiogaten.js",
    "regels": [
-    "de achterstand is 61, dat is binnen de drempel van 60"
-   ]
-  },
-  {
-   "suite": "pw-foutenlus.js",
-   "regels": [
-    "na een half uur wel weer"
+    "de achterstand is 69, dat is binnen de drempel van 60"
    ]
   }
  ],
- "poortReden": "pw-audiogaten.js: de achterstand is 61, dat is binnen de drempel van 60 · pw-foutenlus.js: na een half uur wel weer",
+ "poortReden": "pw-audiogaten.js: de achterstand is 69, dat is binnen de drempel van 60",
  "gegenereerd": true,
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-11-14T08:48:10.836Z"
+ "afgemaakt": "2026-11-15T09:10:36.625Z"
 }
