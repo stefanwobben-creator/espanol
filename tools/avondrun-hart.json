@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-15T09:00:15.578Z",
+ "wanneer": "2026-11-16T09:07:37.101Z",
  "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -17,15 +17,17 @@
  },
  "versie": "v23.276",
  "klachten": [
-  "s532: afgekeurd — De zin is correct Spaans, maar niemand zegt 'sin que la pidiéramos' in een restaurantcontext; natuurlijker is 'sin pedirla'.",
-  "toetsje van de nieuwe les: 2 vraag/vragen afgekeurd (vraag 6: De uitleg klopt niet met de vraag: 'que aprenda' is hier niet het juiste antwoord en de uitleg verwijst naar een andere constructie (que sea útil).; vraag 8: De uitleg klopt niet met de vraag: 'he alcanzado' is geen optie en de uitleg verwijst naar een andere constructie (haya alcanzado).)"
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s531 (ayer)",
+  "woord w474 eruit: woord 1 (w474): de vertaling verklapt het Spaanse woord (\"de flexibele werktijden\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "1 van de 14 woorden afgekeurd, de rest gaat door",
+  "toetsje van de nieuwe les: 3 vraag/vragen afgekeurd (vraag 4: De uitleg klopt niet met de regel: 'espera + infinitief' wordt hier niet gebruikt omdat het onderwerp verschilt ('él' vs. 'uno').; vraag 5: De uitleg is onjuist: 'organiza' wordt hier gebruikt voor een geplande toekomstige actie, wat beter past bij 'va a organizar'.; vraag 6: De uitleg is onjuist: 'trabaja' is correct, maar de uitleg suggereert dat 'ha trabajado' ook zou kunnen, wat niet het geval is.)"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
+   "naZeef": 3,
    "naKeuring": 3
   }
  ],
@@ -44,5 +46,5 @@
  "gepubliceerd": false,
  "status": "poort-dicht",
  "pogingen": 2,
- "afgemaakt": "2026-11-15T09:10:36.625Z"
+ "afgemaakt": "2026-11-16T09:19:18.695Z"
 }
