@@ -1,13 +1,74 @@
 {
- "wanneer": "2026-11-13T09:15:11.342Z",
+ "wanneer": "2026-11-17T10:04:47.812Z",
  "versie": "v23.276",
- "gaten": [],
+ "gaten": [
+  {
+   "tag": "costar",
+   "soort": "verschijnsel",
+   "fouten": 31
+  },
+  {
+   "tag": "les2",
+   "soort": "verschijnsel",
+   "fouten": 23
+  }
+ ],
  "reparatie": {
   "zinnen": [
    "s523",
-   "s524"
+   "s524",
+   "s525",
+   "s526",
+   "s527",
+   "s528",
+   "s529",
+   "s530",
+   "s531",
+   "s532",
+   "s534"
   ],
-  "toetsjes": []
+  "toetsjes": [
+   "q-imperativo-extra7"
+  ]
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-23",
+  "num": 23,
+  "niveau": "B1",
+  "titel": "La educación y el futuro",
+  "doel": "Leren praten over onderwijs, studies en toekomstplannen in het Spaans.",
+  "doelEn": "Learn to talk about education, studies and future plans in Spanish.",
+  "spiek": [
+   41
+  ],
+  "words": [
+   "w468",
+   "w469",
+   "w470",
+   "w471",
+   "w472",
+   "w473",
+   "w474",
+   "w475",
+   "w476",
+   "w477",
+   "w478",
+   "w479",
+   "w480",
+   "w481"
+  ],
+  "sents": [
+   "s535",
+   "s536",
+   "s537",
+   "s538",
+   "s539",
+   "s540",
+   "s541",
+   "s542"
+  ],
+  "quizzes": [
+   "q-b1-23"
+  ]
+ }
 }
