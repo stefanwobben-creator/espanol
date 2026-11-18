@@ -1,23 +1,23 @@
 {
- "wanneer": "2026-11-17T10:04:47.812Z",
+ "wanneer": "2026-11-18T09:38:31.420Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": 0,
+ "voorraadDagen": null,
  "beloofd": {
-  "gaten": 2,
-  "toetsje": 1,
+  "gaten": 0,
+  "toetsje": 0,
   "kaal": 1,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 11,
-  "toetsjes": 1,
+  "zinnen": 3,
+  "toetsjes": 0,
   "kaal": 3,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
- "versie": "v23.276",
+ "versie": "v23.277",
  "klachten": [
-  "s533: afgekeurd — De zin is niet natuurlijk Spaans. 'Casi me caigo de la silla cuando me reí' is incorrect; het moet 'Casi me caigo de la silla cuando me reía' (imperfecto) of 'Casi me caí de la silla cuando me reí' (indefinido) zijn."
+  "s546: afgekeurd — De zin is niet natuurlijk Spaans: 'pasó' (kwam langs) en 'pidió un tazón de azúcar' (vroeg om een kom suiker) is ongebruikelijk in deze context. In het Nederlands zeg je 'kwam langs' en 'vroeg om een kopje suiker', maar in het Spaans zou je eerder 'pasó por aquí' en 'pidió un poco de azúcar' of 'pidió azúcar' zeggen."
  ],
  "mis": null,
  "kaalVerloop": [
@@ -34,5 +34,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-17T10:14:45.018Z"
+ "afgemaakt": "2026-11-18T09:48:29.711Z"
 }
