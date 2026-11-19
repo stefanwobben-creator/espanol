@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-18T09:38:31.420Z",
+ "wanneer": "2026-11-19T09:50:01.625Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": null,
@@ -10,22 +10,20 @@
   "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 3,
+  "zinnen": 4,
   "toetsjes": 0,
-  "kaal": 3,
+  "kaal": 4,
   "nieuweLes": 0
  },
  "versie": "v23.277",
- "klachten": [
-  "s546: afgekeurd — De zin is niet natuurlijk Spaans: 'pasó' (kwam langs) en 'pidió un tazón de azúcar' (vroeg om een kom suiker) is ongebruikelijk in deze context. In het Nederlands zeg je 'kwam langs' en 'vroeg om een kopje suiker', maar in het Spaans zou je eerder 'pasó por aquí' en 'pidió un poco de azúcar' of 'pidió azúcar' zeggen."
- ],
+ "klachten": [],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
    "naZeef": 4,
-   "naKeuring": 3
+   "naKeuring": 4
   }
  ],
  "reden": null,
@@ -34,5 +32,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-18T09:48:29.711Z"
+ "afgemaakt": "2026-11-19T09:59:57.278Z"
 }
