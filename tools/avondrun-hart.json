@@ -1,23 +1,30 @@
 {
- "wanneer": "2026-11-19T09:50:01.625Z",
- "gelukt": true,
+ "wanneer": "2026-11-20T09:37:14.301Z",
+ "gelukt": false,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": null,
+ "voorraadDagen": 0,
  "beloofd": {
-  "gaten": 0,
-  "toetsje": 0,
+  "gaten": 2,
+  "toetsje": 1,
   "kaal": 1,
-  "nieuweLes": 0
+  "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 4,
-  "toetsjes": 0,
+  "zinnen": 12,
+  "toetsjes": 1,
   "kaal": 4,
   "nieuweLes": 0
  },
  "versie": "v23.277",
- "klachten": [],
- "mis": null,
+ "klachten": [
+  "woord w482 eruit: woord 1 (w482): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "1 van de 14 woorden afgekeurd, de rest gaat door",
+  "nieuwe les AFGEKEURD:\n - zin 3 (s557): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam",
+  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+ ],
+ "mis": [
+  "de nieuwe les"
+ ],
  "kaalVerloop": [
   {
    "poging": 1,
@@ -26,11 +33,11 @@
    "naKeuring": 4
   }
  ],
- "reden": null,
+ "reden": "de run is niet afgemaakt",
  "geweigerd": 0,
- "gegenereerd": true,
- "gepubliceerd": true,
- "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-11-19T09:59:57.278Z"
+ "gegenereerd": false,
+ "gepubliceerd": false,
+ "status": "geklapt",
+ "pogingen": 2,
+ "afgemaakt": "2026-11-20T09:37:32.646Z"
 }
