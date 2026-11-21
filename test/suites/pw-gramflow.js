@@ -85,6 +85,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     gwStart(wid);
     uit.naKlaar = gwSess ? { id: gwSess.id, stap: gwSess.stap,
                              vragen: (gwOnderwerp(gwSess.id).stappen[gwSess.stap].vragen || []).length,
+                             /* v23.278: en over alle stappen, want de regel staat sinds die ronde
+                                tussen de vragen in plaats van nergens. */
+                             vragenTotaal: (gwOnderwerp(gwSess.id).stappen || []).reduce(
+                               function (a, st) { return a + ((st.vragen || []).length); }, 0),
                              stappen: gwOnderwerp(gwSess.id).stappen.length } : null;
 
     // ---- 2. het controlegeval: onafgerond hervat gewoon ----
@@ -140,13 +144,22 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('\n-- 1. een afgerond onderwerp komt terug als opfrisser --');
   console.log('   ' + JSON.stringify(r.naKlaar));
   ok(!!r.naKlaar && /^opfris-/.test(r.naKlaar.id), 'de app opent de opfrisser (' + (r.naKlaar || {}).id + ')');
-  ok(!!r.naKlaar && r.naKlaar.stappen === 1, 'die één stap heeft');
+  /* v23.278: hier stond `stappen === 1`. De opfrisser heeft er sinds die ronde twee, met de
+     regel ertussen: Stefan zag de uitleg van een onderwerp tot dan toe precies een keer in zijn
+     leven. Wat deze proef wilde vaststellen staat in de regel erboven en blijft onveranderd: een
+     afgerond onderwerp komt terug als OPFRISSER en niet als de hele microles. Dat het er twee
+     stappen voor gebruikt is vorm, geen maat. */
+  ok(!!r.naKlaar && r.naKlaar.stappen >= 1 && r.naKlaar.stappen <= 2,
+    'die een of twee stappen heeft (' + (r.naKlaar || {}).stappen + ')');
   /* v23.225: hier stond `=== 1`. De opfrisser heeft twee vragen gekregen, want één driekeuzevraag
      is 33 procent raden en zette het doosje toch een hele stap verder. Het getal komt uit de app
      (GC_OPFRIS_VRAGEN) en niet uit deze suite: een proef die zijn eigen aanname meeneemt kan hem
      niet weerspreken. */
-  ok(!!r.naKlaar && r.naKlaar.vragen === r.opfrisVragen,
-    'met ' + r.opfrisVragen + ' vragen erin (' + (r.naKlaar || {}).vragen + ')');
+  /* v23.278: en dit telde de vragen van de EERSTE stap. Sinds de regel tussen de vragen staat is
+     dat niet meer hetzelfde als "hoeveel vragen is deze opfrisser", dus telt het nu over alle
+     stappen. Het getal komt nog steeds uit de app en niet uit deze suite. */
+  ok(!!r.naKlaar && r.naKlaar.vragenTotaal === r.opfrisVragen,
+    'met ' + r.opfrisVragen + ' vragen erin (' + (r.naKlaar || {}).vragenTotaal + ')');
 
   console.log('\n-- 2. het controlegeval: onafgerond hervat gewoon --');
   console.log('   ' + JSON.stringify(r.naHalf));

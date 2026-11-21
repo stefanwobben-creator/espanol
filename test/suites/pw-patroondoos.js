@@ -151,16 +151,41 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     };
     // dit is precies wat foutRegel(), de quiz, de tegels, de Clasificador en El Corrector doen
     gramBij('genero', false);
+    /* v23.278: het ledger erbij, want dat is wat gcStaatFout() leest om te beslissen of een
+       onderwerp terug moet komen. gramBij() schrijft het zelf via gramLog(). */
     return { kaal: gramLees('genero#') , sleutels: Object.keys(S.gram).sort(),
              p0: gramLees('genero#0').box, p2: gramLees('genero#2').box,
              bare: (S.gram.genero || {}).box, bareDue: (S.gram.genero || {}).due,
-             concept: gramLees('genero').box, morgen: addDays(today(), 1) };
+             concept: gramLees('genero').box, kaalBox: gramLees('genero').kaalBox,
+             komtTerug: gcStaatFout(gramLees('genero'), 'genero'),
+             morgen: addDays(today(), 1) };
   });
   console.log('   ' + JSON.stringify({ sleutels: wild.sleutels, p0: wild.p0, p2: wild.p2, kaal: wild.bare }));
   ok(wild.p0 === 5 && wild.p2 === 4, 'de patronen die je kent blijven staan waar ze stonden');
   ok(wild.bare === 0 && wild.bareDue === wild.morgen,
     'de fout landt op de kale sleutel en komt morgen terug');
-  ok(wild.concept === 0, 'CONTROLE: en het concept zegt daardoor wél nul, want dat is zijn zwakste doosje');
+  /* ================= v23.278 DRAAIT DEZE PROEF OM, EN DAT IS DE HELE RONDE =================
+
+     Hier stond: "CONTROLE: en het concept zegt daardoor wél nul, want dat is zijn zwakste doosje."
+     Dat was waar en het was ook het probleem.
+
+     Gemeten bij Stefan op 20 november: genero had 249 antwoorden, alle vijf de patronen stonden op
+     doos 5 met 93 tot 100 procent goed, en het kale doosje op doos 1. Het kale doosje is de plek
+     waar fouten uit de vrije zinnen landen, en het krijgt nooit gerichte oefening omdat de microles
+     naar de patroondoosjes schrijft. Het kan dus alleen omlaag, en het hield genero weken in de
+     focus: op 13 van de 17 dagen dat hij grammatica deed kwam genero terug.
+
+     Vanaf nu komt het oordeel van de patronen. Maar het kale doosje mag zijn andere taak houden,
+     en die staat hieronder: een verse fout in het wild brengt het onderwerp dezelfde week terug.
+     Zonder die tweede helft is deze ronde geen reparatie maar een versoepeling, dus ze worden
+     allebei nagerekend. */
+  ok(wild.concept === Math.min(wild.p0, wild.p2) && wild.concept > 0,
+    'het concept blijft staan op het zwakste PATROON (' + wild.concept + ', patronen ' +
+      wild.p0 + ' en ' + wild.p2 + ')');
+  ok(wild.kaalBox === 0,
+    'en het kale doosje staat op nul, want daar landde de fout (' + wild.kaalBox + ')');
+  ok(wild.komtTerug === true,
+    'en het onderwerp komt er wel degelijk door terug: gcStaatFout zegt ja');
   ok(wild.sleutels.length === 3, 'er zijn nu drie doosjes: twee patronen en de vrije zin');
 
   ok(errs.length === 0, 'geen paginafouten' + (errs.length ? ': ' + errs[0] : ''));

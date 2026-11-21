@@ -64,7 +64,9 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
       cid: cid,
       opfrisConst: GC_OPFRIS_VRAGEN, drillConst: GC_DRILL_VRAGEN,
       opfrisStappen: opfris ? opfris.stappen.length : -1,
-      opfris: opfris ? opfris.stappen[0].vragen.length : -1,
+      /* v23.278: over alle stappen. De opfrisser heeft er sinds die ronde twee, met de regel
+         ertussen, en "hoeveel vragen is dit" is dan niet meer de eerste stap. */
+      opfris: opfris ? opfris.stappen.reduce(function (a, s) { return a + s.vragen.length; }, 0) : -1,
       drillStappen: drill ? drill.stappen.length : -1,
       drill: drill ? drill.stappen[0].vragen.length : -1,
       drillConcept: drill ? drill.concept : null,
@@ -74,7 +76,11 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
   console.log('   ' + maten.cid + ': opfrisser ' + maten.opfris + ', drill ' + maten.drill);
   ok(maten.opfrisConst >= 2, 'een opfrisser is meer dan één vraag (' + maten.opfrisConst + ')');
   ok(maten.opfris === maten.opfrisConst, 'en de gebouwde opfrisser heeft er ook zoveel');
-  ok(maten.opfrisStappen === 1, 'nog steeds één stap: een opfrisser is geen tweede microles');
+  /* v23.278: hier stond `=== 1`. Zie de kop van patch-v23.278: de opfrisser is twee stappen
+     geworden met de regel ertussen. Wat deze proef bewaakt staat in de regel eronder en verandert
+     niet: de drill is groter dan de opfrisser. Dat is zijn hele bestaansreden. */
+  ok(maten.opfrisStappen <= 2, 'en hoogstens twee stappen: een opfrisser is geen tweede microles (' +
+    maten.opfrisStappen + ')');
   ok(maten.drill === maten.drillConst && maten.drillConst > maten.opfrisConst,
     'de drill heeft er meer dan de opfrisser (' + maten.drill + ' tegen ' + maten.opfris + ')');
   ok(maten.drillStappen === 1, 'ook één stap, want het is oefenen en geen les');

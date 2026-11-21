@@ -410,7 +410,13 @@ const { chromium } = require('playwright');
     gwStart(lijst[0]);
     return { lijst: lijst, sess: gwSess ? gwSess.id : null, lees: gcLeesId,
              stappen: gwSess ? (gwOnderwerp(gwSess.id).stappen || []).length : -1,
-             vragen: gwSess ? ((gwOnderwerp(gwSess.id).stappen || [])[0] || {}).vragen.length : -1 };
+             /* v23.278: over alle stappen, want de opfrisser heeft er sinds die ronde twee met
+                de regel ertussen. En of je meteen in de oefening belandt staat niet in het aantal
+                stappen maar in de uitleg van de EERSTE: die hoort leeg te zijn. */
+             vragen: gwSess ? (gwOnderwerp(gwSess.id).stappen || []).reduce(function (a, s) {
+               return a + ((s.vragen || []).length); }, 0) : -1,
+             eersteUitleg: gwSess ? String(ct((((gwOnderwerp(gwSess.id).stappen || [])[0] || {}).uitleg),
+               (((gwOnderwerp(gwSess.id).stappen || [])[0] || {}).uitlegEn)) || '').trim().length : -1 };
   });
   ok(inFlow.lijst[0] === 'opfris-reflexivo',
     'een fout op reflexivo zet die vooraan in de dagles (' + inFlow.lijst.join(', ') + ')');
@@ -425,8 +431,14 @@ const { chromium } = require('playwright');
   /* v23.259: het aantal ging van twee naar vijf, want onder de vijf antwoorden velt gramBij geen
      oordeel en zou de nieuwe doosregel nooit gelden in de dagles. De grens die hier bewaakt wordt
      is niet het getal maar de vorm: ÉÉN stap, dus geen tweede microles, en niet eindeloos lang. */
-  ok(inFlow.stappen === 1 && inFlow.vragen >= 1 && inFlow.vragen <= 8,
-    'en het is één korte stap, geen tweede les (' + inFlow.stappen + ' stappen, ' + inFlow.vragen + ' vragen)');
+  /* v23.278: hier stond `stappen === 1`. De opfrisser is twee stappen geworden met de regel
+     ertussen (Stefan, 21 november: "iedere keer weer uitleg dan toetsen"). De kop hierboven zegt
+     het zelf: de grens is niet het getal maar de vorm. Die vorm is nog steeds "kort, en je begint
+     met een vraag en niet met een scherm vol tekst", en dat is wat er nu staat. */
+  ok(inFlow.stappen <= 2 && inFlow.vragen >= 1 && inFlow.vragen <= 8,
+    'en het is kort, geen tweede les (' + inFlow.stappen + ' stappen, ' + inFlow.vragen + ' vragen)');
+  ok(inFlow.eersteUitleg === 0,
+    'en de eerste stap zet je meteen aan het werk, zonder scherm vol tekst (' + inFlow.eersteUitleg + ' tekens)');
   await page.evaluate(() => { gwSluit(); });
 
   /* ---------------- 9. de tab opent kort (v20.7) ----------------

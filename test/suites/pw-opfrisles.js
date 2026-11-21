@@ -92,7 +92,10 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
     const vol = beschrijf(gcBouw('genero'));
     const c = gcConcept('genero');
     return { opNul, opDrie, bijnaVers, helemaalVers, weerNul, zonderPatroon, vol, drempel: GRAM_RIJ_MIN,
-             uitleg: c.uitleg, begripVraag: c.begrip.v, opfrisN: GC_OPFRIS_VRAGEN, lesN: GC_OPFRIS_LES_VRAGEN };
+             uitleg: c.uitleg, begripVraag: c.begrip.v, opfrisN: GC_OPFRIS_VRAGEN, lesN: GC_OPFRIS_LES_VRAGEN,
+             /* v23.278: en de maat van een onderhoudsbeurt, want een doosje op doos 3 of hoger
+                krijgt er sinds die ronde twee in plaats van vijf. */
+             onderhoudN: GC_OPFRIS_ONDERHOUD };
   });
 
   // ---------- 1. doosje op nul -> een lesje ----------
@@ -114,9 +117,20 @@ function ok(c, m) { if (!c) { fout++; console.log('  ✗ ' + m); } else console.
      'CONTROLE: en op doos 0 met maar twee antwoorden erachter ook niet — dat is kennismaking, geen terugval');
   ok(bouw.helemaalVers && !bouw.helemaalVers.lesje,
      'CONTROLE: en zonder doosje al helemaal niet. Doos 0 betekent twee dingen, en dit is het andere');
-  ok(bouw.opDrie.stappen.length === 1, 'CONTROLE: één stap (' + bouw.opDrie.stappen.length + ')');
-  ok(bouw.opDrie.stappen[0].n === bouw.opfrisN,
-     'CONTROLE: en ' + bouw.opDrie.stappen[0].n + ' vragen, want dit is een opfrisser (afgesproken: ' + bouw.opfrisN + ')');
+  /* v23.278: hier stond "één stap" en "vijf vragen". Twee dingen zijn sindsdien veranderd en
+     allebei met opzet. De opfrisser heeft de regel ertussen gekregen, dus twee stappen. En een
+     doosje op doos 3 of hoger is ONDERHOUD geworden en krijgt er twee in plaats van vijf, omdat de
+     dagles er sinds diezelfde ronde drie van aanbiedt in plaats van een.
+
+     Wat deze proef meet verandert daar niet van: een doosje dat staat krijgt geen terugvalles.
+     Sterker nog, het is nu korter dan het was, en dat is de kant op die deze proef bedoelde. */
+  const opDrieN = bouw.opDrie.stappen.reduce(function (a, st) { return a + st.n; }, 0);
+  ok(bouw.opDrie.stappen.length <= 2,
+     'CONTROLE: hoogstens twee stappen (' + bouw.opDrie.stappen.length + ')');
+  ok(opDrieN === bouw.onderhoudN,
+     'CONTROLE: en ' + opDrieN + ' vragen, want doos 3 is onderhoud (afgesproken: ' + bouw.onderhoudN + ')');
+  ok(opDrieN < bouw.opfrisN,
+     'CONTROLE: dus korter dan een gewone opfrisser (' + opDrieN + ' tegen ' + bouw.opfrisN + ')');
   ok(!bouw.opDrie.stappen[0].diep, 'CONTROLE: zonder de hele regel eronder, want die heb je niet nodig');
 
   // ---------- 3. het doosje van het patroon beslist ----------
