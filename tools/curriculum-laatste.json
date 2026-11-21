@@ -1,15 +1,72 @@
 {
- "wanneer": "2026-11-19T09:50:01.625Z",
+ "wanneer": "2026-11-21T09:09:03.803Z",
  "versie": "v23.277",
- "gaten": [],
+ "gaten": [
+  {
+   "tag": "costar",
+   "soort": "verschijnsel",
+   "fouten": 31
+  },
+  {
+   "tag": "les2",
+   "soort": "verschijnsel",
+   "fouten": 23
+  }
+ ],
  "reparatie": {
   "zinnen": [
    "s543",
    "s544",
    "s545",
-   "s546"
+   "s546",
+   "s547",
+   "s548",
+   "s549",
+   "s550",
+   "s552",
+   "s553"
   ],
-  "toetsjes": []
+  "toetsjes": [
+   "q-imperativo-extra7"
+  ]
  },
- "nieuweLes": null
+ "nieuweLes": {
+  "id": "b1-24",
+  "num": 24,
+  "niveau": "B1",
+  "titel": "La vida en redes sociales",
+  "doel": "Leren praten over sociale media, online gedrag en de invloed ervan op het dagelijks leven.",
+  "doelEn": "To talk about social media, online behavior and its influence on daily life.",
+  "spiek": [
+   42
+  ],
+  "words": [
+   "w483",
+   "w484",
+   "w485",
+   "w486",
+   "w487",
+   "w488",
+   "w489",
+   "w490",
+   "w491",
+   "w492",
+   "w493",
+   "w494",
+   "w495"
+  ],
+  "sents": [
+   "s554",
+   "s555",
+   "s556",
+   "s557",
+   "s558",
+   "s559",
+   "s560",
+   "s561"
+  ],
+  "quizzes": [
+   "q-b1-24"
+  ]
+ }
 }

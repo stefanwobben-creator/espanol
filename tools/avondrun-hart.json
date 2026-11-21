@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-20T09:37:14.301Z",
- "gelukt": false,
+ "wanneer": "2026-11-21T09:09:03.803Z",
+ "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
  "beloofd": {
@@ -10,34 +10,33 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 12,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 4,
-  "nieuweLes": 0
+  "kaal": 2,
+  "nieuweLes": 1
  },
  "versie": "v23.277",
  "klachten": [
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s551 (anoche)",
+  "s554: afgekeurd — De uitleg is onjuist: 'olvidó' is geen werkwoord maar een vorm van 'olvidarse' (se me olvidó), en de uitleg verwijst naar het verkeerde onderwerp.",
   "woord w482 eruit: woord 1 (w482): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "1 van de 14 woorden afgekeurd, de rest gaat door",
-  "nieuwe les AFGEKEURD:\n - zin 3 (s557): uitleg legt niets uit; noem een Spaans woord uit de zin of de regel bij naam",
-  "MISLUKT: beloofd en niet geleverd: de nieuwe les. Kijk hierboven welk onderdeel afhaakte."
+  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De uitleg is onjuist: bij 'pasarse tiempo con' is het onderwerp 'yo', maar de werkwoordsvorm is 'me paso' (niet 'me paso' als losse woorden, maar als één werkwoord). De zin 'Me paso demasiado tiempo en las redes sociales.' is correct, maar de uitleg klopt niet.)"
  ],
- "mis": [
-  "de nieuwe les"
- ],
+ "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 4,
-   "naKeuring": 4
+   "naZeef": 3,
+   "naKeuring": 2
   }
  ],
- "reden": "de run is niet afgemaakt",
+ "reden": null,
  "geweigerd": 0,
- "gegenereerd": false,
- "gepubliceerd": false,
- "status": "geklapt",
- "pogingen": 2,
- "afgemaakt": "2026-11-20T09:37:32.646Z"
+ "gegenereerd": true,
+ "gepubliceerd": true,
+ "status": "gepubliceerd",
+ "pogingen": 1,
+ "afgemaakt": "2026-11-21T09:18:41.525Z"
 }
