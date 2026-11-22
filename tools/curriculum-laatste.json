@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-21T09:09:03.803Z",
- "versie": "v23.277",
+ "wanneer": "2026-11-22T09:23:07.056Z",
+ "versie": "v23.279",
  "gaten": [
   {
    "tag": "costar",
@@ -15,58 +15,57 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s543",
-   "s544",
-   "s545",
-   "s546",
-   "s547",
-   "s548",
-   "s549",
-   "s550",
-   "s552",
-   "s553"
+   "s562",
+   "s563",
+   "s564",
+   "s565",
+   "s566",
+   "s567",
+   "s568",
+   "s569",
+   "s572",
+   "s573"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-24",
-  "num": 24,
+  "id": "b1-25",
+  "num": 25,
   "niveau": "B1",
-  "titel": "La vida en redes sociales",
-  "doel": "Leren praten over sociale media, online gedrag en de invloed ervan op het dagelijks leven.",
-  "doelEn": "To talk about social media, online behavior and its influence on daily life.",
+  "titel": "La vida en pareja: ventajas y desventajas",
+  "doel": "Leren praten over de voor- en nadelen van samenwonen en een relatie hebben, inclusief praktische situaties en meningen.",
+  "doelEn": "To learn how to discuss the pros and cons of living together and being in a relationship, including practical situations and opinions.",
   "spiek": [
-   42
+   43
   ],
   "words": [
-   "w483",
-   "w484",
-   "w485",
-   "w486",
-   "w487",
-   "w488",
-   "w489",
-   "w490",
-   "w491",
-   "w492",
-   "w493",
-   "w494",
-   "w495"
+   "w496",
+   "w497",
+   "w498",
+   "w499",
+   "w500",
+   "w501",
+   "w503",
+   "w504",
+   "w505",
+   "w506",
+   "w507",
+   "w508",
+   "w509"
   ],
   "sents": [
-   "s554",
-   "s555",
-   "s556",
-   "s557",
-   "s558",
-   "s559",
-   "s560",
-   "s561"
+   "s574",
+   "s575",
+   "s576",
+   "s577",
+   "s578",
+   "s579",
+   "s581"
   ],
   "quizzes": [
-   "q-b1-24"
+   "q-b1-25"
   ]
  }
 }

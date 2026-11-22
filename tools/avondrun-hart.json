@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-21T09:09:03.803Z",
+ "wanneer": "2026-11-22T09:23:07.057Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -15,20 +15,20 @@
   "kaal": 2,
   "nieuweLes": 1
  },
- "versie": "v23.277",
+ "versie": "v23.279",
  "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s551 (anoche)",
-  "s554: afgekeurd — De uitleg is onjuist: 'olvidó' is geen werkwoord maar een vorm van 'olvidarse' (se me olvidó), en de uitleg verwijst naar het verkeerde onderwerp.",
-  "woord w482 eruit: woord 1 (w482): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
+  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s570 (ayer), s571 (cada día)",
+  "woord w502 eruit: woord 1 (w502): de vertaling verklapt het Spaanse woord (\"de persoonlijke ruimte\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
   "1 van de 14 woorden afgekeurd, de rest gaat door",
-  "toetsje van de nieuwe les: 1 vraag/vragen afgekeurd (vraag 2: De uitleg is onjuist: bij 'pasarse tiempo con' is het onderwerp 'yo', maar de werkwoordsvorm is 'me paso' (niet 'me paso' als losse woorden, maar als één werkwoord). De zin 'Me paso demasiado tiempo en las redes sociales.' is correct, maar de uitleg klopt niet.)"
+  "s580: afgekeurd — De zin is correct Spaans, maar 'eso forma parte' is onnatuurlijk in deze context; 'eso es parte de ello' of 'eso es normal' zou beter klinken.",
+  "1 van de 8 zinnen afgekeurd, de rest gaat door"
  ],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
+   "naZeef": 2,
    "naKeuring": 2
   }
  ],
@@ -37,6 +37,6 @@
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
- "pogingen": 1,
- "afgemaakt": "2026-11-21T09:18:41.525Z"
+ "pogingen": 2,
+ "afgemaakt": "2026-11-22T09:32:44.078Z"
 }
