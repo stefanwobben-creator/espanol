@@ -3743,6 +3743,90 @@
       "model": "eleven_multilingual_v2",
       "hash": "e7b27afd2574eb73",
       "tekens": 43
+    },
+    "s574": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4129ec4dee5465bb",
+      "tekens": 74
+    },
+    "s575": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "0583e1b4cd1b559a",
+      "tekens": 87
+    },
+    "s576": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "588fd95c035656ff",
+      "tekens": 66
+    },
+    "s577": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "544362ae7af33aa2",
+      "tekens": 52
+    },
+    "s578": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "70c2dc56d3d165a4",
+      "tekens": 68
+    },
+    "s579": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4f1ae81f03fcf289",
+      "tekens": 65
+    },
+    "s581": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "eb3c8ca2cdbde7c8",
+      "tekens": 51
+    },
+    "s582": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "6960d35c7716c215",
+      "tekens": 28
+    },
+    "s583": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "4f88cbe9319c1883",
+      "tekens": 39
+    },
+    "s584": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "e00e3cfe0284f9d9",
+      "tekens": 33
+    },
+    "s585": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "2f7ef72aa0547201",
+      "tekens": 28
+    },
+    "s586": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "771f3a8faefe027d",
+      "tekens": 36
+    },
+    "s588": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "1ca9c76cf29b8b84",
+      "tekens": 50
+    },
+    "s591": {
+      "voice": "nTkjq09AuYgsNR8E4sDe",
+      "model": "eleven_multilingual_v2",
+      "hash": "83d298e39e639c53",
+      "tekens": 69
     }
   },
   "dialogo-a": {

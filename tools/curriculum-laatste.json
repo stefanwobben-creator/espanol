@@ -1,71 +1,68 @@
 {
- "wanneer": "2026-11-22T09:23:07.056Z",
- "versie": "v23.279",
+ "wanneer": "2026-11-23T10:10:19.084Z",
+ "versie": "v23.280",
  "gaten": [
-  {
-   "tag": "costar",
-   "soort": "verschijnsel",
-   "fouten": 31
-  },
   {
    "tag": "les2",
    "soort": "verschijnsel",
    "fouten": 23
+  },
+  {
+   "tag": "comparativos",
+   "soort": "verschijnsel",
+   "fouten": 5
   }
  ],
  "reparatie": {
   "zinnen": [
-   "s562",
-   "s563",
-   "s564",
-   "s565",
-   "s566",
-   "s567",
-   "s568",
-   "s569",
-   "s572",
-   "s573"
+   "s582",
+   "s583",
+   "s584",
+   "s585",
+   "s586",
+   "s588",
+   "s591"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-25",
-  "num": 25,
+  "id": "b1-26",
+  "num": 26,
   "niveau": "B1",
-  "titel": "La vida en pareja: ventajas y desventajas",
-  "doel": "Leren praten over de voor- en nadelen van samenwonen en een relatie hebben, inclusief praktische situaties en meningen.",
-  "doelEn": "To learn how to discuss the pros and cons of living together and being in a relationship, including practical situations and opinions.",
+  "titel": "La vida después de los estudios",
+  "doel": "De leerling kan praten over plannen na de studie, sollicitatiebrieven begrijpen en advies geven over carrièrekeuzes.",
+  "doelEn": "The student can talk about plans after graduation, understand job application letters, and give career advice.",
   "spiek": [
-   43
+   44
   ],
   "words": [
-   "w496",
-   "w497",
-   "w498",
-   "w499",
-   "w500",
-   "w501",
-   "w503",
-   "w504",
-   "w505",
-   "w506",
-   "w507",
-   "w508",
-   "w509"
+   "w510",
+   "w511",
+   "w512",
+   "w513",
+   "w514",
+   "w515",
+   "w516",
+   "w517",
+   "w518",
+   "w519",
+   "w520",
+   "w521",
+   "w522",
+   "w523"
   ],
   "sents": [
-   "s574",
-   "s575",
-   "s576",
-   "s577",
-   "s578",
-   "s579",
-   "s581"
+   "s592",
+   "s593",
+   "s596",
+   "s597",
+   "s598",
+   "s599"
   ],
   "quizzes": [
-   "q-b1-25"
+   "q-b1-26"
   ]
  }
 }
