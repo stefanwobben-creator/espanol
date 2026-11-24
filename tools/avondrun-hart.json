@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-23T10:10:19.085Z",
+ "wanneer": "2026-11-24T12:00:23.573Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": 0,
@@ -10,37 +10,27 @@
   "nieuweLes": 1
  },
  "geleverd": {
-  "zinnen": 7,
+  "zinnen": 10,
   "toetsjes": 1,
-  "kaal": 2,
+  "kaal": 4,
   "nieuweLes": 1
  },
- "versie": "v23.280",
- "klachten": [
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s589 (cada día)",
-  "s590: afgekeurd — De zin is praktisch toepasbaar en correct Spaans, maar de uitleg is onnauwkeurig: 'miró' is hier niet de beste keuze omdat het gaat om een gewoonte of achtergrondinformatie ('niet goed kijken'), niet om een afgeronde gebeurtenis. 'No miraba bien' zou natuurlijker zijn.",
-  "1 vraag/vragen afgekeurd (poging 1): vraag 8: De uitleg klopt niet: 'calienta' is de bevestigende tú-vorm, niet de negatieve. De negatieve vorm is 'no calientes'.",
-  "toetsje q-imperativo-extra7: 7 van de 8 vragen blijven staan, het toetsje gaat door zonder vraag 8",
-  "— 1 zin(nen) uit de levering gehaald, de rest gaat gewoon door —",
-  "s587: zin 1 (s587): veld \"lvl\" ontbreekt | zin 1 (s587): lvl moet 1-5 zijn",
-  "s594: afgekeurd — De zin is niet praktisch toepasbaar: 'aprendizaje' betekent 'leerproces' of 'opleiding', niet 'stage'. De juiste vertaling is 'prácticas'.",
-  "s595: afgekeurd — De zin is niet natuurlijk Spaans: 'sobre tu carrera' betekent 'over jouw carrière', maar de leerling vraagt om advies over zijn eigen carrière. Het moet 'sobre mi carrera' zijn.",
-  "2 van de 8 zinnen afgekeurd, de rest gaat door"
- ],
+ "versie": "v23.281",
+ "klachten": [],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 4
   }
  ],
  "reden": null,
- "geweigerd": 1,
+ "geweigerd": 0,
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-23T10:20:08.416Z"
+ "afgemaakt": "2026-11-24T12:11:05.052Z"
 }
