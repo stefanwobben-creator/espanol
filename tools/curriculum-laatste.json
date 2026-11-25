@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-24T12:00:23.573Z",
- "versie": "v23.281",
+ "wanneer": "2026-11-25T10:52:23.145Z",
+ "versie": "v23.282",
  "gaten": [
   {
    "tag": "les2",
@@ -15,59 +15,59 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s600",
-   "s601",
-   "s602",
-   "s603",
-   "s604",
-   "s605",
-   "s606",
-   "s607",
-   "s608",
-   "s609"
+   "s618",
+   "s619",
+   "s620",
+   "s621",
+   "s622",
+   "s623",
+   "s624",
+   "s625",
+   "s626",
+   "s627"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-27",
-  "num": 27,
+  "id": "b1-28",
+  "num": 28,
   "niveau": "B1",
-  "titel": "El futuro y las decisiones importantes",
-  "doel": "De leerling kan praten over toekomstplannen, voorspellingen en belangrijke beslissingen in het Spaans, met focus op de toekomende tijd (futuro simple) en de subjunctivo in bijzinnen.",
-  "doelEn": "The student can talk about future plans, predictions and important decisions in Spanish, focusing on the simple future tense (futuro simple) and the subjunctive in subordinate clauses.",
+  "titel": "La salud y los hábitos",
+  "doel": "Leren praten over gezondheid, gewoontes en medische situaties in het Spaans.",
+  "doelEn": "To learn how to talk about health, habits, and medical situations in Spanish.",
   "spiek": [
-   45
+   46
   ],
   "words": [
-   "w524",
-   "w525",
-   "w526",
-   "w527",
-   "w528",
-   "w529",
-   "w530",
-   "w531",
-   "w532",
-   "w533",
-   "w534",
-   "w535",
-   "w536",
-   "w537"
+   "w538",
+   "w539",
+   "w540",
+   "w541",
+   "w542",
+   "w543",
+   "w544",
+   "w545",
+   "w546",
+   "w547",
+   "w548",
+   "w549",
+   "w550",
+   "w551"
   ],
   "sents": [
-   "s610",
-   "s611",
-   "s612",
-   "s613",
-   "s614",
-   "s615",
-   "s616",
-   "s617"
+   "s628",
+   "s629",
+   "s630",
+   "s631",
+   "s632",
+   "s633",
+   "s634",
+   "s635"
   ],
   "quizzes": [
-   "q-b1-27"
+   "q-b1-28"
   ]
  }
 }
