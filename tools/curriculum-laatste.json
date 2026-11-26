@@ -1,6 +1,6 @@
 {
- "wanneer": "2026-11-25T10:52:23.145Z",
- "versie": "v23.282",
+ "wanneer": "2026-11-26T10:25:30.728Z",
+ "versie": "v23.283",
  "gaten": [
   {
    "tag": "les2",
@@ -15,59 +15,54 @@
  ],
  "reparatie": {
   "zinnen": [
-   "s618",
-   "s619",
-   "s620",
-   "s621",
-   "s622",
-   "s623",
-   "s624",
-   "s625",
-   "s626",
-   "s627"
+   "s636",
+   "s637",
+   "s638",
+   "s639",
+   "s640",
+   "s642",
+   "s643"
   ],
   "toetsjes": [
    "q-imperativo-extra7"
   ]
  },
  "nieuweLes": {
-  "id": "b1-28",
-  "num": 28,
+  "id": "b1-29",
+  "num": 29,
   "niveau": "B1",
-  "titel": "La salud y los hábitos",
-  "doel": "Leren praten over gezondheid, gewoontes en medische situaties in het Spaans.",
-  "doelEn": "To learn how to talk about health, habits, and medical situations in Spanish.",
+  "titel": "La vida de los jóvenes en España",
+  "doel": "De leerling leert over het leven van jongeren in Spanje, hun uitdagingen, gewoontes en meningen, en oefent met gerelateerd vocabulaire en grammatica.",
+  "doelEn": "The student learns about the lives of young people in Spain, their challenges, habits and opinions, and practices related vocabulary and grammar.",
   "spiek": [
-   46
+   47
   ],
   "words": [
-   "w538",
-   "w539",
-   "w540",
-   "w541",
-   "w542",
-   "w543",
-   "w544",
-   "w545",
-   "w546",
-   "w547",
-   "w548",
-   "w549",
-   "w550",
-   "w551"
+   "w552",
+   "w554",
+   "w555",
+   "w556",
+   "w557",
+   "w558",
+   "w559",
+   "w560",
+   "w561",
+   "w562",
+   "w563",
+   "w564",
+   "w565"
   ],
   "sents": [
-   "s628",
-   "s629",
-   "s630",
-   "s631",
-   "s632",
-   "s633",
-   "s634",
-   "s635"
+   "s644",
+   "s645",
+   "s646",
+   "s647",
+   "s648",
+   "s650",
+   "s651"
   ],
   "quizzes": [
-   "q-b1-28"
+   "q-b1-29"
   ]
  }
 }
