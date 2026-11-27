@@ -1,68 +1,15 @@
 {
- "wanneer": "2026-11-26T10:25:30.728Z",
- "versie": "v23.283",
- "gaten": [
-  {
-   "tag": "les2",
-   "soort": "verschijnsel",
-   "fouten": 23
-  },
-  {
-   "tag": "comparativos",
-   "soort": "verschijnsel",
-   "fouten": 5
-  }
- ],
+ "wanneer": "2026-11-27T10:28:05.089Z",
+ "versie": "v23.284",
+ "gaten": [],
  "reparatie": {
   "zinnen": [
-   "s636",
-   "s637",
-   "s638",
-   "s639",
-   "s640",
-   "s642",
-   "s643"
+   "s652",
+   "s653",
+   "s654",
+   "s655"
   ],
-  "toetsjes": [
-   "q-imperativo-extra7"
-  ]
+  "toetsjes": []
  },
- "nieuweLes": {
-  "id": "b1-29",
-  "num": 29,
-  "niveau": "B1",
-  "titel": "La vida de los jóvenes en España",
-  "doel": "De leerling leert over het leven van jongeren in Spanje, hun uitdagingen, gewoontes en meningen, en oefent met gerelateerd vocabulaire en grammatica.",
-  "doelEn": "The student learns about the lives of young people in Spain, their challenges, habits and opinions, and practices related vocabulary and grammar.",
-  "spiek": [
-   47
-  ],
-  "words": [
-   "w552",
-   "w554",
-   "w555",
-   "w556",
-   "w557",
-   "w558",
-   "w559",
-   "w560",
-   "w561",
-   "w562",
-   "w563",
-   "w564",
-   "w565"
-  ],
-  "sents": [
-   "s644",
-   "s645",
-   "s646",
-   "s647",
-   "s648",
-   "s650",
-   "s651"
-  ],
-  "quizzes": [
-   "q-b1-29"
-  ]
- }
+ "nieuweLes": null
 }

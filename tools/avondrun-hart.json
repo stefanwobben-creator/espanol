@@ -1,37 +1,29 @@
 {
- "wanneer": "2026-11-26T10:25:30.730Z",
+ "wanneer": "2026-11-27T10:28:05.090Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
- "voorraadDagen": 0,
+ "voorraadDagen": null,
  "beloofd": {
-  "gaten": 2,
-  "toetsje": 1,
+  "gaten": 0,
+  "toetsje": 0,
   "kaal": 1,
-  "nieuweLes": 1
+  "nieuweLes": 0
  },
  "geleverd": {
-  "zinnen": 7,
-  "toetsjes": 1,
-  "kaal": 2,
-  "nieuweLes": 1
+  "zinnen": 4,
+  "toetsjes": 0,
+  "kaal": 4,
+  "nieuweLes": 0
  },
- "versie": "v23.283",
- "klachten": [
-  "s641: afgekeurd — De zin is wel praktisch toepasbaar en het Spaans is correct, maar de uitleg is onnauwkeurig: 'tan ... como' wordt hier niet gebruikt, en 'de misma edad que' is juist de natuurlijke vorm voor deze vergelijking.",
-  "tijdsaanduiding gevonden, dus eruit vóór de tegenlezer: s641 (anoche)",
-  "s644: afgekeurd — De uitleg is onjuist: 'olvidaron' is geen indefinido-vorm van 'olvidar', maar een constructie met 'se me olvidaron' (meervoudig onderwerp).",
-  "woord w553 eruit: woord 1 (w553): de vertaling verklapt het Spaanse woord (\"het sociale netwerk\"). Zet het Spaans op de Spaanse kant, of in \"meer\".",
-  "1 van de 14 woorden afgekeurd, de rest gaat door",
-  "s649: afgekeurd — De zin is niet praktisch toepasbaar: 'botellón' is een Spaanse term voor een illegale straatfeest met alcohol, niet voor een gezellig feest met vrienden.",
-  "1 van de 8 zinnen afgekeurd, de rest gaat door"
- ],
+ "versie": "v23.284",
+ "klachten": [],
  "mis": null,
  "kaalVerloop": [
   {
    "poging": 1,
    "gemaakt": 4,
-   "naZeef": 3,
-   "naKeuring": 2
+   "naZeef": 4,
+   "naKeuring": 4
   }
  ],
  "reden": null,
@@ -39,6 +31,6 @@
  "gegenereerd": true,
  "gepubliceerd": true,
  "status": "gepubliceerd",
- "pogingen": 2,
- "afgemaakt": "2026-11-26T10:36:07.400Z"
+ "pogingen": 1,
+ "afgemaakt": "2026-11-27T10:38:00.050Z"
 }
