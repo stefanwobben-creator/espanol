@@ -1,5 +1,5 @@
 {
- "wanneer": "2026-11-27T10:28:05.090Z",
+ "wanneer": "2026-11-28T09:47:40.242Z",
  "gelukt": true,
  "ladder": "server (https://espanol-qbm8.onrender.com/api/admin/llm) · anthropic:claude-sonnet-4-5 voorop",
  "voorraadDagen": null,
@@ -32,5 +32,5 @@
  "gepubliceerd": true,
  "status": "gepubliceerd",
  "pogingen": 1,
- "afgemaakt": "2026-11-27T10:38:00.050Z"
+ "afgemaakt": "2026-11-28T09:58:21.550Z"
 }
